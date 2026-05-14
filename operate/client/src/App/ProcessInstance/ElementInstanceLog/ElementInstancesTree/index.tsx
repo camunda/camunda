@@ -505,10 +505,17 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       const isRoot = elementType === 'PROCESS';
 
       const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      // Ad-hoc subprocess inner-instance wrappers share their parent's
+      // elementId, so a diagram-driven selection (which carries only an
+      // elementId, no elementInstanceKey) would otherwise also highlight every
+      // inner instance underneath the outer subprocess. Inner instances are
+      // internal Zeebe artifacts — only match them on an exact
+      // elementInstanceKey, never on elementId alone.
+      const isInnerInstance = elementType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
       const isElementSelected = isRoot
         ? !hasSelection
         : isSelected({
-            elementId,
+            elementId: isInnerInstance ? undefined : elementId,
             elementInstanceKey: scopeKey,
             isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
           });

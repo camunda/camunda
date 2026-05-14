@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useState} from 'react';
+import {lazy, Suspense, useLayoutEffect, useRef, useState} from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -50,13 +50,13 @@ const MonacoEditor = lazy(async () => {
   return Editor;
 });
 
-const SegmentRow = styled.div`
+const SegmentRow = styled.div<{$alwaysShowActions?: boolean}>`
   display: flex;
   align-items: flex-start;
   gap: var(--cds-spacing-03);
 
   & > .segment-actions {
-    opacity: 0;
+    opacity: ${({$alwaysShowActions}) => ($alwaysShowActions ? 1 : 0)};
     transition: opacity 120ms ease-out;
     flex-shrink: 0;
     align-self: flex-start;
@@ -68,6 +68,26 @@ const SegmentRow = styled.div`
   &:focus-within > .segment-actions {
     opacity: 1;
   }
+`;
+
+const SegmentBody = styled.div`
+  position: relative;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TruncationFade = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--cds-spacing-07);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0),
+    var(--cds-layer-02) 90%
+  );
+  pointer-events: none;
 `;
 
 const MarkdownBody = styled.div`
@@ -759,6 +779,8 @@ function ExpandableSegment({
   role: string;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const modalHeading =
     blockCount > 1
       ? `${role} message — block ${blockIndex + 1} of ${blockCount}`
@@ -766,25 +788,38 @@ function ExpandableSegment({
         ? 'System prompt'
         : `${role} message`;
 
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) {
+      return;
+    }
+    setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [content]);
+
   return (
     <>
-      <SegmentRow style={{marginTop: isFirst ? 0 : 'var(--cds-spacing-04)'}}>
-        <MarkdownBody
-          style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            lineHeight: '1.5',
-            color: 'var(--cds-text-secondary)',
-            wordBreak: 'break-word',
-            maxHeight: 360,
-            overflowY: 'auto',
-          }}
-        >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {toMarkdown(content)}
-          </ReactMarkdown>
-        </MarkdownBody>
+      <SegmentRow
+        style={{marginTop: isFirst ? 0 : 'var(--cds-spacing-04)'}}
+        $alwaysShowActions={isTruncated}
+      >
+        <SegmentBody>
+          <MarkdownBody
+            ref={bodyRef}
+            style={{
+              fontSize: 'var(--cds-body-compact-01-font-size)',
+              lineHeight: '1.5',
+              color: 'var(--cds-text-secondary)',
+              wordBreak: 'break-word',
+              maxHeight: 360,
+              overflow: 'hidden',
+            }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {toMarkdown(content)}
+            </ReactMarkdown>
+          </MarkdownBody>
+          {isTruncated && <TruncationFade aria-hidden="true" />}
+        </SegmentBody>
         <div className="segment-actions">
           <Button
             kind="ghost"
