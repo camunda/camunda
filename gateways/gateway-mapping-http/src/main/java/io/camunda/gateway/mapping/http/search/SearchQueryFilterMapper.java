@@ -332,6 +332,9 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getProcessInstanceKey())
         .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
     ofNullable(filter.getScopeKey())
         .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);

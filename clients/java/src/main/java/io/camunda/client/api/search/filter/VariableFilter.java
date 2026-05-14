@@ -104,6 +104,23 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /**
+   * Filters variables by the specified process definition key.
+   *
+   * @param processDefinitionKey the process definition key of the variable
+   * @return the updated filter
+   */
+  VariableFilter processDefinitionKey(final Long processDefinitionKey);
+
+  /**
+   * Filters variables by the specified process definition key using {@link BasicLongProperty}
+   * consumer.
+   *
+   * @param fn the process definition key {@link BasicLongProperty} consumer of the variable
+   * @return the updated filter
+   */
+  VariableFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
+
+  /**
    * Filters variables by the specified tenant id.
    *
    * @param tenantId the tenant id of the variable

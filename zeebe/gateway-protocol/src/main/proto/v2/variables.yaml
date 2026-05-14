@@ -170,6 +170,10 @@ components:
           description: The key of the process instance of this variable.
           allOf:
           - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        processDefinitionKey:
+          description: The key of the process definition of this variable.
+          allOf:
+          - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
 
     VariableSearchQueryResult:
       description: Variable search query response.

@@ -104,6 +104,20 @@ public class VariableFilterImpl
   }
 
   @Override
+  public VariableFilter processDefinitionKey(final Long processDefinitionKey) {
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public VariableFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public VariableFilter tenantId(final String tenantId) {
     filter.setTenantId(tenantId);
     return this;

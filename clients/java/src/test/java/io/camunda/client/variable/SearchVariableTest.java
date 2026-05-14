@@ -159,4 +159,32 @@ public class SearchVariableTest extends ClientRestTest {
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo("1");
   }
+
+  @Test
+  void shouldSearchVariablesByProcessDefinitionKey() {
+    // when
+    client.newVariableSearchRequest().filter(f -> f.processDefinitionKey(1L)).send().join();
+
+    // then
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("1");
+  }
+
+  @Test
+  void shouldSearchVariablesByProcessDefinitionKeyLongFilter() {
+    // when
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.processDefinitionKey(b -> b.in(1L, 10L)))
+        .send()
+        .join();
+
+    // then
+    final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
+    final VariableFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicStringFilterProperty processDefinitionKey = filter.getProcessDefinitionKey();
+    assertThat(processDefinitionKey).isNotNull();
+    assertThat(processDefinitionKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
+  }
 }
