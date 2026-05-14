@@ -8,6 +8,8 @@
 
 import {lazy, Suspense, useState} from 'react';
 import styled from 'styled-components';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Accordion,
   AccordionItem,
@@ -65,6 +67,84 @@ const SegmentRow = styled.div`
   &:hover > .segment-actions,
   &:focus-within > .segment-actions {
     opacity: 1;
+  }
+`;
+
+const MarkdownBody = styled.div`
+  /* Every markdown-produced element inherits the Carbon body type from the
+     parent <div>, so <p>/<li>/<h*> don't render at browser defaults. */
+  & *,
+  & *::before,
+  & *::after {
+    font-size: inherit;
+    line-height: inherit;
+    font-family: inherit;
+    letter-spacing: inherit;
+  }
+  & > :first-child {
+    margin-top: 0;
+  }
+  & > :last-child {
+    margin-bottom: 0;
+  }
+  & p {
+    margin: 0 0 var(--cds-spacing-03) 0;
+  }
+  & ol,
+  & ul {
+    margin: 0 0 var(--cds-spacing-03) 0;
+    padding-left: var(--cds-spacing-06);
+  }
+  & ol {
+    list-style: decimal outside;
+  }
+  & ul {
+    list-style: disc outside;
+  }
+  & li {
+    margin: 0;
+    padding-left: var(--cds-spacing-02);
+  }
+  & li + li {
+    margin-top: var(--cds-spacing-02);
+  }
+  & li > p {
+    margin: 0;
+  }
+  & h1,
+  & h2,
+  & h3,
+  & h4,
+  & h5,
+  & h6 {
+    font-weight: 600;
+    margin: 0 0 var(--cds-spacing-02) 0;
+  }
+  & strong {
+    font-weight: 600;
+  }
+  & em {
+    font-style: italic;
+  }
+  & code {
+    font-family: var(--cds-code-01-font-family);
+    background: var(--cds-layer-01);
+    padding: 0 var(--cds-spacing-02);
+    border-radius: 2px;
+  }
+  & pre {
+    background: var(--cds-layer-01);
+    padding: var(--cds-spacing-03);
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0 0 var(--cds-spacing-03) 0;
+  }
+  & pre code {
+    background: transparent;
+    padding: 0;
+  }
+  & a {
+    color: var(--cds-link-primary);
   }
 `;
 
@@ -651,6 +731,20 @@ function IterationDetail({iteration}: {iteration: AgentIteration}) {
   );
 }
 
+// Normalize free-form text into CommonMark-friendly markdown so we can render
+// it with react-markdown without falling back to pre-wrap. Two adjustments:
+//   1. Insert a blank line before a list marker that follows non-blank text,
+//      so `**Header**\n1. item` parses as a real list instead of one paragraph.
+//   2. Convert remaining single newlines into markdown hard breaks (two trailing
+//      spaces + newline), so `Line 1\nLine 2` renders as two visual lines.
+function toMarkdown(text: string): string {
+  const withListSeparators = text.replace(
+    /([^\n])\n(\d+\.\s|[-*]\s)/g,
+    '$1\n\n$2',
+  );
+  return withListSeparators.replace(/(?<!\n)\n(?!\n)/g, '  \n');
+}
+
 function ExpandableSegment({
   content,
   isFirst,
@@ -675,21 +769,22 @@ function ExpandableSegment({
   return (
     <>
       <SegmentRow style={{marginTop: isFirst ? 0 : 'var(--cds-spacing-04)'}}>
-        <div
+        <MarkdownBody
           style={{
             flex: 1,
             minWidth: 0,
             fontSize: 'var(--cds-body-compact-01-font-size)',
             lineHeight: '1.5',
-            color: 'var(--cds-text-primary)',
-            whiteSpace: 'pre-wrap',
+            color: 'var(--cds-text-secondary)',
             wordBreak: 'break-word',
-            maxHeight: 160,
+            maxHeight: 360,
             overflowY: 'auto',
           }}
         >
-          {content}
-        </div>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {toMarkdown(content)}
+          </ReactMarkdown>
+        </MarkdownBody>
         <div className="segment-actions">
           <Button
             kind="ghost"
