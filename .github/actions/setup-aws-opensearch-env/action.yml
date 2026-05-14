@@ -62,7 +62,7 @@ runs:
           echo "Using OS 3.5"
           OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_5_URL }}"
         else
-          echo "Unsupported OpenSearch version"
+          echo "Unsupported OpenSearch version: '${{ inputs.opensearch-version }}'. Supported versions: 2.19, 3.5."
           exit 1
         fi
 
