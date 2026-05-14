@@ -1,6 +1,7 @@
 #!/bin/bash -xeu
 # Usage:
 #  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
+#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
@@ -10,6 +11,9 @@
 #   elasticsearch (default), opensearch, postgresql, oracle, mysql, mssql, mariadb, none
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
+#
+# Environment variables:
+#   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
 if [ -z "$1" ]; then
@@ -87,7 +91,7 @@ fi
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
+kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
 # Copy result
 kubectl cp "$node:$containerPath/$filename" "$node-$filename"
