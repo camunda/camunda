@@ -238,8 +238,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove two add modification elements', async () => {
-    const {businessObjects} =
-      await parseBusinessObjects(multiInstanceProcess);
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([
@@ -355,8 +354,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove one cancel modification elements', async () => {
-    const {businessObjects} =
-      await parseBusinessObjects(multiInstanceProcess);
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([
