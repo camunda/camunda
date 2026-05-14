@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.management.backups.BackupInfo;
@@ -364,17 +365,17 @@ public interface BackupCompatibilityAcceptance {
   }
 
   private BrokerContainer createOldBroker(final String storeBasePath) {
-    final var imageName = DockerImageName.parse("camunda/zeebe").withTag(previousVersion());
+    final var imageName = DockerImageName.parse("camunda/camunda").withTag(previousVersion());
     final var broker =
         new BrokerContainer(imageName)
             .withNetwork(getNetwork())
+            .withUnifiedConfig(
+                cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
             .withLogConsumer(
                 new Slf4jLogConsumer(LoggerFactory.getLogger(BackupCompatibilityAcceptance.class))
                     .withPrefix(imageName.asCanonicalNameString()))
             .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
-            .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     // Apply backup store specific env vars
