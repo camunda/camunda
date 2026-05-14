@@ -163,8 +163,8 @@ sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"    Makefile
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml databases/*.yaml resources/namespace.yaml
-sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml databases/*.yaml resources/namespace.yaml
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml resources/namespace.yaml
+sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml resources/namespace.yaml
 sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
 
 # When single-zone is disabled the topology annotation has no useful value;
