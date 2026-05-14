@@ -49,8 +49,8 @@
 
     <zeebe.version>8.8.27-SNAPSHOT</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
-    <camunda.docker.version>8.8.25</camunda.docker.version>
-    <zeebe.docker.version>8.8.25</zeebe.docker.version>
+    <camunda.docker.version>8.8.10</camunda.docker.version>
+    <zeebe.docker.version>8.8.10</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.6</surefire-plugin.version>

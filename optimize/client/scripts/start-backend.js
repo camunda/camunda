@@ -196,7 +196,6 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         OS_VERSION: opensearchVersion,
-        IDENTITY_VERSION: camundaVersion,
         // we assume that the version of operate is the same as zeebe
         CAMUNDA_VERSION: camundaVersion,
         // to start only the opensearch services, we create profiles for mode + database
