@@ -101,18 +101,17 @@ public class BackupPriorityConfiguration {
 
     final List<Prio3Backup> prio3 =
         List.of(
-            // OPERATE
-            new BatchOperationTemplate(indexPrefix, isElasticsearch),
-            new OperationTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new CorrelatedMessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             // OPERATE
+            new BatchOperationTemplate(indexPrefix, isElasticsearch),
             new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
-            new MessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
             new IncidentTemplate(indexPrefix, isElasticsearch),
             new JobTemplate(indexPrefix, isElasticsearch),
+            new MessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             new MessageTemplate(indexPrefix, isElasticsearch),
+            new OperationTemplate(indexPrefix, isElasticsearch),
             new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
             new SequenceFlowTemplate(indexPrefix, isElasticsearch),
             new VariableTemplate(indexPrefix, isElasticsearch),
@@ -140,14 +139,14 @@ public class BackupPriorityConfiguration {
             new UsageMetricTemplate(indexPrefix, isElasticsearch),
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
             // AUDIT LOG
-            new AuditLogTemplate(indexPrefix, isElasticsearch),
             new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
+            new AuditLogTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new AgentInstanceTemplate(indexPrefix, isElasticsearch),
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
-            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
+            new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
-            new DeployedResourceIndex(indexPrefix, isElasticsearch));
+            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);
