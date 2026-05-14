@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 
 public interface TopologyPartitionListener {
-  void onPartitionLeaderUpdated(int partitionId, MemberId leaderId);
+  void onPartitionLeaderUpdated(int partitionId, BrokerMemberId leaderId);
 }
