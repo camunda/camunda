@@ -313,10 +313,7 @@ public class ZeebeTopologyWaitStrategy extends AbstractWaitStrategy {
   }
 
   private Topology getTopology(final CamundaClient client) {
-    return client
-        .newTopologyRequest()
-        .send()
-        .join(startupTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    return client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
   }
 
   private static final class TopologyHolder {
