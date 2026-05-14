@@ -13,9 +13,11 @@ import io.camunda.security.configuration.PhysicalTenantConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -60,6 +62,12 @@ public class CamundaPhysicalTenantsConfiguration {
     return tenants == null ? List.of() : tenants;
   }
 
+  /**
+   * Transitional scaffolding. The target architecture gives each PT its own store; once per-PT
+   * storage routing lands, each PT should run its own {@code IdentitySetupInitializer} against its
+   * own store, fed only from that PT's init block. This flat-merge into the shared root
+   * initialization can be deleted then.
+   */
   @PostConstruct
   public void mergePerTenantInitialization() {
     final var tenants = properties.getPhysicalTenants();
@@ -67,9 +75,11 @@ public class CamundaPhysicalTenantsConfiguration {
       return;
     }
     final Set<String> knownIdps = collectKnownIdps(securityConfiguration);
+    for (final PhysicalTenantConfiguration tenant : tenants) {
+      validateTenant(tenant, knownIdps);
+    }
     final InitializationConfiguration root = securityConfiguration.getInitialization();
     for (final PhysicalTenantConfiguration tenant : tenants) {
-      validateIdps(tenant, knownIdps);
       mergeOne(root, tenant);
     }
   }
@@ -79,11 +89,14 @@ public class CamundaPhysicalTenantsConfiguration {
     if (providers != null && providers.getOidc() != null) {
       return providers.getOidc().keySet();
     }
-    return Collections.emptySet();
+    return Set.of();
   }
 
-  private static void validateIdps(
+  private static void validateTenant(
       final PhysicalTenantConfiguration tenant, final Set<String> knownIdps) {
+    if (tenant.getId() == null || tenant.getId().isBlank()) {
+      throw new IllegalStateException("camunda.physical-tenants entry is missing a non-blank 'id'");
+    }
     final var idps = tenant.getIdps();
     if (idps == null || idps.isEmpty()) {
       LOG.warn(
@@ -110,83 +123,40 @@ public class CamundaPhysicalTenantsConfiguration {
 
   private static void mergeOne(
       final InitializationConfiguration root, final PhysicalTenantConfiguration tenant) {
-    if (tenant.getId() == null || tenant.getId().isBlank()) {
-      throw new IllegalStateException("camunda.physical-tenants entry is missing a non-blank 'id'");
-    }
     final InitializationConfiguration init = tenant.getSecurity().getInitialization();
-    final String tenantId = tenant.getId();
 
-    final int rolesAdded = appendDistinctRoles(root, init);
-    final int groupsAdded = appendDistinctGroups(root, init);
-    final int tenantsAdded = appendDistinctTenants(root, init);
-    final int authzAdded = root.getAuthorizations().size();
+    final int rolesAdded =
+        appendDistinct(root.getRoles(), init.getRoles(), r -> r.roleId(), "role");
+    final int groupsAdded =
+        appendDistinct(root.getGroups(), init.getGroups(), g -> g.groupId(), "group");
+    final int tenantsAdded =
+        appendDistinct(root.getTenants(), init.getTenants(), t -> t.tenantId(), "logical tenant");
     root.getAuthorizations().addAll(init.getAuthorizations());
-    final int authzAddedDelta = root.getAuthorizations().size() - authzAdded;
 
     LOG.info(
         "Merged physical tenant '{}': +{} roles, +{} groups, +{} tenants, +{} authorizations",
-        tenantId,
+        tenant.getId(),
         rolesAdded,
         groupsAdded,
         tenantsAdded,
-        authzAddedDelta);
+        init.getAuthorizations().size());
   }
 
-  private static int appendDistinctRoles(
-      final InitializationConfiguration root, final InitializationConfiguration tenantInit) {
-    if (root.getRoles() == null) {
-      root.setRoles(new ArrayList<>());
-    }
-    final var existingIds =
-        root.getRoles().stream().map(r -> r.roleId()).filter(java.util.Objects::nonNull).toList();
+  private static <T> int appendDistinct(
+      final List<T> root,
+      final List<T> incoming,
+      final Function<T, String> idOf,
+      final String label) {
+    final Set<String> existingIds =
+        root.stream().map(idOf).filter(Objects::nonNull).collect(Collectors.toSet());
     int added = 0;
-    for (final var role : tenantInit.getRoles()) {
-      if (role.roleId() != null && existingIds.contains(role.roleId())) {
-        LOG.debug("Skipping duplicate role '{}' from physical tenant init", role.roleId());
+    for (final T item : incoming) {
+      final String id = idOf.apply(item);
+      if (id != null && existingIds.contains(id)) {
+        LOG.debug("Skipping duplicate {} '{}' from physical tenant init", label, id);
         continue;
       }
-      root.getRoles().add(role);
-      added++;
-    }
-    return added;
-  }
-
-  private static int appendDistinctGroups(
-      final InitializationConfiguration root, final InitializationConfiguration tenantInit) {
-    if (root.getGroups() == null) {
-      root.setGroups(new ArrayList<>());
-    }
-    final var existingIds =
-        root.getGroups().stream().map(g -> g.groupId()).filter(java.util.Objects::nonNull).toList();
-    int added = 0;
-    for (final var group : tenantInit.getGroups()) {
-      if (group.groupId() != null && existingIds.contains(group.groupId())) {
-        LOG.debug("Skipping duplicate group '{}' from physical tenant init", group.groupId());
-        continue;
-      }
-      root.getGroups().add(group);
-      added++;
-    }
-    return added;
-  }
-
-  private static int appendDistinctTenants(
-      final InitializationConfiguration root, final InitializationConfiguration tenantInit) {
-    if (root.getTenants() == null) {
-      root.setTenants(new ArrayList<>());
-    }
-    final var existingIds =
-        root.getTenants().stream()
-            .map(t -> t.tenantId())
-            .filter(java.util.Objects::nonNull)
-            .toList();
-    int added = 0;
-    for (final var t : tenantInit.getTenants()) {
-      if (t.tenantId() != null && existingIds.contains(t.tenantId())) {
-        LOG.debug("Skipping duplicate logical tenant '{}' from physical tenant init", t.tenantId());
-        continue;
-      }
-      root.getTenants().add(t);
+      root.add(item);
       added++;
     }
     return added;
