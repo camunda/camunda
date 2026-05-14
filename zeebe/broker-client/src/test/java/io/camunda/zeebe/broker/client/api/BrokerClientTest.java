@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import static io.camunda.zeebe.broker.client.BrokerMemberIds.ONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.fail;
@@ -62,7 +63,6 @@ import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
-  private static final BrokerMemberId ONE = BrokerMemberId.from("1");
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
