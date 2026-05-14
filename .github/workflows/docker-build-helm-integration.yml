@@ -196,7 +196,7 @@ jobs:
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
             # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
-            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/[^/]+/pr-([0-9]+)-.*$|\1|p' <<< "${{ github.ref }}")
+            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/.+/pr-([0-9]+)-.*$|\1|p' <<< "${{ github.ref }}")
             if [[ -z "${PR_NUM}" ]]; then
               echo "Failed to resolve a single PR number from merge_group ref: '${{ github.ref }}'" >&2
               exit 1
