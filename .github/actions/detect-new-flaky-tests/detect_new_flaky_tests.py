@@ -83,6 +83,14 @@ def process_flaky_tests_data(raw_data: list) -> list:
 
         for test_name in test_names:
             parsed = parse_test_name(test_name)
+            # Skip JUnit lifecycle entries like <beforeAll>, <afterAll>, <beforeEach>,
+            # <afterEach>. These are class-level setup/teardown failures, not test
+            # methods. BigQuery never records them, so the baseline can't match —
+            # treating them as test methods produces guaranteed false-positive alerts.
+            method = parsed.get("methodName", "")
+            if method.startswith("<") and method.endswith(">"):
+                print(f'{PREFIX} Skipping lifecycle entry "{test_name}" (job="{job}") — not a test method')
+                continue
             key = get_test_key(parsed)
             if key in test_map:
                 existing = test_map[key]
