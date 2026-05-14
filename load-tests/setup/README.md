@@ -201,11 +201,9 @@ make install-platform
 make install-load-test
 ```
 
-To bump the deadline of an existing namespace without re-scaffolding:
+To bump the deadline of an existing namespace without re-scaffolding, edit `deadline-date` in `resources/namespace.yaml` (single source of truth — `check-deadline` reads it directly) and reapply:
 
 ```sh
-# 1. Edit the deadline-date label in resources/namespace.yaml
-# 2. Reapply:
 make create-namespace
 ```
 
@@ -314,7 +312,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.
