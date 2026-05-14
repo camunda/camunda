@@ -64,6 +64,9 @@ jobs:
         with:
           commit_message: "test: updated operate snapshots"
           file_pattern: "operate/client/**/*.png"
+          commit_user_name: operate-snapshot-bot
+          commit_user_email: noreply@camunda.com
+          commit_author: operate-snapshot-bot <noreply@camunda.com>
       - name: Remove update-snapshots label
         if: success()
         continue-on-error: true
