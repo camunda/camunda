@@ -384,7 +384,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
-        .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
+        .thenComposeAsync(
+            ignored -> {
+              // don't set the lifecycle if nothing was moved
+              // as it also might mean the index does not exist anyway
+              if (taskSupplier.getTotalArchived() > 0L) {
+                return setIndexLifeCycle(destinationIndexName);
+              }
+              return CompletableFuture.completedFuture(null);
+            },
+            executor)
         .thenApply(
             ignored -> {
               logger.trace(
