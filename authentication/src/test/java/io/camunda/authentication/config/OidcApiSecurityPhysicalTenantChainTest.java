@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import io.camunda.authentication.context.RequestedPhysicalTenant;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.configuration.PhysicalTenantConfiguration;
 import io.camunda.security.oidc.OidcClaimsProvider;
@@ -39,17 +40,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * End-to-end OIDC chain test for the physical-tenant flow. Exercises the full bearer-token pipeline
- * on {@code oidcApiSecurity}: {@code BearerTokenAuthenticationFilter} → mocked {@link JwtDecoder} →
- * {@code PhysicalTenantJwtAuthenticationConverter} → {@code PhysicalTenantAuthorizationManager} on
- * {@code /v2/physical-tenants/{ptId}/**}.
+ * End-to-end OIDC chain test for the physical-tenant flow. Exercises the bearer-token pipeline on
+ * {@code oidcApiSecurity} ({@code BearerTokenAuthenticationFilter} → mocked {@link JwtDecoder} →
+ * {@code PhysicalTenantJwtAuthenticationConverter}) plus the {@link
+ * io.camunda.authentication.filters.RequestedPhysicalTenantFilter} that resolves {@code ptId} from
+ * the URL.
+ *
+ * <p>PT-level authorization is the controllers' responsibility and is not exercised here.
  *
  * <p>The {@link JwtDecoder} is mocked so the converter sees real {@link Jwt} instances with
- * controlled {@code iss} and {@code groups} claims, without needing a running IdP. The {@link
- * ClientRegistrationRepository} is replaced with a hand-built {@link
- * InMemoryClientRegistrationRepository} (with {@code allow-bean-definition-overriding=true}) so
- * that the chain wiring's iterable check passes and {@code OidcConfiguration}'s factory doesn't
- * perform OIDC discovery against the (fake) issuer URIs.
+ * controlled {@code iss} and {@code groups} claims. The {@link ClientRegistrationRepository} is
+ * replaced with a hand-built {@link InMemoryClientRegistrationRepository} so that the chain
+ * wiring's iterable check passes and {@code OidcConfiguration}'s factory doesn't perform OIDC
+ * discovery against the (fake) issuer URIs.
  */
 @SpringBootTest(
     classes = {
@@ -81,6 +84,7 @@ public class OidcApiSecurityPhysicalTenantChainTest extends AbstractWebSecurityC
 
   private static final String PT_RISK_URL = "/v2/physical-tenants/risk-production/foo";
   private static final String PT_AUDIT_URL = "/v2/physical-tenants/audit/foo";
+  private static final String PT_UNKNOWN_URL = "/v2/physical-tenants/unknown/foo";
   private static final String DEFAULT_ISSUER = "http://idp.test/default";
   private static final String PROVIDER_A_ISSUER = "http://idp.test/provider-a";
 
@@ -105,43 +109,6 @@ public class OidcApiSecurityPhysicalTenantChainTest extends AbstractWebSecurityC
   }
 
   @Test
-  void shouldReturn200WhenBearerTokenCarriesMatchingPtClaimFromAssignedIssuer() {
-    // given — token issued by 'default' (in risk-production's idps allow-list), carrying
-    // groups: [pt:risk-production]
-    when(jwtDecoder.decode("good-token"))
-        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("pt:risk-production")));
-
-    // when
-    final MvcTestResult result =
-        mockMvcTester
-            .get()
-            .headers(bearer("good-token"))
-            .uri("https://localhost" + PT_RISK_URL)
-            .exchange();
-
-    // then — decoder → converter (PT_risk-production added) → manager (granted)
-    assertThat(result).hasStatusOk();
-  }
-
-  @Test
-  void shouldReturn403WhenBearerTokenCarriesWrongPtClaim() {
-    // given — token carrying pt:audit but request is for risk-production
-    when(jwtDecoder.decode("wrong-pt"))
-        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("pt:audit")));
-
-    // when
-    final MvcTestResult result =
-        mockMvcTester
-            .get()
-            .headers(bearer("wrong-pt"))
-            .uri("https://localhost" + PT_RISK_URL)
-            .exchange();
-
-    // then — PT_audit doesn't satisfy /v2/physical-tenants/risk-production/**
-    assertThat(result).hasStatus(HttpStatus.FORBIDDEN);
-  }
-
-  @Test
   void shouldReturn401WhenBearerTokenIssuerIsNotInPtAllowList() {
     // given — provider-a is NOT in audit's idps; token claims pt:audit
     when(jwtDecoder.decode("cross-pt"))
@@ -156,49 +123,46 @@ public class OidcApiSecurityPhysicalTenantChainTest extends AbstractWebSecurityC
             .exchange();
 
     // then — converter throws OAuth2AuthenticationException, surfaced as 401. This is the cross-PT
-    // token-replay defence pinned end-to-end.
+    // token-replay defence pinned end-to-end and is the only PT-related auth-time decision left
+    // on the chain.
     assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
   }
 
   @Test
-  void shouldReturn403WhenBearerTokenHasNoPtClaim() {
-    // given — valid token but no pt:* group → converter adds no PT_* authority
-    when(jwtDecoder.decode("no-pt"))
-        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("engineering")));
+  void shouldReachControllerAndExposeResolvedPtWhenAuthIsValidAndPtIsKnown() {
+    // given — token from an allow-listed issuer claiming pt:risk-production
+    when(jwtDecoder.decode("good-token"))
+        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("pt:risk-production")));
 
     // when
     final MvcTestResult result =
         mockMvcTester
             .get()
-            .headers(bearer("no-pt"))
+            .headers(bearer("good-token"))
             .uri("https://localhost" + PT_RISK_URL)
             .exchange();
 
-    // then — authenticated but lacks PT_* → 403
-    assertThat(result).hasStatus(HttpStatus.FORBIDDEN);
+    // then — auth passes, filter resolves PT and attaches the attribute, controller reads it back
+    assertThat(result).hasStatusOk();
+    assertThat(result).hasBodyTextEqualTo("PT risk-production resolved=risk-production");
   }
 
   @Test
-  void shouldGrantMultiPtTokenOnEitherTenantUrl() {
-    // given
-    when(jwtDecoder.decode("multi-pt"))
-        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("pt:risk-production", "pt:audit")));
+  void shouldReturn404WhenPhysicalTenantUrlReferencesUnknownPt() {
+    // given — valid token, but the URL targets a PT that is not configured
+    when(jwtDecoder.decode("good-token"))
+        .thenReturn(jwt(DEFAULT_ISSUER, "groups", List.of("pt:risk-production")));
 
-    // when / then
-    assertThat(
-            mockMvcTester
-                .get()
-                .headers(bearer("multi-pt"))
-                .uri("https://localhost" + PT_RISK_URL)
-                .exchange())
-        .hasStatusOk();
-    assertThat(
-            mockMvcTester
-                .get()
-                .headers(bearer("multi-pt"))
-                .uri("https://localhost" + PT_AUDIT_URL)
-                .exchange())
-        .hasStatusOk();
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .headers(bearer("good-token"))
+            .uri("https://localhost" + PT_UNKNOWN_URL)
+            .exchange();
+
+    // then — filter rejects before any controller runs
+    assertThat(result).hasStatus(HttpStatus.NOT_FOUND);
   }
 
   @Test
@@ -288,7 +252,9 @@ public class OidcApiSecurityPhysicalTenantChainTest extends AbstractWebSecurityC
   static class PhysicalTenantTestController {
     @GetMapping("/v2/physical-tenants/{ptId}/foo")
     String dummyPhysicalTenantEndpoint(@PathVariable("ptId") final String ptId) {
-      return "PT " + ptId;
+      // also exposes the value the filter attached, so the test can verify the attribute
+      // round-trip without coupling to a real authz check
+      return "PT " + ptId + " resolved=" + RequestedPhysicalTenant.id().orElse("UNSET");
     }
   }
 }
