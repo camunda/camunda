@@ -12,6 +12,7 @@ import {
   eventSubProcessElementInstances,
   getWrapper,
   mockEventSubprocessInstance,
+  parseBusinessObjects,
 } from './mocks';
 import {eventSubProcess, searchResult} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -20,11 +21,6 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
-
-const diagramModel = await parseDiagramXML(eventSubProcess);
-const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
@@ -38,6 +34,7 @@ describe('ElementInstancesTree - Event Subprocess', () => {
   });
 
   it('should be able to unfold and fold event subprocesses', async () => {
+    const {businessObjects} = await parseBusinessObjects(eventSubProcess);
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockEventSubprocessInstance}
