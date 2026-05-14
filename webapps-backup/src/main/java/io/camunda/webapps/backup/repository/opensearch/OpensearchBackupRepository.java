@@ -55,12 +55,15 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
+import org.opensearch.client.util.MissingRequiredPropertyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  private static final String MISSING_REQUIRED_LOCATION_PROPERTY_MESSAGE =
+      "Missing required property 'RepositorySettings.location'";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;
@@ -122,6 +125,12 @@ public class OpensearchBackupRepository implements BackupRepository {
         final String reason = noRepositoryErrorMessage(repositoryName);
         throw new BackupException(reason);
       }
+
+      if (isKnownS3RepositoryDeserializationIssue(e)) {
+        LOGGER.debug("Repository {} exists (property 'location' missing)", repositoryName);
+        return;
+      }
+
       final String reason =
           format(
               "Exception occurred when validating existence of repository with name [%s].",
@@ -536,6 +545,24 @@ public class OpensearchBackupRepository implements BackupRepository {
       }
     }
     return null;
+  }
+
+  /**
+   * Recognizes a known case of an S3 repository that exists but is rendered with a required field
+   * 'location' missing. With opensearch-java older than 3.0.0, an error is thrown, while our
+   * expected behavior is that <code>validateRepositoryExists</code> should succeed.
+   *
+   * @param t exception thrown by the OpenSearch client
+   * @return <code>true</code> if we're in the case of missing `location` property, <code>false
+   *     </code> otherwise.
+   */
+  private boolean isKnownS3RepositoryDeserializationIssue(final Throwable t) {
+    final Throwable cause = t.getCause();
+    if (!(cause instanceof MissingRequiredPropertyException)) {
+      return false;
+    }
+
+    return MISSING_REQUIRED_LOCATION_PROPERTY_MESSAGE.equals(cause.getMessage());
   }
 
   private <R> R safe(
