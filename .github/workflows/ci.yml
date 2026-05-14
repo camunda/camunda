@@ -1321,7 +1321,16 @@ jobs:
 
   detect-new-flaky-tests:
     name: detect new flaky tests
-    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+    # Skip backport PRs: code already gated on main, re-checking adds noise.
+    # Two conditions cover both automated (monorepo-devops-automation[bot]) and
+    # manually-named (backport-* / backport/*) backports. Direct fixes on
+    # stable/* branches by humans still run the gate.
+    if: >-
+      always()
+      && github.event_name == 'pull_request'
+      && !github.event.pull_request.head.repo.fork
+      && !startsWith(github.head_ref, 'backport')
+      && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
     needs:
       - detect-changes
       - archunit-tests
