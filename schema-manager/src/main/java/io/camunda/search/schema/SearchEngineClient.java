@@ -83,4 +83,6 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   void upsertDocument(
       final String indexName, final String documentId, final Map<String, Object> document);
+
+  void setOrdinalIndexLifeCyclePolicy(String index);
 }

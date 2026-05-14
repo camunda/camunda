@@ -343,6 +343,38 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void setOrdinalIndexLifeCyclePolicy(final String index) {
+    // TODO lookup from config
+    final var policyName = "camunda-retention-policy";
+
+    final var now = System.currentTimeMillis();
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(
+                        lifecycle -> lifecycle.name(policyName).originationDate(now)))
+            .index(index)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    try {
+      final var response = client.indices().putSettings(settingsRequest);
+      if (!response.acknowledged()) {
+        throw new SearchEngineException(
+            "Failed to set ordinal index life cycle policy on: "
+                + index
+                + " got response: "
+                + response);
+      }
+    } catch (final IOException | ElasticsearchException ex) {
+      throw new SearchEngineException(
+          "Failed to set ordinal index life cycle policy on: " + index, ex);
+    }
+  }
+
   private void createIndex(final CreateIndexRequest request) {
     try {
       client.indices().create(request);

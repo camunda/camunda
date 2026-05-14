@@ -373,6 +373,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+  @Override
+  public void setOrdinalIndexLifeCyclePolicy(final String index) {
+    // TODO OS does not support origination_date so we'd maybe need some other way to do that?
+  }
+
   private void createIndex(final CreateIndexRequest request) {
     try {
       client.indices().create(request);

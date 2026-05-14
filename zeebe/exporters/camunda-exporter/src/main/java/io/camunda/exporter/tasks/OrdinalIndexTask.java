@@ -21,7 +21,7 @@ public class OrdinalIndexTask implements BackgroundTask {
 
   @Override
   public CompletionStage<Integer> execute() {
-    ordinalIndexManager.ensureNextReady();
+    ordinalIndexManager.runIndexManagement();
     return CompletableFuture.completedFuture(0);
   }
 }

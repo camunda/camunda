@@ -8,13 +8,14 @@
 package io.camunda.search.schema;
 
 import com.google.common.base.Strings;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,12 @@ public class OrdinalIndexManager {
     var ord = ordinals.get(ordinal);
     if (ord == null) {
       final var suffix = createOrdinalSuffix(ordinal);
-      initialiseOrdinalIndices(ordinalBasedIndexes, suffix);
+      runAgainstAllOrdinalIndexes(
+          suffix,
+          index -> {
+            LOGGER.info("Create ordinal index '{}'", index);
+            searchEngineClient.createOrdinalIndex(index);
+          });
       final var newOrd = new Ordinal(suffix);
       ord = ordinals.putIfAbsent(ordinal, newOrd);
       if (ord == null) {
@@ -61,25 +67,9 @@ public class OrdinalIndexManager {
     return ORDINAL_SUFFIX_PREFIX + Strings.padStart(String.valueOf(ordinal), 5, '0');
   }
 
-  private void initialiseOrdinalIndices(
-      final Collection<String> indices, final String ordinalSuffix) {
-    try (final var virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-      final var futures =
-          indices.stream()
-              .map(
-                  index ->
-                      // run creation of indices async as virtual thread
-                      CompletableFuture.runAsync(
-                          () -> {
-                            final var fullName = index + ordinalSuffix;
-                            LOGGER.info("Create ordinal index '{}'", fullName);
-                            searchEngineClient.createOrdinalIndex(fullName);
-                          },
-                          virtualThreadExecutor))
-              .toArray(CompletableFuture[]::new);
-
-      CompletableFuture.allOf(futures).join();
-    }
+  public void runIndexManagement() {
+    ensureNextReady();
+    updateLifecycles();
   }
 
   public void ensureNextReady() {
@@ -92,6 +82,58 @@ public class OrdinalIndexManager {
     }
     final int nextOrdinal = maxOrdinal + 1;
     ensureOrdinalIndexesExist(nextOrdinal);
+  }
+
+  public void updateLifecycles() {
+    final var activeOrdinals =
+        ordinals.entrySet().stream()
+            .filter(entry -> entry.getValue().getState() == Ordinal.State.ACTIVE)
+            .sorted(Map.Entry.comparingByKey())
+            .toList();
+
+    // bit of fudge, but we'll allow two "active" ordinals
+    // as during max benchmark we'd usually expect the oldest ordinal
+    // to be fully finished and ok to set ILM on
+    if (activeOrdinals.size() > 2) {
+      final var entry = activeOrdinals.getFirst();
+      final var ordinal = entry.getKey();
+      LOGGER.info("Marking ordinal {} as delete pending", ordinal);
+      setLifeCycleDeletionForOrdinal(ordinal);
+      entry.getValue().markDeletePending();
+    }
+  }
+
+  private void setLifeCycleDeletionForOrdinal(final int ordinal) {
+    final var suffix = createOrdinalSuffix(ordinal);
+    runAgainstAllOrdinalIndexes(
+        suffix,
+        index -> {
+          LOGGER.info("Set lifecycle deletion for ordinal index '{}'", index);
+          searchEngineClient.setOrdinalIndexLifeCyclePolicy(index);
+        });
+  }
+
+  private void runAgainstAllOrdinalIndexes(
+      final String suffix, final Consumer<String> indexConsumer) {
+    try (final var virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+      final var futures =
+          indexesForOrdinal(suffix)
+              .map(
+                  index ->
+                      // run update of indices async as virtual thread
+                      CompletableFuture.runAsync(
+                          () -> {
+                            indexConsumer.accept(index);
+                          },
+                          virtualThreadExecutor))
+              .toArray(CompletableFuture[]::new);
+
+      CompletableFuture.allOf(futures).join();
+    }
+  }
+
+  private Stream<String> indexesForOrdinal(final String suffix) {
+    return ordinalBasedIndexes.stream().map(index -> index + suffix);
   }
 
   static class Ordinal {
@@ -111,9 +153,14 @@ public class OrdinalIndexManager {
       state.set(State.ACTIVE);
     }
 
+    public void markDeletePending() {
+      state.set(State.DELETE_PENDING);
+    }
+
     enum State {
       PENDING,
-      ACTIVE;
+      ACTIVE,
+      DELETE_PENDING;
     }
   }
 }
