@@ -89,6 +89,7 @@
               <exclude>.github/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
               <exclude>docs/monorepo-docs/**/*.md</exclude>
+              <exclude>docs/superpowers/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>

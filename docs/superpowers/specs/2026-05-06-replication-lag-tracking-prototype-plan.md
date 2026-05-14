@@ -34,6 +34,7 @@ in the open-closed range. Internally:
   whole segments, so this is exact). Maintains the invariant
   `anchor + sum(live segment bytes) == bytesWrittenLifetime`.
 - **`bytesBetween` lookup**:
+
   ```
   long upper = sparseIndex.cumulativeBytesAt(toIndexInclusive)        // floor lookup
                      ?? bytesWrittenLifetime                          // toIndex past last sparse point
@@ -41,6 +42,7 @@ in the open-closed range. Internally:
                      ?? bytesAtFirstIndex                             // fromIndex below firstIndex
   return Math.max(0, upper - lower)
   ```
+
   Pure in-memory `ConcurrentSkipListMap.floorEntry` lookups. **Zero I/O at
   query time, ever.** Result may overestimate by up to `density (= 100)`
   entries on each side — biased high, the safe direction for the rebalance
@@ -76,9 +78,9 @@ in-memory, rebuilt by the existing segment scan on journal re-open.
   3. `FileBasedSnapshotStoreImpl.collectSnapshot` (store open) — computes from
      disk for legacy snapshots whose on-disk metadata predates the field; in-memory
      only (on-disk metadata is not modified — it is part of the SFV checksum)
-  `FileBasedSnapshot.getTotalSizeInBytes()` **throws `IllegalStateException`** if
-  `totalSizeBytes == 0` at access time — surfaces upstream bugs loudly. Whether to
-  add a lazy walk as a graceful fallback is a deferred decision point.
+     `FileBasedSnapshot.getTotalSizeInBytes()` **throws `IllegalStateException`** if
+     `totalSizeBytes == 0` at access time — surfaces upstream bugs loudly. Whether to
+     add a lazy walk as a graceful fallback is a deferred decision point.
 - **`PersistedSnapshot.getTotalSizeInBytes()`** — default method on the interface,
   delegates to `getMetadata().totalSizeBytes()`. No I/O.
 - **Type naming**: all `*Checksum*` types were renamed to reflect that their scope
