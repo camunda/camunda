@@ -97,6 +97,14 @@ public final class AgentInstanceEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<Long> elementInstanceKeys;
 
+  /**
+   * Key of the top-level (root) process instance in a call-activity hierarchy. Required by {@link
+   * io.camunda.webapps.schema.descriptors.ProcessInstanceDependant} so the archiver can sweep agent
+   * instance documents across sub-process boundaries when archiving a root process instance.
+   */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long rootProcessInstanceKey = -1L;
+
   // Handler-computed dates — not present in AgentInstanceRecordValue
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private OffsetDateTime creationDate;
@@ -320,6 +328,15 @@ public final class AgentInstanceEntity
     return this;
   }
 
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public AgentInstanceEntity setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   public OffsetDateTime getCreationDate() {
     return creationDate;
   }
@@ -373,6 +390,7 @@ public final class AgentInstanceEntity
         toolCalls,
         tools,
         elementInstanceKeys,
+        rootProcessInstanceKey,
         creationDate,
         lastUpdatedDate,
         completionDate);
@@ -410,6 +428,7 @@ public final class AgentInstanceEntity
         && toolCalls == that.toolCalls
         && Objects.equals(tools, that.tools)
         && Objects.equals(elementInstanceKeys, that.elementInstanceKeys)
+        && rootProcessInstanceKey == that.rootProcessInstanceKey
         && Objects.equals(creationDate, that.creationDate)
         && Objects.equals(lastUpdatedDate, that.lastUpdatedDate)
         && Objects.equals(completionDate, that.completionDate);
@@ -428,6 +447,8 @@ public final class AgentInstanceEntity
         + '\''
         + ", processInstanceKey="
         + processInstanceKey
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
