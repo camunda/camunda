@@ -107,6 +107,12 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public static final String AGENT_INSTANCE_START_DATE_EPOCH_MS =
       AgentInstanceDto.Fields.startDateEpochMs;
   public static final String AGENT_INSTANCE_METRICS = AgentInstanceDto.Fields.metrics;
+  public static final String AGENT_INSTANCE_METRICS_INPUT_TOKENS =
+      AgentInstanceDto.Fields.metrics + "." + AgentInstanceDto.AgentMetricsDto.Fields.inputTokens;
+  public static final String AGENT_INSTANCE_METRICS_OUTPUT_TOKENS =
+      AgentInstanceDto.Fields.metrics + "." + AgentInstanceDto.AgentMetricsDto.Fields.outputTokens;
+  public static final String AGENT_INSTANCE_METRICS_MODEL_CALLS =
+      AgentInstanceDto.Fields.metrics + "." + AgentInstanceDto.AgentMetricsDto.Fields.modelCalls;
   public static final String AGENT_INSTANCE_METRICS_TOOL_CALLS =
       AgentInstanceDto.Fields.metrics + "." + AgentInstanceDto.AgentMetricsDto.Fields.toolCalls;
   public static final String AGENT_INSTANCE_TOOLS = AgentInstanceDto.Fields.tools;
@@ -324,8 +330,21 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
                                     pp.object(
                                         kk ->
                                             kk.properties(
-                                                AgentInstanceDto.AgentMetricsDto.Fields.toolCalls,
-                                                p2 -> p2.long_(k2 -> k2))))
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .inputTokens,
+                                                    p2 -> p2.long_(k2 -> k2))
+                                                .properties(
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .outputTokens,
+                                                    p2 -> p2.long_(k2 -> k2))
+                                                .properties(
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .modelCalls,
+                                                    p2 -> p2.long_(k2 -> k2))
+                                                .properties(
+                                                    AgentInstanceDto.AgentMetricsDto.Fields
+                                                        .toolCalls,
+                                                    p2 -> p2.long_(k2 -> k2))))
                             .properties(
                                 AGENT_INSTANCE_TOOLS,
                                 pp ->

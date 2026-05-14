@@ -170,9 +170,36 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
 
   public static class AgentMetricsDto implements Serializable {
 
+    private Long inputTokens;
+    private Long outputTokens;
+    private Long modelCalls;
     private Long toolCalls;
 
     public AgentMetricsDto() {}
+
+    public Long getInputTokens() {
+      return inputTokens;
+    }
+
+    public void setInputTokens(final Long inputTokens) {
+      this.inputTokens = inputTokens;
+    }
+
+    public Long getOutputTokens() {
+      return outputTokens;
+    }
+
+    public void setOutputTokens(final Long outputTokens) {
+      this.outputTokens = outputTokens;
+    }
+
+    public Long getModelCalls() {
+      return modelCalls;
+    }
+
+    public void setModelCalls(final Long modelCalls) {
+      this.modelCalls = modelCalls;
+    }
 
     public Long getToolCalls() {
       return toolCalls;
@@ -188,22 +215,36 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
         return false;
       }
       final AgentMetricsDto that = (AgentMetricsDto) o;
-      return Objects.equals(toolCalls, that.toolCalls);
+      return Objects.equals(inputTokens, that.inputTokens)
+          && Objects.equals(outputTokens, that.outputTokens)
+          && Objects.equals(modelCalls, that.modelCalls)
+          && Objects.equals(toolCalls, that.toolCalls);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(toolCalls);
+      return Objects.hash(inputTokens, outputTokens, modelCalls, toolCalls);
     }
 
     @Override
     public String toString() {
-      return "AgentMetricsDto(toolCalls=" + toolCalls + ")";
+      return "AgentMetricsDto(inputTokens="
+          + inputTokens
+          + ", outputTokens="
+          + outputTokens
+          + ", modelCalls="
+          + modelCalls
+          + ", toolCalls="
+          + toolCalls
+          + ")";
     }
 
     @SuppressWarnings("checkstyle:ConstantName")
     public static final class Fields {
 
+      public static final String inputTokens = "inputTokens";
+      public static final String outputTokens = "outputTokens";
+      public static final String modelCalls = "modelCalls";
       public static final String toolCalls = "toolCalls";
     }
   }
