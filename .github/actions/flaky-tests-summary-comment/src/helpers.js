@@ -1,5 +1,13 @@
 function parseTestName(testName) {
-  const lastDotIndex = testName.lastIndexOf('.');
+  // Strip trailing [index] and (params) from the full FQN *before* splitting
+  // so that dots inside display-name brackets (e.g. "[1: Rule with 4 nodes.]")
+  // don't confuse lastIndexOf and produce a wrong package/class/method split.
+  const bare = testName.trim()
+    .replace(/\[.*?]\s*$/, '')
+    .replace(/\(.*?\)\s*$/, '')
+    .trim();
+
+  const lastDotIndex = bare.lastIndexOf('.');
 
   if (lastDotIndex === -1) {
     console.warn(`[flaky-tests] Could not parse test name: ${testName}`);
@@ -8,14 +16,8 @@ function parseTestName(testName) {
     };
   }
 
-  const fullyQualifiedClass = testName.slice(0, lastDotIndex);
-  let methodName = testName.slice(lastDotIndex + 1);
-
-  // Remove trailing [index] if it exists
-  methodName = methodName.replace(/\[.*?]\s*$/, '');
-
-  // Remove parameter list if it exists
-  methodName = methodName.replace(/\(.*?\)\s*$/, '').trim();
+  const fullyQualifiedClass = bare.slice(0, lastDotIndex);
+  const methodName = bare.slice(lastDotIndex + 1).trim();
 
   const classParts = fullyQualifiedClass.split('.');
   const className = classParts[classParts.length - 1];
