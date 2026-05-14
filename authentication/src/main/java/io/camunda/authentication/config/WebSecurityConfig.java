@@ -14,7 +14,6 @@ import static java.util.stream.Collectors.toMap;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.authorization.PhysicalTenantAuthorizationManager;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.PhysicalTenantJwtAuthenticationConverter;
@@ -24,6 +23,7 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import io.camunda.authentication.filters.RequestedPhysicalTenantFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
@@ -167,6 +167,14 @@ public class WebSecurityConfig {
           "/v1/external/process/**",
           // OAuth2 Protected Resource Metadata endpoint (RFC 9728)
           "/.well-known/oauth-protected-resource/**");
+
+  /**
+   * URL space scoped to a single physical tenant. {@link RequestedPhysicalTenantFilter} resolves
+   * {@code ptId} from the path, 404s on unknown PTs, and attaches the id to the request for
+   * controllers and downstream services. Per-PT authorization is enforced by the controllers.
+   */
+  public static final String PHYSICAL_TENANT_API_PATH = "/v2/physical-tenants/{ptId}/**";
+
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -425,8 +433,9 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnPhysicalTenantsConfigured
-  public PhysicalTenantAuthorizationManager physicalTenantAuthorizationManager() {
-    return new PhysicalTenantAuthorizationManager();
+  public RequestedPhysicalTenantFilter requestedPhysicalTenantFilter(
+      final List<PhysicalTenantConfiguration> physicalTenants) {
+    return new RequestedPhysicalTenantFilter(PHYSICAL_TENANT_API_PATH, physicalTenants);
   }
 
   private static void configureCsrf(
@@ -535,24 +544,19 @@ public class WebSecurityConfig {
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
-        final Optional<PhysicalTenantAuthorizationManager> physicalTenantAuthorizationManager)
+        final Optional<RequestedPhysicalTenantFilter> requestedPhysicalTenantFilter)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(String[]::new))
               .authorizeHttpRequests(
-                  authorizeHttpRequests -> {
-                    authorizeHttpRequests
-                        .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                        .permitAll();
-                    physicalTenantAuthorizationManager.ifPresent(
-                        manager ->
-                            authorizeHttpRequests
-                                .requestMatchers("/v2/physical-tenants/{ptId}/**")
-                                .access(manager));
-                    authorizeHttpRequests.anyRequest().authenticated();
-                  })
+                  authorizeHttpRequests ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -576,6 +580,9 @@ public class WebSecurityConfig {
                   (sessionManagement) ->
                       sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
               .requestCache((cache) -> cache.requestCache(new NullRequestCache()));
+
+      requestedPhysicalTenantFilter.ifPresent(
+          filter -> httpSecurity.addFilterAfter(filter, AuthorizationFilter.class));
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
@@ -1042,23 +1049,18 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final Optional<PhysicalTenantJwtAuthenticationConverter>
             physicalTenantJwtAuthenticationConverter,
-        final Optional<PhysicalTenantAuthorizationManager> physicalTenantAuthorizationManager)
+        final Optional<RequestedPhysicalTenantFilter> requestedPhysicalTenantFilter)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  authorizeHttpRequests -> {
-                    authorizeHttpRequests
-                        .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                        .permitAll();
-                    physicalTenantAuthorizationManager.ifPresent(
-                        manager ->
-                            authorizeHttpRequests
-                                .requestMatchers("/v2/physical-tenants/{ptId}/**")
-                                .access(manager));
-                    authorizeHttpRequests.anyRequest().authenticated();
-                  })
+                  authorizeHttpRequests ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -1098,6 +1100,9 @@ public class WebSecurityConfig {
       applyOauth2RefreshTokenFilter(
           httpSecurity, authorizedClientRepository, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      requestedPhysicalTenantFilter.ifPresent(
+          filter -> httpSecurity.addFilterAfter(filter, AuthorizationFilter.class));
 
       return filterChainBuilder.build();
     }
