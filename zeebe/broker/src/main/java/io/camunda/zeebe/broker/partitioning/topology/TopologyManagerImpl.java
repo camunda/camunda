@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -230,9 +230,7 @@ public final class TopologyManagerImpl extends Actor
               (partitionId, leader) ->
                   LogUtil.catchAndLog(
                       LOG,
-                      () ->
-                          listener.onPartitionLeaderUpdated(
-                              partitionId, MemberId.from(leader.getZone(), leader.getNodeId()))));
+                      () -> listener.onPartitionLeaderUpdated(partitionId, memberIdOf(leader))));
         });
   }
 
@@ -261,13 +259,13 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
-    final var leaderId = MemberId.from(member.getZone(), member.getNodeId());
+    final var leaderId = memberIdOf(member);
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
   }
 
-  private static MemberId memberIdOf(final BrokerInfo brokerInfo) {
-    return MemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
+  private static BrokerMemberId memberIdOf(final BrokerInfo brokerInfo) {
+    return BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
   }
 }
