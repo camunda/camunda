@@ -11,9 +11,6 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer;
@@ -63,10 +60,6 @@ final class ContainerState implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
   private static final DockerImageName PREVIOUS_VERSION =
       DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .registerModule(new JavaTimeModule())
-          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
   static {
     CONTAINER_START_RETRY_POLICY
