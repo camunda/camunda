@@ -25,27 +25,24 @@ PREFIX = "[new-flaky]"
 
 
 # ---------------------------------------------------------------------------
-# Test‑name helpers (mirror the JS helpers in flaky-tests-summary-comment)
+# Test-name helpers (mirrors parseTestName in flaky-tests-summary-comment/src/helpers.js)
+# Keep both in sync when changing parsing logic.
 # ---------------------------------------------------------------------------
 
 def parse_test_name(test_name: str) -> dict:
     """Parse a fully-qualified test name into package, class, and method."""
-    # Strip trailing (params)[index] suffixes before locating the class/method
-    # split. JUnit @ParameterizedTest display names can embed dots inside [...]
-    # (e.g. "[1: RaftRule with 4 nodes.]"), which would mislead rfind(".") into
-    # treating the bracketed dot as the package separator.
-    bare = re.sub(r"(\([^)]*\))?(\[[^\]]*\])?\s*$", "", test_name)
+    # Strip trailing [index] and (params) from the full FQN *before* splitting
+    # so that dots inside display-name brackets (e.g. "[1: Rule with 4 nodes.]")
+    # don't confuse rfind(".") and produce a wrong package/class/method split.
+    bare = re.sub(r"\[.*?]\s*$", "", test_name.strip()).strip()
+    bare = re.sub(r"\(.*?\)\s*$", "", bare).strip()
+
     last_dot = bare.rfind(".")
     if last_dot == -1:
         return {"fullName": test_name.strip()}
 
-    fully_qualified_class = test_name[:last_dot]
-    method_name = test_name[last_dot + 1 :]
-
-    # Remove trailing [index]
-    method_name = re.sub(r"\[.*?]\s*$", "", method_name)
-    # Remove parameter list
-    method_name = re.sub(r"\(.*?\)\s*$", "", method_name).strip()
+    fully_qualified_class = bare[:last_dot]
+    method_name = bare[last_dot + 1:].strip()
 
     class_parts = fully_qualified_class.split(".")
     class_name = class_parts[-1]
