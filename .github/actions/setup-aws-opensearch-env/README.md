@@ -11,7 +11,7 @@ for subsequent steps.
 | `vault-address`      | Vault URL to retrieve secrets from                | Yes      |
 | `vault-role-id`      | Vault Role ID to use                              | Yes      |
 | `vault-secret-id`    | Vault Secret ID to use                            | Yes      |
-| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.3`) | Yes      |
+| `opensearch-version` | OpenSearch version to configure (`2.19` or `3.5`) | Yes      |
 
 ## Outputs
 

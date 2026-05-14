@@ -16,7 +16,7 @@ on:
         type: choice
         options:
           - "2.19"
-          - "3.3"
+          - "3.5"
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.3"')) }}
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup AWS OpenSearch
@@ -82,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.3"')) }}
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
         group:
         - camunda-qa-acceptance-tests-client
         - camunda-qa-acceptance-tests-non-client
