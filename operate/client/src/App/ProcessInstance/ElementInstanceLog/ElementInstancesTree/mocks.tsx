@@ -16,6 +16,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
@@ -1241,6 +1243,14 @@ const getWrapper = () => {
   return Wrapper;
 };
 
+async function parseBusinessObjects(xml: string) {
+  const diagramModel = await parseDiagramXML(xml);
+  return {
+    businessObjects: businessObjectsParser({diagramModel}),
+    diagramModel,
+  };
+}
+
 export {
   mockEventSubprocessInstance,
   mockMultiInstanceProcessInstance,
@@ -1254,5 +1264,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
+  parseBusinessObjects,
   getWrapper,
 };
