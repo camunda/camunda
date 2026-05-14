@@ -18,6 +18,7 @@ import {
   getWrapper,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessInstance,
+  parseBusinessObjects,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -31,20 +32,6 @@ import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementI
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
-
-const multiInstanceProcessDiagramModel =
-  await parseDiagramXML(multiInstanceProcess);
-const multiInstanceProcessBusinessObjects = businessObjectsParser({
-  diagramModel: multiInstanceProcessDiagramModel,
-});
-
-const mockNestedSubprocessDiagramModel =
-  await parseDiagramXML(mockNestedSubprocess);
-const nestedSubprocessBusinessObjects = businessObjectsParser({
-  diagramModel: mockNestedSubprocessDiagramModel,
-});
 
 describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -54,6 +41,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
+    const {businessObjects} = await parseBusinessObjects(mockNestedSubprocess);
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
@@ -65,7 +53,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        businessObjects={nestedSubprocessBusinessObjects}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: getWrapper(),
@@ -250,6 +238,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove two add modification elements', async () => {
+    const {businessObjects} =
+      await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([
@@ -291,7 +281,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        businessObjects={multiInstanceProcessBusinessObjects}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: getWrapper(),
@@ -365,6 +355,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove one cancel modification elements', async () => {
+    const {businessObjects} =
+      await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([
@@ -406,7 +398,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     render(
       <ElementInstancesTree
         processInstance={mockMultiInstanceProcessInstance}
-        businessObjects={multiInstanceProcessBusinessObjects}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: getWrapper(),
@@ -445,6 +437,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   });
 
   it('should not create new parent scopes for a new placeholder if there is one running scopes', async () => {
+    const {businessObjects, diagramModel} =
+      await parseBusinessObjects(mockNestedSubprocess);
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchElementInstancesStatistics().withSuccess({items: []});
@@ -455,7 +449,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockNestedSubProcessInstance}
-        businessObjects={nestedSubprocessBusinessObjects}
+        businessObjects={businessObjects}
       />,
       {
         wrapper: getWrapper(),
@@ -479,7 +473,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            mockNestedSubprocessDiagramModel.elementsById,
+            diagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),
@@ -494,7 +488,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            mockNestedSubprocessDiagramModel.elementsById,
+            diagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),
