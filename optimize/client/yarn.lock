@@ -1416,10 +1416,10 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.22.0":
-  version "0.22.1"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.22.1.tgz#157a1d3e625223815cdd2151dee1742e28f7918f"
-  integrity sha512-kR7+cJo9ktSwR3/dXW0SQ+SX8swoDxy2XE7QHIak/mHr92MpkBEzKM4EgCMjIRVfkh8KGYSYxaf6czsIXa25lA==
+"@camunda/camunda-composite-components@^0.23.0":
+  version "0.23.3"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.23.3.tgz#285c20b04563e791a04c5b7d3f3c85d93d21e94f"
+  integrity sha512-/q4NeHifKu+NgI4G2U34+X7vW+C0aQxxXs87eSFgM0NPptSSNRW9GmILJU2f1Me+gPgNB9MiIxjQ3ti9zYQWWQ==
   dependencies:
     jwt-decode "4.0.0"
     react-error-boundary "6.1.1"
