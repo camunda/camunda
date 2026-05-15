@@ -98,6 +98,25 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    // Idempotent CREATE: if an agent instance already exists, return the existing one to the
+    // client (the public API has no 409). Reject on the stream to suppress a duplicate CREATED
+    // event, but respond with the existing record so the client sees the same result as the
+    // original CREATE. This check runs before the active-state and element-type guards so that a
+    // late retry against an element instance that has since left ACTIVE (e.g. parked in
+    // COMPLETING behind an incident) still returns the existing record rather than INVALID_STATE.
+    final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
+    if (existingAgentInstanceKey != -1L) {
+      final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.ALREADY_EXISTS,
+          ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
+              elementInstanceKey, existingAgentInstanceKey));
+      responseWriter.writeEventOnCommand(
+          existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
+      return;
+    }
+
     if (!elementInstance.isActive()) {
       writeRejection(
           command,
@@ -113,23 +132,6 @@ public final class AgentInstanceCreateProcessor
           RejectionType.INVALID_ARGUMENT,
           ERROR_MSG_UNSUPPORTED_ELEMENT_TYPE.formatted(
               elementInstanceKey, bpmnElementType, SUPPORTED_ELEMENT_TYPES));
-      return;
-    }
-
-    // Idempotent CREATE: if an agent instance already exists, return the existing one to the
-    // client (the public API has no 409). Reject on the stream to suppress a duplicate CREATED
-    // event, but respond with the existing record so the client sees the same result as the
-    // original CREATE.
-    final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
-    if (existingAgentInstanceKey != -1L) {
-      final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
-              elementInstanceKey, existingAgentInstanceKey));
-      responseWriter.writeEventOnCommand(
-          existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
       return;
     }
 

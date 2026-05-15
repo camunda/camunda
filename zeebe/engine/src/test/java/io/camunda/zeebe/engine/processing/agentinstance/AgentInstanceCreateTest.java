@@ -448,6 +448,50 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
+  public void shouldReturnExistingRecordForRetryAfterElementInstanceLeftActive() {
+    // given -- an element instance that successfully got an agent created, then transitioned out
+    // of ACTIVE (parked in COMPLETING behind an incident from a faulty output expression). The
+    // element instance still exists in state and carries the back-link to the agent instance.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType("agent").zeebeOutputExpression("assert(x, x != null)", "y"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    final var first =
+        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("agent").complete();
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when -- a retry CREATE arrives after the element instance has left ACTIVE.
+    final var retryRejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .expectRejection()
+            .create();
+
+    // then -- the retry is short-circuited as an idempotent success against the existing record,
+    // not rejected as INVALID_STATE. The stream still carries ALREADY_EXISTS to suppress a
+    // duplicate CREATED event.
+    assertThat(retryRejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(retryRejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(retryRejection.getRejectionReason())
+        .contains(String.valueOf(first.getValue().getAgentInstanceKey()));
+  }
+
+  @Test
   public void shouldRejectWhenElementTypeIsUserTask() {
     // given -- a process with a USER_TASK element that stays active until a user acts on it.
     ENGINE
