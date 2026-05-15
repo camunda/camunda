@@ -22,6 +22,7 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
   private ProcessingScheduleService scheduleService;
   private InstantSource clock;
   private boolean recovered;
+  private boolean schedulingEnabled = true;
 
   @Override
   public Handle register(
@@ -78,8 +79,43 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
     }
   }
 
+  @Override
+  public void onPaused() {
+    schedulingEnabled = false;
+    cancelAll();
+  }
+
+  @Override
+  public void onClose() {
+    schedulingEnabled = false;
+    cancelAll();
+  }
+
+  @Override
+  public void onFailed() {
+    schedulingEnabled = false;
+    cancelAll();
+  }
+
+  @Override
+  public void onResumed() {
+    schedulingEnabled = true;
+    for (final var task : tasks.values()) {
+      armNextRun(task);
+    }
+  }
+
+  private void cancelAll() {
+    for (final var task : tasks.values()) {
+      if (task.currentScheduled != null) {
+        task.currentScheduled.cancel();
+        task.currentScheduled = null;
+      }
+    }
+  }
+
   private void armNextRun(final RegisteredTask task) {
-    if (!recovered || task.paused) {
+    if (!recovered || !schedulingEnabled || task.paused) {
       return;
     }
     final long candidate = chooseNextRunAt(task);

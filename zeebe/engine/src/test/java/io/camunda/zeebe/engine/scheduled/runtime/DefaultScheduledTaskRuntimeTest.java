@@ -87,6 +87,63 @@ class DefaultScheduledTaskRuntimeTest {
       // then
       assertThat(runs.get()).isEqualTo(1);
     }
+
+    @Test
+    void shouldCancelAllScheduledRunsOnPaused() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> {
+            fireTimes.add(ctx.clock().millis());
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+      runtime.onRecovered(context);
+
+      // when
+      runtime.onPaused();
+      scheduleService.advanceTo(2000);
+
+      // then
+      assertThat(fireTimes).isEmpty();
+    }
+
+    @Test
+    void shouldRestoreSchedulingOnResumed() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> {
+            fireTimes.add(ctx.clock().millis());
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+      runtime.onRecovered(context);
+      runtime.onPaused();
+      scheduleService.advanceTo(2000);
+      assertThat(fireTimes).isEmpty();
+
+      // when
+      runtime.onResumed();
+      scheduleService.advanceTo(2100);
+
+      // then — schedule resumed at now + interval = 2100
+      assertThat(fireTimes).containsExactly(2100L);
+    }
   }
 
   @Nested
