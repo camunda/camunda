@@ -16,6 +16,7 @@ public class GatewayRestConfiguration {
   private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
   private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
+  private final SecretsConfiguration secrets = new SecretsConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   public ProcessCacheConfiguration getProcessCache() {
@@ -28,6 +29,10 @@ public class GatewayRestConfiguration {
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
+  }
+
+  public SecretsConfiguration getSecrets() {
+    return secrets;
   }
 
   /**
@@ -189,6 +194,23 @@ public class GatewayRestConfiguration {
         throw new IllegalArgumentException("queueCapacity must be > 0 (was " + queueCapacity + ")");
       }
       this.queueCapacity = queueCapacity;
+    }
+  }
+
+  /** Configuration for the gateway secret resolution service. */
+  public static class SecretsConfiguration {
+
+    private static final Duration DEFAULT_CACHE_TTL = Duration.ofSeconds(20);
+
+    /** Time-to-live for cached resolved secret values. */
+    private Duration cacheTtl = DEFAULT_CACHE_TTL;
+
+    public Duration getCacheTtl() {
+      return cacheTtl;
+    }
+
+    public void setCacheTtl(final Duration cacheTtl) {
+      this.cacheTtl = cacheTtl;
     }
   }
 
