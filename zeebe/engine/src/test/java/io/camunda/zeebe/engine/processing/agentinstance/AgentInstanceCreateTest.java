@@ -68,7 +68,7 @@ public class AgentInstanceCreateTest {
             .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
             .withLimits(1000L, 10, 20)
             .withStatus(AgentInstanceStatus.COMPLETED)
-            .withMetrics(50L, 25L, 5, 3)
+            .withMetricsDelta(50L, 25L, 5, 3)
             .withTools(List.of(seededTool))
             .create();
 
@@ -206,7 +206,7 @@ public class AgentInstanceCreateTest {
         ENGINE
             .agentInstances()
             .withElementInstanceKey(serviceTaskInstance.getKey())
-            .withMetrics(50L, 25L, 5, 3)
+            .withMetricsDelta(50L, 25L, 5, 3)
             .create();
 
     // then

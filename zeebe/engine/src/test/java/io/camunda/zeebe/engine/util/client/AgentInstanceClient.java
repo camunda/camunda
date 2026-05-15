@@ -15,14 +15,19 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Function;
 
 /**
  * Fluent test client for agent instance commands.
  *
- * <p>PR1 only carries the CREATE builder; UPDATE (which auto-populates {@code changedAttributes}
- * from the builder calls) lands with PR2.
+ * <p>The client mimics the wire contract clients will see at the gateway: builder methods that
+ * change a single concept (status, metrics, tools) automatically populate {@code changedAttributes}
+ * so callers don't have to remember the bookkeeping. Negative tests that need to drive the engine
+ * with a deliberately broken {@code changedAttributes} list use {@link #withChangedAttributes} as
+ * an escape hatch.
  */
 public final class AgentInstanceClient {
 
@@ -42,8 +47,26 @@ public final class AgentInstanceClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
+  private static final Function<Long, Record<AgentInstanceRecordValue>> UPDATED_EXPECTATION =
+      (position) ->
+          RecordingExporter.agentInstanceRecords()
+              .withIntent(AgentInstanceIntent.UPDATED)
+              .withSourceRecordPosition(position)
+              .getFirst();
+
+  private static final Function<Long, Record<AgentInstanceRecordValue>>
+      UPDATE_REJECTION_EXPECTATION =
+          (position) ->
+              RecordingExporter.agentInstanceRecords()
+                  .onlyCommandRejections()
+                  .withIntent(AgentInstanceIntent.UPDATE)
+                  .withSourceRecordPosition(position)
+                  .getFirst();
+
   private final CommandWriter writer;
   private final AgentInstanceRecord record = new AgentInstanceRecord();
+  private final LinkedHashSet<String> autoChangedAttributes = new LinkedHashSet<>();
+  private List<String> overrideChangedAttributes;
   private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private boolean expectRejection = false;
 
@@ -53,6 +76,11 @@ public final class AgentInstanceClient {
 
   public AgentInstanceClient withElementInstanceKey(final long elementInstanceKey) {
     record.setElementInstanceKey(elementInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceClient withAgentInstanceKey(final long agentInstanceKey) {
+    record.setAgentInstanceKey(agentInstanceKey);
     return this;
   }
 
@@ -72,20 +100,13 @@ public final class AgentInstanceClient {
     return this;
   }
 
-  /**
-   * Sets a status on the command payload. The CREATE processor overwrites this with {@code
-   * INITIALIZING}; use this in tests that assert the override.
-   */
   public AgentInstanceClient withStatus(final AgentInstanceStatus status) {
     record.setStatus(status);
+    autoChangedAttributes.add("status");
     return this;
   }
 
-  /**
-   * Sets metric values on the command payload. The CREATE processor resets metrics to zero; use
-   * this in tests that assert the reset.
-   */
-  public AgentInstanceClient withMetrics(
+  public AgentInstanceClient withMetricsDelta(
       final long inputTokens, final long outputTokens, final int modelCalls, final int toolCalls) {
     record
         .getMetrics()
@@ -93,15 +114,23 @@ public final class AgentInstanceClient {
         .setOutputTokens(outputTokens)
         .setModelCalls(modelCalls)
         .setToolCalls(toolCalls);
+    autoChangedAttributes.add("metrics");
+    return this;
+  }
+
+  public AgentInstanceClient withTools(final List<AgentInstanceTool> tools) {
+    record.setTools(tools);
+    autoChangedAttributes.add("tools");
     return this;
   }
 
   /**
-   * Sets a tools list on the command payload. The CREATE processor clears tools; use this in tests
-   * that assert the reset.
+   * Overrides the {@code changedAttributes} list that would otherwise be auto-populated from the
+   * builder calls. Used by negative tests that want to drive the engine with an explicitly broken
+   * list (e.g. empty, unknown attribute).
    */
-  public AgentInstanceClient withTools(final List<AgentInstanceTool> tools) {
-    record.setTools(tools);
+  public AgentInstanceClient withChangedAttributes(final List<String> changedAttributes) {
+    overrideChangedAttributes = changedAttributes;
     return this;
   }
 
@@ -135,5 +164,50 @@ public final class AgentInstanceClient {
             record,
             authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
+  }
+
+  public Record<AgentInstanceRecordValue> update() {
+    applyChangedAttributes();
+    final long position =
+        writer.writeCommand(
+            record.getAgentInstanceKey(),
+            AgentInstanceIntent.UPDATE,
+            record,
+            authorizedTenantIds.toArray(new String[0]));
+    return (expectRejection ? UPDATE_REJECTION_EXPECTATION : UPDATED_EXPECTATION).apply(position);
+  }
+
+  public Record<AgentInstanceRecordValue> update(final String username) {
+    applyChangedAttributes();
+    final long position =
+        writer.writeCommand(
+            record.getAgentInstanceKey(),
+            AgentInstanceIntent.UPDATE,
+            username,
+            record,
+            authorizedTenantIds.toArray(new String[0]));
+    return (expectRejection ? UPDATE_REJECTION_EXPECTATION : UPDATED_EXPECTATION).apply(position);
+  }
+
+  private void applyChangedAttributes() {
+    if (overrideChangedAttributes != null) {
+      record.setChangedAttributes(overrideChangedAttributes);
+    } else {
+      record.setChangedAttributes(new ArrayList<>(autoChangedAttributes));
+    }
+  }
+
+  /** Convenience builder for {@link AgentInstanceTool} values used with {@link #withTools}. */
+  public static AgentInstanceTool tool(
+      final String name, final String description, final String elementId) {
+    return new AgentInstanceTool()
+        .setName(name)
+        .setDescription(description)
+        .setElementId(elementId);
+  }
+
+  /** Convenience builder for a list of {@link AgentInstanceTool} values. */
+  public static List<AgentInstanceTool> tools(final AgentInstanceTool... tools) {
+    return List.of(tools);
   }
 }
