@@ -62,6 +62,9 @@ test.describe('Swagger UI Tests', () => {
           Accept: 'application/json',
           Authorization: `Basic ${credentials.accessToken}`,
         },
+        // Default 10s is tight under nightly load; the spec endpoint can be
+        // slow to assemble grouped docs from many controllers.
+        timeout: 30000,
       },
     );
 
