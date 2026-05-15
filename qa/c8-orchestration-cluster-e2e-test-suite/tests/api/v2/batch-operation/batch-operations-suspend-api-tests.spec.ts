@@ -24,7 +24,6 @@ import {
   notFoundDetail,
   resumeBatchOperation,
   suspendBatchOperation,
-  postMigrationAssertionOptions,
 } from '@requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
 
@@ -70,7 +69,6 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
         request,
         key,
         204,
-        postMigrationAssertionOptions,
       );
       await assertStatusCode(res, 204);
     });
@@ -84,7 +82,6 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
         request,
         key,
         409,
-        postMigrationAssertionOptions,
       );
       await assertInvalidState(doubleRes);
     });
