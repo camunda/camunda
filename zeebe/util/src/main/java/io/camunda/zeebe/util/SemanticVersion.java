@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isNumeric;
 
 import java.util.Optional;
@@ -107,8 +108,8 @@ public record SemanticVersion(
       return 1;
     }
 
-    final var preReleaseParts = preRelease.split("\\.");
-    final var otherPreReleaseParts = other.preRelease.split("\\.");
+    final var preReleaseParts = requireNonNull(preRelease).split("\\.");
+    final var otherPreReleaseParts = requireNonNull(other.preRelease).split("\\.");
 
     // Precedence for two pre-release versions with the same major, minor, and patch version MUST be
     // determined by comparing each dot separated identifier from left to right until a difference

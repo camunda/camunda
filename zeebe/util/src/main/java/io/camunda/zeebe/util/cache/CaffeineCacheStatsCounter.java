@@ -14,7 +14,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
-import org.jspecify.annotations.Nullable;
 
 public class CaffeineCacheStatsCounter implements StatsCounter {
 
@@ -91,9 +90,8 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
   }
 
   @Override
-  public @Nullable CacheStats snapshot() {
-    // not implemented, as we don't need it
-    return null;
+  public CacheStats snapshot() {
+    return CacheStats.empty();
   }
 
   private String meterName(final String name) {
