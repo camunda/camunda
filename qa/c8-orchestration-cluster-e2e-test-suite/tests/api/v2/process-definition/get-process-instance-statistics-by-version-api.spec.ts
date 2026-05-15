@@ -37,8 +37,7 @@ type ProcessInstanceStatisticsByVersionResponse = {
   activeInstancesWithoutIncidentCount: number;
 };
 
-test.describe
-  .parallel('Get process instance statistics by version API Tests', () => {
+test.describe.parallel('Process instance statistics by version', () => {
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
