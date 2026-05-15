@@ -36,7 +36,7 @@ final class FileSetManager {
 
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
-  static final int MAX_DELETE_BLOB_BATCH_SIZE = 100;
+  static final int MAX_DELETE_BATCH_SIZE = 100;
 
   /**
    * The path format consists of the following elements:
@@ -152,8 +152,8 @@ final class FileSetManager {
 
   void deleteBlobs(final List<BlobId> blobIds) {
     final int size = blobIds.size();
-    for (int i = 0; i < size; i += MAX_DELETE_BLOB_BATCH_SIZE) {
-      client.delete(blobIds.subList(i, Math.min(i + MAX_DELETE_BLOB_BATCH_SIZE, size)));
+    for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
+      client.delete(blobIds.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size)));
     }
   }
 

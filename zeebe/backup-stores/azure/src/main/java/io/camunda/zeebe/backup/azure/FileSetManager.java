@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
-  static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
+  static final int MAX_DELETE_BATCH_SIZE = 256;
   private static final long MB = 1024 * 1024;
   private static final ParallelTransferOptions CHUNKED_FILE_OPTS =
       new ParallelTransferOptions()
@@ -87,9 +87,9 @@ final class FileSetManager {
 
   void deleteBlobs(final List<String> blobUrls) {
     final int size = blobUrls.size();
-    for (int i = 0; i < size; i += MAX_DELETE_BLOB_BATCH_SIZE) {
+    for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
       final var batch = blobBatchClient.getBlobBatch();
-      for (final var url : blobUrls.subList(i, Math.min(i + MAX_DELETE_BLOB_BATCH_SIZE, size))) {
+      for (final var url : blobUrls.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size))) {
         batch.deleteBlob(url);
       }
       blobBatchClient.submitBatch(batch);
