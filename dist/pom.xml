@@ -922,7 +922,7 @@
             <goals>
               <goal>java</goal>
             </goals>
-            <phase>none</phase>
+            <phase>verify</phase>
             <configuration>
               <mainClass>io.camunda.configuration.GenerateDefaults</mainClass>
               <arguments>
