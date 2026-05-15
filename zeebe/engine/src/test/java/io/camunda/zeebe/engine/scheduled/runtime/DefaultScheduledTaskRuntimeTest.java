@@ -304,6 +304,81 @@ class DefaultScheduledTaskRuntimeTest {
   }
 
   @Nested
+  final class PauseResumeTest {
+
+    @Test
+    void shouldStopScheduledRunsOfPausedTaskOnly() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireA = new java.util.ArrayList<Long>();
+      final var fireB = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> {
+            fireA.add(ctx.clock().millis());
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+      runtime.register(
+          "task-b",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> {
+            fireB.add(ctx.clock().millis());
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+      runtime.onRecovered(context);
+
+      // when
+      runtime.pause("task-a");
+      scheduleService.advanceTo(1100);
+
+      // then — only task-b ran
+      assertThat(fireA).isEmpty();
+      assertThat(fireB).containsExactly(1100L);
+    }
+
+    @Test
+    void shouldResumePausedTaskFromRetainedNudge() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireA = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(50)),
+              ctx -> {
+                fireA.add(ctx.clock().millis());
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+
+      runtime.pause("task-a");
+      handle.nudge(1100); // retained while paused
+
+      scheduleService.advanceTo(2000);
+      assertThat(fireA).isEmpty();
+
+      // when
+      runtime.resume("task-a");
+      scheduleService.advanceTo(2050);
+
+      // then — runs at now + minDelay = 2050 (floor)
+      assertThat(fireA).containsExactly(2050L);
+    }
+  }
+
+  @Nested
   final class ResolutionFloorTest {
 
     @Test

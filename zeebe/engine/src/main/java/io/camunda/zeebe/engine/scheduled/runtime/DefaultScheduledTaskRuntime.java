@@ -56,12 +56,25 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
   @Override
   public void pause(final String name) {
-    // implemented in Task 11
+    final var task = tasks.get(name);
+    if (task == null || task.paused) {
+      return;
+    }
+    task.paused = true;
+    if (task.currentScheduled != null) {
+      task.currentScheduled.cancel();
+      task.currentScheduled = null;
+    }
   }
 
   @Override
   public void resume(final String name) {
-    // implemented in Task 11
+    final var task = tasks.get(name);
+    if (task == null || !task.paused) {
+      return;
+    }
+    task.paused = false;
+    armNextRun(task);
   }
 
   @Override
