@@ -13,7 +13,7 @@ public class OptimizeProperties {
 
   private boolean enabled = true;
   private String baseUrl = "http://optimize:8090";
-  private String keycloakUrl = "http://camunda-platform-keycloak:18080";
+  private String keycloakUrl = "http://keycloak:18080";
   private String realm = "camunda-platform";
   private String clientId = "optimize";
   private String clientSecret = "";

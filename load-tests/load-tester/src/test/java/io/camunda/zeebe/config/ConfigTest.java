@@ -69,7 +69,7 @@ class ConfigTest {
     assertThat(optimizeCfg).isNotNull();
     assertThat(optimizeCfg.isEnabled()).isTrue();
     assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://optimize:8090");
-    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://camunda-platform-keycloak:18080");
+    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://keycloak:18080");
     assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
     assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
     assertThat(optimizeCfg.getClientSecret()).isEmpty();
