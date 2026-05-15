@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
     streamer.pushAsync(payload, retryHandler, initialConsumer.id());
   }
 
-  private StreamConsumer<M> pickInitialConsumer() {
+  private @Nullable StreamConsumer<M> pickInitialConsumer() {
     final var consumers = stream.streamConsumers();
     var size = consumers.size();
 

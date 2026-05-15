@@ -97,6 +97,12 @@ final class RemoteStreamPusher<P extends BufferWriter> {
               payload.getLength(),
               streamId,
               e);
+      case null ->
+          pushErrorLogger.error(
+              "Failed to push (size = {}) to stream {}, unknown error code",
+              payload.getLength(),
+              streamId,
+              e);
       default ->
           pushWarnLogger.warn(
               "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, e);

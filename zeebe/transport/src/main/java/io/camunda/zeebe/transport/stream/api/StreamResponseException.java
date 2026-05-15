@@ -12,11 +12,12 @@ import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /** An exception returned */
 public class StreamResponseException extends UnrecoverableException {
 
-  private final ErrorCode code;
+  private final @Nullable ErrorCode code;
   private final String message;
   private final List<ErrorDetail> details;
 
@@ -30,7 +31,7 @@ public class StreamResponseException extends UnrecoverableException {
     details = new ArrayList<>(response.details());
   }
 
-  public ErrorCode code() {
+  public @Nullable ErrorCode code() {
     return code;
   }
 

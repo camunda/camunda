@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class RemoveStreamRequest implements BufferReader, BufferWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -21,7 +22,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
   private final RemoveStreamRequestEncoder messageEncoder = new RemoveStreamRequestEncoder();
   private final RemoveStreamRequestDecoder messageDecoder = new RemoveStreamRequestDecoder();
 
-  private UUID streamId;
+  private @Nullable UUID streamId;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -47,7 +48,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
     return getLength();
   }
 
-  public UUID streamId() {
+  public @Nullable UUID streamId() {
     return streamId;
   }
 
