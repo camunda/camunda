@@ -245,4 +245,42 @@ class DefaultScheduledTaskRuntimeTest {
       assertThat(fireTimes).containsExactly(1100L, 1150L);
     }
   }
+
+  @Nested
+  final class ResolutionFloorTest {
+
+    @Test
+    void shouldNotRunBeforeMinResolutionEvenIfNudgedInThePast() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(100)),
+              ctx -> {
+                fireTimes.add(ctx.clock().millis());
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+
+      // when — nudge in the past
+      handle.nudge(500);
+      scheduleService.advanceTo(1099);
+
+      // then — must not have fired yet
+      assertThat(fireTimes).isEmpty();
+
+      // when — advance past the floor
+      scheduleService.advanceTo(1100);
+
+      // then
+      assertThat(fireTimes).containsExactly(1100L);
+    }
+  }
 }
