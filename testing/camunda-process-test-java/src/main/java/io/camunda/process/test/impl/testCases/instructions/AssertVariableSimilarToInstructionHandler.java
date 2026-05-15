@@ -48,25 +48,20 @@ public class AssertVariableSimilarToInstructionHandler
     final String variableName = instruction.getVariableName();
     final String expectedValue = instruction.getExpectedValue();
 
+    final ProcessInstanceAssert configuredAssert =
+        instruction
+            .getThreshold()
+            .map(
+                threshold ->
+                    processInstanceAssert.withSemanticSimilarityConfig(
+                        config -> config.withThreshold(threshold)))
+            .orElse(processInstanceAssert);
+
     if (elementSelector.isPresent()) {
-      if (instruction.getThreshold().isPresent()) {
-        processInstanceAssert
-            .withSemanticSimilarityConfig(
-                config -> config.withThreshold(instruction.getThreshold().get()))
-            .hasLocalVariableSimilarTo(elementSelector.get(), variableName, expectedValue);
-      } else {
-        processInstanceAssert.hasLocalVariableSimilarTo(
-            elementSelector.get(), variableName, expectedValue);
-      }
+      configuredAssert.hasLocalVariableSimilarTo(
+          elementSelector.get(), variableName, expectedValue);
     } else {
-      if (instruction.getThreshold().isPresent()) {
-        processInstanceAssert
-            .withSemanticSimilarityConfig(
-                config -> config.withThreshold(instruction.getThreshold().get()))
-            .hasVariableSimilarTo(variableName, expectedValue);
-      } else {
-        processInstanceAssert.hasVariableSimilarTo(variableName, expectedValue);
-      }
+      configuredAssert.hasVariableSimilarTo(variableName, expectedValue);
     }
   }
 
