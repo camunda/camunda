@@ -22,6 +22,8 @@ final class RegisteredTask {
   boolean paused;
   ThrottlePolicy throttle = ThrottlePolicy.none();
   ScheduledTask currentScheduled;
+  boolean resultWritten = true;
+  boolean resultProcessed = true;
 
   RegisteredTask(
       final String name,

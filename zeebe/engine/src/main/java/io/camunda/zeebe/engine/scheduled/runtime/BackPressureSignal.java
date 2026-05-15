@@ -19,6 +19,13 @@ package io.camunda.zeebe.engine.scheduled.runtime;
  * LogStream}). Both modules sit outside {@code zeebe/engine} and the spec explicitly scopes that
  * out of this iteration. Per-task write+processed callbacks stay local to the engine and give us
  * the back-pressure gate we need for #8991 without cross-module API surface.
+ *
+ * <p>The runtime exposes the gate plumbing as scaffolding: a per-task {@code resultWritten /
+ * resultProcessed} pair on {@link RegisteredTask} that {@code armNextRun} consults, plus the {@code
+ * DefaultScheduledTaskRuntime#onTaskResultWritten} / {@code onTaskResultProcessed} entry points.
+ * The auto-close in {@code runTask} is intentionally not yet active — the production wire-up from
+ * the stream-platform's write/processed events is a follow-up. Until then the gate is a no-op and
+ * runtime behavior matches the pre-migration scheduler.
  */
 @FunctionalInterface
 public interface BackPressureSignal {

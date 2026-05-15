@@ -141,13 +141,42 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
     }
   }
 
+  public void onTaskResultWritten(final String name) {
+    final var t = tasks.get(name);
+    if (t == null) {
+      return;
+    }
+    t.resultWritten = true;
+    if (t.resultProcessed) {
+      armNextRun(t);
+    }
+  }
+
+  public void onTaskResultProcessed(final String name) {
+    final var t = tasks.get(name);
+    if (t == null) {
+      return;
+    }
+    t.resultProcessed = true;
+    if (t.resultWritten) {
+      armNextRun(t);
+    }
+  }
+
   private void armNextRun(final RegisteredTask task) {
     if (!recovered || !schedulingEnabled || task.paused) {
+      return;
+    }
+    if (!task.resultWritten || !task.resultProcessed) {
       return;
     }
     final long candidate = chooseNextRunAt(task);
     if (candidate == Long.MAX_VALUE) {
       return;
+    }
+    if (task.currentScheduled != null) {
+      task.currentScheduled.cancel();
+      task.currentScheduled = null;
     }
     final Task taskAdapter = builder -> runTask(task, builder);
     task.currentScheduled =
@@ -194,6 +223,9 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
   private TaskResult runTask(final RegisteredTask task, final TaskResultBuilder builder) {
     task.currentScheduled = null;
     task.lastRunAt = clock.millis();
+    // The write+processed gate is dormant until production callbacks are wired
+    // (see BackPressureSignal Javadoc). Until then resultWritten/resultProcessed
+    // stay true so the gate is a no-op for production behavior.
     final var ctx =
         new Context() {
           @Override
