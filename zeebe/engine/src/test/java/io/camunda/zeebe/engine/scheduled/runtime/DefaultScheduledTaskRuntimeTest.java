@@ -175,4 +175,74 @@ class DefaultScheduledTaskRuntimeTest {
       assertThat(fireTimes).containsExactly(1200L);
     }
   }
+
+  @Nested
+  final class HintHandlingTest {
+
+    @Test
+    void shouldScheduleNextRunAtHintedTimestamp() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(50)),
+              ctx -> {
+                final long now = ctx.clock().millis();
+                fireTimes.add(now);
+                if (fireTimes.size() == 1) {
+                  return Result.nextDueAt(now + 500, ctx.resultBuilder());
+                }
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+      handle.nudge(1100);
+      scheduleService.advanceTo(1100);
+
+      // when — the first run returned NextDueAt(1600); next run should be at 1600
+      scheduleService.advanceTo(1600);
+
+      // then
+      assertThat(fireTimes).containsExactly(1100L, 1600L);
+    }
+
+    @Test
+    void shouldRescheduleImmediatelyOnMoreWorkPending() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(50)),
+              ctx -> {
+                final long now = ctx.clock().millis();
+                fireTimes.add(now);
+                if (fireTimes.size() == 1) {
+                  return Result.moreWorkPending(ctx.resultBuilder());
+                }
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+      handle.nudge(1100);
+      scheduleService.advanceTo(1100);
+
+      // when — first run returned MoreWorkPending; next run should be at 1100+50=1150
+      scheduleService.advanceTo(1150);
+
+      // then
+      assertThat(fireTimes).containsExactly(1100L, 1150L);
+    }
+  }
 }
