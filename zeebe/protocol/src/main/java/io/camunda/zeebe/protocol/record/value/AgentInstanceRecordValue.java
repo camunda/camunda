@@ -97,6 +97,13 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   List<AgentInstanceToolValue> getTools();
 
+  /**
+   * @return the names of attributes this command intends to update (on UPDATE) or the names of the
+   *     attributes that were actually updated (on UPDATED); empty on CREATED and on the initial
+   *     command form for CREATE
+   */
+  List<String> getChangedAttributes();
+
   /** Represents a tool available to an agent. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)
