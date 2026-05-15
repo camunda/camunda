@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -85,6 +86,133 @@ public class AgentInstanceUpdateTest {
     assertThat(updated.getKey()).isEqualTo(agentInstanceKey);
     assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldOnlyUpdateAttributesNamedInChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — the command attempts to set status, metrics, and tools, but only "status" is
+    // listed in changedAttributes via the escape hatch — the other fields must be ignored.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withMetricsDelta(99L, 88L, 7, 5)
+            .withTools(tools(tool("calc", "Calculator", "calc-task")))
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — only status is applied; metrics stay zero, tools stay empty.
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
+    assertThat(updated.getValue().getTools()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldEmitUpdatedEventCarryingChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — both status and metrics are updated.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withMetricsDelta(1L, 1L, 1, 1)
+            .update();
+
+    // then — UPDATED carries the effective changedAttributes (both "status" and "metrics").
+    assertThat(updated.getValue().getChangedAttributes())
+        .containsExactlyInAnyOrder("status", "metrics");
+  }
+
+  @Test
+  public void shouldRejectEmptyChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withChangedAttributes(List.of())
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("changedAttributes");
+  }
+
+  @Test
+  public void shouldDedupeDuplicateAttributesInChangedAttributes() {
+    // given — a duplicated "metrics" entry in changedAttributes. Without dedup the delta would
+    // be applied twice; the processor iterates the validated set so each attribute is patched once.
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(10L, 5L, 1, 2)
+            .withChangedAttributes(List.of("metrics", "metrics"))
+            .update();
+
+    // then — delta applied once
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(10L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(5L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(2);
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("metrics");
+  }
+
+  @Test
+  public void shouldRejectUnknownAttributeInChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withChangedAttributes(List.of("foo"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("foo");
+  }
+
+  @Test
+  public void shouldRejectWhenAgentInstanceNotFound() {
+    // given
+    final var nonExistentKey = 987654321L;
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(nonExistentKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(nonExistentKey));
   }
 
   @Test
