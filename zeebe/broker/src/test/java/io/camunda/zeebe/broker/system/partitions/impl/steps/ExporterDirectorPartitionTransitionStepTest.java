@@ -258,7 +258,7 @@ class ExporterDirectorPartitionTransitionStepTest {
 
     // expB is absent from the repository because its static config was removed
     final Map<String, ExporterDescriptor> exporters =
-        Map.of(configuredExporterId, new ExporterDescriptor(configuredExporterId));
+        Map.of(configuredExporterId, new ExporterDescriptor(configuredExporterId, null, null));
     when(exporterRepository.getExporters()).thenReturn(exporters);
     transitionContext.setDynamicPartitionConfig(exporterConfig);
 
