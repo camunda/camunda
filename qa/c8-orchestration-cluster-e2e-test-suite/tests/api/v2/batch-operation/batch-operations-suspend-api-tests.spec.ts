@@ -142,10 +142,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
 
     await test.step('Send suspend request', async () => {
-      await expect(async () => {
-        const res = await suspendBatchOperation(request, key);
-        await assertStatusCode(res, 204);
-      }).toPass(defaultAssertionOptions);
+      const res = await suspendBatchOperation(request, key);
+      await assertStatusCode(res, 204);
     });
 
     await test.step('Poll until batch operation is suspended', async () => {
