@@ -82,10 +82,12 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
     String getExpectedValue();
 
     /**
-     * The minimum similarity threshold (0.0–1.0) for the assertion to pass. Optional — when absent
-     * the configured default threshold is used.
+     * The similarity score threshold at or above which the assertion passes. Must be between {@code
+     * 0.0} and {@code 1.0}; higher values are stricter. Overrides the preconfigured threshold.
+     * Optional; defaults to the preconfigured {@code SemanticSimilarityConfig} threshold when
+     * omitted.
      *
-     * @return the threshold or empty to use the default
+     * @return the threshold or empty if using the preconfigured value
      */
     Optional<Double> getThreshold();
   }
