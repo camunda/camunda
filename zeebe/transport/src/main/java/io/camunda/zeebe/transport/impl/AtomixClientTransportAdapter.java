@@ -47,7 +47,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   @Override
   public ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final Duration timeout) {
@@ -57,14 +57,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   @Override
   public ActorFuture<DirectBuffer> sendRequest(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
     return sendRequestInternal(nodeAddressSupplier, r -> true, clientRequest, false, timeout);
   }
 
   private ActorFuture<DirectBuffer> sendRequestInternal(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final boolean shouldRetry,
