@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';

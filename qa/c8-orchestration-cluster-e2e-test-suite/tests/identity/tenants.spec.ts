@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForItemInList} from 'utils/waitForItemInList';
