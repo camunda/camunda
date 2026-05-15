@@ -15,8 +15,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 
 public final class JobPriorityDefinitionTransformer {
 
-  private static final String NEUTRAL_PRIORITY = "0";
-
   public void transform(
       final ExecutableJobWorkerElement element,
       final TransformContext context,
@@ -32,17 +30,17 @@ public final class JobPriorityDefinitionTransformer {
       return;
     }
 
-    final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
     final Expression resolved;
     if (priorityDefinition != null) {
+      final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
       resolved = expressionLanguage.parseExpression(priorityDefinition.getPriority());
     } else {
-      final Expression processDefault = context.getCurrentProcess().getDefaultJobPriority();
-      resolved =
-          processDefault != null
-              ? processDefault
-              : expressionLanguage.parseExpression(NEUTRAL_PRIORITY);
+      // Falls through to BpmnJobBehavior.evalPriorityExp, which returns 0 when jobPriority is
+      // null. Leaving the field unset avoids an unnecessary FEEL evaluation per job creation.
+      resolved = context.getCurrentProcess().getDefaultJobPriority();
     }
-    jobWorkerProperties.setJobPriority(resolved);
+    if (resolved != null) {
+      jobWorkerProperties.setJobPriority(resolved);
+    }
   }
 }

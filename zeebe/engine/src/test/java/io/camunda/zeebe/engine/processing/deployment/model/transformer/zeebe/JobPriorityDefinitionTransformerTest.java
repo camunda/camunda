@@ -12,12 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
-import org.camunda.feel.FeelEngineClock;
+import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,7 +35,7 @@ class JobPriorityDefinitionTransformerTest {
     transformer = new JobPriorityDefinitionTransformer();
     expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(
-            (FeelEngineClock) () -> java.time.ZonedDateTime.now());
+            new ZeebeFeelEngineClock(InstantSource.system()));
     process = new ExecutableProcess("process");
     context = new TransformContext();
     context.setExpressionLanguage(expressionLanguage);
@@ -93,7 +94,7 @@ class JobPriorityDefinitionTransformerTest {
   }
 
   @Test
-  void shouldFallBackToZeroLiteralWhenNeitherPresent() {
+  void shouldLeaveJobPriorityUnsetWhenNeitherPresent() {
     // given
     final var element = elementWithJobWorkerProperties();
 
@@ -101,9 +102,9 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, null);
 
     // then
-    final Expression jobPriority = element.getJobWorkerProperties().getJobPriority();
-    assertThat(jobPriority).isNotNull();
-    assertThat(jobPriority.getExpression()).isEqualTo("0");
+    // jobPriority left null on purpose; BpmnJobBehavior.evalPriorityExp returns 0 for null,
+    // so we avoid an unnecessary FEEL evaluation per job creation for the neutral default.
+    assertThat(element.getJobWorkerProperties().getJobPriority()).isNull();
   }
 
   @Test

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -116,6 +114,46 @@ public final class JobPriorityTest {
   }
 
   @Test
+  public void shouldUseProcessLevelFeelExpressionWhenTaskLevelAbsent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriorityExpression("tier")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("tier", 55).create();
+
+    // then
+    Assertions.assertThat(awaitJobCreated(processInstanceKey).getValue()).hasPriority(55);
+  }
+
+  @Test
+  public void shouldAcceptDecimalScaleIntegerAsPriority() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("p"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    // 1.0 is integral despite the decimal scale; should resolve to priority 1
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("p", 1.0).create();
+
+    // then
+    Assertions.assertThat(awaitJobCreated(processInstanceKey).getValue()).hasPriority(1);
+  }
+
+  @Test
   public void shouldPreferTaskLevelOverProcessLevel() {
     // given
     final BpmnModelInstance process =
@@ -209,8 +247,9 @@ public final class JobPriorityTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
-    assertNoJobCreated(processInstanceKey);
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasJobKey(-1L);
   }
 
   @Test
@@ -234,8 +273,9 @@ public final class JobPriorityTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
-    assertNoJobCreated(processInstanceKey);
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasJobKey(-1L);
   }
 
   @Test
@@ -259,8 +299,9 @@ public final class JobPriorityTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
-    assertNoJobCreated(processInstanceKey);
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasJobKey(-1L);
   }
 
   @Test
@@ -288,19 +329,8 @@ public final class JobPriorityTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
-    assertNoJobCreated(processInstanceKey);
-  }
-
-  private static void assertNoJobCreated(final long processInstanceKey) {
-    final var jobs =
-        RecordingExporter.expectNoMatchingRecords(
-            records ->
-                records
-                    .jobRecords()
-                    .withIntent(JobIntent.CREATED)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .toList());
-    assertThat(jobs).as("no job is created when the priority expression fails").isEmpty();
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasJobKey(-1L);
   }
 }

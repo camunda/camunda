@@ -543,10 +543,16 @@ public final class BpmnJobBehavior {
       return priorityFailure(priority, scopeKey, "'NUMBER', but was '" + result.getType() + "'");
     }
     final Number number = result.getNumber();
+    final BigDecimal asDecimal;
     try {
-      return Either.right(new BigDecimal(number.toString()).intValueExact());
+      asDecimal = new BigDecimal(number.toString());
     } catch (final NumberFormatException e) {
       return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
+    }
+    try {
+      // stripTrailingZeros so values like `1.0` (decimal scale, no fractional part)
+      // are accepted as integers, matching FEEL/engine semantics elsewhere.
+      return Either.right(asDecimal.stripTrailingZeros().intValueExact());
     } catch (final ArithmeticException e) {
       return priorityFailure(
           priority,
