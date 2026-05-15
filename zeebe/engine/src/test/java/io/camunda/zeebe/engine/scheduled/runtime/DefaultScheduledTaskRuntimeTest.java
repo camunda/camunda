@@ -145,5 +145,34 @@ class DefaultScheduledTaskRuntimeTest {
       // then
       assertThat(runs.get()).isEqualTo(1);
     }
+
+    @Test
+    void shouldHonorEarlierNudgeAndIgnoreLaterOne() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(50)),
+              ctx -> {
+                fireTimes.add(ctx.clock().millis());
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+
+      // when
+      handle.nudge(1200); // earlier
+      handle.nudge(1500); // later — should be ignored
+      scheduleService.advanceTo(1200);
+
+      // then
+      assertThat(fireTimes).containsExactly(1200L);
+    }
   }
 }
