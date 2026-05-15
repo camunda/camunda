@@ -168,10 +168,18 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
       public String asString() {
         return "targetPartition";
       }
+    },
+
+    QUEUE {
+      @Override
+      public String asString() {
+        return "queue";
+      }
     };
 
-    public static Tags targetPartitionTags(final int targetPartitionId) {
-      return Tags.of(TARGET_PARTITION.asString(), String.valueOf(targetPartitionId));
+    public static Tags tags(final int targetPartitionId, final String queue) {
+      return Tags.of(
+          TARGET_PARTITION.asString(), String.valueOf(targetPartitionId), QUEUE.asString(), queue);
     }
   }
 }
