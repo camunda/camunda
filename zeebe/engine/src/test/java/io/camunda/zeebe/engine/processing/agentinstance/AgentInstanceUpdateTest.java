@@ -381,6 +381,107 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
+  public void shouldDropStatusFromChangedAttributesOnNoOpStatusUpdate() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — set status to the same value as current (INITIALIZING)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .update();
+
+    // then
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+    assertThat(updated.getValue().getChangedAttributes()).isEmpty();
+  }
+
+  @Test
+  public void shouldRejectStatusUnspecifiedWhenStatusInChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — explicitly UNSPECIFIED with status named in changedAttributes; this falls into the
+    // transition matrix (UNSPECIFIED is not an active target state) and is rejected as such.
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.UNSPECIFIED)
+            .expectRejection()
+            .update();
+
+    // then - the transition-matrix rejection cites both from and to so that a future change which
+    // accidentally accepts UNSPECIFIED (e.g. by adding it to ACTIVE_STATUSES) would not pass with a
+    // RejectionType-only assertion.
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(AgentInstanceStatus.INITIALIZING.name())
+        .contains(AgentInstanceStatus.UNSPECIFIED.name())
+        .contains("transition is not allowed");
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromToolDiscovery() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_DISCOVERY);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromThinking() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.THINKING);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromToolCalling() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_CALLING);
+  }
+
+  @Test
+  public void shouldRejectTransitionToInitializingFromIdle() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.IDLE);
+  }
+
+  @Test
+  public void shouldRejectUpdateSettingStatusToCompleted() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.COMPLETED)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+  }
+
+  private void assertRejectsTransitionToInitializingFrom(final AgentInstanceStatus from) {
+    // given — move the agent from INITIALIZING into the requested "from" state.
+    final var agentInstanceKey = createAgentInstance();
+    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+
+    // when — attempt to transition back to INITIALIZING.
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType())
+        .as("transition from %s -> INITIALIZING should be rejected", from)
+        .isEqualTo(RejectionType.INVALID_STATE);
+  }
+
+  @Test
   public void shouldAllowStatusTransitionsBetweenActiveStates() {
     // given — verify the matrix of active-state -> active-state transitions, including same-state.
     final var activeStates =
