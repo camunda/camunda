@@ -164,27 +164,38 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
     int getMaxToolCalls();
   }
 
-  /** Represents metrics collected during agent instance execution. */
+  /**
+   * Represents metrics collected during agent instance execution.
+   *
+   * <p>On UPDATE commands, each field is interpreted as a delta to add to the stored value: {@code
+   * -1} signals "field not provided" (the stored value is left untouched), and any non-negative
+   * value is added to the stored counter. Negative deltas other than {@code -1} are rejected. On
+   * CREATED / UPDATED events the fields carry the current absolute counter values.
+   */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentInstanceMetricsValue.Builder.class)
   interface AgentInstanceMetricsValue {
     /**
-     * @return the number of input tokens used
+     * @return on events, the current number of input tokens used; on UPDATE, the delta to add
+     *     ({@code -1} means the field is not provided)
      */
     long getInputTokens();
 
     /**
-     * @return the number of output tokens generated
+     * @return on events, the current number of output tokens generated; on UPDATE, the delta to add
+     *     ({@code -1} means the field is not provided)
      */
     long getOutputTokens();
 
     /**
-     * @return the number of model calls made by the agent
+     * @return on events, the current number of model calls made by the agent; on UPDATE, the delta
+     *     to add ({@code -1} means the field is not provided)
      */
     int getModelCalls();
 
     /**
-     * @return the number of tool calls made by the agent
+     * @return on events, the current number of tool calls made by the agent; on UPDATE, the delta
+     *     to add ({@code -1} means the field is not provided)
      */
     int getToolCalls();
   }
