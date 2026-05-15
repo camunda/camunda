@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
@@ -32,6 +33,7 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +48,7 @@ final class SegmentsManager implements AutoCloseable {
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
-  private CompletableFuture<UninitializedSegment> nextSegment = null;
+  private @Nullable CompletableFuture<UninitializedSegment> nextSegment = null;
 
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
@@ -56,7 +58,7 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
 
-  private volatile Segment currentSegment;
+  private volatile @Nullable Segment currentSegment;
 
   SegmentsManager(
       final JournalIndex journalIndex,
@@ -98,16 +100,16 @@ final class SegmentsManager implements AutoCloseable {
     currentSegment = null;
   }
 
-  Segment getCurrentSegment() {
+  @Nullable Segment getCurrentSegment() {
     return currentSegment;
   }
 
-  Segment getFirstSegment() {
+  @Nullable Segment getFirstSegment() {
     final Map.Entry<Long, Segment> segment = segments.firstEntry();
     return segment != null ? segment.getValue() : null;
   }
 
-  Segment getLastSegment() {
+  @Nullable Segment getLastSegment() {
     final Map.Entry<Long, Segment> segment = segments.lastEntry();
     return segment != null ? segment.getValue() : null;
   }
@@ -119,11 +121,11 @@ final class SegmentsManager implements AutoCloseable {
    * @throws IllegalStateException if the segment manager is not open
    */
   Segment getNextSegment() {
-
-    final Segment lastSegment = getLastSegment();
+    final var lastSegment = getLastSegment();
     final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
-    final var nextSegmentIndex = currentSegment.lastIndex() + 1;
-    final SegmentDescriptor descriptor =
+    final var nextSegmentIndex =
+        requireNonNull(currentSegment, "currentSegment is null").lastIndex() + 1;
+    final var descriptor =
         SegmentDescriptor.builder()
             .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
             .withIndex(nextSegmentIndex)
@@ -148,12 +150,12 @@ final class SegmentsManager implements AutoCloseable {
     return currentSegment;
   }
 
-  Segment getNextSegment(final long index) {
+  @Nullable Segment getNextSegment(final long index) {
     final Map.Entry<Long, Segment> nextSegment = segments.higherEntry(index);
     return nextSegment != null ? nextSegment.getValue() : null;
   }
 
-  Segment getSegment(final long index) {
+  @Nullable Segment getSegment(final long index) {
     // Check if the current segment contains the given index first in order to prevent an
     // unnecessary map lookup.
     if (currentSegment != null && index > currentSegment.index()) {
@@ -193,7 +195,7 @@ final class SegmentsManager implements AutoCloseable {
         "{} - Deleting log up from {} up to {} (removing {} segments)",
         name,
         getFirstIndex(),
-        compactSegments.get(compactSegments.lastKey()).index(),
+        requireNonNull(compactSegments.get(compactSegments.lastKey())).index(),
         compactSegments.size());
     for (final Segment segment : compactSegments.values()) {
       LOG.trace("{} - Deleting segment: {}", name, segment);
@@ -319,7 +321,7 @@ final class SegmentsManager implements AutoCloseable {
   private void prepareNextSegment() {
     final var descriptor =
         SegmentDescriptor.builder()
-            .withId(currentSegment.id() + 1)
+            .withId(requireNonNull(currentSegment, "current segment is null").id() + 1)
             .withIndex(INITIAL_INDEX)
             .withMaxSegmentSize(maxSegmentSize)
             .build();

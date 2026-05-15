@@ -15,6 +15,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import jnr.constants.platform.Errno;
 import jnr.ffi.Platform;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class PosixFs {
   private static final Logger LOGGER = LoggerFactory.getLogger(PosixFs.class);
-  private static final VarHandle FILE_DESCRIPTOR_FD_FIELD;
+  private static final @Nullable VarHandle FILE_DESCRIPTOR_FD_FIELD;
 
   static {
     VarHandle fileDescriptorFd;
@@ -121,12 +122,13 @@ public final class PosixFs {
           String.format("Cannot allocate file with a negative length of [%d]", length));
     }
 
-    if (!isPosixFallocateEnabled()) {
+    final var fileDescriptorFdField = FILE_DESCRIPTOR_FD_FIELD;
+    if (!isPosixFallocateEnabled() || fileDescriptorFdField == null) {
       throw new UnsupportedOperationException(
           "Failed to pre-allocate file natively: posix_fallocate is disabled");
     }
 
-    final int fd = (int) FILE_DESCRIPTOR_FD_FIELD.get(descriptor);
+    final int fd = (int) fileDescriptorFdField.get(descriptor);
     final int result = libC.posix_fallocate(fd, offset, length);
     final Errno error = Errno.valueOf(result);
 

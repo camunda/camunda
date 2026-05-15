@@ -66,6 +66,11 @@
       <artifactId>jnr-constants</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -151,6 +156,29 @@
               <arguments>
                 <argument>${project.build.resources[0].directory}/journal-schema.xml</argument>
               </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <!--        Sbe classes are generated in the same package as the source code.
+Sbe generates a package-info.java in that same package, leading to a compilation error.
+As a long term fix, we should move the generated classes in a `generated.*` package.
+-->
+            <id>delete-generated-sbe-package-info</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <target>
+                <delete file="${project.build.directory}/generated-sources/sbe/io/camunda/zeebe/journal/file/package-info.java"/>
+              </target>
             </configuration>
           </execution>
         </executions>

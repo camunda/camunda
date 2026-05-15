@@ -37,6 +37,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ final class SegmentWriter {
   private final long firstIndex;
   private final long firstAsqn;
   private long lastAsqn;
-  private JournalRecord lastEntry;
+  private @Nullable JournalRecord lastEntry;
   private int lastEntryPosition;
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
@@ -143,7 +144,7 @@ final class SegmentWriter {
       final Long entryIndex,
       final long asqn,
       final BufferWriter recordDataWriter,
-      final Long expectedChecksum) {
+      final @Nullable Long expectedChecksum) {
 
     verifyAsqnIsIncreasing(asqn);
 
@@ -198,7 +199,7 @@ final class SegmentWriter {
   }
 
   private Either<SegmentFull, JournalRecord> tryFinalizeAppend(
-      final Long expectedChecksum,
+      final @Nullable Long expectedChecksum,
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -219,7 +220,7 @@ final class SegmentWriter {
 
   /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
   private void finalizeAppend(
-      final Long expectedChecksum,
+      final @Nullable Long expectedChecksum,
       final int startPosition,
       final int frameLength,
       final int metadataLength,

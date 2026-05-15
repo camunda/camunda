@@ -22,6 +22,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,7 +218,11 @@ final class SegmentLoader {
   }
 
   private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) {
-    final var available = segmentPath.getParent().toFile().getUsableSpace();
+    final var parent =
+        requireNonNull(
+            segmentPath.getParent(),
+            () -> String.format("Expected file %s to have a parent but it was null", segmentPath));
+    final var available = parent.toFile().getUsableSpace();
     final var required = Math.max(maxSegmentSize, minFreeDiskSpace);
     if (available < required) {
       throw new JournalException.OutOfDiskSpace(

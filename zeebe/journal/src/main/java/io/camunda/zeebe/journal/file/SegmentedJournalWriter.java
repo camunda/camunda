@@ -16,6 +16,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
@@ -47,7 +49,7 @@ final class SegmentedJournalWriter {
     this.journalMetrics = journalMetrics;
 
     lastFlushedIndex = metaStore.loadLastFlushedIndex();
-    currentSegment = segments.getLastSegment();
+    currentSegment = requireNonNull(segments.getLastSegment(), "journal not open");
     currentWriter = currentSegment.writer();
   }
 
@@ -120,7 +122,7 @@ final class SegmentedJournalWriter {
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
       segments.removeSegment(currentSegment);
-      currentSegment = segments.getLastSegment();
+      currentSegment = requireNonNull(segments.getLastSegment(), "journal not open");
       currentWriter = currentSegment.writer();
     }
 

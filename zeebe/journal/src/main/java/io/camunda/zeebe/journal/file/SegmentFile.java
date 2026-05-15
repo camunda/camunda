@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Segment file utility.
@@ -35,7 +36,7 @@ public final class SegmentFile {
   private static final String DELETE_EXTENSION = "deleted";
   private static final char DELETE_EXTENSION_SEPARATOR = '_';
   private final File file;
-  private Path fileMarkedForDeletion;
+  private @Nullable Path fileMarkedForDeletion;
 
   /**
    * @throws IllegalArgumentException if {@code file} is not a valid segment file
@@ -131,7 +132,10 @@ public final class SegmentFile {
           String.format(
               "%s%c%d-%s",
               file.getName(), DELETE_EXTENSION_SEPARATOR, deletedFileIndex++, DELETE_EXTENSION);
-      fileMarkedForDeletion = Path.of(file.getParent(), renamedFileName);
+      final var parent =
+          checkNotNull(
+              file.toPath().getParent(), "Expected file %s to have a parent, but was null", file);
+      fileMarkedForDeletion = parent.resolve(renamedFileName);
     }
     return fileMarkedForDeletion;
   }
