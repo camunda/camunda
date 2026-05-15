@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link PartitionDistributor} that distributes partitions across brokers in a zone-aware manner.
@@ -62,6 +64,9 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ZoneAwarePartitionDistributor implements PartitionDistributor {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ZoneAwarePartitionDistributor.class);
+
   /** Regions sorted by {@link ZoneSpec#priority()} descending (highest priority first). */
   private final List<ZoneSpec> zoneSpecs;
 
@@ -73,6 +78,13 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
   public ZoneAwarePartitionDistributor(final List<ZoneSpec> zoneSpecs) {
     this.zoneSpecs =
         zoneSpecs.stream().sorted(Comparator.comparingInt(ZoneSpec::priority).reversed()).toList();
+    if (this.zoneSpecs.size() == 1) {
+      LOG.warn(
+          "ZoneAwarePartitionDistributor is configured with only one zone ('{}'). "
+              + "Zone-aware distribution requires at least two zones to provide fault isolation "
+              + "across availability zones. This is likely a misconfiguration.",
+          this.zoneSpecs.getFirst().name());
+    }
   }
 
   @Override
