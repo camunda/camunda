@@ -38,7 +38,7 @@ final class FileSetManagerTest {
 
   @Test
   void shouldSplitDeleteAcrossMultipleBatches() {
-    // given - 257 URLs exceeds MAX_DELETE_BLOB_BATCH_SIZE (256)
+    // given - 257 URLs exceeds MAX_DELETE_BATCH_SIZE (256)
     final var blobBatch = mock(BlobBatch.class);
     when(blobBatchClient.getBlobBatch()).thenReturn(blobBatch);
     final var urls =

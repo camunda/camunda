@@ -191,7 +191,7 @@ final class FileSetManagerTest {
 
   @Test
   void shouldSplitDeleteAcrossMultipleBatches() {
-    // given - 101 blobs exceeds MAX_DELETE_BLOB_BATCH_SIZE (100)
+    // given - 101 blobs exceeds MAX_DELETE_BATCH_SIZE (100)
     final var blobIds =
         java.util.stream.IntStream.range(0, 101)
             .mapToObj(i -> BlobId.of("bucket", "contents/1/2/3/file" + i))
