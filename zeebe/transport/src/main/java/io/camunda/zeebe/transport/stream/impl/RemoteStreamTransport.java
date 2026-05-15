@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import org.agrona.collections.ArrayUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,7 +129,7 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   private void onRestartStreamsResponse(
       final MemberId receiver,
-      final Throwable error,
+      final @Nullable Throwable error,
       final CompletableFuture<Void> completed,
       final long retryDelayMs) {
     if (error == null) {
@@ -137,21 +138,7 @@ public final class RemoteStreamTransport<M> extends Actor {
       return;
     }
 
-    final var cause = error.getCause();
-    if (cause == null) {
-      LOG.warn(
-          "Failed to restart streams for member '{}', retrying in {}ms",
-          receiver,
-          retryDelayMs,
-          error);
-      final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
-      actor.schedule(
-          Duration.ofMillis(nextRetryDelay),
-          () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
-      return;
-    }
-
-    switch (cause) {
+    switch (error.getCause()) {
       // it's possible that the member that was just added has since been removed in between
       // retries;
       // if this is the case, it'll be re-added eventually
@@ -186,7 +173,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             e);
         completed.completeExceptionally(e);
       }
-      default -> {
+      case null, default -> {
         LOG.warn(
             "Failed to restart streams for member '{}', retrying in {}ms",
             receiver,
