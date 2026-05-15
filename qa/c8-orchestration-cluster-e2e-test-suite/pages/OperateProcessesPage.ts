@@ -292,13 +292,17 @@ class OperateProcessesPage {
   }
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
+    // Match the PIK cell's text content exactly, so a key that is a substring
+    // of another visible key (rare for 16-digit keys, but possible) cannot
+    // produce an ambiguous multi-row match.
+    const escapedKey = keyStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return page
       .getByTestId('data-list')
       .getByRole('row')
       .filter({
         has: page
           .getByTestId('cell-processInstanceKey')
-          .filter({hasText: keyStr}),
+          .filter({hasText: new RegExp(`^${escapedKey}$`)}),
       });
   }
   async clickVersionSortButton(): Promise<void> {
@@ -315,20 +319,18 @@ class OperateProcessesPage {
     // indexer catches up, so without this guard the first checkbox click can
     // race the row appearing.
     for (const key of PIK) {
-      await expect(
-        this.page.getByTestId('cell-processInstanceKey').filter({hasText: key}),
-      ).toBeVisible({timeout: 30000});
+      const row = OperateProcessesPage.getRowByProcessInstanceKey(
+        this.page,
+        key,
+      );
+      await expect(row).toHaveCount(1, {timeout: 30000});
     }
 
     for (const key of PIK) {
-      const row = this.page
-        .getByTestId('data-list')
-        .getByRole('row')
-        .filter({
-          has: this.page
-            .getByTestId('cell-processInstanceKey')
-            .filter({hasText: key}),
-        });
+      const row = OperateProcessesPage.getRowByProcessInstanceKey(
+        this.page,
+        key,
+      );
       const checkbox = row.getByRole('checkbox', {
         name: /(un)?select row/i,
       });
