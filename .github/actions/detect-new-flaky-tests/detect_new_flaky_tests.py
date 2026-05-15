@@ -25,22 +25,24 @@ PREFIX = "[new-flaky]"
 
 
 # ---------------------------------------------------------------------------
-# Test‑name helpers (mirror the JS helpers in flaky-tests-summary-comment)
+# Test-name helpers (mirrors parseTestName in flaky-tests-summary-comment/src/helpers.js)
+# Keep both in sync when changing parsing logic.
 # ---------------------------------------------------------------------------
 
 def parse_test_name(test_name: str) -> dict:
     """Parse a fully-qualified test name into package, class, and method."""
-    last_dot = test_name.rfind(".")
+    # Strip trailing [index] and (params) from the full FQN *before* splitting
+    # so that dots inside display-name brackets (e.g. "[1: Rule with 4 nodes.]")
+    # don't confuse rfind(".") and produce a wrong package/class/method split.
+    bare = re.sub(r"\[.*?]\s*$", "", test_name.strip()).strip()
+    bare = re.sub(r"\(.*?\)\s*$", "", bare).strip()
+
+    last_dot = bare.rfind(".")
     if last_dot == -1:
         return {"fullName": test_name.strip()}
 
-    fully_qualified_class = test_name[:last_dot]
-    method_name = test_name[last_dot + 1 :]
-
-    # Remove trailing [index]
-    method_name = re.sub(r"\[.*?]\s*$", "", method_name)
-    # Remove parameter list
-    method_name = re.sub(r"\(.*?\)\s*$", "", method_name).strip()
+    fully_qualified_class = bare[:last_dot]
+    method_name = bare[last_dot + 1:].strip()
 
     class_parts = fully_qualified_class.split(".")
     class_name = class_parts[-1]
@@ -83,6 +85,14 @@ def process_flaky_tests_data(raw_data: list) -> list:
 
         for test_name in test_names:
             parsed = parse_test_name(test_name)
+            # Skip JUnit lifecycle entries like <beforeAll>, <afterAll>, <beforeEach>,
+            # <afterEach>. These are class-level setup/teardown failures, not test
+            # methods. BigQuery never records them, so the baseline can't match —
+            # treating them as test methods produces guaranteed false-positive alerts.
+            method = parsed.get("methodName", "")
+            if method.startswith("<") and method.endswith(">"):
+                print(f'{PREFIX} Skipping lifecycle entry "{test_name}" (job="{job}") — not a test method')
+                continue
             key = get_test_key(parsed)
             if key in test_map:
                 existing = test_map[key]
