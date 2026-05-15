@@ -79,7 +79,16 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
   @Override
   public void throttle(final String name, final ThrottlePolicy policy) {
-    // implemented in Task 12
+    final var task = tasks.get(name);
+    if (task == null) {
+      return;
+    }
+    task.throttle = policy;
+    if (task.currentScheduled != null) {
+      task.currentScheduled.cancel();
+      task.currentScheduled = null;
+      armNextRun(task);
+    }
   }
 
   @Override
@@ -153,7 +162,11 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
     }
     candidate = Math.min(candidate, task.latestNudgeAtOrBefore);
     final long floor = now + minResolution(task);
-    return Math.max(candidate, floor);
+    candidate = Math.max(candidate, floor);
+    if (task.throttle instanceof ThrottlePolicy.MinInterval mi && task.lastRunAt >= 0) {
+      candidate = Math.max(candidate, task.lastRunAt + mi.minInterval().toMillis());
+    }
+    return candidate;
   }
 
   private long scheduleCandidate(final RegisteredTask task, final long now) {

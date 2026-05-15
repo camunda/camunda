@@ -379,6 +379,50 @@ class DefaultScheduledTaskRuntimeTest {
   }
 
   @Nested
+  final class ThrottleTest {
+
+    @Test
+    void shouldEnforceMinIntervalFloor() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(10)),
+              ctx -> {
+                final long now = ctx.clock().millis();
+                fireTimes.add(now);
+                if (fireTimes.size() == 1) {
+                  return Result.moreWorkPending(ctx.resultBuilder());
+                }
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+      runtime.throttle("task-a", ThrottlePolicy.minInterval(Duration.ofMillis(500)));
+      handle.nudge(1100);
+
+      // when
+      scheduleService.advanceTo(1100);
+      scheduleService.advanceTo(1599); // before throttle's 500ms floor
+
+      // then
+      assertThat(fireTimes).containsExactly(1100L);
+
+      // when — past the throttle floor
+      scheduleService.advanceTo(1600);
+
+      // then
+      assertThat(fireTimes).containsExactly(1100L, 1600L);
+    }
+  }
+
+  @Nested
   final class ResolutionFloorTest {
 
     @Test
