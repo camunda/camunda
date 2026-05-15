@@ -38,6 +38,7 @@ final class MemberIdTest {
         .returns(7, MemberId::nodeIdx)
         .returns(null, MemberId::zone)
         .returns("7", MemberId::id);
+    assertEncodeDecode(memberId);
   }
 
   @Test
@@ -62,6 +63,7 @@ final class MemberIdTest {
         .returns(7, MemberId::nodeIdx)
         .returns("eu-west", MemberId::zone)
         .returns("eu-west/7", MemberId::id);
+    assertEncodeDecode(memberId);
   }
 
   @Test
@@ -74,6 +76,7 @@ final class MemberIdTest {
         .returns(7, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
         .returns("us-east/7", MemberId::id);
+    assertEncodeDecode(memberId);
   }
 
   @Test
@@ -83,6 +86,7 @@ final class MemberIdTest {
 
     // when / then
     assertThat(memberId).returns(3, MemberId::nodeIdx).returns(null, MemberId::zone);
+    assertEncodeDecode(memberId);
   }
 
   @Test
@@ -95,6 +99,7 @@ final class MemberIdTest {
         .returns(12, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
         .returns("us-east/12", MemberId::id);
+    assertEncodeDecode(memberId);
   }
 
   @Test
