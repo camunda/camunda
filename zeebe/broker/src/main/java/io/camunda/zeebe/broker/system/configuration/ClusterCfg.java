@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.time.Duration;
@@ -135,44 +136,45 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     final ZoneAwareCfg zoneAwareCfg = partitioningCfg.getZoneAware();
-    final var zones = zoneAwareCfg.getRegions();
+    final var zones = zoneAwareCfg.regions();
 
-    if (!zones.containsKey(zone)) {
+    final var zoneNames = zones.stream().map(RegionCfg::name).toList();
+    if (!zoneNames.contains(zone)) {
       throw new IllegalArgumentException(
-          String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zones.keySet()));
+          String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
     }
 
-    final var zoneCfg = zones.get(zone);
-    if (nodeId < 0 || nodeId >= zoneCfg.getNumberOfBrokers()) {
+    final var zoneCfg = zones.stream().filter(r -> r.name().equals(zone)).findFirst().orElseThrow();
+    if (nodeId < 0 || nodeId >= zoneCfg.numberOfBrokers()) {
       throw new IllegalArgumentException(
-          String.format(NODE_ID_ZONE_ERROR_MSG, nodeId, zone, zoneCfg.getNumberOfBrokers()));
+          String.format(NODE_ID_ZONE_ERROR_MSG, nodeId, zone, zoneCfg.numberOfBrokers()));
     }
 
-    final int totalBrokers = zones.values().stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
+    final int totalBrokers = zones.stream().mapToInt(RegionCfg::numberOfBrokers).sum();
     if (totalBrokers != clusterSize) {
       throw new IllegalArgumentException(
           String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
     }
 
-    final int totalReplicas = zones.values().stream().mapToInt(r -> r.getNumberOfReplicas()).sum();
+    final int totalReplicas = zones.stream().mapToInt(RegionCfg::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalArgumentException(
           String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));
     }
 
     zones.forEach(
-        (zoneName, cfg) -> {
-          if (cfg.getNumberOfReplicas() > cfg.getNumberOfBrokers()) {
+        cfg -> {
+          if (cfg.numberOfReplicas() > cfg.numberOfBrokers()) {
             throw new IllegalArgumentException(
                 String.format(
                     REPLICAS_EXCEED_BROKERS_ERROR_MSG,
-                    zoneName,
-                    cfg.getNumberOfReplicas(),
-                    cfg.getNumberOfBrokers()));
+                    cfg.name(),
+                    cfg.numberOfReplicas(),
+                    cfg.numberOfBrokers()));
           }
-          if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
+          if (cfg.numberOfBrokers() < 1 || cfg.numberOfReplicas() < 1) {
             throw new IllegalArgumentException(
-                String.format("Zone '%s' must have at least 1 broker and 1 replica.", zoneName));
+                String.format("Zone '%s' must have at least 1 broker and 1 replica.", cfg.name()));
           }
         });
   }

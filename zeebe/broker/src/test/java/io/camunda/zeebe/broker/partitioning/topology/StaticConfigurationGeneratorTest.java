@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -141,21 +141,10 @@ fixed:
   @Test
   void shouldGenerateZoneAwareDistribution() {
     // given — 2 zones: us-east (2 brokers, 2 replicas), us-west (1 broker, 1 replica)
-    final var usEast = new RegionCfg();
-    usEast.setNumberOfBrokers(2);
-    usEast.setNumberOfReplicas(2);
-    usEast.setPriority(1000);
-
-    final var usWest = new RegionCfg();
-    usWest.setNumberOfBrokers(1);
-    usWest.setNumberOfReplicas(1);
-    usWest.setPriority(500);
-
-    final var zoneAwareCfg = new ZoneAwareCfg();
-    final var regions = new LinkedHashMap<String, RegionCfg>();
-    regions.put("us-east", usEast);
-    regions.put("us-west", usWest);
-    zoneAwareCfg.setRegions(regions);
+    final var zoneAwareCfg =
+        new ZoneAwareCfg(
+            List.of(
+                new RegionCfg("us-east", 2, 2, 1000), new RegionCfg("us-west", 1, 1, 500)));
 
     final var partitioningCfg = new PartitioningCfg();
     partitioningCfg.setScheme(Scheme.REGION_AWARE);

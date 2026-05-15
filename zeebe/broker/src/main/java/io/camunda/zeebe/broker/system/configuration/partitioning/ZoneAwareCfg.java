@@ -7,20 +7,14 @@
  */
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Top-level configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
  *
- * <p>Maps region names to their respective {@link RegionCfg}. The insertion order of this map is
- * significant: broker {@link io.atomix.cluster.MemberId}s are assigned sequentially per region in
- * iteration order. For example, given regions {@code us-east1} (2 brokers) then {@code us-west1} (2
- * brokers), the member IDs will be {@code us-east1/0}, {@code us-east1/1}, {@code us-west1/0},
- * {@code us-west1/1}.
- *
- * <p>The map <strong>must</strong> be a {@link LinkedHashMap} to preserve YAML insertion order.
- * This is enforced via the {@link JsonDeserialize} annotation.
+ * <p>Lists all regions and their per-region configuration. Each entry carries its own {@link
+ * RegionCfg#name()} so individual regions can be overridden via indexed environment variables
+ * (e.g. {@code CAMUNDA_CLUSTER_PARTITIONING_ZONEAWARE_REGIONS_0_NAME}).
  *
  * <p>Example YAML configuration:
  *
@@ -34,35 +28,22 @@ import java.util.LinkedHashMap;
  *       scheme: REGION_AWARE
  *       zone-aware:
  *         regions:
- *           us-east1:
+ *           - name: us-east1
  *             numberOfBrokers: 2
  *             numberOfReplicas: 2
  *             priority: 1000
- *           us-west1:
+ *           - name: us-west1
  *             numberOfBrokers: 2
  *             numberOfReplicas: 2
  *             priority: 500
- *           euro-east1:
+ *           - name: euro-east1
  *             numberOfBrokers: 1
  *             numberOfReplicas: 1
  *             priority: 10
  * }</pre>
  */
-public final class ZoneAwareCfg {
-
-  @JsonDeserialize(as = LinkedHashMap.class)
-  private LinkedHashMap<String, RegionCfg> regions = new LinkedHashMap<>();
-
-  public LinkedHashMap<String, RegionCfg> getRegions() {
-    return regions;
-  }
-
-  public void setRegions(final LinkedHashMap<String, RegionCfg> regions) {
-    this.regions = regions;
-  }
-
-  @Override
-  public String toString() {
-    return "ZoneAwareCfg{regions=" + regions + '}';
+public record ZoneAwareCfg(List<RegionCfg> regions) {
+  public ZoneAwareCfg() {
+    this(List.of());
   }
 }
