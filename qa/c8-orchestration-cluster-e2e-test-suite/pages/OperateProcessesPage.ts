@@ -334,16 +334,16 @@ class OperateProcessesPage {
       const checkbox = row.getByRole('checkbox', {
         name: /(un)?select row/i,
       });
+      // Carbon renders the checkbox inside a <label>; the visible text
+      // ("Select row") sits in a visually-hidden <span> inside that label.
+      // Clicking the span fails because the wrapping label intercepts
+      // pointer events. Click the label element itself instead, mirroring
+      // the working pattern in selectProcessInstances.
+      const label = row.locator('label.cds--checkbox-label');
 
       await expect(checkbox).toBeVisible({timeout: 30000});
       if (!(await checkbox.isChecked())) {
-        // Carbon wraps the checkbox in a label; clicking the label is the
-        // reliable cross-browser way to toggle the input. The label text
-        // toggles between "Select row" and "Unselect row" with state.
-        await row
-          .getByText(/^(un)?select row$/i)
-          .first()
-          .click({timeout: 30000});
+        await label.click({timeout: 30000});
       }
     }
   }
