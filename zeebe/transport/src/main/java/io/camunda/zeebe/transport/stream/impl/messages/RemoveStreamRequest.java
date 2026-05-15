@@ -24,6 +24,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
   private UUID streamId;
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
     streamId = new UUID(messageDecoder.id().high(), messageDecoder.id().low());

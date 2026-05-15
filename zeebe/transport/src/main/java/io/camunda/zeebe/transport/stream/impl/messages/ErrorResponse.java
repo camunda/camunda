@@ -35,6 +35,7 @@ public final class ErrorResponse implements StreamResponse {
   private ErrorCode code;
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     code = messageDecoder.code();

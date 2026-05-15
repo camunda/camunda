@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,7 +264,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final ClientStreamRegistration<M> registration,
       final byte[] request,
       final byte[] responseBuffer,
-      final Throwable error) {
+      final @Nullable Throwable error) {
     final var state = registration.state();
     if (state != State.ADDING) {
       LOGGER.trace("Skip handling ADD response since the state is {}", state, error);
@@ -322,7 +323,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final ClientStreamRegistration<M> registration,
       final byte[] request,
       final byte[] responseBuffer,
-      final Throwable error) {
+      final @Nullable Throwable error) {
     final var state = registration.state();
     if (state != State.REMOVING) {
       LOGGER.trace("Skip handling REMOVE response since the state is {}", state, error);

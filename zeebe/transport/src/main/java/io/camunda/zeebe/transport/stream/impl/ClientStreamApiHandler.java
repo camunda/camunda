@@ -14,9 +14,11 @@ import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponse;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.collections.ArrayUtil;
+import org.jspecify.annotations.Nullable;
 
 final class ClientStreamApiHandler {
   private final ClientStreamManager<?> clientStreamManager;
@@ -45,16 +47,19 @@ final class ClientStreamApiHandler {
   }
 
   private void handlePayloadPushed(
-      final CompletableFuture<StreamResponse> response, final Throwable error) {
+      final CompletableFuture<StreamResponse> response, final @Nullable Throwable error) {
     if (error == null) {
       response.complete(new PushStreamResponse());
       return;
     }
 
     final var errorResponse =
-        new ErrorResponse().code(ErrorResponse.mapErrorToCode(error)).message(error.getMessage());
+        new ErrorResponse()
+            .code(ErrorResponse.mapErrorToCode(error))
+            .message(Objects.toString(error.getMessage(), ""));
     for (final var detail : error.getSuppressed()) {
-      errorResponse.addDetail(ErrorResponse.mapErrorToCode(detail), detail.getMessage());
+      errorResponse.addDetail(
+          ErrorResponse.mapErrorToCode(detail), Objects.toString(detail.getMessage(), ""));
     }
 
     response.complete(errorResponse);

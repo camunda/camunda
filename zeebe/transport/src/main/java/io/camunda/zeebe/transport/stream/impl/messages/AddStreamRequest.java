@@ -99,6 +99,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
     return streamId;
   }
 
+  @SuppressWarnings("NullAway.Init")
   public AddStreamRequest streamId(final UUID streamId) {
     this.streamId = streamId;
     return this;

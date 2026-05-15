@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.transport.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class ServerResponseImpl implements ServerResponse {
   private final DirectBufferWriter writerAdapter = new DirectBufferWriter();
-  private BufferWriter writer;
+  private @Nullable BufferWriter writer;
   private int partitionId;
   private long requestId;
 
@@ -42,15 +45,15 @@ public final class ServerResponseImpl implements ServerResponse {
 
   @Override
   public int getLength() {
-    return writer.getLength();
+    return requireNonNull(writer).getLength();
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return writer.write(buffer, offset);
+    return requireNonNull(writer).write(buffer, offset);
   }
 
-  public BufferWriter getWriter() {
+  public @Nullable BufferWriter getWriter() {
     return writer;
   }
 

@@ -16,11 +16,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 final class RequestContext {
 
   private final CompletableActorFuture<DirectBuffer> currentFuture;
-  private final Supplier<String> nodeAddressSupplier;
+  private final Supplier<@Nullable String> nodeAddressSupplier;
   private final String topicName;
   private final byte[] requestBytes;
   private final boolean shouldRetry;
@@ -28,11 +29,11 @@ final class RequestContext {
   private final Duration timeout;
   private final Predicate<DirectBuffer> responseValidator;
 
-  private ScheduledTimer scheduledTimer;
+  private @Nullable ScheduledTimer scheduledTimer;
 
   RequestContext(
       final CompletableActorFuture<DirectBuffer> currentFuture,
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final String topicName,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,
@@ -52,7 +53,7 @@ final class RequestContext {
     return currentFuture.isDone();
   }
 
-  Address getNodeAddress() {
+  @Nullable Address getNodeAddress() {
     final var address = nodeAddressSupplier.get();
     return address == null ? null : Address.from(address);
   }
