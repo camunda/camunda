@@ -88,4 +88,62 @@ class DefaultScheduledTaskRuntimeTest {
       assertThat(runs.get()).isEqualTo(1);
     }
   }
+
+  @Nested
+  final class OnDemandScheduleTest {
+
+    @Test
+    void shouldNotRunOnDemandTaskAfterRecoveryWithoutNudge() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var runs = new java.util.concurrent.atomic.AtomicInteger();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(100)),
+          ctx -> {
+            runs.incrementAndGet();
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+
+      // when
+      runtime.onRecovered(context);
+      scheduleService.advanceTo(10_000);
+
+      // then
+      assertThat(runs.get()).isZero();
+    }
+
+    @Test
+    void shouldRunOnDemandTaskAfterNudge() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var runs = new java.util.concurrent.atomic.AtomicInteger();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(100)),
+              ctx -> {
+                runs.incrementAndGet();
+                return Result.idle(ctx.resultBuilder());
+              },
+              TaskOptions.sync());
+
+      // when
+      runtime.onRecovered(context);
+      handle.nudge(1050);
+      scheduleService.advanceTo(1200);
+
+      // then
+      assertThat(runs.get()).isEqualTo(1);
+    }
+  }
 }

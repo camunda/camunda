@@ -38,7 +38,19 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
   @Override
   public void nudge(final String name, final long runAtOrBefore) {
-    // implemented in Task 9
+    final var task = tasks.get(name);
+    if (task == null) {
+      return;
+    }
+    if (runAtOrBefore >= task.latestNudgeAtOrBefore) {
+      return;
+    }
+    task.latestNudgeAtOrBefore = runAtOrBefore;
+    if (task.currentScheduled != null) {
+      task.currentScheduled.cancel();
+      task.currentScheduled = null;
+    }
+    armNextRun(task);
   }
 
   @Override
