@@ -82,7 +82,7 @@ public final class StaticConfigurationGenerator {
             .map(
                 e ->
                     new ZoneSpec(
-                        e.getKey(), e.getValue().getNumberOfReplicas(), e.getValue().getPriority()))
+                        e.getKey(), e.getValue().numberOfReplicas(), e.getValue().priority()))
             .toList();
     return new ZoneAwarePartitionDistributor(specs);
   }
@@ -125,7 +125,7 @@ public final class StaticConfigurationGenerator {
     return partitioningCfg.getZoneAware().getRegions().entrySet().stream()
         .flatMap(
             e ->
-                IntStream.range(0, e.getValue().getNumberOfBrokers())
+                IntStream.range(0, e.getValue().numberOfBrokers())
                     .mapToObj(localId -> MemberId.from(e.getKey(), localId)))
         .collect(Collectors.toSet());
   }

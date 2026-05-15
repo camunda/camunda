@@ -11,8 +11,7 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
  * Per-region configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
  *
  * <p>{@link #numberOfBrokers} brokers must be deployed in this region, each configured with {@code
- * zeebe.broker.cluster.region} set to this region's name. The {@link #nodeId} of each broker must
- * be unique within the region (0-indexed, i.e. in the range {@code [0, numberOfBrokers)}).
+ * zeebe.broker.cluster.region} set to this region's name.
  *
  * <p>{@link #numberOfReplicas} controls how many replicas of each partition are placed in this
  * region. It must satisfy {@code numberOfReplicas <= numberOfBrokers}, because two replicas of the
@@ -23,45 +22,4 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
  * elections first. If all brokers in the highest-priority region are unavailable, leadership fails
  * over to the next region automatically via Raft's priority-decrement mechanism.
  */
-public final class RegionCfg {
-
-  private int numberOfReplicas;
-  private int numberOfBrokers;
-  private int priority;
-
-  public int getNumberOfReplicas() {
-    return numberOfReplicas;
-  }
-
-  public void setNumberOfReplicas(final int numberOfReplicas) {
-    this.numberOfReplicas = numberOfReplicas;
-  }
-
-  public int getNumberOfBrokers() {
-    return numberOfBrokers;
-  }
-
-  public void setNumberOfBrokers(final int numberOfBrokers) {
-    this.numberOfBrokers = numberOfBrokers;
-  }
-
-  public int getPriority() {
-    return priority;
-  }
-
-  public void setPriority(final int priority) {
-    this.priority = priority;
-  }
-
-  @Override
-  public String toString() {
-    return "RegionCfg{"
-        + "numberOfReplicas="
-        + numberOfReplicas
-        + ", numberOfBrokers="
-        + numberOfBrokers
-        + ", priority="
-        + priority
-        + '}';
-  }
-}
+public record RegionCfg(String name, int numberOfReplicas, int numberOfBrokers, int priority) {}
