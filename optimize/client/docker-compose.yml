@@ -106,7 +106,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
       KEYCLOAK_USERS_0_USERNAME: 'demo'
       KEYCLOAK_USERS_0_PASSWORD: 'demo'
       KEYCLOAK_USERS_0_EMAIL: 'demo@example.com'
@@ -136,6 +136,12 @@ services:
       - "26500:26500"
       - "9600:9600"
       - "8080:8080"
+    healthcheck:
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 30s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
     depends_on:
       - elasticsearch
     restart: always
@@ -169,7 +175,7 @@ services:
       - "9600:9600"
       - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
