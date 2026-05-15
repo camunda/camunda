@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A table is a data structure which maps rows and columns to a single value. Think of it like your
@@ -45,7 +46,7 @@ public interface Table<RowT, ColT, T> {
    * @param columnKey which column in the row to return
    * @return the value indexed at the row/column, or null if none
    */
-  T get(RowT rowKey, ColT columnKey);
+  @Nullable T get(RowT rowKey, ColT columnKey);
 
   /**
    * Sets the given value at the column {@code columnKey} in row {@code rowKey}.
@@ -113,7 +114,7 @@ public interface Table<RowT, ColT, T> {
     }
 
     @Override
-    public T get(final RowT rowKey, final ColT columnKey) {
+    public @Nullable T get(final RowT rowKey, final ColT columnKey) {
       final var row = table.get(rowKey);
       if (row == null) {
         return null;
@@ -166,7 +167,7 @@ public interface Table<RowT, ColT, T> {
     }
 
     @Override
-    public T get(final RowT rowKey, final ColT columnKey) {
+    public @Nullable T get(final RowT rowKey, final ColT columnKey) {
       return marray.get(rowKey.ordinal(), columnKey.ordinal());
     }
 

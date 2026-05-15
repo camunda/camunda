@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /** Utility class for common tasks with {@link AtomicReference} instances. */
 public final class AtomicUtil {
@@ -36,7 +37,7 @@ public final class AtomicUtil {
    * @return The previous value of the atomic reference, or null if the value was not replaced
    * @param <T> The type of the value of the atomic reference
    */
-  public static <T> T replace(
+  public static <T> @Nullable T replace(
       final AtomicReference<T> ref,
       final Function<T, Optional<T>> replacer,
       final Consumer<T> rollback) {

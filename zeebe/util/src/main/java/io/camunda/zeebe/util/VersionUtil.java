@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class VersionUtil {
@@ -23,9 +24,9 @@ public final class VersionUtil {
   private static final String LAST_VERSION_PROPERTY_NAME = "zeebe.last.version";
   private static final String VERSION_DEV = "development";
 
-  private static String version;
-  private static String versionLowerCase;
-  private static String lastVersion;
+  private static @Nullable String version;
+  private static @Nullable String versionLowerCase;
+  private static @Nullable String lastVersion;
 
   private VersionUtil() {}
 
@@ -93,7 +94,7 @@ public final class VersionUtil {
    * @return the configured backwards-compatibility baseline, or {@code null} if the property is not
    *     set or the properties file cannot be read.
    */
-  public static String getPreviousVersion() {
+  public static @Nullable String getPreviousVersion() {
     if (lastVersion == null) {
       lastVersion = readProperty(LAST_VERSION_PROPERTY_NAME);
     }
@@ -130,9 +131,12 @@ public final class VersionUtil {
     versionLowerCase = null;
   }
 
-  private static String readProperty(final String property) {
+  private static @Nullable String readProperty(final String property) {
     try (final InputStream lastVersionFileStream =
         VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {
+      if (lastVersionFileStream == null) {
+        return null;
+      }
       final Properties props = new Properties();
       props.load(lastVersionFileStream);
 

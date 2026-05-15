@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /** An expendable list of reusable objects. */
 public final class ReusableObjectList<T extends Reusable> implements Iterable<T> {
@@ -61,7 +62,7 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
     }
   }
 
-  public T poll() {
+  public @Nullable T poll() {
     for (final ReusableElement element : elements) {
       if (element.isSet()) {
         element.set(false);
@@ -73,7 +74,7 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
     return null;
   }
 
-  public T peek() {
+  public @Nullable T peek() {
     for (final ReusableElement element : elements) {
       if (element.isSet()) {
         return element.getElement();
@@ -103,7 +104,7 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
   }
 
   private final class ObjectIterator implements Iterator<T> {
-    private ReusableElement current = null;
+    private @Nullable ReusableElement current = null;
 
     private int index = 0;
 

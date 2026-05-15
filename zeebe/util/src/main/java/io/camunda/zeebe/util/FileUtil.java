@@ -81,7 +81,10 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    flushDirectory(target.getParent());
+    final var parent = target.getParent();
+    if (parent != null) {
+      flushDirectory(parent);
+    }
   }
 
   public static void deleteFolder(final String path) throws IOException {

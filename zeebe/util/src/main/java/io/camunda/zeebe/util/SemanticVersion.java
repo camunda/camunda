@@ -12,6 +12,7 @@ import static org.apache.commons.lang3.StringUtils.isNumeric;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A semantic version as specified by <a href="https://semver.org/">Semantic Versioning 2.0.0</a>.
@@ -20,7 +21,7 @@ import java.util.regex.Pattern;
  * Object#equals(Object)} because SemVer does not consider build metadata when comparing versions.
  */
 public record SemanticVersion(
-    int major, int minor, int patch, String preRelease, String buildMetadata)
+    int major, int minor, int patch, @Nullable String preRelease, @Nullable String buildMetadata)
     implements Comparable<SemanticVersion> {
 
   private static final ConcurrentHashMap<String, SemanticVersion> CACHE =
@@ -56,7 +57,7 @@ public record SemanticVersion(
     return preRelease != null;
   }
 
-  public static Optional<SemanticVersion> parse(final String version) {
+  public static Optional<SemanticVersion> parse(final @Nullable String version) {
     if (version == null) {
       return Optional.empty();
     }
@@ -64,7 +65,7 @@ public record SemanticVersion(
     return Optional.ofNullable(CACHE.computeIfAbsent(version, SemanticVersion::doParse));
   }
 
-  private static SemanticVersion doParse(final String version) {
+  private static @Nullable SemanticVersion doParse(final String version) {
     final var matcher = PATTERN.matcher(version);
     if (matcher.matches()) {
       final var major = Integer.parseInt(matcher.group("major"));
