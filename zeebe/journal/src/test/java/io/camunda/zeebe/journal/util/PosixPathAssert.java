@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.journal.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -31,10 +30,6 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
 
   public static PosixPathAssert assertThat(final Path path) {
     return new PosixPathAssert(path);
-  }
-
-  public static PosixPathAssert assertThat(final File file) {
-    return assertThat(file.toPath());
   }
 
   /**

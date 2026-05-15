@@ -56,7 +56,7 @@ class SegmentedJournalReaderTest {
 
     journal =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data").toFile())
+            .withDirectory(directory.resolve("data"))
             .withMaxSegmentSize(
                 entrySize * ENTRIES_PER_SEGMENT
                     + SegmentDescriptorSerializer.currentEncodingLength())

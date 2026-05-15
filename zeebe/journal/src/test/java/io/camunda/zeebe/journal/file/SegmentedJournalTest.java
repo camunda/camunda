@@ -35,14 +35,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -549,10 +548,9 @@ class SegmentedJournalTest {
   @Test
   void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
-    final File dataFile = directory.resolve("data").toFile();
-    assertThat(dataFile.mkdirs()).isTrue();
-    final File emptyLog = new File(dataFile, "journal-1.log");
-    assertThat(emptyLog.createNewFile()).isTrue();
+    final Path dataFile = directory.resolve("data");
+    Files.createDirectories(dataFile);
+    Files.createFile(dataFile.resolve("journal-1.log"));
 
     // when
     journal = openJournal(10);
@@ -571,9 +569,12 @@ class SegmentedJournalTest {
     // given
     journal = openJournal(1);
     journal.close();
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile =
+        Files.list(dataFile)
+            .filter(p -> p.getFileName().toString().endsWith(".log"))
+            .findFirst()
+            .orElseThrow();
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -609,9 +610,12 @@ class SegmentedJournalTest {
     journal.close();
     journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
 
-    final File dataFile = directory.resolve("data").toFile();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
+    final Path dataFile = directory.resolve("data");
+    final Path logFile =
+        Files.list(dataFile)
+            .filter(p -> p.getFileName().toString().endsWith("2.log"))
+            .findFirst()
+            .orElseThrow();
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -640,11 +644,11 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
@@ -714,11 +718,11 @@ class SegmentedJournalTest {
     reader.close();
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
@@ -731,15 +735,15 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p));
   }
 
   @Test
-  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
+  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() throws Exception {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -751,15 +755,19 @@ class SegmentedJournalTest {
     journal.reset(200);
 
     // then
-    final File logDirectory = directory.resolve("data").toFile();
+    final Path logDirectory = directory.resolve("data");
 
     // there are two files deferred for deletion
     assertThat(
-            logDirectory.listFiles(
-                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+            Files.list(logDirectory)
+                .filter(
+                    p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+                .toList())
         .hasSize(2);
     assertThat(
-            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+            Files.list(logDirectory)
+                .filter(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p))
+                .toList())
         .hasSize(1);
   }
 
@@ -799,9 +807,9 @@ class SegmentedJournalTest {
         SegmentedJournal.builder(meterRegistry)
             .withSegmentAllocator(SegmentAllocator.defaultAllocator())
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile())
+            .withDirectory(tmpDir)
             .withMetaStore(new MockJournalMetastore());
-    final File firstSegment;
+    final Path firstSegment;
 
     // when
     try (final var journal = builder.build()) {
@@ -822,9 +830,9 @@ class SegmentedJournalTest {
         SegmentedJournal.builder(meterRegistry)
             .withSegmentAllocator(SegmentAllocator.noop())
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile())
+            .withDirectory(tmpDir)
             .withMetaStore(new MockJournalMetastore());
-    final File firstSegment;
+    final Path firstSegment;
 
     // when
     try (final var journal = builder.build()) {

@@ -22,12 +22,11 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -508,8 +507,8 @@ final class JournalTest {
     recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
-    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
+    final Path dataFile = Files.list(directory).findFirst().orElseThrow();
+    final Path log = Files.list(dataFile).findFirst().orElseThrow();
 
     // when
     journal.close();
@@ -527,8 +526,8 @@ final class JournalTest {
     recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
-    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
+    final Path dataFile = Files.list(directory).findFirst().orElseThrow();
+    final Path log = Files.list(dataFile).findFirst().orElseThrow();
 
     // when
     journal.close();
@@ -580,7 +579,7 @@ final class JournalTest {
   private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
     final var builder =
         SegmentedJournal.builder(meterRegistry)
-            .withDirectory(directory.resolve("data").toFile())
+            .withDirectory(directory.resolve("data"))
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
