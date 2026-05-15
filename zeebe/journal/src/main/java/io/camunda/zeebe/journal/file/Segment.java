@@ -129,8 +129,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
       buffer.force();
     } catch (final UncheckedIOException e) {
       if (isOpen()) {
-        final var cause = e.getCause();
-        throw new FlushException(cause != null ? cause : new java.io.IOException(e));
+        throw new FlushException(e.getCause());
       }
 
       LOG.debug("Flushing failed on a closed or deleted segment, and will be ignored");
