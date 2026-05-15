@@ -79,7 +79,7 @@ type PlaywrightFixtures = {
   suppressHelperModals: void;
 };
 
-const test = base.extend<PlaywrightFixtures>({
+const publicTest = base.extend<PlaywrightFixtures>({
   suppressHelperModals: [
     async ({page}, use) => {
       await page.addInitScript(() => {
@@ -217,7 +217,7 @@ type AuthWorkerFixtures = {
   loginState: {cookies: Cookie[]; csrfToken: string};
 };
 
-const authedTest = test.extend<NonNullable<unknown>, AuthWorkerFixtures>({
+const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
   loginUser: [
     {
       username: process.env.TEST_USERNAME ?? 'demo',
@@ -250,4 +250,4 @@ const authedTest = test.extend<NonNullable<unknown>, AuthWorkerFixtures>({
   },
 });
 
-export {test, authedTest};
+export {test, publicTest};

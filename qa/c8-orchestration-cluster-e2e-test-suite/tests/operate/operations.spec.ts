@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {authedTest as test} from 'fixtures';
+import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
