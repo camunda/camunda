@@ -18,8 +18,8 @@ import java.lang.annotation.Target;
  * Marks a controller method parameter that should be populated with the resolved physical tenant id
  * for the current request.
  *
- * <p>Resolution is performed by {@code PhysicalTenantArgumentResolver}, which reads the value from
- * {@link PhysicalTenantContext} (set earlier by {@code PhysicalTenantInterceptor}). When no
+ * <p>Resolution is performed by {@code PhysicalTenantIdResolver}, which reads the value from {@link
+ * PhysicalTenantContext} (set earlier by {@code PhysicalTenantInterceptor}). When no
  * physical-tenant prefix is present on the request, the value defaults to {@link
  * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  *
@@ -35,4 +35,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface PhysicalTenant {}
+public @interface PhysicalTenantId {}
