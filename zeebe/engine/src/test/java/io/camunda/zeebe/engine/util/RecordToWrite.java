@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
@@ -49,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
@@ -210,6 +213,13 @@ public final class RecordToWrite implements LogAppendEntry {
       final AdHocSubProcessInstructionRecordValue value) {
     recordMetadata.valueType(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION).intent(intent);
     unifiedRecordValue = (AdHocSubProcessInstructionRecord) value;
+    return this;
+  }
+
+  public RecordToWrite agentInstance(
+      final AgentInstanceIntent intent, final AgentInstanceRecordValue value) {
+    recordMetadata.valueType(ValueType.AGENT_INSTANCE).intent(intent);
+    unifiedRecordValue = (AgentInstanceRecord) value;
     return this;
   }
 
