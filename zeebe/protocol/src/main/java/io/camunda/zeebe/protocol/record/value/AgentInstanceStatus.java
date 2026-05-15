@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 public enum AgentInstanceStatus {
+  UNSPECIFIED,
   INITIALIZING,
   TOOL_DISCOVERY,
   THINKING,
