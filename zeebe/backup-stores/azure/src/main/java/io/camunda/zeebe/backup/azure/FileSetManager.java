@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.azure;
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.batch.BlobBatchClient;
 import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
+<<<<<<< HEAD
 import java.util.stream.Collectors;
 
 final class FileSetManager {
@@ -28,9 +30,37 @@ final class FileSetManager {
   private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
   private boolean containerCreated = false;
+=======
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
-  FileSetManager(final BlobContainerClient containerClient, final boolean createContainer) {
+final class FileSetManager {
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 256;
+  private static final long MB = 1024 * 1024;
+  private static final ParallelTransferOptions CHUNKED_FILE_OPTS =
+      new ParallelTransferOptions()
+          .setBlockSizeLong(4 * MB)
+          .setMaxSingleUploadSizeLong(8 * MB)
+          .setMaxConcurrency(2);
+  private static final BlobRequestConditions NO_OVERWRITE_CONDITION =
+      new BlobRequestConditions().setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
+
+  // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
+  private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
+  private final BlobContainerClient containerClient;
+  private final BlobBatchClient blobBatchClient;
+  private final ReentrantLock containerCreationLock = new ReentrantLock();
+  private volatile boolean containerCreated = false;
+>>>>>>> 6be6de6f (feat: azure supports batch deletion for backup contents)
+
+  FileSetManager(
+      final BlobContainerClient containerClient,
+      final BlobBatchClient blobBatchClient,
+      final boolean createContainer) {
     this.containerClient = containerClient;
+    this.blobBatchClient = blobBatchClient;
     containerCreated = !createContainer;
   }
 
@@ -55,14 +85,23 @@ final class FileSetManager {
     }
   }
 
-  public void delete(final BackupIdentifier id, final String fileSetName) {
+  Collection<String> collectBlobUrls(final BackupIdentifier id, final String fileSetName) {
     assureContainerCreated();
     final ListBlobsOptions options = new ListBlobsOptions().setPrefix(fileSetPath(id, fileSetName));
-    containerClient
-        .listBlobs(options, null)
-        .forEach(
-            blobItem ->
-                containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient().delete());
+    return containerClient.listBlobs(options, null).stream()
+        .map(blobItem -> containerClient.getBlobClient(blobItem.getName()).getBlobUrl())
+        .toList();
+  }
+
+  void deleteBlobs(final List<String> blobUrls) {
+    final int size = blobUrls.size();
+    for (int i = 0; i < size; i += MAX_DELETE_BLOB_BATCH_SIZE) {
+      final var batch = blobBatchClient.getBlobBatch();
+      for (final var url : blobUrls.subList(i, Math.min(i + MAX_DELETE_BLOB_BATCH_SIZE, size))) {
+        batch.deleteBlob(url);
+      }
+      blobBatchClient.submitBatch(batch);
+    }
   }
 
   public NamedFileSet restore(

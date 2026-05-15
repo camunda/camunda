@@ -11,6 +11,11 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+<<<<<<< HEAD
+=======
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
+import com.azure.storage.blob.models.ListBlobsOptions;
+>>>>>>> 6be6de6f (feat: azure supports batch deletion for backup contents)
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -24,7 +29,9 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -60,8 +67,14 @@ public final class AzureBackupStore implements BackupStore {
     executor = Executors.newVirtualThreadPerTaskExecutor();
     final BlobContainerClient blobContainerClient = getContainerClient(client, config);
 
+<<<<<<< HEAD
     fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
     manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
+=======
+    final var blobBatchClient = new BlobBatchClientBuilder(client).buildClient();
+    fileSetManager = new FileSetManager(blobContainerClient, blobBatchClient, createContainer);
+    manifestManager = new ManifestManager(blobContainerClient, createContainer);
+>>>>>>> 6be6de6f (feat: azure supports batch deletion for backup contents)
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -164,9 +177,26 @@ public final class AzureBackupStore implements BackupStore {
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
     return CompletableFuture.runAsync(
         () -> {
+<<<<<<< HEAD
           manifestManager.deleteManifest(id);
           fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+=======
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return;
+          } else if (manifest.statusCode() != StatusCode.DELETED) {
+            throw new UnexpectedManifestState(
+                "Cannot delete Backup with id '%s', must be marked as deleted."
+                    .formatted(id.toString()));
+          }
+          final var snapshotUrls = fileSetManager.collectBlobUrls(id, SNAPSHOT_FILESET_NAME);
+          final var segmentUrls = fileSetManager.collectBlobUrls(id, SEGMENTS_FILESET_NAME);
+          final List<String> allUrls = new ArrayList<>(snapshotUrls);
+          allUrls.addAll(segmentUrls);
+          fileSetManager.deleteBlobs(allUrls);
+          manifestManager.deleteManifest(manifest);
+>>>>>>> 6be6de6f (feat: azure supports batch deletion for backup contents)
         },
         executor);
   }
