@@ -25,7 +25,7 @@ on:
         type: string
         required: false
       scenario:
-        description: 'Workload scenario to run'
+        description: 'Workload scenario to run.'
         required: false
         type: choice
         options:
@@ -123,12 +123,12 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
         type: string
         required: false
-        default: custom
+        default: ""
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. Can be combined with any scenario, or used alone when scenario is empty.'
         type: string
         required: false
       platform-helm-values:
