@@ -4698,7 +4698,8 @@ final class JsonSerializableToJsonTest {
                                   .setElementId("extract-line-items-task"),
                               new AgentInstanceTool()
                                   .setName("MCP_ocr___scan_document")
-                                  .setElementId("MCP_ocr")));
+                                  .setElementId("MCP_ocr")))
+                      .setChangedAttributes(List.of("status", "metrics"));
               record
                   .getDefinition()
                   .setModel("gpt-4o")
@@ -4736,7 +4737,8 @@ final class JsonSerializableToJsonTest {
           "tools": [
             { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
             { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
-          ]
+          ],
+          "changedAttributes": ["status", "metrics"]
         }
         """
       },
@@ -4758,7 +4760,8 @@ final class JsonSerializableToJsonTest {
           "definition": { "model": "", "provider": "", "systemPrompt": "" },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
-          "tools": []
+          "tools": [],
+          "changedAttributes": []
         }
         """
       }
