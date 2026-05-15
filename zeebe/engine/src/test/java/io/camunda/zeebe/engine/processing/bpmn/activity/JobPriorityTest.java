@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -209,10 +211,11 @@ public final class JobPriorityTest {
             .getFirst();
 
     Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertNoJobCreated(processInstanceKey);
   }
 
   @Test
-  public void shouldRaiseIncidentWhenFeelExpressionEvaluatesToNonInteger() {
+  public void shouldRaiseIncidentWhenFeelExpressionEvaluatesToNonNumber() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -233,5 +236,72 @@ public final class JobPriorityTest {
             .getFirst();
 
     Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertNoJobCreated(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenFeelExpressionEvaluatesToFraction() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("p"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("p", 1.5).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertNoJobCreated(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenFeelExpressionEvaluatesOutOfIntRange() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("p"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("p", Integer.MAX_VALUE + 1L)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue()).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertNoJobCreated(processInstanceKey);
+  }
+
+  private static void assertNoJobCreated(final long processInstanceKey) {
+    final var jobs =
+        RecordingExporter.expectNoMatchingRecords(
+            records ->
+                records
+                    .jobRecords()
+                    .withIntent(JobIntent.CREATED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .toList());
+    assertThat(jobs).as("no job is created when the priority expression fails").isEmpty();
   }
 }

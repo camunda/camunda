@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -530,8 +533,45 @@ public final class BpmnJobBehavior {
       return Either.right(0);
     }
     return expressionBehavior
-        .evaluateLongExpression(priority, scopeKey, tenantId)
-        .map(Long::intValue);
+        .evaluateAnyExpression(priority, scopeKey, tenantId)
+        .flatMap(result -> mapPriorityResult(priority, result, scopeKey));
+  }
+
+  private Either<Failure, Integer> mapPriorityResult(
+      final Expression priority, final EvaluationResult result, final long scopeKey) {
+    if (result.getType() != ResultType.NUMBER) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected result of the expression '%s' for the job priority to be 'NUMBER', but was '%s'.",
+                  priority.getExpression(), result.getType()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
+    }
+    final Number number = result.getNumber();
+    final BigDecimal asDecimal;
+    try {
+      asDecimal = new BigDecimal(number.toString());
+    } catch (final NumberFormatException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected result of the expression '%s' for the job priority to be a finite number, but was '%s'.",
+                  priority.getExpression(), number),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
+    }
+    try {
+      return Either.right(asDecimal.intValueExact());
+    } catch (final ArithmeticException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected result of the expression '%s' for the job priority to be an integer within the 32-bit signed range, but was '%s'.",
+                  priority.getExpression(), number),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
+    }
   }
 
   private void writeJobCreatedEvent(
