@@ -158,8 +158,19 @@ class TaskDetailsPage {
   }
 
   async clickUnassignButton() {
-    await expect(this.unassignButton).toBeVisible({timeout: 30000});
-    await this.unassignButton.click({timeout: 30000});
+    // The right-panel re-renders when transitioning from a just-completed
+    // task to the next one. `toBeVisible` can match the Unassign button from
+    // the stale (previous) state just before it detaches, leaving `click` to
+    // wait for an actionable element that never resettles in time. Re-query
+    // on each retry so a stale-then-detached match doesn't sink the click.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.unassignButton).toBeVisible({timeout: 10000});
+        await this.unassignButton.click({timeout: 5000});
+      },
+      onFailure: async () => {},
+      maxRetries: 4,
+    });
   }
 
   async clickCompleteTaskButton() {
