@@ -461,6 +461,54 @@ class DefaultScheduledTaskRuntimeTest {
   }
 
   @Nested
+  final class ActorYieldInvariantTest {
+
+    @Test
+    void shouldNotInvokeTaskRecursivelyOnMoreWorkPending() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var depth = new java.util.concurrent.atomic.AtomicInteger();
+      final var maxDepth = new java.util.concurrent.atomic.AtomicInteger();
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      final var handle =
+          runtime.register(
+              "task-a",
+              new Schedule.OnDemand(Duration.ofMillis(10)),
+              ctx -> {
+                final int d = depth.incrementAndGet();
+                maxDepth.updateAndGet(prev -> Math.max(prev, d));
+                fireTimes.add(ctx.clock().millis());
+                try {
+                  if (fireTimes.size() < 5) {
+                    return Result.moreWorkPending(ctx.resultBuilder());
+                  }
+                  return Result.idle(ctx.resultBuilder());
+                } finally {
+                  depth.decrementAndGet();
+                }
+              },
+              TaskOptions.sync());
+      runtime.onRecovered(context);
+      handle.nudge(1100);
+
+      // when
+      // The fake scheduler dispatches tasks via advanceTo only; the runtime cannot
+      // run the task itself between dispatches. Advance enough to drain 5 invocations.
+      for (int i = 0; i < 50 && fireTimes.size() < 5; i++) {
+        scheduleService.advanceTo(clock.millis() + 10);
+      }
+
+      // then — recursion never exceeded depth 1
+      assertThat(maxDepth.get()).isEqualTo(1);
+      assertThat(fireTimes).hasSize(5);
+    }
+  }
+
+  @Nested
   final class AsyncOptionTest {
 
     @Test
