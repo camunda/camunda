@@ -93,6 +93,7 @@ public final class S3BackupStore implements BackupStore {
   static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
+  private static final int MAX_DELETE_BATCH_SIZE = 1000;
   private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
@@ -269,11 +270,11 @@ public final class S3BackupStore implements BackupStore {
             })
         .thenComposeAsync(
             manifest ->
-                listObjects(manifest, Directory.MANIFESTS)
+                listObjects(manifest, Directory.CONTENTS)
                     .thenComposeAsync(this::deleteBackupObjects)
                     .thenComposeAsync(
                         ignored ->
-                            listObjects(manifest, Directory.CONTENTS)
+                            listObjects(manifest, Directory.MANIFESTS)
                                 .thenComposeAsync(this::deleteBackupObjects)));
   }
 
@@ -423,11 +424,21 @@ public final class S3BackupStore implements BackupStore {
       // Nothing to delete, which we must handle because the delete request would be invalid
       return CompletableFuture.completedFuture(null);
     }
+    final var list = List.copyOf(objectIdentifiers);
+    final int size = list.size();
+    CompletableFuture<Void> result = CompletableFuture.completedFuture(null);
+    for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
+      final var batch = list.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size));
+      result = result.thenComposeAsync(ignored -> deleteBatch(batch));
+    }
+    return result;
+  }
+
+  private CompletableFuture<Void> deleteBatch(final List<ObjectIdentifier> batch) {
     return client
         .deleteObjects(
             req ->
-                req.bucket(config.bucketName())
-                    .delete(delete -> delete.objects(objectIdentifiers).quiet(true)))
+                req.bucket(config.bucketName()).delete(delete -> delete.objects(batch).quiet(true)))
         .thenApplyAsync(
             response -> {
               if (!response.errors().isEmpty()) {
