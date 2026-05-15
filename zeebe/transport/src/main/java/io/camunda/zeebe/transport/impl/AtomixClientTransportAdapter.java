@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +172,9 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
   }
 
   private void handleResponse(
-      final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
+      final RequestContext requestContext,
+      final byte[] response,
+      final @Nullable Throwable errorOnRequest) {
     if (requestContext.isDone()) {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Handle response, but request {} is already done", requestContext.hashCode());
@@ -224,7 +227,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     }
   }
 
-  private boolean exceptionShowsConnectionIssue(final Throwable throwable) {
+  private boolean exceptionShowsConnectionIssue(final @Nullable Throwable throwable) {
     return throwable instanceof ConnectException
         || throwable instanceof MessagingException.NoRemoteHandler;
   }

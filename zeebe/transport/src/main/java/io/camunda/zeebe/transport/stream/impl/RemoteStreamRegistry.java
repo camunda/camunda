@@ -105,7 +105,10 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
           (id, aggregatedStream) -> {
             aggregatedStream.removeConsumer(consumer);
             if (aggregatedStream.streamConsumers().isEmpty()) {
-              typeToConsumers.get(consumer.logicalId().streamType()).remove(aggregatedStream);
+              final var streams = typeToConsumers.get(consumer.logicalId().streamType());
+              if (streams != null) {
+                streams.remove(aggregatedStream);
+              }
               return null;
             } else {
               return aggregatedStream;

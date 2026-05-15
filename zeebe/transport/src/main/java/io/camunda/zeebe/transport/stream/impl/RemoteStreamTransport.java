@@ -138,6 +138,19 @@ public final class RemoteStreamTransport<M> extends Actor {
     }
 
     final var cause = error.getCause();
+    if (cause == null) {
+      LOG.warn(
+          "Failed to restart streams for member '{}', retrying in {}ms",
+          receiver,
+          retryDelayMs,
+          error);
+      final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
+      actor.schedule(
+          Duration.ofMillis(nextRetryDelay),
+          () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
+      return;
+    }
+
     switch (cause) {
       // it's possible that the member that was just added has since been removed in between
       // retries;
