@@ -209,6 +209,7 @@ public class ZeebeTopologyWaitStrategy extends AbstractWaitStrategy {
 
       try {
         Awaitility.await()
+            .ignoreExceptions()
             .pollInterval(Duration.ofSeconds(1))
             .atMost(startupTimeout)
             .until(
