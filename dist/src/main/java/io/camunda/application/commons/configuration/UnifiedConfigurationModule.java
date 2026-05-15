@@ -9,6 +9,7 @@ package io.camunda.application.commons.configuration;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -29,5 +30,18 @@ public class UnifiedConfigurationModule {
   public PhysicalTenantResolver physicalTenantResolver(
       final Environment environment, final Camunda camunda) {
     return PhysicalTenantResolver.of(environment, camunda);
+  }
+
+  /**
+   * Exposes the configured physical tenants to the REST layer so that {@code
+   * /v2/physical-tenants/{physicalTenantId}/...} requests with an unknown id are rejected with HTTP
+   * 404 before reaching any controller. Unconditional because physical tenants are storage-agnostic
+   * — the gate must apply for every secondary-storage type.
+   */
+  @Bean
+  public io.camunda.zeebe.gateway.rest.util.PhysicalTenantResolver
+      gatewayRestPhysicalTenantResolver(final PhysicalTenantResolver physicalTenantResolver) {
+    final Set<String> known = Set.copyOf(physicalTenantResolver.getAll().keySet());
+    return known::contains;
   }
 }
