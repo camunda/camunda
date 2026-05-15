@@ -976,11 +976,26 @@ test.describe('Parallel job-based user task migration', () => {
 
       for (const taskName of taskNames) {
         for (let i = 0; i < totalV2InstanceCount; i++) {
-          // Always click .nth(0) — the completed task disappears so the next one shifts up
-          await taskPanelPage.availableTasks
-            .getByText(taskName, {exact: true})
-            .nth(0)
-            .click();
+          // Clicking the task card while the prior `Task completed` banner is
+          // still showing on the right panel sometimes leaves the panel stuck
+          // on the completed task — no Unassign button ever appears for the
+          // newly clicked task. Retry the click until the right panel
+          // actually advances to the new task (Unassign becomes visible).
+          await waitForAssertion({
+            assertion: async () => {
+              // Always click .nth(0) — the completed task disappears so the
+              // next one shifts up.
+              await taskPanelPage.availableTasks
+                .getByText(taskName, {exact: true})
+                .nth(0)
+                .click();
+              await expect(taskDetailsPage.unassignButton).toBeVisible({
+                timeout: 10000,
+              });
+            },
+            onFailure: async () => {},
+            maxRetries: 3,
+          });
 
           await taskDetailsPage.unassignReassignToMeAndComplete();
         }
