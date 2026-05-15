@@ -21,8 +21,10 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction.JudgeAssertion;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction.SemanticSimilarityAssertion;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import java.util.Optional;
@@ -49,6 +51,11 @@ public class AssertVariableInstructionHandler
     instruction
         .getSatisfiesJudge()
         .ifPresent(judge -> applyJudgeAssertion(baseAssert, variableName, elementSelector, judge));
+
+    instruction
+        .getSimilarTo()
+        .ifPresent(
+            similarTo -> applySimilarToAssertion(baseAssert, variableName, elementSelector, similarTo));
   }
 
   @Override
@@ -89,5 +96,29 @@ public class AssertVariableInstructionHandler
           }
           return modified;
         });
+  }
+
+  private static void applySimilarToAssertion(
+      final ProcessInstanceAssert baseAssert,
+      final String variableName,
+      final Optional<ElementSelector> elementSelector,
+      final SemanticSimilarityAssertion similarTo) {
+
+    final ProcessInstanceAssert configured =
+        similarTo
+            .getThreshold()
+            .map(
+                threshold ->
+                    baseAssert.withSemanticSimilarityConfig(
+                        (SemanticSimilarityConfig config) -> config.withThreshold(threshold)))
+            .orElse(baseAssert);
+
+    final String expectedValue = similarTo.getExpectedValue();
+
+    if (elementSelector.isPresent()) {
+      configured.hasLocalVariableSimilarTo(elementSelector.get(), variableName, expectedValue);
+    } else {
+      configured.hasVariableSimilarTo(variableName, expectedValue);
+    }
   }
 }

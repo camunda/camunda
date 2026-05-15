@@ -72,9 +72,6 @@
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
-          "$ref": "#/definitions/AssertVariableSimilarToInstruction"
-        },
-        {
           "$ref": "#/definitions/BroadcastSignalInstruction"
         },
         {
@@ -1083,6 +1080,10 @@
         "satisfiesJudge": {
           "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
           "$ref": "#/definitions/JudgeAssertion"
+        },
+        "similarTo": {
+          "description": "A semantic similarity assertion that checks the variable value against an expected value using text embeddings. Optional.",
+          "$ref": "#/definitions/SemanticSimilarityAssertion"
         }
       },
       "required": [
@@ -1128,27 +1129,10 @@
       ],
       "additionalProperties": false
     },
-    "AssertVariableSimilarToInstruction": {
-      "description": "An instruction to assert that a process variable is semantically similar to an expected value using text embeddings.",
+    "SemanticSimilarityAssertion": {
+      "description": "A semantic similarity assertion that checks a variable value against an expected value using text embeddings.",
       "type": "object",
       "properties": {
-        "type": {
-          "description": "The type of the instruction.",
-          "type": "string",
-          "const": "ASSERT_VARIABLE_SIMILAR_TO"
-        },
-        "processInstanceSelector": {
-          "description": "The selector to identify the process instance.",
-          "$ref": "#/definitions/ProcessInstanceSelector"
-        },
-        "elementSelector": {
-          "description": "The selector to identify the element for local variable scope. Optional — when absent the variable is looked up as a global process-instance variable.",
-          "$ref": "#/definitions/ElementSelector"
-        },
-        "variableName": {
-          "description": "The name of the variable to assert.",
-          "type": "string"
-        },
         "expectedValue": {
           "description": "The expected value the variable should be semantically similar to.",
           "type": "string"
@@ -1161,9 +1145,6 @@
         }
       },
       "required": [
-        "type",
-        "processInstanceSelector",
-        "variableName",
         "expectedValue"
       ],
       "additionalProperties": false

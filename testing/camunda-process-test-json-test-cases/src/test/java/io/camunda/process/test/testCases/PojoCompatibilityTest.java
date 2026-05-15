@@ -47,7 +47,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcess
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableSimilarToInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
@@ -555,22 +555,25 @@ public class PojoCompatibilityTest {
                             .customPrompt("You are evaluating data accuracy")
                             .build())
                     .build())),
-        // ===== ASSERT_VARIABLE_SIMILAR_TO =====
+        // ===== ASSERT_VARIABLE with similarTo =====
         Arguments.of(
             "assert variable similar to: minimal",
             singleTestCase(
-                ImmutableAssertVariableSimilarToInstruction.builder()
+                ImmutableAssertVariableInstruction.builder()
                     .processInstanceSelector(
                         ImmutableProcessInstanceSelector.builder()
                             .processDefinitionId("my-process")
                             .build())
                     .variableName("result")
-                    .expectedValue("The order was processed successfully.")
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The order was processed successfully.")
+                            .build())
                     .build())),
         Arguments.of(
             "assert variable similar to: complete",
             singleTestCase(
-                ImmutableAssertVariableSimilarToInstruction.builder()
+                ImmutableAssertVariableInstruction.builder()
                     .processInstanceSelector(
                         ImmutableProcessInstanceSelector.builder()
                             .processDefinitionId("my-process")
@@ -578,8 +581,11 @@ public class PojoCompatibilityTest {
                     .elementSelector(
                         ImmutableElementSelector.builder().elementId("review-task").build())
                     .variableName("reviewComment")
-                    .expectedValue("The product quality meets the required standards.")
-                    .threshold(0.85)
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The product quality meets the required standards.")
+                            .threshold(0.85)
+                            .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
         Arguments.of(

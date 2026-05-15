@@ -62,6 +62,34 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
    */
   Optional<JudgeAssertion> getSatisfiesJudge();
 
+  /**
+   * The semantic similarity assertion to perform on the variable. Optional.
+   *
+   * @return the similarity assertion or empty if no similarity assertion is configured
+   */
+  Optional<SemanticSimilarityAssertion> getSimilarTo();
+
+  /** A semantic similarity assertion that checks a variable value against an expected value. */
+  @Value.Immutable
+  @JsonDeserialize(builder = ImmutableSemanticSimilarityAssertion.Builder.class)
+  interface SemanticSimilarityAssertion {
+
+    /**
+     * The expected value the variable should be semantically similar to.
+     *
+     * @return the expected value
+     */
+    String getExpectedValue();
+
+    /**
+     * The minimum similarity threshold (0.0–1.0) for the assertion to pass. Optional — when absent
+     * the configured default threshold is used.
+     *
+     * @return the threshold or empty to use the default
+     */
+    Optional<Double> getThreshold();
+  }
+
   /** A judge-based assertion that evaluates a variable against a semantic expectation. */
   @Value.Immutable
   @JsonDeserialize(builder = ImmutableJudgeAssertion.Builder.class)
