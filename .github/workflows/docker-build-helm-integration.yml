@@ -25,7 +25,7 @@ on:
       scenario:
         description: 'Test scenario'
         type: string
-        default: 'keycloak-original'
+        default: 'alwaysgreen'
       deployment-ttl:
         description: 'Deployment TTL'
         type: string
@@ -33,7 +33,7 @@ on:
       shortname:
         description: 'Short name for the deployment'
         type: string
-        default: 'kcor'
+        default: 'agrn'
   merge_group:
     types:
       - checks_requested
@@ -296,19 +296,20 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     needs: [build-and-push, format-identifier]
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    # TODO: Revert to @main after camunda/camunda-platform-helm PR merges (adds alwaysgreen infra-type)
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@move-ag-nodes-onto-always-green
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
-      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
+      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'move-ag-nodes-onto-always-green' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
-      scenario: ${{ inputs.scenario || 'keycloak-original' }}
-      shortname: ${{ inputs.shortname || 'kcor' }}
+      scenario: ${{ inputs.scenario || 'alwaysgreen' }}
+      shortname: ${{ inputs.shortname || 'agrn' }}
       always-delete-namespace: true
       flows: install
       extra-values: |
