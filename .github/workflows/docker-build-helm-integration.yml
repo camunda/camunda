@@ -296,13 +296,12 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     needs: [build-and-push, format-identifier]
-    # TODO: Revert to @main after camunda/camunda-platform-helm PR merges (adds alwaysgreen infra-type)
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@move-ag-nodes-onto-always-green
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
-      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'move-ag-nodes-onto-always-green' }}
+      camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
       namespace-prefix: monorepo
       test-enabled: true
