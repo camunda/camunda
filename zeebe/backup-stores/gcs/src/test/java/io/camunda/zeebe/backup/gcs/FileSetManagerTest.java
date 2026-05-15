@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -145,50 +147,61 @@ final class FileSetManagerTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void shouldDeleteFileSet() {
+  void shouldCollectAndDeleteFileSetBlobs() {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-
+    final var blobId = BlobId.of("bucket", "basePath/contents/1/2/3/filesetName/file");
     final var mockBlob = mock(Blob.class);
+    when(mockBlob.getBlobId()).thenReturn(blobId);
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
     when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
 
     // when
-    manager.delete(backupIdentifier, "filesetName");
+    final var collected = manager.collectBlobIds(backupIdentifier, "filesetName");
+    manager.deleteBlobs(new ArrayList<>(collected));
 
     // then
-    verify(mockBlob).delete();
+    verify(storage).delete(List.of(blobId));
   }
 
   @Test
-  void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
+  void shouldThrowExceptionOnCollectWhenListThrows() {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     when(storage.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
-    // when throw
-    Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.collectBlobIds(backupIdentifier, "filesetName"))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
-  @SuppressWarnings("unchecked")
   @Test
-  void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
+  void shouldThrowExceptionWhenBatchDeleteThrows() {
     // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var blobId = BlobId.of("bucket", "basePath/contents/1/2/3/filesetName/file");
+    when(storage.delete(List.of(blobId))).thenThrow(new StorageException(412, "expected"));
 
-    final Blob mockBlob = mock(Blob.class);
-    when(mockBlob.delete()).thenThrow(new StorageException(412, "expected"));
-    final var mockPage = mock(Page.class);
-    when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
-
-    // when throw
-    Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.deleteBlobs(List.of(blobId)))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
+  }
+
+  @Test
+  void shouldSplitDeleteAcrossMultipleBatches() {
+    // given - 101 blobs exceeds MAX_DELETE_BLOB_BATCH_SIZE (100)
+    final var blobIds =
+        java.util.stream.IntStream.range(0, 101)
+            .mapToObj(i -> BlobId.of("bucket", "contents/1/2/3/file" + i))
+            .collect(java.util.stream.Collectors.toList());
+
+    // when
+    manager.deleteBlobs(blobIds);
+
+    // then - two separate batch calls: first 100, then 1
+    verify(storage, times(2)).delete(any(Iterable.class));
   }
 
   @Test

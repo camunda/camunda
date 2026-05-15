@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -26,7 +27,9 @@ import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -155,8 +158,13 @@ public final class GcsBackupStore implements BackupStore {
                 "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          final var snapshotIds =
+              fileSetManager.collectBlobIds(id, FileSetManager.SNAPSHOT_FILESET_NAME);
+          final var segmentIds =
+              fileSetManager.collectBlobIds(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          final List<BlobId> allIds = new ArrayList<>(snapshotIds);
+          allIds.addAll(segmentIds);
+          fileSetManager.deleteBlobs(allIds);
           manifestManager.deleteManifest(manifest);
         },
         executor);

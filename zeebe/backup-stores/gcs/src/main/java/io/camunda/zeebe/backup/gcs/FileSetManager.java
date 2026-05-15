@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -21,6 +22,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +36,7 @@ final class FileSetManager {
 
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BLOB_BATCH_SIZE = 100;
 
   /**
    * The path format consists of the following elements:
@@ -134,12 +139,21 @@ final class FileSetManager {
     }
   }
 
-  public void delete(final BackupIdentifier id, final String fileSetName) {
+  Collection<BlobId> collectBlobIds(final BackupIdentifier id, final String fileSetName) {
+    final var ids = new ArrayList<BlobId>();
     for (final var blob :
         client
             .list(bucketInfo.getName(), BlobListOption.prefix(fileSetPath(id, fileSetName)))
             .iterateAll()) {
-      blob.delete();
+      ids.add(blob.getBlobId());
+    }
+    return ids;
+  }
+
+  void deleteBlobs(final List<BlobId> blobIds) {
+    final int size = blobIds.size();
+    for (int i = 0; i < size; i += MAX_DELETE_BLOB_BATCH_SIZE) {
+      client.delete(blobIds.subList(i, Math.min(i + MAX_DELETE_BLOB_BATCH_SIZE, size)));
     }
   }
 
