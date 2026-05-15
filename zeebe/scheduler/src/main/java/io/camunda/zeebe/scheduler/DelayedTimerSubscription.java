@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A TimerSubscription based on a delay. Scheduling requires an external clock to determine the
@@ -16,14 +17,14 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DelayedTimerSubscription implements TimerSubscription {
   private final ActorJob job;
-  private final ActorTask task;
+  private final @Nullable ActorTask task;
   private final TimeUnit timeUnit;
   private final long delay;
   private final boolean isRecurring;
   private volatile boolean isDone = false;
   private volatile boolean isCanceled = false;
   private long timerId = -1L;
-  private ActorThread thread;
+  private @Nullable ActorThread thread;
   private long timerExpiredAt;
 
   public DelayedTimerSubscription(

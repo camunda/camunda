@@ -7,13 +7,16 @@
  */
 package io.camunda.zeebe.scheduler.retry;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 
 public final class ActorRetryMechanism {
-  private OperationToRetry currentCallable;
-  private BooleanSupplier currentTerminateCondition;
-  private ActorFuture<Boolean> currentFuture;
+  private @Nullable OperationToRetry currentCallable;
+  private @Nullable BooleanSupplier currentTerminateCondition;
+  private @Nullable ActorFuture<Boolean> currentFuture;
 
   void wrap(
       final OperationToRetry callable,
@@ -25,11 +28,12 @@ public final class ActorRetryMechanism {
   }
 
   Control run() throws Exception {
-    if (currentCallable.run()) {
-      currentFuture.complete(true);
+    if (requireNonNull(currentCallable, "currentCallable").run()) {
+      requireNonNull(currentFuture, "currentFuture").complete(true);
       return Control.DONE;
-    } else if (currentTerminateCondition.getAsBoolean()) {
-      currentFuture.complete(false);
+    } else if (requireNonNull(currentTerminateCondition, "currentTerminateCondition")
+        .getAsBoolean()) {
+      requireNonNull(currentFuture, "currentFuture").complete(false);
       return Control.DONE;
     } else {
       return Control.RETRY;

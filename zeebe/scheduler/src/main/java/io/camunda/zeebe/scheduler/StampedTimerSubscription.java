@@ -9,15 +9,16 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 
 public final class StampedTimerSubscription implements TimerSubscription {
   private final ActorJob job;
-  private final ActorTask task;
+  private final @Nullable ActorTask task;
   private final long deadline;
   private volatile boolean isDone = false;
   private volatile boolean isCanceled = false;
   private long timerId = -1L;
-  private ActorThread thread;
+  private @Nullable ActorThread thread;
   private long timerExpiredAt;
 
   public StampedTimerSubscription(final ActorJob job, final long timestamp) {
