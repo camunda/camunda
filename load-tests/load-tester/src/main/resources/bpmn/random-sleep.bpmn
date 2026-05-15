@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0dwy7mw" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="benchmark" name="Random Sleep" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1adhqwx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1adhqwx" sourceRef="StartEvent_1" targetRef="Activity_0go4m6w" />
+    <bpmn:scriptTask id="Activity_0go4m6w" name="Random value">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=&#34;PT&#34; + string(ceiling(random number() * 60)) + &#34;M&#34;" resultVariable="sleep" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1adhqwx</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ib1o0y</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_1ib1o0y" sourceRef="Activity_0go4m6w" targetRef="Event_18lh90g" />
+    <bpmn:intermediateCatchEvent id="Event_18lh90g">
+      <bpmn:incoming>Flow_1ib1o0y</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qzbw64</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0bez1ed">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=sleep</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_1wuddpk" name="Do something">
+      <bpmn:incoming>Flow_0qzbw64</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jyscnt</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0qzbw64" sourceRef="Event_18lh90g" targetRef="Activity_1wuddpk" />
+    <bpmn:endEvent id="Event_1outtmc">
+      <bpmn:incoming>Flow_1jyscnt</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1jyscnt" sourceRef="Activity_1wuddpk" targetRef="Event_1outtmc" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="RandomSleep">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="182" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_06gkhor_di" bpmnElement="Activity_0go4m6w">
+        <dc:Bounds x="270" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1vij5q0_di" bpmnElement="Event_18lh90g">
+        <dc:Bounds x="422" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wuddpk_di" bpmnElement="Activity_1wuddpk">
+        <dc:Bounds x="510" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1outtmc_di" bpmnElement="Event_1outtmc">
+        <dc:Bounds x="662" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1adhqwx_di" bpmnElement="Flow_1adhqwx">
+        <di:waypoint x="218" y="120" />
+        <di:waypoint x="270" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ib1o0y_di" bpmnElement="Flow_1ib1o0y">
+        <di:waypoint x="370" y="120" />
+        <di:waypoint x="422" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qzbw64_di" bpmnElement="Flow_0qzbw64">
+        <di:waypoint x="458" y="120" />
+        <di:waypoint x="510" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jyscnt_di" bpmnElement="Flow_1jyscnt">
+        <di:waypoint x="610" y="120" />
+        <di:waypoint x="662" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
