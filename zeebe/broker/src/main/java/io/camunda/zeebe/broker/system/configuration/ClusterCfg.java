@@ -140,8 +140,7 @@ public final class ClusterCfg implements ConfigurationEntry {
 
     final var zoneNames = zones.stream().map(RegionCfg::name).toList();
     if (!zoneNames.contains(zone)) {
-      throw new IllegalArgumentException(
-          String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
+      throw new IllegalArgumentException(String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
     }
 
     final var zoneCfg = zones.stream().filter(r -> r.name().equals(zone)).findFirst().orElseThrow();

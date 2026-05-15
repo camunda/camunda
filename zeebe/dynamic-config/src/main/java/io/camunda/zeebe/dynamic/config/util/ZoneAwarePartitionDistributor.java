@@ -68,8 +68,7 @@ import org.slf4j.LoggerFactory;
 @NullMarked
 public final class ZoneAwarePartitionDistributor implements PartitionDistributor {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ZoneAwarePartitionDistributor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ZoneAwarePartitionDistributor.class);
 
   /** Regions sorted by {@link ZoneSpec#priority()} descending (highest priority first). */
   private final List<ZoneSpec> zoneSpecs;

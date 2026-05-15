@@ -13,8 +13,8 @@ import java.util.List;
  * Top-level configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
  *
  * <p>Lists all regions and their per-region configuration. Each entry carries its own {@link
- * RegionCfg#name()} so individual regions can be overridden via indexed environment variables
- * (e.g. {@code CAMUNDA_CLUSTER_PARTITIONING_ZONEAWARE_REGIONS_0_NAME}).
+ * RegionCfg#name()} so individual regions can be overridden via indexed environment variables (e.g.
+ * {@code CAMUNDA_CLUSTER_PARTITIONING_ZONEAWARE_REGIONS_0_NAME}).
  *
  * <p>Example YAML configuration:
  *

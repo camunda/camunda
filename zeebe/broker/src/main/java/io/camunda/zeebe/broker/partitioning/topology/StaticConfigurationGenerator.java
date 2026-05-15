@@ -119,7 +119,10 @@ public final class StaticConfigurationGenerator {
    */
   private static Set<MemberId> getZoneAwareRaftGroupMembers(final PartitioningCfg partitioningCfg) {
     return partitioningCfg.getZoneAware().regions().stream()
-        .flatMap(r -> IntStream.range(0, r.numberOfBrokers()).mapToObj(localId -> MemberId.from(r.name(), localId)))
+        .flatMap(
+            r ->
+                IntStream.range(0, r.numberOfBrokers())
+                    .mapToObj(localId -> MemberId.from(r.name(), localId)))
         .collect(Collectors.toSet());
   }
 
