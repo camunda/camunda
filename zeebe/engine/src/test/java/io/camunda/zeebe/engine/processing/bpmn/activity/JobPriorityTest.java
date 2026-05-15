@@ -173,6 +173,25 @@ public final class JobPriorityTest {
   }
 
   @Test
+  public void shouldOverrideProcessLevelWithTaskLevelLiteralZero() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("33")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriority("0"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    Assertions.assertThat(awaitJobCreated(processInstanceKey).getValue()).hasPriority(0);
+  }
+
+  @Test
   public void shouldPopulatePriorityOnSendTask() {
     // given
     final BpmnModelInstance process =

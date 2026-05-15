@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
@@ -32,8 +31,14 @@ public final class JobPriorityDefinitionTransformer {
 
     final Expression resolved;
     if (priorityDefinition != null) {
-      final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
-      resolved = expressionLanguage.parseExpression(priorityDefinition.getPriority());
+      final String raw = priorityDefinition.getPriority();
+      // Task-level literal "0" overrides any process-level default, but the effective priority
+      // is still 0, which is exactly what BpmnJobBehavior.evalPriorityExp returns for a null
+      // expression. Leaving jobPriority unset skips a FEEL evaluation per job creation.
+      if (ZeebeJobPriorityDefinition.DEFAULT_LITERAL_PRIORITY.equals(raw)) {
+        return;
+      }
+      resolved = context.getExpressionLanguage().parseExpression(raw);
     } else {
       // Falls through to BpmnJobBehavior.evalPriorityExp, which returns 0 when jobPriority is
       // null. Leaving the field unset avoids an unnecessary FEEL evaluation per job creation.

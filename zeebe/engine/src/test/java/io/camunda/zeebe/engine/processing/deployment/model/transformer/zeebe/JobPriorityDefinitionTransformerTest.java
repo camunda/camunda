@@ -124,6 +124,24 @@ class JobPriorityDefinitionTransformerTest {
   }
 
   @Test
+  void shouldSkipTaskLevelLiteralZeroEvenWhenProcessDefaultPresent() {
+    // given
+    final var element = elementWithJobWorkerProperties();
+    process.setDefaultJobPriority(expressionLanguage.parseExpression("33"));
+    final var priorityDef = Mockito.mock(ZeebeJobPriorityDefinition.class);
+    Mockito.when(priorityDef.getPriority()).thenReturn("0");
+
+    // when
+    transformer.transform(element, context, priorityDef);
+
+    // then
+    // Task-level "0" still overrides the process default (effective priority = 0), but
+    // leaving jobPriority null is equivalent — BpmnJobBehavior.evalPriorityExp returns 0
+    // for a null expression and skips the FEEL evaluation.
+    assertThat(element.getJobWorkerProperties().getJobPriority()).isNull();
+  }
+
+  @Test
   void shouldNotMaterialiseJobWorkerPropertiesForDirectExecutionTasks() {
     // given
     final var element = new ExecutableJobWorkerTask("scriptTask");
