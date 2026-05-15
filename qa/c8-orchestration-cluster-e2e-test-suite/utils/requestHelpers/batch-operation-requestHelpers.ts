@@ -15,13 +15,20 @@ import {validateResponse} from 'json-body-assertions';
 export async function cancelBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
+  expectedStatusCode = 204,
 ) {
-  return request.post(
-    buildUrl(`/batch-operations/${batchOperationKey}/cancellation`),
-    {
-      headers: jsonHeaders(),
-    },
-  );
+  const result: Record<string, APIResponse> = {};
+  await expect(async () => {
+    const res = await request.post(
+      buildUrl(`/batch-operations/${batchOperationKey}/cancellation`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    result.response = res;
+    await assertStatusCode(res, expectedStatusCode);
+  }).toPass(batchOperationLifecycleOptions);
+  return result.response as APIResponse;
 }
 
 // A freshly created batch operation can take longer than the default 30s

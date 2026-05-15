@@ -22,7 +22,6 @@ import {
   createCompletedBatchOperation,
   expectBatchState,
 } from '@requestHelpers';
-
 /* eslint-disable playwright/expect-expect */
 
 test.describe.parallel('Cancel Batch Operation Tests', () => {
@@ -70,7 +69,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     });
 
     await test.step('Send second cancel request and assert failure', async () => {
-      const secondRes = await cancelBatchOperation(request, key);
+      const secondRes = await cancelBatchOperation(request, key, 404);
 
       await assertNotFoundRequest(
         secondRes,
@@ -83,7 +82,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     const key = state.finishedBatchOperationKey as string;
 
     await test.step('Cancel finished batch operation', async () => {
-      const res = await cancelBatchOperation(request, key);
+      const res = await cancelBatchOperation(request, key, 404);
       await assertNotFoundRequest(
         res,
         `Command 'CANCEL' rejected with code 'NOT_FOUND': Expected to cancel a batch operation with key '${key}', but no such batch operation was found`,
@@ -97,7 +96,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     const unknownKey = '2251799813999999';
 
     await test.step('Cancel unknown batch operation', async () => {
-      const res = await cancelBatchOperation(request, unknownKey);
+      const res = await cancelBatchOperation(request, unknownKey, 404);
       await assertNotFoundRequest(
         res,
         `Command 'CANCEL' rejected with code 'NOT_FOUND': Expected to cancel a batch operation with key '${unknownKey}', but no such batch operation was found`,
