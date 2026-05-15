@@ -53,7 +53,8 @@ final class ProcessInstanceElementMigratedV4Applier
               .setBpmnProcessId(value.getBpmnProcessId())
               .setVersion(value.getVersion())
               .setElementId(value.getElementId())
-              .setFlowScopeKey(value.getFlowScopeKey());
+              .setFlowScopeKey(value.getFlowScopeKey())
+              .setProcessDefinitionPath(value.getProcessDefinitionPath());
         });
 
     if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
