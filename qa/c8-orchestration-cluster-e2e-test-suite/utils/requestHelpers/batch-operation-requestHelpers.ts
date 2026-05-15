@@ -15,6 +15,7 @@ import {validateResponse} from 'json-body-assertions';
 export async function cancelBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
+  expectedStatusCode = 204,
 ) {
   const result: Record<string, APIResponse> = {};
   await expect(async () => {
@@ -25,7 +26,7 @@ export async function cancelBatchOperation(
       },
     );
     result.response = res;
-    await assertStatusCode(res, 204);
+    await assertStatusCode(res, expectedStatusCode);
   }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
