@@ -36,6 +36,8 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private static final String ZONE_SCHEME_ERROR_MSG =
       "Broker has zone '%s' configured but partitioning scheme is %s; set scheme to REGION_AWARE.";
+  private static final String ZONE_MISSING_ERROR_MSG =
+      "Partitioning scheme is REGION_AWARE but broker zone is not configured. Set cluster.zone.";
   private static final String ZONE_NOT_FOUND_ERROR_MSG =
       "Broker zone '%s' is not defined in the zoneAware partitioning configuration. "
           + "Configured zones: %s.";
@@ -94,12 +96,9 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException("Partition count must not be smaller than 1.");
     }
 
-    if (zone != null && !zone.isBlank()) {
-      validateZoneAwareConfig(globalConfig);
-    } else {
-      if (nodeId < 0) {
-        throw new IllegalArgumentException("Node id must be positive");
-      }
+    validateZoneAwareConfig(globalConfig);
+    if (nodeId < 0) {
+      throw new IllegalArgumentException("Node id must be positive");
     }
 
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
@@ -131,8 +130,11 @@ public final class ClusterCfg implements ConfigurationEntry {
     final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
 
     if (partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
-      throw new IllegalArgumentException(
-          String.format(ZONE_SCHEME_ERROR_MSG, zone, partitioningCfg.getScheme()));
+      return;
+    }
+
+    if (zone == null || zone.isBlank()) {
+      throw new IllegalArgumentException(ZONE_MISSING_ERROR_MSG);
     }
 
     final ZoneAwareCfg zoneAwareCfg = partitioningCfg.getZoneAware();

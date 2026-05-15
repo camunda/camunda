@@ -45,8 +45,7 @@ import org.slf4j.LoggerFactory;
  *       naturally falls over to the next zone without any additional code.
  * </ul>
  *
- * <p>Regions must have distinct priority values; equal priorities produce undefined failover
- * ordering.
+ * <p>Zones with equal priority values are allowed; the ordering between them is unspecified.
  *
  * <p>Example distribution with 3 zones (us-east1 prio=1000 × 2 replicas/2 brokers, us-west1
  * prio=500 × 2 replicas/2 brokers, euro-east1 prio=10 × 1 replica/1 broker), 5 partitions, RF=5:
