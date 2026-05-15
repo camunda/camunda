@@ -12,12 +12,13 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 
 public final class AbortableRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
-  private CompletableActorFuture<Boolean> currentFuture;
+  private @Nullable CompletableActorFuture<Boolean> currentFuture;
 
   public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
@@ -25,11 +26,13 @@ public final class AbortableRetryStrategy implements RetryStrategy {
   }
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public ActorFuture<Boolean> runWithRetry(final OperationToRetry callable) {
     return runWithRetry(callable, () -> false);
   }
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public ActorFuture<Boolean> runWithRetry(
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();

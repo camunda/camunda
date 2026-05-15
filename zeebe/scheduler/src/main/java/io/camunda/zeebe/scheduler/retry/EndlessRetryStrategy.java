@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,14 +23,15 @@ public final class EndlessRetryStrategy implements RetryStrategy {
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
   private final int maxRetries;
-  private CompletableActorFuture<Boolean> currentFuture;
-  private BooleanSupplier terminateCondition;
+  private @Nullable CompletableActorFuture<Boolean> currentFuture;
+  private @Nullable BooleanSupplier terminateCondition;
   private int retryCount;
 
   public EndlessRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
   }
 
+  @SuppressWarnings("NullAway.Init")
   public EndlessRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     this.maxRetries = maxRetries;

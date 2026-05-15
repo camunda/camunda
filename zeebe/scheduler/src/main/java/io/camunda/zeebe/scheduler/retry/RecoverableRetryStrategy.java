@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,14 +27,15 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private final ActorRetryMechanism retryMechanism;
   private final int maxRetries;
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
-  private CompletableActorFuture<Boolean> currentFuture;
-  private BooleanSupplier terminateCondition;
+  private @Nullable CompletableActorFuture<Boolean> currentFuture;
+  private @Nullable BooleanSupplier terminateCondition;
   private int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
   }
 
+  @SuppressWarnings("NullAway.Init")
   public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     this.maxRetries = maxRetries;

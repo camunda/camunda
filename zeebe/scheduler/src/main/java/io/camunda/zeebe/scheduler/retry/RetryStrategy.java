@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler.retry;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public interface RetryStrategy {
@@ -53,7 +54,7 @@ public interface RetryStrategy {
   default boolean retryLimitExceeded(
       final int retryCount,
       final int maxRetries,
-      final Throwable cause,
+      final @Nullable Throwable cause,
       final Logger log,
       final CompletableActorFuture<Boolean> currentFuture) {
     if (retryCount > maxRetries) {
