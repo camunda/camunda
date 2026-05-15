@@ -19,29 +19,22 @@ public final class JobPriorityDefinitionTransformer {
       final TransformContext context,
       final ZeebeJobPriorityDefinition priorityDefinition) {
 
+    // Non-job-producing tasks (direct-execution Script/BusinessRule) must not get
+    // JobWorkerProperties here; StraightThroughProcessingLoopValidator keys off its presence.
     final var jobWorkerProperties = element.getJobWorkerProperties();
     if (jobWorkerProperties == null) {
-      // The element has no <zeebe:taskDefinition> and therefore won't create a job at runtime
-      // (e.g. ScriptTask with <zeebe:script>, BusinessRuleTask with <zeebe:calledDecision>).
-      // The presence of JobWorkerProperties is used downstream as a signal that the element
-      // produces jobs (see StraightThroughProcessingLoopValidator), so we must not materialise
-      // it here.
       return;
     }
 
     final Expression resolved;
     if (priorityDefinition != null) {
       final String raw = priorityDefinition.getPriority();
-      // Task-level literal "0" overrides any process-level default, but the effective priority
-      // is still 0, which is exactly what BpmnJobBehavior.evalPriorityExp returns for a null
-      // expression. Leaving jobPriority unset skips a FEEL evaluation per job creation.
+      // Literal "0" is equivalent to the null -> 0 fast path in BpmnJobBehavior.evalPriorityExp.
       if (ZeebeJobPriorityDefinition.DEFAULT_LITERAL_PRIORITY.equals(raw)) {
         return;
       }
       resolved = context.getExpressionLanguage().parseExpression(raw);
     } else {
-      // Falls through to BpmnJobBehavior.evalPriorityExp, which returns 0 when jobPriority is
-      // null. Leaving the field unset avoids an unnecessary FEEL evaluation per job creation.
       resolved = context.getCurrentProcess().getDefaultJobPriority();
     }
     if (resolved != null) {

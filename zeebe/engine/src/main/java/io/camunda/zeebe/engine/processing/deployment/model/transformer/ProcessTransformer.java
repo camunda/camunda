@@ -48,11 +48,9 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
       final ExecutableProcess process,
       final ExpressionLanguage expressionLanguage) {
 
+    // Skip the model default ("0"); BpmnJobBehavior.evalPriorityExp short-circuits null -> 0.
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeJobPriorityDefinition.class))
         .map(ZeebeJobPriorityDefinition::getPriority)
-        // Skip the model default (literal "0") so the runtime keeps using the null -> 0
-        // fast path in BpmnJobBehavior.evalPriorityExp instead of evaluating an expression
-        // per job creation.
         .filter(raw -> !ZeebeJobPriorityDefinition.DEFAULT_LITERAL_PRIORITY.equals(raw))
         .ifPresent(raw -> process.setDefaultJobPriority(expressionLanguage.parseExpression(raw)));
   }

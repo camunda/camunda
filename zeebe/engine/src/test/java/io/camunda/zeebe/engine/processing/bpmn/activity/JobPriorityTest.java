@@ -145,7 +145,6 @@ public final class JobPriorityTest {
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    // 1.0 is integral despite the decimal scale; should resolve to priority 1
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("p", 1.0).create();
 

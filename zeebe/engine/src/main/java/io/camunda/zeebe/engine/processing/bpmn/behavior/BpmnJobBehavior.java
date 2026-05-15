@@ -550,8 +550,7 @@ public final class BpmnJobBehavior {
       return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
     }
     try {
-      // stripTrailingZeros so values like `1.0` (decimal scale, no fractional part)
-      // are accepted as integers, matching FEEL/engine semantics elsewhere.
+      // stripTrailingZeros so `1.0` is accepted as integer 1.
       return Either.right(asDecimal.stripTrailingZeros().intValueExact());
     } catch (final ArithmeticException e) {
       return priorityFailure(

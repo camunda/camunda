@@ -102,8 +102,6 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, null);
 
     // then
-    // jobPriority left null on purpose; BpmnJobBehavior.evalPriorityExp returns 0 for null,
-    // so we avoid an unnecessary FEEL evaluation per job creation for the neutral default.
     assertThat(element.getJobWorkerProperties().getJobPriority()).isNull();
   }
 
@@ -135,9 +133,6 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, priorityDef);
 
     // then
-    // Task-level "0" still overrides the process default (effective priority = 0), but
-    // leaving jobPriority null is equivalent — BpmnJobBehavior.evalPriorityExp returns 0
-    // for a null expression and skips the FEEL evaluation.
     assertThat(element.getJobWorkerProperties().getJobPriority()).isNull();
   }
 
@@ -152,10 +147,6 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, priorityDef);
 
     // then
-    assertThat(element.getJobWorkerProperties())
-        .as(
-            "should not create JobWorkerProperties for elements without a <zeebe:taskDefinition>"
-                + " (would break straight-through-loop validation)")
-        .isNull();
+    assertThat(element.getJobWorkerProperties()).isNull();
   }
 }
