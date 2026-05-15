@@ -91,9 +91,18 @@ public class SbeCommand implements Callable<Integer> {
       return SbeJsonDecoder.loadIr(schema);
     }
 
+    final var schemaName = schema.toString();
+    if (!schemaName.endsWith(".sbeir")) {
+      throw new IllegalArgumentException(
+          "Schema not found on filesystem: "
+              + schema
+              + ". XML schemas must be provided as a valid filesystem path. "
+              + "Use a pre-compiled .sbeir file for classpath schemas.");
+    }
+
     if (verbose) {
       spec.commandLine().getErr().println("Schema used: classpath resource " + schema);
     }
-    return SbeJsonDecoder.loadIrFromResource(getClass(), schema.toString());
+    return SbeJsonDecoder.loadIrFromResource(getClass(), schemaName);
   }
 }
