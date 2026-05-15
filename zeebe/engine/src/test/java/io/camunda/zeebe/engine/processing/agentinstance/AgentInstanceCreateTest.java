@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -405,6 +406,45 @@ public class AgentInstanceCreateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .contains(String.valueOf(nonExistingElementInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectWhenElementInstanceIsNotActive() {
+    // given -- a service task with a faulty output expression. Completing the job triggers
+    // output mapping evaluation, which fails and raises an incident. The element instance is
+    // left in state COMPLETING (not active) and is not removed from state.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType("agent").zeebeOutputExpression("assert(x, x != null)", "y"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("agent").complete();
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    // when -- the element instance still exists but is no longer active.
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(serviceTaskInstance.getKey()));
   }
 
   @Test
