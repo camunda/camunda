@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,7 +82,55 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
     }
   }
 
+  // ---- registerHandlerMethod -----------------------------------------------
+
+  static Stream<Arguments> registerCases() {
+    return Stream.of(
+        Arguments.of(
+            "tenant-scoped /v2 keeps original and adds prefixed sibling",
+            new TenantScopedController(),
+            "/v2/widgets",
+            List.of("/v2/widgets", EXPECTED_PREFIX + "/widgets")),
+        Arguments.of(
+            "cluster-scoped controller keeps only original — no sibling",
+            new ClusterScopedController(),
+            "/v2/widgets",
+            List.of("/v2/widgets")),
+        Arguments.of(
+            "non-/v2 path on tenant-scoped controller keeps only original",
+            new TenantScopedController(),
+            "/v1/widgets",
+            List.of("/v1/widgets")));
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("registerCases")
+  void shouldKeepOriginalAndPrefixWhenApplicable(
+      final String description,
+      final Object controller,
+      final String path,
+      final List<String> expectedPatterns)
+      throws Exception {
+    // given
+    final Method method = controller.getClass().getDeclaredMethod("handle");
+
+    // when
+    mapping.registerHandlerMethod(controller, method, info(path));
+
+    // then
+    assertThat(registeredPatterns())
+        .as(description)
+        .containsExactlyInAnyOrderElementsOf(expectedPatterns);
+  }
+
   // ---- helpers -------------------------------------------------------------
+
+  private List<String> registeredPatterns() {
+    return mapping.getHandlerMethods().keySet().stream()
+        .filter(m -> m.getPathPatternsCondition() != null)
+        .flatMap(m -> m.getPathPatternsCondition().getPatternValues().stream())
+        .toList();
+  }
 
   private static RequestMappingInfo info(final String... patterns) {
     return RequestMappingInfo.paths(patterns).options(builderConfiguration()).build();
@@ -95,9 +145,15 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
   // ---- fixtures ------------------------------------------------------------
 
   @CamundaRestController
-  private static final class TenantScopedController {}
+  private static final class TenantScopedController {
+    @SuppressWarnings("unused") // resolved reflectively in registerCases()
+    public void handle() {}
+  }
 
   @CamundaRestController
   @ClusterScoped
-  private static final class ClusterScopedController {}
+  private static final class ClusterScopedController {
+    @SuppressWarnings("unused") // resolved reflectively in registerCases()
+    public void handle() {}
+  }
 }
