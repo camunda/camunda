@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.FIXED;
-import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.REGION_AWARE;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -18,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistribut
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -82,19 +80,9 @@ public final class StaticConfigurationGenerator {
     final List<ZoneSpec> specs =
         regions.entrySet().stream()
             .map(
-                e -> {
-                  final var regionName = e.getKey();
-                  final var regionCfg = e.getValue();
-                  final var brokers =
-                      IntStream.range(0, regionCfg.getNumberOfBrokers())
-                          .mapToObj(localId -> MemberId.from(regionName, localId))
-                          .toList();
-                  return new ZoneSpec(
-                      regionName,
-                      regionCfg.getNumberOfReplicas(),
-                      regionCfg.getPriority(),
-                      brokers);
-                })
+                e ->
+                    new ZoneSpec(
+                        e.getKey(), e.getValue().getNumberOfReplicas(), e.getValue().getPriority()))
             .toList();
     return new ZoneAwarePartitionDistributor(specs);
   }
@@ -116,7 +104,7 @@ public final class StaticConfigurationGenerator {
 
   private static Set<MemberId> getRaftGroupMembers(
       final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
-    if (partitioningCfg.getScheme() == REGION_AWARE) {
+    if (partitioningCfg.getScheme() == Scheme.REGION_AWARE) {
       return getZoneAwareRaftGroupMembers(partitioningCfg);
     }
     // Legacy path: node ids are always 0 to clusterSize - 1

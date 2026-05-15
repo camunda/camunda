@@ -30,6 +30,10 @@ import org.slf4j.LoggerFactory;
  * priority order, using a round-robin offset within each zone so that different partitions are
  * spread evenly across the brokers in that zone.
  *
+ * <p>The broker list for each zone is derived at distribution time from the {@code clusterMembers}
+ * set by filtering members whose {@link MemberId#zone()} matches the zone name and sorting them by
+ * {@link MemberId#nodeIdx()} ascending. All members in {@code clusterMembers} must have a zone set.
+ *
  * <p>Raft election priorities are assigned sequentially from {@code replicationFactor} down to
  * {@code 1}, iterating zones from highest to lowest priority and brokers within each zone in
  * round-robin order. This means:
@@ -93,9 +97,9 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
 
+    validateMemberZones(clusterMembers);
     validateReplicaSum(replicationFactor);
-    validateZoneSpecs();
-    validateBrokerIds(clusterMembers);
+    validateZoneHasSufficientBrokers(clusterMembers);
 
     final Set<PartitionMetadata> result = new HashSet<>();
 
@@ -110,10 +114,15 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final Map<MemberId, Integer> priorityMap = new HashMap<>(replicationFactor);
 
       for (final ZoneSpec spec : zoneSpecs) {
-        final int zoneBrokerCount = spec.brokers().size();
+        final var zoneBrokers =
+            clusterMembers.stream()
+                .filter(m -> m.isInZone(spec.name()))
+                .sorted(Comparator.comparingInt(MemberId::nodeIdx))
+                .toList();
+        final int zoneBrokerCount = zoneBrokers.size();
         for (int r = 0; r < spec.numberOfReplicas(); r++) {
           final int brokerIndex = (i + r) % zoneBrokerCount;
-          final var broker = spec.brokers().get(brokerIndex);
+          final var broker = zoneBrokers.get(brokerIndex);
           orderedMembers.add(broker);
           priorityMap.put(broker, priorityCounter--);
         }
@@ -135,6 +144,16 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     return result;
   }
 
+  private void validateMemberZones(final Set<MemberId> clusterMembers) {
+    for (final var member : clusterMembers) {
+      if (member.zone() == null) {
+        throw new IllegalStateException(
+            "ZoneAwarePartitionDistributor: member '%s' has no zone configured; all cluster members must have a zone"
+                .formatted(member));
+      }
+    }
+  }
+
   private void validateReplicaSum(final int replicationFactor) {
     final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
@@ -144,26 +163,13 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     }
   }
 
-  private void validateZoneSpecs() {
+  private void validateZoneHasSufficientBrokers(final Set<MemberId> clusterMembers) {
     for (final var spec : zoneSpecs) {
-      if (spec.numberOfReplicas() > spec.brokers().size()) {
+      final long zoneCount = clusterMembers.stream().filter(m -> m.isInZone(spec.name())).count();
+      if (zoneCount < spec.numberOfReplicas()) {
         throw new IllegalStateException(
-            ("ZoneAwarePartitionDistributor: zone '%s' has numberOfReplicas (%d) > brokers.size() (%d)"
-                    + " — each broker can hold at most one replica per partition")
-                .formatted(spec.name(), spec.numberOfReplicas(), spec.brokers().size()));
-      }
-    }
-  }
-
-  private void validateBrokerIds(final Set<MemberId> clusterMembers) {
-    for (final var spec : zoneSpecs) {
-      for (final var broker : spec.brokers()) {
-        if (!clusterMembers.contains(broker)) {
-          throw new IllegalStateException(
-              ("ZoneAwarePartitionDistributor: broker '%s' (zone '%s') is not present in "
-                      + "clusterMembers — the zone config may be out of sync with the actual cluster")
-                  .formatted(broker, spec.name()));
-        }
+            "ZoneAwarePartitionDistributor: zone '%s' needs %d replicas but only has %d broker(s) in clusterMembers"
+                .formatted(spec.name(), spec.numberOfReplicas(), zoneCount));
       }
     }
   }
@@ -172,15 +178,11 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
    * Describes a single zone's participation in the cluster.
    *
    * @param name the zone name (e.g. {@code "us-east1"})
-   * @param numberOfReplicas how many replicas of each partition are placed in this zone; must be
-   *     {@code <= brokers.size()}
+   * @param numberOfReplicas how many replicas of each partition are placed in this zone
    * @param priority the zone's preferred-leader ranking; higher values are preferred. Must be
    *     unique across all zones.
-   * @param brokers the ordered list of {@link MemberId}s belonging to this zone, in the same
-   *     insertion order as the configuration (i.e. local node IDs 0, 1, … within the zone)
    */
-  public record ZoneSpec(String name, int numberOfReplicas, int priority, List<MemberId> brokers) {
-
+  public record ZoneSpec(String name, int numberOfReplicas, int priority) {
     public ZoneSpec {
       if (name.isEmpty()) {
         throw new IllegalArgumentException(
@@ -193,16 +195,6 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       if (priority <= 0) {
         throw new IllegalArgumentException(
             "ZoneAwarePartitionDistributor: expected priority > 0, but got %d".formatted(priority));
-      }
-      if (brokers.isEmpty()) {
-        throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected at least one broker in zone '%s', but got empty list"
-                .formatted(name));
-      }
-      if (new HashSet<>(brokers).size() != brokers.size()) {
-        throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected brokers to not contain any duplicates, but was "
-                + brokers);
       }
     }
   }

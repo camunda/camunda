@@ -14,8 +14,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSpec;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -30,13 +33,33 @@ final class ZoneAwarePartitionDistributorTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(ZoneAwarePartitionDistributorTest.class);
   private static final String GROUP = "raft";
+  private static final TestConfig TWO_ZONES =
+      new TestConfig(
+          List.of(new ZoneSpec("us-east1", 2, 1000), new ZoneSpec("us-west1", 1, 500)),
+          3,
+          union(membersOf("us-east1", 2), membersOf("us-west1", 1)));
+  private static final TestConfig THREE_ZONES =
+      new TestConfig(
+          List.of(
+              new ZoneSpec("us-east1", 2, 1000),
+              new ZoneSpec("us-west1", 2, 500),
+              new ZoneSpec("eu-east1", 1, 10)),
+          5,
+          union(membersOf("us-east1", 2), membersOf("us-west1", 2), membersOf("eu-east1", 1)));
 
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
-  private static List<MemberId> brokers(final String region, final int count) {
-    return IntStream.range(0, count).mapToObj(i -> MemberId.from(region, i)).toList();
+  private static Set<MemberId> membersOf(final String zone, final int count) {
+    return IntStream.range(0, count)
+        .mapToObj(i -> MemberId.from(zone, i))
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  @SafeVarargs
+  private static Set<MemberId> union(final Set<MemberId>... sets) {
+    return Arrays.stream(sets).flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
   }
 
   private static List<PartitionId> partitions(final int count) {
@@ -44,12 +67,6 @@ final class ZoneAwarePartitionDistributorTest {
         .mapToObj(i -> PartitionId.from(GROUP, i))
         .sorted()
         .toList();
-  }
-
-  private static Set<MemberId> allBrokers(final List<ZoneSpec> specs) {
-    return specs.stream()
-        .flatMap(s -> s.brokers().stream())
-        .collect(java.util.stream.Collectors.toSet());
   }
 
   private static PartitionMetadata partitionById(
@@ -61,24 +78,11 @@ final class ZoneAwarePartitionDistributorTest {
   }
 
   // -------------------------------------------------------------------------
-  // Parameterized configurations: 2-zone (RF=2) and 3-zone (RF=5)
+  // Parameterized configurations: 2-zone (RF=4) and 3-zone (RF=5)
   // -------------------------------------------------------------------------
 
   private static Stream<Arguments> twoAndThreeZoneConfigs() {
-    final var twoZone =
-        new TestConfig(
-            List.of(
-                new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-                new ZoneSpec("us-west1", 1, 500, brokers("us-west1", 1))),
-            3);
-    final var threeZone =
-        new TestConfig(
-            List.of(
-                new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-                new ZoneSpec("us-west1", 2, 500, brokers("us-west1", 2)),
-                new ZoneSpec("euro-east1", 1, 10, brokers("euro-east1", 1))),
-            5);
-    return Stream.of(Arguments.of(twoZone), Arguments.of(threeZone));
+    return Stream.of(Arguments.of(TWO_ZONES), Arguments.of(THREE_ZONES));
   }
 
   @ParameterizedTest
@@ -89,7 +93,7 @@ final class ZoneAwarePartitionDistributorTest {
 
     // when
     final var result =
-        distributor.distributePartitions(allBrokers(config.specs()), partitions(5), config.rf());
+        distributor.distributePartitions(config.clusterMembers(), partitions(5), config.rf());
 
     // then
     assertThat(result).hasSize(5).allSatisfy(p -> assertThat(p.members()).hasSize(config.rf()));
@@ -107,7 +111,7 @@ final class ZoneAwarePartitionDistributorTest {
 
     // when
     final var result =
-        distributor.distributePartitions(allBrokers(config.specs()), partitions(4), config.rf());
+        distributor.distributePartitions(config.clusterMembers(), partitions(4), config.rf());
 
     // then — every partition ID appears exactly once
     final var assignedIds = result.stream().map(p -> p.id().id()).sorted().toList();
@@ -122,7 +126,7 @@ final class ZoneAwarePartitionDistributorTest {
 
     // when
     final var result =
-        distributor.distributePartitions(allBrokers(config.specs()), partitions(5), config.rf());
+        distributor.distributePartitions(config.clusterMembers(), partitions(5), config.rf());
 
     // then — Set<MemberId>.size() == members().size() iff no duplicates
     result.forEach(
@@ -140,7 +144,7 @@ final class ZoneAwarePartitionDistributorTest {
 
     // when
     final var result =
-        distributor.distributePartitions(allBrokers(config.specs()), partitions(3), config.rf());
+        distributor.distributePartitions(config.clusterMembers(), partitions(3), config.rf());
 
     // then — primary of every partition must be a broker from us-east1
     result.forEach(
@@ -159,7 +163,7 @@ final class ZoneAwarePartitionDistributorTest {
 
     // when
     final var result =
-        distributor.distributePartitions(allBrokers(config.specs()), partitions(3), config.rf());
+        distributor.distributePartitions(config.clusterMembers(), partitions(3), config.rf());
 
     // then
     result.forEach(p -> assertThat(p.getTargetPriority()).isEqualTo(config.rf()));
@@ -168,31 +172,27 @@ final class ZoneAwarePartitionDistributorTest {
   @Test
   void shouldAssignHighestRaftPriorityToHighestPriorityRegion() {
     // given
-    final int rf = 5;
-    final var specs =
-        List.of(
-            new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-            new ZoneSpec("us-west1", 2, 500, brokers("us-west1", 2)),
-            new ZoneSpec("euro-east1", 1, 10, brokers("euro-east1", 1)));
-    final var distributor = new ZoneAwarePartitionDistributor(specs);
+    final var distributor = new ZoneAwarePartitionDistributor(THREE_ZONES.specs());
 
     // when
-    final var result = distributor.distributePartitions(allBrokers(specs), partitions(1), rf);
+    final var result =
+        distributor.distributePartitions(
+            THREE_ZONES.clusterMembers(), partitions(1), THREE_ZONES.rf());
 
     // then — us-east1 brokers must have the two highest priorities (5 and 4)
     final var p1 = partitionById(result, 1);
-    final var eastPriorities =
-        specs.get(0).brokers().stream().mapToInt(p1::getPriority).boxed().toList();
-    assertThat(eastPriorities).containsExactlyInAnyOrder(rf, rf - 1);
+    final var eastBrokers = membersOf("us-east1", 2);
+    final var eastPriorities = eastBrokers.stream().mapToInt(p1::getPriority).boxed().toList();
+    assertThat(eastPriorities).containsExactlyInAnyOrder(THREE_ZONES.rf(), THREE_ZONES.rf() - 1);
 
     // us-west1 brokers have the next two (3 and 2)
-    final var westPriorities =
-        specs.get(1).brokers().stream().mapToInt(p1::getPriority).boxed().toList();
-    assertThat(westPriorities).containsExactlyInAnyOrder(rf - 2, rf - 3);
+    final var westBrokers = membersOf("us-west1", 2);
+    final var westPriorities = westBrokers.stream().mapToInt(p1::getPriority).boxed().toList();
+    assertThat(westPriorities)
+        .containsExactlyInAnyOrder(THREE_ZONES.rf() - 2, THREE_ZONES.rf() - 3);
 
-    // euro-east1 broker has the lowest priority (1)
-    final var euroPriority = p1.getPriority(specs.get(2).brokers().stream().findFirst().get());
-    assertThat(euroPriority).isEqualTo(1);
+    // eu-east1 broker has the lowest priority (1)
+    assertThat(p1.getPriority(MemberId.from("eu-east1", 0))).isEqualTo(1);
   }
 
   // -------------------------------------------------------------------------
@@ -202,13 +202,14 @@ final class ZoneAwarePartitionDistributorTest {
   @Test
   void shouldRoundRobinBrokersWithinRegionAcrossPartitions() {
     // given — one region, 2 brokers, 1 replica per partition
-    final var specs = List.of(new ZoneSpec("us-east1", 1, 1000, brokers("us-east1", 2)));
+    final var specs = List.of(new ZoneSpec("us-east1", 1, 1000));
+    final var clusterMembers = membersOf("us-east1", 2);
     final var distributor = new ZoneAwarePartitionDistributor(specs);
 
     // when
-    final var result = distributor.distributePartitions(allBrokers(specs), partitions(4), 1);
+    final var result = distributor.distributePartitions(clusterMembers, partitions(4), 1);
 
-    // then — partitions 1,3 → us-east1-0; partitions 2,4 → us-east1-1 (or vice versa)
+    // then — partitions 1,3 → us-east1/0; partitions 2,4 → us-east1/1 (or vice versa)
     final var p1Primary = partitionById(result, 1).getPrimary().orElseThrow();
     final var p2Primary = partitionById(result, 2).getPrimary().orElseThrow();
     final var p3Primary = partitionById(result, 3).getPrimary().orElseThrow();
@@ -223,27 +224,25 @@ final class ZoneAwarePartitionDistributorTest {
   // Round-robin within each region
   // -------------------------------------------------------------------------
 
-  @Test
-  void shouldShiftStartingBrokerPerPartitionWithinRegion() {
-    // given — us-east1 has 2 brokers and 2 replicas per partition
-    final var specs =
-        List.of(
-            new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-            new ZoneSpec("us-west1", 1, 500, brokers("us-west1", 1)));
-    final var distributor = new ZoneAwarePartitionDistributor(specs);
+  @ParameterizedTest
+  @MethodSource("twoAndThreeZoneConfigs")
+  void shouldShiftStartingBrokerPerPartitionWithinRegion(final TestConfig config) {
+    // given — us-east1 has 2 brokers and 2 replicas per partition in both configs
+    final var distributor = new ZoneAwarePartitionDistributor(config.specs());
 
     // when
-    final var result = distributor.distributePartitions(allBrokers(specs), partitions(2), 3);
+    final var result =
+        distributor.distributePartitions(config.clusterMembers(), partitions(2), config.rf());
 
-    // then — for partition 1 the highest-priority east broker is us-east1-0,
-    //        for partition 2 it is us-east1-1 (offset shifts by 1)
+    // then — for partition 1 the highest-priority east broker is us-east1/0,
+    //        for partition 2 it is us-east1/1 (offset shifts by 1)
     final var p1 = partitionById(result, 1);
     final var p2 = partitionById(result, 2);
 
     assertThat(p1.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 0));
     assertThat(p2.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 1));
 
-    // us-west1 has only one broker (id=0); the round-robin offset must not produce id=1
+    // us-west1/0 is always assigned regardless of zone size or round-robin offset
     assertThat(p1.members()).contains(MemberId.from("us-west1", 0));
     assertThat(p2.members()).contains(MemberId.from("us-west1", 0));
   }
@@ -251,18 +250,19 @@ final class ZoneAwarePartitionDistributorTest {
   @Test
   void shouldBehaveCorrectlyWithSingleRegion() {
     // given
-    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000, brokers("us-east1", 3)));
+    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000));
+    final var clusterMembers = membersOf("us-east1", 3);
     final var distributor = new ZoneAwarePartitionDistributor(specs);
 
     // when
-    final var result = distributor.distributePartitions(allBrokers(specs), partitions(3), 3);
+    final var result = distributor.distributePartitions(clusterMembers, partitions(3), 3);
 
-    // then — distribution is identical a one region round-robin
-    final var roundRobinResult =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(allBrokers(specs), partitions(3), 3);
-
-    assertThat(roundRobinResult).isEqualTo(result);
+    // then — every partition has 3 members, all from us-east1
+    result.forEach(
+        p -> {
+          assertThat(p.members()).hasSize(3);
+          p.members().forEach(m -> assertThat(m.zone()).isEqualTo("us-east1"));
+        });
   }
 
   // -------------------------------------------------------------------------
@@ -271,8 +271,7 @@ final class ZoneAwarePartitionDistributorTest {
 
   @Test
   void shouldThrowWhenZoneNameIsEmpty() {
-    // given / when / then
-    assertThatThrownBy(() -> new ZoneSpec("", 1, 1000, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("", 1, 1000))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name");
   }
@@ -283,98 +282,82 @@ final class ZoneAwarePartitionDistributorTest {
 
   @Test
   void shouldThrowWhenNumberOfReplicasIsZero() {
-    // given / when / then
-    assertThatThrownBy(
-            () -> new ZoneSpec("us-east1", 0, 1000, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 0, 1000))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("numberOfReplicas");
   }
 
   @Test
   void shouldThrowWhenPriorityIsZero() {
-    // given / when / then
-    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, 0, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, 0))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("priority");
   }
 
   @Test
   void shouldThrowWhenPriorityIsNegative() {
-    // given / when / then
-    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, -1, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, -1))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("priority");
   }
 
   @Test
-  void shouldThrowWhenBrokersListIsEmpty() {
-    // given / when / then
-    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, 1000, List.of()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("us-east1");
-  }
-
-  @Test
-  void shouldThrowWhenReplicaSumDoesNotMatchReplicationFactor() {
-    // given — 2 + 1 = 3 replicas but RF = 4
-    final var specs =
-        List.of(
-            new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-            new ZoneSpec("us-west1", 1, 500, brokers("us-west1", 1)));
+  void shouldThrowWhenMemberHasNoZone() {
+    // given — bare member id (no zone)
+    final var specs = List.of(new ZoneSpec("us-east1", 1, 1000));
     final var distributor = new ZoneAwarePartitionDistributor(specs);
+    final Set<MemberId> bareMembers = Set.of(MemberId.from("0"));
 
     // when / then
-    assertThatThrownBy(() -> distributor.distributePartitions(allBrokers(specs), partitions(1), 4))
+    assertThatThrownBy(() -> distributor.distributePartitions(bareMembers, partitions(1), 1))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("replicationFactor");
+        .hasMessageContaining("no zone");
   }
 
   // -------------------------------------------------------------------------
   // Guard / validation
   // -------------------------------------------------------------------------
 
-  @Test
-  void shouldThrowWhenNumberOfReplicasExceedsBrokerCount() {
-    // given — zone declares 3 replicas but only has 2 brokers
-    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000, brokers("us-east1", 2)));
-    final var distributor = new ZoneAwarePartitionDistributor(specs);
+  @ParameterizedTest
+  @MethodSource("twoAndThreeZoneConfigs")
+  void shouldThrowWhenReplicaSumDoesNotMatchReplicationFactor(final TestConfig config) {
+    // given — passing RF != config.rf() should fail
+    final var distributor = new ZoneAwarePartitionDistributor(config.specs());
 
     // when / then
-    assertThatThrownBy(() -> distributor.distributePartitions(allBrokers(specs), partitions(1), 3))
+    assertThatThrownBy(
+            () ->
+                distributor.distributePartitions(
+                    config.clusterMembers(), partitions(1), config.rf() + 1))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("us-east1")
-        .hasMessageContaining("numberOfReplicas");
+        .hasMessageContaining("replicationFactor");
   }
 
   @Test
-  void shouldThrowWhenBrokerNotInClusterMembers() {
-    // given — spec declares 2 brokers but we only pass 1 to distributePartitions
-    final var specs = List.of(new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)));
+  void shouldThrowWhenZoneHasFewerBrokersThanReplicas() {
+    // given — zone declares 3 replicas but clusterMembers only has 2 in that zone
+    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000));
     final var distributor = new ZoneAwarePartitionDistributor(specs);
-    final Set<MemberId> onlyOneBroker = Set.of(MemberId.from("us-east1", 0));
+    final var clusterMembers = membersOf("us-east1", 2);
 
     // when / then
-    assertThatThrownBy(() -> distributor.distributePartitions(onlyOneBroker, partitions(1), 2))
+    assertThatThrownBy(() -> distributor.distributePartitions(clusterMembers, partitions(1), 3))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("us-east1/1");
+        .hasMessageContaining("us-east1");
   }
 
-  @Test
-  void shouldPrintPriorityTableForDocumentedExample() {
-    // given — the 3-region, 5-partition example from the class-level Javadoc
-    final var specs =
-        List.of(
-            new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
-            new ZoneSpec("us-west1", 2, 500, brokers("us-west1", 2)),
-            new ZoneSpec("euro-east1", 1, 10, brokers("euro-east1", 1)));
-    final int rf = 5;
-    final var distributor = new ZoneAwarePartitionDistributor(specs);
+  @ParameterizedTest
+  @MethodSource("twoAndThreeZoneConfigs")
+  void shouldPrintPriorityTable(final TestConfig config) {
+    // given
+    final var distributor = new ZoneAwarePartitionDistributor(config.specs());
 
     // when
-    final var result = distributor.distributePartitions(allBrokers(specs), partitions(5), rf);
+    final var result =
+        distributor.distributePartitions(config.clusterMembers(), partitions(5), config.rf());
 
     // then — table is printed to the logs; this test acts as a visual smoke-check
-    logPriorityTable(result, specs);
+    logPriorityTable(result, config.specs(), config.clusterMembers());
     assertThat(result).hasSize(5);
   }
 
@@ -384,23 +367,24 @@ final class ZoneAwarePartitionDistributorTest {
 
   /**
    * Logs a Markdown-style table showing the Raft election priority of every broker for every
-   * partition. Columns are ordered by region (highest priority region first) and then by local
-   * broker index within the region. The broker with priority {@code targetPriority} (==
-   * replicationFactor) is the preferred leader for that partition.
-   *
-   * <p>Example output:
-   *
-   * <pre>
-   * Partition \ Broker | us-east1-0 | us-east1-1 | us-west1-0 | us-west1-1 | euro-east1-0
-   * -------------------|------------|------------|------------|------------|--------------
-   *                  1 |     5      |     4      |     3      |     2      |      1
-   *                  2 |     4      |     5      |     2      |     3      |      1
-   * </pre>
+   * partition. Columns are ordered by zone (highest priority first, matching spec order) then by
+   * local broker index. The broker with priority {@code targetPriority} (== replicationFactor) is
+   * the preferred leader for that partition.
    */
   private static void logPriorityTable(
-      final Set<PartitionMetadata> result, final List<ZoneSpec> specs) {
-    // Collect all brokers in deterministic column order (region declaration order, then local id)
-    final List<MemberId> columns = specs.stream().flatMap(s -> s.brokers().stream()).toList();
+      final Set<PartitionMetadata> result,
+      final List<ZoneSpec> specs,
+      final Set<MemberId> clusterMembers) {
+    // Columns: zones in spec order (already sorted by priority desc), brokers within each zone
+    // sorted by nodeIdx
+    final List<MemberId> columns =
+        specs.stream()
+            .<MemberId>flatMap(
+                s ->
+                    clusterMembers.stream()
+                        .filter(m -> m.isInZone(s.name()))
+                        .sorted(Comparator.comparingInt(MemberId::nodeIdx)))
+            .toList();
 
     // Sort partitions by numeric id for stable row order
     final List<PartitionMetadata> rows =
@@ -458,5 +442,5 @@ final class ZoneAwarePartitionDistributorTest {
     return " ".repeat(left) + s + " ".repeat(right);
   }
 
-  private record TestConfig(List<ZoneSpec> specs, int rf) {}
+  private record TestConfig(List<ZoneSpec> specs, int rf, Set<MemberId> clusterMembers) {}
 }
