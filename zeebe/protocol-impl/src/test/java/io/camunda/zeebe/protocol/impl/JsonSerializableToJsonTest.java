@@ -4742,7 +4742,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionVersion": -1,
           "versionTag": "",
           "tenantId": "<default>",
-          "status": "INITIALIZING",
+          "status": "UNSPECIFIED",
           "definition": { "model": "", "provider": "", "systemPrompt": "" },
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
