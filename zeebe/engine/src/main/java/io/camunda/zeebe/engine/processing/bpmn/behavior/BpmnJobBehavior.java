@@ -150,6 +150,10 @@ public final class BpmnJobBehavior {
         .flatMap(
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         .flatMap(
+            p ->
+                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                    .map(p::priority))
+        .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
@@ -520,6 +524,16 @@ public final class BpmnJobBehavior {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
+  private Either<Failure, Integer> evalPriorityExp(
+      final Expression priority, final long scopeKey, final String tenantId) {
+    if (priority == null) {
+      return Either.right(0);
+    }
+    return expressionBehavior
+        .evaluateLongExpression(priority, scopeKey, tenantId)
+        .map(Long::intValue);
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final JobProperties props,
@@ -543,6 +557,7 @@ public final class BpmnJobBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setTags(getTagsFromProcessInstance(context))
+        .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
@@ -663,6 +678,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
+    private int priority;
     private List<LinkedResourceProps> linkedResources;
 
     public JobProperties type(final String type) {
@@ -744,6 +760,15 @@ public final class BpmnJobBehavior {
 
     public List<LinkedResourceProps> getLinkedResources() {
       return linkedResources;
+    }
+
+    public JobProperties priority(final int priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public int getPriority() {
+      return priority;
     }
   }
 
