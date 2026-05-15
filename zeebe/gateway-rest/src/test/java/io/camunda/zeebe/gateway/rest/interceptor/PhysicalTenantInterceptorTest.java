@@ -33,9 +33,10 @@ class PhysicalTenantInterceptorTest {
   }
 
   @Test
-  void shouldDefaultWhenNoUriVariablesAttribute() throws Exception {
-    // given: no URI_TEMPLATE_VARIABLES_ATTRIBUTE present at all
-    final var interceptor = new PhysicalTenantInterceptor(id -> false);
+  void shouldDefaultWhenEmptyUriVariablesAttribute() throws Exception {
+    // given
+    request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, Map.of());
+    final var interceptor = new PhysicalTenantInterceptor(id -> true);
 
     // when
     final boolean proceed = interceptor.preHandle(request, response, new Object());
@@ -51,7 +52,7 @@ class PhysicalTenantInterceptorTest {
   void shouldDefaultWhenUriVariablesMissTenantKey() throws Exception {
     // given
     request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, Map.of("foo", "bar"));
-    final var interceptor = new PhysicalTenantInterceptor(id -> false);
+    final var interceptor = new PhysicalTenantInterceptor(id -> true);
 
     // when
     final boolean proceed = interceptor.preHandle(request, response, new Object());
