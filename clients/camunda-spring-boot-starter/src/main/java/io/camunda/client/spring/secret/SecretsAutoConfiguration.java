@@ -16,15 +16,16 @@
 package io.camunda.client.spring.secret;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.secret.SecretsClient;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.secret.SecretResolvingJsonMapper;
-import io.camunda.client.spring.properties.CamundaClientProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 /**
@@ -33,7 +34,9 @@ import org.springframework.context.annotation.Primary;
  *
  * <p>When enabled, a {@link SecretResolvingJsonMapper} is registered as the primary {@link
  * JsonMapper}; it wraps the default {@link CamundaObjectMapper} and resolves {@code
- * camunda.secrets.*} references against the gateway on each variable deserialization.
+ * camunda.secrets.*} references on each variable deserialization by delegating to {@link
+ * CamundaClient#newSecretResolveCommand()}. The {@link CamundaClient} is injected lazily to avoid a
+ * circular dependency between the client and the mapper it uses.
  */
 @AutoConfiguration
 @ConditionalOnProperty(
@@ -44,8 +47,8 @@ public class SecretsAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public SecretsClient secretsClient(final CamundaClientProperties properties) {
-    return new HttpSecretsClient(properties.getRestAddress());
+  public SecretsClient secretsClient(@Lazy final CamundaClient camundaClient) {
+    return SecretsClient.fromCamundaClient(camundaClient);
   }
 
   @Bean

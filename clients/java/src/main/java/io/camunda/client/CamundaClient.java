@@ -74,6 +74,7 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.SecretResolveCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
@@ -448,6 +449,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   SetVariablesCommandStep1 newSetVariablesCommand(long elementInstanceKey);
+
+  /**
+   * Command to resolve {@code camunda.secrets.*} references against the gateway's configured secret
+   * stores. Only successfully resolved entries are returned; missing or malformed references are
+   * silently omitted.
+   *
+   * <pre>
+   * camundaClient
+   *  .newSecretResolveCommand()
+   *  .references("camunda.secrets.STRIPE_API_KEY")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  SecretResolveCommandStep1 newSecretResolveCommand();
 
   /**
    * Command to evaluate a decision.
