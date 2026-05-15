@@ -25,7 +25,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const requiredJavaMajorVersion = 21
+const (
+	bundledJavaMajorVersion = 25
+	helperJavaRelease       = 21
+)
 
 var conservativeJREModules = []string{
 	// jdeps cannot see provider and locale modules loaded indirectly at runtime.
@@ -35,7 +38,16 @@ var conservativeJREModules = []string{
 	"jdk.zipfs",
 }
 
-func Clean(camundaVersion string) {
+var runtimeProviderJREModules = []string{
+	// The connectors runtime is a Spring Boot fat JAR. Running jdeps on it is prohibitively slow,
+	// so keep provider modules that are commonly resolved indirectly at runtime explicit.
+	"java.management.rmi",
+	"java.xml.crypto",
+	"jdk.management.agent",
+	"jdk.naming.dns",
+}
+
+func Clean(camundaVersion, connectorJarToKeep string) {
 	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
 	// picked up by later packaging runs after Elasticsearch was removed from the distribution.
 	legacyElasticsearchArtifacts, err := filepath.Glob("elasticsearch-*")
@@ -91,6 +103,9 @@ func Clean(camundaVersion string) {
 		log.Error().Err(err).Msg("failed to discover connector jars")
 	} else {
 		for _, jar := range connectorJars {
+			if jar == connectorJarToKeep {
+				continue
+			}
 			if err := os.Remove(jar); err != nil && !errors.Is(err, os.ErrNotExist) {
 				log.Error().Err(err).Str("file", jar).Msg("failed to remove connector jar")
 			}
@@ -224,7 +239,7 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-	javaVersionCmd := exec.Command("javac", "JavaVersion.java")
+	javaVersionCmd := exec.Command("javac", buildJavaHelperArgs("JavaVersion.java")...)
 	var out strings.Builder
 	var stderr strings.Builder
 	javaVersionCmd.Stdout = &out
@@ -233,7 +248,7 @@ func BuildJavaScripts() error {
 	if err != nil {
 		return fmt.Errorf("failed to compile JavaVersion : %w", err)
 	}
-	javaHomeCmd := exec.Command("javac", "JavaHome.java")
+	javaHomeCmd := exec.Command("javac", buildJavaHelperArgs("JavaHome.java")...)
 	javaHomeCmd.Stdout = &out
 	javaHomeCmd.Stderr = &stderr
 	err = javaHomeCmd.Run()
@@ -243,12 +258,16 @@ func BuildJavaScripts() error {
 	return nil
 }
 
-func BuildJRE(camundaVersion, connectorsFilePath string) error {
+func buildJavaHelperArgs(sourceFile string) []string {
+	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
+}
+
+func BuildJRE(camundaVersion, _ string) error {
 	if err := ensureJLinkVersion(); err != nil {
 		return err
 	}
 
-	modules, err := detectRequiredJREModules(camundaVersion, connectorsFilePath)
+	modules, err := detectRequiredJREModules(camundaVersion)
 	if err != nil {
 		return err
 	}
@@ -281,20 +300,20 @@ func ensureJLinkVersion() error {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to run jlink --version; install a JDK %d or newer to package C8Run: %w\n%s", requiredJavaMajorVersion, err, stderr.String())
+		return fmt.Errorf("failed to run jlink --version; install a JDK %d or newer to package C8Run: %w\n%s", bundledJavaMajorVersion, err, stderr.String())
 	}
 
 	majorVersion, err := parseJavaMajorVersion(out.String())
 	if err != nil {
 		return fmt.Errorf("failed to parse jlink version %q: %w", strings.TrimSpace(out.String()), err)
 	}
-	if majorVersion < requiredJavaMajorVersion {
-		return fmt.Errorf("jlink version %d is too old; install a JDK %d or newer to package C8Run", majorVersion, requiredJavaMajorVersion)
+	if majorVersion < bundledJavaMajorVersion {
+		return fmt.Errorf("jlink version %d is too old; install a JDK %d or newer to package C8Run", majorVersion, bundledJavaMajorVersion)
 	}
 	return nil
 }
 
-func detectRequiredJREModules(camundaVersion, connectorsFilePath string) ([]string, error) {
+func detectRequiredJREModules(camundaVersion string) ([]string, error) {
 	camundaHome := "camunda-zeebe-" + camundaVersion
 	camundaLibDir := filepath.Join(camundaHome, "lib")
 	camundaJar := filepath.Join(camundaLibDir, "camunda-zeebe-"+camundaVersion+".jar")
@@ -302,27 +321,15 @@ func detectRequiredJREModules(camundaVersion, connectorsFilePath string) ([]stri
 	if _, err := os.Stat(camundaJar); err != nil {
 		return nil, fmt.Errorf("failed to locate Camunda distribution JAR %s: %w", camundaJar, err)
 	}
-	if _, err := os.Stat(connectorsFilePath); err != nil {
-		return nil, fmt.Errorf("failed to locate connectors runtime JAR %s: %w", connectorsFilePath, err)
-	}
-
-	classPath := strings.Join(
-		[]string{
-			filepath.Join(camundaLibDir, "*"),
-			connectorsFilePath,
-		},
-		string(os.PathListSeparator),
-	)
 
 	args := []string{
 		"--ignore-missing-deps",
 		"--multi-release",
-		strconv.Itoa(requiredJavaMajorVersion),
+		strconv.Itoa(bundledJavaMajorVersion),
 		"--print-module-deps",
 		"--class-path",
-		classPath,
+		filepath.Join(camundaLibDir, "*"),
 		camundaJar,
-		connectorsFilePath,
 	}
 	jdepsCmd := exec.Command("jdeps", args...)
 	var out strings.Builder
@@ -333,7 +340,7 @@ func detectRequiredJREModules(camundaVersion, connectorsFilePath string) ([]stri
 		return nil, fmt.Errorf("failed to determine JRE modules with jdeps: %w\n%s", err, stderr.String())
 	}
 
-	modules := mergeModules(parseJDepsModuleOutput(out.String()), conservativeJREModules)
+	modules := mergeModules(parseJDepsModuleOutput(out.String()), conservativeJREModules, runtimeProviderJREModules)
 	if len(modules) == 0 {
 		return nil, fmt.Errorf("jdeps did not report any JRE modules")
 	}
@@ -467,7 +474,7 @@ func New(camundaVersion, connectorsVersion string) error {
 		os.Exit(1)
 	}
 
-	Clean(camundaVersion)
+	Clean(camundaVersion, connectorsFilePath)
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {

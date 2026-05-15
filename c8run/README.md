@@ -26,10 +26,11 @@ Only CI checks related to C8Run (those with "c8run" in the name) and CI runs mar
 
 ## Build C8run locally
 
-### 1. Install Go and JDK 21+
+### 1. Install Go and JDK 25+
 
 Go **1.25 or newer** is required (the `go.mod` minimum). Verify any existing installation with `go version`.
-A JDK **21 or newer** is required to package C8Run locally because the packager compiles helper classes and creates the bundled JRE with `jdeps` and `jlink`.
+A JDK **25 or newer** is required to package C8Run locally because the packager creates the bundled Java 25 JRE with `jdeps` and `jlink`.
+The packaged runtime still falls back to a user-provided JDK 21+ when the bundled `jre/` directory is absent.
 
 ### 2. Configure LDAP credentials in `.env`
 

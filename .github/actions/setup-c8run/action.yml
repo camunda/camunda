@@ -99,11 +99,6 @@ runs:
         go-version: ">=1.23.1"
         cache: false # disabling since not working anyways without a cache-dependency-path specified
 
-    - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
-      with:
-        distribution: "temurin"
-        java-version: "21"
-
     - uses: ./.github/actions/setup-build
       if: ${{ inputs.source-build == 'true' }}
       with:
@@ -164,6 +159,12 @@ runs:
       run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
       shell: bash
       working-directory: ./c8run
+
+    - name: Set up Java 25 for C8Run packaging
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: "temurin"
+        java-version: "25"
 
     - name: Build c8run
       run: go build -o c8run ./cmd/c8run

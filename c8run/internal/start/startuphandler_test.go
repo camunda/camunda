@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -211,5 +212,96 @@ func TestConfigureJavaRuntimeEnvironment(t *testing.T) {
 	}
 	if os.Getenv("JAVACMD") != expectedJavaCmd {
 		t.Fatalf("expected JAVACMD %s, got %s", expectedJavaCmd, os.Getenv("JAVACMD"))
+	}
+}
+
+func TestParseJavaMajorVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		version         string
+		expectedVersion int
+	}{
+		{
+			name:            "modern version",
+			version:         "25.0.1",
+			expectedVersion: 25,
+		},
+		{
+			name:            "early access version",
+			version:         "25-ea",
+			expectedVersion: 25,
+		},
+		{
+			name:            "legacy version",
+			version:         "1.8.0_412",
+			expectedVersion: 8,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// when
+			actualVersion, err := parseJavaMajorVersion(tt.version)
+
+			// then
+			if err != nil {
+				t.Fatalf("parseJavaMajorVersion returned error: %v", err)
+			}
+			if actualVersion != tt.expectedVersion {
+				t.Fatalf("expected Java major version %d, got %d", tt.expectedVersion, actualVersion)
+			}
+		})
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsAddsJava25Options(t *testing.T) {
+	// given
+	t.Setenv(jdkJavaOptionsEnvironment, "-Dexisting=true")
+
+	// when
+	err := configureJavaCompatibilityOptions(25)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	actualOptions := os.Getenv(jdkJavaOptionsEnvironment)
+	for _, expectedOption := range []string{"-Dexisting=true", "--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow"} {
+		if !strings.Contains(actualOptions, expectedOption) {
+			t.Fatalf("expected %s in %s", expectedOption, actualOptions)
+		}
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsSkipsOlderJavaVersions(t *testing.T) {
+	// given
+	t.Setenv(jdkJavaOptionsEnvironment, "-Dexisting=true")
+
+	// when
+	err := configureJavaCompatibilityOptions(21)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	if os.Getenv(jdkJavaOptionsEnvironment) != "-Dexisting=true" {
+		t.Fatalf("expected existing options to be unchanged, got %s", os.Getenv(jdkJavaOptionsEnvironment))
+	}
+}
+
+func TestConfigureJavaCompatibilityOptionsDoesNotDuplicateJava25Options(t *testing.T) {
+	// given
+	options := "--enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
+	t.Setenv(jdkJavaOptionsEnvironment, options)
+
+	// when
+	err := configureJavaCompatibilityOptions(25)
+
+	// then
+	if err != nil {
+		t.Fatalf("configureJavaCompatibilityOptions returned error: %v", err)
+	}
+	if os.Getenv(jdkJavaOptionsEnvironment) != options {
+		t.Fatalf("expected options to be unchanged, got %s", os.Getenv(jdkJavaOptionsEnvironment))
 	}
 }

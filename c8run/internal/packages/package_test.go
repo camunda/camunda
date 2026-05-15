@@ -89,6 +89,54 @@ func TestBuildJLinkArgsUsesConservativeCompression(t *testing.T) {
 	}
 }
 
+func TestBuildJavaHelperArgsUsesJava21Release(t *testing.T) {
+	// when
+	args := buildJavaHelperArgs("JavaVersion.java")
+
+	// then
+	expectedArgs := []string{"--release", "21", "JavaVersion.java"}
+	if !reflect.DeepEqual(args, expectedArgs) {
+		t.Fatalf("expected javac args %v, got %v", expectedArgs, args)
+	}
+}
+
+func TestCleanPreservesRequestedConnectorJar(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to change working directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	connectorJarToKeep := "connector-runtime-bundle-8.8.0-alpha5-with-dependencies.jar"
+	staleConnectorJar := "connector-runtime-bundle-8.7.0-with-dependencies.jar"
+	if err := os.WriteFile(connectorJarToKeep, []byte("current"), 0o644); err != nil {
+		t.Fatalf("failed to write current connector jar: %v", err)
+	}
+	if err := os.WriteFile(staleConnectorJar, []byte("stale"), 0o644); err != nil {
+		t.Fatalf("failed to write stale connector jar: %v", err)
+	}
+
+	// when
+	Clean("8.8.0-alpha5", connectorJarToKeep)
+
+	// then
+	if _, err := os.Stat(connectorJarToKeep); err != nil {
+		t.Fatalf("expected current connector jar to be preserved: %v", err)
+	}
+	if _, err := os.Stat(staleConnectorJar); !os.IsNotExist(err) {
+		t.Fatalf("expected stale connector jar to be removed, stat error: %v", err)
+	}
+}
+
 func TestGetFilesToArchiveIncludesBundledJRE(t *testing.T) {
 	// when
 	files := getFilesToArchive("linux", "connector-runtime-bundle-test-with-dependencies.jar", "8.10.0-alpha1")
@@ -103,12 +151,22 @@ func TestGetFilesToArchiveIncludesBundledJRE(t *testing.T) {
 	t.Fatalf("expected files to archive to include %s, got %v", expectedJREPath, files)
 }
 
-func TestMergeModulesAddsConservativeJREModules(t *testing.T) {
+func TestMergeModulesAddsRuntimeJREModules(t *testing.T) {
 	// when
-	modules := mergeModules([]string{"java.base"}, conservativeJREModules)
+	modules := mergeModules([]string{"java.base"}, conservativeJREModules, runtimeProviderJREModules)
 
 	// then
-	for _, expectedModule := range []string{"java.base", "jdk.charsets", "jdk.crypto.ec", "jdk.localedata", "jdk.zipfs"} {
+	for _, expectedModule := range []string{
+		"java.base",
+		"java.management.rmi",
+		"java.xml.crypto",
+		"jdk.charsets",
+		"jdk.crypto.ec",
+		"jdk.localedata",
+		"jdk.management.agent",
+		"jdk.naming.dns",
+		"jdk.zipfs",
+	} {
 		found := false
 		for _, module := range modules {
 			if module == expectedModule {

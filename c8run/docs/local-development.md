@@ -4,13 +4,13 @@ C8Run lets internal developers run the Orchestration Cluster locally for rapid d
 
 ## Prerequisites
 
-|   Requirement    |                                                                        Notes                                                                         |
-|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **JDK**          | `JAVA_HOME` must be set. Supported range depends on the version: **8.8 and earlier** require OpenJDK 21–23; **8.9 and later** support OpenJDK 21–25. |
-| **Go**           | 1.25+ (see `go.mod`)                                                                                                                                 |
-| **Maven**        | Configured with Camunda Nexus access (required when testing local code changes)                                                                      |
-| **JFrog access** | Required for downloading artifacts                                                                                                                   |
-| **Camunda repo** | `camunda/camunda` cloned locally                                                                                                                     |
+|   Requirement    |                                                                                                                              Notes                                                                                                                              |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **JDK**          | `JAVA_HOME` must be set. Packaging C8Run requires JDK 25+ so `jlink` creates the bundled Java 25 runtime. Running without a bundled `jre/` still follows the version range: **8.8 and earlier** require OpenJDK 21–23; **8.9 and later** support OpenJDK 21–25. |
+| **Go**           | 1.25+ (see `go.mod`)                                                                                                                                                                                                                                            |
+| **Maven**        | Configured with Camunda Nexus access (required when testing local code changes)                                                                                                                                                                                 |
+| **JFrog access** | Required for downloading artifacts                                                                                                                                                                                                                              |
+| **Camunda repo** | `camunda/camunda` cloned locally                                                                                                                                                                                                                                |
 
 ### Nexus credentials
 
