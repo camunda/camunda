@@ -126,4 +126,14 @@ public final class AgentInstanceClient {
             AgentInstanceIntent.CREATE, record, authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
   }
+
+  public Record<AgentInstanceRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(
+            AgentInstanceIntent.CREATE,
+            username,
+            record,
+            authorizedTenantIds.toArray(new String[0]));
+    return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
+  }
 }
