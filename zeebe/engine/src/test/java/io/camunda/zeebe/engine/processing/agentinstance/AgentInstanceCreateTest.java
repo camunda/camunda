@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -298,7 +299,7 @@ public class AgentInstanceCreateTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(Map.of("items", java.util.List.of("a", "b")))
+            .withVariables(Map.of("items", List.of("a", "b")))
             .create();
 
     final var children =
@@ -321,6 +322,40 @@ public class AgentInstanceCreateTest {
     assertThat(secondAgent.getValue().getElementInstanceKey()).isEqualTo(children.get(1).getKey());
     assertThat(secondAgent.getValue().getAgentInstanceKey())
         .isNotEqualTo(firstAgent.getValue().getAgentInstanceKey());
+  }
+
+  @Test
+  public void shouldTreatSecondCreateForSameElementInstanceAsIdempotentSuccess() {
+    // given -- only one agent instance can exist per element instance; the public API has no 409.
+    // The engine short-circuits a second CREATE: a rejection lands on the stream (suppressing a
+    // second CREATED event), and the client response carries the existing record.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when
+    final var first =
+        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+    final var secondRejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .expectRejection()
+            .create();
+
+    // then -- the second CREATE is rejected on the stream with ALREADY_EXISTS.
+    assertThat(secondRejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(secondRejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(secondRejection.getRejectionReason())
+        .contains(String.valueOf(first.getValue().getAgentInstanceKey()));
   }
 
   @Test
@@ -364,7 +399,7 @@ public class AgentInstanceCreateTest {
             .getFirst();
 
     // when
-    final io.camunda.zeebe.protocol.record.Record<?> rejection =
+    final Record<?> rejection =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(userTaskInstance.getKey())
@@ -393,7 +428,7 @@ public class AgentInstanceCreateTest {
     awaitServiceTaskActivated(processInstanceKey);
 
     // when -- use the process instance key (the root PROCESS element instance) as the target.
-    final io.camunda.zeebe.protocol.record.Record<?> rejection =
+    final Record<?> rejection =
         ENGINE
             .agentInstances()
             .withElementInstanceKey(processInstanceKey)
