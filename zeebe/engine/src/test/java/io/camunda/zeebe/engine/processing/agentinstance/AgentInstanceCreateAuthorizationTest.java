@@ -19,13 +19,16 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -41,6 +44,7 @@ public final class AgentInstanceCreateAuthorizationTest {
 
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_ID = "service-task";
+  private static final String CUSTOM_TENANT = "custom-tenant";
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -55,18 +59,29 @@ public final class AgentInstanceCreateAuthorizationTest {
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                cfg.getInitialization()
+                    .getDefaultRoles()
+                    .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getMultiTenancy().setChecksEnabled(true);
+              });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void before() {
+    engine.tenant().newTenant().withTenantId(CUSTOM_TENANT).withName("Custom Tenant").create();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, DEFAULT_USER.getUsername());
+    assignUserToTenant(CUSTOM_TENANT, DEFAULT_USER.getUsername());
+  }
 
   @Test
   public void shouldAuthorizeWithUpdateProcessInstancePermission() {
     // given - a user with explicit UPDATE_PROCESS_INSTANCE on the parent PROCESS_DEFINITION
-    final var elementInstanceKey = deployAndStartProcess();
+    final var elementInstanceKey =
+        deployAndStartProcessUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
@@ -87,9 +102,11 @@ public final class AgentInstanceCreateAuthorizationTest {
 
   @Test
   public void shouldRejectWhenCallerNotAuthorized() {
-    // given - a user without any permissions
-    final var elementInstanceKey = deployAndStartProcess();
+    // given - a user assigned to the resource's tenant but without any permissions
+    final var elementInstanceKey =
+        deployAndStartProcessUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
 
     // when
     engine
@@ -107,7 +124,38 @@ public final class AgentInstanceCreateAuthorizationTest {
         .isEqualTo(RejectionType.FORBIDDEN);
   }
 
-  private long deployAndStartProcess() {
+  @Test
+  public void shouldRejectWhenAuthorizedTenantsExcludeElementInstanceTenant() {
+    // given - process deployed/started under CUSTOM_TENANT, caller has UPDATE_PROCESS_INSTANCE on
+    // the process id but is only assigned to DEFAULT_TENANT
+    final var elementInstanceKey = deployAndStartProcessUnderTenant(CUSTOM_TENANT);
+    final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    engine
+        .agentInstances()
+        .withElementInstanceKey(elementInstanceKey)
+        .withAuthorizedTenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // then - tenant denial on an existing PROCESS_DEFINITION forwards as NOT_FOUND
+    assertThat(
+            RecordingExporter.agentInstanceRecords()
+                .onlyCommandRejections()
+                .getFirst()
+                .getRejectionType())
+        .isEqualTo(RejectionType.NOT_FOUND);
+  }
+
+  private long deployAndStartProcessUnderTenant(final String tenantId) {
     engine
         .deployment()
         .withXmlResource(
@@ -116,15 +164,29 @@ public final class AgentInstanceCreateAuthorizationTest {
                 .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
                 .endEvent()
                 .done())
+        .withTenantId(tenantId)
         .deploy(DEFAULT_USER.getUsername());
     final long processInstanceKey =
-        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withTenantId(tenantId)
+            .create(DEFAULT_USER.getUsername());
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.SERVICE_TASK)
         .withElementId(SERVICE_TASK_ID)
         .getFirst()
         .getKey();
+  }
+
+  private void assignUserToTenant(final String tenantId, final String username) {
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
   }
 
   private UserRecordValue createUser() {
