@@ -68,9 +68,9 @@ final class ZoneAwarePartitionDistributorTest {
     final var twoZone =
         new TestConfig(
             List.of(
-                new ZoneSpec("us-east1", 1, 1000, brokers("us-east1", 1)),
+                new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
                 new ZoneSpec("us-west1", 1, 500, brokers("us-west1", 1))),
-            4);
+            3);
     final var threeZone =
         new TestConfig(
             List.of(
@@ -242,6 +242,10 @@ final class ZoneAwarePartitionDistributorTest {
 
     assertThat(p1.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 0));
     assertThat(p2.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 1));
+
+    // us-west1 has only one broker (id=0); the round-robin offset must not produce id=1
+    assertThat(p1.members()).contains(MemberId.from("us-west1", 0));
+    assertThat(p2.members()).contains(MemberId.from("us-west1", 0));
   }
 
   @Test
@@ -253,12 +257,12 @@ final class ZoneAwarePartitionDistributorTest {
     // when
     final var result = distributor.distributePartitions(allBrokers(specs), partitions(3), 3);
 
-    // then — every partition has 3 members, all from us-east1
-    result.forEach(
-        p -> {
-          assertThat(p.members()).hasSize(3);
-          p.members().forEach(m -> assertThat(m.zone()).isEqualTo("us-east1"));
-        });
+    // then — distribution is identical a one region round-robin
+    final var roundRobinResult =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(allBrokers(specs), partitions(3), 3);
+
+    assertThat(roundRobinResult).isEqualTo(result);
   }
 
   // -------------------------------------------------------------------------
@@ -289,8 +293,7 @@ final class ZoneAwarePartitionDistributorTest {
   @Test
   void shouldThrowWhenPriorityIsZero() {
     // given / when / then
-    assertThatThrownBy(
-            () -> new ZoneSpec("us-east1", 1, 0, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, 0, List.of(MemberId.from("us-east1", 0))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("priority");
   }
@@ -298,8 +301,7 @@ final class ZoneAwarePartitionDistributorTest {
   @Test
   void shouldThrowWhenPriorityIsNegative() {
     // given / when / then
-    assertThatThrownBy(
-            () -> new ZoneSpec("us-east1", 1, -1, List.of(MemberId.from("us-east1", 0))))
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, -1, List.of(MemberId.from("us-east1", 0))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("priority");
   }
