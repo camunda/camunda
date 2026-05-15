@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy} from 'utils/zeebeClient';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {navigateToApp} from '@pages/UtilitiesPage';

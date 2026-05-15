@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {credentials} from '../../utils/http';
 import {LOGIN_CREDENTIALS} from '../../utils/constants';
 

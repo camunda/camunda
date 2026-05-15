@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import {test as base, type Cookie} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
@@ -79,7 +79,7 @@ type PlaywrightFixtures = {
   suppressHelperModals: void;
 };
 
-const test = base.extend<PlaywrightFixtures>({
+const publicTest = base.extend<PlaywrightFixtures>({
   suppressHelperModals: [
     async ({page}, use) => {
       await page.addInitScript(() => {
@@ -212,4 +212,42 @@ const test = base.extend<PlaywrightFixtures>({
   },
 });
 
-export {test};
+type AuthWorkerFixtures = {
+  loginUser: {username: string; password: string};
+  loginState: {cookies: Cookie[]; csrfToken: string};
+};
+
+const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
+  loginUser: [
+    {
+      username: process.env.TEST_USERNAME ?? 'demo',
+      password: process.env.TEST_PASSWORD ?? 'demo',
+    },
+    {scope: 'worker'},
+  ],
+  loginState: [
+    async ({browser, loginUser}, use) => {
+      const baseURL =
+        process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+      const context = await browser.newContext();
+      const response = await context.request.post(`${baseURL}/login`, {
+        form: loginUser,
+      });
+      const csrfToken = response.headers()['x-csrf-token'] ?? '';
+      const cookies = await context.cookies();
+      await context.close();
+      await use({cookies, csrfToken});
+    },
+    {scope: 'worker'},
+  ],
+  page: async ({context, loginState}, use) => {
+    await context.addCookies(loginState.cookies);
+    await context.addInitScript((csrfToken) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+    }, loginState.csrfToken);
+    const page = await context.newPage();
+    await use(page);
+  },
+});
+
+export {test, publicTest};

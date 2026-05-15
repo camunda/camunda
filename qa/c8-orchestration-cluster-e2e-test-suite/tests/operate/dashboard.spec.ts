@@ -15,7 +15,7 @@ import {
   createWorker,
 } from 'utils/zeebeClient';
 import {waitForProcessInstances} from 'utils/incidentsHelper';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
 import {defaultAssertionOptions} from '../../utils/constants';
@@ -80,9 +80,8 @@ test.beforeAll(async ({request}) => {
   await waitForProcessInstances(request, instanceIds, 50);
 });
 
-test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-  await navigateToApp(page, 'operate');
-  await loginPage.login('demo', 'demo');
+test.beforeEach(async ({page, operateHomePage}) => {
+  await navigateToAppHome(page, 'operate');
   await expect(operateHomePage.operateBanner).toBeVisible();
 });
 

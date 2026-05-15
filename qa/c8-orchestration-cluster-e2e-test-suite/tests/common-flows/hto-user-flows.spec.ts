@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
 import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';

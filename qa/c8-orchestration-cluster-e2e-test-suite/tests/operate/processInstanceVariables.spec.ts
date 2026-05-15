@@ -16,7 +16,7 @@ import {
   createWorker,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
 import {sleep} from 'utils/sleep';
 
@@ -54,9 +54,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Variables', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 

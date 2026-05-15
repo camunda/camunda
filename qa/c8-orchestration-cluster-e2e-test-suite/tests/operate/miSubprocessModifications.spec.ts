@@ -14,7 +14,7 @@ import {
   cancelProcessInstance,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
+import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
@@ -108,9 +108,8 @@ test.afterAll(async () => {
 });
 
 test.describe('Multi-Instance Subprocess Modifications', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await hideHelperModals(page);
   });
