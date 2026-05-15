@@ -19,6 +19,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -40,7 +41,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       new ManyToManyConcurrentArrayQueue<>(1024 * 24);
   protected final ActorTimerQueue timerJobQueue;
   protected ActorTaskRunnerIdleStrategy idleStrategy;
-  ActorTask currentTask;
+  @Nullable ActorTask currentTask;
   private final ActorMetrics actorMetrics;
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
@@ -158,7 +159,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
    *
    * @return the current {@link ActorThread} or null
    */
-  public static ActorThread current() {
+  public static @Nullable ActorThread current() {
     /*
      * Yes, we could work with a thread-local. Except thread locals are slow as f***
      * since they are kept in a map datastructure on the current thread.
@@ -240,7 +241,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
-  public ActorJob getCurrentJob() {
+  public @Nullable ActorJob getCurrentJob() {
     final ActorTask task = getCurrentTask();
 
     if (task != null) {
@@ -250,7 +251,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     return null;
   }
 
-  public ActorTask getCurrentTask() {
+  public @Nullable ActorTask getCurrentTask() {
     return currentTask;
   }
 

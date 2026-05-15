@@ -18,6 +18,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 public abstract class Actor implements AutoCloseable, AsyncClosable, ConcurrencyControl {
 
@@ -26,7 +27,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
-  private Map<String, String> context;
+  private @Nullable Map<String, String> context;
 
   /**
    * Should be overwritten by sub classes to add more context where the actor is run.
@@ -153,8 +154,8 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   public static class ActorBuilder {
 
-    private String name;
-    private Consumer<ActorControl> actorStartedHandler;
+    private @Nullable String name;
+    private @Nullable Consumer<ActorControl> actorStartedHandler;
 
     public ActorBuilder name(final String name) {
       this.name = name;

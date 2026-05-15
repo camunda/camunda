@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.jspecify.annotations.Nullable;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 @SuppressWarnings("restriction")
@@ -40,7 +41,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    *
    * @return the actor which was stolen or null in case no actor is available
    */
-  public ActorTask trySteal() {
+  public @Nullable ActorTask trySteal() {
     ActorTaskQueueNode node = tail;
 
     while (node != null && node != empty) {
@@ -55,9 +56,9 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
     return null;
   }
 
-  public ActorTask pop() {
-    ActorTask task = null;
-    ActorTaskQueueNode node = null;
+  public @Nullable ActorTask pop() {
+    @Nullable ActorTask task = null;
+    @Nullable ActorTaskQueueNode node = null;
 
     do {
       node = poll();
@@ -74,8 +75,8 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
     return task;
   }
 
-  private ActorTaskQueueNode poll() {
-    ActorTaskQueueNode value = null;
+  private @Nullable ActorTaskQueueNode poll() {
+    @Nullable ActorTaskQueueNode value = null;
     final ActorTaskQueueNode head = this.head;
     ActorTaskQueueNode next = head.next;
 
@@ -97,7 +98,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
     return value;
   }
 
-  public ActorTaskQueueNode peek() {
+  public @Nullable ActorTaskQueueNode peek() {
     final ActorTaskQueueNode next = head.next;
     return next == empty ? null : next;
   }
@@ -137,22 +138,22 @@ class ActorTaskQueueNode {
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
       justification = "Written using UnsafeApi (see NEXT_OFFSET usage)")
-  volatile ActorTaskQueueNode next;
+  volatile @Nullable ActorTaskQueueNode next;
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
       justification = "Written using UnsafeApi (see PREV_OFFSET usage)")
-  volatile ActorTaskQueueNode prev;
+  volatile @Nullable ActorTaskQueueNode prev;
 
   long stateCount;
-  ActorTask task;
+  @Nullable ActorTask task;
 
-  void nextOrdered(final ActorTaskQueueNode t) {
+  void nextOrdered(final @Nullable ActorTaskQueueNode t) {
     assert t != this;
     UnsafeApi.putReferenceRelease(this, NEXT_OFFSET, t);
   }
 
-  void prevOrdered(final ActorTaskQueueNode t) {
+  void prevOrdered(final @Nullable ActorTaskQueueNode t) {
     assert t != this;
     UnsafeApi.putReferenceVolatile(this, PREV_OFFSET, t);
   }
@@ -189,7 +190,7 @@ class ActorTaskQueuePadding1 {
 
 /** Value for the tail that is expected to be padded. */
 class ActorTaskQueueTail extends ActorTaskQueuePadding1 {
-  protected volatile ActorTaskQueueNode tail;
+  protected volatile @Nullable ActorTaskQueueNode tail;
 }
 
 /** Pad out a cache line between the tail and the head to prevent false sharing. */
@@ -200,5 +201,5 @@ class ActorTaskQueuePadding2 extends ActorTaskQueueTail {
 
 /** Value for the head that is expected to be padded. */
 class ActorTaskQueueHead extends ActorTaskQueuePadding2 {
-  protected volatile ActorTaskQueueNode head;
+  protected volatile @Nullable ActorTaskQueueNode head;
 }

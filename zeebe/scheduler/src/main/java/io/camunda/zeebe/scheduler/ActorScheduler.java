@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.jspecify.annotations.Nullable;
 
 public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
@@ -126,14 +128,14 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     public static final long DEFAULT_MAX_PARK_PERIOD_NS = 20_000_000;
 
     private String schedulerName = "";
-    private ActorClock actorClock;
+    private @Nullable ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
-    private ActorThreadGroup cpuBoundActorGroup;
+    private @Nullable ActorThreadGroup cpuBoundActorGroup;
     private int ioBoundThreadsCount = 2;
-    private ActorThreadGroup ioBoundActorGroup;
-    private ActorThreadFactory actorThreadFactory;
-    private ActorExecutor actorExecutor;
-    private ActorTimerQueue actorTimerQueue;
+    private @Nullable ActorThreadGroup ioBoundActorGroup;
+    private @Nullable ActorThreadFactory actorThreadFactory;
+    private @Nullable ActorExecutor actorExecutor;
+    private @Nullable ActorTimerQueue actorTimerQueue;
     private final boolean enableMetrics = false;
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
@@ -239,6 +241,18 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       }
     }
 
+    private void initActorClock() {
+      if (actorClock == null) {
+        actorClock = new DefaultActorClock();
+      }
+    }
+
+    private void initActorTimerQueue() {
+      if (actorTimerQueue == null) {
+        actorTimerQueue = new ActorTimerQueue(actorClock);
+      }
+    }
+
     private void initIoBoundActorThreadGroup() {
       if (ioBoundActorGroup == null) {
         ioBoundActorGroup = new IoThreadGroup(this);
@@ -258,6 +272,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
 
     public ActorScheduler build() {
+      initActorClock();
+      initActorTimerQueue();
       initActorThreadFactory();
       initCpuBoundActorThreadGroup();
       initIoBoundActorThreadGroup();

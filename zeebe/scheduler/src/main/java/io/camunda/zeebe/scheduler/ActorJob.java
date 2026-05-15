@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.concurrent.Callable;
 import org.jetbrains.annotations.Async;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -22,12 +23,12 @@ public final class ActorJob {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
-  TaskSchedulingState schedulingState;
-  ActorTask task;
-  private Callable<?> callable;
-  private Runnable runnable;
-  private ActorFuture resultFuture;
-  private ActorSubscription subscription;
+  @Nullable TaskSchedulingState schedulingState;
+  @Nullable ActorTask task;
+  private @Nullable Callable<?> callable;
+  private @Nullable Runnable runnable;
+  private @Nullable ActorFuture resultFuture;
+  private @Nullable ActorSubscription subscription;
   private long scheduledAt = -1;
 
   public void onJobAddedToTask(final ActorTask task) {
@@ -144,7 +145,7 @@ public final class ActorJob {
     return subscription != null;
   }
 
-  public ActorSubscription getSubscription() {
+  public @Nullable ActorSubscription getSubscription() {
     return subscription;
   }
 
@@ -153,7 +154,7 @@ public final class ActorJob {
     task.addSubscription(subscription);
   }
 
-  public ActorTask getTask() {
+  public @Nullable ActorTask getTask() {
     return task;
   }
 
