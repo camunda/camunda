@@ -16,11 +16,20 @@ jobs:
     name: Trigger c8Run E2E Tests in c8-cross-component-e2e-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Extract minor version
+        id: version
+        run: |
+          version=$(grep '^CAMUNDA_VERSION=' c8run/.env | cut -d= -f2 | grep -oP '^\d+\.\d+')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Generate a GitHub token for camunda/camunda repo
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
@@ -44,7 +53,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             https://api.github.com/repos/camunda/c8-cross-component-e2e-tests/dispatches \
-            -d '{"event_type": "run-c8run-tests", "client_payload": {"source_repo": "${{ github.repository }}", "source_sha": "${{ github.sha }}"}}'
+            -d '{"event_type": "run-c8run-tests", "client_payload": {"source_repo": "${{ github.repository }}", "source_sha": "${{ github.sha }}", "version": "${{ steps.version.outputs.version }}"}}'
 
       - name: Observe build status
         if: always()
