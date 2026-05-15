@@ -146,7 +146,7 @@
     <version.jnr-posix>3.1.22</version.jnr-posix>
     <version.jnr-constants>0.10.4</version.jnr-constants>
     <version.feign>13.11</version.feign>
-    <version.google-sdk>26.79.0</version.google-sdk>
+    <version.google-sdk>26.81.0</version.google-sdk>
     <version.azure-sdk>1.3.6</version.azure-sdk>
     <version.awssdk>2.44.4</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
