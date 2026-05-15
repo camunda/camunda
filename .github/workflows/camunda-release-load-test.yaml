@@ -124,7 +124,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
