@@ -10,8 +10,9 @@ paths:
       summary: Evaluate an expression
       description: |
         Evaluates a FEEL expression and returns the result. Supports references to tenant scoped
-        cluster variables when a tenant ID is provided. Optionally, a `scopeKey` may be provided to
-        evaluate the expression in the variable scope of the given process or element instance.
+        cluster variables when a tenant ID is provided. Optionally, provide a `scopeKey` to make the
+        variables of a specific process instance or element instance visible while evaluating the
+        expression.
       requestBody:
         required: true
         content:
@@ -54,9 +55,11 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ScopeKey'
           description: |
-            Key of the process or element instance whose variable scope should be made visible to
-            the expression. If omitted, the expression is evaluated unscoped, using only
-            tenant-scoped cluster variables and request-body variables.
+            Key of the process instance or element instance whose variables should be made visible
+            to the expression. Use a process instance key to evaluate against the process instance
+            scope, or an element instance key to evaluate against that element instance scope. If
+            omitted, the expression is evaluated unscoped, using only cluster variables
+            and request-body variables.
         variables:
           type: object
           description: Optional variables for expression evaluation. These variables are only used for the current evaluation and do not persist beyond it.
