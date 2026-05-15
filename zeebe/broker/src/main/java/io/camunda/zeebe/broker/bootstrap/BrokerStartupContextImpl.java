@@ -35,6 +35,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -43,7 +44,10 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -71,6 +75,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
+  private final List<String> physicalTenantIds;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -81,7 +86,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
-  private PartitionManagerImpl partitionManager;
+  private final Map<String, PartitionManagerImpl> partitionManagers = new LinkedHashMap<>();
+  private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
@@ -108,7 +114,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final NodeIdProvider nodeIdProvider,
+      final List<String> physicalTenantIds) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -128,6 +135,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.oidcClaimsProvider = oidcClaimsProvider;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
+    this.physicalTenantIds = List.copyOf(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
@@ -282,13 +290,29 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public PartitionManagerImpl getPartitionManager() {
-    return partitionManager;
+  public Map<String, PartitionManagerImpl> getPartitionManagers() {
+    return Collections.unmodifiableMap(partitionManagers);
   }
 
   @Override
-  public void setPartitionManager(final PartitionManagerImpl partitionManager) {
-    this.partitionManager = partitionManager;
+  public void addPartitionManager(
+      final String physicalTenantId, final PartitionManagerImpl partitionManager) {
+    partitionManagers.put(physicalTenantId, partitionManager);
+  }
+
+  @Override
+  public void removePartitionManager(final String physicalTenantId) {
+    partitionManagers.remove(physicalTenantId);
+  }
+
+  @Override
+  public RocksDbResources getRocksDbResources() {
+    return sharedRocksDbResources;
+  }
+
+  @Override
+  public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
+    this.sharedRocksDbResources = sharedRocksDbResources;
   }
 
   @Override
@@ -402,5 +426,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  @Override
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

@@ -50,7 +50,8 @@ class PartitionManagerStepTest {
   }
 
   private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
-  private final PartitionManagerStep sut = new PartitionManagerStep();
+  private final PartitionManagerStep sut =
+      new PartitionManagerStep(PartitionManagerImpl.DEFAULT_GROUP_NAME);
   private MockBrokerStartupContext testBrokerStartupContext;
 
   @Test
@@ -59,7 +60,7 @@ class PartitionManagerStepTest {
     final var actual = sut.getName();
 
     // then
-    assertThat(actual).isSameAs("Partition Manager");
+    assertThat(actual).isEqualTo("Partition Manager [default]");
   }
 
   @Nested
@@ -105,7 +106,10 @@ class PartitionManagerStepTest {
 
     @AfterEach
     void tearDown() {
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       if (partitionManager != null) {
         partitionManager.stop().join();
       }
@@ -133,7 +137,10 @@ class PartitionManagerStepTest {
       await().until(startupFuture::isDone);
 
       // then
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       assertThat(partitionManager).isNotNull();
     }
 
@@ -171,7 +178,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
-      testBrokerStartupContext.setPartitionManager(mockPartitionManager);
+      testBrokerStartupContext.addPartitionManager(
+          PartitionManagerImpl.DEFAULT_GROUP_NAME, mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =
           mock(ClusterConfigurationService.class);
       testBrokerStartupContext.setClusterConfigurationService(mockClusterTopology);
@@ -186,7 +194,10 @@ class PartitionManagerStepTest {
 
       // then
       verify(mockPartitionManager).stop();
-      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      final var partitionManager =
+          testBrokerStartupContext
+              .getPartitionManagers()
+              .get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
       assertThat(partitionManager).isNull();
     }
 

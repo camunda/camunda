@@ -129,7 +129,7 @@ public class ClusteringRule extends ExternalResource {
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
-      PartitionManagerImpl.GROUP_NAME + "/partitions/1";
+      PartitionManagerImpl.DEFAULT_GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -395,7 +395,8 @@ public class ClusteringRule extends ExternalResource {
             new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     final Broker broker =
         new Broker(

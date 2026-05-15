@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -24,7 +25,11 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
-    final var adminService = new BrokerAdminServiceImpl(brokerStartupContext.getPartitionManager());
+    final var adminService =
+        new BrokerAdminServiceImpl(
+            brokerStartupContext
+                .getPartitionManagers()
+                .get(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     final var submitActorFuture =
         brokerStartupContext.getActorSchedulingService().submitActor(adminService);

@@ -89,7 +89,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                           partitionDistribution =
                               new PartitionDistribution(
                                   ConfigurationUtil.getPartitionDistributionFrom(
-                                      configuration, PartitionManagerImpl.GROUP_NAME));
+                                      configuration, PartitionManagerImpl.DEFAULT_GROUP_NAME));
                           initialClusterConfiguration = configuration;
                           if (currentClusterConfiguration == null) {
                             currentClusterConfiguration = configuration;

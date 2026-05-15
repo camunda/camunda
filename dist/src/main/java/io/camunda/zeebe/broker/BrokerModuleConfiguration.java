@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -69,6 +70,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
+  private final PhysicalTenantResolver physicalTenantResolver;
 
   private Broker broker;
 
@@ -89,7 +91,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final JwtDecoder jwtDecoder,
       @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
-      final NodeIdProvider nodeIdProvider) {
+      final NodeIdProvider nodeIdProvider,
+      final PhysicalTenantResolver physicalTenantResolver) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -106,6 +109,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = nodeIdProvider;
+    this.physicalTenantResolver = physicalTenantResolver;
   }
 
   @Bean
@@ -137,7 +141,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             oidcClaimsProvider,
             searchClientsProxy,
             new BrokerRequestAuthorizationConverter(securityConfiguration),
-            nodeIdProvider);
+            nodeIdProvider,
+            List.copyOf(physicalTenantResolver.getAll().keySet()));
     springBrokerBridge.registerShutdownHelper(
         (errorCode, reason) -> shutdownHelper.initiateShutdown(errorCode, reason));
     broker =
