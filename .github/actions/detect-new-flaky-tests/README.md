@@ -72,7 +72,7 @@ LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
   ON ts.ci_url = bs.ci_url AND ts.build_id = bs.build_id AND ts.job_name = bs.job_name
 WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
   AND ts.ci_url = "https://github.com/camunda/camunda"
-  AND test_status = "flaky"
+  AND test_status IN ("flaky", "failure", "error")
   AND (
     (build_trigger = "merge_group"
       AND (build_base_ref = "refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
@@ -80,18 +80,26 @@ WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
     (build_trigger = "push"
       AND (build_ref = "refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
     OR
+    (build_trigger = "schedule"
+      AND (build_ref = "refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
+    OR
     (build_trigger = "pull_request"
-      AND bs.build_ref != @pr_ref)
+      AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
   )
 ```
 
-This returns every test that flaked at least once on `main`, `stable/*`, or
+This returns every test that produced an unreliable result (`flaky`,
+`failure`, or `error`) on `main`, `stable/*`, in nightly scheduled runs, or
 in any other pull request in the last 20 days. The 20-day window matches the
-range of clustered BigQuery data. PR runs are included so tests that flake
-mostly on PRs are still recognised, but the current PR's own observations are
-excluded (via the `@pr_ref` parameter, e.g. `refs/pull/12345/merge`) so a
-new flake cannot launder itself across re-runs. The GCP service account key
-is fetched from Vault.
+range of clustered BigQuery data. The status filter is broad on purpose —
+`failure`/`error` rows on `main`/`stable/*` are just as much a signal of an
+unreliable test as `flaky`, and excluding them was causing false-positive
+alerts. PR runs are included so tests that flake mostly on PRs are still
+recognised, but the current PR's own observations are excluded so a new flake
+cannot launder itself across re-runs. The current PR's ref is supplied at
+query time via `bq query --parameter='pr_ref:STRING:refs/pull/<N>/merge'`
+(see the [workflow step](../../workflows/ci.yml)). The GCP service account
+key is fetched from Vault.
 
 ## Processing Steps
 
@@ -112,6 +120,13 @@ io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpired
 ```
 
 If the same test appears in multiple jobs, it's deduplicated (jobs are merged).
+
+JUnit lifecycle entries (`<beforeAll>`, `<afterAll>`, `<beforeEach>`,
+`<afterEach>`) are dropped at this stage. They represent class-level setup
+or teardown failures, not test methods, and BigQuery never records them, so
+comparing them against the baseline produces guaranteed false-positive
+alerts. A setup failure already fails the job through the normal path; the
+new-flaky gate has nothing useful to add for it.
 
 ### Step 2: Parse baseline flaky tests
 
@@ -259,11 +274,12 @@ bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
      ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
    WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
      AND ts.ci_url="https://github.com/camunda/camunda"
-     AND test_status = "flaky"
+     AND test_status IN ("flaky","failure","error")
      AND (
        (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
        OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-       OR (build_trigger="pull_request" AND bs.build_ref != @pr_ref)
+       OR (build_trigger="schedule" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
+       OR (build_trigger="pull_request" AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
      )' 2>/dev/null > /tmp/known-flaky-tests.json
 
 # 2. Simulate PR flaky test data
