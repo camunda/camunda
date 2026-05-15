@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {Button, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
-import {Form} from 'react-final-form';
+import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import {useNavigate, useLocation} from 'react-router-dom';
@@ -96,9 +96,9 @@ type EditorRef = {
 
 const VariableFilterModal: React.FC = observer(() => {
   const {conditions} = variableFilterStore;
-  const initialDraftConditions = useRef(() =>
-    conditions.length > 0 ? conditions : [createDraft()],
-  );
+  const initialValues = useRef<FormValues>({
+    conditions: conditions.length > 0 ? [...conditions] : [createDraft()],
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const handleCloseModal = () => {
@@ -111,15 +111,9 @@ const VariableFilterModal: React.FC = observer(() => {
   };
 
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
-  const [editedValue, setEditedValue] = useState('');
   const [isEditorValid, setIsEditorValid] = useState(true);
   const editorRef = useRef<EditorRef | null>(null);
-
-  const handleEditValue = useCallback((index: number, currentValue: string) => {
-    setEditedValue(beautifyJSON(currentValue));
-    setEditingRowIndex(index);
-    setIsEditorValid(true);
-  }, []);
+  const preEditValueRef = useRef('');
 
   useEffect(() => {
     if (isEditorValid) {
@@ -150,7 +144,7 @@ const VariableFilterModal: React.FC = observer(() => {
   return (
     <Form<FormValues>
       onSubmit={handleSubmit}
-      initialValues={{conditions: initialDraftConditions.current()}}
+      initialValues={initialValues.current}
       mutators={{...arrayMutators}}
     >
       {({handleSubmit: submitForm, form}) => {
@@ -176,10 +170,6 @@ const VariableFilterModal: React.FC = observer(() => {
             onRequestSubmit={() => {
               if (isEditing) {
                 if (isEditorValid) {
-                  (form.change as (name: string, value: string) => void)(
-                    `conditions[${editingRowIndex}].value`,
-                    editedValue,
-                  );
                   setEditingRowIndex(null);
                 } else {
                   editorRef.current?.showMarkers();
@@ -190,6 +180,10 @@ const VariableFilterModal: React.FC = observer(() => {
             }}
             onRequestClose={() => {
               if (isEditing) {
+                form.change(
+                  `conditions[${editingRowIndex}].value`,
+                  preEditValueRef.current,
+                );
                 setEditingRowIndex(null);
               } else {
                 handleCloseModal();
@@ -197,6 +191,10 @@ const VariableFilterModal: React.FC = observer(() => {
             }}
             onSecondarySubmit={() => {
               if (isEditing) {
+                form.change(
+                  `conditions[${editingRowIndex}].value`,
+                  preEditValueRef.current,
+                );
                 setEditingRowIndex(null);
               } else {
                 handleCloseModal();
@@ -206,24 +204,32 @@ const VariableFilterModal: React.FC = observer(() => {
             size="md"
           >
             <ModalContent>
-              {isEditing ? (
-                <Stack gap={4}>
-                  <EditorToolbar>
-                    <CopyButton value={editedValue} />
-                  </EditorToolbar>
-                  <Suspense fallback={<div>Loading editor...</div>}>
-                    <JSONEditor
-                      value={editedValue}
-                      onChange={setEditedValue}
-                      onValidate={setIsEditorValid}
-                      onMount={(editor) => {
-                        editorRef.current = editor;
-                      }}
-                      height="45vh"
-                    />
-                  </Suspense>
-                </Stack>
-              ) : (
+              {isEditing && (
+                <Field
+                  name={`conditions[${editingRowIndex}].value`}
+                  subscription={{value: true}}
+                >
+                  {({input: editorInput}) => (
+                    <Stack gap={4}>
+                      <EditorToolbar>
+                        <CopyButton value={editorInput.value} />
+                      </EditorToolbar>
+                      <Suspense>
+                        <JSONEditor
+                          value={editorInput.value}
+                          onChange={editorInput.onChange}
+                          onValidate={setIsEditorValid}
+                          onMount={(editor) => {
+                            editorRef.current = editor;
+                          }}
+                          height="45vh"
+                        />
+                      </Suspense>
+                    </Stack>
+                  )}
+                </Field>
+              )}
+              <div style={{display: isEditing ? 'none' : undefined}}>
                 <Stack gap={5}>
                   <Description>
                     Define one or more conditions to filter process instances by
@@ -243,7 +249,13 @@ const VariableFilterModal: React.FC = observer(() => {
                               const val =
                                 form.getState().values?.['conditions']?.[i]
                                   ?.value ?? '';
-                              handleEditValue(i, val);
+                              preEditValueRef.current = val;
+                              form.change(
+                                `conditions[${i}].value`,
+                                beautifyJSON(val),
+                              );
+                              setEditingRowIndex(i);
+                              setIsEditorValid(true);
                             }}
                           />
                         ))}
@@ -260,7 +272,7 @@ const VariableFilterModal: React.FC = observer(() => {
                     )}
                   </FieldArray>
                 </Stack>
-              )}
+              </div>
             </ModalContent>
           </Modal>
         );
