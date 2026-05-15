@@ -37,7 +37,6 @@ import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -154,13 +153,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       startTime = System.currentTimeMillis();
       stopBroker();
       LOG.info("Broker closing time: " + (System.currentTimeMillis() - startTime));
-
-      final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
-      if (allocatedMemoryInKb > 0) {
-        LOG.warn(
-            "There are still allocated direct buffers of a total size of {}kB.",
-            allocatedMemoryInKb);
-      }
     } finally {
       try {
         FileUtil.deleteFolder(brokerBase.getAbsolutePath());
