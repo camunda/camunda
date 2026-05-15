@@ -85,7 +85,7 @@ components:
           description: ID of the last completed change
           type: string
           example: "-1"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: brokers
           addedInVersion: "8.6"
         - propertyName: clusterId

@@ -9,7 +9,7 @@ components:
           description: Pagination criteria.
           allOf:
             - $ref: '#/components/schemas/SearchQueryPageRequest'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: page
           addedInVersion: "8.6"
 
@@ -49,7 +49,7 @@ components:
           format: int32
           default: 100
           minimum: 1
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: from
           addedInVersion: "8.6"
         - propertyName: limit
@@ -72,7 +72,7 @@ components:
           default: 100
           minimum: 1
           maximum: 10000
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: after
           addedInVersion: "8.8"
 
@@ -93,7 +93,7 @@ components:
           default: 100
           minimum: 1
           maximum: 10000
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: before
           addedInVersion: "8.8"
 
@@ -104,7 +104,7 @@ components:
       properties:
         page:
           $ref: '#/components/schemas/SearchQueryPageResponse'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: page
           addedInVersion: "8.6"
 
@@ -146,7 +146,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/EndCursor'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: hasMoreTotalItems
           addedInVersion: "8.8"
         - propertyName: startCursor

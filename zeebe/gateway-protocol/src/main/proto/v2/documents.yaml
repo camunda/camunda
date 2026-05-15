@@ -112,7 +112,7 @@ paths:
                     $ref: '#/components/schemas/DocumentMetadata'
               required:
                 - files
-              x-added-in-version:
+              x-properties-added-in-version:
                 - propertyName: metadataList
                   addedInVersion: "8.8"
             encoding:
@@ -311,7 +311,7 @@ components:
           nullable: true
         metadata:
           $ref: '#/components/schemas/DocumentMetadataResponse'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "camunda.document.type"
           addedInVersion: "8.7"
         - propertyName: storeId
@@ -344,7 +344,7 @@ components:
         detail:
           type: string
           description: A human-readable explanation specific to this occurrence of the problem.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: status
           addedInVersion: "8.9"
         - propertyName: title
@@ -398,7 +398,7 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: contentType
           addedInVersion: "8.6"
         - propertyName: fileName
@@ -455,7 +455,7 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.7"
         - propertyName: processInstanceKey

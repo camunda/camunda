@@ -199,7 +199,7 @@ components:
           $ref: '#/components/schemas/AuthenticationConfigurationResponse'
         cloud:
           $ref: '#/components/schemas/CloudConfigurationResponse'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: components
           addedInVersion: "8.10"
         - propertyName: deployment
