@@ -46,7 +46,11 @@ test.describe('Task History Audit Log', () => {
 
   test.afterEach(async ({page, taskDetailsPage}, testInfo) => {
     await taskDetailsPage.clickUnassignButton();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    // The Assign-to-me toggle replaces Unassign asynchronously after the
+    // unassign POST resolves; allow up to 60s to ride out tasklist refresh.
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
 
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);

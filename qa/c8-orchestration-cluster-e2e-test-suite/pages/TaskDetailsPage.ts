@@ -388,11 +388,13 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        await expect(input).toHaveValue(expectedValue);
       },
       onFailure: async () => {
-        console.log(`Retrying assertion for field "${label}"...`);
+        // The completed-task view sometimes renders form fields lazily after
+        // first paint; reload to force a fresh load on retry.
+        await this.page.reload();
+        await sleep(2000);
       },
     });
   }
