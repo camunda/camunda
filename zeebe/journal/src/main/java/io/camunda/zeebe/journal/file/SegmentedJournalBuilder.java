@@ -171,11 +171,17 @@ public class SegmentedJournalBuilder {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
-    final var journal = requireNonNull(journalMetaStore, "must specify a journal meta store");
+    final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex, maxSegmentSize, directory, name, segmentLoader, journalMetrics, journal);
+            journalIndex,
+            maxSegmentSize,
+            directory,
+            name,
+            segmentLoader,
+            journalMetrics,
+            metaStore);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journal);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
   }
 }
