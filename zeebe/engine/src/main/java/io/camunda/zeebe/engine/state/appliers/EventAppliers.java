@@ -169,7 +169,9 @@ public final class EventAppliers implements EventApplier {
         AgentInstanceIntent.CREATED,
         new AgentInstanceCreatedApplier(
             state.getAgentInstanceState(), state.getElementInstanceState()));
-    register(AgentInstanceIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(
+        AgentInstanceIntent.UPDATED,
+        new AgentInstanceUpdatedApplier(state.getAgentInstanceState()));
     register(AgentInstanceIntent.COMPLETED, NOOP_EVENT_APPLIER);
   }
 
