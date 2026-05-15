@@ -12,6 +12,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.batch.BlobBatchClientBuilder;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
@@ -28,7 +29,9 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -77,7 +80,8 @@ public final class AzureBackupStore implements BackupStore {
     final boolean createContainer = isCreateContainer(config);
     containerCreated = !createContainer;
 
-    fileSetManager = new FileSetManager(blobContainerClient, createContainer);
+    final var blobBatchClient = new BlobBatchClientBuilder(client).buildClient();
+    fileSetManager = new FileSetManager(blobContainerClient, blobBatchClient, createContainer);
     manifestManager = new ManifestManager(blobContainerClient, createContainer);
   }
 
@@ -225,8 +229,11 @@ public final class AzureBackupStore implements BackupStore {
                 "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+          final var snapshotUrls = fileSetManager.collectBlobUrls(id, SNAPSHOT_FILESET_NAME);
+          final var segmentUrls = fileSetManager.collectBlobUrls(id, SEGMENTS_FILESET_NAME);
+          final List<String> allUrls = new ArrayList<>(snapshotUrls);
+          allUrls.addAll(segmentUrls);
+          fileSetManager.deleteBlobs(allUrls);
           manifestManager.deleteManifest(manifest);
         },
         executor);
