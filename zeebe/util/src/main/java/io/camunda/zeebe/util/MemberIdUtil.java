@@ -10,11 +10,11 @@ package io.camunda.zeebe.util;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Utility functions to create MemberId from zone and node-id. Cannot live in {@code atomix/cluster}
+ * due to module dependencies.
+ */
 @NullMarked
-/*
- Utility functions to create MemberId from zone & node-id. Because of module dependencies, it
- cannot live in `atomix/cluster`.
-*/
 public final class MemberIdUtil {
 
   private MemberIdUtil() {}
