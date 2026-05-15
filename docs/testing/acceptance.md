@@ -252,11 +252,6 @@ To run with RDBMS from your IDE, you have two options:
 
 Updates tests ensure that the upgrade paths between different versions are compatible.
 
-> [!Note]
-> At the moment, only Zeebe supports rolling update tests. With the new unified Orchestration
-> Cluster, this means only the primary storage is part of the tests - the secondary storage path
-> still does not support rolling updates.
-
 Update tests are implemented in the `zeebe/qa/update-tests` module and are executed in parts with the CI
 pipeline, and with some nightly workflows.
 
@@ -292,6 +287,11 @@ in the `qa/update-tests` module. These tests run in three different modes, depen
 1. **Local**: Checks compatibility between the current version and the first patch of the previous minor.
 2. **CI**: Checks compatibility between the current version and all patches of the current and previous minor.
 3. **Full**: Checks all supported upgrade paths, i.e. upgrading from any patch to any other patch of the current or next minor.
+
+Secondary storage (RDBMS/Postgres) schema migration compatibility across version upgrades is covered
+by [SecondaryStorageRollingUpdateTest](/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/SecondaryStorageRollingUpdateTest.java).
+This test verifies that process instances created before, during, and after a version upgrade
+(including a downgrade back to the previous minor) remain visible in secondary storage.
 
 #### Full test coverage
 
