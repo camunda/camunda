@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
-import static java.util.Objects.requireNonNull;
-
 import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
@@ -24,7 +22,6 @@ import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.jspecify.annotations.Nullable;
 
 public final class ErrorResponse implements StreamResponse {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -35,9 +32,10 @@ public final class ErrorResponse implements StreamResponse {
 
   private final List<ErrorDetailImpl> details = new ArrayList<>();
   private final DirectBuffer message = new UnsafeBuffer();
-  private @Nullable ErrorCode code;
+  private ErrorCode code;
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     code = messageDecoder.code();
@@ -75,7 +73,7 @@ public final class ErrorResponse implements StreamResponse {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .code(requireNonNull(code, "code must be set before writing"))
+        .code(code)
         .putMessage(message, 0, message.capacity());
     final var detailsEncoder = messageEncoder.detailsCount(details.size());
     details.forEach(
@@ -109,7 +107,7 @@ public final class ErrorResponse implements StreamResponse {
     return this;
   }
 
-  public @Nullable ErrorCode code() {
+  public ErrorCode code() {
     return code;
   }
 

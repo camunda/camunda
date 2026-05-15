@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.jspecify.annotations.Nullable;
 
 public final class PushStreamRequest implements BufferReader, BufferWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -27,9 +26,10 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
 
   private final DirectBuffer payloadReader = new UnsafeBuffer();
   private BufferWriter payloadWriter = new DirectBufferWriter().wrap(payloadReader);
-  private @Nullable UUID streamId;
+  private UUID streamId;
 
   @Override
+  @SuppressWarnings("NullAway.Init")
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
     streamId = new UUID(messageDecoder.id().high(), messageDecoder.id().low());
@@ -65,7 +65,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
   }
 
   /** May return null if it was never read or set. */
-  public @Nullable UUID streamId() {
+  public UUID streamId() {
     return streamId;
   }
 

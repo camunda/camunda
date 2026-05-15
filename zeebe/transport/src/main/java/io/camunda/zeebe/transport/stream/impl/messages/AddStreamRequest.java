@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.jspecify.annotations.Nullable;
 
 public final class AddStreamRequest implements BufferReader, BufferWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -27,7 +26,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
 
   private final DirectBuffer streamType = new UnsafeBuffer();
 
-  private @Nullable UUID streamId;
+  private UUID streamId;
   private final DirectBuffer metadataReader = new UnsafeBuffer();
   private BufferWriter metadataWriter = new DirectBufferWriter().wrap(metadataReader);
 
@@ -96,10 +95,11 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
     return this;
   }
 
-  public @Nullable UUID streamId() {
+  public UUID streamId() {
     return streamId;
   }
 
+  @SuppressWarnings("NullAway.Init")
   public AddStreamRequest streamId(final UUID streamId) {
     this.streamId = streamId;
     return this;
