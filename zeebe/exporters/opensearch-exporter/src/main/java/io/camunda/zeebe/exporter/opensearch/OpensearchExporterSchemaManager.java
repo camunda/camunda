@@ -177,6 +177,9 @@ public class OpensearchExporterSchemaManager {
       if (index.globalListener) {
         createValueIndexTemplate(ValueType.GLOBAL_LISTENER, version);
       }
+      if (index.agentInstance) {
+        createValueIndexTemplate(ValueType.AGENT_INSTANCE, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
