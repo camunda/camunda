@@ -243,7 +243,7 @@ components:
             $ref: '#/components/schemas/ElementId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.10"
         - propertyName: "$neq"
@@ -295,7 +295,7 @@ components:
             $ref: '#/components/schemas/ProcessDefinitionId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.10"
         - propertyName: "$neq"

@@ -375,7 +375,7 @@ components:
             Null when the property is absent.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
         - propertyName: messageSubscriptionType
@@ -505,7 +505,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: messageSubscriptionKey
           addedInVersion: "8.8"
         - propertyName: processDefinitionKey
@@ -626,7 +626,7 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID associated with this correlated message subscription.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
 

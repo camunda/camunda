@@ -244,7 +244,7 @@ components:
         decisionRequirementsVersion:
           type: integer
           description: The assigned version of the decision requirements that the decision definition is part of.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: name
           addedInVersion: "8.8"
         - propertyName: isLatestVersion
@@ -312,7 +312,7 @@ components:
         version:
           description: The assigned version of the decision definition.
           type: integer
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: decisionDefinitionId
           addedInVersion: "8.6"
         - propertyName: decisionDefinitionKey
@@ -452,7 +452,7 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the evaluated decision.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: decisionEvaluationKey
           addedInVersion: "8.8"
 
@@ -513,6 +513,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
           description: The unique key identifying this decision evaluation instance.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: decisionEvaluationInstanceKey
           addedInVersion: "8.8"

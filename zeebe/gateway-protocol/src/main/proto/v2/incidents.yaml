@@ -210,7 +210,7 @@ components:
           description: The incident search filters.
           allOf:
             - $ref: '#/components/schemas/IncidentFilter'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: sort
           addedInVersion: "8.6"
         - propertyName: filter
@@ -268,7 +268,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
           description: The job key, if exists, associated with this incident.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: elementId
           addedInVersion: "8.8"
         - propertyName: incidentKey
@@ -314,7 +314,7 @@ components:
             $ref: "#/components/schemas/IncidentErrorTypeEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"
@@ -387,7 +387,7 @@ components:
             $ref: "#/components/schemas/IncidentStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"
@@ -446,7 +446,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentResult'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: items
           addedInVersion: "8.6"
 
@@ -523,7 +523,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"
         - propertyName: errorType
@@ -557,7 +557,7 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: operationReference
           addedInVersion: "8.8"
 

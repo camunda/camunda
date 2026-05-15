@@ -37,7 +37,7 @@ components:
           type: array
           items:
             type: string
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -58,7 +58,7 @@ components:
           properties:
             $like:
               $ref: '#/components/schemas/LikeFilter'
-          x-added-in-version:
+          x-properties-added-in-version:
             - propertyName: "$like"
               addedInVersion: "8.8"
 
@@ -116,7 +116,7 @@ components:
           items:
             type: integer
             format: int32
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -181,7 +181,7 @@ components:
           items:
             type: string
             format: date-time
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"

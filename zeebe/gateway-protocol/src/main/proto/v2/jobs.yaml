@@ -317,7 +317,7 @@ components:
         - type
         - maxJobsToActivate
         - timeout
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: tenantFilter
           addedInVersion: "8.9"
 
@@ -441,7 +441,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: kind
           addedInVersion: "8.8"
         - propertyName: listenerEventType
@@ -657,7 +657,7 @@ components:
           description: When the job was last updated. Field is present for jobs created after 8.9.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: creationTime
           addedInVersion: "8.9"
         - propertyName: lastUpdateTime
@@ -802,7 +802,7 @@ components:
           nullable: true
           type: string
           format: date-time
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
         - propertyName: creationTime
@@ -867,7 +867,7 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: result
           addedInVersion: "8.8"
 
@@ -1013,7 +1013,7 @@ components:
           $ref: "keys.yaml#/components/schemas/OperationReference"
       required:
         - changeset
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: operationReference
           addedInVersion: "8.8"
 

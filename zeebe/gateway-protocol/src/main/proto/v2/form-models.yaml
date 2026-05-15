@@ -31,7 +31,7 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/FormKey"
           description: The assigned key, which acts as a unique identifier for this form.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: tenantId
           addedInVersion: "8.8"
         - propertyName: formId

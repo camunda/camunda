@@ -322,7 +322,7 @@ components:
           description: Deployed resource.
           allOf:
             - $ref: '#/components/schemas/DeploymentResourceResult'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resource
           addedInVersion: "8.7"
 
@@ -527,7 +527,7 @@ components:
             will not be populated.
           type: boolean
           default: false
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: deleteHistory
           addedInVersion: "8.9"
 
@@ -551,7 +551,7 @@ components:
             This field is only populated when the request `deleteHistory` is set to `true` and the resource
             is a process definition. For other resource types (decisions, forms, generic resources),
             this field will be `null`.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resourceKey
           addedInVersion: "8.9"
         - propertyName: batchOperation
@@ -589,7 +589,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resourceName
           addedInVersion: "8.7"
         - propertyName: version
@@ -661,7 +661,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeploymentKey'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"
@@ -709,7 +709,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"

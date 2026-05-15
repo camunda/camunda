@@ -234,7 +234,7 @@ components:
         - resourcePropertyName
         - resourceType
         - permissionTypes
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resourcePropertyName
           addedInVersion: "8.9"
 
@@ -304,7 +304,7 @@ components:
           description: The type of resource to search permissions for.
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resourcePropertyNames
           addedInVersion: "8.9"
 
@@ -345,7 +345,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: resourcePropertyName
           addedInVersion: "8.9"
 

@@ -213,7 +213,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -261,7 +261,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -309,7 +309,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -357,7 +357,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobKey'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -405,7 +405,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
         - propertyName: "$neq"
@@ -529,7 +529,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"

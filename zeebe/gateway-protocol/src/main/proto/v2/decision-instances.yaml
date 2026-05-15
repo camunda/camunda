@@ -265,7 +265,7 @@ components:
           description: The key of the decision requirements definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: decisionEvaluationInstanceKey
           addedInVersion: "8.8"
         - propertyName: state
@@ -408,7 +408,7 @@ components:
           description: The tenant ID of the decision instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: decisionDefinitionId
           addedInVersion: "8.6"
         - propertyName: decisionDefinitionKey
@@ -482,7 +482,7 @@ components:
         inputValue:
           description: The value of the decision input.
           type: string
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: inputId
           addedInVersion: "8.6"
         - propertyName: inputName
@@ -518,7 +518,7 @@ components:
           nullable: true
           type: integer
           format: int32
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: ruleId
           addedInVersion: "8.9"
         - propertyName: ruleIndex
@@ -544,7 +544,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvaluatedDecisionOutputItem'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: ruleId
           addedInVersion: "8.6"
         - propertyName: ruleIndex
@@ -610,7 +610,7 @@ components:
             $ref: "#/components/schemas/DecisionInstanceStateEnum"
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-      x-added-in-version:
+      x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.9"
         - propertyName: "$neq"
