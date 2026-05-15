@@ -36,7 +36,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final EnumProperty<AgentInstanceStatus> statusProp =
-      new EnumProperty<>("status", AgentInstanceStatus.class, AgentInstanceStatus.INITIALIZING);
+      new EnumProperty<>("status", AgentInstanceStatus.class, AgentInstanceStatus.UNSPECIFIED);
   private final ObjectProperty<AgentInstanceDefinition> definitionProp =
       new ObjectProperty<>("definition", new AgentInstanceDefinition());
   private final ObjectProperty<AgentInstanceLimits> limitsProp =

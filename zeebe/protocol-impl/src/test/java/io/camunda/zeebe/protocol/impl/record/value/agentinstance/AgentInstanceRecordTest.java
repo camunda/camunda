@@ -68,9 +68,9 @@ final class AgentInstanceRecordTest {
   }
 
   @Test
-  void shouldDefaultStatusToInitializing() {
+  void shouldDefaultStatusToUnspecified() {
     final AgentInstanceRecord record = new AgentInstanceRecord();
-    assertThat(record.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+    assertThat(record.getStatus()).isEqualTo(AgentInstanceStatus.UNSPECIFIED);
   }
 
   @Test
