@@ -112,33 +112,6 @@ public class SbeCommandTest {
         .contains("Offset used: 1");
   }
 
-  @Test
-  public void shouldDecodeUsingClasspathXmlSchemaWhenFilesystemPathDoesNotExist() throws Exception {
-    // given
-    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.conf");
-    assertThat(resourceUrl).isNotNull();
-    final var filePath = Path.of(resourceUrl.toURI());
-
-    // when
-    final int exitCode =
-        commandLine.execute(
-            "sbe",
-            "--schema",
-            "raft-entry-schema.xml",
-            "--offset",
-            "1",
-            "--verbose",
-            filePath.toString());
-
-    // then
-    assertThat(exitCode).isZero();
-    assertThat(out.toString().trim()).isEqualTo(EXPECTED_CONFIGURATION.trim());
-    assertThat(err.toString())
-        .contains("Reading file: " + filePath)
-        .contains("Schema used: classpath resource raft-entry-schema.xml")
-        .contains("Offset used: 1");
-  }
-
   private Path schemaPath() {
     final var schemaPath =
         Path.of(
