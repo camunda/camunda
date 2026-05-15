@@ -293,9 +293,9 @@ public final class SegmentedJournal implements Journal {
    * @param index The index for which to return the segment.
    * @throws IllegalStateException if the segment manager is not open
    */
-  Segment getSegment(final long index) {
+  @Nullable Segment getSegment(final long index) {
     assertOpen();
-    return requireNonNull(segments.getSegment(index), "journal has no segment for index");
+    return segments.getSegment(index);
   }
 
   void closeReader(final SegmentedJournalReader segmentedJournalReader) {
