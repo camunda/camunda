@@ -540,38 +540,30 @@ public final class BpmnJobBehavior {
   private Either<Failure, Integer> mapPriorityResult(
       final Expression priority, final EvaluationResult result, final long scopeKey) {
     if (result.getType() != ResultType.NUMBER) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected result of the expression '%s' for the job priority to be 'NUMBER', but was '%s'.",
-                  priority.getExpression(), result.getType()),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              scopeKey));
+      return priorityFailure(priority, scopeKey, "'NUMBER', but was '" + result.getType() + "'");
     }
     final Number number = result.getNumber();
-    final BigDecimal asDecimal;
     try {
-      asDecimal = new BigDecimal(number.toString());
+      return Either.right(new BigDecimal(number.toString()).intValueExact());
     } catch (final NumberFormatException e) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected result of the expression '%s' for the job priority to be a finite number, but was '%s'.",
-                  priority.getExpression(), number),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              scopeKey));
-    }
-    try {
-      return Either.right(asDecimal.intValueExact());
+      return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
     } catch (final ArithmeticException e) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected result of the expression '%s' for the job priority to be an integer within the 32-bit signed range, but was '%s'.",
-                  priority.getExpression(), number),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              scopeKey));
+      return priorityFailure(
+          priority,
+          scopeKey,
+          "an integer within the 32-bit signed range, but was '" + number + "'");
     }
+  }
+
+  private static Either<Failure, Integer> priorityFailure(
+      final Expression priority, final long scopeKey, final String detail) {
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected result of the expression '%s' for the job priority to be %s.",
+                priority.getExpression(), detail),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
   }
 
   private void writeJobCreatedEvent(
