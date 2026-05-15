@@ -55,7 +55,8 @@ public class AssertVariableInstructionHandler
     instruction
         .getSimilarTo()
         .ifPresent(
-            similarTo -> applySimilarToAssertion(baseAssert, variableName, elementSelector, similarTo));
+            similarTo ->
+                applySimilarToAssertion(baseAssert, variableName, elementSelector, similarTo));
   }
 
   @Override

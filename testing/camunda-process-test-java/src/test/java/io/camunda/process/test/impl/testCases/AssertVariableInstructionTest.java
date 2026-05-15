@@ -337,7 +337,8 @@ public class AssertVariableInstructionTest {
     void shouldApplyThreshold() {
       // given
       final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class)))
+          .thenReturn(mockAssert);
 
       final AssertVariableInstruction instruction =
           ImmutableAssertVariableInstruction.builder()
@@ -373,7 +374,8 @@ public class AssertVariableInstructionTest {
     void shouldApplyThresholdForLocalVariable() {
       // given
       final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class)))
+          .thenReturn(mockAssert);
 
       final AssertVariableInstruction instruction =
           ImmutableAssertVariableInstruction.builder()

@@ -47,7 +47,6 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcess
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
@@ -66,6 +65,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorker
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
