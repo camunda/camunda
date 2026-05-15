@@ -57,8 +57,8 @@ public final class PartitioningCfg {
     return zoneAware;
   }
 
-  public void setZoneAware(final ZoneAwareCfg ZoneAware) {
-    zoneAware = ZoneAware;
+  public void setZoneAware(final ZoneAwareCfg zoneAware) {
+    this.zoneAware = zoneAware;
   }
 
   @Override
