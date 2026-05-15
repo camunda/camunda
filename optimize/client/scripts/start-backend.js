@@ -104,7 +104,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `./mvnw -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
+      `mvn -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
