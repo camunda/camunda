@@ -419,7 +419,48 @@ describe('<VariableFilterModal />', () => {
     expect(screen.getByRole('button', {name: /copy/i})).toBeInTheDocument();
   });
 
-  it('should not show conditions list on editor step', async () => {
+  it('should preserve value in text input after cancelling editor', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    expect(screen.getByDisplayValue('"active"')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(screen.getByDisplayValue('"active"')).toBeInTheDocument();
+  });
+
+  it('should preserve freshly typed values after opening and cancelling editor', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.type(
+      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      '"hello"',
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+    expect(
+      screen.getByRole('heading', {name: 'Edit value: myVar'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue(
+      'myVar',
+    );
+    expect(
+      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+    ).toHaveValue('"hello"');
+  });
+
+  it('should hide conditions list on editor step', async () => {
     variableFilterStore.setConditions([
       {name: 'status', operator: 'equals', value: '"active"'},
       {name: 'count', operator: 'equals', value: '5'},
@@ -432,8 +473,8 @@ describe('<VariableFilterModal />', () => {
       screen.getAllByRole('button', {name: 'Open JSON editor'})[0]!,
     );
 
-    expect(
-      screen.queryByPlaceholderText('Variable name'),
-    ).not.toBeInTheDocument();
+    screen.getAllByPlaceholderText('Variable name').forEach((input) => {
+      expect(input).not.toBeVisible();
+    });
   });
 });
