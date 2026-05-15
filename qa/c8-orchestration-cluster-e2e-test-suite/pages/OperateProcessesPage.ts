@@ -310,8 +310,39 @@ class OperateProcessesPage {
   }
 
   async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
+    // Wait for every PIK's row to be present before clicking — the table can
+    // briefly render fewer rows than the "X results" count claims while the
+    // indexer catches up, so without this guard the first checkbox click can
+    // race the row appearing.
     for (const key of PIK) {
-      await this.page.locator(`label[for$="${key}"]`).click();
+      await expect(
+        this.page.getByTestId('cell-processInstanceKey').filter({hasText: key}),
+      ).toBeVisible({timeout: 30000});
+    }
+
+    for (const key of PIK) {
+      const row = this.page
+        .getByTestId('data-list')
+        .getByRole('row')
+        .filter({
+          has: this.page
+            .getByTestId('cell-processInstanceKey')
+            .filter({hasText: key}),
+        });
+      const checkbox = row.getByRole('checkbox', {
+        name: /(un)?select row/i,
+      });
+
+      await expect(checkbox).toBeVisible({timeout: 30000});
+      if (!(await checkbox.isChecked())) {
+        // Carbon wraps the checkbox in a label; clicking the label is the
+        // reliable cross-browser way to toggle the input. The label text
+        // toggles between "Select row" and "Unselect row" with state.
+        await row
+          .getByText(/^(un)?select row$/i)
+          .first()
+          .click({timeout: 30000});
+      }
     }
   }
 
