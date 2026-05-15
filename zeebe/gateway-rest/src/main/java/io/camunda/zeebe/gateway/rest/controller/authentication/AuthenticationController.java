@@ -13,7 +13,6 @@ import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Profile("consolidated-auth")
 @CamundaRestController
-@ClusterScoped
 @ConditionalOnSecondaryStorageEnabled
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {
