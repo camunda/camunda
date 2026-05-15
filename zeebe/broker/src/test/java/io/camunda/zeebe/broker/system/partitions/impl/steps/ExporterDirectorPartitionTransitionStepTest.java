@@ -250,6 +250,36 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
+  void shouldNotRemoveStateOfConfigNotFoundExporter() {
+    // given - expB's static config was removed; it is tracked with CONFIG_NOT_FOUND
+    final String configuredExporterId = "expA";
+    final String configNotFoundExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(
+            configuredExporterId, State.ENABLED, configNotFoundExporterId, State.CONFIG_NOT_FOUND);
+
+    // expB is absent from the repository because its static config was removed
+    final Map<String, ExporterDescriptor> exporters =
+        Map.of(configuredExporterId, new ExporterDescriptor(configuredExporterId));
+    when(exporterRepository.getExporters()).thenReturn(exporters);
+    transitionContext.setDynamicPartitionConfig(exporterConfig);
+
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    when(mockedExporterDirector.startAsync(any()))
+        .thenReturn(TestActorFuture.completedFuture(null));
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep((ctx, phase) -> mockedExporterDirector);
+
+    // when - director starts with no concurrent config change
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then - expB's persisted state (position, metadata) must not be deleted
+    verify(mockedExporterDirector, never()).removeExporter(configNotFoundExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(configuredExporterId);
+  }
+
+  @Test
   void shouldEnableExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";
