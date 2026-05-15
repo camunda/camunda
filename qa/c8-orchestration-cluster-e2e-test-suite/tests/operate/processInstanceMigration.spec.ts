@@ -1043,15 +1043,33 @@ test.describe('Parallel job-based user task migration', () => {
       ).toHaveText(targetVersion, {useInnerText: true});
     });
 
-    await test.step('Map renamed flow node: Embedded → Embedded new', async () => {
+    await test.step('Map renamed flow nodes (all V2 user tasks were renamed)', async () => {
+      // Every V1 user task is renamed in V2 ("Embedded" → "Embedded new",
+      // "camunda form" → "camunda form new", "external form" → "external
+      // form new"). Operate's auto-map matches by NAME, not by ID, so no
+      // node populates automatically even though IDs are identical between
+      // V1 and V2. Map all three explicitly to give the migration something
+      // to submit.
       await operateProcessMigrationModePage.mapFlowNode(
         'Embedded',
         'Embedded new',
       );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'camunda form',
+        'camunda form new',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'external form',
+        'external form new',
+      );
     });
 
-    await test.step('Verify auto-mapped flow nodes', async () => {
+    await test.step('Verify mapped flow node values', async () => {
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
+        {
+          label: /target element for embedded/i,
+          targetValue: 'embedded',
+        },
         {
           label: /target element for camunda form/i,
           targetValue: 'camunda_form',
