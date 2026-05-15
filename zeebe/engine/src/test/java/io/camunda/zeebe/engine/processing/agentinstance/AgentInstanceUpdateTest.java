@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -83,6 +85,127 @@ public class AgentInstanceUpdateTest {
     assertThat(updated.getKey()).isEqualTo(agentInstanceKey);
     assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldAccumulateMetricsAsDeltas() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withMetricsDelta(10L, 5L, 1, 0)
+        .update();
+
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(20L, 15L, 2, 1)
+            .update();
+
+    // then
+    final var updates =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .limit(2)
+            .toList();
+    assertThat(updates).hasSize(2);
+
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(30L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(20L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(3);
+    assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(secondUpdate.getValue().getChangedAttributes()).containsExactly("metrics");
+  }
+
+  @Test
+  public void shouldRejectMetricDeltaBelowNotProvidedSentinel() {
+    // given — anything below -1 (the not-provided sentinel) is invalid
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(-2L, 0L, 0, 0)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).containsIgnoringCase("metric delta");
+  }
+
+  @Test
+  public void shouldTreatMetricDeltaOfMinusOneAsNotProvided() {
+    // given — bring metrics to a known baseline
+    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withMetricsDelta(10L, 20L, 1, 2)
+        .update();
+
+    // when — only inputTokens is provided; the other fields are -1 (not provided)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(5L, -1L, -1, -1)
+            .update();
+
+    // then — only inputTokens moves; not-provided fields are left untouched, and "metrics" still
+    // appears in changedAttributes because at least one field changed
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(15L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(20L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(2);
+    assertThat(updated.getValue().getChangedAttributes()).contains("metrics");
+  }
+
+  @Test
+  public void shouldDropMetricsFromChangedAttributesWhenAllDeltasAreNoOp() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — all deltas are either 0 (provided but no change) or -1 (not provided)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(0L, -1L, 0, -1)
+            .update();
+
+    // then — UPDATED is still emitted, but the event signals that no field changed by omitting
+    // "metrics" from changedAttributes
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
+    assertThat(updated.getValue().getChangedAttributes()).doesNotContain("metrics");
+  }
+
+  @Test
+  public void shouldNotEnforceLimits() {
+    // given — CREATE the agent instance directly (limits are reset on CREATE anyway, so the
+    // intent here is to assert the UPDATE processor does not enforce maxTokens / etc.).
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — UPDATE with input-tokens delta of 200, well above any reasonable max-tokens.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(200L, 0L, 0, 0)
+            .update();
+
+    // then — UPDATED is emitted normally; no limit-based rejection.
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(200L);
   }
 
   @Test
