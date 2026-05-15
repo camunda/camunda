@@ -8,12 +8,20 @@
 package io.camunda.zeebe.engine.scheduled.runtime;
 
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.Task;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import java.time.InstantSource;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
   private final Map<String, RegisteredTask> tasks = new LinkedHashMap<>();
+  private ProcessingScheduleService scheduleService;
+  private InstantSource clock;
+  private boolean recovered;
 
   @Override
   public Handle register(
@@ -50,6 +58,79 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    // implemented in Task 5
+    scheduleService = processingContext.getScheduleService();
+    clock = processingContext.getClock();
+    recovered = true;
+    for (final var task : tasks.values()) {
+      armNextRun(task);
+    }
+  }
+
+  private void armNextRun(final RegisteredTask task) {
+    if (!recovered || task.paused) {
+      return;
+    }
+    final long candidate = chooseNextRunAt(task);
+    if (candidate == Long.MAX_VALUE) {
+      return;
+    }
+    final Task taskAdapter = builder -> runTask(task, builder);
+    task.currentScheduled =
+        task.options.runAsync()
+            ? scheduleService.runAtAsync(candidate, taskAdapter, task.options.taskGroup())
+            : scheduleService.runAt(candidate, taskAdapter);
+  }
+
+  private long chooseNextRunAt(final RegisteredTask task) {
+    final long now = clock.millis();
+    long candidate = scheduleCandidate(task, now);
+    if (task.latestHint instanceof Hint.NextDueAt next) {
+      candidate = Math.min(candidate, next.timestamp());
+    }
+    if (task.latestHint instanceof Hint.MoreWorkPending) {
+      candidate = Math.min(candidate, now);
+    }
+    candidate = Math.min(candidate, task.latestNudgeAtOrBefore);
+    final long floor = now + minResolution(task);
+    return Math.max(candidate, floor);
+  }
+
+  private long scheduleCandidate(final RegisteredTask task, final long now) {
+    return switch (task.schedule) {
+      case Schedule.Periodic p ->
+          task.lastRunAt < 0
+              ? now + p.interval().toMillis()
+              : task.lastRunAt + p.interval().toMillis();
+      case Schedule.OnDemand ignored -> Long.MAX_VALUE;
+    };
+  }
+
+  private long minResolution(final RegisteredTask task) {
+    return switch (task.schedule) {
+      case Schedule.Periodic p -> p.interval().toMillis();
+      case Schedule.OnDemand o -> o.minDelay().toMillis();
+    };
+  }
+
+  private TaskResult runTask(final RegisteredTask task, final TaskResultBuilder builder) {
+    task.currentScheduled = null;
+    task.lastRunAt = clock.millis();
+    final var ctx =
+        new Context() {
+          @Override
+          public InstantSource clock() {
+            return clock;
+          }
+
+          @Override
+          public TaskResultBuilder resultBuilder() {
+            return builder;
+          }
+        };
+    final Result result = task.task.run(ctx);
+    task.latestHint = result.hint();
+    task.latestNudgeAtOrBefore = Long.MAX_VALUE;
+    armNextRun(task);
+    return result.taskResult();
   }
 }

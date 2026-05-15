@@ -58,4 +58,34 @@ class DefaultScheduledTaskRuntimeTest {
           .hasMessageContaining("task-a");
     }
   }
+
+  @Nested
+  final class LifecycleTest {
+
+    @Test
+    void shouldSchedulePeriodicTaskAfterOnRecovered() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var runs = new java.util.concurrent.atomic.AtomicInteger();
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> {
+            runs.incrementAndGet();
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+
+      // when
+      runtime.onRecovered(context);
+      scheduleService.advanceTo(1100);
+
+      // then
+      assertThat(runs.get()).isEqualTo(1);
+    }
+  }
 }
