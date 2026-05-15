@@ -44,15 +44,9 @@ public class PhysicalTenantInterceptor implements HandlerInterceptor {
     final Map<String, String> uriVars =
         (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
     final String tenantId =
-        uriVars != null
-            ? uriVars.get(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID)
-            : null;
-
-    if (tenantId == null) {
-      PhysicalTenantContext.setPhysicalTenantId(
-          request, PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
-      return true;
-    }
+        uriVars.getOrDefault(
+            PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID,
+            PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
 
     if (!resolver.exists(tenantId)) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown physical tenant: " + tenantId);

@@ -11,6 +11,7 @@ import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -32,7 +33,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
   /** Path segment inserted between {@code /v2} and the original resource path. */
-  static final String PREFIX_SEGMENT =
+  private static final String PREFIX_SEGMENT =
       "physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private static final String V2 = "/v2";
@@ -40,6 +41,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
   @Override
   protected void registerHandlerMethod(
       final Object handler, final Method method, final RequestMappingInfo mapping) {
+    // this is needed to keep original routes, without prefixes
     super.registerHandlerMethod(handler, method, mapping);
 
     final Class<?> beanType = resolveBeanType(handler);
@@ -53,14 +55,14 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
     }
   }
 
-  /** Visible for testing. */
-  protected boolean shouldPrefix(final Class<?> beanType) {
+  @VisibleForTesting
+  boolean shouldPrefix(final Class<?> beanType) {
     return AnnotatedElementUtils.hasAnnotation(beanType, CamundaRestController.class)
         && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
   }
 
-  /** Visible for testing. */
-  protected RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
+  @VisibleForTesting
+  RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
     final Set<String> patterns = extractPatterns(mapping);
     final Set<String> prefixed = new LinkedHashSet<>();
     for (final String pattern : patterns) {
