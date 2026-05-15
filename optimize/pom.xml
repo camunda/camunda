@@ -46,6 +46,8 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <zeebe.version>${project.version}</zeebe.version>
+    <!-- This is used in the start-backend.js script to determine the backing Camunda version -->
+    <camunda.docker.version>8.9.0</camunda.docker.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
