@@ -40,6 +40,8 @@ public final class FakeScheduleService implements ProcessingScheduleService {
       new PriorityQueue<>(Comparator.comparingLong(s -> s.fireAt));
   private final AtomicInteger seq = new AtomicInteger(0);
   private final List<String> firedNames = new ArrayList<>();
+  private int syncCount;
+  private int asyncCount;
 
   public FakeScheduleService(final FakeClock clock) {
     this.clock = clock;
@@ -47,6 +49,14 @@ public final class FakeScheduleService implements ProcessingScheduleService {
 
   public List<String> firedNames() {
     return firedNames;
+  }
+
+  public int syncCount() {
+    return syncCount;
+  }
+
+  public int asyncCount() {
+    return asyncCount;
   }
 
   /** Fires every queued task whose fire time is <= {@code timestamp}, in order. */
@@ -69,59 +79,70 @@ public final class FakeScheduleService implements ProcessingScheduleService {
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
+    syncCount++;
     return enqueue(clock.millis() + delay.toMillis(), null, task);
   }
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Task task) {
+    syncCount++;
     return enqueue(clock.millis() + delay.toMillis(), task, null);
   }
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Task task) {
+    syncCount++;
     return enqueue(timestamp, task, null);
   }
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
+    syncCount++;
     return enqueue(timestamp, null, task);
   }
 
   @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
+    syncCount++;
     enqueue(clock.millis() + delay.toMillis(), task, null);
   }
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
+    asyncCount++;
     runAtFixedRate(delay, task);
   }
 
   @Override
   public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
+    asyncCount++;
     return enqueue(clock.millis() + delay.toMillis(), task, null);
   }
 
   @Override
   public ScheduledTask runAtAsync(final long timestamp, final Task task) {
+    asyncCount++;
     return enqueue(timestamp, task, null);
   }
 
   @Override
   public void runAtFixedRateAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    asyncCount++;
     runAtFixedRate(delay, task);
   }
 
   @Override
   public ScheduledTask runDelayedAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    asyncCount++;
     return enqueue(clock.millis() + delay.toMillis(), task, null);
   }
 
   @Override
   public ScheduledTask runAtAsync(
       final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
+    asyncCount++;
     return enqueue(timestamp, task, null);
   }
 

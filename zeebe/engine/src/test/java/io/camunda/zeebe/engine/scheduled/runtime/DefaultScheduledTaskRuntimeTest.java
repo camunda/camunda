@@ -459,4 +459,53 @@ class DefaultScheduledTaskRuntimeTest {
       assertThat(fireTimes).containsExactly(1100L);
     }
   }
+
+  @Nested
+  final class AsyncOptionTest {
+
+    @Test
+    void shouldScheduleAsyncWhenRunAsyncOptionIsTrue() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> Result.idle(ctx.resultBuilder()),
+          TaskOptions.async(
+              io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING));
+
+      // when
+      runtime.onRecovered(context);
+
+      // then
+      assertThat(scheduleService.asyncCount()).isEqualTo(1);
+      assertThat(scheduleService.syncCount()).isZero();
+    }
+
+    @Test
+    void shouldScheduleSyncWhenRunAsyncOptionIsFalse() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+
+      final var runtime = new DefaultScheduledTaskRuntime();
+      runtime.register(
+          "task-a",
+          new Schedule.Periodic(Duration.ofMillis(100)),
+          ctx -> Result.idle(ctx.resultBuilder()),
+          TaskOptions.sync());
+
+      // when
+      runtime.onRecovered(context);
+
+      // then
+      assertThat(scheduleService.syncCount()).isEqualTo(1);
+      assertThat(scheduleService.asyncCount()).isZero();
+    }
+  }
 }
