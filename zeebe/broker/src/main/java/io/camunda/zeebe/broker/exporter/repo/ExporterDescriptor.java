@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Map;
+import java.util.Objects;
 
 public class ExporterDescriptor {
   private final ExporterConfiguration configuration;
@@ -42,5 +43,21 @@ public class ExporterDescriptor {
 
   public boolean isSameTypeAs(final ExporterDescriptor other) {
     return exporterClass.equals(other.exporterClass);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final ExporterDescriptor other)) {
+      return false;
+    }
+    return Objects.equals(getId(), other.getId());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(getId());
   }
 }
