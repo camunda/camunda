@@ -213,6 +213,35 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
+  public void shouldPreserveLimitsFromCommand() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+
+    // when -- limits supplied on the command must be preserved on the CREATED event.
+    final var created =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withLimits(1000L, 10, 20)
+            .create();
+
+    // then
+    assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(1000L);
+    assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(10);
+    assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(20);
+  }
+
+  @Test
   public void shouldAcceptServiceTaskElementType() {
     // given
     ENGINE

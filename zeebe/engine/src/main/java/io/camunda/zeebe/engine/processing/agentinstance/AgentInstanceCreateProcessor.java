@@ -157,6 +157,12 @@ public final class AgentInstanceCreateProcessor
         .setProvider(commandValue.getDefinition().getProvider())
         .setSystemPrompt(commandValue.getDefinition().getSystemPrompt());
 
+    event
+        .getLimits()
+        .setMaxTokens(commandValue.getLimits().getMaxTokens())
+        .setMaxModelCalls(commandValue.getLimits().getMaxModelCalls())
+        .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
+
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
     responseWriter.writeEventOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
