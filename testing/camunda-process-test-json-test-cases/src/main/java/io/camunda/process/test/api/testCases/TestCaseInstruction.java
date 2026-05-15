@@ -25,6 +25,7 @@ import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceI
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableSimilarToInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobAdHocSubProcessInstruction;
@@ -77,6 +78,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = AssertVariablesInstruction.class,
       name = TestCaseInstructionType.ASSERT_VARIABLES),
+  @JsonSubTypes.Type(
+      value = AssertVariableSimilarToInstruction.class,
+      name = TestCaseInstructionType.ASSERT_VARIABLE_SIMILAR_TO),
   @JsonSubTypes.Type(
       value = BroadcastSignalInstruction.class,
       name = TestCaseInstructionType.BROADCAST_SIGNAL),

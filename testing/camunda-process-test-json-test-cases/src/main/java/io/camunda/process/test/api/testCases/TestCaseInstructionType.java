@@ -27,6 +27,7 @@ public class TestCaseInstructionType {
   public static final String ASSERT_USER_TASK = "ASSERT_USER_TASK";
   public static final String ASSERT_VARIABLE = "ASSERT_VARIABLE";
   public static final String ASSERT_VARIABLES = "ASSERT_VARIABLES";
+  public static final String ASSERT_VARIABLE_SIMILAR_TO = "ASSERT_VARIABLE_SIMILAR_TO";
   public static final String BROADCAST_SIGNAL = "BROADCAST_SIGNAL";
   public static final String COMPLETE_JOB = "COMPLETE_JOB";
   public static final String COMPLETE_JOB_AD_HOC_SUB_PROCESS = "COMPLETE_JOB_AD_HOC_SUB_PROCESS";
