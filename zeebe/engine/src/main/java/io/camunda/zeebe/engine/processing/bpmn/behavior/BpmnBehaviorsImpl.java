@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.SecretsEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -107,7 +108,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
                         CombinedEvaluationContext.withContexts(
                             namespacedMergedClusterScope,
                             namespacedTenantClusterScope,
-                            namespacedGlobalClusterScope)));
+                            namespacedGlobalClusterScope))
+                    .register("secrets", new SecretsEvaluationContext()));
 
     final var processVariableContext =
         new VariableEvaluationContext(processingState.getVariableState());
