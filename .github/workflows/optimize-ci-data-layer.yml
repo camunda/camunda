@@ -76,7 +76,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Read Java/version info
         id: "pom-info"
-        uses: YunaBraska/java-info-action@e560d3b1ec14ab36dc95b09b49bb0a2289554f85 # 3.0.3
+        uses: YunaBraska/java-info-action@090786d328e343461f8650f54e5be4a72d2c2cee # 3.0.4
       - name: Start Database
         uses: ./.github/actions/compose
         with:
