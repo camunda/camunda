@@ -10,11 +10,11 @@ package io.camunda.webapps.schema.descriptors.template;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import java.util.Optional;
 
 public class AgentInstanceTemplate extends AbstractTemplateDescriptor
-    implements ProcessInstanceDependant, Prio4Backup {
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "agent-instance";
   public static final String INDEX_VERSION = "8.10.0";
