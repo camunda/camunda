@@ -738,6 +738,21 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The number of batch operation items to insert in a single batched SQL when creating the items for a
         # batch operation. This is only relevant when exportBatchOperationItemsOnCreation is set to true.
         batch-operation-item-insert-block-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_BATCHOPERATIONITEMINSERTBLOCKSIZE
+        connection-pool: # Type: io.camunda.configuration.RdbmsConnectionPool
+          # Maximum time the pool waits for a connection before throwing.
+          connection-timeout: "30s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_CONNECTIONTIMEOUT
+          # Maximum time a connection is allowed to sit idle in the pool before being evicted.
+          idle-timeout: "10m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_IDLETIMEOUT
+          # Threshold for logging a possible connection leak. Set to {@link Duration#ZERO} (the HikariCP default)
+          # to disable leak detection.
+          leak-detection-threshold: "0s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_LEAKDETECTIONTHRESHOLD
+          # Maximum lifetime of a connection in the pool.
+          max-lifetime: "30m" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXLIFETIME
+          # Maximum number of connections kept by the pool.
+          maximum-pool-size: 10 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXIMUMPOOLSIZE
+          # Minimum number of idle connections kept by the pool.
+          minimum-idle: 2 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_CONNECTIONPOOL_MINIMUMIDLE
+
         # If true, batch operation items are exported to the database when the batch operation is created
         # (status = ACTIVE). If false, the items are created on demand when they have been processed. When set
         # to true, this ensures that the items are available when the batch operation is created, but it may

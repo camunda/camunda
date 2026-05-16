@@ -203,7 +203,7 @@ public class MultiExporterIT {
     final MultiDbConfigurator configurator = new MultiDbConfigurator(testStandaloneApplication);
 
     // configure the app to use RDBMS as secondary storage, with an in-memory H2 database
-    configurator.configureRDBMSSupport(false, "jdbc:h2:mem:camunda", "sa", "", "org.h2.Driver");
+    configurator.configureRDBMSSupport(false, "jdbc:h2:mem:camunda", "sa", "");
 
     final String containerUrl =
         String.format(
