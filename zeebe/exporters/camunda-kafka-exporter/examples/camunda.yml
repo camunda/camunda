@@ -1,0 +1,31 @@
+camunda:
+  webapps:
+    operate:
+      enabled: false
+    tasklist:
+      enabled: false
+    identity:
+      enabled: false
+    admin:
+      enabled: false
+  data:
+    secondary-storage:
+      autoconfigure-camunda-exporter: false
+
+zeebe:
+  broker:
+    exporters:
+      camunda-kafka:
+        className: io.camunda.exporter.kafka.CamundaKafkaExporter
+        args:
+          maxBatchSize: 100
+          maxQueueSize: 10000
+          overflowPolicy: drop_oldest
+          flushIntervalMs: 1000
+          producer:
+            servers: kafka:29092
+            clientId: zeebe
+          records:
+            defaults:
+              topic: zeebe
+              type: event

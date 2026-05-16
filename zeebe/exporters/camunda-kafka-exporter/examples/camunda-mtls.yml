@@ -1,0 +1,42 @@
+camunda:
+  webapps:
+    operate:
+      enabled: false
+    tasklist:
+      enabled: false
+    identity:
+      enabled: false
+    admin:
+      enabled: false
+  data:
+    secondary-storage:
+      autoconfigure-camunda-exporter: false
+
+zeebe:
+  broker:
+    exporters:
+      camunda-kafka:
+        className: io.camunda.exporter.kafka.CamundaKafkaExporter
+        args:
+          maxBatchSize: 100
+          maxQueueSize: 10000
+          overflowPolicy: drop_oldest
+          flushIntervalMs: 1000
+          producer:
+            servers: kafka:19094
+            clientId: zeebe
+            # Mutual TLS: present the Zeebe client certificate to the broker.
+            # The broker validates it against the shared CA in the truststore.
+            # No username/password — identity is established entirely via X.509 certificates.
+            config: |
+              security.protocol=SSL
+              ssl.truststore.location=/etc/camunda/kafka/truststore.p12
+              ssl.truststore.password=changeit
+              ssl.truststore.type=PKCS12
+              ssl.keystore.location=/etc/camunda/kafka/client-zeebe.p12
+              ssl.keystore.password=changeit
+              ssl.keystore.type=PKCS12
+          records:
+            defaults:
+              topic: zeebe
+              type: event

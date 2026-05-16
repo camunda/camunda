@@ -25,3 +25,20 @@ vscode-settings-sync: ## Merge repository settings with user's VS Code settings
 
 .PHONY: vscode-sync-all
 vscode-sync-all: vscode-mcp-sync vscode-settings-sync ## Sync both MCP and settings configurations
+
+.PHONY: kafka-exporter-smoke
+kafka-exporter-smoke: ## Start local Kafka and verify consume flow for camunda-kafka-exporter
+	@echo "Running Kafka exporter smoke test..."
+	@bash ./zeebe/exporters/camunda-kafka-exporter/examples/smoke-test.sh
+
+.PHONY: kafka-exporter-smoke-down
+kafka-exporter-smoke-down: ## Stop and remove local Kafka used by camunda-kafka-exporter smoke tests
+	@docker compose -f ./zeebe/exporters/camunda-kafka-exporter/docker-compose.sm-kafka.yml down -v
+
+.PHONY: kafka-exporter-camunda-stack-up
+kafka-exporter-camunda-stack-up: ## Start local Camunda + Kafka integration stack for kafka exporter
+	@docker compose -f ./zeebe/exporters/camunda-kafka-exporter/docker-compose.sm-camunda-kafka.yml up -d
+
+.PHONY: kafka-exporter-camunda-stack-down
+kafka-exporter-camunda-stack-down: ## Stop local Camunda + Kafka integration stack for kafka exporter
+	@docker compose -f ./zeebe/exporters/camunda-kafka-exporter/docker-compose.sm-camunda-kafka.yml down -v
