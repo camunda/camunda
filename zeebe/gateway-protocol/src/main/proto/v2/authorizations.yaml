@@ -234,6 +234,9 @@ components:
         - resourcePropertyName
         - resourceType
         - permissionTypes
+      x-properties-added-in-version:
+        - propertyName: resourcePropertyName
+          addedInVersion: "8.9"
 
     AuthorizationRequest:
       x-polymorphic-schema: true
@@ -301,6 +304,9 @@ components:
           description: The type of resource to search permissions for.
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
+      x-properties-added-in-version:
+        - propertyName: resourcePropertyNames
+          addedInVersion: "8.9"
 
     AuthorizationResult:
       required:
@@ -339,6 +345,9 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
+      x-properties-added-in-version:
+        - propertyName: resourcePropertyName
+          addedInVersion: "8.9"
 
     AuthorizationSearchResult:
       type: object

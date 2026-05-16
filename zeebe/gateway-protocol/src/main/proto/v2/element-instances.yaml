@@ -502,6 +502,9 @@ components:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     ElementInstanceStateEnum:
       description: Element states

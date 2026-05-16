@@ -567,6 +567,31 @@ components:
           description: The key of the element instance.
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+      x-properties-added-in-version:
+        - propertyName: priority
+          addedInVersion: "8.8"
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.8"
+        - propertyName: creationDate
+          addedInVersion: "8.8"
+        - propertyName: completionDate
+          addedInVersion: "8.8"
+        - propertyName: followUpDate
+          addedInVersion: "8.8"
+        - propertyName: dueDate
+          addedInVersion: "8.8"
+        - propertyName: processInstanceVariables
+          addedInVersion: "8.8"
+        - propertyName: localVariables
+          addedInVersion: "8.8"
+        - propertyName: userTaskKey
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.9"
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -715,6 +740,55 @@ components:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+      x-properties-added-in-version:
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: state
+          addedInVersion: "8.6"
+        - propertyName: assignee
+          addedInVersion: "8.6"
+        - propertyName: elementId
+          addedInVersion: "8.6"
+        - propertyName: candidateGroups
+          addedInVersion: "8.8"
+        - propertyName: candidateUsers
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: creationDate
+          addedInVersion: "8.6"
+        - propertyName: completionDate
+          addedInVersion: "8.6"
+        - propertyName: followUpDate
+          addedInVersion: "8.6"
+        - propertyName: dueDate
+          addedInVersion: "8.6"
+        - propertyName: tenantId
+          addedInVersion: "8.8"
+        - propertyName: externalFormReference
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionVersion
+          addedInVersion: "8.6"
+        - propertyName: customHeaders
+          addedInVersion: "8.6"
+        - propertyName: priority
+          addedInVersion: "8.6"
+        - propertyName: userTaskKey
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: processName
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: formKey
+          addedInVersion: "8.6"
+        - propertyName: tags
+          addedInVersion: "8.9"
 
     UserTaskCompletionRequest:
       type: object
@@ -820,6 +894,9 @@ components:
           default: 50
           maximum: 100
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: priority
+          addedInVersion: "8.6"
 
     UserTaskVariableSearchQuerySortRequest:
       type: object
@@ -953,6 +1030,17 @@ components:
             $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$like"
+          addedInVersion: "8.8"
 
     UserTaskAuditLogFilter:
       description: The user task audit log search filters.

@@ -375,6 +375,21 @@ components:
             Null when the property is absent.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: messageSubscriptionType
+          addedInVersion: "8.10"
+        - propertyName: toolProperties
+          addedInVersion: "8.10"
+        - propertyName: processDefinitionName
+          addedInVersion: "8.10"
+        - propertyName: processDefinitionVersion
+          addedInVersion: "8.10"
+        - propertyName: toolName
+          addedInVersion: "8.10"
+        - propertyName: inboundConnectorType
+          addedInVersion: "8.10"
 
     MessageSubscriptionSearchQuerySortRequest:
       type: object
@@ -490,6 +505,39 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
+      x-properties-added-in-version:
+        - propertyName: messageSubscriptionKey
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.9"
+        - propertyName: processDefinitionId
+          addedInVersion: "8.8"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: elementId
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: messageSubscriptionState
+          addedInVersion: "8.8"
+        - propertyName: lastUpdatedDate
+          addedInVersion: "8.8"
+        - propertyName: messageName
+          addedInVersion: "8.8"
+        - propertyName: correlationKey
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.8"
+        - propertyName: messageSubscriptionType
+          addedInVersion: "8.10"
+        - propertyName: processDefinitionName
+          addedInVersion: "8.10"
+        - propertyName: processDefinitionVersion
+          addedInVersion: "8.10"
+        - propertyName: toolName
+          addedInVersion: "8.10"
+        - propertyName: inboundConnectorType
+          addedInVersion: "8.10"
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:
@@ -578,6 +626,9 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID associated with this correlated message subscription.
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     CorrelatedMessageSubscriptionSearchQuery:
       type: object

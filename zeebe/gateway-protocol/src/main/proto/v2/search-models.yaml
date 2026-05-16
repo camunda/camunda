@@ -9,6 +9,9 @@ components:
           description: Pagination criteria.
           allOf:
             - $ref: '#/components/schemas/SearchQueryPageRequest'
+      x-properties-added-in-version:
+        - propertyName: page
+          addedInVersion: "8.6"
 
     SearchQueryPageRequest:
       x-polymorphic-schema: true
@@ -46,6 +49,11 @@ components:
           format: int32
           default: 100
           minimum: 1
+      x-properties-added-in-version:
+        - propertyName: from
+          addedInVersion: "8.6"
+        - propertyName: limit
+          addedInVersion: "8.6"
 
     CursorForwardPagination:
       type: object
@@ -64,6 +72,11 @@ components:
           default: 100
           minimum: 1
           maximum: 10000
+      x-properties-added-in-version:
+        - propertyName: after
+          addedInVersion: "8.8"
+        - propertyName: limit
+          addedInVersion: "8.6"
 
     CursorBackwardPagination:
       type: object
@@ -82,6 +95,9 @@ components:
           default: 100
           minimum: 1
           maximum: 10000
+      x-properties-added-in-version:
+        - propertyName: before
+          addedInVersion: "8.8"
 
     SearchQueryResponse:
       type: object
@@ -90,6 +106,9 @@ components:
       properties:
         page:
           $ref: '#/components/schemas/SearchQueryPageResponse'
+      x-properties-added-in-version:
+        - propertyName: page
+          addedInVersion: "8.6"
 
     SortOrderEnum:
       description: The order in which to sort the related field.
@@ -129,3 +148,10 @@ components:
           nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/EndCursor'
+      x-properties-added-in-version:
+        - propertyName: hasMoreTotalItems
+          addedInVersion: "8.8"
+        - propertyName: startCursor
+          addedInVersion: "8.8"
+        - propertyName: endCursor
+          addedInVersion: "8.8"
