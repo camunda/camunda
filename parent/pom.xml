@@ -177,7 +177,7 @@
     <version.reflections>0.10.2</version.reflections>
     <version.hikari-cp>7.0.2</version.hikari-cp>
 
-    <version.commons-io>2.21.0</version.commons-io>
+    <version.commons-io>2.22.0</version.commons-io>
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.4</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
