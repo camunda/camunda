@@ -102,6 +102,7 @@ public class BackupPriorityConfiguration {
     final List<Prio3Backup> prio3 =
         List.of(
             // CAMUNDA
+            new AgentInstanceTemplate(indexPrefix, isElasticsearch),
             new CorrelatedMessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             // OPERATE
             new BatchOperationTemplate(indexPrefix, isElasticsearch),
@@ -142,7 +143,6 @@ public class BackupPriorityConfiguration {
             new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
             new AuditLogTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
-            new AgentInstanceTemplate(indexPrefix, isElasticsearch),
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
