@@ -101,9 +101,8 @@ import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
@@ -411,16 +410,16 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean(PlatformTransactionManager.class)
-  public TransactionRunner springTransactionRunner(
-      final PlatformTransactionManager transactionManager) {
+  public TransactionRunner transactionRunner(
+      final ObjectProvider<PlatformTransactionManager> transactionManagerProvider) {
+    final var transactionManager = transactionManagerProvider.getIfAvailable();
+    if (transactionManager == null) {
+      LOG.warn(
+          "No PlatformTransactionManager bean available — falling back to a noop TransactionRunner. "
+              + "Batched RDBMS writes will not be transactional and will not roll back on failure.");
+      return TransactionRunner.noop();
+    }
     return new SpringTransactionRunner(transactionManager);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(TransactionRunner.class)
-  public TransactionRunner noOpTransactionRunner() {
-    return TransactionRunner.noop();
   }
 
   @Bean
