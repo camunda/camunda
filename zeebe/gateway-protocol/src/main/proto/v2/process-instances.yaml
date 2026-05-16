@@ -814,6 +814,13 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: runtimeInstructions
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -944,6 +951,9 @@ components:
           example: Activity_106kb
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+      x-properties-added-in-version:
+        - propertyName: type
+          addedInVersion: "8.9"
 
     CreateProcessInstanceResult:
       x-semantic-provider:

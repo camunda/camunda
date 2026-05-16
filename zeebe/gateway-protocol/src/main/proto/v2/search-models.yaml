@@ -53,7 +53,7 @@ components:
         - propertyName: from
           addedInVersion: "8.6"
         - propertyName: limit
-          addedInVersion: "8.8"
+          addedInVersion: "8.6"
 
     CursorForwardPagination:
       type: object
@@ -75,6 +75,8 @@ components:
       x-properties-added-in-version:
         - propertyName: after
           addedInVersion: "8.8"
+        - propertyName: limit
+          addedInVersion: "8.6"
 
     CursorBackwardPagination:
       type: object
