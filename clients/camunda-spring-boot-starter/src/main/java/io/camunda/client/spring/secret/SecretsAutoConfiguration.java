@@ -15,28 +15,35 @@
  */
 package io.camunda.client.spring.secret;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.secret.SecretsClient;
-import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.secret.SecretResolvingJsonMapper;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Primary;
 
 /**
- * Wires transparent secret resolution into the Camunda Spring Boot client. Disabled by default;
- * enable with {@code camunda.client.secrets.transparent-resolution=true}.
+ * Layers transparent {@code camunda.secrets.*} resolution on top of whatever {@link JsonMapper}
+ * bean the application already exposes. Disabled by default; enable with {@code
+ * camunda.client.secrets.transparent-resolution=true}.
  *
- * <p>When enabled, a {@link SecretResolvingJsonMapper} is registered as the primary {@link
- * JsonMapper}; it wraps the default {@link CamundaObjectMapper} and resolves {@code
- * camunda.secrets.*} references on each variable deserialization by delegating to {@link
- * CamundaClient#newSecretResolveCommand()}. The {@link CamundaClient} is injected lazily to avoid a
- * circular dependency between the client and the mapper it uses.
+ * <p>Activation is purely additive:
+ *
+ * <ul>
+ *   <li>A {@link BeanPostProcessor} wraps the existing {@link JsonMapper} bean (default or
+ *       user-provided) with a {@link SecretResolvingJsonMapper}, so a user's custom Jackson
+ *       modules, naming strategies, and serialization features are preserved.
+ *   <li>A default {@link SecretsClient} is provided only if the user has not defined their own
+ *       (e.g. for tests or alternative backends). The default delegates to {@link
+ *       CamundaClient#newSecretResolveCommand()}.
+ *   <li>The {@link CamundaClient} is injected lazily so the wrapper can be assembled before the
+ *       client itself is fully constructed.
+ * </ul>
  */
 @AutoConfiguration
 @ConditionalOnProperty(
@@ -51,11 +58,24 @@ public class SecretsAutoConfiguration {
     return SecretsClient.fromCamundaClient(camundaClient);
   }
 
+  /**
+   * Wraps every {@link JsonMapper} bean with {@link SecretResolvingJsonMapper}. {@code static} so
+   * Spring can instantiate the post-processor before any regular bean is created without forcing
+   * eager creation of the enclosing configuration class. {@link ObjectProvider} defers {@link
+   * SecretsClient} lookup until first use, avoiding ordering issues.
+   */
   @Bean
-  @Primary
-  public JsonMapper secretResolvingJsonMapper(
-      final ObjectMapper objectMapper, final SecretsClient secretsClient) {
-    return new SecretResolvingJsonMapper(
-        new CamundaObjectMapper(objectMapper.copy()), secretsClient);
+  static BeanPostProcessor secretResolvingJsonMapperWrapper(
+      final ObjectProvider<SecretsClient> secretsClient) {
+    return new BeanPostProcessor() {
+      @Override
+      public Object postProcessAfterInitialization(final Object bean, final String beanName) {
+        if (bean instanceof JsonMapper && !(bean instanceof SecretResolvingJsonMapper)) {
+          return new SecretResolvingJsonMapper(
+              (JsonMapper) bean, references -> secretsClient.getObject().resolve(references));
+        }
+        return bean;
+      }
+    };
   }
 }
