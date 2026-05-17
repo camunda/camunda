@@ -12,4 +12,9 @@ import org.agrona.DirectBuffer;
 
 public record TestJournalRecord(
     long index, long asqn, long checksum, DirectBuffer data, DirectBuffer serializedRecord)
-    implements JournalRecord {}
+    implements JournalRecord {
+  @Override
+  public int size() {
+    return serializedRecord != null ? serializedRecord.capacity() : 0;
+  }
+}

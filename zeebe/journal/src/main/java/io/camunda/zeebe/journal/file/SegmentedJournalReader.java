@@ -165,6 +165,8 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public long bytesUntilEnd() {
+    // The journal's readlock serialises with deleteUntil and segment rotation so the segment list
+    // we walk and the appendedBytes we read are a consistent snapshot.
     final var stamp = journal.acquireReadlock();
     try {
       long bytes = currentSegment.appendedBytes() - currentReader.getOffsetInSegment();

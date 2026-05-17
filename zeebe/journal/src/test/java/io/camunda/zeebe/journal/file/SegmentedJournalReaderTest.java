@@ -156,6 +156,91 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
+  void shouldReturnZeroBytesUntilEndOnEmptyJournal() {
+    // when - reader on an empty journal
+    // then - nothing to replicate
+    assertThat(reader.bytesUntilEnd()).isZero();
+  }
+
+  @Test
+  void shouldReturnTotalBytesWhenReaderAtFirstEntry() {
+    // given - one segment's worth of entries; reader at first
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) ENTRIES_PER_SEGMENT * entrySize);
+  }
+
+  @Test
+  void shouldReturnZeroBytesUntilEndAfterConsumingAllEntries() {
+    // given
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+    while (reader.hasNext()) {
+      reader.next();
+    }
+
+    // then - reader is past the last entry
+    assertThat(reader.bytesUntilEnd()).isZero();
+  }
+
+  @Test
+  void shouldDecreaseBytesUntilEndAsReaderAdvances() {
+    // given
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // when - read one entry
+    reader.next();
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) (ENTRIES_PER_SEGMENT - 1) * entrySize);
+  }
+
+  @Test
+  void shouldSumBytesUntilEndAcrossMultipleSegments() {
+    // given - three segments' worth of entries (max-segment-size forces rotation)
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    final int totalEntries = ENTRIES_PER_SEGMENT * 3;
+    for (int i = 1; i <= totalEntries; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // then - reader at start of segment 1 sees all entries across all three segments
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) totalEntries * entrySize);
+  }
+
+  @Test
+  void shouldReturnRemainingBytesAfterSeekIntoLaterSegment() {
+    // given - three segments' worth of entries
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    final int totalEntries = ENTRIES_PER_SEGMENT * 3;
+    for (int i = 1; i <= totalEntries; i++) {
+      journal.append(i, recordDataWriter);
+    }
+
+    // when - seek to the second segment's first entry, then read it (so reader sits at
+    // its end, i.e. start of next entry)
+    final int seekIndex = ENTRIES_PER_SEGMENT + 1;
+    reader.seek(seekIndex);
+    reader.next();
+
+    // then - bytes remaining are everything strictly after entry ENTRIES_PER_SEGMENT+1
+    final long expected = (long) (totalEntries - seekIndex) * entrySize;
+    assertThat(reader.bytesUntilEnd()).isEqualTo(expected);
+  }
+
+  @Test
   void shouldBuiltIndexOnDemandWhileSeek() {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
