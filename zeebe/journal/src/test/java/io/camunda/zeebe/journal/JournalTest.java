@@ -510,8 +510,14 @@ final class JournalTest {
         new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final Path dataFile = Files.list(directory).findFirst().orElseThrow();
-    final Path log = Files.list(dataFile).findFirst().orElseThrow();
+    final Path dataFile;
+    try (final var stream = Files.list(directory)) {
+      dataFile = stream.findFirst().orElseThrow();
+    }
+    final Path log;
+    try (final var stream = Files.list(dataFile)) {
+      log = stream.findFirst().orElseThrow();
+    }
 
     // when
     journal.close();
@@ -530,8 +536,14 @@ final class JournalTest {
         new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
-    final Path dataFile = Files.list(directory).findFirst().orElseThrow();
-    final Path log = Files.list(dataFile).findFirst().orElseThrow();
+    final Path dataFile;
+    try (final var stream = Files.list(directory)) {
+      dataFile = stream.findFirst().orElseThrow();
+    }
+    final Path log;
+    try (final var stream = Files.list(dataFile)) {
+      log = stream.findFirst().orElseThrow();
+    }
 
     // when
     journal.close();
