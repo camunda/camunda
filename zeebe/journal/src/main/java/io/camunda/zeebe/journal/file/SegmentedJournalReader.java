@@ -164,6 +164,22 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   @Override
+  public long bytesUntilEnd() {
+    final var stamp = journal.acquireReadlock();
+    try {
+      long bytes = currentSegment.appendedBytes() - currentReader.getOffsetInSegment();
+      Segment next = journal.getNextSegment(currentSegment.index());
+      while (next != null) {
+        bytes += next.appendedBytes();
+        next = journal.getNextSegment(next.index());
+      }
+      return Math.max(0, bytes);
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
   public void close() {
     currentReader.close();
     journal.closeReader(this);

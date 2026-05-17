@@ -81,7 +81,7 @@ public final class LogCorrupter {
     for (long index = 1;
         FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;
         index++) {
-      final var record = reader.read(buffer, index);
+      final var record = reader.read(buffer, index, FrameUtil.getLength());
 
       if (record.index() > targetIndex) {
         break;

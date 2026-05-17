@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
  * RecordMetadata}. The second part is {@link RecordData}.
  */
 public record PersistedJournalRecord(
-    RecordMetadata metadata, RecordData record, DirectBuffer serializedRecord)
+    RecordMetadata metadata, RecordData record, DirectBuffer serializedRecord, int size)
     implements JournalRecord {
 
   @Override

@@ -100,6 +100,15 @@ final class SegmentWriter {
     return lastEntryPosition;
   }
 
+  /**
+   * Returns the total bytes of records appended to this segment, excluding the descriptor. Derived
+   * from the writer's buffer position, which is maintained at the end of the last entry by both the
+   * recovery seek and every successful append.
+   */
+  int getAppendedBytes() {
+    return buffer.position() - descriptorLength;
+  }
+
   long getNextIndex() {
     if (lastEntry != null) {
       return lastEntry.index() + 1;
@@ -263,7 +272,8 @@ final class SegmentWriter {
             metadata,
             data,
             new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength + metadataLength, recordLength));
+                writeBuffer, startPosition + frameLength + metadataLength, recordLength),
+            frameLength + metadataLength + recordLength);
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
     lastEntryPosition = startPosition;
@@ -339,7 +349,7 @@ final class SegmentWriter {
   private void advanceToNextEntry(final long nextIndex) {
     final int position = buffer.position();
     FrameUtil.readVersion(buffer);
-    lastEntry = recordUtil.read(buffer, nextIndex);
+    lastEntry = recordUtil.read(buffer, nextIndex, FrameUtil.getLength());
     updateLastAsqn(lastEntry.asqn());
     lastEntryPosition = position;
     index.index(lastEntry, position);

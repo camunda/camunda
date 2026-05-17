@@ -153,6 +153,16 @@ final class Segment implements AutoCloseable, FlushableSegment {
   }
 
   /**
+   * Returns the total bytes of records appended to this segment, excluding the descriptor.
+   *
+   * <p>For closed segments this value is stable after recovery; for the currently-active segment it
+   * advances as new entries are appended.
+   */
+  int appendedBytes() {
+    return writer.getAppendedBytes();
+  }
+
+  /**
    * Returns the segment file.
    *
    * @return The segment file.

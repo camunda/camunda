@@ -26,9 +26,13 @@ public final class JournalRecordReaderUtil {
 
   /**
    * Reads the JournalRecord in the buffer at the current position. After the methods returns, the
-   * position of {@code buffer} will be advanced to the next record.
+   * position of {@code buffer} will be advanced to the next record. {@code frameLength} is the
+   * number of bytes consumed by the caller before invoking this method (i.e. the frame version
+   * byte) — it is included in the returned record's {@link JournalRecord#size()} so that callers
+   * can do exact journal-byte accounting without knowing the framing layout.
    */
-  public JournalRecord read(final ByteBuffer buffer, final long expectedIndex) {
+  public JournalRecord read(
+      final ByteBuffer buffer, final long expectedIndex, final int frameLength) {
     // Mark the buffer so it can be reset if necessary.
     buffer.mark();
 
@@ -78,6 +82,9 @@ public final class JournalRecordReaderUtil {
     }
     buffer.position(startPosition + metadataLength + recordLength);
     return new PersistedJournalRecord(
-        metadata, record, new UnsafeBuffer(buffer, startPosition + metadataLength, recordLength));
+        metadata,
+        record,
+        new UnsafeBuffer(buffer, startPosition + metadataLength, recordLength),
+        frameLength + metadataLength + recordLength);
   }
 }

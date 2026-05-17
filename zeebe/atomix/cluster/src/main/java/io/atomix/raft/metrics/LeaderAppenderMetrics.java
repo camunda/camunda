@@ -33,6 +33,7 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
   private final Counter commitRate;
   private final StatefulGauge nonCommittedEntriesValue;
   private final Map<String, StatefulGauge> nonReplicatedEntries;
+  private final Map<String, StatefulGauge> replicationLagBytes;
 
   public LeaderAppenderMetrics(final String partitionName, final MeterRegistry meterRegistry) {
     super(partitionName);
@@ -41,6 +42,7 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
     appendDataRate = new HashMap<>();
     appendRate = new HashMap<>();
     nonReplicatedEntries = new HashMap<>();
+    replicationLagBytes = new HashMap<>();
 
     commitRate =
         Counter.builder(LeaderMetricsDoc.COMMIT_RATE.getName())
@@ -77,6 +79,12 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
     nonReplicatedEntries
         .computeIfAbsent(memberId, this::registerNonReplicatedEntries)
         .set(remainingEntries);
+  }
+
+  public void observeReplicationLagBytes(final String memberId, final long lagBytes) {
+    replicationLagBytes
+        .computeIfAbsent(memberId, this::registerReplicationLagBytes)
+        .set(lagBytes);
   }
 
   private Timer getAppendLatency(final String memberId) {
@@ -130,6 +138,14 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
         .register(meterRegistry);
   }
 
+  private StatefulGauge registerReplicationLagBytes(final String memberId) {
+    return StatefulGauge.builder(LeaderMetricsDoc.REPLICATION_LAG_BYTES.getName())
+        .description(LeaderMetricsDoc.REPLICATION_LAG_BYTES.getDescription())
+        .tag(RaftKeyNames.FOLLOWER.asString(), memberId)
+        .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+        .register(meterRegistry);
+  }
+
   @Override
   public void close() {
     meterRegistry.remove(commitRate);
@@ -138,5 +154,6 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
     appendRate.values().forEach(meterRegistry::remove);
     appendDataRate.values().forEach(meterRegistry::remove);
     nonReplicatedEntries.values().forEach(meterRegistry::remove);
+    replicationLagBytes.values().forEach(meterRegistry::remove);
   }
 }

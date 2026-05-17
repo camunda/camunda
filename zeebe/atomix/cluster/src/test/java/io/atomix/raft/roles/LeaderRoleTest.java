@@ -464,5 +464,10 @@ public class LeaderRoleTest {
     public ReplicatableJournalRecord getReplicatableJournalRecord() {
       return null;
     }
+
+    @Override
+    public int size() {
+      return 0;
+    }
   }
 }

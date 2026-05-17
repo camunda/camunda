@@ -52,6 +52,13 @@ public final class RaftMemberContext {
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
 
+  // Per-follower log replication lag in bytes. Calibrated to the exact bytes between the
+  // reader and the writer on every reset() (via reader.bytesUntilEnd()); incremented on each
+  // local leader append; decremented on each successful AppendResponse. snapshotInstallRemainingBytes
+  // tracks in-flight snapshot installs separately and is added to the metric reading.
+  private long logReplicationLagBytes;
+  private long snapshotInstallRemainingBytes;
+
   RaftMemberContext(
       final DefaultRaftMember member,
       final RaftClusterContext cluster,
@@ -74,11 +81,44 @@ public final class RaftMemberContext {
     appendSucceeded = false;
     failures = 0;
     failureTime = 0;
+    snapshotInstallRemainingBytes = 0;
+    logReplicationLagBytes = 0;
 
     if (reader != null) {
       closeReader();
       openReader(log);
     }
+  }
+
+  /** Records bytes of a locally-appended entry that this follower has yet to receive. */
+  public void recordAppend(final long bytes) {
+    logReplicationLagBytes += bytes;
+  }
+
+  /** Records bytes of a batch this follower just acknowledged. */
+  public void recordAck(final long bytes) {
+    logReplicationLagBytes -= bytes;
+  }
+
+  /**
+   * Sets the snapshot install remaining bytes when a new snapshot install begins. Decremented on
+   * each chunk ack; zeroed when the install completes.
+   */
+  public void setSnapshotInstallRemainingBytes(final long bytes) {
+    snapshotInstallRemainingBytes = bytes;
+  }
+
+  /** Decrements snapshot install remaining bytes by {@code bytes}, floored at 0. */
+  public void subtractSnapshotInstallRemainingBytes(final long bytes) {
+    snapshotInstallRemainingBytes = Math.max(0, snapshotInstallRemainingBytes - bytes);
+  }
+
+  public long getLogReplicationLagBytes() {
+    return logReplicationLagBytes;
+  }
+
+  public long getSnapshotInstallRemainingBytes() {
+    return snapshotInstallRemainingBytes;
   }
 
   public void close() {
@@ -467,5 +507,8 @@ public final class RaftMemberContext {
     } else {
       currentEntry = null;
     }
+    // After the seek the reader is positioned right after the entry at matchIndex (== index - 1),
+    // so bytesUntilEnd is exactly the bytes the follower still has to receive from this leader.
+    logReplicationLagBytes = reader.bytesUntilEnd();
   }
 }

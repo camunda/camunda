@@ -759,6 +759,11 @@ public final class RaftRule extends ExternalResource {
     public ReplicatableJournalRecord getReplicatableJournalRecord() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int size() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   public interface Configurator {

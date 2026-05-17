@@ -53,4 +53,11 @@ public interface JournalRecord {
    * @return serialized record
    */
   DirectBuffer serializedRecord();
+
+  /**
+   * Returns the total size in bytes occupied by this record in the journal, including the frame and
+   * metadata in addition to the record payload. Used by callers that need exact journal-byte
+   * accounting (e.g. replication-lag tracking) without having to know about the framing layout.
+   */
+  int size();
 }

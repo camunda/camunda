@@ -107,6 +107,17 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
   /** Get the index of the next record to be read. */
   long getNextIndex();
 
+  /**
+   * Returns the total bytes of journal records appended between the reader's current position and
+   * the end of the journal. Used by the Raft leader to size the per-follower log replication lag
+   * right after a seek, without needing per-entry byte accounting on the hot path.
+   *
+   * <p>Implementations may return {@code -1} if the operation is not supported.
+   */
+  default long bytesUntilEnd() {
+    return -1L;
+  }
+
   @Override
   void close();
 }

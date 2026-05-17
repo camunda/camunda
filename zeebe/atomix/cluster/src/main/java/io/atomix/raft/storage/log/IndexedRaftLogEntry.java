@@ -65,4 +65,11 @@ public interface IndexedRaftLogEntry {
    * @return a record to replicate
    */
   ReplicatableJournalRecord getReplicatableJournalRecord();
+
+  /**
+   * Returns the total size in bytes occupied by this entry in the underlying journal, including
+   * frame and metadata. Used by replication-lag tracking to compute exact journal-byte deltas
+   * without needing to know about framing.
+   */
+  int size();
 }
