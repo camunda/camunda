@@ -21,7 +21,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
 
   public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    retryMechanism = new ActorRetryMechanism();
+    retryMechanism = new ActorRetryMechanism(actor.getActorMetrics());
   }
 
   @Override

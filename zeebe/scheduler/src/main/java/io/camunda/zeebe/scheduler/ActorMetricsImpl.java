@@ -63,6 +63,13 @@ final class ActorMetricsImpl implements ActorMetrics {
         .register(registry);
   }
 
+  private Gauge createRetryCountGauge(final String actorName, final AtomicLong value) {
+    return Gauge.builder(RETRY_COUNT.getName(), value::get)
+        .description(RETRY_COUNT.getDescription())
+        .tag(ActorMetricsKeyName.ACTOR_NAME.asString(), actorName)
+        .register(registry);
+  }
+
   @Override
   public boolean isEnabled() {
     return true;
@@ -71,12 +78,15 @@ final class ActorMetricsImpl implements ActorMetrics {
   @Override
   public ActorMetricsScoped scoped(final String actorName) {
     final var jobQueueLength = new AtomicLong(0L);
+    final var retryCount = new AtomicLong(0L);
     return new ActorMetricsScopedEnabled(
         registry,
         createExecutionTimer(actorName),
         createJobQueueLength(actorName, jobQueueLength),
         jobQueueLength,
-        createExecutionCount(actorName));
+        createExecutionCount(actorName),
+        createRetryCountGauge(actorName, retryCount),
+        retryCount);
   }
 
   @Override
@@ -90,15 +100,19 @@ final class ActorMetricsImpl implements ActorMetrics {
       Timer executionLatency,
       Gauge jobQueueLengthGauge,
       AtomicLong jobQueueLength,
-      Counter executionCount)
+      Counter executionCount,
+      Gauge retryCountGauge,
+      AtomicLong retryCount)
       implements ActorMetricsScoped {
 
     @Override
     public void close() {
       jobQueueLength.set(0);
+      retryCount.set(0);
       registry.remove(executionLatency);
       registry.remove(jobQueueLengthGauge);
       registry.remove(executionCount);
+      registry.remove(retryCountGauge);
     }
 
     @Override
@@ -109,6 +123,11 @@ final class ActorMetricsImpl implements ActorMetrics {
     @Override
     public void updateJobQueueLength(final int length) {
       jobQueueLength.set(length);
+    }
+
+    @Override
+    public void updateRetryCount(final int retryCount) {
+      retryCount.set(retryCount);
     }
 
     @Override

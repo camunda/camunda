@@ -59,6 +59,9 @@ public interface ActorMetrics {
           public void updateJobQueueLength(final int length) {}
 
           @Override
+          public void updateRetryCount(final int count) {}
+
+          @Override
           public CloseableSilently startExecutionTimer() {
             return closeable;
           }
@@ -72,6 +75,8 @@ public interface ActorMetrics {
     void countExecution();
 
     void updateJobQueueLength(final int length);
+
+    void updateRetryCount(final int count);
 
     CloseableSilently startExecutionTimer();
 

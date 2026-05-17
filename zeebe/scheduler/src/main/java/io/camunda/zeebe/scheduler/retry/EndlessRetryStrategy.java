@@ -24,7 +24,6 @@ public final class EndlessRetryStrategy implements RetryStrategy {
   private final int maxRetries;
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
-  private int retryCount;
 
   public EndlessRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
@@ -33,7 +32,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
   public EndlessRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     this.maxRetries = maxRetries;
-    retryMechanism = new ActorRetryMechanism();
+    retryMechanism = new ActorRetryMechanism(actor.getActorMetrics());
   }
 
   @Override
@@ -46,7 +45,6 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
-    retryCount = 0;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -58,15 +56,17 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
+        final int retryCount = retryMechanism.getRetryCount();
+        if (!retryLimitExceeded(retryCount + 1, maxRetries, null, LOG, currentFuture)) {
           actor.run(this::run);
           actor.yieldThread();
         }
       }
     } catch (final Exception exception) {
+      final int retryCount = retryMechanism.getRetryCount();
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
-      } else if (!retryLimitExceeded(++retryCount, maxRetries, exception, LOG, currentFuture)) {
+      } else if (!retryLimitExceeded(retryCount + 1, maxRetries, exception, LOG, currentFuture)) {
         actor.run(this::run);
         actor.yieldThread();
         LOG.error(

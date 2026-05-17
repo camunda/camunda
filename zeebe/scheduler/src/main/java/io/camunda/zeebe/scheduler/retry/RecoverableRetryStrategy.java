@@ -28,7 +28,6 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
-  private int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this(actor, Integer.MAX_VALUE);
@@ -37,7 +36,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     this.maxRetries = maxRetries;
-    retryMechanism = new ActorRetryMechanism();
+    retryMechanism = new ActorRetryMechanism(actor.getActorMetrics());
   }
 
   @Override
@@ -50,7 +49,6 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
-    retryCount = 0;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -61,15 +59,17 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private void run() {
     try {
       final var control = retryMechanism.run();
+      final int retryCount = retryMechanism.getRetryCount();
       if (control == Control.RETRY) {
-        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
+        if (!retryLimitExceeded(retryCount + 1, maxRetries, null, LOG, currentFuture)) {
           actor.run(this::run);
           actor.yieldThread();
         }
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        if (!retryLimitExceeded(++retryCount, maxRetries, ex, LOG, currentFuture)) {
+        final int retryCount = retryMechanism.getRetryCount();
+        if (!retryLimitExceeded(retryCount + 1, maxRetries, ex, LOG, currentFuture)) {
           throttledLog.warn(
               "Caught recoverable exception (retry {}/{}), will retry: {}",
               retryCount,

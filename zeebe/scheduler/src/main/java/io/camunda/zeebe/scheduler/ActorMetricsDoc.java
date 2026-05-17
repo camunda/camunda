@@ -119,6 +119,29 @@ public enum ActorMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {ActorMetricsKeyName.ACTOR_NAME};
     }
+  },
+
+  /** The number of retry attempts for the current operation */
+  RETRY_COUNT {
+    @Override
+    public String getName() {
+      return "zeebe.actor.retry.attempts";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The number of retry attempts for the current operation";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {ActorMetricsKeyName.ACTOR_NAME};
+    }
   };
 
   public enum ActorMetricsKeyName implements KeyName {
