@@ -85,6 +85,21 @@ components:
           description: ID of the last completed change
           type: string
           example: "-1"
+      x-properties-added-in-version:
+        - propertyName: brokers
+          addedInVersion: "8.6"
+        - propertyName: clusterId
+          addedInVersion: "8.9"
+        - propertyName: clusterSize
+          addedInVersion: "8.6"
+        - propertyName: partitionsCount
+          addedInVersion: "8.6"
+        - propertyName: replicationFactor
+          addedInVersion: "8.6"
+        - propertyName: gatewayVersion
+          addedInVersion: "8.6"
+        - propertyName: lastCompletedChangeId
+          addedInVersion: "8.8"
 
     BrokerInfo:
       description: Provides information on a broker node.

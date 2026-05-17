@@ -265,6 +265,39 @@ components:
           description: The key of the decision requirements definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: decisionEvaluationInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: state
+          addedInVersion: "8.6"
+        - propertyName: evaluationFailure
+          addedInVersion: "8.6"
+        - propertyName: evaluationDate
+          addedInVersion: "8.8"
+        - propertyName: decisionDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionName
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionVersion
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionType
+          addedInVersion: "8.6"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: decisionEvaluationKey
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: rootDecisionDefinitionKey
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsKey
+          addedInVersion: "8.9"
 
     DeleteDecisionInstanceRequest:
       type: object
@@ -375,6 +408,41 @@ components:
           description: The tenant ID of the decision instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      x-properties-added-in-version:
+        - propertyName: decisionDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionName
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionType
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionVersion
+          addedInVersion: "8.6"
+        - propertyName: decisionEvaluationInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: decisionEvaluationKey
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: evaluationDate
+          addedInVersion: "8.6"
+        - propertyName: evaluationFailure
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: result
+          addedInVersion: "8.6"
+        - propertyName: rootDecisionDefinitionKey
+          addedInVersion: "8.9"
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: state
+          addedInVersion: "8.6"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
 
     DecisionInstanceGetQueryResult:
       allOf:
@@ -414,6 +482,13 @@ components:
         inputValue:
           description: The value of the decision input.
           type: string
+      x-properties-added-in-version:
+        - propertyName: inputId
+          addedInVersion: "8.6"
+        - propertyName: inputName
+          addedInVersion: "8.6"
+        - propertyName: inputValue
+          addedInVersion: "8.6"
 
     EvaluatedDecisionOutputItem:
       required:
@@ -443,6 +518,11 @@ components:
           nullable: true
           type: integer
           format: int32
+      x-properties-added-in-version:
+        - propertyName: ruleId
+          addedInVersion: "8.9"
+        - propertyName: ruleIndex
+          addedInVersion: "8.9"
 
     MatchedDecisionRuleItem:
       required:
@@ -464,6 +544,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvaluatedDecisionOutputItem'
+      x-properties-added-in-version:
+        - propertyName: ruleId
+          addedInVersion: "8.6"
+        - propertyName: ruleIndex
+          addedInVersion: "8.6"
+        - propertyName: evaluatedOutputs
+          addedInVersion: "8.6"
 
     ## Enums
 
@@ -523,6 +610,19 @@ components:
             $ref: "#/components/schemas/DecisionInstanceStateEnum"
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
+        - propertyName: "$like"
+          addedInVersion: "8.9"
 
     DecisionInstanceStateFilterProperty:
       description: DecisionInstanceStateEnum property with full advanced search capabilities.

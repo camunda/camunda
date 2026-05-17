@@ -213,6 +213,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ProcessInstanceKeyFilterProperty:
       description: ProcessInstanceKey property with full advanced search capabilities.
@@ -250,6 +261,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ElementInstanceKeyFilterProperty:
       description: ElementInstanceKey property with full advanced search capabilities.
@@ -287,6 +309,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     JobKeyFilterProperty:
       description: JobKey property with full advanced search capabilities.
@@ -324,6 +357,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobKey'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     DecisionDefinitionKeyFilterProperty:
       description: DecisionDefinitionKey property with full advanced search capabilities.
@@ -361,6 +405,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ScopeKeyFilterProperty:
       description: |
@@ -474,6 +529,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     AgentInstanceKeyFilterProperty:
       description: AgentInstanceKey property with full advanced search capabilities.

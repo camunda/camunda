@@ -64,7 +64,7 @@
     <version.nullaway>0.13.4</version.nullaway>
     <version.grpc>1.80.0</version.grpc>
     <version.gson>2.14.0</version.gson>
-    <version.guava>33.5.0-jre</version.guava>
+    <version.guava>33.6.0-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
@@ -87,7 +87,7 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.13.Final</version.netty>
     <version.objenesis>3.5</version.objenesis>
-    <version.opentelemetry>1.49.0</version.opentelemetry>
+    <version.opentelemetry>1.62.0</version.opentelemetry>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>3.5.0</version.opensearch-java>
     <version.opensearch.testcontainers>4.1.0</version.opensearch.testcontainers>
@@ -98,7 +98,7 @@
     <version.rocksdbjni>10.9.1</version.rocksdbjni>
     <version.sbe>1.37.1</version.sbe>
     <version.scala>3.8.3</version.scala>
-    <version.slf4j>2.0.17</version.slf4j>
+    <version.slf4j>2.0.18</version.slf4j>
     <version.snakeyaml>2.6</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
@@ -145,10 +145,10 @@
     <version.jnr-ffi>2.2.19</version.jnr-ffi>
     <version.jnr-posix>3.1.22</version.jnr-posix>
     <version.jnr-constants>0.10.4</version.jnr-constants>
-    <version.feign>13.11</version.feign>
+    <version.feign>13.12</version.feign>
     <version.google-sdk>26.81.0</version.google-sdk>
     <version.azure-sdk>1.3.6</version.azure-sdk>
-    <version.awssdk>2.44.4</version.awssdk>
+    <version.awssdk>2.44.5</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.bind-api>4.0.5</version.bind-api>
@@ -157,7 +157,7 @@
     <version.jackson-annotations>2.21</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
     <version.swagger-annotations>2.2.46</version.swagger-annotations>
-    <version.swagger-parser>2.1.41</version.swagger-parser>
+    <version.swagger-parser>2.1.42</version.swagger-parser>
     <version.checker-qual>3.54.0</version.checker-qual>
     <version.java-jwt>4.5.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
@@ -165,7 +165,7 @@
     <version.h2>2.4.240</version.h2>
     <version.aws-advanced-jdbc-wrapper>3.3.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
-    <version.tc-keycloak>4.1.1</version.tc-keycloak>
+    <version.tc-keycloak>4.2.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.4</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
@@ -177,7 +177,7 @@
     <version.reflections>0.10.2</version.reflections>
     <version.hikari-cp>7.0.2</version.hikari-cp>
 
-    <version.commons-io>2.21.0</version.commons-io>
+    <version.commons-io>2.22.0</version.commons-io>
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.4</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
@@ -199,11 +199,11 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>3.3.0</version.auth0>
+    <version.auth0>3.5.0</version.auth0>
     <version.auth0.commons>1.11.1</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.17.0</version.okio-jvm>
-    <version.jwks-rsa>0.23.0</version.jwks-rsa>
+    <version.jwks-rsa>0.24.0</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.9</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.37.1</version.nimbus-sdk>

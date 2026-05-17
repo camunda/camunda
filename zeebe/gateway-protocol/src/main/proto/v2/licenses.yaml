@@ -49,3 +49,8 @@ components:
           description: The date when the Camunda license expires
           type: string
           format: date-time
+      x-properties-added-in-version:
+        - propertyName: isCommercial
+          addedInVersion: "8.8"
+        - propertyName: expiresAt
+          addedInVersion: "8.8"

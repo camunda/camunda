@@ -37,6 +37,17 @@ components:
           type: array
           items:
             type: string
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     AdvancedStringFilter:
       title: Advanced filter
@@ -47,6 +58,9 @@ components:
           properties:
             $like:
               $ref: '#/components/schemas/LikeFilter'
+          x-properties-added-in-version:
+            - propertyName: "$like"
+              addedInVersion: "8.8"
 
     BasicStringFilterProperty:
       description: String property with basic advanced search capabilities.
@@ -102,6 +116,23 @@ components:
           items:
             type: integer
             format: int32
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$gt"
+          addedInVersion: "8.8"
+        - propertyName: "$gte"
+          addedInVersion: "8.8"
+        - propertyName: "$lt"
+          addedInVersion: "8.8"
+        - propertyName: "$lte"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
 
     IntegerFilterProperty:
       description: Integer property with advanced search capabilities.
@@ -150,6 +181,23 @@ components:
           items:
             type: string
             format: date-time
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$gt"
+          addedInVersion: "8.8"
+        - propertyName: "$gte"
+          addedInVersion: "8.8"
+        - propertyName: "$lt"
+          addedInVersion: "8.8"
+        - propertyName: "$lte"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
 
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.

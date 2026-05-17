@@ -199,6 +199,15 @@ components:
           $ref: '#/components/schemas/AuthenticationConfigurationResponse'
         cloud:
           $ref: '#/components/schemas/CloudConfigurationResponse'
+      x-properties-added-in-version:
+        - propertyName: components
+          addedInVersion: "8.10"
+        - propertyName: deployment
+          addedInVersion: "8.10"
+        - propertyName: authentication
+          addedInVersion: "8.10"
+        - propertyName: cloud
+          addedInVersion: "8.10"
 
     JobMetricsConfigurationResponse:
       description: Configuration for job metrics collection and export.

@@ -317,6 +317,9 @@ components:
         - type
         - maxJobsToActivate
         - timeout
+      x-properties-added-in-version:
+        - propertyName: tenantFilter
+          addedInVersion: "8.9"
 
     JobActivationResult:
       description: The list of activated jobs
@@ -438,6 +441,17 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      x-properties-added-in-version:
+        - propertyName: kind
+          addedInVersion: "8.8"
+        - propertyName: listenerEventType
+          addedInVersion: "8.8"
+        - propertyName: userTask
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     UserTaskProperties:
       required:
@@ -643,6 +657,11 @@ components:
           description: When the job was last updated. Field is present for jobs created after 8.9.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: creationTime
+          addedInVersion: "8.9"
+        - propertyName: lastUpdateTime
+          addedInVersion: "8.9"
 
     JobSearchQueryResult:
       description: Job search response.
@@ -783,6 +802,13 @@ components:
           nullable: true
           type: string
           format: date-time
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: creationTime
+          addedInVersion: "8.9"
+        - propertyName: lastUpdateTime
+          addedInVersion: "8.9"
 
     JobFailRequest:
       type: object
@@ -841,6 +867,9 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
+      x-properties-added-in-version:
+        - propertyName: result
+          addedInVersion: "8.8"
 
     JobResult:
       description: >
@@ -984,6 +1013,9 @@ components:
           $ref: "keys.yaml#/components/schemas/OperationReference"
       required:
         - changeset
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.8"
 
     JobChangeset:
       description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.

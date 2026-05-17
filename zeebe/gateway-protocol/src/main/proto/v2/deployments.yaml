@@ -322,6 +322,9 @@ components:
           description: Deployed resource.
           allOf:
             - $ref: '#/components/schemas/DeploymentResourceResult'
+      x-properties-added-in-version:
+        - propertyName: resource
+          addedInVersion: "8.7"
 
     DeploymentProcessResult:
       description: A deployed process.
@@ -524,6 +527,9 @@ components:
             will not be populated.
           type: boolean
           default: false
+      x-properties-added-in-version:
+        - propertyName: deleteHistory
+          addedInVersion: "8.9"
 
     DeleteResourceResponse:
       type: object
@@ -545,6 +551,11 @@ components:
             This field is only populated when the request `deleteHistory` is set to `true` and the resource
             is a process definition. For other resource types (decisions, forms, generic resources),
             this field will be `null`.
+      x-properties-added-in-version:
+        - propertyName: resourceKey
+          addedInVersion: "8.9"
+        - propertyName: batchOperation
+          addedInVersion: "8.9"
 
     ResourceResult:
       type: object
@@ -578,6 +589,19 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
+      x-properties-added-in-version:
+        - propertyName: resourceName
+          addedInVersion: "8.7"
+        - propertyName: version
+          addedInVersion: "8.7"
+        - propertyName: versionTag
+          addedInVersion: "8.7"
+        - propertyName: resourceId
+          addedInVersion: "8.7"
+        - propertyName: tenantId
+          addedInVersion: "8.7"
+        - propertyName: resourceKey
+          addedInVersion: "8.7"
 
     ## Keys
 
@@ -637,6 +661,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeploymentKey'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     ResourceKeyFilterProperty:
       description: ResourceKey property with full advanced search capabilities.
@@ -674,6 +709,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     ## Resource Search
 
