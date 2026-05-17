@@ -570,11 +570,11 @@ class SegmentedJournalTest {
     journal = openJournal(1);
     journal.close();
     final Path dataFile = directory.resolve("data");
-    final Path logFile =
-        Files.list(dataFile)
-            .filter(p -> p.getFileName().toString().endsWith(".log"))
-            .findFirst()
-            .orElseThrow();
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -611,11 +611,14 @@ class SegmentedJournalTest {
     journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
 
     final Path dataFile = directory.resolve("data");
-    final Path logFile =
-        Files.list(dataFile)
-            .filter(p -> p.getFileName().toString().endsWith("2.log"))
-            .findFirst()
-            .orElseThrow();
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream
+              .filter(p -> p.getFileName().toString().endsWith("2.log"))
+              .findFirst()
+              .orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -758,17 +761,20 @@ class SegmentedJournalTest {
     final Path logDirectory = directory.resolve("data");
 
     // there are two files deferred for deletion
-    assertThat(
-            Files.list(logDirectory)
-                .filter(
-                    p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
-                .toList())
-        .hasSize(2);
-    assertThat(
-            Files.list(logDirectory)
-                .filter(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p))
-                .toList())
-        .hasSize(1);
+    try (final var stream = Files.list(logDirectory)) {
+      assertThat(
+              stream
+                  .filter(
+                      p ->
+                          SegmentFile.isDeletedSegmentFile(
+                              JOURNAL_NAME, p.getFileName().toString()))
+                  .toList())
+          .hasSize(2);
+    }
+    try (final var stream = Files.list(logDirectory)) {
+      assertThat(stream.filter(p -> SegmentFile.isSegmentFile(JOURNAL_NAME, p)).toList())
+          .hasSize(1);
+    }
   }
 
   @Test

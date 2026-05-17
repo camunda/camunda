@@ -72,11 +72,11 @@ class SegmentsManagerTest {
     }
 
     final Path dataFile = directory.resolve("data");
-    final Path logFile =
-        Files.list(dataFile)
-            .filter(p -> p.getFileName().toString().endsWith(".log"))
-            .findFirst()
-            .orElseThrow();
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
@@ -95,11 +95,14 @@ class SegmentsManagerTest {
     journalFactory.metaStore().storeLastFlushedIndex(index);
 
     final Path dataFile = directory.resolve("data");
-    final Path logFile =
-        Files.list(dataFile)
-            .filter(p -> p.getFileName().toString().endsWith("2.log"))
-            .findFirst()
-            .orElseThrow();
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream
+              .filter(p -> p.getFileName().toString().endsWith("2.log"))
+              .findFirst()
+              .orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
@@ -118,11 +121,11 @@ class SegmentsManagerTest {
     final var journal = openJournal();
     journal.close();
     final Path dataFile = directory.resolve("data");
-    final Path logFile =
-        Files.list(dataFile)
-            .filter(p -> p.getFileName().toString().endsWith(".log"))
-            .findFirst()
-            .orElseThrow();
+    final Path logFile;
+    try (final var stream = Files.list(dataFile)) {
+      logFile =
+          stream.filter(p -> p.getFileName().toString().endsWith(".log")).findFirst().orElseThrow();
+    }
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
