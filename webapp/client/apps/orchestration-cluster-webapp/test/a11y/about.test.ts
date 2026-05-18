@@ -7,21 +7,10 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse} from 'msw';
 
-import {mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
-
-const ABOUT_MESSAGE = 'About page loaded from MSW';
-
-test('should have no accessibility violations on the about page', async ({makeAxeBuilder, network, page}) => {
-	network.use(
-		mockAboutEndpoint({
-			successResponse: HttpResponse.json({message: ABOUT_MESSAGE}),
-		}),
-	);
-
+test('should have no accessibility violations on the about page', async ({makeAxeBuilder, page}) => {
 	await page.goto('/about');
-	await expect(page.getByText(ABOUT_MESSAGE)).toBeVisible();
+	await expect(page.getByText('About page loaded')).toBeVisible();
 
 	const accessibilityScanResults = await makeAxeBuilder().analyze();
 

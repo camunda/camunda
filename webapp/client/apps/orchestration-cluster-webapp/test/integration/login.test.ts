@@ -8,7 +8,7 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {http, HttpResponse, delay} from 'msw';
-import {mockCurrentUserEndpoint, mockLoginEndpoint, mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/mock-handlers';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -31,7 +31,6 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),
-		mockAboutEndpoint({successResponse: HttpResponse.json({message: 'About'})}),
 	);
 
 	await page.goto('/about');

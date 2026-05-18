@@ -18,9 +18,4 @@ const mockLoginEndpoint = createEndpointMock({
 	method: 'POST',
 });
 
-const mockAboutEndpoint = createEndpointMock({
-	endpoint: '/api/about',
-	method: 'GET',
-});
-
-export {mockCurrentUserEndpoint, mockLoginEndpoint, mockAboutEndpoint};
+export {mockCurrentUserEndpoint, mockLoginEndpoint};
