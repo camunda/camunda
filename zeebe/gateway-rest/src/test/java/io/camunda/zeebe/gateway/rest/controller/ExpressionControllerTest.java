@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -260,6 +261,47 @@ public class ExpressionControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectEvaluationWithMalformedScopeKey() {
+    // given
+    final var request =
+        """
+        {
+            "expression": "=x",
+            "tenantId": "tenant1",
+            "scopeKey": "abc"
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The provided scopeKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
+              "instance": "%s"
+            }"""
+            .formatted(EXPRESSION_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(expressionServices, never())
+        .evaluateExpression(any(ExpressionEvaluationRequest.class), any());
   }
 
   @Test
