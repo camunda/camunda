@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 
 /**
  * Configuration for which extension property names are exported as tool properties.
@@ -17,32 +17,32 @@ import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
  * properties. While currently used primarily for message subscriptions, these settings are general
  * and can be applied to other entity types in the future.
  */
-public class Tools {
+public class ExtensionProperties {
 
   public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
   public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
   public static final String DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
 
   /** The extension property name whose value is exported as the {@code toolName} attribute. */
   private String extensionPropertyToolName =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
 
   /**
    * The extension property name whose value is exported as the {@code inboundConnectorType}
    * attribute.
    */
   private String extensionPropertyInboundConnectorType =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
 
   /**
    * The extension property name prefix for properties exported as the {@code toolProperties}
    * key-value attribute. Only extension properties whose names start with this prefix are exported.
    */
   private String extensionPropertyPrefixToolProperties =
-      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
 
   public String getExtensionPropertyToolName() {
     return extensionPropertyToolName;

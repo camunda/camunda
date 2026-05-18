@@ -11,7 +11,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
@@ -97,7 +97,7 @@ public final class ProcessCacheUtil {
    */
   public static ProcessDiagramData extractProcessDiagramData(
       final ProcessDefinitionEntity processDefinitionEntity,
-      final ToolsConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration toolsConfiguration) {
     return extractProcessDiagramData(
         processDefinitionEntity.bpmnXml(),
         processDefinitionEntity.processDefinitionId(),
@@ -115,7 +115,7 @@ public final class ProcessCacheUtil {
   public static ProcessDiagramData extractProcessDiagramData(
       final String bpmnXml,
       final String bpmnProcessId,
-      final ToolsConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration toolsConfiguration) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);

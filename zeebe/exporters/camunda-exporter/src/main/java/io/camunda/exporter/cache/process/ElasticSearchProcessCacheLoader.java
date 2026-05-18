@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -23,12 +23,12 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
 
   private final ElasticsearchClient client;
   private final String processIndexName;
-  private final ToolsConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration toolsConfiguration;
 
   public ElasticSearchProcessCacheLoader(
       final ElasticsearchClient client,
       final String processIndexName,
-      final ToolsConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration toolsConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
     this.toolsConfiguration = toolsConfiguration;

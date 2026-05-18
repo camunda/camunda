@@ -16,7 +16,7 @@ import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -35,7 +35,7 @@ public class ProcessHandlerTest {
   private final String indexName = "test-process";
   private final TestProcessCache processCache = new TestProcessCache();
   private final ProcessHandler underTest =
-      new ProcessHandler(indexName, processCache, new ToolsConfiguration());
+      new ProcessHandler(indexName, processCache, new ExtensionPropertyConfiguration());
 
   @Test
   void testGetHandledValueType() {

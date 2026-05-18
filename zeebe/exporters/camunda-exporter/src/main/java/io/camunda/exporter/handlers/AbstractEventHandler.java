@@ -38,7 +38,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -50,9 +50,10 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
-  protected final ToolsConfiguration toolConfig;
+  protected final ExtensionPropertyConfiguration toolConfig;
 
-  public AbstractEventHandler(final String indexName, final ToolsConfiguration toolConfig) {
+  public AbstractEventHandler(
+      final String indexName, final ExtensionPropertyConfiguration toolConfig) {
     this.indexName = indexName;
     this.toolConfig = toolConfig;
   }
