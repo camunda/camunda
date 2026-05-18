@@ -148,7 +148,12 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      // Default 10s timeout races indexing of the completed task on slower
+      // CI runners; mirror the 60s used by the deployed-form completion
+      // tests in task-details.spec.ts.
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 60000,
+      });
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');

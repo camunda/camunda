@@ -357,7 +357,13 @@ test.describe('Process Instance Modifications', () => {
       );
       await operateProcessInstancePage.clickDialogCancel();
 
-      await operateProcessInstancePage.navigateToRootScope();
+      // After closing the dialog we are still scoped to the added "Never
+      // fails" token, where the modification we just deleted lived. Its
+      // `newVariables[0]` row should be gone here. The previous version of
+      // this test navigated to the root scope before asserting hidden — but
+      // root still has its own pending `test3:1` modification (added in the
+      // first step), so that row remains visible there and the assertion
+      // always failed.
       await expect(
         operateProcessInstancePage.getVariableTestId('newVariables[0]'),
       ).toBeHidden({timeout: 30000});
