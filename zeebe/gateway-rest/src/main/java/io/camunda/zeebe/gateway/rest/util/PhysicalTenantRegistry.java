@@ -15,7 +15,7 @@ package io.camunda.zeebe.gateway.rest.util;
  * accepts the {@code "default"} tenant.
  */
 @FunctionalInterface
-public interface PhysicalTenantResolver {
+public interface PhysicalTenantRegistry {
 
   /**
    * @return {@code true} when {@code physicalTenantId} is a known/configured physical tenant.

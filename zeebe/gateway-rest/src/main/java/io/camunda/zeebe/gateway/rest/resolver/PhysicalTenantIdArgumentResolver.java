@@ -26,9 +26,10 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * is always present (defaulting to {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID} when
  * the request did not carry the {@code /v2/physical-tenants/{physicalTenantId}/...} prefix).
  */
-public class PhysicalTenantIdResolver implements HandlerMethodArgumentResolver {
+public class PhysicalTenantIdArgumentResolver implements HandlerMethodArgumentResolver {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalTenantIdResolver.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PhysicalTenantIdArgumentResolver.class);
 
   @Override
   public boolean supportsParameter(final MethodParameter parameter) {
