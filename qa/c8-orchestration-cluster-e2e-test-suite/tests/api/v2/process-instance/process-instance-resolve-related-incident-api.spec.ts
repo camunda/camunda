@@ -27,7 +27,7 @@ import {validateResponse} from '../../../../json-body-assertions';
 import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe.parallel('Resolve related incidents API Tests', () => {
+test.describe.serial('Resolve related incidents API Tests', () => {
   let processInstanceKeyWithIncidentToResolve: string = '';
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
