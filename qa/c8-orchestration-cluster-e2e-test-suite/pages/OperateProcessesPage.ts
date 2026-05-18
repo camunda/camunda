@@ -292,13 +292,17 @@ class OperateProcessesPage {
   }
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
+    // Match the PIK cell's text content exactly, so a key that is a substring
+    // of another visible key (rare for 16-digit keys, but possible) cannot
+    // produce an ambiguous multi-row match.
+    const escapedKey = keyStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return page
       .getByTestId('data-list')
       .getByRole('row')
       .filter({
         has: page
           .getByTestId('cell-processInstanceKey')
-          .filter({hasText: keyStr}),
+          .filter({hasText: new RegExp(`^${escapedKey}$`)}),
       });
   }
   async clickVersionSortButton(): Promise<void> {
@@ -310,8 +314,37 @@ class OperateProcessesPage {
   }
 
   async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
+    // Wait for every PIK's row to be present before clicking — the table can
+    // briefly render fewer rows than the "X results" count claims while the
+    // indexer catches up, so without this guard the first checkbox click can
+    // race the row appearing.
     for (const key of PIK) {
-      await this.page.locator(`label[for$="${key}"]`).click();
+      const row = OperateProcessesPage.getRowByProcessInstanceKey(
+        this.page,
+        key,
+      );
+      await expect(row).toHaveCount(1, {timeout: 30000});
+    }
+
+    for (const key of PIK) {
+      const row = OperateProcessesPage.getRowByProcessInstanceKey(
+        this.page,
+        key,
+      );
+      const checkbox = row.getByRole('checkbox', {
+        name: /(un)?select row/i,
+      });
+      // Carbon renders the checkbox inside a <label>; the visible text
+      // ("Select row") sits in a visually-hidden <span> inside that label.
+      // Clicking the span fails because the wrapping label intercepts
+      // pointer events. Click the label element itself instead, mirroring
+      // the working pattern in selectProcessInstances.
+      const label = row.locator('label.cds--checkbox-label');
+
+      await expect(checkbox).toBeVisible({timeout: 30000});
+      if (!(await checkbox.isChecked())) {
+        await label.click({timeout: 30000});
+      }
     }
   }
 
