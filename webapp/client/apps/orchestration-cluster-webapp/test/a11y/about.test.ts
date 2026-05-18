@@ -9,14 +9,9 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 
-import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
+import {mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
 
 const ABOUT_MESSAGE = 'About page loaded from MSW';
-
-const mockAboutEndpoint = createEndpointMock({
-	endpoint: '/api/about',
-	method: 'GET',
-});
 
 test('should have no accessibility violations on the about page', async ({makeAxeBuilder, network, page}) => {
 	network.use(
