@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -254,13 +255,18 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId,
-      String zone,
-      String memberId,
+      @Deprecated
+          // use memberId
+          Integer nodeId,
+      BrokerMemberId brokerId,
       String host,
       Integer port,
       List<Partition> partitions,
       String version) {
+    public Broker {
+      Objects.requireNonNull(nodeId, "Expected nodeId to not be null");
+      Objects.requireNonNull(brokerId, "Expected  memberId to not be null");
+    }
 
     static class Builder {
       Integer nodeId;
@@ -311,7 +317,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(nodeId, zone, memberId, host, port, partitions, version);
+        return new Broker(
+            nodeId, BrokerMemberId.from(zone, nodeId), host, port, partitions, version);
       }
     }
   }
