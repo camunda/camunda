@@ -129,7 +129,7 @@ camunda-platform:
     #   registry: camunda/console
     # Overrides the default service URL because the preview environment
     # is exposed through its own (separate)ingress controller.
-    overrideConfiguration: |
+    configuration: |
       camunda:
         console:
           managed:
