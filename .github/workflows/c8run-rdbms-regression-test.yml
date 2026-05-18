@@ -73,8 +73,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/qa/ci/common NEXUS_USERNAME;
-            secret/data/products/qa/ci/common NEXUS_PASSWORD;
+            secret/data/products/qa/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/qa/ci/nexus PASSWORD | NEXUS_PASSWORD;
 
       - name: Build c8run
         working-directory: ./c8run
