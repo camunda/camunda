@@ -22,7 +22,7 @@ public class CreateAgentInstanceResponseImpl implements CreateAgentInstanceRespo
 
   private long agentInstanceKey;
 
-  public CreateAgentInstanceResponse setResponse(final AgentInstanceCreationResult result) {
+  public CreateAgentInstanceResponseImpl setResponse(final AgentInstanceCreationResult result) {
     agentInstanceKey = Long.parseLong(result.getAgentInstanceKey());
     return this;
   }
