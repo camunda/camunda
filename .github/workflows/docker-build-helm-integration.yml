@@ -5,10 +5,13 @@
 name: Docker Build and Helm Integration Test
 
 on:
+  push:
+    branches:
+      - stable/8.7
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to pr-<sha> or Maven version)'
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-stable-8.7-run<run_id>-a<attempt> for push to stable/8.7)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -22,7 +25,7 @@ on:
       scenario:
         description: 'Test scenario'
         type: string
-        default: 'keycloak-original'
+        default: 'alwaysgreen'
       deployment-ttl:
         description: 'Deployment TTL'
         type: string
@@ -30,7 +33,7 @@ on:
       shortname:
         description: 'Short name for the deployment'
         type: string
-        default: 'kcor'
+        default: 'agrn'
   merge_group:
     types:
       - checks_requested
@@ -52,12 +55,14 @@ jobs:
     name: Check Run Conditions
     runs-on: ubuntu-latest
     timeout-minutes: 1
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     outputs:
       concurrency-group: ${{ steps.concurrency-group.outputs.group }}
       merge-group-pr-numbers: ${{ steps.concurrency-group.outputs.pr-numbers }}
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       github.event_name == 'merge_group'
     steps:
       - name: Compute concurrency group
@@ -77,6 +82,11 @@ jobs:
               echo "::warning::Could not derive stable merge_group PR key from ref '${REF_SOURCE}'; using ref as fallback."
               echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
             fi
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            # For push to main/stable/*, every commit must run its own build (no cancellation),
+            # so use the SHA in the concurrency group. Other branches keep ref-based grouping.
+            echo "pr-numbers=" >> "$GITHUB_OUTPUT"
+            echo "group=${{ github.workflow }}-push-${{ github.sha }}" >> "$GITHUB_OUTPUT"
           else
             echo "pr-numbers=" >> "$GITHUB_OUTPUT"
             echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
@@ -89,6 +99,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-build-operate-frontend
       cancel-in-progress: true
@@ -99,7 +110,7 @@ jobs:
         with:
           directory: ./operate/client
       - name: Upload Operate frontend artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: operate-frontend
           path: operate/client/build
@@ -120,6 +131,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-build-tasklist-frontend
       cancel-in-progress: true
@@ -130,7 +142,7 @@ jobs:
         with:
           directory: ./tasklist/client
       - name: Upload Tasklist frontend artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: tasklist-frontend
           path: tasklist/client/build
@@ -151,6 +163,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-build-identity-frontend
       cancel-in-progress: true
@@ -161,7 +174,7 @@ jobs:
         with:
           directory: ./identity/client
       - name: Upload Identity frontend artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: identity-frontend
           path: identity/client/dist
@@ -185,6 +198,7 @@ jobs:
     permissions: { }
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-build-and-push-images
       cancel-in-progress: true
@@ -229,10 +243,12 @@ jobs:
               echo "::warning::Could not determine PR number from merge_group payload/ref; using merge-group SHA-based tag instead."
               echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
             fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.7.0-SNAPSHOT-dispatch-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.7.0-SNAPSHOT-abc1234)
-            SHA_SHORT="${GITHUB_SHA::7}"
-            echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+            # For push to stable/8.7: <maven-version>-stable-8.7-run<run_id>-a<run_attempt> (e.g., 8.7.0-SNAPSHOT-stable-8.7-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-stable-8.7-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download Operate frontend artifact
@@ -324,6 +340,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     concurrency:
       group: ${{ needs.should-run.outputs.concurrency-group }}-format-identifier
       cancel-in-progress: true
@@ -358,8 +375,8 @@ jobs:
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
-      scenario: ${{ inputs.scenario || 'keycloak-original' }}
-      shortname: ${{ inputs.shortname || 'kcor' }}
+      scenario: ${{ inputs.scenario || 'alwaysgreen' }}
+      shortname: ${{ inputs.shortname || 'agrn' }}
       always-delete-namespace: true
       flows: install
       extra-values: |
@@ -401,6 +418,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
