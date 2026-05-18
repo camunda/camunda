@@ -638,8 +638,8 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      const operationId =
-        await operateOperationsDetailsPage.getBatchOperationId();
+      const batchOperationKey =
+        await operateOperationsDetailsPage.getBatchOperationKey();
 
       await page.goto(`operate/processes`);
 

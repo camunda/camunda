@@ -294,11 +294,11 @@ export class OperateFiltersPanelPage {
     await expect(this.errorMessageFilter).toHaveValue(errorMessage);
   }
 
-  async fillBatchOperationIdFilter(operationId: string) {
+  async fillBatchOperationKeyFilter(batchOperationKey: string) {
     await expect(this.batchOperationKeyFilter).toBeVisible();
     await expect(this.batchOperationKeyFilter).toBeEnabled();
-    await this.batchOperationKeyFilter.fill(operationId);
-    await expect(this.batchOperationKeyFilter).toHaveValue(operationId);
+    await this.batchOperationKeyFilter.fill(batchOperationKey);
+    await expect(this.batchOperationKeyFilter).toHaveValue(batchOperationKey);
   }
 
   async clickJsonEditorModal() {

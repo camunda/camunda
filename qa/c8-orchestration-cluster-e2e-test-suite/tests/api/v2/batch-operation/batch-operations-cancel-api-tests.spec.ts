@@ -116,7 +116,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       );
       await assertBadRequest(
         res,
-        "Batch operation id 'not-a-valid-key' is not a valid number. Legacy Batch Operation IDs are not supported!",
+        "Batch operation key 'not-a-valid-key' is not a valid number. Legacy Batch Operation Keys are not supported!",
       );
     });
   });
