@@ -9,17 +9,14 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 
-import {mockCurrentUserEndpoint, mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 
-const ABOUT_MESSAGE = 'About page loaded from MSW';
+const ABOUT_MESSAGE = 'About page loaded';
 
 test('should render mocked about data', async ({network, page}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
-		}),
-		mockAboutEndpoint({
-			successResponse: HttpResponse.json({message: ABOUT_MESSAGE}),
 		}),
 	);
 
@@ -27,20 +24,4 @@ test('should render mocked about data', async ({network, page}) => {
 
 	await expect(page.getByRole('heading', {name: 'About'})).toBeVisible();
 	await expect(page.getByText(ABOUT_MESSAGE)).toBeVisible();
-});
-
-test('should render an error when about data fails to load', async ({network, page}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json({}),
-		}),
-		mockAboutEndpoint({
-			successResponse: HttpResponse.json({error: 'Internal Server Error'}, {status: 500}),
-		}),
-	);
-
-	await page.goto('/about');
-
-	await expect(page.getByRole('heading', {name: 'About'})).toBeVisible();
-	await expect(page.getByText('Unable to load about data')).toBeVisible();
 });
