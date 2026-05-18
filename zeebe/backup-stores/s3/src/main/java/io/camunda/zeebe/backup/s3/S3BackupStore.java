@@ -404,14 +404,14 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final String prefix) {
-    return client
-        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix))
-        .thenApplyAsync(
-            objects ->
-                objects.contents().stream()
-                    .map(S3Object::key)
-                    .map(key -> ObjectIdentifier.builder().key(key).build())
-                    .toList());
+    final var aggregator = new AsyncAggregatingSubscriber<ObjectIdentifier>(SCAN_PARALLELISM);
+    client
+        .listObjectsV2Paginator(req -> req.bucket(config.bucketName()).prefix(prefix))
+        .contents()
+        .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+        .map(CompletableFuture::completedFuture)
+        .subscribe(aggregator);
+    return aggregator.result().thenApply(List::copyOf);
   }
 
   private CompletableFuture<Void> deleteBackupObjects(
