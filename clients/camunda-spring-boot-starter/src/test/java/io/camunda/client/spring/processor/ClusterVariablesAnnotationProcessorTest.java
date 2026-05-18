@@ -222,7 +222,9 @@ public class ClusterVariablesAnnotationProcessorTest {
               processor.configureFor(beanInfo(new WithSingleResource()));
               processor.start(client);
             })
-        .withMessageContaining("Error resolving cluster variables resources for pattern");
+        .withMessageContaining("Error resolving cluster variables resources for pattern")
+        .withCauseInstanceOf(IOException.class)
+        .withRootCauseMessage("I/O error");
   }
 
   @Test
