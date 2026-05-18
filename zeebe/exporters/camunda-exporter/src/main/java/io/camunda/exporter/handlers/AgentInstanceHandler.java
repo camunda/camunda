@@ -32,9 +32,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AgentInstanceHandler
     implements ExportHandler<AgentInstanceEntity, AgentInstanceRecordValue> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AgentInstanceHandler.class);
 
   private static final Set<AgentInstanceIntent> HANDLED_INTENTS =
       Set.of(
@@ -149,6 +153,12 @@ public class AgentInstanceHandler
       case TOOL_CALLING -> AgentInstanceStatus.TOOL_CALLING;
       case TOOL_DISCOVERY -> AgentInstanceStatus.TOOL_DISCOVERY;
       case COMPLETED -> AgentInstanceStatus.COMPLETED;
+      default -> {
+        LOGGER.warn(
+            "Received unexpected AgentInstanceStatus: {}, will be mapped to UNKNOWN",
+            protocolStatus);
+        yield AgentInstanceStatus.UNKNOWN;
+      }
     };
   }
 
