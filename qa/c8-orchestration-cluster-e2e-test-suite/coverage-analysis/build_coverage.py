@@ -232,6 +232,22 @@ def prerequisite_of(path, entity):
         return f'{parent} + {member_singular}'
     return PREREQ_BY_ENTITY.get(entity, 'unknown')
 
+# ---------- 4d. Stateless tag ----------
+# A test is "stateless" when the API call doesn't persist anything to the
+# engine: submit input, receive a result, nothing left behind. Useful for
+# the AI-generator coverage comparison since stateless endpoints have no
+# prerequisite/cleanup and are the easiest to generate.
+#
+# `clock` mutates engine clock state (pin/reset) → not stateless.
+# `optimize` tests deploy processes and observe variable export → not
+# stateless. `usage-metrics` is a pure read of metered counters.
+STATELESS_ENTITIES = {
+    'expression', 'conditional',
+    'authentication', 'cluster', 'license', 'usage-metrics',
+}
+def stateless_of(entity):
+    return 'yes' if entity in STATELESS_ENTITIES else 'no'
+
 # ---------- 5. Walk + emit CSV ----------
 rows = []
 for root, _dirs, files in os.walk(ROOT):
@@ -260,6 +276,7 @@ for root, _dirs, files in os.walk(ROOT):
                 'operation': op,
                 'form_step': form_step_of(op, name, variants),
                 'prerequisite': prerequisite_of(path, ent),
+                'stateless': stateless_of(ent),
                 'variants': variants,
                 'dynamic': '',
             })
@@ -281,6 +298,7 @@ for root, _dirs, files in os.walk(ROOT):
                 'operation': 'parameterized',
                 'form_step': 'parameterized',
                 'prerequisite': prerequisite_of(path, ent),
+                'stateless': stateless_of(ent),
                 'variants': 'data-driven',
                 'dynamic': 'yes',
             })
@@ -288,7 +306,7 @@ for root, _dirs, files in os.walk(ROOT):
 os.makedirs(OUT, exist_ok=True)
 csv_path = os.path.join(OUT, 'tests.csv')
 with open(csv_path, 'w', newline='', encoding='utf-8') as fp:
-    w = csv.DictWriter(fp, fieldnames=['file','line','entity','category','operation','form_step','prerequisite','variants','dynamic','test_name'])
+    w = csv.DictWriter(fp, fieldnames=['file','line','entity','category','operation','form_step','prerequisite','stateless','variants','dynamic','test_name'])
     w.writeheader()
     w.writerows(rows)
 print(f"wrote {csv_path} ({len(rows)} rows)")

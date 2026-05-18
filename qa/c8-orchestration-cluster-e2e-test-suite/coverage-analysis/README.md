@@ -12,7 +12,7 @@ and reason about coverage of the C8 Orchestration Cluster public REST API.
 |-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `build_coverage.py`     | Regenerates every artifact below by re-scanning `../tests/api/v2/**/*.spec.ts`.                                                                                                                               |
 | `category_breakdown.md` | **Per-category narrative**: for each category, the canonical Form, the prerequisite to create, the GET-vs-search observation split, variant counts, and the **actual test names** with file:line. Start here. |
-| `tests.csv`             | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,form_step,prerequisite,variants,dynamic,test_name`.                                                                        |
+| `tests.csv`             | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,form_step,prerequisite,stateless,variants,dynamic,test_name`.                                                              |
 | `coverage_matrix.csv`   | Entity × operation grid with one column per variant (counts).                                                                                                                                                 |
 | `coverage_matrix.md`    | Same matrix in two views — "at-a-glance presence" (✓/blank) and "counts per cell".                                                                                                                            |
 | `gaps.md`               | Heuristic gap report (entities missing 401/400 coverage and a — noisy — delete/observe-absence check).                                                                                                        |
@@ -137,6 +137,10 @@ Common variants layered on top:
 ## Prerequisite labelling
 
 `tests.csv` carries a `prerequisite` column that says what the test needs already in place. Examples: `deployed-process`, `running-process-instance-with-user-task`, `group + user`, `none`. Membership tests are auto-tagged with `<parent> + <member>` derived from the file name; everything else is mapped from the entity type.
+
+## Stateless tag
+
+`tests.csv` carries a `stateless` column (`yes`/`no`). A test is stateless when the API call doesn't persist anything to the engine — submit input, get a result, nothing left behind. Stateless entities: `expression`, `conditional`, `authentication`, `cluster`, `license`, `usage-metrics`. Everything else (including `clock` pin/reset and `optimize` config tests, which mutate or observe persisted state) is `no`. Useful when comparing against the AI generator because stateless endpoints have no prerequisite or cleanup and are the easiest to generate.
 
 ## Operation labelling
 
