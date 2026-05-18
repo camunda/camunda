@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -66,7 +68,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
+      final boolean businessIdUniquenessEnabled) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
@@ -90,7 +95,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             eventHandle,
             stateWriter,
             subscriptionState,
-            commandSender);
+            commandSender,
+            elementInstanceState,
+            bannedInstanceState,
+            businessIdUniquenessEnabled);
   }
 
   @Override

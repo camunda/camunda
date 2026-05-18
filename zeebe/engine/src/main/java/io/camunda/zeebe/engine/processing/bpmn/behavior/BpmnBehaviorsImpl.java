@@ -207,7 +207,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             writers,
-            clock);
+            clock,
+            config.isBusinessIdUniquenessEnabled());
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(

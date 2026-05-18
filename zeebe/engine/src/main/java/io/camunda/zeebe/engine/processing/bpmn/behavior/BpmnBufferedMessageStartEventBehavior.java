@@ -12,12 +12,16 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -27,6 +31,9 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final MessageState messageState;
   private final ProcessState processState;
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
+  private final boolean businessIdUniquenessEnabled;
 
   private final EventHandle eventHandle;
   private final InstantSource clock;
@@ -37,10 +44,14 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final Writers writers,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final boolean businessIdUniquenessEnabled) {
     messageState = processingState.getMessageState();
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
+    elementInstanceState = processingState.getElementInstanceState();
+    bannedInstanceState = processingState.getBannedInstanceState();
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.clock = clock;
 
     eventHandle =
@@ -110,9 +121,13 @@ public final class BpmnBufferedMessageStartEventBehavior {
               correlationKey,
               storedMessage -> {
                 // correlate the first message with same correlation key that was not correlated yet
+                // additionally, skip a buffered message whose businessId is currently taken by an
+                // active PI on this partition — leaving it in the buffer so a future release can
+                // pick it up
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
-                        storedMessage.getMessageKey(), process.getBpmnProcessId())) {
+                        storedMessage.getMessageKey(), process.getBpmnProcessId())
+                    && !isBufferedMessageBlockedByBusinessIdUniqueness(storedMessage, process)) {
 
                   // correlate the first published message across all message start events
                   // - using the message key to decide which message was published before
@@ -134,6 +149,22 @@ public final class BpmnBufferedMessageStartEventBehavior {
     } else {
       return Optional.empty();
     }
+  }
+
+  private boolean isBufferedMessageBlockedByBusinessIdUniqueness(
+      final StoredMessage storedMessage, final DeployedProcess process) {
+    if (!businessIdUniquenessEnabled) {
+      return false;
+    }
+    final var businessId = storedMessage.getMessage().getBusinessIdBuffer();
+    if (businessId == null || businessId.capacity() == 0) {
+      return false;
+    }
+    return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        BufferUtil.bufferAsString(businessId),
+        BufferUtil.bufferAsString(process.getBpmnProcessId()),
+        storedMessage.getMessage().getTenantId(),
+        bannedInstanceState::isProcessInstanceBanned);
   }
 
   private static final class Correlation {

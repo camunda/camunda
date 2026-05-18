@@ -10,9 +10,12 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -23,6 +26,9 @@ public final class MessageCorrelateBehavior {
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final MessageSubscriptionState messageSubscriptionState;
   private final MessageState messageState;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
+  private final boolean businessIdUniquenessEnabled;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final SubscriptionCommandSender commandSender;
@@ -33,13 +39,19 @@ public final class MessageCorrelateBehavior {
       final EventHandle eventHandle,
       final StateWriter stateWriter,
       final MessageSubscriptionState messageSubscriptionState,
-      final SubscriptionCommandSender commandSender) {
+      final SubscriptionCommandSender commandSender,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
+      final boolean businessIdUniquenessEnabled) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
     this.eventHandle = eventHandle;
     this.stateWriter = stateWriter;
     this.commandSender = commandSender;
+    this.elementInstanceState = elementInstanceState;
+    this.bannedInstanceState = bannedInstanceState;
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
   public void correlateToMessageStartEvents(
@@ -64,9 +76,13 @@ public final class MessageCorrelateBehavior {
 
           // create only one instance of a process per correlation key
           // - allow multiple instance if correlation key is empty
-          if (messageData.correlationKey().capacity() == 0
-              || !messageState.existActiveProcessInstance(
-                  messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey())) {
+          // additionally, when the published message carries a businessId, also enforce that no
+          // active PI exists locally with the same businessId for this process definition (the
+          // local arm of the design's uniqueness check; cross-partition handling lands later)
+          if ((messageData.correlationKey().capacity() == 0
+                  || !messageState.existActiveProcessInstance(
+                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
+              && !isBlockedByBusinessIdUniqueness(messageData, subscriptionRecord)) {
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
@@ -102,12 +118,13 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          if (messageData.correlationKey().capacity() == 0
-              || !messageState.existActiveProcessInstance(
-                  messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey())) {
-            // Just collect, don't trigger events yet
+          // Mirror the same uniqueness gates as the real correlation path so authorization is only
+          // checked for subscriptions that would actually correlate.
+          if ((messageData.correlationKey().capacity() == 0
+                  || !messageState.existActiveProcessInstance(
+                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
+              && !isBlockedByBusinessIdUniqueness(messageData, subscriptionRecord)) {
+            // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
         });
@@ -203,6 +220,33 @@ public final class MessageCorrelateBehavior {
       return true;
     }
     return BufferUtil.equals(messageBusinessId, subscriptionBusinessId);
+  }
+
+  /**
+   * Local arm of the design's start-event uniqueness check: when the published message carries a
+   * businessId and the feature is enabled, reject the start when a root PI with the same businessId
+   * is already active for this process definition on this partition. The message itself is left in
+   * the buffer (the existing TTL path), so it can correlate later when the holding instance ends.
+   *
+   * <p>Cross-partition uniqueness (i.e. when the businessId hashes to a different partition than
+   * the correlation key) is intentionally out of scope here and is delegated to {@code P_B} in a
+   * later increment via a cross-partition ask. This method only resolves what {@code P_K} can
+   * answer locally.
+   */
+  private boolean isBlockedByBusinessIdUniqueness(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    if (!businessIdUniquenessEnabled) {
+      return false;
+    }
+    final var businessId = messageData.businessId();
+    if (businessId == null || businessId.capacity() == 0) {
+      return false;
+    }
+    return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        BufferUtil.bufferAsString(businessId),
+        subscriptionRecord.getBpmnProcessId(),
+        messageData.tenantId(),
+        bannedInstanceState::isProcessInstanceBanned);
   }
 
   public record MessageData(
