@@ -69,6 +69,7 @@ const cloudEnv = {
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
+  CAMUNDA_OPTIMIZE_ZEEBE_REST_ADDRESS: 'http://localhost:8080',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
     'http://localhost:18080/auth/realms/camunda-platform',
@@ -220,7 +221,11 @@ function waitForDockerDependencies() {
   const dependencies = ['http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'];
 
   if (mode === 'self-managed') {
-    dependencies.push('http://localhost:18080/auth', 'http://localhost:9600/ready');
+    dependencies.push(
+      'http://localhost:18080/auth',
+      'http://localhost:9600/ready',
+      'http://localhost:8080/v2/topology'
+    );
   }
 
   return Promise.all(dependencies.map(waitForServerCheck));
