@@ -45,6 +45,7 @@ import {
 	updateElementInstanceVariables,
 	queryElementInstanceIncidents,
 } from './element-instance';
+import {queryElementInstanceInspection} from './element-instance-inspection';
 import {
 	createGroup,
 	getGroup,
@@ -223,6 +224,7 @@ const endpoints = {
 	createDocumentLink,
 	queryElementInstances,
 	queryElementInstanceIncidents,
+	queryElementInstanceInspection,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -592,6 +594,18 @@ export {
 	type QueryElementInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
+export {
+	waitStateTypeSchema,
+	waitStateDetailsSchema,
+	elementInstanceInspectionSchema,
+	queryElementInstanceInspectionRequestBodySchema,
+	queryElementInstanceInspectionResponseBodySchema,
+	type WaitStateType,
+	type WaitStateDetails,
+	type ElementInstanceInspection,
+	type QueryElementInstanceInspectionRequestBody,
+	type QueryElementInstanceInspectionResponseBody,
+} from './element-instance-inspection';
 export {
 	createGroupRequestBodySchema,
 	createGroupResponseBodySchema,
