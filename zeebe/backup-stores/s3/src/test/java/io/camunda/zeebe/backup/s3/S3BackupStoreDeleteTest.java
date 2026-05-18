@@ -9,11 +9,13 @@ package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -22,12 +24,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.reactivestreams.Subscription;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Publisher;
 
 @ExtendWith(MockitoExtension.class)
 final class S3BackupStoreDeleteTest {
@@ -50,14 +54,10 @@ final class S3BackupStoreDeleteTest {
         .thenReturn(
             CompletableFuture.failedFuture(
                 NoSuchKeyException.builder().message("no such key").build()));
-    // contents listing returns 1 object (new path); legacy path returns empty
-    when(client.listObjectsV2(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                ListObjectsV2Response.builder()
-                    .contents(S3Object.builder().key("contents/2/3/1/snapshot/file1").build())
-                    .build()))
-        .thenReturn(CompletableFuture.completedFuture(ListObjectsV2Response.builder().build()));
+    // contents new path: 1 object; legacy path: empty
+    stubPaginatorCalls(
+        publisherOf(S3Object.builder().key("contents/2/3/1/snapshot/file1").build()),
+        emptyPublisher());
     // contents deletion fails
     when(client.deleteObjects(any(Consumer.class)))
         .thenReturn(
@@ -80,18 +80,12 @@ final class S3BackupStoreDeleteTest {
         .thenReturn(
             CompletableFuture.failedFuture(
                 NoSuchKeyException.builder().message("no such key").build()));
-    // 1001 objects on new-path contents listing; all other listObjectsV2 calls return empty
+    // contents new path: 1001 objects across two pages; all other paths: empty
     final var objects =
-        IntStream.range(0, 1001)
+        IntStream.range(0, 2001)
             .mapToObj(i -> S3Object.builder().key("contents/2/3/1/file" + i).build())
             .toList();
-    when(client.listObjectsV2(any(Consumer.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                ListObjectsV2Response.builder().contents(objects).build()))
-        .thenReturn(CompletableFuture.completedFuture(ListObjectsV2Response.builder().build()))
-        .thenReturn(CompletableFuture.completedFuture(ListObjectsV2Response.builder().build()))
-        .thenReturn(CompletableFuture.completedFuture(ListObjectsV2Response.builder().build()));
+    stubPaginatorCalls(publisherOf(objects), emptyPublisher(), emptyPublisher(), emptyPublisher());
     // both content batches succeed
     when(client.deleteObjects(any(Consumer.class)))
         .thenReturn(CompletableFuture.completedFuture(DeleteObjectsResponse.builder().build()));
@@ -100,6 +94,48 @@ final class S3BackupStoreDeleteTest {
     store.delete(id).join();
 
     // then - deleteObjects called twice: batch of 1000 then batch of 1
-    verify(client, times(2)).deleteObjects(any(Consumer.class));
+    verify(client, times(3)).deleteObjects(any(Consumer.class));
+  }
+
+  /** Stubs successive listObjectsV2Paginator calls to return the given publishers in order. */
+  private void stubPaginatorCalls(final ListObjectsV2Publisher... publishers) {
+    var stub = when(client.listObjectsV2Paginator(any(Consumer.class)));
+    for (final var publisher : publishers) {
+      stub = stub.thenReturn(publisher);
+    }
+  }
+
+  private static ListObjectsV2Publisher publisherOf(final S3Object... objects) {
+    return publisherOf(List.of(objects));
+  }
+
+  private static ListObjectsV2Publisher publisherOf(final List<S3Object> objects) {
+    final var publisher = mock(ListObjectsV2Publisher.class);
+    when(publisher.contents()).thenReturn(sdkPublisherOf(objects));
+    return publisher;
+  }
+
+  private static ListObjectsV2Publisher emptyPublisher() {
+    return publisherOf(List.of());
+  }
+
+  private static SdkPublisher<S3Object> sdkPublisherOf(final List<S3Object> objects) {
+    return subscriber ->
+        subscriber.onSubscribe(
+            new Subscription() {
+              private boolean emitted = false;
+
+              @Override
+              public void request(final long n) {
+                if (!emitted) {
+                  emitted = true;
+                  objects.forEach(subscriber::onNext);
+                  subscriber.onComplete();
+                }
+              }
+
+              @Override
+              public void cancel() {}
+            });
   }
 }
