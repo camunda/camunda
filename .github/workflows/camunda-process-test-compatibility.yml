@@ -556,6 +556,18 @@ jobs:
             -DfailIfNoTests=false
             ${{ steps.api-version.outputs.extra-props }}
 
+      - name: Dump All Docker Container Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Fetching status of all containers (including stopped/failed ones) ==="
+          docker ps -a
+
+          echo "=== Fetching logs for all available containers ==="
+          for container_id in $(docker ps -a -q); do
+            echo "--- Logs for Container: $(docker inspect --format '{{.Name}}' $container_id) ($container_id) ---"
+            docker logs $container_id || true
+          done
+
       - name: Record tested combination
         if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
         run: |
@@ -716,16 +728,6 @@ jobs:
                 }
               ]
             }
-      - name: Dump All Docker Container Logs on Failure
-        run: |
-          echo "=== Fetching status of all containers (including stopped/failed ones) ==="
-          docker ps -a
-          
-          echo "=== Fetching logs for all available containers ==="
-          for container_id in $(docker ps -a -q); do
-            echo "--- Logs for Container: $(docker inspect --format '{{.Name}}' $container_id) ($container_id) ---"
-            docker logs $container_id || true
-          done
       - name: Observe build status
         if: always()
         continue-on-error: true
