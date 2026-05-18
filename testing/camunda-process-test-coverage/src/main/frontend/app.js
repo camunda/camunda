@@ -8,7 +8,7 @@
  * ────────────────────────────────────
  * {
  *   suites:              CoverageSuiteReport[]
- *   coverages:           Coverage[]
+ *   processCoverages:    ProcessCoverage[]
  *   decisionCoverages:   DecisionCoverage[]
  *   definitions:         { [processId]: string }        // BPMN XML per process
  *   decisionDefinitions: { [decisionId]: string }       // DMN XML per decision

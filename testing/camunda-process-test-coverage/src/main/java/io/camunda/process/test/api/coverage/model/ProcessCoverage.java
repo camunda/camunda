@@ -20,8 +20,8 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableCoverage.Builder.class)
-public interface Coverage {
+@JsonDeserialize(builder = ImmutableProcessCoverage.Builder.class)
+public interface ProcessCoverage {
   String getProcessDefinitionId();
 
   List<String> getCompletedElements();

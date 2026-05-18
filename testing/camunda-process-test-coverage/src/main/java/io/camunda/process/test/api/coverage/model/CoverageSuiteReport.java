@@ -28,7 +28,7 @@ public interface CoverageSuiteReport {
 
   List<Run> getRuns();
 
-  List<Coverage> getCoverages();
+  List<ProcessCoverage> getProcessCoverages();
 
   List<DecisionCoverage> getDecisionCoverages();
 }

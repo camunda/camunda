@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.CoverageDataSourceSnapshot;
@@ -59,16 +59,16 @@ public class ProcessEngineCoverageIT {
     assertThat(runs).hasSize(1);
     assertThat(runs)
         .first()
-        .extracting(Run::getCoverages)
+        .extracting(Run::getProcessCoverages)
         .satisfies(
             coverages -> {
               assertThat(coverages).hasSize(1);
               assertThat(coverages)
                   .first()
-                  .extracting(Coverage::getProcessDefinitionId)
+                  .extracting(ProcessCoverage::getProcessDefinitionId)
                   .isEqualTo("test-with-event-based-gateway");
               assertThat(coverages.stream().findFirst().get())
-                  .extracting(Coverage::getTakenSequenceFlows)
+                  .extracting(ProcessCoverage::getTakenSequenceFlows)
                   .satisfies(
                       takenFlows -> {
                         assertThat(takenFlows).contains("Flow_Timer");
@@ -103,22 +103,22 @@ public class ProcessEngineCoverageIT {
         .get()
         .satisfies(
             run -> {
-              assertThat(run.getCoverages()).hasSize(2);
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getCompletedElements)
+              assertThat(run.getProcessCoverages()).hasSize(2);
+              assertThat(run.getProcessCoverages())
+                  .extracting(ProcessCoverage::getCompletedElements)
                   .containsExactly(
                       Arrays.asList("StartEvent", "GatewayEvent", "NoEvent", "EndEvent"),
                       Arrays.asList("StartEvent", "GatewayEvent", "YesEvent", "EndEvent"));
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getTakenSequenceFlows)
+              assertThat(run.getProcessCoverages())
+                  .extracting(ProcessCoverage::getTakenSequenceFlows)
                   .containsExactly(
                       Arrays.asList("FlowGateway", "FlowGatewayDefault", "FlowNoEnd"),
                       Arrays.asList("FlowGateway", "FlowGatewayYes", "FlowYesEnd"));
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getCoverage)
+              assertThat(run.getProcessCoverages())
+                  .extracting(ProcessCoverage::getCoverage)
                   .containsExactly(0.7, 0.7);
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getProcessDefinitionId)
+              assertThat(run.getProcessCoverages())
+                  .extracting(ProcessCoverage::getProcessDefinitionId)
                   .containsExactly("test-with-simple-gateway", "test-with-simple-gateway");
             });
   }
@@ -151,10 +151,10 @@ public class ProcessEngineCoverageIT {
         .get()
         .satisfies(
             run -> {
-              assertThat(run.getCoverages()).hasSize(1);
-              assertThat(run.getCoverages())
+              assertThat(run.getProcessCoverages()).hasSize(1);
+              assertThat(run.getProcessCoverages())
                   .first()
-                  .extracting(Coverage::getProcessDefinitionId)
+                  .extracting(ProcessCoverage::getProcessDefinitionId)
                   .isEqualTo("test-with-simple-gateway");
             });
   }

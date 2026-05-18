@@ -20,8 +20,8 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.api.coverage.model.Coverage;
-import io.camunda.process.test.api.coverage.model.ImmutableCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -56,9 +56,9 @@ public class CoverageCreator {
    * @param dataSource The data source to retrieve process execution data
    * @param processInstance The process instance to analyze
    * @param model The process model containing definition information
-   * @return A Coverage object containing the coverage details for the process instance
+   * @return A ProcessCoverage object containing the coverage details for the process instance
    */
-  public static Coverage createCoverage(
+  public static ProcessCoverage createCoverage(
       final CoverageDataSource dataSource,
       final ProcessInstance processInstance,
       final Model model) {
@@ -93,7 +93,7 @@ public class CoverageCreator {
     // not reflected in the records
     enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlows, takenElementInstances, model);
 
-    return ImmutableCoverage.builder()
+    return ImmutableProcessCoverage.builder()
         .processDefinitionId(processInstance.getProcessDefinitionId())
         .addAllCompletedElements(takenElements)
         .addAllTakenSequenceFlows(takenSequenceFlows)
@@ -109,13 +109,13 @@ public class CoverageCreator {
    *
    * @param coverages Collection of individual coverage reports to aggregate
    * @param models Collection of process models for coverage calculation
-   * @return List of aggregated Coverage objects, one per process definition
+   * @return List of aggregated ProcessCoverage objects, one per process definition
    */
-  public static List<Coverage> aggregateCoverages(
-      final Collection<Coverage> coverages, final Collection<Model> models) {
-    final Map<String, List<Coverage>> coveragesByProcessDefinition =
-        coverages.stream().collect(Collectors.groupingBy(Coverage::getProcessDefinitionId));
-    final List<Coverage> aggregatedCoverages = new ArrayList<>();
+  public static List<ProcessCoverage> aggregateCoverages(
+      final Collection<ProcessCoverage> coverages, final Collection<Model> models) {
+    final Map<String, List<ProcessCoverage>> coveragesByProcessDefinition =
+        coverages.stream().collect(Collectors.groupingBy(ProcessCoverage::getProcessDefinitionId));
+    final List<ProcessCoverage> aggregatedCoverages = new ArrayList<>();
     coveragesByProcessDefinition.forEach(
         (processDefinitionId, coveragesForProcessInstance) -> {
           final List<String> completedElements =
@@ -137,7 +137,7 @@ public class CoverageCreator {
                           new IllegalStateException(
                               "No model found for process definition id: " + processDefinitionId));
           aggregatedCoverages.add(
-              ImmutableCoverage.builder()
+              ImmutableProcessCoverage.builder()
                   .processDefinitionId(processDefinitionId)
                   .addAllCompletedElements(completedElements)
                   .addAllTakenSequenceFlows(takenSequenceFlows)
@@ -195,7 +195,7 @@ public class CoverageCreator {
    * @param takenElements List of element IDs that were executed
    * @param takenSequenceFlows List of sequence flow IDs that were traversed
    * @param model The process model containing definition information
-   * @return Coverage percentage as a value between 0.0 and 1.0
+   * @return ProcessCoverage percentage as a value between 0.0 and 1.0
    */
   private static double calculateCoverage(
       final List<String> takenElements, final List<String> takenSequenceFlows, final Model model) {

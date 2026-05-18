@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
-import io.camunda.process.test.api.coverage.model.ImmutableCoverage;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableModel;
@@ -56,8 +56,8 @@ class CoverageReportCreatorTest {
             .addRuns(
                 ImmutableRun.builder()
                     .name("run")
-                    .addCoverages(
-                        ImmutableCoverage.builder()
+                    .addProcessCoverages(
+                        ImmutableProcessCoverage.builder()
                             .processDefinitionId("process")
                             .addCompletedElements("task")
                             .addTakenSequenceFlows("flow")
@@ -82,7 +82,7 @@ class CoverageReportCreatorTest {
 
     // then
     assertThat(report.getSuites()).hasSize(1);
-    assertThat(report.getCoverages()).hasSize(1);
+    assertThat(report.getProcessCoverages()).hasSize(1);
     assertThat(report.getDecisionCoverages()).hasSize(1);
     assertThat(report.getDefinitions()).containsEntry("process", "<bpmn>process</bpmn>");
     assertThat(report.getDecisionDefinitions()).containsEntry("decision", "<dmn>decision</dmn>");

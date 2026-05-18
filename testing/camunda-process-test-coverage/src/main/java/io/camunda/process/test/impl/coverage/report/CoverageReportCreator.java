@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.coverage.report;
 
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
@@ -37,8 +37,9 @@ public class CoverageReportCreator {
       final Suite suite,
       final Collection<Model> models,
       final Collection<DecisionModel> decisionModels) {
-    final java.util.List<Coverage> coverages =
-        CoverageCreator.aggregateCoverages(allCoverages(Collections.singletonList(suite)), models);
+    final java.util.List<ProcessCoverage> processCoverages =
+        CoverageCreator.aggregateCoverages(
+            allProcessCoverages(Collections.singletonList(suite)), models);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(
             allDecisionCoverages(Collections.singletonList(suite)), decisionModels);
@@ -46,7 +47,7 @@ public class CoverageReportCreator {
         .id(suite.getId())
         .name(suite.getName())
         .addAllRuns(suite.getRuns())
-        .addAllCoverages(coverages)
+        .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)
         .build();
   }
@@ -59,8 +60,8 @@ public class CoverageReportCreator {
         suites.stream()
             .map(suite -> createSuiteCoverageReport(suite, models, decisionModels))
             .collect(Collectors.toList());
-    final java.util.List<Coverage> coverages =
-        CoverageCreator.aggregateCoverages(allCoverages(suites), models);
+    final java.util.List<ProcessCoverage> processCoverages =
+        CoverageCreator.aggregateCoverages(allProcessCoverages(suites), models);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
     final Map<String, String> definitions =
@@ -75,7 +76,7 @@ public class CoverageReportCreator {
         .addAllSuites(suiteReports)
         .addAllModels(models)
         .addAllDecisionModels(decisionModels)
-        .addAllCoverages(coverages)
+        .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)
         .putAllDefinitions(definitions)
         .putAllDecisionDefinitions(decisionDefinitions)
@@ -86,11 +87,11 @@ public class CoverageReportCreator {
    * Extracts and flattens all coverage entries from a collection of test suites.
    *
    * @param suites Collection of test suites to extract coverage data from
-   * @return A flat collection of all Coverage objects from all test runs
+   * @return A flat collection of all ProcessCoverage objects from all test runs
    */
-  private static Collection<Coverage> allCoverages(final Collection<Suite> suites) {
+  private static Collection<ProcessCoverage> allProcessCoverages(final Collection<Suite> suites) {
     return suites.stream()
-        .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getCoverages().stream()))
+        .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getProcessCoverages().stream()))
         .collect(Collectors.toList());
   }
 

@@ -72,7 +72,7 @@ class ProcessCoverageBuilderTest {
     assertThat(report.getSuites())
         .singleElement()
         .satisfies(suite -> assertThat(suite.getRuns()).hasSize(1));
-    assertThat(report.getCoverages()).isEmpty();
+    assertThat(report.getProcessCoverages()).isEmpty();
     assertThat(report.getDecisionCoverages()).isEmpty();
   }
 }

@@ -26,7 +26,7 @@ export function renderSuite(suiteId, data) {
     return;
   }
 
-  const suiteCoverages = suite.coverages || [];
+  const suiteCoverages = suite.processCoverages || [];
   const suiteDecisionCoverages = suite.decisionCoverages || [];
   const runs = suite.runs || [];
   const sid = encodeURIComponent(suite.id);
@@ -125,7 +125,7 @@ export function renderSuite(suiteId, data) {
           <tbody>`;
 
     runs.forEach((run, runIndex) => {
-      const runAllCoverages = [...(run.coverages || []), ...(run.decisionCoverages || [])];
+      const runAllCoverages = [...(run.processCoverages || []), ...(run.decisionCoverages || [])];
       const runAvg =
         runAllCoverages.length > 0
           ? runAllCoverages.reduce((s, c) => s + c.coverage, 0) / runAllCoverages.length

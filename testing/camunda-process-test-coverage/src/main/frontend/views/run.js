@@ -37,7 +37,7 @@ export function renderRun(suiteId, runIndex, data) {
     return;
   }
 
-  const runCoverages = run.coverages || [];
+  const runCoverages = run.processCoverages || [];
   const runDecisionCoverages = run.decisionCoverages || [];
   const allCoverages = [...runCoverages, ...runDecisionCoverages];
   const avgCoverage =

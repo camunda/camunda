@@ -134,7 +134,7 @@ public class DecisionCoverageCreator {
    *
    * @param matchedRuleIds List of rule IDs that were matched
    * @param model The decision model containing rule count information
-   * @return Coverage percentage as a value between 0.0 and 1.0
+   * @return ProcessCoverage percentage as a value between 0.0 and 1.0
    */
   private static double calculateCoverage(
       final List<String> matchedRuleIds, final DecisionModel model) {

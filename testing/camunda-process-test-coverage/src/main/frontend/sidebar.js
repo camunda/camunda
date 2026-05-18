@@ -90,7 +90,7 @@ function expandSuiteInSidebar(suiteId) {
 
 function buildSidebarHtml(data) {
   const suites = data.suites || [];
-  const globalCoverages = data.coverages || [];
+  const globalCoverages = data.processCoverages || [];
   const globalDecisionCoverages = data.decisionCoverages || [];
 
   let html = `<ul class="nav-list" role="list">

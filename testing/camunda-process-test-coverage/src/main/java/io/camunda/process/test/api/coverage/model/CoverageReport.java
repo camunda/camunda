@@ -29,7 +29,7 @@ public interface CoverageReport {
 
   List<DecisionModel> getDecisionModels();
 
-  List<Coverage> getCoverages();
+  List<ProcessCoverage> getProcessCoverages();
 
   List<DecisionCoverage> getDecisionCoverages();
 

@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.coverage.report;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
@@ -134,10 +134,10 @@ public class CoverageReporter {
 
   private void printCoverage(final CoverageCollector coverageCollector) {
     final Suite suite = coverageCollector.getSuite();
-    final Collection<Coverage> coverages =
+    final Collection<ProcessCoverage> coverages =
         CoverageCreator.aggregateCoverages(
             suite.getRuns().stream()
-                .flatMap(r -> r.getCoverages().stream())
+                .flatMap(r -> r.getProcessCoverages().stream())
                 .collect(Collectors.toList()),
             coverageCollector.getModels());
     final String processCoverageList =

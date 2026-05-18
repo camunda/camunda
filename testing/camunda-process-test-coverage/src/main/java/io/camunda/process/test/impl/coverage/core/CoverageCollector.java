@@ -19,7 +19,7 @@ import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
@@ -117,7 +117,7 @@ public final class CoverageCollector {
                         processInstance.getProcessDefinitionId()))
             .collect(Collectors.toList());
 
-    final List<Coverage> coverages =
+    final List<ProcessCoverage> coverages =
         processInstances.stream()
             .map(
                 processInstance ->
@@ -134,7 +134,7 @@ public final class CoverageCollector {
     runs.add(
         ImmutableRun.builder()
             .name(runName)
-            .addAllCoverages(coverages)
+            .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
             .build());
   }

@@ -2,7 +2,7 @@
  * Process details view – BPMN diagram with coverage highlighting.
  *
  * Supports two modes:
- *   - Overall coverage  (no context): shows aggregate coverage from data.coverages
+ *   - Overall coverage  (no context): shows aggregate coverage from data.processCoverages
  *   - Run-scoped coverage (context):  shows the coverage of a specific test run
  */
 
@@ -32,7 +32,7 @@ export async function renderProcess(processId, data, context = null) {
     if (context.runIndex !== undefined) {
       // Run-scoped: coverage from a specific test run (identified by index)
       const run = suite?.runs?.[context.runIndex];
-      cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+      cov = run?.processCoverages?.find((c) => c.processDefinitionId === processId) ?? null;
 
       // Breadcrumb: Suite > Run > Process
       breadcrumbHtml = `
@@ -45,7 +45,7 @@ export async function renderProcess(processId, data, context = null) {
         </nav>`;
     } else {
       // Suite-scoped: aggregated coverage for this process within the suite
-      cov = suite?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+      cov = suite?.processCoverages?.find((c) => c.processDefinitionId === processId) ?? null;
 
       // Breadcrumb: Suite > Process
       breadcrumbHtml = `
@@ -57,7 +57,7 @@ export async function renderProcess(processId, data, context = null) {
         </nav>`;
     }
   } else {
-    cov = (data.coverages || []).find((c) => c.processDefinitionId === processId) ?? null;
+    cov = (data.processCoverages || []).find((c) => c.processDefinitionId === processId) ?? null;
   }
 
   const xml = definitions[processId];
@@ -97,7 +97,7 @@ export async function renderProcess(processId, data, context = null) {
   // Show test suite coverage table only in global mode
   if (!context) {
     const suitesForProcess = suites.filter((s) =>
-      (s.coverages || []).some((c) => c.processDefinitionId === processId)
+      (s.processCoverages || []).some((c) => c.processDefinitionId === processId)
     );
     if (suitesForProcess.length > 0) {
       html += `
@@ -112,7 +112,7 @@ export async function renderProcess(processId, data, context = null) {
             <tbody>`;
 
       for (const suite of suitesForProcess) {
-        const suiteCov = (suite.coverages || []).find(
+        const suiteCov = (suite.processCoverages || []).find(
           (c) => c.processDefinitionId === processId
         );
         const sid = encodeURIComponent(suite.id);

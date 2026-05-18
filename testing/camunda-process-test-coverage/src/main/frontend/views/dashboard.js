@@ -19,7 +19,7 @@ import {
  */
 export function renderDashboard(data) {
   const suites = data.suites || [];
-  const globalCoverages = data.coverages || [];
+  const globalCoverages = data.processCoverages || [];
   const globalDecisionCoverages = data.decisionCoverages || [];
 
   const totalSuites = suites.length;
@@ -128,7 +128,7 @@ export function renderDashboard(data) {
 
     for (const suite of suites) {
       const sid = encodeURIComponent(suite.id);
-      const allSuiteCoverages = [...(suite.coverages || []), ...(suite.decisionCoverages || [])];
+      const allSuiteCoverages = [...(suite.processCoverages || []), ...(suite.decisionCoverages || [])];
       const suiteAvg =
         allSuiteCoverages.length > 0
           ? allSuiteCoverages.reduce((s, c) => s + c.coverage, 0) / allSuiteCoverages.length

@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 public interface Run {
   String getName();
 
-  List<Coverage> getCoverages();
+  List<ProcessCoverage> getProcessCoverages();
 
   @Value.Default
   default List<DecisionCoverage> getDecisionCoverages() {
