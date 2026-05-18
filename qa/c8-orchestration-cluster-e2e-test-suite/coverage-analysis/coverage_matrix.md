@@ -12,7 +12,7 @@ Legend: ✓ = at least 1, blank = 0.
 |--|--|--:|--|--|--|--|--|--|--|--|--|
 | process-instance | create | 35 | ✓ | ✓ | ✓ |  | ✓ |  |  | ✓ |  |
 | process-instance | get | 14 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
-| process-instance | update | 16 | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |  |
+| process-instance | update | 16 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |
 | process-instance | delete | 18 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ |  |
 | process-instance | search | 17 | ✓ | ✓ | ✓ |  | ✓ |  | ✓ | ✓ |  |
 | process-instance | other | 13 | ✓ | ✓ |  |  |  | ✓ |  |  | ✓ |
@@ -58,8 +58,8 @@ Legend: ✓ = at least 1, blank = 0.
 | decision-definition | update | 9 |  | ✓ | ✓ |  |  |  |  |  |  |
 | decision-definition | search | 16 |  | ✓ | ✓ |  |  |  | ✓ | ✓ |  |
 | batch-operation | get | 3 | ✓ |  | ✓ |  | ✓ |  |  |  |  |
-| batch-operation | update | 7 |  | ✓ |  |  |  |  |  |  |  |
-| batch-operation | delete | 6 |  | ✓ |  |  |  |  |  |  |  |
+| batch-operation | update | 7 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
+| batch-operation | delete | 6 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
 | batch-operation | search | 16 | ✓ | ✓ | ✓ |  |  |  | ✓ | ✓ |  |
 | user | create | 11 | ✓ | ✓ | ✓ |  |  | ✓ |  |  |  |
 | user | get | 3 |  |  | ✓ |  | ✓ |  |  |  |  |
@@ -80,8 +80,8 @@ Legend: ✓ = at least 1, blank = 0.
 | mapping-rule | update | 6 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
 | mapping-rule | delete | 3 |  |  | ✓ |  | ✓ |  |  |  |  |
 | mapping-rule | search | 8 |  |  | ✓ |  |  |  |  |  |  |
-| document | create | 16 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
-| document | get | 4 |  |  | ✓ |  | ✓ |  |  |  |  |
+| document | create | 16 |  | ✓ | ✓ | ✓ | ✓ |  |  |  |  |
+| document | get | 4 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
 | document | delete | 3 |  |  | ✓ |  | ✓ |  |  |  |  |
 | decision-instance | create | 5 |  | ✓ | ✓ | ✓ | ✓ |  |  | ✓ |  |
 | decision-instance | get | 4 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
@@ -120,7 +120,7 @@ Legend: ✓ = at least 1, blank = 0.
 |--|--|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | process-instance | create | 35 | 9 | 12 | 4 |  | 1 |  |  | 15 |  |
 | process-instance | get | 14 | 3 | 3 | 3 |  | 1 |  |  |  |  |
-| process-instance | update | 16 | 3 | 7 | 3 | 1 | 2 |  |  |  |  |
+| process-instance | update | 16 | 3 | 7 | 3 | 1 | 2 | 1 |  |  |  |
 | process-instance | delete | 18 | 4 | 3 | 3 | 2 | 3 | 1 |  | 2 |  |
 | process-instance | search | 17 | 5 | 2 | 3 |  | 1 |  | 1 | 2 |  |
 | process-instance | other | 13 | 8 | 1 |  |  |  | 2 |  |  | 1 |
@@ -146,7 +146,7 @@ Legend: ✓ = at least 1, blank = 0.
 | cluster-variables | search | 15 | 1 | 2 | 1 |  |  |  | 4 | 6 |  |
 | job | create | 1 |  |  |  |  |  |  |  |  |  |
 | job | get | 9 | 4 | 2 | 1 | 2 |  |  |  |  |  |
-| job | update | 15 | 4 | 4 |  |  | 4 | 2 |  |  |  |
+| job | update | 15 | 4 | 4 |  |  | 4 | 3 |  |  |  |
 | job | search | 21 | 6 | 6 | 4 | 3 | 1 |  | 1 | 2 |  |
 | job | other | 11 |  | 3 | 1 |  |  |  |  |  |  |
 | user-task | get | 8 | 3 | 1 | 2 |  | 2 |  |  |  |  |
@@ -166,8 +166,8 @@ Legend: ✓ = at least 1, blank = 0.
 | decision-definition | update | 9 |  | 1 | 1 |  |  |  |  |  |  |
 | decision-definition | search | 16 |  | 1 | 1 |  |  |  | 5 | 1 |  |
 | batch-operation | get | 3 | 1 |  | 1 |  | 1 |  |  |  |  |
-| batch-operation | update | 7 |  | 1 |  |  |  |  |  |  |  |
-| batch-operation | delete | 6 |  | 1 |  |  |  |  |  |  |  |
+| batch-operation | update | 7 |  | 1 | 1 |  | 2 |  |  |  |  |
+| batch-operation | delete | 6 |  | 1 | 1 |  | 2 |  |  |  |  |
 | batch-operation | search | 16 | 5 | 5 | 2 |  |  |  | 3 | 4 |  |
 | user | create | 11 | 4 | 5 | 1 |  |  | 1 |  |  |  |
 | user | get | 3 |  |  | 1 |  | 1 |  |  |  |  |
@@ -188,8 +188,8 @@ Legend: ✓ = at least 1, blank = 0.
 | mapping-rule | update | 6 |  | 3 | 1 |  | 1 |  |  |  |  |
 | mapping-rule | delete | 3 |  |  | 1 |  | 1 |  |  |  |  |
 | mapping-rule | search | 8 |  |  | 1 |  |  |  |  |  |  |
-| document | create | 16 |  | 6 | 3 |  | 1 |  |  |  |  |
-| document | get | 4 |  |  | 1 |  | 1 |  |  |  |  |
+| document | create | 16 |  | 7 | 3 | 1 | 1 |  |  |  |  |
+| document | get | 4 |  | 1 | 1 |  | 1 |  |  |  |  |
 | document | delete | 3 |  |  | 1 |  | 1 |  |  |  |  |
 | decision-instance | create | 5 |  | 2 | 1 | 1 | 1 |  |  | 2 |  |
 | decision-instance | get | 4 | 1 | 1 | 1 |  | 1 |  |  |  |  |

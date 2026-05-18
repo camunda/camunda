@@ -1,7 +1,7 @@
 entity,operation,total,happy-path,bad-request,unauthorized,forbidden,not-found,conflict,pagination-sort,filter,observe-absence,data-driven,unlabeled
 process-instance,create,35,9,12,4,0,1,0,0,15,0,0,2
 process-instance,get,14,3,3,3,0,1,0,0,0,0,0,0
-process-instance,update,16,3,7,3,1,2,0,0,0,0,0,0
+process-instance,update,16,3,7,3,1,2,1,0,0,0,0,0
 process-instance,delete,18,4,3,3,2,3,1,0,2,0,0,2
 process-instance,search,17,5,2,3,0,1,0,1,2,0,0,0
 process-instance,other,13,8,1,0,0,0,2,0,0,1,0,2
@@ -27,7 +27,7 @@ cluster-variables,delete,6,0,0,2,0,2,0,0,0,0,0,2
 cluster-variables,search,15,1,2,1,0,0,0,4,6,0,0,0
 job,create,1,0,0,0,0,0,0,0,0,0,0,1
 job,get,9,4,2,1,2,0,0,0,0,0,0,0
-job,update,15,4,4,0,0,4,2,0,0,0,0,1
+job,update,15,4,4,0,0,4,3,0,0,0,0,0
 job,search,21,6,6,4,3,1,0,1,2,0,0,0
 job,other,11,0,3,1,0,0,0,0,0,0,0,7
 user-task,get,8,3,1,2,0,2,0,0,0,0,0,0
@@ -47,8 +47,8 @@ decision-definition,get,8,0,2,2,0,2,0,0,0,0,0,0
 decision-definition,update,9,0,1,1,0,0,0,0,0,0,0,7
 decision-definition,search,16,0,1,1,0,0,0,5,1,0,0,0
 batch-operation,get,3,1,0,1,0,1,0,0,0,0,0,0
-batch-operation,update,7,0,1,0,0,0,0,0,0,0,0,6
-batch-operation,delete,6,0,1,0,0,0,0,0,0,0,0,5
+batch-operation,update,7,0,1,1,0,2,0,0,0,0,0,3
+batch-operation,delete,6,0,1,1,0,2,0,0,0,0,0,2
 batch-operation,search,16,5,5,2,0,0,0,3,4,0,0,0
 user,create,11,4,5,1,0,0,1,0,0,0,0,1
 user,get,3,0,0,1,0,1,0,0,0,0,0,0
@@ -69,8 +69,8 @@ mapping-rule,get,3,0,0,1,0,1,0,0,0,0,0,0
 mapping-rule,update,6,0,3,1,0,1,0,0,0,0,0,1
 mapping-rule,delete,3,0,0,1,0,1,0,0,0,0,0,1
 mapping-rule,search,8,0,0,1,0,0,0,0,0,0,0,0
-document,create,16,0,6,3,0,1,0,0,0,0,0,6
-document,get,4,0,0,1,0,1,0,0,0,0,0,0
+document,create,16,0,7,3,1,1,0,0,0,0,0,4
+document,get,4,0,1,1,0,1,0,0,0,0,0,0
 document,delete,3,0,0,1,0,1,0,0,0,0,0,1
 decision-instance,create,5,0,2,1,1,1,0,0,2,0,0,0
 decision-instance,get,4,1,1,1,0,1,0,0,0,0,0,0

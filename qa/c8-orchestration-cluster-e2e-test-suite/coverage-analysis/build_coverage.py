@@ -116,14 +116,19 @@ def op_of(name):
     return 'other'
 
 # ---------- 4. Variant — multi-label allowed, joined by '|' ----------
+# Each rule matches descriptive phrases AND the numeric status code, so titles
+# that only mention the code (e.g. "Get Document Without Hash 400") still get
+# the right variant tag.
 VARIANT_RULES = [
-    ('unauthorized',         re.compile(r'unauthor', re.I)),
-    ('forbidden',            re.compile(r'forbidden|no(t)?[ -]granted|no permission|missing.*permission|without.*permission', re.I)),
-    ('not-found',            re.compile(r'not[ -]?found|non[ -]?existing|nonexistent|does not exist', re.I)),
+    ('unauthorized',         re.compile(r'unauthor|\b401\b', re.I)),
+    ('forbidden',            re.compile(r'forbidden|no(t)?[ -]granted|no permission|missing.*permission|without.*permission|\b403\b', re.I)),
+    ('not-found',            re.compile(r'not[ -]?found|non[ -]?existing|nonexistent|does not exist|\b404\b', re.I)),
     # `empty` is qualified by an input-noun so happy-path "returns empty result"
     # / "is empty" / "empty response" tests are no longer mislabelled.
-    ('bad-request',          re.compile(r'bad request|invalid|missing.*(field|param|body|required)|empty\s+(name|username|body|field|param|required|value|input|argument|id|payload|key)|null .*(field|value)|negative|exceed|too long|too short', re.I)),
-    ('conflict',             re.compile(r'conflict|duplicate|already', re.I)),
+    # 4xx codes for bad input: 400 (bad request), 415 (unsupported media type),
+    # 422 (unprocessable entity).
+    ('bad-request',          re.compile(r'bad request|invalid|missing.*(field|param|body|required)|empty\s+(name|username|body|field|param|required|value|input|argument|id|payload|key)|null .*(field|value)|negative|exceed|too long|too short|\b400\b|\b415\b|\b422\b', re.I)),
+    ('conflict',             re.compile(r'conflict|duplicate|already|\b409\b', re.I)),
     ('pagination-sort',      re.compile(r'pagin|sort|page (limit|size)|cursor', re.I)),
     ('filter',               re.compile(r'filter', re.I)),
     ('observe-via-search',   re.compile(r'search', re.I)),
@@ -466,120 +471,119 @@ CANONICAL_FORM = {
 }
 
 cat_path = os.path.join(OUT, 'category_breakdown.md')
-fp = open(cat_path, 'w', encoding='utf-8')
-fp.write('# OC API v2 — Per-category breakdown\n\n')
-fp.write(f'Total test declarations: **{len(rows)}** across **{len(entity_totals)}** entities.\n\n')
-fp.write('This file answers, per category: **(1) Form** (the canonical sequence the tests embody), '
-         '**(2) Prerequisite to create**, **(3) Observation channel split** (GET vs search), '
-         '**(4) Variants with counts**, **(5) The actual tests in that category**.\n\n')
+with open(cat_path, 'w', encoding='utf-8') as fp:
+    fp.write('# OC API v2 — Per-category breakdown\n\n')
+    fp.write(f'Total test declarations: **{len(rows)}** across **{len(entity_totals)}** entities.\n\n')
+    fp.write('This file answers, per category: **(1) Form** (the canonical sequence the tests embody), '
+             '**(2) Prerequisite to create**, **(3) Observation channel split** (GET vs search), '
+             '**(4) Variants with counts**, **(5) The actual tests in that category**.\n\n')
 
-# Group rows
-by_cat = defaultdict(list)
-for r in rows:
-    by_cat[r['category']].append(r)
+    # Group rows
+    by_cat = defaultdict(list)
+    for r in rows:
+        by_cat[r['category']].append(r)
 
-cat_order = [
-    'A. Entity Lifecycle (CRUD)',
-    'B. Membership/Association',
-    'C. Deployment Lifecycle',
-    'D. Process-Instance Lifecycle & Ops',
-    'E. Batch-Operation Lifecycle',
-    'F. User-Task Lifecycle',
-    'G. Job Lifecycle & Stats',
-    'H. Incident Lifecycle',
-    'I. Decision-Instance Lifecycle',
-    'J/K/L. Observation-only',
-    'M. Messaging/Signals',
-    'N. Engine Evaluation',
-    'O. System/Admin',
-    'Z. Uncategorised',
-]
-form_step_order = [
-    'create', 'observe-present-get', 'observe-present-search', 'mutate',
-    'delete', 'observe-absence', 'aggregate', 'evaluate',
-    'negative-create', 'negative-get', 'negative-search', 'negative-mutate',
-    'negative-delete', 'negative-aggregate', 'parameterized', 'other',
-]
-variant_order = [
-    'happy-path','observe-via-get','observe-via-search','observe-absence',
-    'pagination-sort','filter',
-    'bad-request','unauthorized','forbidden','not-found','conflict',
-    'data-driven','unlabeled',
-]
+    cat_order = [
+        'A. Entity Lifecycle (CRUD)',
+        'B. Membership/Association',
+        'C. Deployment Lifecycle',
+        'D. Process-Instance Lifecycle & Ops',
+        'E. Batch-Operation Lifecycle',
+        'F. User-Task Lifecycle',
+        'G. Job Lifecycle & Stats',
+        'H. Incident Lifecycle',
+        'I. Decision-Instance Lifecycle',
+        'J/K/L. Observation-only',
+        'M. Messaging/Signals',
+        'N. Engine Evaluation',
+        'O. System/Admin',
+        'Z. Uncategorised',
+    ]
+    form_step_order = [
+        'create', 'observe-present-get', 'observe-present-search', 'mutate',
+        'delete', 'observe-absence', 'aggregate', 'evaluate',
+        'negative-create', 'negative-get', 'negative-search', 'negative-mutate',
+        'negative-delete', 'negative-aggregate', 'parameterized', 'other',
+    ]
+    variant_order = [
+        'happy-path','observe-via-get','observe-via-search','observe-absence',
+        'pagination-sort','filter',
+        'bad-request','unauthorized','forbidden','not-found','conflict',
+        'data-driven','unlabeled',
+    ]
 
-fp.write('## Table of contents\n\n')
-for cat in cat_order:
-    if cat in by_cat:
-        fp.write(f'- [{cat}](#{cat.lower().replace(". ","-").replace(" ","-").replace("/","").replace("(","").replace(")","").replace("&","").replace(",","")}) — {len(by_cat[cat])} tests\n')
-fp.write('\n')
+    fp.write('## Table of contents\n\n')
+    for cat in cat_order:
+        if cat in by_cat:
+            fp.write(f'- [{cat}](#{cat.lower().replace(". ","-").replace(" ","-").replace("/","").replace("(","").replace(")","").replace("&","").replace(",","")}) — {len(by_cat[cat])} tests\n')
+    fp.write('\n')
 
-for cat in cat_order:
-    if cat not in by_cat:
-        continue
-    cat_rows = by_cat[cat]
-    fp.write(f'## {cat}\n\n')
-    fp.write(f'**Form**: {CANONICAL_FORM.get(cat, "(no canonical form)")}\n\n')
-    fp.write(f'**Total tests**: {len(cat_rows)}\n\n')
+    for cat in cat_order:
+        if cat not in by_cat:
+            continue
+        cat_rows = by_cat[cat]
+        fp.write(f'## {cat}\n\n')
+        fp.write(f'**Form**: {CANONICAL_FORM.get(cat, "(no canonical form)")}\n\n')
+        fp.write(f'**Total tests**: {len(cat_rows)}\n\n')
 
-    # Group by entity
-    by_ent = defaultdict(list)
-    for r in cat_rows:
-        by_ent[r['entity']].append(r)
+        # Group by entity
+        by_ent = defaultdict(list)
+        for r in cat_rows:
+            by_ent[r['entity']].append(r)
 
-    for ent in sorted(by_ent, key=lambda x: -len(by_ent[x])):
-        ent_rows = by_ent[ent]
-        # Prerequisites (collapse if all the same)
-        prereqs = sorted({r['prerequisite'] for r in ent_rows})
-        prereq_str = ', '.join(prereqs)
+        for ent in sorted(by_ent, key=lambda x: -len(by_ent[x])):
+            ent_rows = by_ent[ent]
+            # Prerequisites (collapse if all the same)
+            prereqs = sorted({r['prerequisite'] for r in ent_rows})
+            prereq_str = ', '.join(prereqs)
 
-        # Form-step counts
-        step_counts = defaultdict(int)
-        for r in ent_rows:
-            step_counts[r['form_step']] += 1
+            # Form-step counts
+            step_counts = defaultdict(int)
+            for r in ent_rows:
+                step_counts[r['form_step']] += 1
 
-        # Observation channel split
-        obs_get    = sum(1 for r in ent_rows if 'observe-via-get'    in r['variants'].split('|'))
-        obs_search = sum(1 for r in ent_rows if 'observe-via-search' in r['variants'].split('|'))
+            # Observation channel split
+            obs_get    = sum(1 for r in ent_rows if 'observe-via-get'    in r['variants'].split('|'))
+            obs_search = sum(1 for r in ent_rows if 'observe-via-search' in r['variants'].split('|'))
 
-        # Variant counts (multi-label)
-        var_counts = defaultdict(int)
-        for r in ent_rows:
-            for v in r['variants'].split('|'):
-                if v: var_counts[v] += 1
+            # Variant counts (multi-label)
+            var_counts = defaultdict(int)
+            for r in ent_rows:
+                for v in r['variants'].split('|'):
+                    if v: var_counts[v] += 1
 
-        # Files used
-        files = sorted({r['file'] for r in ent_rows})
+            # Files used
+            files = sorted({r['file'] for r in ent_rows})
 
-        fp.write(f'### `{ent}` — {len(ent_rows)} tests\n\n')
-        fp.write(f'- **Prerequisite to create**: {prereq_str}\n')
-        fp.write(f'- **Files**: {", ".join(f"`{f}`" for f in files)}\n')
-        fp.write(f'- **Observation channel**: GET = {obs_get}, Search = {obs_search}\n')
+            fp.write(f'### `{ent}` — {len(ent_rows)} tests\n\n')
+            fp.write(f'- **Prerequisite to create**: {prereq_str}\n')
+            fp.write(f'- **Files**: {", ".join(f"`{f}`" for f in files)}\n')
+            fp.write(f'- **Observation channel**: GET = {obs_get}, Search = {obs_search}\n')
 
-        step_line = ', '.join(f'{s}={step_counts[s]}' for s in form_step_order if step_counts.get(s,0))
-        fp.write(f'- **Form-step counts**: {step_line}\n')
+            step_line = ', '.join(f'{s}={step_counts[s]}' for s in form_step_order if step_counts.get(s,0))
+            fp.write(f'- **Form-step counts**: {step_line}\n')
 
-        var_line = ', '.join(f'{v}={var_counts[v]}' for v in variant_order if var_counts.get(v,0))
-        fp.write(f'- **Variants**: {var_line}\n\n')
+            var_line = ', '.join(f'{v}={var_counts[v]}' for v in variant_order if var_counts.get(v,0))
+            fp.write(f'- **Variants**: {var_line}\n\n')
 
-        # Tests table, grouped by form_step
-        fp.write('| form step | variants | file:line | test name |\n')
-        fp.write('|--|--|--|--|\n')
-        # Sort: form-step order, then file, then line
-        step_idx = {s: i for i, s in enumerate(form_step_order)}
-        sorted_rows = sorted(
-            ent_rows,
-            key=lambda r: (step_idx.get(r['form_step'], 999), r['file'], r['line']),
-        )
-        for r in sorted_rows:
-            # Trim noisy `observe-via-*` from the variant column when the form step already implies it
-            display_vars = [v for v in r['variants'].split('|') if v]
-            if r['form_step'] in ('observe-present-get','negative-get','observe-absence'):
-                display_vars = [v for v in display_vars if v != 'observe-via-get']
-            if r['form_step'] in ('observe-present-search','negative-search'):
-                display_vars = [v for v in display_vars if v != 'observe-via-search']
-            fp.write(f'| {r["form_step"]} | {", ".join(display_vars) or "—"} | '
-                     f'`{r["file"]}:{r["line"]}` | {r["test_name"]} |\n')
-        fp.write('\n')
+            # Tests table, grouped by form_step
+            fp.write('| form step | variants | file:line | test name |\n')
+            fp.write('|--|--|--|--|\n')
+            # Sort: form-step order, then file, then line
+            step_idx = {s: i for i, s in enumerate(form_step_order)}
+            sorted_rows = sorted(
+                ent_rows,
+                key=lambda r: (step_idx.get(r['form_step'], 999), r['file'], r['line']),
+            )
+            for r in sorted_rows:
+                # Trim noisy `observe-via-*` from the variant column when the form step already implies it
+                display_vars = [v for v in r['variants'].split('|') if v]
+                if r['form_step'] in ('observe-present-get','negative-get','observe-absence'):
+                    display_vars = [v for v in display_vars if v != 'observe-via-get']
+                if r['form_step'] in ('observe-present-search','negative-search'):
+                    display_vars = [v for v in display_vars if v != 'observe-via-search']
+                fp.write(f'| {r["form_step"]} | {", ".join(display_vars) or "—"} | '
+                         f'`{r["file"]}:{r["line"]}` | {r["test_name"]} |\n')
+            fp.write('\n')
 
-fp.close()
 print(f"wrote {cat_path}")

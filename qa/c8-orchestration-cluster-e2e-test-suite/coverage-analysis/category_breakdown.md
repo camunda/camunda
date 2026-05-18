@@ -401,8 +401,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: none
 - **Files**: `document-api-tests.spec.ts`
 - **Observation channel**: GET = 4, Search = 0
-- **Form-step counts**: create=6, observe-present-get=2, delete=1, negative-create=10, negative-get=2, negative-delete=2
-- **Variants**: observe-via-get=4, bad-request=6, unauthorized=5, not-found=3, unlabeled=7
+- **Form-step counts**: create=4, observe-present-get=1, delete=1, negative-create=12, negative-get=3, negative-delete=2
+- **Variants**: observe-via-get=4, bad-request=8, unauthorized=5, forbidden=1, not-found=3, unlabeled=5
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -410,10 +410,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | create | unlabeled | `document-api-tests.spec.ts:168` | Create Document With Query Parameters |
 | create | unlabeled | `document-api-tests.spec.ts:197` | Create Document With Metadata |
 | create | unlabeled | `document-api-tests.spec.ts:337` | Create Multiple Documents |
-| create | unlabeled | `document-api-tests.spec.ts:433` | Create Document Link 403 For In-Memory Storage |
-| create | unlabeled | `document-api-tests.spec.ts:455` | Create Document Link Without Hash 400 |
 | observe-present-get | — | `document-api-tests.spec.ts:229` | Get Document |
-| observe-present-get | — | `document-api-tests.spec.ts:248` | Get Document Without Hash 400 |
 | delete | unlabeled | `document-api-tests.spec.ts:308` | Delete Document |
 | negative-create | unauthorized | `document-api-tests.spec.ts:82` | Create Document Unauthorized 401 |
 | negative-create | bad-request | `document-api-tests.spec.ts:91` | Create Document Invalid Header 415 |
@@ -423,8 +420,11 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-create | unauthorized | `document-api-tests.spec.ts:394` | Create Multiple Documents Unauthorized 401 |
 | negative-create | bad-request | `document-api-tests.spec.ts:409` | Create Multiple Documents Invalid Header 415 |
 | negative-create | bad-request | `document-api-tests.spec.ts:424` | Create Multiple Documents Invalid Body 400 |
+| negative-create | forbidden | `document-api-tests.spec.ts:433` | Create Document Link 403 For In-Memory Storage |
+| negative-create | bad-request | `document-api-tests.spec.ts:455` | Create Document Link Without Hash 400 |
 | negative-create | not-found | `document-api-tests.spec.ts:474` | Create Document Link Not Found 404 |
 | negative-create | unauthorized | `document-api-tests.spec.ts:488` | Create Document Link Unauthorized 401 |
+| negative-get | bad-request | `document-api-tests.spec.ts:248` | Get Document Without Hash 400 |
 | negative-get | not-found | `document-api-tests.spec.ts:264` | Get Document Not Found 404 |
 | negative-get | unauthorized | `document-api-tests.spec.ts:275` | Get Document Unauthorized 401 |
 | negative-delete | unauthorized | `document-api-tests.spec.ts:285` | Delete Document Unauthorized 401 |
@@ -790,7 +790,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Files**: `process-instance/process-instance-api.spec.ts`, `process-instance/process-instance-business-id-api.spec.ts`, `process-instance/process-instance-business-id-api2.spec.ts`, `process-instance/process-instance-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-delete-api.spec.ts`, `process-instance/process-instance-create-batch-to-migrate-api.spec.ts`, `process-instance/process-instance-create-batch-to-modify-api.spec.ts`, `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts`, `process-instance/process-instance-delete-api.spec.ts`, `process-instance/process-instance-get-api.spec.ts`, `process-instance/process-instance-get-call-hierachy-api.spec.ts`, `process-instance/process-instance-get-sequenceflows-api.spec.ts`, `process-instance/process-instance-get-statistics-api.spec.ts`, `process-instance/process-instance-migrate-api.spec.ts`, `process-instance/process-instance-modify-process-api.spec.ts`, `process-instance/process-instance-resolve-related-incident-api.spec.ts`, `process-instance/process-instance-search-api.spec.ts`, `process-instance/process-instance-search-incidents-api.spec.ts`
 - **Observation channel**: GET = 18, Search = 13
 - **Form-step counts**: create=18, observe-present-get=7, observe-present-search=9, mutate=3, delete=6, observe-absence=1, aggregate=2, negative-create=17, negative-get=7, negative-search=4, negative-mutate=13, negative-delete=12, negative-aggregate=2, other=12
-- **Variants**: happy-path=32, observe-via-get=18, observe-via-search=13, observe-absence=1, pagination-sort=1, filter=19, bad-request=28, unauthorized=16, forbidden=3, not-found=8, conflict=3, unlabeled=6
+- **Variants**: happy-path=32, observe-via-get=18, observe-via-search=13, observe-absence=1, pagination-sort=1, filter=19, bad-request=28, unauthorized=16, forbidden=3, not-found=8, conflict=4, unlabeled=6
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -868,7 +868,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request | `process-instance/process-instance-search-api.spec.ts:238` | Search Process Instances - Bad Request - Invalid Payload |
 | negative-search | unauthorized | `process-instance/process-instance-search-incidents-api.spec.ts:96` | Search Process Instances with Incidents - Unauthorized |
 | negative-search | not-found | `process-instance/process-instance-search-incidents-api.spec.ts:108` | Search Process Instances with Incidents - Not Found |
-| negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:117` | Process instance migrate - 409 Invalid State |
+| negative-mutate | bad-request, conflict | `process-instance/process-instance-migrate-api.spec.ts:117` | Process instance migrate - 409 Invalid State |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:162` | Process instance migrate - 400 Bad Request - invalid path parameter |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:179` | Process instance migrate - 400 Invalid Argument - Missing targetProcessDefinitionKey |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:205` | Process instance migrate - 400 Bad Request - Missing mappingInstructions |
@@ -919,8 +919,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance(s)
 - **Files**: `batch-operation/batch-operation-get-api.spec.ts`, `batch-operation/batch-operation-items-search-api.spec.ts`, `batch-operation/batch-operations-cancel-api-tests.spec.ts`, `batch-operation/batch-operations-search-api.spec.ts`, `batch-operation/batch-operations-suspend-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 16
-- **Form-step counts**: observe-present-get=1, observe-present-search=9, mutate=6, delete=5, negative-get=2, negative-search=7, negative-mutate=1, negative-delete=1
-- **Variants**: happy-path=6, observe-via-get=3, observe-via-search=16, pagination-sort=3, filter=4, bad-request=7, unauthorized=3, not-found=1, unlabeled=11
+- **Form-step counts**: observe-present-get=1, observe-present-search=9, mutate=3, delete=2, negative-get=2, negative-search=7, negative-mutate=4, negative-delete=4
+- **Variants**: happy-path=6, observe-via-get=3, observe-via-search=16, pagination-sort=3, filter=4, bad-request=7, unauthorized=5, not-found=5, unlabeled=5
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -936,15 +936,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `batch-operation/batch-operations-search-api.spec.ts:160` | Search Batch Operations Empty Result |
 | mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:35` | Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes |
 | mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:58` | Suspend batch operation twice fails on second request, finally resumes |
-| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:86` | Suspend finished batch operation returns 404 |
-| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:96` | Suspend batch operation with unknown key returns 404 |
-| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:119` | Suspend batch operation without auth returns 401 |
 | mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:136` | Suspend active batch operation returns 204 and status becomes SUSPENDED without resume |
 | delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:40` | Cancel active batch operation returns 204 and status becomes CANCELED |
 | delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:58` | Cancel batch operation twice fails on second request |
-| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:81` | Cancel finished batch operation returns 404 |
-| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:93` | Cancel batch operation with unknown key returns 404 |
-| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:124` | Cancel batch operation without auth returns 401 |
 | negative-get | not-found | `batch-operation/batch-operation-get-api.spec.ts:72` | Get Batch Operation - Not Found |
 | negative-get | unauthorized | `batch-operation/batch-operation-get-api.spec.ts:87` | Get Batch Operation - Unauthorized |
 | negative-search | unauthorized | `batch-operation/batch-operation-items-search-api.spec.ts:527` | Search Batch Operation Items - Unauthorized Request |
@@ -954,8 +948,14 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `batch-operation/batch-operations-search-api.spec.ts:186` | Search Batch Operations Unauthorized |
 | negative-search | bad-request, pagination-sort | `batch-operation/batch-operations-search-api.spec.ts:194` | Search Batch Operations Invalid Pagination |
 | negative-search | bad-request, pagination-sort | `batch-operation/batch-operations-search-api.spec.ts:211` | Search Batch Operations Invalid Sort Field |
+| negative-mutate | not-found | `batch-operation/batch-operations-suspend-api-tests.spec.ts:86` | Suspend finished batch operation returns 404 |
+| negative-mutate | not-found | `batch-operation/batch-operations-suspend-api-tests.spec.ts:96` | Suspend batch operation with unknown key returns 404 |
 | negative-mutate | bad-request | `batch-operation/batch-operations-suspend-api-tests.spec.ts:104` | Suspend batch operation with invalid key returns 400 |
+| negative-mutate | unauthorized | `batch-operation/batch-operations-suspend-api-tests.spec.ts:119` | Suspend batch operation without auth returns 401 |
+| negative-delete | not-found | `batch-operation/batch-operations-cancel-api-tests.spec.ts:81` | Cancel finished batch operation returns 404 |
+| negative-delete | not-found | `batch-operation/batch-operations-cancel-api-tests.spec.ts:93` | Cancel batch operation with unknown key returns 404 |
 | negative-delete | bad-request | `batch-operation/batch-operations-cancel-api-tests.spec.ts:107` | Cancel batch operation with invalid key format returns 400 |
+| negative-delete | unauthorized | `batch-operation/batch-operations-cancel-api-tests.spec.ts:124` | Cancel batch operation without auth returns 401 |
 
 ## F. User-Task Lifecycle
 
@@ -1036,8 +1036,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance-with-job
 - **Files**: `job/el-header-basic-tests.spec.ts`, `job/el-header-cross-task-tests.spec.ts`, `job/el-header-element-types-tests.spec.ts`, `job/el-header-merge-conflict-tests.spec.ts`, `job/job-api-tests.spec.ts`, `job/job-completion-api-tests.spec.ts`, `job/job-error-api-tests.spec.ts`, `job/job-failure-api-tests.spec.ts`, `job/job-statistics-by-type-api-tests.spec.ts`, `job/job-statistics-by-worker-api-tests.spec.ts`, `job/job-statistics-error-metrics-job-type-api-tests.spec.ts`, `job/job-statistics-global-api-tests.spec.ts`, `job/job-statistics-time-series-job-type-api-tests.spec.ts`, `job/job-update-api-tests.spec.ts`, `job/job-worker-statistics-test-setup.spec.ts`
 - **Observation channel**: GET = 26, Search = 4
-- **Form-step counts**: create=1, observe-present-search=2, mutate=5, aggregate=10, negative-search=2, negative-mutate=10, negative-aggregate=16, other=11
-- **Variants**: happy-path=14, observe-via-get=26, observe-via-search=4, pagination-sort=1, filter=2, bad-request=15, unauthorized=6, forbidden=5, not-found=5, conflict=2, unlabeled=9
+- **Form-step counts**: create=1, observe-present-search=2, mutate=4, aggregate=10, negative-search=2, negative-mutate=11, negative-aggregate=16, other=11
+- **Variants**: happy-path=14, observe-via-get=26, observe-via-search=4, pagination-sort=1, filter=2, bad-request=15, unauthorized=6, forbidden=5, not-found=5, conflict=3, unlabeled=8
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -1047,7 +1047,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | happy-path | `job/job-completion-api-tests.spec.ts:52` | Complete Job - success |
 | mutate | happy-path | `job/job-error-api-tests.spec.ts:45` | Throw Error for Job - success |
 | mutate | happy-path | `job/job-failure-api-tests.spec.ts:44` | Fail Job - success |
-| mutate | unlabeled | `job/job-failure-api-tests.spec.ts:90` | Fail Job - 409 |
 | mutate | happy-path | `job/job-update-api-tests.spec.ts:44` | Update Job - success |
 | aggregate | observe-via-get, happy-path | `job/job-statistics-by-type-api-tests.spec.ts:60` | Get Job Statistics By Type - success |
 | aggregate | observe-via-get, happy-path | `job/job-statistics-by-type-api-tests.spec.ts:178` | Get Job Statistics By Type With Not Existing Job Type - Success Empty Result |
@@ -1069,6 +1068,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-mutate | conflict | `job/job-error-api-tests.spec.ts:89` | Throw Error for Job - conflict 409 |
 | negative-mutate | not-found | `job/job-failure-api-tests.spec.ts:61` | Fail Job - Job not found |
 | negative-mutate | bad-request | `job/job-failure-api-tests.spec.ts:77` | Fail Job - invalid request |
+| negative-mutate | conflict | `job/job-failure-api-tests.spec.ts:90` | Fail Job - 409 |
 | negative-mutate | not-found | `job/job-update-api-tests.spec.ts:60` | Update Job - not found |
 | negative-mutate | bad-request | `job/job-update-api-tests.spec.ts:79` | Update Job - invalid request |
 | negative-aggregate | bad-request, filter, observe-via-get | `job/job-statistics-by-type-api-tests.spec.ts:144` | Get Job Statistics By Type With Wrong Filter Parameter - Bad Request |

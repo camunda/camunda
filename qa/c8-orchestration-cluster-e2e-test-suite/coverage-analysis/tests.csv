@@ -15,7 +15,7 @@ document-api-tests.spec.ts,146,document,A. Entity Lifecycle (CRUD),create,create
 document-api-tests.spec.ts,168,document,A. Entity Lifecycle (CRUD),create,create,none,no,unlabeled,,Create Document With Query Parameters
 document-api-tests.spec.ts,197,document,A. Entity Lifecycle (CRUD),create,create,none,no,unlabeled,,Create Document With Metadata
 document-api-tests.spec.ts,229,document,A. Entity Lifecycle (CRUD),get,observe-present-get,none,no,observe-via-get,,Get Document
-document-api-tests.spec.ts,248,document,A. Entity Lifecycle (CRUD),get,observe-present-get,none,no,observe-via-get,,Get Document Without Hash 400
+document-api-tests.spec.ts,248,document,A. Entity Lifecycle (CRUD),get,negative-get,none,no,bad-request|observe-via-get,,Get Document Without Hash 400
 document-api-tests.spec.ts,264,document,A. Entity Lifecycle (CRUD),get,negative-get,none,no,not-found|observe-via-get,,Get Document Not Found 404
 document-api-tests.spec.ts,275,document,A. Entity Lifecycle (CRUD),get,negative-get,none,no,unauthorized|observe-via-get,,Get Document Unauthorized 401
 document-api-tests.spec.ts,285,document,A. Entity Lifecycle (CRUD),delete,negative-delete,none,no,unauthorized,,Delete Document Unauthorized 401
@@ -25,8 +25,8 @@ document-api-tests.spec.ts,337,document,A. Entity Lifecycle (CRUD),create,create
 document-api-tests.spec.ts,394,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,unauthorized,,Create Multiple Documents Unauthorized 401
 document-api-tests.spec.ts,409,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,bad-request,,Create Multiple Documents Invalid Header 415
 document-api-tests.spec.ts,424,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,bad-request,,Create Multiple Documents Invalid Body 400
-document-api-tests.spec.ts,433,document,A. Entity Lifecycle (CRUD),create,create,none,no,unlabeled,,Create Document Link 403 For In-Memory Storage
-document-api-tests.spec.ts,455,document,A. Entity Lifecycle (CRUD),create,create,none,no,unlabeled,,Create Document Link Without Hash 400
+document-api-tests.spec.ts,433,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,forbidden,,Create Document Link 403 For In-Memory Storage
+document-api-tests.spec.ts,455,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,bad-request,,Create Document Link Without Hash 400
 document-api-tests.spec.ts,474,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,not-found,,Create Document Link Not Found 404
 document-api-tests.spec.ts,488,document,A. Entity Lifecycle (CRUD),create,negative-create,none,no,unauthorized,,Create Document Link Unauthorized 401
 license-api-tests.spec.ts,14,license,O. System/Admin,get,observe-present-get,none,yes,observe-via-get,,Get License
@@ -197,10 +197,10 @@ batch-operation/batch-operation-items-search-api.spec.ts,598,batch-operation,E. 
 batch-operation/batch-operation-items-search-api.spec.ts,622,batch-operation,E. Batch-Operation Lifecycle,search,negative-search,running-process-instance(s),no,bad-request|filter|observe-via-search,,Search Batch Operation Items - Bad Request - invalid itemKey filter value
 batch-operation/batch-operations-cancel-api-tests.spec.ts,40,batch-operation,E. Batch-Operation Lifecycle,delete,delete,running-process-instance(s),no,unlabeled,,Cancel active batch operation returns 204 and status becomes CANCELED
 batch-operation/batch-operations-cancel-api-tests.spec.ts,58,batch-operation,E. Batch-Operation Lifecycle,delete,delete,running-process-instance(s),no,unlabeled,,Cancel batch operation twice fails on second request
-batch-operation/batch-operations-cancel-api-tests.spec.ts,81,batch-operation,E. Batch-Operation Lifecycle,delete,delete,running-process-instance(s),no,unlabeled,,Cancel finished batch operation returns 404
-batch-operation/batch-operations-cancel-api-tests.spec.ts,93,batch-operation,E. Batch-Operation Lifecycle,delete,delete,running-process-instance(s),no,unlabeled,,Cancel batch operation with unknown key returns 404
+batch-operation/batch-operations-cancel-api-tests.spec.ts,81,batch-operation,E. Batch-Operation Lifecycle,delete,negative-delete,running-process-instance(s),no,not-found,,Cancel finished batch operation returns 404
+batch-operation/batch-operations-cancel-api-tests.spec.ts,93,batch-operation,E. Batch-Operation Lifecycle,delete,negative-delete,running-process-instance(s),no,not-found,,Cancel batch operation with unknown key returns 404
 batch-operation/batch-operations-cancel-api-tests.spec.ts,107,batch-operation,E. Batch-Operation Lifecycle,delete,negative-delete,running-process-instance(s),no,bad-request,,Cancel batch operation with invalid key format returns 400
-batch-operation/batch-operations-cancel-api-tests.spec.ts,124,batch-operation,E. Batch-Operation Lifecycle,delete,delete,running-process-instance(s),no,unlabeled,,Cancel batch operation without auth returns 401
+batch-operation/batch-operations-cancel-api-tests.spec.ts,124,batch-operation,E. Batch-Operation Lifecycle,delete,negative-delete,running-process-instance(s),no,unauthorized,,Cancel batch operation without auth returns 401
 batch-operation/batch-operations-search-api.spec.ts,38,batch-operation,E. Batch-Operation Lifecycle,search,observe-present-search,running-process-instance(s),no,observe-via-search|happy-path,,Search Batch Operations Success
 batch-operation/batch-operations-search-api.spec.ts,72,batch-operation,E. Batch-Operation Lifecycle,search,observe-present-search,running-process-instance(s),no,filter|observe-via-search,,Search Batch Operations Filter By State And Type
 batch-operation/batch-operations-search-api.spec.ts,105,batch-operation,E. Batch-Operation Lifecycle,search,observe-present-search,running-process-instance(s),no,pagination-sort|observe-via-search,,Search Batch Operations Cursor Pagination
@@ -210,10 +210,10 @@ batch-operation/batch-operations-search-api.spec.ts,194,batch-operation,E. Batch
 batch-operation/batch-operations-search-api.spec.ts,211,batch-operation,E. Batch-Operation Lifecycle,search,negative-search,running-process-instance(s),no,bad-request|pagination-sort|observe-via-search,,Search Batch Operations Invalid Sort Field
 batch-operation/batch-operations-suspend-api-tests.spec.ts,35,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,"Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes"
 batch-operation/batch-operations-suspend-api-tests.spec.ts,58,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,"Suspend batch operation twice fails on second request, finally resumes"
-batch-operation/batch-operations-suspend-api-tests.spec.ts,86,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,Suspend finished batch operation returns 404
-batch-operation/batch-operations-suspend-api-tests.spec.ts,96,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,Suspend batch operation with unknown key returns 404
+batch-operation/batch-operations-suspend-api-tests.spec.ts,86,batch-operation,E. Batch-Operation Lifecycle,update,negative-mutate,running-process-instance(s),no,not-found,,Suspend finished batch operation returns 404
+batch-operation/batch-operations-suspend-api-tests.spec.ts,96,batch-operation,E. Batch-Operation Lifecycle,update,negative-mutate,running-process-instance(s),no,not-found,,Suspend batch operation with unknown key returns 404
 batch-operation/batch-operations-suspend-api-tests.spec.ts,104,batch-operation,E. Batch-Operation Lifecycle,update,negative-mutate,running-process-instance(s),no,bad-request,,Suspend batch operation with invalid key returns 400
-batch-operation/batch-operations-suspend-api-tests.spec.ts,119,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,Suspend batch operation without auth returns 401
+batch-operation/batch-operations-suspend-api-tests.spec.ts,119,batch-operation,E. Batch-Operation Lifecycle,update,negative-mutate,running-process-instance(s),no,unauthorized,,Suspend batch operation without auth returns 401
 batch-operation/batch-operations-suspend-api-tests.spec.ts,136,batch-operation,E. Batch-Operation Lifecycle,update,mutate,running-process-instance(s),no,unlabeled,,Suspend active batch operation returns 204 and status becomes SUSPENDED without resume
 clock/clock-pin-api.spec.ts,48,clock,O. System/Admin,create,create,none,no,unlabeled,,Pin clock to a fixed instant
 clock/clock-pin-api.spec.ts,77,clock,O. System/Admin,create,negative-create,none,no,bad-request,,Pin clock - bad request
@@ -538,7 +538,7 @@ job/job-error-api-tests.spec.ts,89,job,G. Job Lifecycle & Stats,update,negative-
 job/job-failure-api-tests.spec.ts,44,job,G. Job Lifecycle & Stats,update,mutate,running-process-instance-with-job,no,happy-path,,Fail Job - success
 job/job-failure-api-tests.spec.ts,61,job,G. Job Lifecycle & Stats,update,negative-mutate,running-process-instance-with-job,no,not-found,,Fail Job - Job not found
 job/job-failure-api-tests.spec.ts,77,job,G. Job Lifecycle & Stats,update,negative-mutate,running-process-instance-with-job,no,bad-request,,Fail Job - invalid request
-job/job-failure-api-tests.spec.ts,90,job,G. Job Lifecycle & Stats,update,mutate,running-process-instance-with-job,no,unlabeled,,Fail Job - 409
+job/job-failure-api-tests.spec.ts,90,job,G. Job Lifecycle & Stats,update,negative-mutate,running-process-instance-with-job,no,conflict,,Fail Job - 409
 job/job-statistics-by-type-api-tests.spec.ts,60,job,G. Job Lifecycle & Stats,search,aggregate,running-process-instance-with-job,no,observe-via-get|happy-path,,Get Job Statistics By Type - success
 job/job-statistics-by-type-api-tests.spec.ts,144,job,G. Job Lifecycle & Stats,search,negative-aggregate,running-process-instance-with-job,no,bad-request|filter|observe-via-get,,Get Job Statistics By Type With Wrong Filter Parameter - Bad Request
 job/job-statistics-by-type-api-tests.spec.ts,163,job,G. Job Lifecycle & Stats,search,negative-aggregate,running-process-instance-with-job,no,bad-request|filter|observe-via-get,,Get Job Statistics By Type With Missing Required From Filter Parameter - Bad Request
@@ -717,7 +717,7 @@ process-instance/process-instance-get-statistics-api.spec.ts,99,process-instance
 process-instance/process-instance-get-statistics-api.spec.ts,112,process-instance,D. Process-Instance Lifecycle & Ops,search,aggregate,deployed-process,no,observe-via-get,,Get Process Instance Statistics - No Items Found
 process-instance/process-instance-get-statistics-api.spec.ts,136,process-instance,D. Process-Instance Lifecycle & Ops,search,negative-aggregate,deployed-process,no,bad-request|observe-via-get,,Get Process Instance Statistics - Bad Request
 process-instance/process-instance-migrate-api.spec.ts,46,process-instance,D. Process-Instance Lifecycle & Ops,update,mutate,deployed-process,no,happy-path,,Process instance migrate - success
-process-instance/process-instance-migrate-api.spec.ts,117,process-instance,D. Process-Instance Lifecycle & Ops,update,negative-mutate,deployed-process,no,bad-request,,Process instance migrate - 409 Invalid State
+process-instance/process-instance-migrate-api.spec.ts,117,process-instance,D. Process-Instance Lifecycle & Ops,update,negative-mutate,deployed-process,no,bad-request|conflict,,Process instance migrate - 409 Invalid State
 process-instance/process-instance-migrate-api.spec.ts,162,process-instance,D. Process-Instance Lifecycle & Ops,update,negative-mutate,deployed-process,no,bad-request,,Process instance migrate - 400 Bad Request - invalid path parameter
 process-instance/process-instance-migrate-api.spec.ts,179,process-instance,D. Process-Instance Lifecycle & Ops,update,negative-mutate,deployed-process,no,bad-request,,Process instance migrate - 400 Invalid Argument - Missing targetProcessDefinitionKey
 process-instance/process-instance-migrate-api.spec.ts,205,process-instance,D. Process-Instance Lifecycle & Ops,update,negative-mutate,deployed-process,no,bad-request,,Process instance migrate - 400 Bad Request - Missing mappingInstructions
