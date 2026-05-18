@@ -10,8 +10,9 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
-import io.camunda.gateway.protocol.model.simple.AgentInstanceCreationRequest;
-import io.camunda.gateway.protocol.model.simple.AgentInstanceCreationResult;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
+import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.util.Either;
 import org.jspecify.annotations.NullMarked;
@@ -43,12 +44,7 @@ public class AgentInstanceMapper {
               .setSystemPrompt(def.getSystemPrompt());
 
           if (request.getLimits() != null) {
-            final var limits = request.getLimits();
-            record
-                .getLimits()
-                .setMaxTokens(limits.getMaxTokens())
-                .setMaxModelCalls(limits.getMaxModelCalls())
-                .setMaxToolCalls(limits.getMaxToolCalls());
+            fillLimits(request.getLimits(), record.getLimits());
           }
 
           return record;
@@ -60,5 +56,23 @@ public class AgentInstanceMapper {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
         .build();
+  }
+
+  // Note: even if limits are marked @NotNull in AgentInstanceCreationRequest,
+  // nothing is actually preventing them from being null
+  @SuppressWarnings("ConstantValue")
+  private void fillLimits(
+      final AgentInstanceLimits requestLimits,
+      final io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceLimits
+          recordLimits) {
+    if (requestLimits.getMaxTokens() != null) {
+      recordLimits.setMaxTokens(requestLimits.getMaxTokens());
+    }
+    if (requestLimits.getMaxModelCalls() != null) {
+      recordLimits.setMaxModelCalls(requestLimits.getMaxModelCalls());
+    }
+    if (requestLimits.getMaxToolCalls() != null) {
+      recordLimits.setMaxToolCalls(requestLimits.getMaxToolCalls());
+    }
   }
 }
