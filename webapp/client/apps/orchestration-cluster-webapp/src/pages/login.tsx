@@ -27,6 +27,7 @@ const Login: React.FC = () => {
 
 	return (
 		<Grid as="main" condensed className={styles['container']!}>
+			<h1 className="cds--visually-hidden">Login</h1>
 			<Form<FormValues>
 				onSubmit={async ({username, password}) => {
 					try {
