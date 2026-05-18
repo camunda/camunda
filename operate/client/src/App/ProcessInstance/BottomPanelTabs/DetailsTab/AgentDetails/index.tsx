@@ -11,10 +11,10 @@ import type {
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {
-  InProgress,
-  CheckmarkFilled,
   CircleDash,
   WarningFilled,
+  CheckmarkOutline,
+  Time,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -39,11 +39,11 @@ function StatusIcon({status}: {status: AgentInstanceStatus}) {
     case 'THINKING':
     case 'TOOL_CALLING':
     case 'TOOL_DISCOVERY':
-      return <InProgress size={16} />;
+      return <Time size={16} />;
     case 'IDLE':
       return <CircleDash size={16} />;
     case 'COMPLETED':
-      return <CheckmarkFilled size={16} />;
+      return <CheckmarkOutline size={16} />;
     default:
       return <WarningFilled size={16} />;
   }
