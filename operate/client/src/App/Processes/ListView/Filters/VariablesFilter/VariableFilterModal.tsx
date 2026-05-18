@@ -148,6 +148,10 @@ const VariableFilterModal: React.FC = observer(() => {
       mutators={{...arrayMutators}}
     >
       {({handleSubmit: submitForm, form}) => {
+        const changeField = form.change as (
+          name: string,
+          value?: unknown,
+        ) => void;
         const editingVariableName = isEditing
           ? form
               .getState()
@@ -180,7 +184,7 @@ const VariableFilterModal: React.FC = observer(() => {
             }}
             onRequestClose={() => {
               if (isEditing) {
-                form.change(
+                changeField(
                   `conditions[${editingRowIndex}].value`,
                   preEditValueRef.current,
                 );
@@ -191,7 +195,7 @@ const VariableFilterModal: React.FC = observer(() => {
             }}
             onSecondarySubmit={() => {
               if (isEditing) {
-                form.change(
+                changeField(
                   `conditions[${editingRowIndex}].value`,
                   preEditValueRef.current,
                 );
@@ -250,7 +254,7 @@ const VariableFilterModal: React.FC = observer(() => {
                                 form.getState().values?.['conditions']?.[i]
                                   ?.value ?? '';
                               preEditValueRef.current = val;
-                              form.change(
+                              changeField(
                                 `conditions[${i}].value`,
                                 beautifyJSON(val),
                               );
