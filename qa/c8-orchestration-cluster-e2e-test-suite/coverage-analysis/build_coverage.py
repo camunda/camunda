@@ -6,9 +6,12 @@ Run from this script's directory (qa/c8-orchestration-cluster-e2e-test-suite/cov
     python3 build_coverage.py
 
 Scans ../tests/api/v2/**/*.spec.ts and writes outputs next to this script:
-  - tests.csv                : (file, line, entity, test_name, category, operation, variant)
-  - coverage_matrix.csv      : entity x operation, counts per variant
+  - tests.csv                : per-test labels (file, line, entity, test_name, category,
+                                operation, form_step, prerequisite, variants)
+  - coverage_matrix.csv      : entity × operation grid, counts per variant
   - coverage_matrix.md       : readable markdown view of the matrix
+  - category_breakdown.md    : per-category → per-entity narrative with form,
+                                prerequisites, variants, and the test names themselves
   - gaps.md                  : heuristic gap report
 """
 import csv
@@ -117,6 +120,106 @@ def variants_of(name):
     hits = [k for k, pat in VARIANT_RULES if pat.search(name)]
     return '|'.join(hits) if hits else 'unlabeled'
 
+# ---------- 4b. Form step (lifecycle phase) ----------
+# Maps the test's role inside the canonical lifecycle FORM:
+#   Create Entity → Observe Present (GET) → Observe Present (Search) → Mutate
+#   → Delete Entity → Observe Absence → Aggregate (statistics) → Evaluate (stateless)
+#
+# Negative paths (unauthorized/forbidden/bad-request/conflict/not-found-without-delete)
+# are tagged as 'negative-<op>' so the FORM step still records which step is being
+# exercised, just on the unhappy path.
+def form_step_of(operation, name, variants):
+    v = set(variants.split('|')) if variants else set()
+    has_error = bool(v & {'unauthorized','forbidden','bad-request','conflict'})
+    is_404    = 'not-found' in v
+    is_stats  = bool(re.search(r'\b(statistics|stat\b|count|metric)', name, re.I))
+    is_eval   = bool(re.search(r'\b(evaluate|evaluat(ed|ing))', name, re.I))
+
+    if 'observe-absence' in v:
+        return 'observe-absence'
+    if is_stats:
+        return 'negative-aggregate' if has_error else 'aggregate'
+    if is_eval and operation == 'update':
+        return 'evaluate'
+
+    if operation == 'create':
+        return 'negative-create' if has_error else 'create'
+    if operation == 'delete':
+        return 'negative-delete' if has_error else 'delete'
+    if operation == 'update':
+        return 'negative-mutate' if has_error else 'mutate'
+    if operation == 'get':
+        if is_404:
+            # 404 on GET *might* be observe-absence after delete, but our name-only
+            # heuristic can't always tell. Treat plain 404 as a negative-get.
+            return 'observe-absence' if re.search(r'(after|once|when).*(delet|remove|cancel)', name, re.I) else 'negative-get'
+        return 'negative-get' if has_error else 'observe-present-get'
+    if operation == 'search':
+        return 'negative-search' if has_error else 'observe-present-search'
+    if operation == 'parameterized':
+        return 'parameterized'
+    return 'other'
+
+# ---------- 4c. Prerequisite — what the test needs set up before it can run ----------
+# Mostly entity-driven; a few file-name overrides for sub-resources.
+PREREQ_BY_ENTITY = {
+    # root-creatable, no prerequisite
+    'user': 'none',
+    'group': 'none',
+    'role': 'none',
+    'tenant': 'none',
+    'mapping-rule': 'none',
+    'authorization': 'owner-entity-or-resource',  # auth always binds a subject + resource
+    'cluster-variables': 'none',
+    'global-task-listener': 'none',
+    'document': 'none',
+    'clock': 'none',
+    'license': 'none',
+    'cluster': 'none',
+    'authentication': 'authenticated-user',
+    'optimize': 'none',
+
+    # Deploy is the prerequisite for everything in this group
+    'resource': 'none',  # resource deploys ARE the prerequisite for others
+    'process-definition': 'deployed-process',
+    'decision-definition': 'deployed-decision',
+    'decision-requirements': 'deployed-drd',
+
+    # Need a running process instance
+    'process-instance': 'deployed-process',
+    'element-instance': 'running-process-instance',
+    'variable': 'running-process-instance',
+    'user-task': 'running-process-instance-with-user-task',
+    'incident': 'running-process-instance-with-failing-job',
+    'job': 'running-process-instance-with-job',
+    'batch-operation': 'running-process-instance(s)',
+
+    # Decision instance: evaluation creates the instance
+    'decision-instance': 'deployed-decision',
+
+    # Events
+    'message': 'deployed-process-with-message-catch-event',
+    'signal': 'deployed-process-with-signal-catch-event',
+    'message-subscriptions': 'deployed-process-with-message-catch-event',
+
+    # Stateless
+    'expression': 'none',
+    'conditional': 'none',
+
+    # Observation
+    'audit-log': 'any-prior-action',
+    'usage-metrics': 'metered-activity',
+}
+def prerequisite_of(path, entity):
+    base = os.path.basename(path)
+    # Membership files: parent entity + member entity must already exist
+    m = MEMBERSHIP_FILE_RE.search(base)
+    if m:
+        parent, member = m.group(1), m.group(2)
+        member_singular = member.rstrip('s')
+        return f'{parent} + {member_singular}'
+    return PREREQ_BY_ENTITY.get(entity, 'unknown')
+
 # ---------- 5. Walk + emit CSV ----------
 rows = []
 for root, _dirs, files in os.walk(ROOT):
@@ -132,14 +235,18 @@ for root, _dirs, files in os.walk(ROOT):
             name = m.group(1)
             line_no = content.count('\n', 0, m.start()) + 1
             ent = entity_of(path)
+            op = op_of(name)
+            variants = variants_of(name)
             rows.append({
                 'file': os.path.relpath(path, ROOT),
                 'line': line_no,
                 'entity': ent,
                 'test_name': name,
                 'category': category_of(path, ent),
-                'operation': op_of(name),
-                'variants': variants_of(name),
+                'operation': op,
+                'form_step': form_step_of(op, name, variants),
+                'prerequisite': prerequisite_of(path, ent),
+                'variants': variants,
                 'dynamic': '',
             })
         # Find parameterized test() calls (dynamic names) — emit one row per loop
@@ -158,6 +265,8 @@ for root, _dirs, files in os.walk(ROOT):
                 'test_name': f'<parameterized: {m.group(1)}>',
                 'category': category_of(path, ent),
                 'operation': 'parameterized',
+                'form_step': 'parameterized',
+                'prerequisite': prerequisite_of(path, ent),
                 'variants': 'data-driven',
                 'dynamic': 'yes',
             })
@@ -165,7 +274,7 @@ for root, _dirs, files in os.walk(ROOT):
 os.makedirs(OUT, exist_ok=True)
 csv_path = os.path.join(OUT, 'tests.csv')
 with open(csv_path, 'w', newline='', encoding='utf-8') as fp:
-    w = csv.DictWriter(fp, fieldnames=['file','line','entity','category','operation','variants','dynamic','test_name'])
+    w = csv.DictWriter(fp, fieldnames=['file','line','entity','category','operation','form_step','prerequisite','variants','dynamic','test_name'])
     w.writeheader()
     w.writerows(rows)
 print(f"wrote {csv_path} ({len(rows)} rows)")
@@ -262,3 +371,159 @@ for ent in sorted(entity_totals):
         fp.write(f'- {ent}\n')
 fp.close()
 print(f"wrote {os.path.join(OUT,'gaps.md')}")
+
+# ---------- 7. Per-category breakdown ----------
+# For each category, group tests by entity, then by form_step, and emit:
+#   - canonical Form (sequence of steps)
+#   - Prerequisite to create
+#   - Observation channel split (GET vs Search)
+#   - Variants with counts
+#   - The actual test names with file:line
+
+CANONICAL_FORM = {
+    'A. Entity Lifecycle (CRUD)':
+        'Create Entity → Get Entity (Observe Present) → Update Entity → Search Entity (Observe via list) → Delete Entity → Get Entity (Observe Absence)',
+    'B. Membership/Association':
+        'Create parent + member (prerequisite) → Assign member → Search members (Observe Present) → Unassign member → Search members (Observe Absence)',
+    'C. Deployment Lifecycle':
+        'Deploy resource → Get definition (XML/JSON) → Search definitions (Observe Present) → Delete resource → Get definition (Observe Absence)',
+    'D. Process-Instance Lifecycle & Ops':
+        'Deploy process (prerequisite) → Create instance → Get/Search instance → Cancel/Migrate/Modify/Resolve-incident → Delete → Observe absence. Batch creators wrap N instances per call.',
+    'E. Batch-Operation Lifecycle':
+        'Create batch (via batch-creating process-instance APIs, prerequisite) → Get batch → Search batch → Search items → Suspend → Cancel',
+    'F. User-Task Lifecycle':
+        'Deploy process w/ user task (prerequisite) → Create instance → Assign → Update → Search/Get → Get form → Search variables → Complete → Unassign',
+    'G. Job Lifecycle & Stats':
+        'Deploy process w/ job (prerequisite) → Activate → Complete / Fail / Error / Update → Search jobs → Aggregate (5 statistics endpoints)',
+    'H. Incident Lifecycle':
+        'Deploy process + failing job (prerequisite) → Incident raised → Get incident → Search → Resolve → Statistics (by definition / by error)',
+    'I. Decision-Instance Lifecycle':
+        'Deploy DRD/DMN (prerequisite) → Evaluate → Get instance → Search → Delete (single + batch) → Search (Observe Absence)',
+    'J/K/L. Observation-only':
+        'Perform an action elsewhere (prerequisite) → Get / Search to observe',
+    'M. Messaging/Signals':
+        'Deploy process with catch event (prerequisite) → Publish/Correlate/Broadcast → Search subscriptions / correlated messages',
+    'N. Engine Evaluation':
+        'Submit expression / conditional → Receive result (stateless, no entity persisted)',
+    'O. System/Admin':
+        'Read system state (auth, license, cluster, clock, metrics) or perform admin action (pin/reset clock)',
+}
+
+cat_path = os.path.join(OUT, 'category_breakdown.md')
+fp = open(cat_path, 'w', encoding='utf-8')
+fp.write('# OC API v2 — Per-category breakdown\n\n')
+fp.write(f'Total test declarations: **{len(rows)}** across **{len(entity_totals)}** entities.\n\n')
+fp.write('This file answers, per category: **(1) Form** (the canonical sequence the tests embody), '
+         '**(2) Prerequisite to create**, **(3) Observation channel split** (GET vs search), '
+         '**(4) Variants with counts**, **(5) The actual tests in that category**.\n\n')
+
+# Group rows
+by_cat = defaultdict(list)
+for r in rows:
+    by_cat[r['category']].append(r)
+
+cat_order = [
+    'A. Entity Lifecycle (CRUD)',
+    'B. Membership/Association',
+    'C. Deployment Lifecycle',
+    'D. Process-Instance Lifecycle & Ops',
+    'E. Batch-Operation Lifecycle',
+    'F. User-Task Lifecycle',
+    'G. Job Lifecycle & Stats',
+    'H. Incident Lifecycle',
+    'I. Decision-Instance Lifecycle',
+    'J/K/L. Observation-only',
+    'M. Messaging/Signals',
+    'N. Engine Evaluation',
+    'O. System/Admin',
+    'Z. Uncategorised',
+]
+form_step_order = [
+    'create', 'observe-present-get', 'observe-present-search', 'mutate',
+    'delete', 'observe-absence', 'aggregate', 'evaluate',
+    'negative-create', 'negative-get', 'negative-search', 'negative-mutate',
+    'negative-delete', 'negative-aggregate', 'parameterized', 'other',
+]
+variant_order = [
+    'happy-path','observe-via-get','observe-via-search','observe-absence',
+    'pagination-sort','filter',
+    'bad-request','unauthorized','forbidden','not-found','conflict',
+    'data-driven','unlabeled',
+]
+
+fp.write('## Table of contents\n\n')
+for cat in cat_order:
+    if cat in by_cat:
+        fp.write(f'- [{cat}](#{cat.lower().replace(". ","-").replace(" ","-").replace("/","").replace("(","").replace(")","").replace("&","").replace(",","")}) — {len(by_cat[cat])} tests\n')
+fp.write('\n')
+
+for cat in cat_order:
+    if cat not in by_cat:
+        continue
+    cat_rows = by_cat[cat]
+    fp.write(f'## {cat}\n\n')
+    fp.write(f'**Form**: {CANONICAL_FORM.get(cat, "(no canonical form)")}\n\n')
+    fp.write(f'**Total tests**: {len(cat_rows)}\n\n')
+
+    # Group by entity
+    by_ent = defaultdict(list)
+    for r in cat_rows:
+        by_ent[r['entity']].append(r)
+
+    for ent in sorted(by_ent, key=lambda x: -len(by_ent[x])):
+        ent_rows = by_ent[ent]
+        # Prerequisites (collapse if all the same)
+        prereqs = sorted({r['prerequisite'] for r in ent_rows})
+        prereq_str = ', '.join(prereqs)
+
+        # Form-step counts
+        step_counts = defaultdict(int)
+        for r in ent_rows:
+            step_counts[r['form_step']] += 1
+
+        # Observation channel split
+        obs_get    = sum(1 for r in ent_rows if 'observe-via-get'    in r['variants'].split('|'))
+        obs_search = sum(1 for r in ent_rows if 'observe-via-search' in r['variants'].split('|'))
+
+        # Variant counts (multi-label)
+        var_counts = defaultdict(int)
+        for r in ent_rows:
+            for v in r['variants'].split('|'):
+                if v: var_counts[v] += 1
+
+        # Files used
+        files = sorted({r['file'] for r in ent_rows})
+
+        fp.write(f'### `{ent}` — {len(ent_rows)} tests\n\n')
+        fp.write(f'- **Prerequisite to create**: {prereq_str}\n')
+        fp.write(f'- **Files**: {", ".join(f"`{f}`" for f in files)}\n')
+        fp.write(f'- **Observation channel**: GET = {obs_get}, Search = {obs_search}\n')
+
+        step_line = ', '.join(f'{s}={step_counts[s]}' for s in form_step_order if step_counts.get(s,0))
+        fp.write(f'- **Form-step counts**: {step_line}\n')
+
+        var_line = ', '.join(f'{v}={var_counts[v]}' for v in variant_order if var_counts.get(v,0))
+        fp.write(f'- **Variants**: {var_line}\n\n')
+
+        # Tests table, grouped by form_step
+        fp.write('| form step | variants | file:line | test name |\n')
+        fp.write('|--|--|--|--|\n')
+        # Sort: form-step order, then file, then line
+        step_idx = {s: i for i, s in enumerate(form_step_order)}
+        sorted_rows = sorted(
+            ent_rows,
+            key=lambda r: (step_idx.get(r['form_step'], 999), r['file'], r['line']),
+        )
+        for r in sorted_rows:
+            # Trim noisy `observe-via-*` from the variant column when the form step already implies it
+            display_vars = [v for v in r['variants'].split('|') if v]
+            if r['form_step'] in ('observe-present-get','negative-get','observe-absence'):
+                display_vars = [v for v in display_vars if v != 'observe-via-get']
+            if r['form_step'] in ('observe-present-search','negative-search'):
+                display_vars = [v for v in display_vars if v != 'observe-via-search']
+            fp.write(f'| {r["form_step"]} | {", ".join(display_vars) or "—"} | '
+                     f'`{r["file"]}:{r["line"]}` | {r["test_name"]} |\n')
+        fp.write('\n')
+
+fp.close()
+print(f"wrote {cat_path}")

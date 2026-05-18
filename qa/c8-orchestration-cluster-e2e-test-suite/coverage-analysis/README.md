@@ -11,7 +11,8 @@ and reason about coverage of the C8 Orchestration Cluster public REST API.
 | File | Purpose |
 |---|---|
 | `build_coverage.py` | Regenerates every artifact below by re-scanning `../tests/api/v2/**/*.spec.ts`. |
-| `tests.csv` | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,variants,dynamic,test_name`. |
+| `category_breakdown.md` | **Per-category narrative**: for each category, the canonical Form, the prerequisite to create, the GET-vs-search observation split, variant counts, and the **actual test names** with file:line. Start here. |
+| `tests.csv` | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,form_step,prerequisite,variants,dynamic,test_name`. |
 | `coverage_matrix.csv` | Entity × operation grid with one column per variant (counts). |
 | `coverage_matrix.md` | Same matrix in two views — "at-a-glance presence" (✓/blank) and "counts per cell". |
 | `gaps.md` | Heuristic gap report (entities missing 401/400 coverage and a — noisy — delete/observe-absence check). |
@@ -115,6 +116,27 @@ Common variants layered on top:
 - **Negative variants** — unauthorized (401), forbidden (403), not-found (404),
   bad-request (400), conflict (409).
 - **Pagination & filter** — only meaningful on search endpoints.
+
+## Form step labelling
+
+`tests.csv` carries a `form_step` column that places each test inside the canonical lifecycle FORM:
+
+| form_step | meaning |
+|---|---|
+| `create` | Happy-path creation of the entity. |
+| `observe-present-get` | Reads the entity by id (or equivalent) to verify it exists. |
+| `observe-present-search` | Verifies presence via a search/list endpoint. |
+| `mutate` | Update / assign / complete / migrate / etc. on an existing entity. |
+| `delete` | Happy-path deletion (or cancellation). |
+| `observe-absence` | GET returns 404 after delete, or search no longer returns the entity. |
+| `aggregate` | Statistics / count / metric endpoint. |
+| `evaluate` | Stateless evaluation (expression, conditional). |
+| `negative-<step>` | Same step on an unhappy path (401/403/404/400/409). |
+| `parameterized` | Placeholder for `for (...) test(tc.description, ...)` loops. |
+
+## Prerequisite labelling
+
+`tests.csv` carries a `prerequisite` column that says what the test needs already in place. Examples: `deployed-process`, `running-process-instance-with-user-task`, `group + user`, `none`. Membership tests are auto-tagged with `<parent> + <member>` derived from the file name; everything else is mapped from the entity type.
 
 ## Operation labelling
 
