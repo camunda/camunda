@@ -98,7 +98,7 @@ warn[msg] {
         [concat(", ", get_jobs_without_printmetadata(input.jobs))])
 }
 
-warn[msg] {
+deny[msg] {
     # only enforced on Unified CI
     input.name == "CI"
 
@@ -146,6 +146,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
         job_id != "setup-tests"
+        job_id != "detect-new-flaky-tests"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"
@@ -229,7 +230,7 @@ get_jobs_without_monitor_as_first_step(jobInput) = result {
         job_id != "get-snapshot-docker-version-tag"
         job_id != "observe-aborted-jobs"
         job_id != "setup-tests"
-        job_id != "utils-flaky-tests-summary"
+        job_id != "detect-new-flaky-tests"
         job_id != "fe-unit-tests-merge"
         job_id != "operate-fe-visual-regression-merge"
         job_id != "generate-db-versions"
