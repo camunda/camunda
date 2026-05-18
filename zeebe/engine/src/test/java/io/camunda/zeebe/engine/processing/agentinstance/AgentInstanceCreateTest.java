@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -39,51 +40,54 @@ public class AgentInstanceCreateTest {
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldEmitCreatedEventForValidCreateCommand() {
+  public void shouldRoundtripSettableFieldsAndResetEngineManagedOnes() {
     // given
-    final var processMetadata =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
-                    .endEvent()
-                    .done())
-            .deploy()
-            .getValue()
-            .getProcessesMetadata()
-            .getFirst();
-
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
 
-    // when
+    // when -- the command sets every field, including engine-managed ones (status, metrics,
+    // tools) that the client must not be able to control on CREATE.
+    final var seededTool =
+        new AgentInstanceTool()
+            .setName("seeded-tool")
+            .setDescription("a tool seeded by the client")
+            .setElementId("inner-task");
     final var created =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
+            .withLimits(1000L, 10, 20)
+            .withStatus(AgentInstanceStatus.COMPLETED)
+            .withMetrics(50L, 25L, 5, 3)
+            .withTools(List.of(seededTool))
+            .create();
 
-    // then
-    assertThat(created.getValue().getElementInstanceKey()).isEqualTo(serviceTaskInstance.getKey());
-    assertThat(created.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(created.getValue().getElementId()).isEqualTo(SERVICE_TASK_ID);
-    assertThat(created.getValue().getProcessDefinitionKey())
-        .isEqualTo(processMetadata.getProcessDefinitionKey());
-    assertThat(created.getValue().getProcessDefinitionVersion())
-        .isEqualTo(processMetadata.getVersion());
-    assertThat(created.getValue().getTenantId())
-        .isEqualTo(serviceTaskInstance.getValue().getTenantId());
+    // then -- settable fields (definition, limits) round-trip into CREATED.
+    assertThat(created.getValue().getDefinition().getModel()).isEqualTo("gpt-4o");
+    assertThat(created.getValue().getDefinition().getProvider()).isEqualTo("openai");
+    assertThat(created.getValue().getDefinition().getSystemPrompt())
+        .isEqualTo("You are a helpful agent.");
+    assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(1000L);
+    assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(10);
+    assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(20);
+
+    // then -- engine-managed fields are reset regardless of what the command supplied.
     assertThat(created.getValue().getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
-
     assertThat(created.getValue().getMetrics().getInputTokens()).isZero();
     assertThat(created.getValue().getMetrics().getOutputTokens()).isZero();
     assertThat(created.getValue().getMetrics().getModelCalls()).isZero();
     assertThat(created.getValue().getMetrics().getToolCalls()).isZero();
-
     assertThat(created.getValue().getTools()).isEmpty();
-
-    assertThat(created.getValue().getLimits().getMaxTokens()).isEqualTo(-1L);
-    assertThat(created.getValue().getLimits().getMaxModelCalls()).isEqualTo(-1);
-    assertThat(created.getValue().getLimits().getMaxToolCalls()).isEqualTo(-1);
   }
 
   @Test
