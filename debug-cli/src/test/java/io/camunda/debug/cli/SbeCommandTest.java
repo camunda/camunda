@@ -20,7 +20,7 @@ import picocli.CommandLine;
 public class SbeCommandTest {
 
   private static final String EXPECTED_CONFIGURATION =
-"""
+      """
 {
     "index": 88,
     "term": 70,
