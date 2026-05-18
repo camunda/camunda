@@ -88,4 +88,14 @@ public interface ProcessMessageSubscriptionRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * The business id captured from the subscribing process instance at the time the subscription was
+   * opened. It is shipped to the message partition together with the OPEN command so the message
+   * partition can apply business-id-based filtering locally at correlation time.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.10
+   */
+  String getBusinessId();
 }
