@@ -1735,7 +1735,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
-      SPECTRAL_VERSION: '6.15.1'
+      SPECTRAL_VERSION: '6.16.0'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Node.js for Spectral
