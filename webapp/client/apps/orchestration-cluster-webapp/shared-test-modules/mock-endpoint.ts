@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {http, type RequestHandler} from 'msw';
+import {http, delay as mswDelay, type RequestHandler} from 'msw';
 import type {z} from 'zod';
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -20,12 +20,14 @@ type CreateEndpointMockParams<Method extends RequestMethod> = {
 
 type SuccessMockParams = {
 	successResponse: Response;
+	delay?: number;
 };
 
 type PayloadMockParams<Schema extends z.ZodType> = {
 	schema: Schema;
 	failureResponse: Response;
 	successResponse: Response;
+	delay?: number;
 };
 
 type PayloadMock = {
@@ -43,6 +45,10 @@ function createEndpointMock<Method extends RequestMethod>({
 }: CreateEndpointMockParams<Method>): MockEndpoint<Method> {
 	return (params: SuccessMockParams | PayloadMockParams<z.ZodType>) => {
 		const resolver = async ({request}: {request: Request}) => {
+			if (params.delay) {
+				await mswDelay(params.delay);
+			}
+
 			if (!('schema' in params)) {
 				return params.successResponse;
 			}
