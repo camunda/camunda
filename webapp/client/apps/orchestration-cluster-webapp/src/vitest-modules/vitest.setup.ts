@@ -6,4 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import './i18n-setup';
 import '../index.scss';
