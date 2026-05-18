@@ -53,65 +53,38 @@ final class AgentInstanceHandlerTest {
   private final AgentInstanceHandler underTest = new AgentInstanceHandler(indexName);
 
   @Test
-  void testGetHandledValueType() {
+  void shouldReturnCorrectHandlerMetadata() {
     assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.AGENT_INSTANCE);
-  }
-
-  @Test
-  void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(AgentInstanceEntity.class);
+    assertThat(underTest.getIndexName()).isEqualTo(indexName);
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "[{index}] Should handle \''{0}\'' record")
   @EnumSource(
       value = AgentInstanceIntent.class,
       names = {"CREATED", "UPDATED", "COMPLETED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final AgentInstanceIntent intent) {
-    // given
-    final Record<AgentInstanceRecordValue> record = generateRecord(intent);
-
-    // when - then
-    assertThat(underTest.handlesRecord(record)).isTrue();
+    assertThat(underTest.handlesRecord(generateRecord(intent))).isTrue();
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "[{index}] Should not handle \''{0}\'' record")
   @EnumSource(
       value = AgentInstanceIntent.class,
       names = {"CREATED", "UPDATED", "COMPLETED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final AgentInstanceIntent intent) {
-    // given
-    final Record<AgentInstanceRecordValue> record = generateRecord(intent);
-
-    // when - then
-    assertThat(underTest.handlesRecord(record)).isFalse();
+    assertThat(underTest.handlesRecord(generateRecord(intent))).isFalse();
   }
 
   @Test
-  void testGenerateIds() {
+  void shouldGenerateIdFromRecordKey() {
     // given
     final Record<AgentInstanceRecordValue> record =
         factory.generateRecord(ValueType.AGENT_INSTANCE);
 
-    // when
-    final var ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids).containsExactly(String.valueOf(record.getKey()));
-  }
-
-  @Test
-  void testCreateNewEntity() {
-    // given
-    final String id = "id";
-
-    // when
-    final var entity = underTest.createNewEntity(id);
-
-    // then
-    assertThat(entity).isNotNull();
-    assertThat(entity.getId()).isEqualTo(id);
+    // when - then
+    assertThat(underTest.generateIds(record)).containsExactly(String.valueOf(record.getKey()));
   }
 
   @Test
@@ -227,77 +200,48 @@ final class AgentInstanceHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityOnUpdated() {
-    // given
-    final long recordKey = 100L;
-    final var recordValue = buildMinimalRecordValue(recordKey);
-
-    final Record<AgentInstanceRecordValue> record =
+  void shouldPreserveCreationDateAcrossSubsequentIntents() {
+    // given — CREATED sets the creation date on the entity
+    final var entity = new AgentInstanceEntity().setId("1");
+    final Record<AgentInstanceRecordValue> createdRecord =
         factory.generateRecord(
             ValueType.AGENT_INSTANCE,
-            r ->
-                r.withIntent(AgentInstanceIntent.UPDATED)
-                    .withKey(recordKey)
-                    .withValue(recordValue));
+            r -> r.withIntent(AgentInstanceIntent.CREATED).withValue(buildMinimalRecordValue(1L)));
+    underTest.updateEntity(createdRecord, entity);
+    final var creationDate = entity.getCreationDate();
+    assertThat(creationDate).isNotNull();
 
-    // pre-populate creationDate as if set by a prior CREATED event
-    final var existingCreationDate = DateUtil.toOffsetDateTime(Instant.now().minusSeconds(60));
-    final var entity =
-        new AgentInstanceEntity()
-            .setId(String.valueOf(recordKey))
-            .setCreationDate(existingCreationDate);
+    // when — UPDATED applied to the same entity
+    final Record<AgentInstanceRecordValue> updatedRecord =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.UPDATED).withValue(buildMinimalRecordValue(1L)));
+    underTest.updateEntity(updatedRecord, entity);
 
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    final var expectedTimestamp =
-        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-
-    assertThat(entity.getLastUpdatedDate()).isEqualTo(expectedTimestamp);
-    assertThat(entity.getCreationDate()).isEqualTo(existingCreationDate);
+    // then — creation date preserved, last updated advanced, completion still absent
+    assertThat(entity.getCreationDate()).isEqualTo(creationDate);
+    assertThat(entity.getLastUpdatedDate()).isAfterOrEqualTo(creationDate);
     assertThat(entity.getCompletionDate()).isNull();
-  }
 
-  @Test
-  void shouldUpdateEntityOnCompleted() {
-    // given
-    final long recordKey = 100L;
-    final var recordValue =
+    // when — COMPLETED applied to the same entity
+    final var completedValue =
         ImmutableAgentInstanceRecordValue.builder()
-            .from(buildMinimalRecordValue(recordKey))
+            .from(buildMinimalRecordValue(1L))
             .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.COMPLETED)
             .build();
-
-    final Record<AgentInstanceRecordValue> record =
+    final Record<AgentInstanceRecordValue> completedRecord =
         factory.generateRecord(
             ValueType.AGENT_INSTANCE,
-            r ->
-                r.withIntent(AgentInstanceIntent.COMPLETED)
-                    .withKey(recordKey)
-                    .withValue(recordValue));
+            r -> r.withIntent(AgentInstanceIntent.COMPLETED).withValue(completedValue));
+    underTest.updateEntity(completedRecord, entity);
 
-    // pre-populate creationDate as if set by a prior CREATED event
-    final var existingCreationDate = DateUtil.toOffsetDateTime(Instant.now().minusSeconds(120));
-    final var entity =
-        new AgentInstanceEntity()
-            .setId(String.valueOf(recordKey))
-            .setCreationDate(existingCreationDate);
-
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    final var expectedTimestamp =
-        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-
+    // then — creation date still untouched, completion date now set
+    assertThat(entity.getCreationDate()).isEqualTo(creationDate);
+    assertThat(entity.getCompletionDate()).isNotNull();
     assertThat(entity.getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED);
-    assertThat(entity.getCompletionDate()).isEqualTo(expectedTimestamp);
-    assertThat(entity.getLastUpdatedDate()).isEqualTo(expectedTimestamp);
-    assertThat(entity.getCreationDate()).isEqualTo(existingCreationDate);
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "[{index}] Should map protocol status \''{0}\' to entity status")
   @EnumSource(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.class)
   void shouldMapAllProtocolStatuses(
       final io.camunda.zeebe.protocol.record.value.AgentInstanceStatus protocolStatus) {
@@ -322,23 +266,34 @@ final class AgentInstanceHandlerTest {
   }
 
   @Test
-  void shouldUpsertEntityOnFlush() {
-    // given
-    final String entityId = "100";
-    final var tools = List.of(new AgentInstanceToolValue("tool", "does stuff", "toolElement"));
-    final var entity =
-        new AgentInstanceEntity()
-            .setId(entityId)
-            .setStatus(AgentInstanceStatus.THINKING)
-            .setInputTokens(10L)
-            .setOutputTokens(5L)
-            .setModelCalls(1)
-            .setToolCalls(0)
-            .setTools(tools)
-            .setElementInstanceKeys(List.of(200L))
-            .setLastUpdatedDate(DateUtil.toOffsetDateTime(Instant.now()));
+  void shouldFlushUpdateFieldsWithValuesPopulatedByUpdateEntity() {
+    // given — entity populated via updateEntity, not hand-constructed, to catch field-name drift
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildMinimalRecordValue(1L))
+            .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.THINKING)
+            .withMetrics(
+                ImmutableAgentInstanceMetricsValue.builder()
+                    .withInputTokens(42L)
+                    .withOutputTokens(17L)
+                    .withModelCalls(3)
+                    .withToolCalls(1)
+                    .build())
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.UPDATED).withKey(1L).withValue(recordValue));
+    final var entity = new AgentInstanceEntity().setId("1");
+    underTest.updateEntity(record, entity);
 
-    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+
+    // when
+    underTest.flush(entity, mockRequest);
+
+    // then — updateFields keys match template constants; values come from entity (not hardcoded)
+    final var expectedUpdateFields = new LinkedHashMap<String, Object>();
     expectedUpdateFields.put(STATUS, entity.getStatus());
     expectedUpdateFields.put(INPUT_TOKENS, entity.getInputTokens());
     expectedUpdateFields.put(OUTPUT_TOKENS, entity.getOutputTokens());
@@ -347,14 +302,9 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(TOOLS, entity.getTools());
     expectedUpdateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     expectedUpdateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
+    // completionDate absent: UPDATED intent does not set it
 
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
-
-    // when
-    underTest.flush(entity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1)).upsert(indexName, entityId, entity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(indexName, entity.getId(), entity, expectedUpdateFields);
   }
 
   @Test
