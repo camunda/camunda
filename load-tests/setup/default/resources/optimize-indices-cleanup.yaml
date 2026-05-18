@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: optimize-indices-cleanup
+  labels:
+    app: optimize-indices-cleanup
+spec:
+  schedule: "@hourly"
+  suspend: false
+  concurrencyPolicy: Replace
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: optimize-indices-cleanup
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: optimize-indices-cleanup
+            image: curlimages/curl:8.20.0
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                #!/bin/sh
+                set -e
+
+                echo "Starting Optimize indices cleanup job..."
+
+                echo "Detecting whether we run OpenSearch or Elasticsearch..."
+                # Support both Elasticsearch and OpenSearch, we clean the first one that is available.
+                for url in "http://elastic-hl:9200" "http://opensearch-headless:9200"
+                do
+                  echo "Checking URL: $url"
+                  set +e
+                  curl -sf "$url" > /dev/null
+                  retval=$?
+                  set -e
+                  if [ $retval -eq 0 ]; then
+                    URL="$url"
+                    echo "Using Elasticsearch/OpenSearch URL at: $URL"
+                    break
+                  fi
+                done
+
+                if [ -z "$URL" ]; then
+                  echo "No Elasticsearch or OpenSearch instance found. Exiting."
+                  exit 1
+                fi
+
+                for index in optimize-process-instance-refundingprocess_v8 optimize-process-instance-bankdisputehandling_v8
+                do
+                  echo "Deleting index: $index"
+                  echo "$(curl -sfi --request DELETE "$URL/$index")"
+                done
+
+                echo "Optimize indices cleanup job completed."
