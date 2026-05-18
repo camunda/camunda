@@ -60,6 +60,8 @@
 /.github/workflows/operate-docker-tests.yml           @camunda/core-features
 /.github/workflows/operate-e2e-tests.yml                  @camunda/core-features
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
+/.github/workflows/operate-update_visual_snapshots.yml    @camunda/core-features
+/.github/workflows/operate-vr-preview-cleanup.yml         @camunda/core-features
 /.github/workflows/ci-operate.yml                         @camunda/core-features
 /.github/workflows/ci-tasklist.yml                        @camunda/core-features
 /.github/workflows/tasklist-ci-build-reusable.yml          @camunda/core-features

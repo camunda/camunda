@@ -1538,9 +1538,13 @@ jobs:
                 if (current != "") { print current; current = "" }
               }
             ' vr-test-results/vr-results.xml > /tmp/failed-tests.txt
+            echo "results_found=true" >> "$GITHUB_OUTPUT"
             echo "failure_count=$(wc -l < /tmp/failed-tests.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
           else
+            # Artifact missing (VR job skipped/failed before upload). Distinguish this
+            # from a genuine zero-failure run so downstream steps don't report a false pass.
             : > /tmp/failed-tests.txt
+            echo "results_found=false" >> "$GITHUB_OUTPUT"
             echo "failure_count=0" >> "$GITHUB_OUTPUT"
           fi
       - name: Post VR diff comment to PR
@@ -1606,7 +1610,7 @@ jobs:
               });
             }
       - name: Clear VR diff comment when all tests pass
-        if: always() && steps.extract-failures.outputs.failure_count == 0
+        if: always() && steps.extract-failures.outputs.results_found == 'true' && steps.extract-failures.outputs.failure_count == 0
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
