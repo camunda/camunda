@@ -70,8 +70,8 @@ public class ActorControl implements ConcurrencyControl {
    * @param action
    * @return
    */
-  public ActorFuture<Void> call(final Runnable action) {
-    final Callable<Void> c =
+  public ActorFuture<@Nullable Void> call(final Runnable action) {
+    final Callable<@Nullable Void> c =
         () -> {
           action.run();
           return null;
