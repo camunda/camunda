@@ -158,6 +158,7 @@ services:
       - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
       - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+      - SERVER_ADDRESS=127.0.0.1
     ports:
       - "26500:26500"
       - "9600:9600"
@@ -196,6 +197,7 @@ services:
       - DATABASE_TYPE=opensearch
       - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
       - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+      - SERVER_ADDRESS=127.0.0.1
     ports:
       - "26500:26500"
       - "9600:9600"
