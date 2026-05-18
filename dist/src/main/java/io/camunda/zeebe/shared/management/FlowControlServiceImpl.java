@@ -23,12 +23,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@NullMarked
 public class FlowControlServiceImpl implements FlowControlService {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControlServiceImpl.class);
   private final BrokerClient client;
@@ -124,14 +126,15 @@ public class FlowControlServiceImpl implements FlowControlService {
 
   private HashSet<BrokerMemberId> getMembers(
       final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
+    final var leader = Optional.ofNullable(topology.getLeaderForPartition(partitionId));
     final var followers =
         Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
     final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
-    members.add(leader);
+    leader.ifPresent(members::add);
+
     members.addAll(followers);
     members.addAll(inactive);
     return members;
