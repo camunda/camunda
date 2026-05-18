@@ -180,25 +180,28 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
     await test.step('Search Mapping Rules After Deletion', async () => {
       const p = {groupId: state['groupId3'] as string};
 
-      const res = await request.post(
+      await expect(async () => {
+        const res = await request.post(
         buildUrl('/groups/{groupId}/mapping-rules/search', p),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: '/groups/{groupId}/mapping-rules/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
-      const json = await res.json();
-      expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/mapping-rules/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        expect(json.page.totalItems).toBe(0);
+        expect(json.items.length).toBe(0);
+      }).toPass(defaultAssertionOptions);
+      
     });
   });
 
