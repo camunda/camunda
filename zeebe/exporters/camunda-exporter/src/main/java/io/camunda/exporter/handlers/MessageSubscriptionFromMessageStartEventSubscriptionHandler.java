@@ -38,8 +38,8 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
   public MessageSubscriptionFromMessageStartEventSubscriptionHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ExtensionPropertyConfiguration toolConfig) {
-    super(indexName, toolConfig);
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
+    super(indexName, extensionPropertyConfig);
     this.processCache = processCache;
   }
 

@@ -19,18 +19,18 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-class DataToolsTest {
+class DataExtensionPropertiesTest {
 
   @Test
   void shouldHaveDefaults() {
     final ExtensionProperties extensionProperties = new ExtensionProperties();
 
-    assertThat(extensionProperties.getExtensionPropertyToolName())
-        .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME);
-    assertThat(extensionProperties.getExtensionPropertyInboundConnectorType())
-        .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE);
-    assertThat(extensionProperties.getExtensionPropertyPrefixToolProperties())
-        .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES);
+    assertThat(extensionProperties.getToolNameProperty())
+        .isEqualTo(ExtensionProperties.DEFAULT_TOOL_NAME_PROPERTY);
+    assertThat(extensionProperties.getInboundConnectorTypeProperty())
+        .isEqualTo(ExtensionProperties.DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY);
+    assertThat(extensionProperties.getToolPropertiesPrefix())
+        .isEqualTo(ExtensionProperties.DEFAULT_TOOL_PROPERTIES_PREFIX);
   }
 
   @Nested
@@ -43,24 +43,24 @@ class DataToolsTest {
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
-        "camunda.data.extension-properties.extension-property-tool-name=custom.tool:name",
-        "camunda.data.extension-properties.extension-property-inbound-connector-type=custom.inbound.type",
-        "camunda.data.extension-properties.extension-property-prefix-tool-properties=custom.tool:",
+        "camunda.data.extension-properties.tool-name-property=custom.tool:name",
+        "camunda.data.extension-properties.inbound-connector-type-property=custom.inbound.type",
+        "camunda.data.extension-properties.tool-properties-prefix=custom.tool:",
       })
-  class CamundaExporterWithCustomTools {
+  class CamundaExporterWithCustomExtensionProperties {
     @Test
-    void shouldApplyToolsConfigToCamundaExporter(
+    void shouldApplyExtensionPropertiesConfigToCamundaExporter(
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       final var exporter = brokerBasedProperties.getCamundaExporter();
       final var config =
           ExporterConfiguration.fromArgs(
               io.camunda.exporter.config.ExporterConfiguration.class, exporter.getArgs());
 
-      assertThat(config.getExtensionProperties().getExtensionPropertyToolName())
+      assertThat(config.getExtensionProperties().getToolNameProperty())
           .isEqualTo("custom.tool:name");
-      assertThat(config.getExtensionProperties().getExtensionPropertyInboundConnectorType())
+      assertThat(config.getExtensionProperties().getInboundConnectorTypeProperty())
           .isEqualTo("custom.inbound.type");
-      assertThat(config.getExtensionProperties().getExtensionPropertyPrefixToolProperties())
+      assertThat(config.getExtensionProperties().getToolPropertiesPrefix())
           .isEqualTo("custom.tool:");
     }
   }
@@ -76,21 +76,21 @@ class DataToolsTest {
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
       })
-  class CamundaExporterWithDefaultTools {
+  class CamundaExporterWithDefaultExtensionProperties {
     @Test
-    void shouldApplyDefaultToolsConfigToCamundaExporter(
+    void shouldApplyDefaultExtensionPropertiesConfigToCamundaExporter(
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       final var exporter = brokerBasedProperties.getCamundaExporter();
       final var config =
           ExporterConfiguration.fromArgs(
               io.camunda.exporter.config.ExporterConfiguration.class, exporter.getArgs());
 
-      assertThat(config.getExtensionProperties().getExtensionPropertyToolName())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME);
-      assertThat(config.getExtensionProperties().getExtensionPropertyInboundConnectorType())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE);
-      assertThat(config.getExtensionProperties().getExtensionPropertyPrefixToolProperties())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES);
+      assertThat(config.getExtensionProperties().getToolNameProperty())
+          .isEqualTo(ExtensionProperties.DEFAULT_TOOL_NAME_PROPERTY);
+      assertThat(config.getExtensionProperties().getInboundConnectorTypeProperty())
+          .isEqualTo(ExtensionProperties.DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY);
+      assertThat(config.getExtensionProperties().getToolPropertiesPrefix())
+          .isEqualTo(ExtensionProperties.DEFAULT_TOOL_PROPERTIES_PREFIX);
     }
   }
 
@@ -104,24 +104,24 @@ class DataToolsTest {
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
-        "camunda.data.extension-properties.extension-property-tool-name=custom.tool:name",
-        "camunda.data.extension-properties.extension-property-inbound-connector-type=custom.inbound.type",
-        "camunda.data.extension-properties.extension-property-prefix-tool-properties=custom.tool:",
+        "camunda.data.extension-properties.tool-name-property=custom.tool:name",
+        "camunda.data.extension-properties.inbound-connector-type-property=custom.inbound.type",
+        "camunda.data.extension-properties.tool-properties-prefix=custom.tool:",
       })
-  class RdbmsExporterWithCustomTools {
+  class RdbmsExporterWithCustomExtensionProperties {
     @Test
-    void shouldApplyToolsConfigToRdbmsExporter(
+    void shouldApplyExtensionPropertiesConfigToRdbmsExporter(
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       final var exporter = brokerBasedProperties.getRdbmsExporter();
       final var config =
           ExporterConfiguration.fromArgs(
               io.camunda.exporter.rdbms.ExporterConfiguration.class, exporter.getArgs());
 
-      assertThat(config.getExtensionProperties().getExtensionPropertyToolName())
+      assertThat(config.getExtensionProperties().getToolNameProperty())
           .isEqualTo("custom.tool:name");
-      assertThat(config.getExtensionProperties().getExtensionPropertyInboundConnectorType())
+      assertThat(config.getExtensionProperties().getInboundConnectorTypeProperty())
           .isEqualTo("custom.inbound.type");
-      assertThat(config.getExtensionProperties().getExtensionPropertyPrefixToolProperties())
+      assertThat(config.getExtensionProperties().getToolPropertiesPrefix())
           .isEqualTo("custom.tool:");
     }
   }
@@ -137,21 +137,21 @@ class DataToolsTest {
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
       })
-  class RdbmsExporterWithDefaultTools {
+  class RdbmsExporterWithDefaultExtensionProperties {
     @Test
-    void shouldApplyDefaultToolsConfigToRdbmsExporter(
+    void shouldApplyDefaultExtensionPropertiesConfigToRdbmsExporter(
         @Autowired final BrokerBasedProperties brokerBasedProperties) {
       final var exporter = brokerBasedProperties.getRdbmsExporter();
       final var config =
           ExporterConfiguration.fromArgs(
               io.camunda.exporter.rdbms.ExporterConfiguration.class, exporter.getArgs());
 
-      assertThat(config.getExtensionProperties().getExtensionPropertyToolName())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME);
-      assertThat(config.getExtensionProperties().getExtensionPropertyInboundConnectorType())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE);
-      assertThat(config.getExtensionProperties().getExtensionPropertyPrefixToolProperties())
-          .isEqualTo(ExtensionProperties.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES);
+      assertThat(config.getExtensionProperties().getToolNameProperty())
+          .isEqualTo(ExtensionProperties.DEFAULT_TOOL_NAME_PROPERTY);
+      assertThat(config.getExtensionProperties().getInboundConnectorTypeProperty())
+          .isEqualTo(ExtensionProperties.DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY);
+      assertThat(config.getExtensionProperties().getToolPropertiesPrefix())
+          .isEqualTo(ExtensionProperties.DEFAULT_TOOL_PROPERTIES_PREFIX);
     }
   }
 }

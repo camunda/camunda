@@ -29,15 +29,15 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ExtensionPropertyConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ProcessExportHandler(
       final ProcessDefinitionWriter processDefinitionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.processCache = processCache;
-    this.toolsConfiguration = toolsConfiguration;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -65,7 +65,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
       final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       final var extensionProperties =
           ProcessModelReader.extractExtensionProperties(
-              flowNodes, toolsConfiguration.extensionPropertyFilter());
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
       cachedProcessEntity =
           new CachedProcessEntity(
               dbModel.name(),

@@ -255,11 +255,9 @@ public final class CamundaExporterConfigurationApplier {
         unifiedConfiguration.getCamunda().getData().getExtensionProperties();
     final ExtensionPropertyConfiguration target = exporterConfiguration.getExtensionProperties();
 
-    target.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
-    target.setExtensionPropertyInboundConnectorType(
-        source.getExtensionPropertyInboundConnectorType());
-    target.setExtensionPropertyPrefixToolProperties(
-        source.getExtensionPropertyPrefixToolProperties());
+    target.setToolNameProperty(source.getToolNameProperty());
+    target.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    target.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(

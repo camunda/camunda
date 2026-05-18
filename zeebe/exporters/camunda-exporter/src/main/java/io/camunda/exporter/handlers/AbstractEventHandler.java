@@ -50,12 +50,12 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
-  protected final ExtensionPropertyConfiguration toolConfig;
+  protected final ExtensionPropertyConfiguration extensionPropertyConfig;
 
   public AbstractEventHandler(
-      final String indexName, final ExtensionPropertyConfiguration toolConfig) {
+      final String indexName, final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.indexName = indexName;
-    this.toolConfig = toolConfig;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -152,13 +152,14 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setToolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+          .setToolName(
+              ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
           .setInboundConnectorType(
               ProcessCacheUtil.getInboundConnectorType(
-                  ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+                  ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
           .setToolProperties(
               ProcessCacheUtil.getToolProperties(
-                  ext, toolConfig.getExtensionPropertyPrefixToolProperties()));
+                  ext, extensionPropertyConfig.getToolPropertiesPrefix()));
     }
   }
 }

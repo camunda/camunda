@@ -92,16 +92,16 @@ public final class ProcessCacheUtil {
    * Returns relevant data from process diagram
    *
    * @param processDefinitionEntity
-   * @param toolsConfiguration configured tool extension property names
+   * @param extensionPropertiesConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
   public static ProcessDiagramData extractProcessDiagramData(
       final ProcessDefinitionEntity processDefinitionEntity,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     return extractProcessDiagramData(
         processDefinitionEntity.bpmnXml(),
         processDefinitionEntity.processDefinitionId(),
-        toolsConfiguration);
+        extensionPropertiesConfiguration);
   }
 
   /**
@@ -109,13 +109,13 @@ public final class ProcessCacheUtil {
    *
    * @param bpmnXml
    * @param bpmnProcessId
-   * @param toolsConfiguration configured tool extension property names
+   * @param extensionPropertiesConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
   public static ProcessDiagramData extractProcessDiagramData(
       final String bpmnXml,
       final String bpmnProcessId,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
@@ -127,7 +127,7 @@ public final class ProcessCacheUtil {
       final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       final Map<String, Map<String, String>> elementExtensionProperties =
           ProcessModelReader.extractExtensionProperties(
-              flowNodes, toolsConfiguration.extensionPropertyFilter());
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
       return new ProcessDiagramData(
           callActivityIds, flowNodesMap, hasUserTasks, elementExtensionProperties);
     }

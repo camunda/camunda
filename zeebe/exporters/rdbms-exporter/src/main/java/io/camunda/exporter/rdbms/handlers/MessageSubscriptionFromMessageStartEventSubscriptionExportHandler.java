@@ -38,15 +38,15 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ExtensionPropertyConfiguration toolConfig;
+  private final ExtensionPropertyConfiguration extensionPropertyConfig;
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ExtensionPropertyConfiguration toolConfig) {
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
-    this.toolConfig = toolConfig;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -99,11 +99,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
         .toolProperties(
             ProcessCacheUtil.getToolProperties(
-                ext, toolConfig.getExtensionPropertyPrefixToolProperties()))
-        .toolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+                ext, extensionPropertyConfig.getToolPropertiesPrefix()))
+        .toolName(ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
         .inboundConnectorType(
             ProcessCacheUtil.getInboundConnectorType(
-                ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+                ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
         .build();
   }
 }

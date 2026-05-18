@@ -88,9 +88,9 @@ public class ProcessCacheUtilTest {
             .startEvent()
             .serviceTask("task1")
             .zeebeJobType("worker")
-            .zeebeProperty(config.getExtensionPropertyToolName(), "myTool")
+            .zeebeProperty(config.getToolNameProperty(), "myTool")
             .zeebeProperty("io.camunda.tool:description", "toolDesc")
-            .zeebeProperty(config.getExtensionPropertyInboundConnectorType(), "connector")
+            .zeebeProperty(config.getInboundConnectorTypeProperty(), "connector")
             .zeebeProperty("unrelated.property", "shouldBeFiltered")
             .zeebeProperty("another.unrelated", "alsoFiltered")
             .endEvent()
@@ -104,9 +104,9 @@ public class ProcessCacheUtilTest {
     // then — only tool-related keys are retained
     assertThat(task1Props)
         .containsOnlyKeys(
-            config.getExtensionPropertyToolName(),
+            config.getToolNameProperty(),
             "io.camunda.tool:description",
-            config.getExtensionPropertyInboundConnectorType());
+            config.getInboundConnectorTypeProperty());
   }
 
   @Test
@@ -114,13 +114,13 @@ public class ProcessCacheUtilTest {
     // given — prefix set to null; only exact-match keys should be retained
     final String processId = "nullPrefixProcess";
     final var config = new ExtensionPropertyConfiguration();
-    config.setExtensionPropertyPrefixToolProperties(null);
+    config.setToolPropertiesPrefix(null);
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task1")
             .zeebeJobType("worker")
-            .zeebeProperty(config.getExtensionPropertyToolName(), "myTool")
+            .zeebeProperty(config.getToolNameProperty(), "myTool")
             .zeebeProperty("io.camunda.tool:description", "wouldMatchDefaultPrefix")
             .zeebeProperty("unrelated.property", "filtered")
             .endEvent()
@@ -132,7 +132,7 @@ public class ProcessCacheUtilTest {
     final var task1Props = diagramData.elementExtensionProperties().get("task1");
 
     // then — only the exact toolName key is retained; prefix-based match is skipped
-    assertThat(task1Props).containsOnlyKeys(config.getExtensionPropertyToolName());
+    assertThat(task1Props).containsOnlyKeys(config.getToolNameProperty());
   }
 
   @Test
@@ -140,13 +140,13 @@ public class ProcessCacheUtilTest {
     // given — blank prefix would match every property name via startsWith(""), guard against it
     final String processId = "blankPrefixProcess";
     final var config = new ExtensionPropertyConfiguration();
-    config.setExtensionPropertyPrefixToolProperties("  ");
+    config.setToolPropertiesPrefix("  ");
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task1")
             .zeebeJobType("worker")
-            .zeebeProperty(config.getExtensionPropertyToolName(), "myTool")
+            .zeebeProperty(config.getToolNameProperty(), "myTool")
             .zeebeProperty("unrelated.property", "filtered")
             .endEvent()
             .done();
@@ -157,7 +157,7 @@ public class ProcessCacheUtilTest {
     final var task1Props = diagramData.elementExtensionProperties().get("task1");
 
     // then — only the exact toolName key is retained; blank prefix does not match everything
-    assertThat(task1Props).containsOnlyKeys(config.getExtensionPropertyToolName());
+    assertThat(task1Props).containsOnlyKeys(config.getToolNameProperty());
   }
 
   private BpmnModelInstance buildModel(final String processId, final List<String> callActivities) {

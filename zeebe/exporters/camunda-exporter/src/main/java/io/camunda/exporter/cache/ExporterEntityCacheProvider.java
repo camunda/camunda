@@ -20,7 +20,7 @@ public interface ExporterEntityCacheProvider {
       String batchOperationIndexName);
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-      String processIndexName, ExtensionPropertyConfiguration toolsConfiguration);
+      String processIndexName, ExtensionPropertyConfiguration extensionPropertiesConfiguration);
 
   CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
       String decisionIndexName);

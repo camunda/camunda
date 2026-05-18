@@ -19,54 +19,51 @@ import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfi
  */
 public class ExtensionProperties {
 
-  public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
-  public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
-  public static final String DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+  public static final String DEFAULT_TOOL_NAME_PROPERTY =
+      ExtensionPropertyConfiguration.DEFAULT_TOOL_NAME_PROPERTY;
+  public static final String DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY =
+      ExtensionPropertyConfiguration.DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY;
+  public static final String DEFAULT_TOOL_PROPERTIES_PREFIX =
+      ExtensionPropertyConfiguration.DEFAULT_TOOL_PROPERTIES_PREFIX;
 
   /** The extension property name whose value is exported as the {@code toolName} attribute. */
-  private String extensionPropertyToolName =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
+  private String toolNameProperty = ExtensionPropertyConfiguration.DEFAULT_TOOL_NAME_PROPERTY;
 
   /**
    * The extension property name whose value is exported as the {@code inboundConnectorType}
    * attribute.
    */
-  private String extensionPropertyInboundConnectorType =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
+  private String inboundConnectorTypeProperty =
+      ExtensionPropertyConfiguration.DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY;
 
   /**
    * The extension property name prefix for properties exported as the {@code toolProperties}
    * key-value attribute. Only extension properties whose names start with this prefix are exported.
    */
-  private String extensionPropertyPrefixToolProperties =
-      ExtensionPropertyConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+  private String toolPropertiesPrefix =
+      ExtensionPropertyConfiguration.DEFAULT_TOOL_PROPERTIES_PREFIX;
 
-  public String getExtensionPropertyToolName() {
-    return extensionPropertyToolName;
+  public String getToolNameProperty() {
+    return toolNameProperty;
   }
 
-  public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
-    this.extensionPropertyToolName = extensionPropertyToolName;
+  public void setToolNameProperty(final String toolNameProperty) {
+    this.toolNameProperty = toolNameProperty;
   }
 
-  public String getExtensionPropertyInboundConnectorType() {
-    return extensionPropertyInboundConnectorType;
+  public String getInboundConnectorTypeProperty() {
+    return inboundConnectorTypeProperty;
   }
 
-  public void setExtensionPropertyInboundConnectorType(
-      final String extensionPropertyInboundConnectorType) {
-    this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
+  public void setInboundConnectorTypeProperty(final String inboundConnectorTypeProperty) {
+    this.inboundConnectorTypeProperty = inboundConnectorTypeProperty;
   }
 
-  public String getExtensionPropertyPrefixToolProperties() {
-    return extensionPropertyPrefixToolProperties;
+  public String getToolPropertiesPrefix() {
+    return toolPropertiesPrefix;
   }
 
-  public void setExtensionPropertyPrefixToolProperties(
-      final String extensionPropertyPrefixToolProperties) {
-    this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
+  public void setToolPropertiesPrefix(final String toolPropertiesPrefix) {
+    this.toolPropertiesPrefix = toolPropertiesPrefix;
   }
 }
