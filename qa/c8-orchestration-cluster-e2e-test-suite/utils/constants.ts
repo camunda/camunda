@@ -38,6 +38,14 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+// Use when an assertion polls on data that has to propagate through the
+// secondary-storage indexer on a loaded shared cluster (e.g. post-batch
+// user-task search, cross-view count reconciliation).
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
+
 export const uniqueBusinessId = (prefix = 'biz'): string => {
   return `${prefix}-${generateUniqueId()}`;
 };

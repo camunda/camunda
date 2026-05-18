@@ -33,8 +33,8 @@ export async function cancelBatchOperation(
 
 // A freshly created batch operation can take longer than the default 30s
 // to be visible to the suspend/resume commands on a loaded shared cluster
-// (404 → 204). Use the same generous budget that createCompletedBatchOperation
-// uses for engine catch-up.
+// (404 → 204). Use a more generous budget here for batch operation lifecycle
+// actions while the engine catches up.
 const batchOperationLifecycleOptions = {
   intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
   timeout: 180_000,

@@ -19,17 +19,12 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {findUserTask} from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
-
-// Batch modify is asynchronous: the API returns immediately, but the
-// resulting user-task moves can take longer than the default 30s to be
-// indexed in user-tasks/search under load.
-const postModificationAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-  timeout: 90_000,
-};
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
@@ -369,7 +364,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
         expect(secondTask).toBeDefined();
         expect(firstTask!.state).toBe('CANCELED');
         expect(secondTask!.state).toBe('CREATED');
-      }).toPass(postModificationAssertionOptions);
+      }).toPass(extendedAssertionOptions);
 
       await expect(async () => {
         const res2 = await request.post(buildUrl('/user-tasks/search'), {
@@ -402,7 +397,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
         expect(secondTask2).toBeDefined();
         expect(firstTask2!.state).toBe('CANCELED');
         expect(secondTask2!.state).toBe('CREATED');
-      }).toPass(postModificationAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
 
     await cancelProcessInstance(localState.processInstanceKey1);
