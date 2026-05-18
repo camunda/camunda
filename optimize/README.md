@@ -67,6 +67,15 @@ CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=[must match the one in docker-compose.ccs
 CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=[audience]
 ```
 
+## Architecture Decisions
+
+Key design decisions are recorded in [`docs/adr/`](docs/adr/):
+
+- [ADR-001: Retain Camunda 7 Naming Conventions](docs/adr/001-c7-naming-conventions.md) — why
+  Optimize's DTO fields and ES/OS index names use C7 terminology (eg `processDefinitionKey`
+  for the BPMN string, `processDefinitionId` for the unique Long) rather than C8/Zeebe
+  conventions.
+
 ## F.A.Q
 
 # Docker is telling me that I do not have the rights to pull the images
