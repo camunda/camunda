@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Named.named;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.verify;
@@ -149,7 +150,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
             any());
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "[{index}] {0}")
   @MethodSource("invalidCreateRequests")
   void shouldRejectInvalidCreateRequest(final String requestBody, final String expectedDetail) {
     // when / then
@@ -184,85 +185,99 @@ class AgentInstanceControllerTest extends RestControllerTest {
   static Stream<Arguments> invalidCreateRequests() {
     return Stream.of(
         Arguments.of(
-            """
-            {
-              "definition": {
-                "model": "gpt-4o",
-                "provider": "openai",
-                "systemPrompt": "prompt"
-              }
-            }
-            """,
+            named(
+                "missing elementInstanceKey",
+                """
+                {
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
             "No elementInstanceKey provided."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": null,
-              "definition": {
-                "model": "gpt-4o",
-                "provider": "openai",
-                "systemPrompt": "prompt"
-              }
-            }
-            """,
+            named(
+                "null elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": null,
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
             "No elementInstanceKey provided."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": "not-a-number",
-              "definition": {
-                "model": "gpt-4o",
-                "provider": "openai",
-                "systemPrompt": "prompt"
-              }
-            }
-            """,
+            named(
+                "non-numeric elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": "not-a-number",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": "%d"
-            }
-            """
-                .formatted(ELEMENT_INSTANCE_KEY),
+            named(
+                "missing definition",
+                """
+                {
+                  "elementInstanceKey": "%d"
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
             "No definition provided."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": "%d",
-              "definition": {
-                "provider": "openai",
-                "systemPrompt": "prompt"
-              }
-            }
-            """
-                .formatted(ELEMENT_INSTANCE_KEY),
+            named(
+                "missing definition.model",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
             "No definition.model provided."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": "%d",
-              "definition": {
-                "model": "gpt-4o",
-                "systemPrompt": "prompt"
-              }
-            }
-            """
-                .formatted(ELEMENT_INSTANCE_KEY),
+            named(
+                "missing definition.provider",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
             "No definition.provider provided."),
         Arguments.of(
-            """
-            {
-              "elementInstanceKey": "%d",
-              "definition": {
-                "model": "gpt-4o",
-                "provider": "openai"
-              }
-            }
-            """
-                .formatted(ELEMENT_INSTANCE_KEY),
+            named(
+                "missing definition.systemPrompt",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai"
+                  }
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
             "No definition.systemPrompt provided."));
   }
 
