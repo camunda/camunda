@@ -45,6 +45,9 @@
             },
             "requestStreamId": {
               "type": "integer"
+            },
+            "businessId": {
+              "type": "keyword"
             }
           }
         }

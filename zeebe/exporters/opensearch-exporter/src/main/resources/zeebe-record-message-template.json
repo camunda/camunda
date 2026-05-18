@@ -45,6 +45,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "businessId": {
+              "type": "keyword"
             }
           }
         }
