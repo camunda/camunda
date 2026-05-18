@@ -33,7 +33,7 @@
     "react-dom": "18.3.1",
     "react-hook-form": "7.72.1",
     "react-i18next": "17.0.7",
-    "react-router-dom": "7.13.2",
+    "react-router-dom": "7.15.1",
     "react-transition-group": "4.4.5",
     "styled-components": "6.3.12",
     "zod": "4.3.6"
