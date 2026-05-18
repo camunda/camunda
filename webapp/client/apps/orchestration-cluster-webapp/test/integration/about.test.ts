@@ -9,15 +9,9 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 
-import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
+import {mockCurrentUserEndpoint, mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
 
 const ABOUT_MESSAGE = 'About page loaded from MSW';
-
-const mockAboutEndpoint = createEndpointMock({
-	endpoint: '/api/about',
-	method: 'GET',
-});
 
 test('should render mocked about data', async ({network, page}) => {
 	network.use(

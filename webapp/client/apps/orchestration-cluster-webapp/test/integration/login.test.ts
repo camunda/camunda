@@ -8,18 +8,7 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {http, HttpResponse, delay} from 'msw';
-import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
-
-const mockLoginEndpoint = createEndpointMock({
-	endpoint: '/login',
-	method: 'POST',
-});
-
-const mockAboutEndpoint = createEndpointMock({
-	endpoint: '/api/about',
-	method: 'GET',
-});
+import {mockCurrentUserEndpoint, mockLoginEndpoint, mockAboutEndpoint} from '#/shared-test-modules/mock-handlers';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(

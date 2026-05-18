@@ -9,7 +9,7 @@
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {describe, expect, vi} from 'vitest';
 
 describe('<Login />', () => {
