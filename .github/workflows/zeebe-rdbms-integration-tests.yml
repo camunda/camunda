@@ -6,6 +6,13 @@ name: Rdbms Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      notify-slack-on-failure:
+        description: "Whether workflow_dispatch runs should send Slack notifications on failure/cancellation"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
   pull_request:
     paths:
       - ".github/workflows/zeebe-rdbms-integration-tests.yml"
@@ -52,7 +59,7 @@ jobs:
       database-image-version: ${{ matrix.database-image-version }}
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
 
   rdbms-history-tests:
     name: "RDBMS History Tests / ${{ matrix.database-name }}"
@@ -74,7 +81,7 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
 
   rdbms-identity-tests:
     name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
@@ -95,4 +102,4 @@ jobs:
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
