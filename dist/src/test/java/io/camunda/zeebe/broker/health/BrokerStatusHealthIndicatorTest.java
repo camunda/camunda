@@ -11,15 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.system.management.HealthTree;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,9 @@ import org.springframework.boot.health.contributor.Status;
 
 final class BrokerStatusHealthIndicatorTest {
 
+  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+
+  private ObjectMapper objectMapper;
   private SpringBrokerBridge brokerBridge;
   private BrokerHealthCheckService healthCheckService;
   private BrokerStatusHealthIndicator indicator;
@@ -38,7 +43,7 @@ final class BrokerStatusHealthIndicatorTest {
     brokerBridge = mock(SpringBrokerBridge.class);
     healthCheckService = mock(BrokerHealthCheckService.class);
     when(brokerBridge.getBrokerHealthCheckService()).thenReturn(Optional.of(healthCheckService));
-    final var objectMapper = JsonMapper.builder().findAndAddModules().build();
+    objectMapper = JsonMapper.builder().findAndAddModules().build();
     indicator = new BrokerStatusHealthIndicator(brokerBridge, objectMapper);
   }
 
@@ -99,39 +104,12 @@ final class BrokerStatusHealthIndicatorTest {
 
     final Health health = indicator.health();
 
+    final var expectedPartitionDetail =
+        objectMapper.convertValue(
+            HealthTree.fromHealthReport("Partition-1", partitionReport), MAP_TYPE);
+
     assertThat(health.getStatus()).isEqualTo(Status.UP);
-    assertThat(health.getDetails())
-        .containsEntry(
-            "Partition-1",
-            Map.of(
-                "id",
-                "Partition-1",
-                "name",
-                "Partition-1",
-                "status",
-                "HEALTHY",
-                "componentsState",
-                "HEALTHY",
-                "children",
-                List.of(
-                    Map.of(
-                        "id",
-                        "Raft-1",
-                        "name",
-                        "Raft-1",
-                        "status",
-                        "HEALTHY",
-                        "children",
-                        List.of()),
-                    Map.of(
-                        "id",
-                        "StreamProcessor-1",
-                        "name",
-                        "StreamProcessor-1",
-                        "status",
-                        "HEALTHY",
-                        "children",
-                        List.of()))));
+    assertThat(health.getDetails()).containsEntry("Partition-1", expectedPartitionDetail);
   }
 
   @Test
@@ -156,23 +134,13 @@ final class BrokerStatusHealthIndicatorTest {
 
     final Health health = indicator.health();
 
+    final var expectedStreamProcessorDetail =
+        objectMapper.convertValue(
+            HealthTree.fromHealthReport("StreamProcessor-1", unhealthyChild), MAP_TYPE);
+
     assertThat(health.getStatus()).isEqualTo(Status.DOWN);
     assertThat(health.getDetails())
-        .containsEntry(
-            "StreamProcessor-1",
-            Map.of(
-                "id",
-                "StreamProcessor-1",
-                "name",
-                "StreamProcessor-1",
-                "status",
-                "UNHEALTHY",
-                "message",
-                "Processing is stuck",
-                "since",
-                "2026-04-05T12:00:00.000Z",
-                "children",
-                List.of()));
+        .containsEntry("StreamProcessor-1", expectedStreamProcessorDetail);
   }
 
   @Test
@@ -191,22 +159,10 @@ final class BrokerStatusHealthIndicatorTest {
 
     final Health health = indicator.health();
 
-    assertThat(health.getDetails())
-        .containsEntry(
-            "Log-1",
-            Map.of(
-                "id",
-                "Log-1",
-                "name",
-                "Log-1",
-                "status",
-                "DEAD",
-                "message",
-                "Disk full",
-                "since",
-                "2026-04-05T12:00:00.000Z",
-                "children",
-                List.of()));
+    final var expectedLogDetail =
+        objectMapper.convertValue(HealthTree.fromHealthReport("Log-1", deadChild), MAP_TYPE);
+
+    assertThat(health.getDetails()).containsEntry("Log-1", expectedLogDetail);
   }
 
   @Test
