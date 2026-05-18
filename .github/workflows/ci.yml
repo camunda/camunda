@@ -1519,17 +1519,28 @@ jobs:
           files: 'vr-test-results/**/*.xml'
           check_name: 'Operate Visual Regression Test Results'
           comment_title: 'Operate Visual Regression Test Results'
-          comment_mode: update
+          comment_mode: always
       - name: Extract failed test names from JUnit XML
         if: always()
         id: extract-failures
         run: |
           if [ -f vr-test-results/vr-results.xml ]; then
-            FAILED=$(grep -c '<failure' vr-test-results/vr-results.xml 2>/dev/null || echo "0")
-            echo "failure_count=$FAILED" >> "$GITHUB_OUTPUT"
-            # Extract failed test names (space before name= to avoid matching classname=)
-            grep -B1 '<failure' vr-test-results/vr-results.xml | grep '<testcase' | sed 's/.* name="\([^"]*\)".*/\1/' > /tmp/failed-tests.txt 2>/dev/null || true
+            # Playwright's JUnit reporter puts <failure>/<error> as the last child of
+            # <testcase>, after <system-out> (which carries screenshot attachments).
+            # Track the most recent testcase name and emit it when a failure follows.
+            awk '
+              /<testcase / {
+                current = ""
+                if (match($0, / name="[^"]*"/))
+                  current = substr($0, RSTART + 7, RLENGTH - 8)
+              }
+              /<failure |<error / {
+                if (current != "") { print current; current = "" }
+              }
+            ' vr-test-results/vr-results.xml > /tmp/failed-tests.txt
+            echo "failure_count=$(wc -l < /tmp/failed-tests.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
           else
+            : > /tmp/failed-tests.txt
             echo "failure_count=0" >> "$GITHUB_OUTPUT"
           fi
       - name: Post VR diff comment to PR
