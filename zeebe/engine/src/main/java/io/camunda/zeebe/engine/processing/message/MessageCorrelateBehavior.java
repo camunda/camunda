@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
@@ -123,7 +124,9 @@ public final class MessageCorrelateBehavior {
           // correlate the message only once per process
           if (!subscription.isCorrelating()
               && !correlatingSubscriptions.contains(
-                  subscription.getRecord().getBpmnProcessIdBuffer())) {
+                  subscription.getRecord().getBpmnProcessIdBuffer())
+              && businessIdMatches(
+                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())) {
 
             final var correlatingSubscription =
                 subscription
@@ -158,7 +161,9 @@ public final class MessageCorrelateBehavior {
           // correlate the message only once per process
           if (!subscription.isCorrelating()
               && !correlatingSubscriptions.contains(
-                  subscription.getRecord().getBpmnProcessIdBuffer())) {
+                  subscription.getRecord().getBpmnProcessIdBuffer())
+              && businessIdMatches(
+                  messageData.businessId(), subscription.getRecord().getBusinessIdBuffer())) {
 
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscription.getRecord());
@@ -184,10 +189,26 @@ public final class MessageCorrelateBehavior {
                 messageData.tenantId()));
   }
 
+  /**
+   * Asymmetric business-id matching rule from the design: a message published without a business id
+   * (empty buffer) correlates regardless of the subscription's stored business id; a message with a
+   * business id only correlates to subscriptions whose stored business id matches exactly. Reading
+   * from the local {@code MessageSubscription} (not from PI state on another partition) is what
+   * keeps this a constant-time, on-partition check.
+   */
+  private boolean businessIdMatches(
+      final DirectBuffer messageBusinessId, final DirectBuffer subscriptionBusinessId) {
+    if (messageBusinessId == null || messageBusinessId.capacity() == 0) {
+      return true;
+    }
+    return BufferUtil.equals(messageBusinessId, subscriptionBusinessId);
+  }
+
   public record MessageData(
       long messageKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       DirectBuffer variables,
-      String tenantId) {}
+      String tenantId,
+      DirectBuffer businessId) {}
 }
