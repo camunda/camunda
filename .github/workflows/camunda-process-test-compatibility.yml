@@ -666,7 +666,16 @@ jobs:
                 }
               ]
             }
-
+      - name: Dump All Docker Container Logs on Failure
+        run: |
+          echo "=== Fetching status of all containers (including stopped/failed ones) ==="
+          docker ps -a
+          
+          echo "=== Fetching logs for all available containers ==="
+          for container_id in $(docker ps -a -q); do
+            echo "--- Logs for Container: $(docker inspect --format '{{.Name}}' $container_id) ($container_id) ---"
+            docker logs $container_id || true
+          done
       - name: Observe build status
         if: always()
         continue-on-error: true
