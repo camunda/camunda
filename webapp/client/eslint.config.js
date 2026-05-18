@@ -24,6 +24,8 @@ export default defineConfig([
 			'apps/**/dist/**/*',
 			'target/**/*',
 			'apps/orchestration-cluster-webapp/src/modules/svg/**/*',
+			'apps/**/playwright-report/**/*',
+			'apps/**/test-results/**/*',
 		],
 	},
 

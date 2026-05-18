@@ -7,9 +7,17 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {LoginPage} from '../pages/Login.page';
+import {HttpResponse} from 'msw';
+import {LoginPage} from '#/pages/Login.page';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 
-test('should match the login page snapshot', async ({page}) => {
+test('should match the login page snapshot', async ({network, page}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+	);
+
 	const loginPage = new LoginPage(page);
 	await loginPage.goto();
 	await expect(loginPage.submitButton).toBeVisible();

@@ -22,6 +22,27 @@ class LoginPage {
 	get submitButton() {
 		return this.page.getByRole('button', {name: /login/i});
 	}
+
+	get usernameInput() {
+		return this.page.getByLabel(/username/i);
+	}
+
+	get passwordInput() {
+		return this.page.getByLabel(/^password$/i);
+	}
+
+	get errorMessage() {
+		return this.page.getByRole('alert').filter({hasText: /.+/});
+	}
+
+	get loadingButton() {
+		return this.page.getByRole('button', {name: /logging in/i});
+	}
+
+	async fillCredentials(username: string, password: string) {
+		await this.usernameInput.fill(username);
+		await this.passwordInput.fill(password);
+	}
 }
 
 export {LoginPage};

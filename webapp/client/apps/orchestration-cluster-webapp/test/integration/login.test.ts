@@ -6,11 +6,109 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '#/pw-modules/test-extend';
+import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse} from 'msw';
+import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/mock-handlers';
 
-// TODO: implement with https://github.com/camunda/camunda/issues/51318
-test.skip('should redirect to the initial page on success', async () => {});
-test.skip('should redirect to the referrer page', async () => {});
-test.skip('should show an error for wrong credentials', async () => {});
-test.skip('should show a generic error message', async () => {});
-test.skip('should show a loading state while the login form is submitting', async () => {});
+test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+		}),
+	);
+
+	await loginPage.goto();
+	await expect(loginPage.usernameInput).toBeVisible();
+
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
+	);
+
+	await loginPage.fillCredentials('demo', 'demo');
+	await loginPage.submitButton.click();
+
+	await expect(page).toHaveURL('/');
+});
+
+test('should redirect to the referrer page', async ({network, page, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+		}),
+	);
+
+	await page.goto('/about');
+	await expect(loginPage.usernameInput).toBeVisible();
+
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
+	);
+
+	await loginPage.fillCredentials('demo', 'demo');
+	await loginPage.submitButton.click();
+
+	await expect(page).toHaveURL('/about');
+});
+
+test('should show an error for wrong credentials', async ({network, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+	);
+
+	await loginPage.goto();
+	await loginPage.fillCredentials('demo', 'wrong-password');
+	await loginPage.submitButton.click();
+
+	await expect(loginPage.errorMessage).toContainText(/username and password do not match/i);
+});
+
+test('should show a generic error message', async ({network, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+
+	await loginPage.goto();
+	await loginPage.fillCredentials('demo', 'demo');
+	await loginPage.submitButton.click();
+
+	await expect(loginPage.errorMessage).toContainText(/credentials could not be verified/i);
+});
+
+test('should show a loading state while the login form is submitting', async ({network, loginPage}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+			delay: 500,
+		}),
+	);
+
+	await loginPage.goto();
+	await loginPage.fillCredentials('demo', 'demo');
+	await loginPage.submitButton.click();
+
+	await expect(loginPage.loadingButton).toBeVisible();
+	await expect(loginPage.loadingButton).toBeDisabled();
+});
