@@ -1,14 +1,17 @@
-# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where PRs entering the merge queue are deployed via helm to confirm no breaking changes.
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
 # type: CI
 # owner: @camunda/distribution
 ---
 name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 
 on:
+  push:
+    branches:
+      - stable/8.9
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to pr-<sha> or Maven version)'
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-stable-8.9-run<run_id>-a<attempt> for push to stable/8.9)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -22,7 +25,7 @@ on:
       scenario:
         description: 'Test scenario'
         type: string
-        default: 'keycloak-original'
+        default: 'alwaysgreen'
       deployment-ttl:
         description: 'Deployment TTL'
         type: string
@@ -30,14 +33,15 @@ on:
       shortname:
         description: 'Short name for the deployment'
         type: string
-        default: 'kcor'
+        default: 'agrn'
   merge_group:
     types:
       - checks_requested
 
-# Cancel in-progress runs when a new commit enters the merge queue for the same ref
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidence
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
   cancel-in-progress: true
 
 env:
@@ -55,9 +59,11 @@ jobs:
     name: Check Run Conditions
     runs-on: ubuntu-latest
     timeout-minutes: 1
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       github.event_name == 'merge_group'
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
@@ -69,6 +75,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -99,6 +106,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -129,6 +137,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -160,6 +169,7 @@ jobs:
     permissions: { }
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.tag }}
     steps:
@@ -191,12 +201,18 @@ jobs:
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
             # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
-            PR_NUM=$(echo "${{ github.ref }}" | grep -oP '(?<=pr-)\d+')
+            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/.+/pr-([0-9]+)-.*$|\1|p' <<< "${{ github.ref }}")
+            if [[ -z "${PR_NUM}" ]]; then
+              echo "Failed to resolve a single PR number from merge_group ref: '${{ github.ref }}'" >&2
+              exit 1
+            fi
             echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.9.0-SNAPSHOT-dispatch-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
-            SHA_SHORT="${GITHUB_SHA::7}"
-            echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+            # For push to stable/8.9: <maven-version>-stable-8.9-run<run_id>-a<run_attempt> (e.g., 8.9.0-SNAPSHOT-stable-8.9-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-stable-8.9-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download Operate frontend artifact
@@ -262,6 +278,7 @@ jobs:
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     outputs:
       identifier: ${{ steps.format.outputs.identifier }}
     steps:
@@ -290,8 +307,8 @@ jobs:
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
-      scenario: ${{ inputs.scenario || 'keycloak-original' }}
-      shortname: ${{ inputs.shortname || 'kcor' }}
+      scenario: ${{ inputs.scenario || 'alwaysgreen' }}
+      shortname: ${{ inputs.shortname || 'agrn' }}
       always-delete-namespace: true
       flows: install
       extra-values: |
@@ -315,6 +332,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -363,7 +381,8 @@ jobs:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
     needs: [build-and-push, format-identifier]
-    timeout-minutes: 30
+    timeout-minutes: 35
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions: { }
     steps:
       - name: Checkout repository
@@ -388,7 +407,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
+          # Use the image tag as the generation name to match filter patterns
+          # e.g., "8.9.0-SNAPSHOT-stable-8.9-run12345678-a1" matches "**-stable-8.9-run**-a**"
+          GEN_NAME="${IMAGE_TAG}"
+
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -399,6 +423,7 @@ jobs:
                       "correlation_id": "'"$CORRELATION_ID"'",
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
+                      "gen_name": "'"${GEN_NAME}"'",
                       "c8Version": "8.9",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
                       "operateVersion": "8.9-SNAPSHOT",
