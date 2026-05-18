@@ -12,7 +12,7 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 
 public interface ExporterEntityCacheProvider {
 
@@ -20,7 +20,7 @@ public interface ExporterEntityCacheProvider {
       String batchOperationIndexName);
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-      String processIndexName, ToolsConfiguration toolsConfiguration);
+      String processIndexName, ExtensionPropertyConfiguration toolsConfiguration);
 
   CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
       String decisionIndexName);

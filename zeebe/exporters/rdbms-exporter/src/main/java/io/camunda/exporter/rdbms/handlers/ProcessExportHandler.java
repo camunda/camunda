@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,12 +29,12 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ToolsConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration toolsConfiguration;
 
   public ProcessExportHandler(
       final ProcessDefinitionWriter processDefinitionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ToolsConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration toolsConfiguration) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.processCache = processCache;
     this.toolsConfiguration = toolsConfiguration;

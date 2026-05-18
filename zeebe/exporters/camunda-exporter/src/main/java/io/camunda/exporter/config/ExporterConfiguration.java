@@ -11,8 +11,8 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 
 public class ExporterConfiguration {
 
@@ -31,7 +31,7 @@ public class ExporterConfiguration {
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
   private boolean skipVariableWriteWithoutUserTasks = false;
-  private ToolsConfiguration tools = new ToolsConfiguration();
+  private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -154,12 +154,12 @@ public class ExporterConfiguration {
     this.batchOperation = batchOperation;
   }
 
-  public ToolsConfiguration getTools() {
-    return tools;
+  public ExtensionPropertyConfiguration getExtensionProperties() {
+    return extensionProperties;
   }
 
-  public void setTools(final ToolsConfiguration tools) {
-    this.tools = tools;
+  public void setExtensionProperties(final ExtensionPropertyConfiguration extensionProperties) {
+    this.extensionProperties = extensionProperties;
   }
 
   @Override

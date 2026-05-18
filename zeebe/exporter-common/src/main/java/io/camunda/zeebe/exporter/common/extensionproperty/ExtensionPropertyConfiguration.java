@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.common.tools;
+package io.camunda.zeebe.exporter.common.extensionproperty;
 
 import java.util.function.Predicate;
 
 /** Exporter-side configuration for which BPMN extension properties map to tool attributes. */
-public class ToolsConfiguration {
+public class ExtensionPropertyConfiguration {
 
   public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME = "io.camunda.tool:name";
   public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE = "inbound.type";

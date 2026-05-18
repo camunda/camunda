@@ -13,8 +13,8 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class ExporterConfiguration {
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
-  private ToolsConfiguration tools = new ToolsConfiguration();
+  private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -152,12 +152,12 @@ public class ExporterConfiguration {
     this.asyncReplication = asyncReplication;
   }
 
-  public ToolsConfiguration getTools() {
-    return tools;
+  public ExtensionPropertyConfiguration getExtensionProperties() {
+    return extensionProperties;
   }
 
-  public void setTools(final ToolsConfiguration tools) {
-    this.tools = tools;
+  public void setExtensionProperties(final ExtensionPropertyConfiguration extensionProperties) {
+    this.extensionProperties = extensionProperties;
   }
 
   public void validate() {

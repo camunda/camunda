@@ -13,7 +13,7 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.protocol.record.Record;
@@ -31,12 +31,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ToolsConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration toolsConfiguration;
 
   public ProcessHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ToolsConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration toolsConfiguration) {
     this.indexName = indexName;
     this.processCache = processCache;
     this.toolsConfiguration = toolsConfiguration;

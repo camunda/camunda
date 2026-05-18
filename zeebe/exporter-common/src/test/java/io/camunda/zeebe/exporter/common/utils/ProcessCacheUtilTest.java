@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -59,7 +59,8 @@ public class ProcessCacheUtilTest {
     final var bpmnXml = Bpmn.convertToString(model);
     // when
     final var callActivities =
-        ProcessCacheUtil.extractProcessDiagramData(bpmnXml, processId, new ToolsConfiguration())
+        ProcessCacheUtil.extractProcessDiagramData(
+                bpmnXml, processId, new ExtensionPropertyConfiguration())
             .callActivityIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
@@ -81,7 +82,7 @@ public class ProcessCacheUtilTest {
   void shouldOnlyRetainKnownToolPropertiesInProcessCache() {
     // given — a service task with both tool-related and unrelated zeebe:properties
     final String processId = "mixedPropsProcess";
-    final var config = new ToolsConfiguration();
+    final var config = new ExtensionPropertyConfiguration();
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -112,7 +113,7 @@ public class ProcessCacheUtilTest {
   void shouldNotMatchAnyPropertyWhenPrefixIsNull() {
     // given — prefix set to null; only exact-match keys should be retained
     final String processId = "nullPrefixProcess";
-    final var config = new ToolsConfiguration();
+    final var config = new ExtensionPropertyConfiguration();
     config.setExtensionPropertyPrefixToolProperties(null);
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
@@ -138,7 +139,7 @@ public class ProcessCacheUtilTest {
   void shouldNotMatchAnyPropertyWhenPrefixIsBlank() {
     // given — blank prefix would match every property name via startsWith(""), guard against it
     final String processId = "blankPrefixProcess";
-    final var config = new ToolsConfiguration();
+    final var config = new ExtensionPropertyConfiguration();
     config.setExtensionPropertyPrefixToolProperties("  ");
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
