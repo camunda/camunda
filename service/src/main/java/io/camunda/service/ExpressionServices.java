@@ -36,10 +36,11 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
         new BrokerExpressionEvaluationRequest()
             .setExpression(request.expression())
             .setVariables(request.variables())
+            .setScopeKey(request.scopeKey())
             .setTenantId(request.tenantId()),
         authentication);
   }
 
   public record ExpressionEvaluationRequest(
-      String expression, String tenantId, Map<String, Object> variables) {}
+      String expression, String tenantId, Long scopeKey, Map<String, Object> variables) {}
 }
