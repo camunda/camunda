@@ -88,7 +88,7 @@ deny[msg] {
         [concat(", ", get_jobs_after_checkresults_without_ifalways(input.jobs))])
 }
 
-warn[msg] {
+deny[msg] {
     # only enforced on Unified CI
     input.name == "CI"
 
@@ -135,6 +135,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "test-summary"
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
+        job_id != "detect-new-flaky-tests"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"
@@ -218,7 +219,7 @@ get_jobs_without_monitor_as_first_step(jobInput) = result {
         job_id != "get-snapshot-docker-version-tag"
         job_id != "observe-aborted-jobs"
         job_id != "setup-tests"
-        job_id != "utils-flaky-tests-summary"
+        job_id != "detect-new-flaky-tests"
         job_id != "fe-unit-tests-merge"
         job_id != "operate-fe-visual-regression-merge"
         job_id != "generate-db-versions"
@@ -235,30 +236,4 @@ get_jobs_without_monitor_as_first_step(jobInput) = result {
 job_has_monitor_as_first_step(job) {
     step := job.steps[0]
     startswith(step.uses, "camunda/infra-global-github-actions/start-build-monitor@")
-}
-
-get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
-    jobs_without_printmetadata := { job_id |
-        job := jobInput[job_id]
-
-        # not enforced on Unified CI jobs that are part of change detection control flow structure
-        job_id != "detect-changes"
-        job_id != "setup-tests"
-        job_id != "check-results"
-
-        # not enforced on Unified CI jobs running after "check-results" job
-        not startswith(job_id, "deploy-")
-        not startswith(job_id, "utils-")
-
-        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
-        not job.uses
-
-        # check that there is at least one step printing metadata
-        printmetadata_steps := { step |
-            step := job.steps[_]
-            step.name == "Print metadata"
-            step.uses == "./.github/actions/print-metadata"
-        }
-        count(printmetadata_steps) == 0
-    }
 }
