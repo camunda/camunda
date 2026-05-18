@@ -166,7 +166,7 @@ class AuditLogExporterFilterAlignmentTest {
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
         final String processIndexName,
         final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
-            toolsConfiguration) {
+            extensionPropertiesConfiguration) {
       return k -> null;
     }
 

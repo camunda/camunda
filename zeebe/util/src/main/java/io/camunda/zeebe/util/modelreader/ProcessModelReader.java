@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,10 +122,8 @@ public final class ProcessModelReader {
                       p -> {
                         final String name = p.getName();
                         final String value = p.getValue();
-                        if (name != null
-                            && !name.isBlank()
-                            && value != null
-                            && !value.isBlank()
+                        if (StringUtils.isNotBlank(name)
+                            && StringUtils.isNotBlank(value)
                             && propertyNameFilter.test(name)) {
                           map.put(name, value);
                         }

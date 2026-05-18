@@ -31,15 +31,15 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ExtensionPropertyConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ProcessHandler(
       final String indexName,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.indexName = indexName;
     this.processCache = processCache;
-    this.toolsConfiguration = toolsConfiguration;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -99,7 +99,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
       hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       elementExtensionProperties =
           ProcessModelReader.extractExtensionProperties(
-              flowNodes, toolsConfiguration.extensionPropertyFilter());
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
     } else {
       hasUserTasks = true;
       elementExtensionProperties = Map.of();

@@ -79,8 +79,10 @@ class ElasticsearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final ExtensionPropertyConfiguration toolsConfiguration) {
-      return new ElasticSearchProcessCacheLoader(client, processIndexName, toolsConfiguration);
+        final String processIndexName,
+        final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
+      return new ElasticSearchProcessCacheLoader(
+          client, processIndexName, extensionPropertiesConfiguration);
     }
 
     @Override

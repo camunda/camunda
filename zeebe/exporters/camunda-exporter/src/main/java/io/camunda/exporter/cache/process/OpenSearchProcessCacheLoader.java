@@ -22,15 +22,15 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
 
   private final OpenSearchClient client;
   private final String processIndexName;
-  private final ExtensionPropertyConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public OpenSearchProcessCacheLoader(
       final OpenSearchClient client,
       final String processIndexName,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
-    this.toolsConfiguration = toolsConfiguration;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -43,7 +43,9 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       final var processEntity = response.source();
       final var processDiagramData =
           ProcessCacheUtil.extractProcessDiagramData(
-              processEntity.getBpmnXml(), processEntity.getBpmnProcessId(), toolsConfiguration);
+              processEntity.getBpmnXml(),
+              processEntity.getBpmnProcessId(),
+              extensionPropertiesConfiguration);
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersion(),

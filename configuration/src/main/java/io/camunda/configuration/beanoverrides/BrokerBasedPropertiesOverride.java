@@ -995,11 +995,9 @@ public class BrokerBasedPropertiesOverride {
       final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
           extensionProperties,
       final io.camunda.configuration.ExtensionProperties source) {
-    extensionProperties.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
-    extensionProperties.setExtensionPropertyInboundConnectorType(
-        source.getExtensionPropertyInboundConnectorType());
-    extensionProperties.setExtensionPropertyPrefixToolProperties(
-        source.getExtensionPropertyPrefixToolProperties());
+    extensionProperties.setToolNameProperty(source.getToolNameProperty());
+    extensionProperties.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private void applyRdbmsHistoryExporterConfiguration(

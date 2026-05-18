@@ -95,7 +95,8 @@ public final class RdbmsCacheRegistry {
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(
-      final RdbmsService rdbmsService, final ExtensionPropertyConfiguration toolsConfiguration) {
+      final RdbmsService rdbmsService,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
     return new RdbmsEntityCacheLoader<>(
         "Process",
@@ -107,7 +108,7 @@ public final class RdbmsCacheRegistry {
                         .resultConfig(c -> c.includeXml(true))),
         query -> reader.search(query).items(),
         ProcessDefinitionEntity::processDefinitionKey,
-        entity -> toCachedProcessEntity(entity, toolsConfiguration));
+        entity -> toCachedProcessEntity(entity, extensionPropertiesConfiguration));
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedDecisionRequirementsEntity>
@@ -139,9 +140,10 @@ public final class RdbmsCacheRegistry {
 
   private static CachedProcessEntity toCachedProcessEntity(
       final ProcessDefinitionEntity processDefinitionEntity,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     final var processDiagramData =
-        ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity, toolsConfiguration);
+        ProcessCacheUtil.extractProcessDiagramData(
+            processDefinitionEntity, extensionPropertiesConfiguration);
     return new CachedProcessEntity(
         processDefinitionEntity.name(),
         processDefinitionEntity.version(),

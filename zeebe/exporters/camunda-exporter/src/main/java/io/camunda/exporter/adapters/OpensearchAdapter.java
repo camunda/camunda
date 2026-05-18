@@ -79,8 +79,10 @@ class OpensearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final ExtensionPropertyConfiguration toolsConfiguration) {
-      return new OpenSearchProcessCacheLoader(client, processIndexName, toolsConfiguration);
+        final String processIndexName,
+        final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
+      return new OpenSearchProcessCacheLoader(
+          client, processIndexName, extensionPropertiesConfiguration);
     }
 
     @Override

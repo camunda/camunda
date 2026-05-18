@@ -42,8 +42,8 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       final String indexName,
       final ExporterMetadata exporterMetadata,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ExtensionPropertyConfiguration toolConfig) {
-    super(indexName, toolConfig);
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
+    super(indexName, extensionPropertyConfig);
     this.exporterMetadata = exporterMetadata;
     this.processCache = processCache;
   }

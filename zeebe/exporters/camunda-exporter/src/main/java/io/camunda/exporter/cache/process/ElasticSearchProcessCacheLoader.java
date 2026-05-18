@@ -23,15 +23,15 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
 
   private final ElasticsearchClient client;
   private final String processIndexName;
-  private final ExtensionPropertyConfiguration toolsConfiguration;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ElasticSearchProcessCacheLoader(
       final ElasticsearchClient client,
       final String processIndexName,
-      final ExtensionPropertyConfiguration toolsConfiguration) {
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
-    this.toolsConfiguration = toolsConfiguration;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -44,7 +44,9 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
       final var processEntity = response.source();
       final var processDiagramData =
           ProcessCacheUtil.extractProcessDiagramData(
-              processEntity.getBpmnXml(), processEntity.getBpmnProcessId(), toolsConfiguration);
+              processEntity.getBpmnXml(),
+              processEntity.getBpmnProcessId(),
+              extensionPropertiesConfiguration);
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersion(),

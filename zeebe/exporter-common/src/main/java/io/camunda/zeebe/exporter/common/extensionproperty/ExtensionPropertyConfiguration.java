@@ -12,48 +12,44 @@ import java.util.function.Predicate;
 /** Exporter-side configuration for which BPMN extension properties map to tool attributes. */
 public class ExtensionPropertyConfiguration {
 
-  public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME = "io.camunda.tool:name";
-  public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE = "inbound.type";
-  public static final String DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES = "io.camunda.tool:";
+  public static final String DEFAULT_TOOL_NAME_PROPERTY = "io.camunda.tool:name";
+  public static final String DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY = "inbound.type";
+  public static final String DEFAULT_TOOL_PROPERTIES_PREFIX = "io.camunda.tool:";
 
-  private String extensionPropertyToolName = DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
-  private String extensionPropertyInboundConnectorType =
-      DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
-  private String extensionPropertyPrefixToolProperties =
-      DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+  private String toolNameProperty = DEFAULT_TOOL_NAME_PROPERTY;
+  private String inboundConnectorTypeProperty = DEFAULT_INBOUND_CONNECTOR_TYPE_PROPERTY;
+  private String toolPropertiesPrefix = DEFAULT_TOOL_PROPERTIES_PREFIX;
 
-  public String getExtensionPropertyToolName() {
-    return extensionPropertyToolName;
+  public String getToolNameProperty() {
+    return toolNameProperty;
   }
 
-  public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
-    this.extensionPropertyToolName = extensionPropertyToolName;
+  public void setToolNameProperty(final String toolNameProperty) {
+    this.toolNameProperty = toolNameProperty;
   }
 
-  public String getExtensionPropertyInboundConnectorType() {
-    return extensionPropertyInboundConnectorType;
+  public String getInboundConnectorTypeProperty() {
+    return inboundConnectorTypeProperty;
   }
 
-  public void setExtensionPropertyInboundConnectorType(
-      final String extensionPropertyInboundConnectorType) {
-    this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
+  public void setInboundConnectorTypeProperty(final String inboundConnectorTypeProperty) {
+    this.inboundConnectorTypeProperty = inboundConnectorTypeProperty;
   }
 
-  public String getExtensionPropertyPrefixToolProperties() {
-    return extensionPropertyPrefixToolProperties;
+  public String getToolPropertiesPrefix() {
+    return toolPropertiesPrefix;
   }
 
-  public void setExtensionPropertyPrefixToolProperties(
-      final String extensionPropertyPrefixToolProperties) {
-    this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
+  public void setToolPropertiesPrefix(final String toolPropertiesPrefix) {
+    this.toolPropertiesPrefix = toolPropertiesPrefix;
   }
 
   public Predicate<String> extensionPropertyFilter() {
     return name ->
-        name.equals(extensionPropertyToolName)
-            || name.equals(extensionPropertyInboundConnectorType)
-            || (extensionPropertyPrefixToolProperties != null
-                && !extensionPropertyPrefixToolProperties.isBlank()
-                && name.startsWith(extensionPropertyPrefixToolProperties));
+        name.equals(toolNameProperty)
+            || name.equals(inboundConnectorTypeProperty)
+            || (toolPropertiesPrefix != null
+                && !toolPropertiesPrefix.isBlank()
+                && name.startsWith(toolPropertiesPrefix));
   }
 }
