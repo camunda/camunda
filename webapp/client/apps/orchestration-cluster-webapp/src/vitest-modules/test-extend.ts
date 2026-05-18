@@ -8,7 +8,6 @@
 
 import {it as itBase} from 'vitest';
 import {setupWorker} from 'msw/browser';
-import './i18n-setup';
 
 const worker = setupWorker();
 
