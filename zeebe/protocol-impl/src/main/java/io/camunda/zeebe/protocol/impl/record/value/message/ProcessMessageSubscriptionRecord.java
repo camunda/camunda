@@ -42,6 +42,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -60,9 +61,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
   public ProcessMessageSubscriptionRecord() {
-    super(13);
+    super(14);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -75,7 +77,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(businessIdProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -92,6 +95,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setElementId(record.getElementIdBuffer());
     setTenantId(record.getTenantId());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
+    setBusinessId(record.getBusinessIdBuffer());
   }
 
   @JsonIgnore
@@ -246,6 +250,26 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return BufferUtil.bufferAsString(businessIdProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 }

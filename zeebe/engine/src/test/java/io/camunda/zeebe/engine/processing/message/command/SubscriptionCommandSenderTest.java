@@ -46,6 +46,7 @@ public class SubscriptionCommandSenderTest {
   private static final long DEFAULT_ELEMENT_INSTANCE_KEY = 111;
   private static final long DEFAULT_PROCESS_DEFINITION_KEY = 222;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
+  private static final DirectBuffer DEFAULT_BUSINESS_ID = BufferUtil.wrapString("");
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private InterPartitionCommandSender mockInterPartitionCommandSender;
   private SubscriptionCommandSender subscriptionCommandSender;
@@ -240,7 +241,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -261,7 +263,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -282,7 +285,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -306,7 +310,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -324,7 +329,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        DEFAULT_BUSINESS_ID);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());

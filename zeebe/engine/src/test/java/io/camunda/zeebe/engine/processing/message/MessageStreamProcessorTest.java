@@ -142,7 +142,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getProcessDefinitionKey()),
             any(),
             anyBoolean(),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any());
   }
 
   @Test
