@@ -16,6 +16,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {
   createUser,
   grantUserResourceAuthorization,
@@ -23,14 +24,6 @@ import {
   StatisticsJobItem,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
-
-// The time-series view can lag the by-types snapshot by tens of seconds on
-// a loaded shared cluster, so the cross-view count comparison needs a
-// longer budget than the default 30s.
-const timeSeriesCatchupAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-  timeout: 90_000,
-};
 
 test.describe
   .parallel('Get time-series metrics for a job type API Tests', () => {
@@ -151,7 +144,7 @@ test.describe
         expect(extendedItem.created.count).toBe(item.created.count);
         expect(extendedItem.completed.count).toBe(item.completed.count);
         expect(extendedItem.failed.count).toBe(item.failed.count);
-      }).toPass(timeSeriesCatchupAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -299,7 +292,7 @@ test.describe
         expect(extendedItem.created.count).toBe(item.created.count);
         expect(extendedItem.completed.count).toBe(item.completed.count);
         expect(extendedItem.failed.count).toBe(item.failed.count);
-      }).toPass(timeSeriesCatchupAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
