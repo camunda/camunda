@@ -14,6 +14,10 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.model.config.SaasConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -38,7 +42,9 @@ class WebappIndexControllerTest {
   void shouldReturnWebappIndexView() {
     // given
     when(servletContext.getContextPath()).thenReturn("/camunda");
-    final WebappIndexController controller = new WebappIndexController(servletContext, false);
+    final WebappConfiguration config = new WebappConfiguration();
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
@@ -46,13 +52,21 @@ class WebappIndexControllerTest {
 
     // then
     assertThat(viewName).isEqualTo("webapp/index");
-    assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda/webapp/");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/camunda/webapp/");
+    assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda");
+    assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
+    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("");
+    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("");
+    assertThat(model.getAttribute("organizationId")).isEqualTo("");
+    assertThat(model.getAttribute("clusterId")).isEqualTo("");
   }
 
   @Test
   void shouldForwardToWebappWhenLoginNotDelegated() {
     // given
-    final WebappIndexController controller = new WebappIndexController(servletContext, false);
+    final WebappConfiguration config = new WebappConfiguration();
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
 
     // when
     final String result = controller.forwardToWebapp(request);
@@ -64,7 +78,10 @@ class WebappIndexControllerTest {
   @Test
   void shouldForwardToWebappWhenLoginDelegatedAndUserAuthenticated() {
     // given
-    final WebappIndexController controller = new WebappIndexController(servletContext, true);
+    final WebappConfiguration config = new WebappConfiguration();
+    config.setLoginDelegated(true);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
     final Authentication authentication = mock(Authentication.class);
     when(authentication.isAuthenticated()).thenReturn(true);
 
@@ -85,7 +102,10 @@ class WebappIndexControllerTest {
   @Test
   void shouldForwardToLoginAndStashUrlWhenLoginDelegatedAndUserUnauthenticated() {
     // given
-    final WebappIndexController controller = new WebappIndexController(servletContext, true);
+    final WebappConfiguration config = new WebappConfiguration();
+    config.setLoginDelegated(true);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
     final HttpSession session = mock(HttpSession.class);
     final AnonymousAuthenticationToken anonymous = mock(AnonymousAuthenticationToken.class);
 
@@ -106,5 +126,67 @@ class WebappIndexControllerTest {
       assertThat(result).isEqualTo("forward:/login");
       verify(session).setAttribute(REQUESTED_URL, "/webapp/foo/bar");
     }
+  }
+
+  @Test
+  void shouldExposeEnterpriseFlagWhenEnabled() {
+    // given
+    when(servletContext.getContextPath()).thenReturn("");
+    final WebappConfiguration config = new WebappConfiguration();
+    config.setEnterprise(true);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
+    final ExtendedModelMap model = new ExtendedModelMap();
+
+    // when
+    controller.webapp(model);
+
+    // then
+    assertThat(model.getAttribute("isEnterprise")).isEqualTo(true);
+    assertThat(model.getAttribute("baseName")).isEqualTo("/webapp/");
+    assertThat(model.getAttribute("contextPath")).isEqualTo("");
+  }
+
+  @Test
+  void shouldExposeMixpanelConfig() {
+    // given
+    when(servletContext.getContextPath()).thenReturn("");
+    final Cloud cloud = new Cloud();
+    cloud.setMixpanelToken("test-token");
+    cloud.setMixpanelApiHost("https://api-eu.mixpanel.com");
+    final WebappConfiguration config = new WebappConfiguration();
+    config.setCloud(cloud);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, null);
+    final ExtendedModelMap model = new ExtendedModelMap();
+
+    // when
+    controller.webapp(model);
+
+    // then
+    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("test-token");
+    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("https://api-eu.mixpanel.com");
+  }
+
+  @Test
+  void shouldExposeCloudIdentifiers() {
+    // given
+    when(servletContext.getContextPath()).thenReturn("");
+    final WebappConfiguration config = new WebappConfiguration();
+    final SecurityConfiguration securityConfig = new SecurityConfiguration();
+    final SaasConfiguration saasConfig = new SaasConfiguration();
+    saasConfig.setOrganizationId("org-123");
+    saasConfig.setClusterId("cluster-456");
+    securityConfig.setSaas(saasConfig);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, config, securityConfig);
+    final ExtendedModelMap model = new ExtendedModelMap();
+
+    // when
+    controller.webapp(model);
+
+    // then
+    assertThat(model.getAttribute("organizationId")).isEqualTo("org-123");
+    assertThat(model.getAttribute("clusterId")).isEqualTo("cluster-456");
   }
 }

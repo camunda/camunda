@@ -1,8 +1,12 @@
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html
+	lang="en"
+	xmlns:th="http://www.thymeleaf.org"
+	th:attr="data-context-path=${contextPath},data-base-name=${baseName},data-is-enterprise=${isEnterprise},data-mixpanel-token=${mixpanelToken},data-mixpanel-api-host=${mixpanelApiHost},data-organization-id=${organizationId},data-cluster-id=${clusterId}"
+>
 	<head>
 		<meta charset="utf-8" />
-		<base href="/" th:attr="href=${contextPath}" />
+		<base href="/" th:attr="href=${baseName}" />
 		<link rel="icon" href="./favicon.ico" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#000000" />

@@ -10,12 +10,14 @@ package io.camunda.webapp.controllers;
 import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,18 +36,30 @@ public class WebappIndexController {
 
   private final ServletContext context;
 
-  private final boolean loginDelegated;
+  private final WebappConfiguration webappConfiguration;
+
+  private final SecurityConfiguration securityConfiguration;
 
   public WebappIndexController(
       final ServletContext context,
-      @Value("${camunda.webapps.login-delegated:false}") final boolean loginDelegated) {
+      final WebappConfiguration webappConfiguration,
+      @Autowired(required = false) final SecurityConfiguration securityConfiguration) {
     this.context = context;
-    this.loginDelegated = loginDelegated;
+    this.webappConfiguration = webappConfiguration;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @GetMapping({"/webapp", "/webapp/", "/webapp/index.html"})
   public String webapp(final Model model) {
-    model.addAttribute("contextPath", context.getContextPath() + "/webapp/");
+    model.addAttribute("baseName", context.getContextPath() + "/webapp/");
+    model.addAttribute("contextPath", context.getContextPath());
+    model.addAttribute("isEnterprise", webappConfiguration.isEnterprise());
+    model.addAttribute(
+        "mixpanelToken", nullToEmpty(webappConfiguration.getCloud().getMixpanelToken()));
+    model.addAttribute(
+        "mixpanelApiHost", nullToEmpty(webappConfiguration.getCloud().getMixpanelApiHost()));
+    model.addAttribute("organizationId", nullToEmpty(getOrganizationId()));
+    model.addAttribute("clusterId", nullToEmpty(getClusterId()));
     return "webapp/index";
   }
 
@@ -72,7 +86,7 @@ public class WebappIndexController {
    */
   @RequestMapping(value = {"/webapp/{path:^(?!assets).*}", "/webapp/{path:^(?!assets).*}/**"})
   public String forwardToWebapp(final HttpServletRequest request) {
-    if (loginDelegated && isNotLoggedIn()) {
+    if (webappConfiguration.isLoginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request);
     } else {
       return "forward:/webapp";
@@ -93,5 +107,21 @@ public class WebappIndexController {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
+  }
+
+  private String getOrganizationId() {
+    return securityConfiguration != null && securityConfiguration.getSaas() != null
+        ? securityConfiguration.getSaas().getOrganizationId()
+        : null;
+  }
+
+  private String getClusterId() {
+    return securityConfiguration != null && securityConfiguration.getSaas() != null
+        ? securityConfiguration.getSaas().getClusterId()
+        : null;
+  }
+
+  private static String nullToEmpty(final String value) {
+    return value != null ? value : "";
   }
 }
