@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
@@ -185,6 +186,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public boolean isBrokerHealthy() {
     return !actor.isClosed() && getBrokerHealth() == HealthStatus.HEALTHY;
+  }
+
+  public HealthReport getHealthReport() {
+    return healthMonitor.getHealthReport();
   }
 
   private HealthStatus getBrokerHealth() {
