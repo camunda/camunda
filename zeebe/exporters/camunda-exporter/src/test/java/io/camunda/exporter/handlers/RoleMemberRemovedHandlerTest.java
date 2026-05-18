@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,9 @@ public class RoleMemberRemovedHandlerTest {
     assertThat(idList)
         .containsExactly(
             RoleIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getRoleId(), value.getEntityId(), value.getEntityType()));
+                value.getRoleId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test

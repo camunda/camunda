@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.gateway.mapping.http.ResponseMapper;
@@ -33,6 +33,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
@@ -48,7 +49,6 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -8,11 +8,11 @@
 package io.camunda.authentication.config.spi;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.service.RoleServices;
-import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;

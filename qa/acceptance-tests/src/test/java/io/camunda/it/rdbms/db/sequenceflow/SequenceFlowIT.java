@@ -20,7 +20,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Tag;

@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
@@ -47,7 +48,9 @@ public class GroupEntityRemovedHandler
     final var groupRecord = record.getValue();
     return List.of(
         GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-            groupRecord.getGroupId(), groupRecord.getEntityId(), groupRecord.getEntityType()));
+            groupRecord.getGroupId(),
+            groupRecord.getEntityId(),
+            AuthzModelMapper.fromProtocol(groupRecord.getEntityType())));
   }
 
   @Override

@@ -7,14 +7,14 @@
  */
 package io.camunda.security.validation;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;

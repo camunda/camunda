@@ -11,15 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
@@ -87,30 +88,37 @@ class AuthorizationConfigurerTest {
         arguments(
             named("Valid wildcard authorization", VALID_WILDCARD_AUTH),
             new AuthorizationRecord()
-                .setOwnerType(VALID_WILDCARD_AUTH.ownerType())
+                .setOwnerType(AuthzModelMapper.toProtocol(VALID_WILDCARD_AUTH.ownerType()))
                 .setOwnerId(VALID_WILDCARD_AUTH.ownerId())
-                .setResourceType(VALID_WILDCARD_AUTH.resourceType())
-                .setResourceMatcher(AuthorizationScope.WILDCARD.getMatcher())
+                .setResourceType(AuthzModelMapper.toProtocol(VALID_WILDCARD_AUTH.resourceType()))
+                .setResourceMatcher(
+                    AuthzModelMapper.toProtocol(AuthorizationScope.WILDCARD.getMatcher()))
                 .setResourceId(VALID_WILDCARD_AUTH.resourceId())
-                .setPermissionTypes(VALID_WILDCARD_AUTH.permissions())),
+                .setPermissionTypes(
+                    AuthzModelMapper.toProtocolPermissionTypes(VALID_WILDCARD_AUTH.permissions()))),
         arguments(
             named("Valid ID-based authorization", VALID_ID_BASED_AUTH),
             new AuthorizationRecord()
-                .setOwnerType(VALID_ID_BASED_AUTH.ownerType())
+                .setOwnerType(AuthzModelMapper.toProtocol(VALID_ID_BASED_AUTH.ownerType()))
                 .setOwnerId(VALID_ID_BASED_AUTH.ownerId())
-                .setResourceType(VALID_ID_BASED_AUTH.resourceType())
-                .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                .setResourceType(AuthzModelMapper.toProtocol(VALID_ID_BASED_AUTH.resourceType()))
+                .setResourceMatcher(AuthzModelMapper.toProtocol(AuthorizationResourceMatcher.ID))
                 .setResourceId(VALID_ID_BASED_AUTH.resourceId())
-                .setPermissionTypes(VALID_ID_BASED_AUTH.permissions())),
+                .setPermissionTypes(
+                    AuthzModelMapper.toProtocolPermissionTypes(VALID_ID_BASED_AUTH.permissions()))),
         arguments(
             named("Valid PROPERTY-based authorization", VALID_PROPERTY_BASED_AUTH),
             new AuthorizationRecord()
-                .setOwnerType(VALID_PROPERTY_BASED_AUTH.ownerType())
+                .setOwnerType(AuthzModelMapper.toProtocol(VALID_PROPERTY_BASED_AUTH.ownerType()))
                 .setOwnerId(VALID_PROPERTY_BASED_AUTH.ownerId())
-                .setResourceType(VALID_PROPERTY_BASED_AUTH.resourceType())
-                .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                .setResourceType(
+                    AuthzModelMapper.toProtocol(VALID_PROPERTY_BASED_AUTH.resourceType()))
+                .setResourceMatcher(
+                    AuthzModelMapper.toProtocol(AuthorizationResourceMatcher.PROPERTY))
                 .setResourcePropertyName(VALID_PROPERTY_BASED_AUTH.resourcePropertyName())
-                .setPermissionTypes(VALID_PROPERTY_BASED_AUTH.permissions())));
+                .setPermissionTypes(
+                    AuthzModelMapper.toProtocolPermissionTypes(
+                        VALID_PROPERTY_BASED_AUTH.permissions()))));
   }
 
   @Test

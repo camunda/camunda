@@ -125,7 +125,7 @@
     <id column="RESOURCE_ID" property="resourceId"/>
     <id column="RESOURCE_PROPERTY_NAME" property="resourcePropertyName"/>
     <collection property="permissionTypes"
-      ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
+      ofType="io.camunda.security.api.model.authz.PermissionType"
       javaType="java.util.Set">
       <id column="PERMISSION_TYPE"/>
     </collection>

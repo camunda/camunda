@@ -10,10 +10,10 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
+import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

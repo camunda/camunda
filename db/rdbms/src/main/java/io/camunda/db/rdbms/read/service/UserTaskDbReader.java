@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.USER_TASK;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;

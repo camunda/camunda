@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
 
@@ -46,7 +47,9 @@ public class TenantEntityAddedHandler
     final var tenantRecord = record.getValue();
     return List.of(
         TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-            tenantRecord.getTenantId(), tenantRecord.getEntityId(), tenantRecord.getEntityType()));
+            tenantRecord.getTenantId(),
+            tenantRecord.getEntityId(),
+            AuthzModelMapper.fromProtocol(tenantRecord.getEntityType())));
   }
 
   @Override
@@ -60,7 +63,7 @@ public class TenantEntityAddedHandler
     final TenantRecordValue value = record.getValue();
     entity
         .setMemberId(value.getEntityId())
-        .setMemberType(value.getEntityType())
+        .setMemberType(AuthzModelMapper.fromProtocol(value.getEntityType()))
         .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantId()));
   }
 

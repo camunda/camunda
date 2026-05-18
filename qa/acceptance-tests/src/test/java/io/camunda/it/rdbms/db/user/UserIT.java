@@ -24,7 +24,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;

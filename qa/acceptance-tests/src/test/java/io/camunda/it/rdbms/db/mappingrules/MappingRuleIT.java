@@ -26,7 +26,7 @@ import io.camunda.search.filter.MappingRuleFilter.Claim;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.sort.MappingRuleSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
