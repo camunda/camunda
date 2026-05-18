@@ -145,17 +145,19 @@ Common variants layered on top:
 ## Operation labelling
 
 The `operation` column in `tests.csv` is a first-match-wins CRUD verb derived
-from the test name:
+from the test name. Rules are evaluated in this order:
 
-|    Operation    |                                  Trigger keywords (case-insensitive)                                  |
-|-----------------|-------------------------------------------------------------------------------------------------------|
-| `create`        | create, add, deploy, publish, broadcast, pin, register                                                |
-| `delete`        | delete, remove, unassign, cancel, reset                                                               |
-| `update`        | update, assign, complete, migrate, modify, resolve, correlate, evaluate, fail, error, suspend, resume |
-| `search`        | search, sort, filter, paginate, list, statistics                                                      |
-| `get`           | get, fetch, retrieve, return, read, exists, by-id                                                     |
-| `parameterized` | rows synthesised from `for (const tc of …) test(tc.description, …)` patterns                          |
-| `other`         | nothing matched                                                                                       |
+|    Operation    |                                                 Trigger keywords (case-insensitive)                                                 |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `create`        | create, add, deploy, publish, broadcast, pin, register                                                                              |
+| `delete`        | delete, remove, unassign, cancel, reset                                                                                             |
+| `search`        | search, sort, filter, paginate, list, statistics                                                                                    |
+| `get`           | get, fetch, retrieve, return, read, exists, by-id                                                                                   |
+| `update`        | update, assign, complete, migrate, modify, resolve, correlate, evaluate, `fail job`, `throw error`, `report error`, suspend, resume |
+| `parameterized` | rows synthesised from `for (const tc of …) test(tc.description, …)` patterns                                                        |
+| `other`         | nothing matched                                                                                                                     |
+
+`search` and `get` are checked before `update` so names like *"Search Incidents With Error Type Filter"* classify as `search` even though they mention "error". `update` keeps only action-specific phrases (`fail job`, `throw error`, etc.) — bare `error` / `failure` are intentionally not in the rule.
 
 ## Variant labelling
 
@@ -163,21 +165,21 @@ The `variants` column is **multi-label** (pipe-joined). A test named
 *"Should fail to delete user when unauthorized"* gets tagged
 `delete + unauthorized + observe-via-get` etc.
 
-|       Variant        |                          What it captures                          |
-|----------------------|--------------------------------------------------------------------|
-| `happy-path`         | "Should X successfully" / "Success" / verbed-without-error names.  |
-| `bad-request`        | invalid, missing required, empty/null, too-long, negative, exceed. |
-| `unauthorized`       | 401 / "unauthorized".                                              |
-| `forbidden`          | 403 / "no permission", "no granted", "without permission".         |
-| `not-found`          | 404 / "not found", "non-existing", "does not exist".               |
-| `conflict`           | 409 / "duplicate", "already".                                      |
-| `pagination-sort`    | paginate, page size, cursor, sort.                                 |
-| `filter`             | "filter" present in name.                                          |
-| `observe-via-get`    | GET / fetch / retrieve language.                                   |
-| `observe-via-search` | "search" present in name.                                          |
-| `observe-absence`    | "after delete / once removed / no longer / absent / gone".         |
-| `data-driven`        | placeholder row for a parameterised loop body.                     |
-| `unlabeled`          | none of the above matched.                                         |
+|       Variant        |                                                                                                                                   What it captures                                                                                                                                   |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `happy-path`         | Title contains `success`, or starts with `should <verb>` (e.g. `should create …`). Plainly-verbed titles like `Get Current User` are NOT tagged here — use the `form_step` column (`observe-present-get`, `create`, `mutate`, …) to identify happy-path tests by lifecycle position. |
+| `bad-request`        | invalid, missing required, empty/null, too-long, negative, exceed.                                                                                                                                                                                                                   |
+| `unauthorized`       | 401 / "unauthorized".                                                                                                                                                                                                                                                                |
+| `forbidden`          | 403 / "no permission", "no granted", "without permission".                                                                                                                                                                                                                           |
+| `not-found`          | 404 / "not found", "non-existing", "does not exist".                                                                                                                                                                                                                                 |
+| `conflict`           | 409 / "duplicate", "already".                                                                                                                                                                                                                                                        |
+| `pagination-sort`    | paginate, page size, cursor, sort.                                                                                                                                                                                                                                                   |
+| `filter`             | "filter" present in name.                                                                                                                                                                                                                                                            |
+| `observe-via-get`    | GET / fetch / retrieve language.                                                                                                                                                                                                                                                     |
+| `observe-via-search` | "search" present in name.                                                                                                                                                                                                                                                            |
+| `observe-absence`    | "after delete / once removed / no longer / absent / gone".                                                                                                                                                                                                                           |
+| `data-driven`        | placeholder row for a parameterised loop body.                                                                                                                                                                                                                                       |
+| `unlabeled`          | none of the above matched.                                                                                                                                                                                                                                                           |
 
 ## Known caveats
 

@@ -142,12 +142,20 @@ def variants_of(name):
 # exercised, just on the unhappy path.
 def form_step_of(operation, name, variants):
     v = set(variants.split('|')) if variants else set()
-    has_error = bool(v & {'unauthorized','forbidden','bad-request','conflict'})
-    is_404    = 'not-found' in v
-    is_stats  = bool(re.search(r'\b(statistics|stat\b|count|metric)', name, re.I))
-    is_eval   = bool(re.search(r'\b(evaluate|evaluat(ed|ing))', name, re.I))
+    is_404     = 'not-found' in v
+    is_happy   = 'happy-path' in v
+    is_absence = 'observe-absence' in v
+    # 4xx variants always count as errors. A 404 also counts as an error
+    # UNLESS the test self-identifies as a happy path (e.g. "Returns Empty
+    # - Success" with non-existing filter) or as observe-absence (already
+    # has its own form step).
+    has_error  = bool(v & {'unauthorized','forbidden','bad-request','conflict'})
+    if is_404 and not is_happy and not is_absence:
+        has_error = True
+    is_stats   = bool(re.search(r'\b(statistics|stat\b|count|metric)', name, re.I))
+    is_eval    = bool(re.search(r'\b(evaluate|evaluat(ed|ing))', name, re.I))
 
-    if 'observe-absence' in v:
+    if is_absence:
         return 'observe-absence'
     if is_stats:
         return 'negative-aggregate' if has_error else 'aggregate'
@@ -161,9 +169,9 @@ def form_step_of(operation, name, variants):
     if operation == 'update':
         return 'negative-mutate' if has_error else 'mutate'
     if operation == 'get':
-        if is_404:
-            # 404 on GET *might* be observe-absence after delete, but our name-only
-            # heuristic can't always tell. Treat plain 404 as a negative-get.
+        if is_404 and not is_happy:
+            # Treat 404 on GET as observe-absence when the title says so
+            # ("after delete", "once removed"), otherwise as a negative-get.
             return 'observe-absence' if re.search(r'(after|once|when).*(delet|remove|cancel)', name, re.I) else 'negative-get'
         return 'negative-get' if has_error else 'observe-present-get'
     if operation == 'search':
@@ -250,7 +258,12 @@ def stateless_of(entity):
 
 # ---------- 5. Walk + emit CSV ----------
 rows = []
-for root, _dirs, files in os.walk(ROOT):
+for root, dirs, files in os.walk(ROOT):
+    # Sort both dirs and files for deterministic traversal — os.walk's
+    # order depends on the underlying filesystem and is not stable across
+    # platforms. Since the artifacts are checked in as a diffable snapshot,
+    # any non-determinism would show up as spurious churn in tests.csv.
+    dirs.sort()
     for f in sorted(files):
         if not f.endswith('.spec.ts'):
             continue
@@ -306,7 +319,12 @@ for root, _dirs, files in os.walk(ROOT):
 os.makedirs(OUT, exist_ok=True)
 csv_path = os.path.join(OUT, 'tests.csv')
 with open(csv_path, 'w', newline='', encoding='utf-8') as fp:
-    w = csv.DictWriter(fp, fieldnames=['file','line','entity','category','operation','form_step','prerequisite','stateless','variants','dynamic','test_name'])
+    w = csv.DictWriter(
+        fp,
+        fieldnames=['file','line','entity','category','operation','form_step','prerequisite','stateless','variants','dynamic','test_name'],
+        # repo-wide .editorconfig is end_of_line = lf
+        lineterminator='\n',
+    )
     w.writeheader()
     w.writerows(rows)
 print(f"wrote {csv_path} ({len(rows)} rows)")
@@ -331,7 +349,7 @@ for r in rows:
 # CSV matrix
 mat_csv = os.path.join(OUT, 'coverage_matrix.csv')
 with open(mat_csv, 'w', newline='', encoding='utf-8') as fp:
-    w = csv.writer(fp)
+    w = csv.writer(fp, lineterminator='\n')  # repo-wide .editorconfig is lf
     w.writerow(['entity','operation','total'] + variant_set)
     for ent in sorted(entity_totals, key=lambda x: -entity_totals[x]):
         for op in op_set:

@@ -31,7 +31,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: owner-entity-or-resource
 - **Files**: `authorization/create-authorization-for-client-api.spec.ts`, `authorization/create-authorization-for-group-api.spec.ts`, `authorization/create-authorization-for-mapping-rule-api.spec.ts`, `authorization/create-authorization-for-role-api.spec.ts`, `authorization/create-authorization-for-user-api.spec.ts`, `authorization/delete-authorization-api.spec.ts`, `authorization/get-authorization-api.spec.ts`, `authorization/search-authorization-api.spec.ts`, `authorization/update-authorization-api.spec.ts`
 - **Observation channel**: GET = 5, Search = 11
-- **Form-step counts**: create=14, observe-present-get=1, observe-present-search=6, mutate=7, delete=4, negative-create=30, negative-get=3, negative-search=5, negative-mutate=5, negative-delete=3
+- **Form-step counts**: create=10, observe-present-get=1, observe-present-search=6, mutate=5, delete=3, negative-create=34, negative-get=3, negative-search=5, negative-mutate=7, negative-delete=4
 - **Variants**: happy-path=25, observe-via-get=5, observe-via-search=11, pagination-sort=4, filter=5, bad-request=22, unauthorized=9, forbidden=9, not-found=8, conflict=5
 
 | form step | variants | file:line | test name |
@@ -40,16 +40,12 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | create | happy-path | `authorization/create-authorization-for-client-api.spec.ts:80` | Create Authorization for client - Multiple permissionTypes - Success |
 | create | happy-path | `authorization/create-authorization-for-group-api.spec.ts:61` | Create Authorization for group - Success |
 | create | happy-path | `authorization/create-authorization-for-group-api.spec.ts:91` | Create Authorization for group - Multiple permissionTypes - Success |
-| create | not-found | `authorization/create-authorization-for-group-api.spec.ts:279` | Create Authorization for group - 404 Not Found - not existing ownerId |
 | create | happy-path | `authorization/create-authorization-for-mapping-rule-api.spec.ts:68` | Create Authorization for Mapping Rule - Success |
 | create | happy-path | `authorization/create-authorization-for-mapping-rule-api.spec.ts:98` | Create Authorization for Mapping Rule - Multiple permissionTypes - Success |
-| create | not-found | `authorization/create-authorization-for-mapping-rule-api.spec.ts:294` | Create Authorization for Mapping Rule - 404 Not Found - not existing ownerId |
 | create | happy-path | `authorization/create-authorization-for-role-api.spec.ts:65` | Create Authorization for role - Success |
 | create | happy-path | `authorization/create-authorization-for-role-api.spec.ts:95` | Create Authorization for role - Multiple permissionTypes - Success |
-| create | not-found | `authorization/create-authorization-for-role-api.spec.ts:284` | Create Authorization for role - 404 Not Found - not existing ownerId |
 | create | happy-path | `authorization/create-authorization-for-user-api.spec.ts:56` | Create Authorization for user - Success |
 | create | happy-path | `authorization/create-authorization-for-user-api.spec.ts:86` | Create Authorization for user - Multiple permissionTypes - Success |
-| create | not-found | `authorization/create-authorization-for-user-api.spec.ts:269` | Create Authorization for user - 404 Not Found - not existing ownerId |
 | observe-present-get | happy-path | `authorization/get-authorization-api.spec.ts:40` | Get existing Authorization - success |
 | observe-present-search | filter, happy-path | `authorization/search-authorization-api.spec.ts:172` | Search Authorization - no filter, multiple results - 200 Success |
 | observe-present-search | pagination-sort, filter, happy-path | `authorization/search-authorization-api.spec.ts:195` | Search Authorization - results sorted by resourceType and filtered by ownerId - 200 Success |
@@ -62,12 +58,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | happy-path | `authorization/update-authorization-api.spec.ts:232` | Update Group Authorization - change ownerId to another group - success |
 | mutate | happy-path | `authorization/update-authorization-api.spec.ts:341` | Update Mapping Rule Authorization - change ownerId, resourceId and permissionType - success |
 | mutate | happy-path | `authorization/update-authorization-api.spec.ts:463` | Update Role Authorization - same authorization - success |
-| mutate | not-found | `authorization/update-authorization-api.spec.ts:702` | Update User Authorization - authorizationKey was not found - 404 Not Found |
-| mutate | not-found | `authorization/update-authorization-api.spec.ts:757` | Update Role Authorization - wrong resourceId value - 404 Not Found |
 | delete | happy-path | `authorization/delete-authorization-api.spec.ts:45` | Delete User Authorization - Success 204 |
 | delete | happy-path | `authorization/delete-authorization-api.spec.ts:94` | Delete Role Authorization - Success 204 |
 | delete | happy-path | `authorization/delete-authorization-api.spec.ts:160` | Delete Mapping Rule Authorization - Success 204 |
-| delete | not-found | `authorization/delete-authorization-api.spec.ts:228` | Delete Authorization - second delete attempt - Not Found 404 |
 | negative-create | conflict | `authorization/create-authorization-for-client-api.spec.ts:118` | Create Authorization for client - 409 Conflict |
 | negative-create | bad-request | `authorization/create-authorization-for-client-api.spec.ts:147` | Create Authorization for client - 400 Bad Request - wrong value for ownerType |
 | negative-create | bad-request | `authorization/create-authorization-for-client-api.spec.ts:173` | Create Authorization for client - 400 Bad Request - wrong value for resourceType |
@@ -79,24 +72,28 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-create | bad-request | `authorization/create-authorization-for-group-api.spec.ts:200` | Create Authorization for group - 400 Bad Request - wrong value for resourceType |
 | negative-create | bad-request | `authorization/create-authorization-for-group-api.spec.ts:226` | Create Authorization for group - 400 Invalid Argument - invalid resourceId |
 | negative-create | unauthorized | `authorization/create-authorization-for-group-api.spec.ts:254` | Create Authorization for group - 401 Unauthorized |
+| negative-create | not-found | `authorization/create-authorization-for-group-api.spec.ts:279` | Create Authorization for group - 404 Not Found - not existing ownerId |
 | negative-create | forbidden | `authorization/create-authorization-for-group-api.spec.ts:340` | Create Authorization for group - 403 Forbidden |
 | negative-create | conflict | `authorization/create-authorization-for-mapping-rule-api.spec.ts:130` | Create Authorization for Mapping Rule - 409 Conflict |
 | negative-create | bad-request | `authorization/create-authorization-for-mapping-rule-api.spec.ts:189` | Create Authorization for Mapping Rule - 400 Bad Request - wrong value for ownerType |
 | negative-create | bad-request | `authorization/create-authorization-for-mapping-rule-api.spec.ts:215` | Create Authorization for Mapping Rule - 400 Bad Request - wrong value for resourceType |
 | negative-create | bad-request | `authorization/create-authorization-for-mapping-rule-api.spec.ts:241` | Create Authorization for Mapping Rule - 400 Invalid Argument - invalid resourceId |
 | negative-create | unauthorized | `authorization/create-authorization-for-mapping-rule-api.spec.ts:269` | Create Authorization for Mapping Rule - 401 Unauthorized |
+| negative-create | not-found | `authorization/create-authorization-for-mapping-rule-api.spec.ts:294` | Create Authorization for Mapping Rule - 404 Not Found - not existing ownerId |
 | negative-create | forbidden | `authorization/create-authorization-for-mapping-rule-api.spec.ts:352` | Create Authorization for Mapping Rule - 403 Forbidden |
 | negative-create | conflict | `authorization/create-authorization-for-role-api.spec.ts:127` | Create Authorization for role - 409 Conflict |
 | negative-create | bad-request | `authorization/create-authorization-for-role-api.spec.ts:179` | Create Authorization for role - 400 Bad Request - wrong value for ownerType |
 | negative-create | bad-request | `authorization/create-authorization-for-role-api.spec.ts:205` | Create Authorization for role - 400 Bad Request - wrong value for resourceType |
 | negative-create | bad-request | `authorization/create-authorization-for-role-api.spec.ts:231` | Create Authorization for role - 400 Invalid Argument - invalid resourceId |
 | negative-create | unauthorized | `authorization/create-authorization-for-role-api.spec.ts:259` | Create Authorization for role - 401 Unauthorized |
+| negative-create | not-found | `authorization/create-authorization-for-role-api.spec.ts:284` | Create Authorization for role - 404 Not Found - not existing ownerId |
 | negative-create | forbidden | `authorization/create-authorization-for-role-api.spec.ts:346` | Create Authorization for role - 403 Forbidden |
 | negative-create | conflict | `authorization/create-authorization-for-user-api.spec.ts:118` | Create Authorization for user - 409 Conflict |
 | negative-create | bad-request | `authorization/create-authorization-for-user-api.spec.ts:164` | Create Authorization for user - 400 Bad Request - wrong value for ownerType |
 | negative-create | bad-request | `authorization/create-authorization-for-user-api.spec.ts:190` | Create Authorization for user - 400 Bad Request - wrong value for resourceType |
 | negative-create | bad-request | `authorization/create-authorization-for-user-api.spec.ts:216` | Create Authorization for user - 400 Invalid Argument - invalid resourceId |
 | negative-create | unauthorized | `authorization/create-authorization-for-user-api.spec.ts:244` | Create Authorization for user - 401 Unauthorized |
+| negative-create | not-found | `authorization/create-authorization-for-user-api.spec.ts:269` | Create Authorization for user - 404 Not Found - not existing ownerId |
 | negative-create | forbidden | `authorization/create-authorization-for-user-api.spec.ts:334` | Create Authorization for user - 403 Forbidden |
 | negative-get | not-found | `authorization/get-authorization-api.spec.ts:100` | Get existing Authorization - not found |
 | negative-get | unauthorized | `authorization/get-authorization-api.spec.ts:119` | Get existing Authorization - unauthorized |
@@ -108,9 +105,12 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request, pagination-sort | `authorization/search-authorization-api.spec.ts:445` | Search Authorization - Negative pagination values - 400 Bad Request |
 | negative-mutate | bad-request | `authorization/update-authorization-api.spec.ts:561` | Update User Authorization - empty requestBody - 400 bad request |
 | negative-mutate | unauthorized | `authorization/update-authorization-api.spec.ts:647` | Update User Authorization - Unauthorized |
+| negative-mutate | not-found | `authorization/update-authorization-api.spec.ts:702` | Update User Authorization - authorizationKey was not found - 404 Not Found |
+| negative-mutate | not-found | `authorization/update-authorization-api.spec.ts:757` | Update Role Authorization - wrong resourceId value - 404 Not Found |
 | negative-mutate | bad-request | `authorization/update-authorization-api.spec.ts:855` | Update User Authorization - wrong resourceType - 400 Bad Request |
 | negative-mutate | bad-request | `authorization/update-authorization-api.spec.ts:911` | Update User Authorization - empty permissionType - 400 Bad Request |
 | negative-mutate | forbidden | `authorization/update-authorization-api.spec.ts:964` | Update User Authorization - 403 Forbidden |
+| negative-delete | not-found | `authorization/delete-authorization-api.spec.ts:228` | Delete Authorization - second delete attempt - Not Found 404 |
 | negative-delete | unauthorized | `authorization/delete-authorization-api.spec.ts:292` | Delete Authorization - Unauthorized Request - 401 |
 | negative-delete | bad-request | `authorization/delete-authorization-api.spec.ts:306` | Delete Authorization - Invalid Authorization Key - Bad Request 400 |
 | negative-delete | forbidden | `authorization/delete-authorization-api.spec.ts:322` | Delete Authorization - 403 Forbidden |
@@ -120,7 +120,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: none
 - **Files**: `cluster-variables/cluster-variable-global-api-tests.spec.ts`, `cluster-variables/cluster-variable-search-api.spec.ts`, `cluster-variables/cluster-variable-tenant-api-tests.spec.ts`, `cluster-variables/cluster-variable-update-api-tests.spec.ts`
 - **Observation channel**: GET = 7, Search = 16
-- **Form-step counts**: create=3, observe-present-get=2, observe-present-search=12, mutate=25, delete=4, negative-create=7, negative-get=4, negative-search=3, negative-mutate=5, negative-delete=2
+- **Form-step counts**: create=3, observe-present-get=2, observe-present-search=12, mutate=23, delete=2, negative-create=7, negative-get=4, negative-search=3, negative-mutate=7, negative-delete=4
 - **Variants**: happy-path=1, observe-via-get=7, observe-via-search=16, pagination-sort=4, filter=6, bad-request=10, unauthorized=9, not-found=8, unlabeled=27
 
 | form step | variants | file:line | test name |
@@ -152,7 +152,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:174` | Update Global Cluster Variable With Empty Object |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:192` | Update Global Cluster Variable With Empty Array |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:208` | Update Global Cluster Variable Multiple Times |
-| mutate | not-found | `cluster-variables/cluster-variable-update-api-tests.spec.ts:252` | Update Global Cluster Variable Not Found |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:282` | Update Global Cluster Variable Verify Response Structure |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:329` | Update Global Cluster Variable Immediately Retrievable |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:382` | Update Tenant Cluster Variable With Object Value |
@@ -164,13 +163,10 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:560` | Update Tenant Cluster Variable With Empty Object |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:588` | Update Tenant Cluster Variable With Empty Array |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:614` | Update Tenant Cluster Variable Multiple Times |
-| mutate | not-found | `cluster-variables/cluster-variable-update-api-tests.spec.ts:681` | Update Tenant Cluster Variable Not Found |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:738` | Update Tenant Cluster Variable Verify Response Structure |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:799` | Update Tenant Cluster Variable Immediately Retrievable |
 | delete | unlabeled | `cluster-variables/cluster-variable-global-api-tests.spec.ts:151` | Delete Global Cluster Variable |
-| delete | not-found | `cluster-variables/cluster-variable-global-api-tests.spec.ts:186` | Delete Global Cluster Variable Not Found |
 | delete | unlabeled | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:212` | Delete Tenant Cluster Variable |
-| delete | not-found | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:265` | Delete Tenant Cluster Variable Not Found |
 | negative-create | unauthorized | `cluster-variables/cluster-variable-global-api-tests.spec.ts:70` | Create Global Cluster Variable Unauthorized |
 | negative-create | bad-request | `cluster-variables/cluster-variable-global-api-tests.spec.ts:78` | Create Global Cluster Variable Missing Name Invalid Body 400 |
 | negative-create | bad-request | `cluster-variables/cluster-variable-global-api-tests.spec.ts:89` | Create Global Cluster Variable Missing Value Invalid Body 400 |
@@ -186,19 +182,23 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request, filter | `cluster-variables/cluster-variable-search-api.spec.ts:435` | Search Cluster Variables Invalid Filter |
 | negative-search | bad-request, pagination-sort | `cluster-variables/cluster-variable-search-api.spec.ts:453` | Search Cluster Variables Invalid Sort Field |
 | negative-mutate | unauthorized | `cluster-variables/cluster-variable-update-api-tests.spec.ts:237` | Update Global Cluster Variable Unauthorized |
+| negative-mutate | not-found | `cluster-variables/cluster-variable-update-api-tests.spec.ts:252` | Update Global Cluster Variable Not Found |
 | negative-mutate | bad-request | `cluster-variables/cluster-variable-update-api-tests.spec.ts:265` | Update Global Cluster Variable Missing Value Field Invalid Body 400 |
 | negative-mutate | unauthorized | `cluster-variables/cluster-variable-update-api-tests.spec.ts:657` | Update Tenant Cluster Variable Unauthorized |
+| negative-mutate | not-found | `cluster-variables/cluster-variable-update-api-tests.spec.ts:681` | Update Tenant Cluster Variable Not Found |
 | negative-mutate | bad-request | `cluster-variables/cluster-variable-update-api-tests.spec.ts:696` | Update Tenant Cluster Variable Missing Value Field Invalid Body 400 |
 | negative-mutate | not-found, bad-request | `cluster-variables/cluster-variable-update-api-tests.spec.ts:722` | Update Tenant Cluster Variable Invalid Tenant Not Found |
 | negative-delete | unauthorized | `cluster-variables/cluster-variable-global-api-tests.spec.ts:172` | Delete Global Cluster Variable Unauthorized |
+| negative-delete | not-found | `cluster-variables/cluster-variable-global-api-tests.spec.ts:186` | Delete Global Cluster Variable Not Found |
 | negative-delete | unauthorized | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:242` | Delete Tenant Cluster Variable Unauthorized |
+| negative-delete | not-found | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:265` | Delete Tenant Cluster Variable Not Found |
 
 ### `tenant` — 37 tests
 
 - **Prerequisite to create**: none
 - **Files**: `tenant/tenant-api-tests.spec.ts`, `tenant/tenant-role-api-tests.spec.ts`
 - **Observation channel**: GET = 4, Search = 10
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=7, mutate=6, delete=5, negative-create=6, negative-get=2, negative-search=3, negative-mutate=4, negative-delete=2
+- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=6, mutate=3, delete=2, negative-create=6, negative-get=2, negative-search=4, negative-mutate=7, negative-delete=5
 - **Variants**: happy-path=3, observe-via-get=4, observe-via-search=10, bad-request=6, unauthorized=8, not-found=8, conflict=2, unlabeled=3
 
 | form step | variants | file:line | test name |
@@ -211,18 +211,11 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `tenant/tenant-api-tests.spec.ts:420` | Search Tenants By Multiple Fields |
 | observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:231` | Search Tenant Roles |
 | observe-present-search | observe-via-get | `tenant/tenant-role-api-tests.spec.ts:262` | Search Tenant Roles Tenant With No Assignments Returns Empty |
-| observe-present-search | not-found | `tenant/tenant-role-api-tests.spec.ts:298` | Search Tenant Roles Tenant - Not Found (empty response) |
 | mutate | unlabeled | `tenant/tenant-api-tests.spec.ts:161` | Update Tenant |
 | mutate | happy-path | `tenant/tenant-api-tests.spec.ts:212` | Update Tenant Missing Description success 200 |
-| mutate | not-found | `tenant/tenant-api-tests.spec.ts:250` | Update Tenant Not Found |
 | mutate | happy-path | `tenant/tenant-role-api-tests.spec.ts:43` | Assign Role To Tenant - Success |
-| mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:61` | Assign Role To Tenant Non Existent Role - Not Found |
-| mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:81` | Assign Role To Tenant Non Existent Tenant - Not Found |
 | delete | unlabeled | `tenant/tenant-api-tests.spec.ts:262` | Delete tenant |
-| delete | not-found | `tenant/tenant-api-tests.spec.ts:295` | Delete tenant Not Found |
 | delete | happy-path | `tenant/tenant-role-api-tests.spec.ts:136` | Unassign Role From Tenant - Success |
-| delete | not-found | `tenant/tenant-role-api-tests.spec.ts:193` | Unassign Role From Tenant Non Existent Role - Not Found |
-| delete | not-found | `tenant/tenant-role-api-tests.spec.ts:212` | Unassign Role From Tenant Non Existent Tenant - Not Found |
 | negative-create | unauthorized | `tenant/tenant-api-tests.spec.ts:63` | Create Tenant Unauthorized |
 | negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:71` | Create Tenant Missing Name Invalid Body 400 |
 | negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:80` | Create Tenant Empty Name Invalid Body 400 |
@@ -234,19 +227,26 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request | `tenant/tenant-api-tests.spec.ts:458` | Search Tenants By Invalid Id |
 | negative-search | unauthorized | `tenant/tenant-api-tests.spec.ts:485` | Search Tenants Unauthorized |
 | negative-search | unauthorized | `tenant/tenant-role-api-tests.spec.ts:289` | Search Tenant Roles - Unauthorized |
+| negative-search | not-found | `tenant/tenant-role-api-tests.spec.ts:298` | Search Tenant Roles Tenant - Not Found (empty response) |
 | negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:188` | Update Tenant Empty Name Invalid Body 400 |
 | negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:200` | Update Tenant Missing Name Invalid Body 400 |
 | negative-mutate | unauthorized | `tenant/tenant-api-tests.spec.ts:239` | Update Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-api-tests.spec.ts:250` | Update Tenant Not Found |
+| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:61` | Assign Role To Tenant Non Existent Role - Not Found |
+| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:81` | Assign Role To Tenant Non Existent Tenant - Not Found |
 | negative-mutate | unauthorized | `tenant/tenant-role-api-tests.spec.ts:101` | Assign Role To Tenant - Unauthorized |
 | negative-delete | unauthorized | `tenant/tenant-api-tests.spec.ts:287` | Delete tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-api-tests.spec.ts:295` | Delete tenant Not Found |
 | negative-delete | unauthorized | `tenant/tenant-role-api-tests.spec.ts:179` | Unassign Role From Tenant - Unauthorized |
+| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:193` | Unassign Role From Tenant Non Existent Role - Not Found |
+| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:212` | Unassign Role From Tenant Non Existent Tenant - Not Found |
 
 ### `user` — 30 tests
 
 - **Prerequisite to create**: none
 - **Files**: `user-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 7
-- **Form-step counts**: create=4, observe-present-get=1, observe-present-search=5, mutate=5, delete=2, negative-create=7, negative-get=2, negative-search=2, negative-mutate=1, negative-delete=1
+- **Form-step counts**: create=4, observe-present-get=1, observe-present-search=5, mutate=4, delete=1, negative-create=7, negative-get=2, negative-search=2, negative-mutate=2, negative-delete=2
 - **Variants**: happy-path=7, observe-via-get=3, observe-via-search=7, bad-request=6, unauthorized=5, not-found=3, conflict=1, unlabeled=3
 
 | form step | variants | file:line | test name |
@@ -265,9 +265,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | happy-path | `user-api-tests.spec.ts:401` | Update User Missing Name Success |
 | mutate | happy-path | `user-api-tests.spec.ts:431` | Update User Missing Email Success |
 | mutate | happy-path | `user-api-tests.spec.ts:461` | Update User With Password Success |
-| mutate | not-found | `user-api-tests.spec.ts:505` | Update User Not Found |
 | delete | unlabeled | `user-api-tests.spec.ts:517` | Delete User |
-| delete | not-found | `user-api-tests.spec.ts:550` | Delete User Not Found |
 | negative-create | unauthorized | `user-api-tests.spec.ts:163` | Create User Unauthorized |
 | negative-create | bad-request | `user-api-tests.spec.ts:171` | Create User Missing Username Invalid Body 400 |
 | negative-create | bad-request | `user-api-tests.spec.ts:184` | Create User Missing Password Invalid Body 400 |
@@ -280,14 +278,16 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request | `user-api-tests.spec.ts:746` | Search Users By Invalid User Name |
 | negative-search | unauthorized | `user-api-tests.spec.ts:772` | Search Users Unauthorized |
 | negative-mutate | unauthorized | `user-api-tests.spec.ts:494` | Update User Unauthorized |
+| negative-mutate | not-found | `user-api-tests.spec.ts:505` | Update User Not Found |
 | negative-delete | unauthorized | `user-api-tests.spec.ts:542` | Delete User Unauthorized |
+| negative-delete | not-found | `user-api-tests.spec.ts:550` | Delete User Not Found |
 
 ### `global-task-listener` — 30 tests
 
 - **Prerequisite to create**: none
 - **Files**: `global-task-listener/global-task-listener-create-api-tests.spec.ts`, `global-task-listener/global-task-listener-delete-api-tests.spec.ts`, `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts`, `global-task-listener/global-task-listener-update-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 8
-- **Form-step counts**: create=3, observe-present-search=5, mutate=3, delete=2, observe-absence=1, negative-create=8, negative-search=3, negative-mutate=4, negative-delete=1
+- **Form-step counts**: create=3, observe-present-search=5, mutate=2, delete=1, observe-absence=1, negative-create=8, negative-search=3, negative-mutate=5, negative-delete=2
 - **Variants**: happy-path=6, observe-via-get=3, observe-via-search=8, observe-absence=1, pagination-sort=7, bad-request=9, unauthorized=4, forbidden=2, not-found=3, conflict=2
 
 | form step | variants | file:line | test name |
@@ -302,9 +302,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | pagination-sort | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:196` | Search Global Task Listeners - sort by priority ASC then id ASC (compound sort) |
 | mutate | happy-path | `global-task-listener/global-task-listener-update-api-tests.spec.ts:31` | Update Global Task Listener - success updating all fields |
 | mutate | happy-path | `global-task-listener/global-task-listener-update-api-tests.spec.ts:72` | Update Global Task Listener - success updating required fields only |
-| mutate | not-found | `global-task-listener/global-task-listener-update-api-tests.spec.ts:128` | Update Global Task Listener - not found |
 | delete | happy-path | `global-task-listener/global-task-listener-delete-api-tests.spec.ts:29` | Delete Global Task Listener - success |
-| delete | not-found | `global-task-listener/global-task-listener-delete-api-tests.spec.ts:61` | Delete Global Task Listener - not found |
 | observe-absence | not-found, conflict, observe-absence | `global-task-listener/global-task-listener-delete-api-tests.spec.ts:70` | Delete Global Task Listener - already deleted returns not found |
 | negative-create | unauthorized | `global-task-listener/global-task-listener-create-api-tests.spec.ts:110` | Create Global Task Listener - unauthorized |
 | negative-create | bad-request | `global-task-listener/global-task-listener-create-api-tests.spec.ts:121` | Create Global Task Listener - missing required id field |
@@ -318,17 +316,19 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request, pagination-sort, observe-via-get | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:245` | Search Global Task Listeners - missing sort field returns 400 |
 | negative-search | unauthorized | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:258` | Search Global Task Listeners - unauthorized |
 | negative-mutate | unauthorized | `global-task-listener/global-task-listener-update-api-tests.spec.ts:110` | Update Global Task Listener - unauthorized |
+| negative-mutate | not-found | `global-task-listener/global-task-listener-update-api-tests.spec.ts:128` | Update Global Task Listener - not found |
 | negative-mutate | bad-request | `global-task-listener/global-task-listener-update-api-tests.spec.ts:143` | Update Global Task Listener - missing required type field |
 | negative-mutate | bad-request | `global-task-listener/global-task-listener-update-api-tests.spec.ts:160` | Update Global Task Listener - missing required eventTypes field |
 | negative-mutate | bad-request | `global-task-listener/global-task-listener-update-api-tests.spec.ts:177` | Update Global Task Listener - invalid eventType value |
 | negative-delete | unauthorized | `global-task-listener/global-task-listener-delete-api-tests.spec.ts:49` | Delete Global Task Listener - unauthorized |
+| negative-delete | not-found | `global-task-listener/global-task-listener-delete-api-tests.spec.ts:61` | Delete Global Task Listener - not found |
 
 ### `mapping-rule` — 27 tests
 
 - **Prerequisite to create**: none
 - **Files**: `mapping-rule-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 8
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=7, mutate=2, delete=2, negative-create=6, negative-get=2, negative-search=1, negative-mutate=4, negative-delete=1
+- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=7, mutate=1, delete=1, negative-create=6, negative-get=2, negative-search=1, negative-mutate=5, negative-delete=2
 - **Variants**: observe-via-get=3, observe-via-search=8, bad-request=7, unauthorized=5, not-found=3, conflict=1, unlabeled=3
 
 | form step | variants | file:line | test name |
@@ -343,9 +343,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `mapping-rule-api-tests.spec.ts:384` | Search Mapping Rules No Matching Item |
 | observe-present-search | — | `mapping-rule-api-tests.spec.ts:409` | Search Mapping Rules By Multiple Fields |
 | mutate | unlabeled | `mapping-rule-api-tests.spec.ts:455` | Update Mapping Rule |
-| mutate | not-found | `mapping-rule-api-tests.spec.ts:566` | Update Mapping Rule Not Found |
 | delete | unlabeled | `mapping-rule-api-tests.spec.ts:602` | Delete Mapping Rule |
-| delete | not-found | `mapping-rule-api-tests.spec.ts:629` | Delete Mapping Rule Not Found |
 | negative-create | unauthorized | `mapping-rule-api-tests.spec.ts:65` | Create Mapping Rule Unauthorized |
 | negative-create | bad-request | `mapping-rule-api-tests.spec.ts:76` | Create Mapping Rule With Only Claim Name Invalid Body 400 |
 | negative-create | bad-request | `mapping-rule-api-tests.spec.ts:91` | Create Mapping Rule With Only Claim Value Invalid Body 400 |
@@ -358,7 +356,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-mutate | bad-request | `mapping-rule-api-tests.spec.ts:489` | Update Mapping Rule With Only Claim Name Invalid Body 400 |
 | negative-mutate | bad-request | `mapping-rule-api-tests.spec.ts:515` | Update Mapping Rule With Only Claim Value Invalid Body 400 |
 | negative-mutate | bad-request | `mapping-rule-api-tests.spec.ts:540` | Update Mapping Rule With Only Name Invalid Body 400 |
+| negative-mutate | not-found | `mapping-rule-api-tests.spec.ts:566` | Update Mapping Rule Not Found |
 | negative-mutate | unauthorized | `mapping-rule-api-tests.spec.ts:586` | Update Mapping Rule Unauthorized |
+| negative-delete | not-found | `mapping-rule-api-tests.spec.ts:629` | Delete Mapping Rule Not Found |
 | negative-delete | unauthorized | `mapping-rule-api-tests.spec.ts:641` | Delete Mapping Rule Unauthorized |
 
 ### `role` — 24 tests
@@ -366,7 +366,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: none
 - **Files**: `role/role-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 6
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=4, mutate=3, delete=2, negative-create=5, negative-get=2, negative-search=2, negative-mutate=3, negative-delete=1
+- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=4, mutate=2, delete=1, negative-create=5, negative-get=2, negative-search=2, negative-mutate=4, negative-delete=2
 - **Variants**: happy-path=1, observe-via-get=3, observe-via-search=6, bad-request=6, unauthorized=5, not-found=3, conflict=1, unlabeled=3
 
 | form step | variants | file:line | test name |
@@ -379,9 +379,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `role/role-api-tests.spec.ts:435` | Search Roles By Multiple Fields |
 | mutate | unlabeled | `role/role-api-tests.spec.ts:168` | Update Role |
 | mutate | happy-path | `role/role-api-tests.spec.ts:219` | Update Role Missing Description Success 200 |
-| mutate | not-found | `role/role-api-tests.spec.ts:257` | Update Role Not Found |
 | delete | unlabeled | `role/role-api-tests.spec.ts:269` | Delete Role |
-| delete | not-found | `role/role-api-tests.spec.ts:302` | Delete Role Not Found |
 | negative-create | unauthorized | `role/role-api-tests.spec.ts:78` | Create Role Unauthorized |
 | negative-create | bad-request | `role/role-api-tests.spec.ts:86` | Create Role Missing Name Invalid Body 400 |
 | negative-create | bad-request | `role/role-api-tests.spec.ts:95` | Create Role Empty Name Invalid Body 400 |
@@ -394,14 +392,16 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-mutate | bad-request | `role/role-api-tests.spec.ts:195` | Update Role Empty Name Invalid Body 400 |
 | negative-mutate | bad-request | `role/role-api-tests.spec.ts:207` | Update Role Missing Name Invalid Body 400 |
 | negative-mutate | unauthorized | `role/role-api-tests.spec.ts:246` | Update Role Unauthorized |
+| negative-mutate | not-found | `role/role-api-tests.spec.ts:257` | Update Role Not Found |
 | negative-delete | unauthorized | `role/role-api-tests.spec.ts:294` | Delete Role Unauthorized |
+| negative-delete | not-found | `role/role-api-tests.spec.ts:302` | Delete Role Not Found |
 
 ### `document` — 23 tests
 
 - **Prerequisite to create**: none
 - **Files**: `document-api-tests.spec.ts`
 - **Observation channel**: GET = 4, Search = 0
-- **Form-step counts**: create=7, observe-present-get=2, delete=2, negative-create=9, negative-get=2, negative-delete=1
+- **Form-step counts**: create=6, observe-present-get=2, delete=1, negative-create=10, negative-get=2, negative-delete=2
 - **Variants**: observe-via-get=4, bad-request=6, unauthorized=5, not-found=3, unlabeled=7
 
 | form step | variants | file:line | test name |
@@ -412,10 +412,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | create | unlabeled | `document-api-tests.spec.ts:337` | Create Multiple Documents |
 | create | unlabeled | `document-api-tests.spec.ts:433` | Create Document Link 403 For In-Memory Storage |
 | create | unlabeled | `document-api-tests.spec.ts:455` | Create Document Link Without Hash 400 |
-| create | not-found | `document-api-tests.spec.ts:474` | Create Document Link Not Found 404 |
 | observe-present-get | — | `document-api-tests.spec.ts:229` | Get Document |
 | observe-present-get | — | `document-api-tests.spec.ts:248` | Get Document Without Hash 400 |
-| delete | not-found | `document-api-tests.spec.ts:295` | Delete Document Not Found 404 |
 | delete | unlabeled | `document-api-tests.spec.ts:308` | Delete Document |
 | negative-create | unauthorized | `document-api-tests.spec.ts:82` | Create Document Unauthorized 401 |
 | negative-create | bad-request | `document-api-tests.spec.ts:91` | Create Document Invalid Header 415 |
@@ -425,17 +423,19 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-create | unauthorized | `document-api-tests.spec.ts:394` | Create Multiple Documents Unauthorized 401 |
 | negative-create | bad-request | `document-api-tests.spec.ts:409` | Create Multiple Documents Invalid Header 415 |
 | negative-create | bad-request | `document-api-tests.spec.ts:424` | Create Multiple Documents Invalid Body 400 |
+| negative-create | not-found | `document-api-tests.spec.ts:474` | Create Document Link Not Found 404 |
 | negative-create | unauthorized | `document-api-tests.spec.ts:488` | Create Document Link Unauthorized 401 |
 | negative-get | not-found | `document-api-tests.spec.ts:264` | Get Document Not Found 404 |
 | negative-get | unauthorized | `document-api-tests.spec.ts:275` | Get Document Unauthorized 401 |
 | negative-delete | unauthorized | `document-api-tests.spec.ts:285` | Delete Document Unauthorized 401 |
+| negative-delete | not-found | `document-api-tests.spec.ts:295` | Delete Document Not Found 404 |
 
 ### `group` — 17 tests
 
 - **Prerequisite to create**: none
 - **Files**: `group/group-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 4
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=2, mutate=2, delete=2, negative-create=2, negative-get=2, negative-search=2, negative-mutate=2, negative-delete=1
+- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=2, mutate=1, delete=1, negative-create=2, negative-get=2, negative-search=2, negative-mutate=3, negative-delete=2
 - **Variants**: observe-via-get=3, observe-via-search=4, bad-request=3, unauthorized=5, not-found=3, unlabeled=3
 
 | form step | variants | file:line | test name |
@@ -445,9 +445,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `group/group-api-tests.spec.ts:91` | Search Groups By Name |
 | observe-present-search | — | `group/group-api-tests.spec.ts:124` | Search Groups By Id |
 | mutate | unlabeled | `group/group-api-tests.spec.ts:249` | Update Group |
-| mutate | not-found | `group/group-api-tests.spec.ts:304` | Update Group Not Found |
 | delete | unlabeled | `group/group-api-tests.spec.ts:320` | Delete Group |
-| delete | not-found | `group/group-api-tests.spec.ts:355` | Delete Group Not Found |
 | negative-create | unauthorized | `group/group-api-tests.spec.ts:70` | Create Group Unauthorized |
 | negative-create | bad-request | `group/group-api-tests.spec.ts:79` | Create Group Bad Request |
 | negative-get | not-found | `group/group-api-tests.spec.ts:226` | Get Group Not Found |
@@ -456,7 +454,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `group/group-api-tests.spec.ts:182` | Search Groups Unauthorized |
 | negative-mutate | unauthorized | `group/group-api-tests.spec.ts:281` | Update Group Unauthorized |
 | negative-mutate | bad-request | `group/group-api-tests.spec.ts:294` | Update Group Bad Request |
+| negative-mutate | not-found | `group/group-api-tests.spec.ts:304` | Update Group Not Found |
 | negative-delete | unauthorized | `group/group-api-tests.spec.ts:347` | Delete Group Unauthorized |
+| negative-delete | not-found | `group/group-api-tests.spec.ts:355` | Delete Group Not Found |
 
 ## B. Membership/Association
 
@@ -469,7 +469,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: role + client, role + group, role + mapping-rule, role + user
 - **Files**: `role/role-clients-api-tests.spec.ts`, `role/role-groups-api-tests.spec.ts`, `role/role-mapping-rules-api-tests.spec.ts`, `role/role-users-api-tests.spec.ts`
 - **Observation channel**: GET = 3, Search = 18
-- **Form-step counts**: observe-present-search=14, mutate=13, delete=11, negative-create=4, negative-search=4, negative-mutate=4, negative-delete=4
+- **Form-step counts**: observe-present-search=12, mutate=7, delete=3, negative-create=4, negative-search=6, negative-mutate=10, negative-delete=12
 - **Variants**: happy-path=1, observe-via-get=3, observe-via-search=18, filter=4, unauthorized=12, not-found=16, conflict=4, unlabeled=9
 
 | form step | variants | file:line | test name |
@@ -478,63 +478,63 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `role/role-clients-api-tests.spec.ts:166` | Search Role Clients For Non Existent Role Empty |
 | observe-present-search | — | `role/role-groups-api-tests.spec.ts:253` | Search Role Groups |
 | observe-present-search | observe-via-get | `role/role-groups-api-tests.spec.ts:283` | Search Role Groups Role With No Assignments Returns Empty |
-| observe-present-search | not-found | `role/role-groups-api-tests.spec.ts:318` | Search Role Groups Role Not Found |
 | observe-present-search | — | `role/role-mapping-rules-api-tests.spec.ts:235` | Search Role Mapping Rules |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:283` | Search Role Mapping Rules Filter By mappingRuleId |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:320` | Search Role Mapping Rules Filter By name |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:355` | Search Role Mapping Rules Filter By multiple fields |
 | observe-present-search | filter, observe-via-get | `role/role-mapping-rules-api-tests.spec.ts:393` | Search Role Mapping Rules Filter Non Matching Returns Empty |
 | observe-present-search | observe-via-get | `role/role-mapping-rules-api-tests.spec.ts:423` | Search Role Mapping Rules Role With No Assignments Returns Empty |
-| observe-present-search | not-found | `role/role-mapping-rules-api-tests.spec.ts:459` | Search Role Mapping Rules Role Not Found |
 | observe-present-search | — | `role/role-users-api-tests.spec.ts:142` | Search Role Users |
 | observe-present-search | — | `role/role-users-api-tests.spec.ts:183` | Search Role Users For Non Existent User Empty |
 | mutate | unlabeled | `role/role-clients-api-tests.spec.ts:54` | Assign Role To Client |
 | mutate | happy-path | `role/role-clients-api-tests.spec.ts:69` | Assign Role To Client Non Existent Client Success |
-| mutate | not-found | `role/role-clients-api-tests.spec.ts:80` | Assign Role To Client Non Existent Role Not Found |
 | mutate | unlabeled | `role/role-groups-api-tests.spec.ts:64` | Assign Role To Group |
 | mutate | unlabeled | `role/role-groups-api-tests.spec.ts:85` | Assign Role To Group Non Existent Group Sucess |
-| mutate | not-found | `role/role-groups-api-tests.spec.ts:103` | Assign Role To Group Non Existent Role Not Found |
 | mutate | unlabeled | `role/role-groups-api-tests.spec.ts:158` | Assign Role From Group |
 | mutate | unlabeled | `role/role-mapping-rules-api-tests.spec.ts:67` | Assign Role To Mapping Rule |
-| mutate | not-found | `role/role-mapping-rules-api-tests.spec.ts:83` | Assign Role To Mapping Rule Non Existent Mapping Rule Not Found |
-| mutate | not-found | `role/role-mapping-rules-api-tests.spec.ts:100` | Assign Role To Mapping Rule Non Existent Role Not Found |
 | mutate | unlabeled | `role/role-users-api-tests.spec.ts:61` | Assign Role To User |
-| mutate | not-found | `role/role-users-api-tests.spec.ts:80` | Assign Role To User Non Existent User NotFound |
-| mutate | not-found | `role/role-users-api-tests.spec.ts:95` | Assign Role To User Non Existent Role Not Found |
 | delete | unlabeled | `role/role-clients-api-tests.spec.ts:186` | Unassign Role From Client |
-| delete | not-found | `role/role-clients-api-tests.spec.ts:235` | Unassign Role From Client Non Existent Client Not Found |
-| delete | not-found | `role/role-clients-api-tests.spec.ts:249` | Unassign Role From Client Non Existent Role Not Found |
-| delete | not-found | `role/role-groups-api-tests.spec.ts:215` | Unassign Role From Group Non Existent Group Not Found |
-| delete | not-found | `role/role-groups-api-tests.spec.ts:234` | Unassign Role From Group Non Existent Role Not Found |
 | delete | unlabeled | `role/role-mapping-rules-api-tests.spec.ts:149` | Unassign Role From Mapping Rule |
-| delete | not-found | `role/role-mapping-rules-api-tests.spec.ts:199` | Unassign Role From Mapping Rule Non Existent Mapping Rule Not Found |
-| delete | not-found | `role/role-mapping-rules-api-tests.spec.ts:217` | Unassign Role From Mapping Rule Non Existent Role Not Found |
 | delete | unlabeled | `role/role-users-api-tests.spec.ts:204` | Unassign Role From User |
-| delete | not-found | `role/role-users-api-tests.spec.ts:257` | Unassign Role From User Non Existent User Not Found |
-| delete | not-found | `role/role-users-api-tests.spec.ts:274` | Unassign Role From User Non Existent Role Not Found |
 | negative-create | conflict | `role/role-clients-api-tests.spec.ts:112` | Assign Already Added Client To Role Conflict |
 | negative-create | conflict | `role/role-groups-api-tests.spec.ts:140` | Assign Already Added Group To Role Conflict |
 | negative-create | conflict | `role/role-mapping-rules-api-tests.spec.ts:132` | Assign Already Added Mapping Rule To Role Conflict |
 | negative-create | conflict | `role/role-users-api-tests.spec.ts:126` | Assign Already Added User To Role Conflict |
 | negative-search | unauthorized | `role/role-clients-api-tests.spec.ts:157` | Search Role Clients Unauthorized |
 | negative-search | unauthorized | `role/role-groups-api-tests.spec.ts:309` | Search Role Groups Unauthorized |
+| negative-search | not-found | `role/role-groups-api-tests.spec.ts:318` | Search Role Groups Role Not Found |
 | negative-search | unauthorized | `role/role-mapping-rules-api-tests.spec.ts:450` | Search Role Mapping Rules Unauthorized |
+| negative-search | not-found | `role/role-mapping-rules-api-tests.spec.ts:459` | Search Role Mapping Rules Role Not Found |
 | negative-search | unauthorized | `role/role-users-api-tests.spec.ts:173` | Search Role Users Unauthorized |
+| negative-mutate | not-found | `role/role-clients-api-tests.spec.ts:80` | Assign Role To Client Non Existent Role Not Found |
 | negative-mutate | unauthorized | `role/role-clients-api-tests.spec.ts:97` | Assign Role To Client Unauthorized |
+| negative-mutate | not-found | `role/role-groups-api-tests.spec.ts:103` | Assign Role To Group Non Existent Role Not Found |
 | negative-mutate | unauthorized | `role/role-groups-api-tests.spec.ts:123` | Assign Role To Group Unauthorized |
+| negative-mutate | not-found | `role/role-mapping-rules-api-tests.spec.ts:83` | Assign Role To Mapping Rule Non Existent Mapping Rule Not Found |
+| negative-mutate | not-found | `role/role-mapping-rules-api-tests.spec.ts:100` | Assign Role To Mapping Rule Non Existent Role Not Found |
 | negative-mutate | unauthorized | `role/role-mapping-rules-api-tests.spec.ts:117` | Assign Role To Mapping Rule Unauthorized |
+| negative-mutate | not-found | `role/role-users-api-tests.spec.ts:80` | Assign Role To User Non Existent User NotFound |
+| negative-mutate | not-found | `role/role-users-api-tests.spec.ts:95` | Assign Role To User Non Existent Role Not Found |
 | negative-mutate | unauthorized | `role/role-users-api-tests.spec.ts:110` | Assign Role To User Unauthorized |
 | negative-delete | unauthorized | `role/role-clients-api-tests.spec.ts:223` | Unassign Role From Client Unauthorized |
+| negative-delete | not-found | `role/role-clients-api-tests.spec.ts:235` | Unassign Role From Client Non Existent Client Not Found |
+| negative-delete | not-found | `role/role-clients-api-tests.spec.ts:249` | Unassign Role From Client Non Existent Role Not Found |
 | negative-delete | unauthorized | `role/role-groups-api-tests.spec.ts:201` | Unassign Role From Group Unauthorized |
+| negative-delete | not-found | `role/role-groups-api-tests.spec.ts:215` | Unassign Role From Group Non Existent Group Not Found |
+| negative-delete | not-found | `role/role-groups-api-tests.spec.ts:234` | Unassign Role From Group Non Existent Role Not Found |
 | negative-delete | unauthorized | `role/role-mapping-rules-api-tests.spec.ts:187` | Unassign Role From Mapping Rule Unauthorized |
+| negative-delete | not-found | `role/role-mapping-rules-api-tests.spec.ts:199` | Unassign Role From Mapping Rule Non Existent Mapping Rule Not Found |
+| negative-delete | not-found | `role/role-mapping-rules-api-tests.spec.ts:217` | Unassign Role From Mapping Rule Non Existent Role Not Found |
 | negative-delete | unauthorized | `role/role-users-api-tests.spec.ts:244` | Unassign Role From User Unauthorized |
+| negative-delete | not-found | `role/role-users-api-tests.spec.ts:257` | Unassign Role From User Non Existent User Not Found |
+| negative-delete | not-found | `role/role-users-api-tests.spec.ts:274` | Unassign Role From User Non Existent Role Not Found |
 
 ### `tenant` — 50 tests
 
 - **Prerequisite to create**: tenant + client, tenant + group, tenant + mapping-rule, tenant + user
 - **Files**: `tenant/tenant-clients-api-tests.spec.ts`, `tenant/tenant-groups-api-tests.spec.ts`, `tenant/tenant-mapping-rule-api-tests.spec.ts`, `tenant/tenant-users-api-tests.spec.ts`
 - **Observation channel**: GET = 2, Search = 14
-- **Form-step counts**: observe-present-search=10, mutate=12, delete=12, negative-create=4, negative-search=4, negative-mutate=4, negative-delete=4
+- **Form-step counts**: observe-present-search=8, mutate=6, delete=4, negative-create=4, negative-search=6, negative-mutate=10, negative-delete=12
 - **Variants**: happy-path=6, observe-via-get=2, observe-via-search=14, unauthorized=12, not-found=16, conflict=4, unlabeled=6
 
 | form step | variants | file:line | test name |
@@ -543,94 +543,94 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:166` | Search Tenant Clients For Non Existent Tenant Empty |
 | observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:232` | Search Tenant Groups |
 | observe-present-search | observe-via-get | `tenant/tenant-groups-api-tests.spec.ts:264` | Search Tenant Groups Tenant With No Assignments Returns Empty |
-| observe-present-search | not-found | `tenant/tenant-groups-api-tests.spec.ts:300` | Search Tenant Groups Tenant Not Found |
 | observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:246` | Search Tenant Mapping Rules - Success |
 | observe-present-search | observe-via-get, happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:289` | Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success |
-| observe-present-search | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:325` | Search Tenant Mapping Rules Tenant Not Found - Not Found |
 | observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:141` | Search Tenant Users |
 | observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:182` | Search Tenant Users For Non Existent User Empty |
 | mutate | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:52` | Assign Client To Tenant |
 | mutate | happy-path | `tenant/tenant-clients-api-tests.spec.ts:66` | Assign Client To Tenant Non Existent Client Success |
-| mutate | not-found | `tenant/tenant-clients-api-tests.spec.ts:80` | Assign Client To Tenant Non Existent Tenant Not Found |
 | mutate | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:43` | Assign Group To Tenant |
-| mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:62` | Assign Group To Tenant Non Existent Group Not Found |
-| mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:82` | Assign Group To Tenant Non Existent Tenant Not Found |
 | mutate | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:42` | Assign Mapping Rule To Tenant - Success |
-| mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:60` | Assign Mapping Rule To Tenant Non Existent Mapping Rule - Not Found |
-| mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:83` | Assign Mapping Rule To Tenant Non Existent Tenant - Not Found |
 | mutate | unlabeled | `tenant/tenant-users-api-tests.spec.ts:55` | Assign User To Tenant |
 | mutate | happy-path | `tenant/tenant-users-api-tests.spec.ts:77` | Assign User To Tenant Non Existent User Success |
-| mutate | not-found | `tenant/tenant-users-api-tests.spec.ts:92` | Assign User To Tenant Non Existent Tenant Not Found |
 | delete | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:188` | Unassign Client From Tenant |
-| delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:237` | Unassign Client From Tenant Non Existent Client Not Found |
-| delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:254` | Unassign Client From Tenant Non Existent Tenant Not Found |
 | delete | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:137` | Unassign Group From Tenant |
-| delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:194` | Unassign Group From Tenant Non Existent Group Not Found |
-| delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:213` | Unassign Group From Tenant Non Existent Tenant Not Found |
 | delete | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:149` | Unassign Mapping Rule From Tenant - Success |
-| delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:208` | Unassign Mapping Rule From Tenant Non Existent Mapping Rule - Not Found |
-| delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:227` | Unassign Mapping Rule From Tenant Non Existent Tenant - Not Found |
 | delete | unlabeled | `tenant/tenant-users-api-tests.spec.ts:203` | Unassign User From Tenant |
-| delete | not-found | `tenant/tenant-users-api-tests.spec.ts:256` | Unassign User From Tenant Non Existent User Not Found |
-| delete | not-found | `tenant/tenant-users-api-tests.spec.ts:273` | Unassign User From Tenant Non Existent Tenant Not Found |
 | negative-create | conflict | `tenant/tenant-clients-api-tests.spec.ts:112` | Assign Already Added Client To Tenant Conflict |
 | negative-create | conflict | `tenant/tenant-groups-api-tests.spec.ts:119` | Assign Already Added Group To Tenant Conflict |
 | negative-create | conflict | `tenant/tenant-mapping-rule-api-tests.spec.ts:126` | Assign Already Added Mapping Rule To Tenant - Conflict |
 | negative-create | conflict | `tenant/tenant-users-api-tests.spec.ts:125` | Assign Already Added User To Tenant Conflict |
 | negative-search | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:157` | Search Tenant Clients Unauthorized |
 | negative-search | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:291` | Search Tenant Groups Unauthorized |
+| negative-search | not-found | `tenant/tenant-groups-api-tests.spec.ts:300` | Search Tenant Groups Tenant Not Found |
 | negative-search | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:316` | Search Tenant Mapping Rules - Unauthorized |
+| negative-search | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:325` | Search Tenant Mapping Rules Tenant Not Found - Not Found |
 | negative-search | unauthorized | `tenant/tenant-users-api-tests.spec.ts:172` | Search Tenant Users Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-clients-api-tests.spec.ts:80` | Assign Client To Tenant Non Existent Tenant Not Found |
 | negative-mutate | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:97` | Assign Client To Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:62` | Assign Group To Tenant Non Existent Group Not Found |
+| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:82` | Assign Group To Tenant Non Existent Tenant Not Found |
 | negative-mutate | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:102` | Assign Group To Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:60` | Assign Mapping Rule To Tenant Non Existent Mapping Rule - Not Found |
+| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:83` | Assign Mapping Rule To Tenant Non Existent Tenant - Not Found |
 | negative-mutate | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:106` | Assign Mapping Rule To Tenant - Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-users-api-tests.spec.ts:92` | Assign User To Tenant Non Existent Tenant Not Found |
 | negative-mutate | unauthorized | `tenant/tenant-users-api-tests.spec.ts:109` | Assign User To Tenant Unauthorized |
 | negative-delete | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:225` | Unassign Client From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:237` | Unassign Client From Tenant Non Existent Client Not Found |
+| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:254` | Unassign Client From Tenant Non Existent Tenant Not Found |
 | negative-delete | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:180` | Unassign Group From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:194` | Unassign Group From Tenant Non Existent Group Not Found |
+| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:213` | Unassign Group From Tenant Non Existent Tenant Not Found |
 | negative-delete | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:192` | Unassign Mapping Rule From Tenant - Unauthorized |
+| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:208` | Unassign Mapping Rule From Tenant Non Existent Mapping Rule - Not Found |
+| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:227` | Unassign Mapping Rule From Tenant Non Existent Tenant - Not Found |
 | negative-delete | unauthorized | `tenant/tenant-users-api-tests.spec.ts:243` | Unassign User From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:256` | Unassign User From Tenant Non Existent User Not Found |
+| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:273` | Unassign User From Tenant Non Existent Tenant Not Found |
 
 ### `group` — 31 tests
 
 - **Prerequisite to create**: group + client, group + mapping-rule, group + role, group + user
 - **Files**: `group/group-clients-api-tests.spec.ts`, `group/group-mapping-rules-api-tests.spec.ts`, `group/group-roles-api-tests.spec.ts`, `group/group-users-api-tests.spec.ts`
 - **Observation channel**: GET = 0, Search = 15
-- **Form-step counts**: observe-present-search=11, mutate=4, delete=6, negative-create=3, negative-search=4, negative-delete=3
+- **Form-step counts**: observe-present-search=7, mutate=3, delete=3, negative-create=3, negative-search=8, negative-mutate=1, negative-delete=6
 - **Variants**: observe-via-search=15, unauthorized=7, not-found=8, conflict=3, unlabeled=6
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
 | observe-present-search | — | `group/group-clients-api-tests.spec.ts:85` | Search Clients For Group |
-| observe-present-search | not-found | `group/group-clients-api-tests.spec.ts:128` | Search Clients For Group Not Found |
 | observe-present-search | — | `group/group-mapping-rules-api-tests.spec.ts:96` | Search Mapping Rules For Group |
-| observe-present-search | not-found | `group/group-mapping-rules-api-tests.spec.ts:138` | Search Mapping Rules For Group Not Found |
 | observe-present-search | — | `group/group-roles-api-tests.spec.ts:49` | Search Group Roles |
-| observe-present-search | not-found | `group/group-roles-api-tests.spec.ts:104` | Search Group Roles Not Found |
 | observe-present-search | — | `group/group-roles-api-tests.spec.ts:127` | Search Group Roles By Role Name |
 | observe-present-search | — | `group/group-roles-api-tests.spec.ts:169` | Search Group Roles By Role Id |
 | observe-present-search | — | `group/group-roles-api-tests.spec.ts:209` | Search Group Roles By Multiple Fields |
 | observe-present-search | — | `group/group-users-api-tests.spec.ts:102` | Search Users For Group |
-| observe-present-search | not-found | `group/group-users-api-tests.spec.ts:141` | Search Users For Group Not Found |
 | mutate | unlabeled | `group/group-clients-api-tests.spec.ts:52` | Assign Client To Group |
 | mutate | unlabeled | `group/group-mapping-rules-api-tests.spec.ts:55` | Assign Mapping Rule To Group |
-| mutate | not-found | `group/group-users-api-tests.spec.ts:51` | Assign User To Group Not Found |
 | mutate | unlabeled | `group/group-users-api-tests.spec.ts:69` | Assign User To Group |
 | delete | unlabeled | `group/group-clients-api-tests.spec.ts:153` | Unassign Client From Group |
-| delete | not-found | `group/group-clients-api-tests.spec.ts:212` | Unassign Client From Group Not Found |
 | delete | unlabeled | `group/group-mapping-rules-api-tests.spec.ts:161` | Unassign Mapping Rule From Group |
-| delete | not-found | `group/group-mapping-rules-api-tests.spec.ts:218` | Unassign Mapping Rule From Group Not Found |
 | delete | unlabeled | `group/group-users-api-tests.spec.ts:163` | Unassign User From Group |
-| delete | not-found | `group/group-users-api-tests.spec.ts:223` | Unassign User From Group Not Found |
 | negative-create | conflict | `group/group-clients-api-tests.spec.ts:70` | Assign Already Added Client To Group Conflict |
 | negative-create | conflict | `group/group-mapping-rules-api-tests.spec.ts:73` | Assign Already Added Mapping Rule To Group Conflict |
 | negative-create | conflict | `group/group-users-api-tests.spec.ts:87` | Assign Already Added User To Group Conflict |
 | negative-search | unauthorized | `group/group-clients-api-tests.spec.ts:116` | Search Clients For Group Unauthorized |
+| negative-search | not-found | `group/group-clients-api-tests.spec.ts:128` | Search Clients For Group Not Found |
 | negative-search | unauthorized | `group/group-mapping-rules-api-tests.spec.ts:126` | Search Mapping Rules For Group Unauthorized |
+| negative-search | not-found | `group/group-mapping-rules-api-tests.spec.ts:138` | Search Mapping Rules For Group Not Found |
 | negative-search | unauthorized | `group/group-roles-api-tests.spec.ts:91` | Search Group Roles Unauthorized |
+| negative-search | not-found | `group/group-roles-api-tests.spec.ts:104` | Search Group Roles Not Found |
 | negative-search | unauthorized | `group/group-users-api-tests.spec.ts:131` | Search Users For Group Unauthorized |
+| negative-search | not-found | `group/group-users-api-tests.spec.ts:141` | Search Users For Group Not Found |
+| negative-mutate | not-found | `group/group-users-api-tests.spec.ts:51` | Assign User To Group Not Found |
 | negative-delete | unauthorized | `group/group-clients-api-tests.spec.ts:197` | Unassign Client From Group Unauthorized |
+| negative-delete | not-found | `group/group-clients-api-tests.spec.ts:212` | Unassign Client From Group Not Found |
 | negative-delete | unauthorized | `group/group-mapping-rules-api-tests.spec.ts:204` | Unassign Mapping Rule From Group Unauthorized |
+| negative-delete | not-found | `group/group-mapping-rules-api-tests.spec.ts:218` | Unassign Mapping Rule From Group Not Found |
 | negative-delete | unauthorized | `group/group-users-api-tests.spec.ts:208` | Unassign User From Group Unauthorized |
+| negative-delete | not-found | `group/group-users-api-tests.spec.ts:223` | Unassign User From Group Not Found |
 
 ## C. Deployment Lifecycle
 
@@ -728,7 +728,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: none
 - **Files**: `resource/resource-delete-api.spec.ts`, `resource/resource-deploy-api.spec.ts`, `resource/resource-get-api.spec.ts`, `resource/resource-get-content-api.spec.ts`
 - **Observation channel**: GET = 6, Search = 0
-- **Form-step counts**: create=6, observe-present-get=2, delete=2, negative-create=2, negative-get=4, negative-delete=3
+- **Form-step counts**: create=6, observe-present-get=2, delete=1, negative-create=2, negative-get=4, negative-delete=4
 - **Variants**: happy-path=9, observe-via-get=6, bad-request=3, unauthorized=4, not-found=3
 
 | form step | variants | file:line | test name |
@@ -742,13 +742,13 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-get | happy-path | `resource/resource-get-api.spec.ts:49` | Get Resource - RPA Success 200 |
 | observe-present-get | happy-path | `resource/resource-get-content-api.spec.ts:22` | Get Resource Content - RPA Success 200 |
 | delete | happy-path | `resource/resource-delete-api.spec.ts:26` | Delete Resource - Success 200 |
-| delete | not-found | `resource/resource-delete-api.spec.ts:52` | Delete Resource - Not Found 404 |
 | negative-create | unauthorized | `resource/resource-deploy-api.spec.ts:222` | Deploy Resource - Unauthorized 401 |
 | negative-create | bad-request | `resource/resource-deploy-api.spec.ts:233` | Deploy Resource - Bad Request 400 |
 | negative-get | not-found | `resource/resource-get-api.spec.ts:81` | Get Resource - Not Found 404 |
 | negative-get | unauthorized | `resource/resource-get-api.spec.ts:100` | Get Resource - Unauthorized 401 |
 | negative-get | not-found | `resource/resource-get-content-api.spec.ts:47` | Get Resource Content - Not Found 404 |
 | negative-get | unauthorized | `resource/resource-get-content-api.spec.ts:66` | Get Resource Content - Unauthorized 401 |
+| negative-delete | not-found | `resource/resource-delete-api.spec.ts:52` | Delete Resource - Not Found 404 |
 | negative-delete | bad-request | `resource/resource-delete-api.spec.ts:70` | Delete Resource - Bad Request 400 - Invalid resourceKey Format |
 | negative-delete | bad-request | `resource/resource-delete-api.spec.ts:90` | Delete Resource - Bad Request 400 - Invalid operationReference in Body |
 | negative-delete | unauthorized | `resource/resource-delete-api.spec.ts:116` | Delete Resource - Unauthorized 401 |
@@ -789,7 +789,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: deployed-process
 - **Files**: `process-instance/process-instance-api.spec.ts`, `process-instance/process-instance-business-id-api.spec.ts`, `process-instance/process-instance-business-id-api2.spec.ts`, `process-instance/process-instance-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-delete-api.spec.ts`, `process-instance/process-instance-create-batch-to-migrate-api.spec.ts`, `process-instance/process-instance-create-batch-to-modify-api.spec.ts`, `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts`, `process-instance/process-instance-delete-api.spec.ts`, `process-instance/process-instance-get-api.spec.ts`, `process-instance/process-instance-get-call-hierachy-api.spec.ts`, `process-instance/process-instance-get-sequenceflows-api.spec.ts`, `process-instance/process-instance-get-statistics-api.spec.ts`, `process-instance/process-instance-migrate-api.spec.ts`, `process-instance/process-instance-modify-process-api.spec.ts`, `process-instance/process-instance-resolve-related-incident-api.spec.ts`, `process-instance/process-instance-search-api.spec.ts`, `process-instance/process-instance-search-incidents-api.spec.ts`
 - **Observation channel**: GET = 20, Search = 13
-- **Form-step counts**: create=19, observe-present-get=7, observe-present-search=10, mutate=5, delete=9, observe-absence=1, aggregate=2, negative-create=16, negative-get=7, negative-search=3, negative-mutate=11, negative-delete=9, negative-aggregate=2, other=12
+- **Form-step counts**: create=18, observe-present-get=7, observe-present-search=9, mutate=3, delete=6, observe-absence=1, aggregate=2, negative-create=17, negative-get=7, negative-search=4, negative-mutate=13, negative-delete=12, negative-aggregate=2, other=12
 - **Variants**: happy-path=32, observe-via-get=20, observe-via-search=13, observe-absence=1, pagination-sort=1, filter=19, bad-request=28, unauthorized=16, forbidden=3, not-found=8, conflict=3, unlabeled=6
 
 | form step | variants | file:line | test name |
@@ -812,7 +812,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | create | happy-path | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:55` | Create a Batch Operation to Resolve Incidents - Success |
 | create | filter | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:155` | Create a Batch Operation to Resolve Incidents - With Multiple Filters |
 | create | filter | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:257` | Create a Batch Operation to Resolve Incidents - With Or Filters |
-| create | not-found | `process-instance/process-instance-migrate-api.spec.ts:248` | Create Process instance migrate - 404 Not Found - non existing process instance |
 | observe-present-get | — | `process-instance/process-instance-business-id-api2.spec.ts:27` | GET process instance includes businessId when set at creation |
 | observe-present-get | — | `process-instance/process-instance-business-id-api2.spec.ts:69` | GET process instance returns null businessId when not set at creation |
 | observe-present-get | happy-path | `process-instance/process-instance-get-api.spec.ts:28` | Get Process Instance - Success |
@@ -829,21 +828,15 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter, happy-path | `process-instance/process-instance-search-api.spec.ts:135` | Search Process Instance With Multiple Filters - Success |
 | observe-present-search | — | `process-instance/process-instance-search-api.spec.ts:255` | Search Process Instances - No Items Found |
 | observe-present-search | happy-path | `process-instance/process-instance-search-incidents-api.spec.ts:35` | Search Process Instances with Multiple Incidents - Success |
-| observe-present-search | not-found | `process-instance/process-instance-search-incidents-api.spec.ts:108` | Search Process Instances with Incidents - Not Found |
 | mutate | happy-path | `process-instance/process-instance-migrate-api.spec.ts:46` | Process instance migrate - success |
 | mutate | happy-path | `process-instance/process-instance-modify-process-api.spec.ts:31` | Modify process instance - success |
-| mutate | not-found | `process-instance/process-instance-modify-process-api.spec.ts:229` | Modify process instance - Not Found |
 | mutate | happy-path | `process-instance/process-instance-resolve-related-incident-api.spec.ts:82` | Resolve related incidents of a process instance - Success |
-| mutate | not-found | `process-instance/process-instance-resolve-related-incident-api.spec.ts:257` | Resolve related incidents of a not existing process instance - Not found |
 | delete | happy-path | `process-instance/process-instance-cancel-api.spec.ts:22` | Cancel Process Instance - Success |
-| delete | not-found | `process-instance/process-instance-cancel-api.spec.ts:59` | Cancel Process Instance - Not Found |
-| delete | not-found | `process-instance/process-instance-cancel-api.spec.ts:105` | Double Cancel Process Instance - Not Found |
 | delete | happy-path | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:101` | Delete Batch Process Instance, single Process Instance - Success |
 | delete | happy-path | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:172` | Delete Batch Process Instance, multiple Process Instances - Success |
 | delete | unlabeled | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:247` | Delete Batch Active Single Process Instance - No instance should be deleted |
 | delete | unlabeled | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:347` | Delete Batch Active Multiple Process Instances - No instance should be deleted |
 | delete | happy-path | `process-instance/process-instance-delete-api.spec.ts:96` | Delete Single Process Instance - Success |
-| delete | not-found | `process-instance/process-instance-delete-api.spec.ts:173` | Delete Single Process Instance - Not Found |
 | observe-absence | observe-absence, happy-path | `process-instance/process-instance-business-id-api.spec.ts:193` | Business ID reuse after cancellation - success |
 | aggregate | observe-via-get, happy-path | `process-instance/process-instance-get-statistics-api.spec.ts:27` | Get Process Instance Statistics - Success |
 | aggregate | observe-via-get | `process-instance/process-instance-get-statistics-api.spec.ts:112` | Get Process Instance Statistics - No Items Found |
@@ -863,6 +856,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-create | unauthorized | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:41` | Create a Batch Operation to Resolve Process Instance Incidents - Unauthorized |
 | negative-create | bad-request, filter | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:120` | Create a Batch Operation to Resolve Incidents With No Filter - Bad Request |
 | negative-create | bad-request, filter | `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts:135` | Create a Batch Operation to Resolve Incidents - With Invalid Filter - Bad Request |
+| negative-create | not-found | `process-instance/process-instance-migrate-api.spec.ts:248` | Create Process instance migrate - 404 Not Found - non existing process instance |
 | negative-get | not-found | `process-instance/process-instance-get-api.spec.ts:87` | Get Process Instance - Not Found |
 | negative-get | bad-request | `process-instance/process-instance-get-api.spec.ts:101` | Get Process Instance - Invalid Key |
 | negative-get | unauthorized | `process-instance/process-instance-get-api.spec.ts:112` | Get Process Instance - Unauthorized |
@@ -873,6 +867,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `process-instance/process-instance-search-api.spec.ts:231` | Search Process Instances - Unauthorized |
 | negative-search | bad-request | `process-instance/process-instance-search-api.spec.ts:238` | Search Process Instances - Bad Request - Invalid Payload |
 | negative-search | unauthorized | `process-instance/process-instance-search-incidents-api.spec.ts:96` | Search Process Instances with Incidents - Unauthorized |
+| negative-search | not-found | `process-instance/process-instance-search-incidents-api.spec.ts:108` | Search Process Instances with Incidents - Not Found |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:117` | Process instance migrate - 409 Invalid State |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:162` | Process instance migrate - 400 Bad Request - invalid path parameter |
 | negative-mutate | bad-request | `process-instance/process-instance-migrate-api.spec.ts:179` | Process instance migrate - 400 Invalid Argument - Missing targetProcessDefinitionKey |
@@ -881,17 +876,22 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-mutate | bad-request | `process-instance/process-instance-modify-process-api.spec.ts:138` | Modify process instance - bad request - invalid payload |
 | negative-mutate | bad-request | `process-instance/process-instance-modify-process-api.spec.ts:185` | Modify process instance - bad request - path parameter |
 | negative-mutate | unauthorized | `process-instance/process-instance-modify-process-api.spec.ts:208` | Modify process instance - Unauthorized |
+| negative-mutate | not-found | `process-instance/process-instance-modify-process-api.spec.ts:229` | Modify process instance - Not Found |
 | negative-mutate | bad-request | `process-instance/process-instance-resolve-related-incident-api.spec.ts:224` | Resolve related incidents with process instance key string value - Bad Request |
 | negative-mutate | unauthorized | `process-instance/process-instance-resolve-related-incident-api.spec.ts:242` | Resolve related incidents of a process instance - Unauthorized |
+| negative-mutate | not-found | `process-instance/process-instance-resolve-related-incident-api.spec.ts:257` | Resolve related incidents of a not existing process instance - Not found |
 | negative-mutate | forbidden | `process-instance/process-instance-resolve-related-incident-api.spec.ts:275` | Resolve related incidents of a process instance without permissions - Forbidden |
+| negative-delete | not-found | `process-instance/process-instance-cancel-api.spec.ts:59` | Cancel Process Instance - Not Found |
 | negative-delete | bad-request | `process-instance/process-instance-cancel-api.spec.ts:74` | Cancel Process Instance - Bad Request - Invalid Key |
 | negative-delete | unauthorized | `process-instance/process-instance-cancel-api.spec.ts:91` | Cancel Process Instance - Unauthorized |
+| negative-delete | not-found | `process-instance/process-instance-cancel-api.spec.ts:105` | Double Cancel Process Instance - Not Found |
 | negative-delete | unauthorized | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:451` | Delete Batch Process Instance, single Process Instance - Unauthorized |
 | negative-delete | forbidden | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:466` | Delete Batch Process Instance, single Process Instance - Forbidden |
 | negative-delete | bad-request, filter | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:487` | Delete Batch Process Instance, no filter - Bad Request |
 | negative-delete | bad-request, filter | `process-instance/process-instance-create-batch-to-delete-api.spec.ts:499` | Delete Batch Process Instance, invalid filter - Bad Request |
 | negative-delete | unauthorized | `process-instance/process-instance-delete-api.spec.ts:145` | Delete Single Process Instance - Unauthorized |
 | negative-delete | forbidden | `process-instance/process-instance-delete-api.spec.ts:156` | Delete Single Process Instance - Forbidden |
+| negative-delete | not-found | `process-instance/process-instance-delete-api.spec.ts:173` | Delete Single Process Instance - Not Found |
 | negative-delete | conflict | `process-instance/process-instance-delete-api.spec.ts:190` | Delete Single Process Instance - Conflict |
 | negative-aggregate | unauthorized, observe-via-get | `process-instance/process-instance-get-statistics-api.spec.ts:99` | Get Process Instance Statistics - Unauthorized |
 | negative-aggregate | bad-request, observe-via-get | `process-instance/process-instance-get-statistics-api.spec.ts:136` | Get Process Instance Statistics - Bad Request |
@@ -968,7 +968,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance-with-user-task
 - **Files**: `user-task/user-task-assign-api-tests.spec.ts`, `user-task/user-task-complete-api-tests.spec.ts`, `user-task/user-task-get-api-tests.spec.ts`, `user-task/user-task-get-form-api-tests.spec.ts`, `user-task/user-task-search-api-tests.spec.ts`, `user-task/user-task-search-variables-api-tests.spec.ts`, `user-task/user-task-unassign-api-tests.spec.ts`, `user-task/user-task-update-api-tests.spec.ts`
 - **Observation channel**: GET = 8, Search = 14
-- **Form-step counts**: observe-present-get=3, observe-present-search=9, mutate=13, delete=5, negative-get=5, negative-search=5, negative-mutate=9, negative-delete=2
+- **Form-step counts**: observe-present-get=3, observe-present-search=9, mutate=10, delete=4, negative-get=5, negative-search=5, negative-mutate=12, negative-delete=3
 - **Variants**: happy-path=20, observe-via-get=8, observe-via-search=14, pagination-sort=1, filter=4, bad-request=10, unauthorized=8, not-found=6, conflict=1
 
 | form step | variants | file:line | test name |
@@ -986,9 +986,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter | `user-task/user-task-search-variables-api-tests.spec.ts:160` | Search user task variables - filter by variable name |
 | observe-present-search | filter | `user-task/user-task-search-variables-api-tests.spec.ts:196` | Search user task variables - advanced filter by variable name with wildcard |
 | mutate | happy-path | `user-task/user-task-assign-api-tests.spec.ts:32` | Assign user task - success |
-| mutate | not-found | `user-task/user-task-assign-api-tests.spec.ts:90` | Assign user task - not found |
 | mutate | happy-path | `user-task/user-task-assign-api-tests.spec.ts:107` | Double Assign user task - success |
-| mutate | not-found | `user-task/user-task-complete-api-tests.spec.ts:96` | Complete user task - not found |
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:61` | Update user task - success - update all fields |
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:83` | Update user task - success - update only dueDate |
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:102` | Update user task - success - update only followUpDate |
@@ -997,9 +995,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:159` | Update user task - success - update only priority |
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:235` | Update user task - success - with custom action |
 | mutate | happy-path | `user-task/user-task-update-api-tests.spec.ts:253` | Update user task - success - verify updated fields |
-| mutate | not-found | `user-task/user-task-update-api-tests.spec.ts:356` | Update user task - not found |
 | delete | happy-path | `user-task/user-task-unassign-api-tests.spec.ts:32` | Unassign user task - success |
-| delete | not-found | `user-task/user-task-unassign-api-tests.spec.ts:82` | Unassign user task - not found |
 | delete | happy-path | `user-task/user-task-unassign-api-tests.spec.ts:115` | Double Unassign user task - success |
 | delete | happy-path | `user-task/user-task-update-api-tests.spec.ts:178` | Update user task - success - reset dueDate and followUpDate |
 | delete | happy-path | `user-task/user-task-update-api-tests.spec.ts:198` | Update user task - success - reset candidateUsers and candidateGroups |
@@ -1015,14 +1011,18 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request | `user-task/user-task-search-variables-api-tests.spec.ts:143` | Search user task variables - bad request - invalid user task key |
 | negative-mutate | bad-request | `user-task/user-task-assign-api-tests.spec.ts:51` | Assign user task - bad request - invalid payload |
 | negative-mutate | unauthorized | `user-task/user-task-assign-api-tests.spec.ts:69` | Assign user task - unauthorized |
+| negative-mutate | not-found | `user-task/user-task-assign-api-tests.spec.ts:90` | Assign user task - not found |
 | negative-mutate | bad-request | `user-task/user-task-complete-api-tests.spec.ts:82` | Complete user task - bad request - invalid payload |
+| negative-mutate | not-found | `user-task/user-task-complete-api-tests.spec.ts:96` | Complete user task - not found |
 | negative-mutate | unauthorized | `user-task/user-task-complete-api-tests.spec.ts:105` | Complete user task - unauthorized |
 | negative-mutate | bad-request | `user-task/user-task-update-api-tests.spec.ts:218` | Update user task - bad request - empty changeset |
 | negative-mutate | bad-request | `user-task/user-task-update-api-tests.spec.ts:298` | Update user task - bad request - invalid priority above max |
 | negative-mutate | bad-request | `user-task/user-task-update-api-tests.spec.ts:317` | Update user task - bad request - invalid priority below min |
 | negative-mutate | unauthorized | `user-task/user-task-update-api-tests.spec.ts:336` | Update user task - unauthorized |
+| negative-mutate | not-found | `user-task/user-task-update-api-tests.spec.ts:356` | Update user task - not found |
 | negative-mutate | conflict | `user-task/user-task-update-api-tests.spec.ts:375` | Update user task - conflict - task already completed |
 | negative-delete | unauthorized | `user-task/user-task-unassign-api-tests.spec.ts:64` | Unassign user task - unauthorized |
+| negative-delete | not-found | `user-task/user-task-unassign-api-tests.spec.ts:82` | Unassign user task - not found |
 | negative-delete | bad-request | `user-task/user-task-unassign-api-tests.spec.ts:99` | Unassign user task - bad request - invalid user task key |
 
 ## G. Job Lifecycle & Stats
@@ -1036,7 +1036,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance-with-job
 - **Files**: `job/el-header-basic-tests.spec.ts`, `job/el-header-cross-task-tests.spec.ts`, `job/el-header-element-types-tests.spec.ts`, `job/el-header-merge-conflict-tests.spec.ts`, `job/job-api-tests.spec.ts`, `job/job-completion-api-tests.spec.ts`, `job/job-error-api-tests.spec.ts`, `job/job-failure-api-tests.spec.ts`, `job/job-statistics-by-type-api-tests.spec.ts`, `job/job-statistics-by-worker-api-tests.spec.ts`, `job/job-statistics-error-metrics-job-type-api-tests.spec.ts`, `job/job-statistics-global-api-tests.spec.ts`, `job/job-statistics-time-series-job-type-api-tests.spec.ts`, `job/job-update-api-tests.spec.ts`, `job/job-worker-statistics-test-setup.spec.ts`
 - **Observation channel**: GET = 26, Search = 4
-- **Form-step counts**: create=1, observe-present-search=2, mutate=9, aggregate=10, negative-search=2, negative-mutate=6, negative-aggregate=16, other=11
+- **Form-step counts**: create=1, observe-present-search=2, mutate=5, aggregate=10, negative-search=2, negative-mutate=10, negative-aggregate=16, other=11
 - **Variants**: happy-path=14, observe-via-get=26, observe-via-search=4, pagination-sort=1, filter=2, bad-request=15, unauthorized=6, forbidden=5, not-found=5, conflict=2, unlabeled=9
 
 | form step | variants | file:line | test name |
@@ -1045,14 +1045,10 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `job/job-api-tests.spec.ts:160` | Search Jobs - no criteria |
 | observe-present-search | pagination-sort | `job/job-api-tests.spec.ts:185` | Search Jobs - sorted by field 'type' |
 | mutate | happy-path | `job/job-completion-api-tests.spec.ts:52` | Complete Job - success |
-| mutate | not-found | `job/job-completion-api-tests.spec.ts:66` | Complete Job - not found |
 | mutate | happy-path | `job/job-error-api-tests.spec.ts:45` | Throw Error for Job - success |
-| mutate | not-found | `job/job-error-api-tests.spec.ts:60` | Throw Error for Job - not found |
 | mutate | happy-path | `job/job-failure-api-tests.spec.ts:44` | Fail Job - success |
-| mutate | not-found | `job/job-failure-api-tests.spec.ts:61` | Fail Job - Job not found |
 | mutate | unlabeled | `job/job-failure-api-tests.spec.ts:90` | Fail Job - 409 |
 | mutate | happy-path | `job/job-update-api-tests.spec.ts:44` | Update Job - success |
-| mutate | not-found | `job/job-update-api-tests.spec.ts:60` | Update Job - not found |
 | aggregate | observe-via-get, happy-path | `job/job-statistics-by-type-api-tests.spec.ts:60` | Get Job Statistics By Type - success |
 | aggregate | observe-via-get, happy-path | `job/job-statistics-by-type-api-tests.spec.ts:178` | Get Job Statistics By Type With Not Existing Job Type - Success Empty Result |
 | aggregate | observe-via-get, happy-path | `job/job-statistics-by-worker-api-tests.spec.ts:59` | Get Job Statistics By Worker - success |
@@ -1065,11 +1061,15 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | aggregate | observe-via-get, happy-path | `job/job-statistics-time-series-job-type-api-tests.spec.ts:211` | Get time-series metrics for a job type with no resolution parameter - Success |
 | negative-search | unauthorized | `job/job-api-tests.spec.ts:221` | Search Jobs - Unauthorized |
 | negative-search | bad-request | `job/job-api-tests.spec.ts:231` | Search Jobs - invalid request |
+| negative-mutate | not-found | `job/job-completion-api-tests.spec.ts:66` | Complete Job - not found |
 | negative-mutate | bad-request | `job/job-completion-api-tests.spec.ts:84` | Complete Job - invalid request |
 | negative-mutate | conflict | `job/job-completion-api-tests.spec.ts:101` | Complete Job - conflict 409 |
+| negative-mutate | not-found | `job/job-error-api-tests.spec.ts:60` | Throw Error for Job - not found |
 | negative-mutate | bad-request | `job/job-error-api-tests.spec.ts:76` | Throw Error for Job - invalid request |
 | negative-mutate | conflict | `job/job-error-api-tests.spec.ts:89` | Throw Error for Job - conflict 409 |
+| negative-mutate | not-found | `job/job-failure-api-tests.spec.ts:61` | Fail Job - Job not found |
 | negative-mutate | bad-request | `job/job-failure-api-tests.spec.ts:77` | Fail Job - invalid request |
+| negative-mutate | not-found | `job/job-update-api-tests.spec.ts:60` | Update Job - not found |
 | negative-mutate | bad-request | `job/job-update-api-tests.spec.ts:79` | Update Job - invalid request |
 | negative-aggregate | bad-request, filter, observe-via-get | `job/job-statistics-by-type-api-tests.spec.ts:144` | Get Job Statistics By Type With Wrong Filter Parameter - Bad Request |
 | negative-aggregate | bad-request, filter, observe-via-get | `job/job-statistics-by-type-api-tests.spec.ts:163` | Get Job Statistics By Type With Missing Required From Filter Parameter - Bad Request |
@@ -1110,7 +1110,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance-with-failing-job
 - **Files**: `incident/get-process-instance-statistics-by-definition-api-tests.spec.ts`, `incident/get-process-instance-statistics-by-error-api-tests.spec.ts`, `incident/incident-get-api.spec.ts`, `incident/incident-resolve-api.spec.ts`, `incident/incident-search-api.spec.ts`
 - **Observation channel**: GET = 14, Search = 9
-- **Form-step counts**: observe-present-get=1, observe-present-search=7, mutate=3, aggregate=3, negative-get=3, negative-search=2, negative-mutate=2, negative-aggregate=7
+- **Form-step counts**: observe-present-get=1, observe-present-search=7, mutate=2, aggregate=3, negative-get=3, negative-search=2, negative-mutate=3, negative-aggregate=7
 - **Variants**: happy-path=11, observe-via-get=14, observe-via-search=9, pagination-sort=4, filter=4, bad-request=6, unauthorized=5, forbidden=2, not-found=2
 
 | form step | variants | file:line | test name |
@@ -1124,7 +1124,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | happy-path | `incident/incident-search-api.spec.ts:305` | Search Incidents Empty Result success |
 | observe-present-search | pagination-sort | `incident/incident-search-api.spec.ts:336` | Search Incident Pagination Limit 1 |
 | mutate | happy-path | `incident/incident-resolve-api.spec.ts:46` | Resolve Incident success |
-| mutate | not-found | `incident/incident-resolve-api.spec.ts:144` | Resolve Incident - not found |
 | mutate | happy-path | `incident/incident-resolve-api.spec.ts:195` | Resolve Incident with a job - success |
 | aggregate | observe-via-get, happy-path | `incident/get-process-instance-statistics-by-definition-api-tests.spec.ts:78` | Get Process Instance Statistics By Definition - Success |
 | aggregate | observe-via-get, happy-path | `incident/get-process-instance-statistics-by-error-api-tests.spec.ts:83` | Get Statistics For Process Instances with errors - Success |
@@ -1134,6 +1133,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-get | bad-request | `incident/incident-get-api.spec.ts:111` | Get Incidents Invalid Value |
 | negative-search | unauthorized | `incident/incident-search-api.spec.ts:274` | Search Incidents Unauthorized |
 | negative-search | bad-request, filter | `incident/incident-search-api.spec.ts:287` | Search Incidents Invalid Filter |
+| negative-mutate | not-found | `incident/incident-resolve-api.spec.ts:144` | Resolve Incident - not found |
 | negative-mutate | bad-request | `incident/incident-resolve-api.spec.ts:161` | Resolve Incident - bad request |
 | negative-mutate | unauthorized | `incident/incident-resolve-api.spec.ts:178` | Resolve Incident - unauthorized |
 | negative-aggregate | unauthorized, observe-via-get | `incident/get-process-instance-statistics-by-definition-api-tests.spec.ts:182` | Get Process Instance Statistics By Definition - Unauthorized |
@@ -1155,12 +1155,11 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: deployed-decision
 - **Files**: `decision-instance/decision-instance-batch-delete-api.spec.ts`, `decision-instance/decision-instance-delete-api.spec.ts`, `decision-instance/decision-instances-get-api.spec.ts`, `decision-instance/decision-instances-search-api.spec.ts`
 - **Observation channel**: GET = 4, Search = 9
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=7, delete=3, negative-create=4, negative-get=3, negative-search=2, negative-delete=2
+- **Form-step counts**: observe-present-get=1, observe-present-search=7, delete=2, negative-create=5, negative-get=3, negative-search=2, negative-delete=3
 - **Variants**: happy-path=3, observe-via-get=4, observe-via-search=9, filter=7, bad-request=4, unauthorized=4, forbidden=2, not-found=3, unlabeled=1
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
-| create | not-found | `decision-instance/decision-instance-batch-delete-api.spec.ts:203` | Create a Batch Operation to Delete Decision Instances With Non-Existing Keys - 200 but batch operation is empty |
 | observe-present-get | happy-path | `decision-instance/decision-instances-get-api.spec.ts:38` | Get Decision Instance - Success |
 | observe-present-search | happy-path | `decision-instance/decision-instances-search-api.spec.ts:37` | Search decision instances - multiple results - success |
 | observe-present-search | filter | `decision-instance/decision-instances-search-api.spec.ts:65` | Search decision instances - filter by state |
@@ -1171,9 +1170,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `decision-instance/decision-instances-search-api.spec.ts:252` | Search decision instances - empty result |
 | delete | unlabeled | `decision-instance/decision-instance-batch-delete-api.spec.ts:72` | Delete Decision Instance With Batch |
 | delete | happy-path | `decision-instance/decision-instance-delete-api.spec.ts:88` | Delete Decision Instance - Success |
-| delete | not-found | `decision-instance/decision-instance-delete-api.spec.ts:144` | Delete Decision Instance - Not Found |
 | negative-create | bad-request, filter | `decision-instance/decision-instance-batch-delete-api.spec.ts:174` | Create a Batch Operation to Delete Decision Instances With No Filter - Bad Request |
 | negative-create | bad-request, filter | `decision-instance/decision-instance-batch-delete-api.spec.ts:186` | Create a Batch Operation to Delete Decision Instances - With Invalid Filter - Bad Request |
+| negative-create | not-found | `decision-instance/decision-instance-batch-delete-api.spec.ts:203` | Create a Batch Operation to Delete Decision Instances With Non-Existing Keys - 200 but batch operation is empty |
 | negative-create | unauthorized | `decision-instance/decision-instance-batch-delete-api.spec.ts:262` | Create a Batch Operation to Delete Decision Instances - Unauthorized |
 | negative-create | forbidden | `decision-instance/decision-instance-batch-delete-api.spec.ts:278` | Create a Batch Operation to Delete Decision Instances - Forbidden |
 | negative-get | not-found | `decision-instance/decision-instances-get-api.spec.ts:73` | Get Decision Instance - Not found |
@@ -1183,6 +1182,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `decision-instance/decision-instances-search-api.spec.ts:308` | Search decision instances - unauthorized request |
 | negative-delete | forbidden | `decision-instance/decision-instance-delete-api.spec.ts:64` | Delete Decision Instance - Forbidden |
 | negative-delete | unauthorized | `decision-instance/decision-instance-delete-api.spec.ts:128` | Delete Decision Instance - Unauthorized |
+| negative-delete | not-found | `decision-instance/decision-instance-delete-api.spec.ts:144` | Delete Decision Instance - Not Found |
 
 ## J/K/L. Observation-only
 
@@ -1195,7 +1195,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: running-process-instance
 - **Files**: `element-instance/element-instance-ad-hoc-activities-api.spec.ts`, `element-instance/element-instance-get-api.spec.ts`, `element-instance/element-instance-search-api.spec.ts`, `element-instance/element-instance-search-incident-api.spec.ts`, `element-instance/element-instance-update-api.spec.ts`
 - **Observation channel**: GET = 6, Search = 24
-- **Form-step counts**: observe-present-get=1, observe-present-search=15, mutate=2, negative-get=3, negative-search=9, other=5
+- **Form-step counts**: observe-present-get=1, observe-present-search=14, mutate=2, negative-get=3, negative-search=10, other=5
 - **Variants**: happy-path=7, observe-via-get=6, observe-via-search=24, pagination-sort=5, filter=11, bad-request=7, unauthorized=4, forbidden=1, not-found=3, unlabeled=5
 
 | form step | variants | file:line | test name |
@@ -1215,7 +1215,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter, happy-path | `element-instance/element-instance-search-incident-api.spec.ts:180` | Search for incidents of a specific element instance - filtered by processDefinitionKey and state - Single Result - Success |
 | observe-present-search | happy-path | `element-instance/element-instance-search-incident-api.spec.ts:219` | Search for incidents of a specific element instance - ascending order by errorMessage - Success |
 | observe-present-search | happy-path | `element-instance/element-instance-search-incident-api.spec.ts:266` | Search for incidents of a specific element instance - Empty Result - Success |
-| observe-present-search | not-found | `element-instance/element-instance-search-incident-api.spec.ts:347` | Search for incidents of a specific element instance - Not Existing Element Instance Key - Not Found |
 | mutate | unlabeled | `element-instance/element-instance-update-api.spec.ts:41` | Update Element Instance - so that process ends with the "end without extra" end event |
 | mutate | unlabeled | `element-instance/element-instance-update-api.spec.ts:93` | Update Element Instance - local update overrides global variable |
 | negative-get | unauthorized | `element-instance/element-instance-get-api.spec.ts:73` | Get Element Instance - Unauthorized |
@@ -1227,6 +1226,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `element-instance/element-instance-search-api.spec.ts:379` | Search Element Instances - Unauthorized |
 | negative-search | bad-request, filter | `element-instance/element-instance-search-incident-api.spec.ts:298` | Search for incidents of a specific element instance - Wrong Filter Value - Bad Request |
 | negative-search | bad-request, filter | `element-instance/element-instance-search-incident-api.spec.ts:323` | Search for incidents of a specific element instance - Wrong Filter Field - Bad Request |
+| negative-search | not-found | `element-instance/element-instance-search-incident-api.spec.ts:347` | Search for incidents of a specific element instance - Not Existing Element Instance Key - Not Found |
 | negative-search | unauthorized | `element-instance/element-instance-search-incident-api.spec.ts:368` | Search for incidents of a specific element instance - Unauthorized |
 | negative-search | forbidden | `element-instance/element-instance-search-incident-api.spec.ts:385` | Search for incidents of a specific element instance - Forbidden |
 | negative-search | bad-request, pagination-sort | `element-instance/element-instance-search-incident-api.spec.ts:437` | Search for incidents of a specific element instance - with invalid pagination parameters |
@@ -1300,7 +1300,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 - **Prerequisite to create**: deployed-process-with-message-catch-event
 - **Files**: `message/correlate-message-api-tests.spec.ts`, `message/publish-message-api-tests.spec.ts`, `message/search-correlated-message-subscriptions-api-tests.spec.ts`, `message/search-message-subscription-api-tests.spec.ts`
 - **Observation channel**: GET = 0, Search = 13
-- **Form-step counts**: create=1, observe-present-search=6, mutate=2, negative-create=3, negative-search=7, negative-mutate=3
+- **Form-step counts**: create=1, observe-present-search=6, mutate=1, negative-create=3, negative-search=7, negative-mutate=4
 - **Variants**: happy-path=4, observe-via-search=13, pagination-sort=2, filter=3, bad-request=8, unauthorized=4, forbidden=1, not-found=1, unlabeled=2
 
 | form step | variants | file:line | test name |
@@ -1312,7 +1312,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter, happy-path | `message/search-correlated-message-subscriptions-api-tests.spec.ts:245` | Search Message Subscriptions - multiple filter - 200 Success |
 | observe-present-search | pagination-sort | `message/search-correlated-message-subscriptions-api-tests.spec.ts:463` | Search Message Subscriptions - Pagination 0 |
 | observe-present-search | — | `message/search-message-subscription-api-tests.spec.ts:65` | Search Message Flow |
-| mutate | not-found | `message/correlate-message-api-tests.spec.ts:63` | Correlate Message Not found |
 | mutate | unlabeled | `message/correlate-message-api-tests.spec.ts:94` | Correlate Message Flow |
 | negative-create | unauthorized | `message/publish-message-api-tests.spec.ts:40` | Publish Message Unauthorized |
 | negative-create | bad-request | `message/publish-message-api-tests.spec.ts:50` | Publish Message Bad Request |
@@ -1326,6 +1325,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `message/search-message-subscription-api-tests.spec.ts:57` | Search Subscriptions Unauthorized |
 | negative-mutate | unauthorized | `message/correlate-message-api-tests.spec.ts:47` | Correlate Message Unauthorized |
 | negative-mutate | bad-request | `message/correlate-message-api-tests.spec.ts:55` | Correlate Message Bad Request |
+| negative-mutate | not-found | `message/correlate-message-api-tests.spec.ts:63` | Correlate Message Not found |
 | negative-mutate | bad-request | `message/correlate-message-api-tests.spec.ts:78` | Correlate Message Invalid Tenant |
 
 ### `signal` — 5 tests

@@ -21,16 +21,16 @@ Legend: ✓ = at least 1, blank = 0.
 | tenant | update | 26 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
 | tenant | delete | 23 | ✓ |  | ✓ |  | ✓ |  |  |  |  |
 | tenant | search | 24 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
-| role | create | 10 |  | ✓ | ✓ |  |  | ✓ |  |  |  |
-| role | get | 3 |  |  | ✓ |  | ✓ |  |  |  |  |
-| role | update | 23 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
-| role | delete | 18 |  |  | ✓ |  | ✓ |  |  |  |  |
-| role | search | 24 |  | ✓ | ✓ |  | ✓ |  |  | ✓ |  |
 | authorization | create | 44 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |
 | authorization | get | 4 | ✓ |  | ✓ | ✓ | ✓ |  |  |  |  |
 | authorization | update | 12 | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |  |
 | authorization | delete | 7 | ✓ | ✓ | ✓ | ✓ | ✓ |  |  |  |  |
 | authorization | search | 11 | ✓ | ✓ | ✓ | ✓ |  |  | ✓ | ✓ |  |
+| role | create | 10 |  | ✓ | ✓ |  |  | ✓ |  |  |  |
+| role | get | 3 |  |  | ✓ |  | ✓ |  |  |  |  |
+| role | update | 23 | ✓ | ✓ | ✓ |  | ✓ |  |  |  |  |
+| role | delete | 18 |  |  | ✓ |  | ✓ |  |  |  |  |
+| role | search | 24 |  | ✓ | ✓ |  | ✓ |  |  | ✓ |  |
 | cluster-variables | create | 10 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
 | cluster-variables | get | 6 |  |  | ✓ |  | ✓ |  |  |  |  |
 | cluster-variables | update | 30 |  | ✓ | ✓ |  | ✓ |  |  |  |  |
@@ -108,9 +108,9 @@ Legend: ✓ = at least 1, blank = 0.
 | authentication | get | 4 |  |  | ✓ |  |  |  |  |  |  |
 | usage-metrics | get | 4 | ✓ | ✓ | ✓ | ✓ |  |  |  |  |  |
 | cluster | get | 3 |  |  | ✓ |  |  |  |  |  |  |
-| expression | parameterized | 3 |  |  |  |  |  |  |  |  |  |
 | clock | create | 2 |  | ✓ |  |  |  |  |  |  |  |
 | clock | delete | 1 |  |  |  |  |  |  |  |  |  |
+| expression | parameterized | 3 |  |  |  |  |  |  |  |  |  |
 | license | get | 2 |  |  | ✓ |  |  |  |  |  |  |
 | message-subscriptions | search | 2 |  |  | ✓ |  |  |  |  |  |  |
 
@@ -129,16 +129,16 @@ Legend: ✓ = at least 1, blank = 0.
 | tenant | update | 26 | 5 | 2 | 6 |  | 9 |  |  |  |  |
 | tenant | delete | 23 | 2 |  | 6 |  | 11 |  |  |  |  |
 | tenant | search | 24 | 2 | 1 | 6 |  | 3 |  |  |  |  |
-| role | create | 10 |  | 3 | 1 |  |  | 5 |  |  |  |
-| role | get | 3 |  |  | 1 |  | 1 |  |  |  |  |
-| role | update | 23 | 2 | 2 | 5 |  | 7 |  |  |  |  |
-| role | delete | 18 |  |  | 5 |  | 9 |  |  |  |  |
-| role | search | 24 |  | 1 | 5 |  | 2 |  |  | 4 |  |
 | authorization | create | 44 | 10 | 15 | 5 | 5 | 4 | 5 |  |  |  |
 | authorization | get | 4 | 1 |  | 1 | 1 | 1 |  |  |  |  |
 | authorization | update | 12 | 5 | 3 | 1 | 1 | 2 |  |  |  |  |
 | authorization | delete | 7 | 3 | 1 | 1 | 1 | 1 |  |  |  |  |
 | authorization | search | 11 | 6 | 3 | 1 | 1 |  |  | 4 | 5 |  |
+| role | create | 10 |  | 3 | 1 |  |  | 5 |  |  |  |
+| role | get | 3 |  |  | 1 |  | 1 |  |  |  |  |
+| role | update | 23 | 2 | 2 | 5 |  | 7 |  |  |  |  |
+| role | delete | 18 |  |  | 5 |  | 9 |  |  |  |  |
+| role | search | 24 |  | 1 | 5 |  | 2 |  |  | 4 |  |
 | cluster-variables | create | 10 |  | 5 | 2 |  | 1 |  |  |  |  |
 | cluster-variables | get | 6 |  |  | 2 |  | 2 |  |  |  |  |
 | cluster-variables | update | 30 |  | 3 | 2 |  | 3 |  |  |  |  |
@@ -216,8 +216,8 @@ Legend: ✓ = at least 1, blank = 0.
 | authentication | get | 4 |  |  | 1 |  |  |  |  |  |  |
 | usage-metrics | get | 4 | 1 | 1 | 1 | 1 |  |  |  |  |  |
 | cluster | get | 3 |  |  | 1 |  |  |  |  |  |  |
-| expression | parameterized | 3 |  |  |  |  |  |  |  |  |  |
 | clock | create | 2 |  | 1 |  |  |  |  |  |  |  |
 | clock | delete | 1 |  |  |  |  |  |  |  |  |  |
+| expression | parameterized | 3 |  |  |  |  |  |  |  |  |  |
 | license | get | 2 |  |  | 1 |  |  |  |  |  |  |
 | message-subscriptions | search | 2 |  |  | 1 |  |  |  |  |  |  |
