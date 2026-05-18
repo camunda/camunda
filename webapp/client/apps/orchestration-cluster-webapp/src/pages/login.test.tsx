@@ -14,7 +14,11 @@ import {describe, expect, vi} from 'vitest';
 
 describe('<Login />', () => {
 	it('should have the correct copyright notice', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: new HttpResponse(null, {status: 401}),
+			}),
+		);
 
 		vi.useFakeTimers();
 		const mockYear = 1984;
@@ -29,7 +33,11 @@ describe('<Login />', () => {
 	});
 
 	it('should not allow the form to be submitted with empty fields', async ({worker}) => {
-		worker.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
+		worker.use(
+			mockCurrentUserEndpoint({
+				successResponse: new HttpResponse(null, {status: 401}),
+			}),
+		);
 
 		const screen = await renderWithRouter('/login');
 

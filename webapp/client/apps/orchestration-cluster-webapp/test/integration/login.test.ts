@@ -12,14 +12,22 @@ import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+		}),
 	);
 
 	await loginPage.goto();
 	await expect(loginPage.usernameInput).toBeVisible();
 
-	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}));
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
+	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
@@ -29,14 +37,22 @@ test('should redirect to the initial page on success', async ({network, page, lo
 
 test('should redirect to the referrer page', async ({network, page, loginPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+		}),
 	);
 
 	await page.goto('/about');
 	await expect(loginPage.usernameInput).toBeVisible();
 
-	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}));
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
+	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
@@ -46,8 +62,12 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 
 test('should show an error for wrong credentials', async ({network, loginPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
 	);
 
 	await loginPage.goto();
@@ -59,8 +79,12 @@ test('should show an error for wrong credentials', async ({network, loginPage}) 
 
 test('should show a generic error message', async ({network, loginPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
 	);
 
 	await loginPage.goto();
@@ -72,8 +96,13 @@ test('should show a generic error message', async ({network, loginPage}) => {
 
 test('should show a loading state while the login form is submitting', async ({network, loginPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200}), delay: 500}),
+		mockCurrentUserEndpoint({
+			successResponse: new HttpResponse(null, {status: 401}),
+		}),
+		mockLoginEndpoint({
+			successResponse: new HttpResponse(null, {status: 200}),
+			delay: 500,
+		}),
 	);
 
 	await loginPage.goto();
