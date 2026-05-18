@@ -22,8 +22,6 @@ public class AgentInstanceTemplate extends AbstractTemplateDescriptor
   public static final String KEY = "key";
   public static final String ELEMENT_ID = "elementId";
   public static final String ELEMENT_INSTANCE_KEYS = "elementInstanceKeys";
-  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
-  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
