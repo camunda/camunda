@@ -159,10 +159,10 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
       final Object value = entry.getValue();
       if (tenantId != null) {
         client.newTenantScopedClusterVariableCreateRequest(tenantId).create(name, value).execute();
-        LOGGER.info("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
+        LOGGER.debug("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
       } else {
         client.newGloballyScopedClusterVariableCreateRequest().create(name, value).execute();
-        LOGGER.info("Created globally-scoped cluster variable '{}'", name);
+        LOGGER.debug("Created globally-scoped cluster variable '{}'", name);
       }
     }
   }
