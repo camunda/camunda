@@ -74,7 +74,8 @@ public final class MessageCorrelateBehavior {
                     messageData.messageKey(),
                     messageData.messageName(),
                     messageData.correlationKey(),
-                    messageData.variables());
+                    messageData.variables(),
+                    messageData.businessId());
 
             subscriptionRecord.setProcessInstanceKey(processInstanceKey);
             correlatingSubscriptions.add(subscriptionRecord);

@@ -88,7 +88,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
                   storedMessage.getMessageKey(),
                   storedMessage.getMessage().getNameBuffer(),
                   storedMessage.getMessage().getCorrelationKeyBuffer(),
-                  storedMessage.getMessage().getVariablesBuffer());
+                  storedMessage.getMessage().getVariablesBuffer(),
+                  storedMessage.getMessage().getBusinessIdBuffer());
             });
   }
 
