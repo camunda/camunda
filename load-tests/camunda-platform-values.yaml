@@ -215,10 +215,10 @@ orchestration:
   resources:
     requests:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
     limits:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
 
   tolerations:
     - key: nodepool
