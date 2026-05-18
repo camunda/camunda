@@ -61,7 +61,8 @@ public class SbeCommandTest {
   @Test
   public void shouldDecodeSbeFileProvidedWithFileOption() throws Exception {
     // given
-    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.meta");
+    final var resourceUrl =
+        getClass().getClassLoader().getResource("raft-partition-partition-1.meta");
     assertThat(resourceUrl).isNotNull();
     final var filePath = Path.of(resourceUrl.toURI());
 
@@ -88,7 +89,8 @@ public class SbeCommandTest {
   @Test
   public void shouldDecodeSbeFileProvidedAsPositionalParameter() throws Exception {
     // given
-    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.conf");
+    final var resourceUrl =
+        getClass().getClassLoader().getResource("raft-partition-partition-1.conf");
     assertThat(resourceUrl).isNotNull();
     final var filePath = Path.of(resourceUrl.toURI());
 
