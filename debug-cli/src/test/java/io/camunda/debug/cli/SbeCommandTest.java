@@ -83,7 +83,6 @@ public class SbeCommandTest {
     assertThat(output.term()).isEqualTo(2L);
     assertThat(output.lastFlushedIndex()).isEqualTo(96L);
     assertThat(output.votedFor()).isEqualTo("0");
-    assertThat(output.commitIndex()).isEqualTo(96L);
   }
 
   @Test
@@ -131,5 +130,5 @@ public class SbeCommandTest {
     return schemaPath;
   }
 
-  record TestRaftMetadata(long term, long lastFlushedIndex, String votedFor, long commitIndex) {}
+  record TestRaftMetadata(long term, long lastFlushedIndex, String votedFor) {}
 }
