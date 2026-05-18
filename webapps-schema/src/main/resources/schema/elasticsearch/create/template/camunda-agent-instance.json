@@ -1,0 +1,104 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "elementId": {
+        "type": "keyword"
+      },
+      "elementInstanceKeys": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processDefinitionVersion": {
+        "type": "integer"
+      },
+      "versionTag": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "model": {
+        "type": "keyword"
+      },
+      "provider": {
+        "type": "keyword"
+      },
+      "systemPrompt": {
+        "type": "text",
+        "index": false
+      },
+      "maxTokens": {
+        "type": "long"
+      },
+      "maxModelCalls": {
+        "type": "integer"
+      },
+      "maxToolCalls": {
+        "type": "integer"
+      },
+      "inputTokens": {
+        "type": "long"
+      },
+      "outputTokens": {
+        "type": "long"
+      },
+      "modelCalls": {
+        "type": "integer"
+      },
+      "toolCalls": {
+        "type": "integer"
+      },
+      "tools": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "description": {
+            "type": "text",
+            "index": false
+          },
+          "elementId": {
+            "type": "keyword"
+          }
+        }
+      },
+      "creationDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "lastUpdatedDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "completionDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      }
+    }
+  }
+}

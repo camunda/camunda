@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -33,6 +34,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -499,7 +501,10 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             List.of(auditLogEntity(processInstance))),
         new DependentEntities(
             resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class),
-            List.of(taskEntity(processInstance))));
+            List.of(taskEntity(processInstance))),
+        new DependentEntities(
+            resourceProvider.getIndexTemplateDescriptor(AgentInstanceTemplate.class),
+            List.of(agentInstanceEntity(processInstance))));
   }
 
   private ProcessInstanceForListViewEntity processInstanceForListViewEntity(final String endDate) {
@@ -638,6 +643,14 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   private TaskEntity taskEntity(final ProcessInstanceForListViewEntity processInstance) {
     final TaskEntity entity = create(TaskEntity::new);
     entity.setProcessInstanceId(String.valueOf(processInstance.getKey()));
+    entity.setRootProcessInstanceKey(processInstance.getKey());
+    return entity;
+  }
+
+  private AgentInstanceEntity agentInstanceEntity(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final AgentInstanceEntity entity = create(AgentInstanceEntity::new);
+    entity.setProcessInstanceKey(processInstance.getKey());
     entity.setRootProcessInstanceKey(processInstance.getKey());
     return entity;
   }

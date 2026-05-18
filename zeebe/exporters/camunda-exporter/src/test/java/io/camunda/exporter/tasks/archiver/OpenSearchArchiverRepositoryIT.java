@@ -1189,7 +1189,7 @@ final class OpenSearchArchiverRepositoryIT {
                 verify(
                         genericClientSpy,
                         times(
-                            40) // number of index templates * 2 (for change policy requests and add
+                            42) // number of index templates * 2 (for change policy requests and add
                         // policy requests)
                         )
                     .executeAsync(captor.capture()));
@@ -1197,7 +1197,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
         .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
-        .hasSize(20)
+        .hasSize(21)
         .allSatisfy(
             request -> {
               final var indexPattern =

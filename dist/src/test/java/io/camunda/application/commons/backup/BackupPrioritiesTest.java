@@ -114,6 +114,8 @@ class BackupPrioritiesTest {
     // PRIO 3 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "camunda-agent-instance-8.10.0_",
+            "camunda-correlated-message-subscription-8.8.0_",
             "operate-batch-operation-1.0.0_",
             "operate-operation-8.4.1_",
             "operate-decision-instance-8.3.0_",
@@ -126,11 +128,14 @@ class BackupPrioritiesTest {
             "operate-sequence-flow-8.3.0_",
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
-            "tasklist-task-variable-8.3.0_",
-            "camunda-correlated-message-subscription-8.8.0_");
+            "tasklist-task-variable-8.3.0_");
     // PRIO 3 dated indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "camunda-agent-instance-8.10.0_*",
+            "-camunda-agent-instance-8.10.0_",
+            "camunda-correlated-message-subscription-8.8.0_*",
+            "-camunda-correlated-message-subscription-8.8.0_",
             "operate-batch-operation-1.0.0_*",
             "-operate-batch-operation-1.0.0_",
             "operate-operation-8.4.1_*",
@@ -156,9 +161,7 @@ class BackupPrioritiesTest {
             "tasklist-draft-task-variable-8.3.0_*",
             "-tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_*",
-            "-tasklist-task-variable-8.3.0_",
-            "camunda-correlated-message-subscription-8.8.0_*",
-            "-camunda-correlated-message-subscription-8.8.0_");
+            "-tasklist-task-variable-8.3.0_");
 
     // PRIO 4 main indices
     assertThat(iterator.next().allIndices())
