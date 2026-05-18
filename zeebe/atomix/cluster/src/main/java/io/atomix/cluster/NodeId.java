@@ -19,8 +19,10 @@ package io.atomix.cluster;
 import io.atomix.utils.AbstractIdentifier;
 import java.util.Objects;
 import java.util.UUID;
+import org.jspecify.annotations.NullMarked;
 
 /** Node identifier. */
+@NullMarked
 public class NodeId extends AbstractIdentifier<String> implements Comparable<NodeId> {
 
   /** Constructor for serialization. */

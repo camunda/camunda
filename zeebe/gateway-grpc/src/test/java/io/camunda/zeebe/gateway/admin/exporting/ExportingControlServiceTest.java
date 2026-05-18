@@ -18,6 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -35,6 +36,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -98,7 +101,8 @@ public class ExportingControlServiceTest {
     final var service = new ExportingControlService(client);
 
     // when
-    when(client.sendRequest(requestTo(1, 1))).thenThrow(new RuntimeException("request failed"));
+    when(client.sendRequest(requestTo(1, BrokerMemberId.from(1))))
+        .thenThrow(new RuntimeException("request failed"));
 
     // then
     assertThatExceptionOfType(Throwable.class).isThrownBy(service::pauseExporting);
@@ -119,22 +123,51 @@ public class ExportingControlServiceTest {
         arguments(
             named(
                 "Evenly distributed",
-                ofTopology(Map.of(1, List.of(1, 2, 3), 2, List.of(2, 1, 3), 3, List.of(3, 1, 2))))),
+                ofTopology(
+                    Map.of(
+                        1,
+                        List.of(
+                            BrokerMemberId.from(1), BrokerMemberId.from(2), BrokerMemberId.from(3)),
+                        2,
+                        List.of(
+                            BrokerMemberId.from(2), BrokerMemberId.from(1), BrokerMemberId.from(3)),
+                        3,
+                        List.of(
+                            BrokerMemberId.from(3),
+                            BrokerMemberId.from(1),
+                            BrokerMemberId.from(2)))))),
         arguments(
             named(
                 "Single broker, no replication",
-                ofTopology(Map.of(1, List.of(1), 2, List.of(1), 3, List.of(1))))),
+                ofTopology(
+                    Map.of(
+                        1,
+                        List.of(BrokerMemberId.from(1)),
+                        2,
+                        List.of(BrokerMemberId.from(1)),
+                        3,
+                        List.of(BrokerMemberId.from(1)))))),
         arguments(
             named(
                 "Multiple brokers, no replication",
-                ofTopology(Map.of(1, List.of(1), 2, List.of(2), 3, List.of(3))))));
+                ofTopology(
+                    Map.of(
+                        1,
+                        List.of(BrokerMemberId.from(1)),
+                        2,
+                        List.of(BrokerMemberId.from(2)),
+                        3,
+                        List.of(BrokerMemberId.from(3)))))));
   }
 
   public static Stream<Arguments> invalidTopologies() {
     return Stream.of(
         arguments(named("Partition without members", ofTopology(3, 1, 3, Map.of(1, List.of())))),
         arguments(
-            named("Partition with missing member", ofTopology(3, 1, 3, Map.of(1, List.of(1, 2))))),
+            named(
+                "Partition with missing member",
+                ofTopology(
+                    3, 1, 3, Map.of(1, List.of(BrokerMemberId.from(1), BrokerMemberId.from(2)))))),
         arguments(named("Empty topology", ofTopology(1, 1, 1, Map.of()))));
   }
 
@@ -142,7 +175,7 @@ public class ExportingControlServiceTest {
       final int clusterSize,
       final int partitionCount,
       final int replicationFactor,
-      final Map<Integer, List<Integer>> topology) {
+      final Map<Integer, List<BrokerMemberId>> topology) {
     return new BrokerClusterState() {
       @Override
       public boolean isInitialized() {
@@ -165,22 +198,22 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getLeaderForPartition(final int partition) {
+      public @Nullable BrokerMemberId getLeaderForPartition(final int partition) {
         return Optional.ofNullable(topology.get(partition))
             .filter(brokers -> !brokers.isEmpty())
             .map(List::getFirst)
-            .orElse(NODE_ID_NULL);
+            .orElse(null);
       }
 
       @Override
-      public Set<Integer> getFollowersForPartition(final int partition) {
+      public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
         return topology.getOrDefault(partition, List.of()).stream()
             .skip(1)
             .collect(Collectors.toSet());
       }
 
       @Override
-      public Set<Integer> getInactiveNodesForPartition(final int partition) {
+      public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
         final var members = topology.getOrDefault(partition, List.of());
 
         return getBrokers().stream()
@@ -189,7 +222,7 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getRandomBroker() {
+      public @Nullable BrokerMemberId getRandomBroker() {
         throw new UnsupportedOperationException();
       }
 
@@ -199,22 +232,23 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public List<Integer> getBrokers() {
+      public List<BrokerMemberId> getBrokers() {
         return topology.values().stream().flatMap(Collection::stream).toList();
       }
 
       @Override
-      public String getBrokerAddress(final int brokerId) {
+      public @Nullable String getBrokerAddress(final @NonNull BrokerMemberId brokerId) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public String getBrokerVersion(final int brokerId) {
+      public @Nullable String getBrokerVersion(final @NonNull BrokerMemberId brokerId) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+      public PartitionHealthStatus getPartitionHealth(
+          final @NonNull BrokerMemberId brokerId, final int partition) {
         throw new UnsupportedOperationException();
       }
 
@@ -230,28 +264,28 @@ public class ExportingControlServiceTest {
     };
   }
 
-  private static BrokerClusterState ofTopology(final Map<Integer, List<Integer>> topology) {
+  private static BrokerClusterState ofTopology(final Map<Integer, List<BrokerMemberId>> topology) {
     final var brokers = topology.values().stream().flatMap(Collection::stream).distinct().count();
     final var partitions = topology.size();
     final var replicationFactor =
         topology.values().stream()
             .map(Collection::size)
-            .max(Comparator.comparingInt((x) -> x))
+            .max(Comparator.comparingInt(x -> x))
             .orElseThrow();
     return ofTopology((int) brokers, partitions, replicationFactor, topology);
   }
 
-  record RequestMatcher(int partitionId, int brokerId)
+  record RequestMatcher(int partitionId, BrokerMemberId brokerId)
       implements ArgumentMatcher<BrokerRequest<Void>> {
 
-    static BrokerRequest<Void> requestTo(final int partitionId, final int brokerId) {
+    static BrokerRequest<Void> requestTo(final int partitionId, final BrokerMemberId brokerId) {
       return argThat(new RequestMatcher(partitionId, brokerId));
     }
 
     @Override
     public boolean matches(final BrokerRequest<Void> argument) {
       return argument.getPartitionId() == partitionId
-          && argument.getBrokerId().orElseThrow() == brokerId;
+          && argument.getBrokerId().orElseThrow().equals(brokerId);
     }
   }
 }

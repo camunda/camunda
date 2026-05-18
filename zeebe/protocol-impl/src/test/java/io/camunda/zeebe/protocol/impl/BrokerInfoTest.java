@@ -47,11 +47,10 @@ final class BrokerInfoTest {
 
     final BrokerInfo brokerInfo =
         new BrokerInfo()
-            .setNodeId(nodeId)
+            .setBrokerId(nodeId, "eu-west-1b")
             .setPartitionsCount(partitionsCount)
             .setClusterSize(clusterSize)
-            .setReplicationFactor(replicationFactor)
-            .setZone("eu-west-1b");
+            .setReplicationFactor(replicationFactor);
 
     addresses.forEach(brokerInfo::addAddress);
     partitionRoles.forEach(brokerInfo::addPartitionRole);
@@ -81,7 +80,7 @@ final class BrokerInfoTest {
 
     final BrokerInfo brokerInfo =
         new BrokerInfo()
-            .setNodeId(nodeId)
+            .setBrokerId(nodeId, null)
             .setPartitionsCount(partitionsCount)
             .setClusterSize(clusterSize)
             .setReplicationFactor(replicationFactor);

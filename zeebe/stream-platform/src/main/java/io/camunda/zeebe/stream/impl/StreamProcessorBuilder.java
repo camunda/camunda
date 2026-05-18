@@ -30,7 +30,6 @@ public final class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
-  private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
@@ -47,11 +46,6 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder actorSchedulingService(
       final ActorSchedulingService actorSchedulingService) {
     this.actorSchedulingService = actorSchedulingService;
-    return this;
-  }
-
-  public StreamProcessorBuilder nodeId(final int nodeId) {
-    this.nodeId = nodeId;
     return this;
   }
 
@@ -107,10 +101,6 @@ public final class StreamProcessorBuilder {
 
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
-  }
-
-  public int getNodeId() {
-    return nodeId;
   }
 
   public List<RecordProcessor> getRecordProcessors() {

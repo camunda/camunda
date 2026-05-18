@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -127,9 +128,14 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(final int nodeId) {
+  public BrokerInfo setBrokerId(final int nodeId, @Nullable final String zone) {
     this.nodeId = nodeId;
+    this.zone = zone;
     return this;
+  }
+
+  public String memberIdString() {
+    return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
   public int getPartitionsCount() {
@@ -193,11 +199,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public @Nullable String getZone() {
     return zone;
-  }
-
-  public BrokerInfo setZone(@Nullable final String zone) {
-    this.zone = zone;
-    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -330,6 +331,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     if (bodyDecoder.versionLength() > 0) {
       bodyDecoder.wrapVersion(version);
     } else {
+      version.wrap(EMPTY_BYTE_ARRAY);
       bodyDecoder.skipVersion();
     }
 
@@ -345,6 +347,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     if (bodyDecoder.zoneLength() > 0) {
       zone = bodyDecoder.zone();
     } else {
+      zone = null;
       bodyDecoder.skipZone();
     }
 

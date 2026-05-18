@@ -12,6 +12,7 @@ import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -105,7 +106,11 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              BrokerMemberId.from(1));
     }
 
     @BeforeEach
@@ -149,7 +154,11 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              BrokerMemberId.from(1));
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -226,7 +235,11 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              BrokerMemberId.from(1));
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -303,7 +316,11 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
+              transport,
+              adminAccess,
+              raftPartition,
+              clusterConfigurationService,
+              BrokerMemberId.from(1));
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -369,7 +386,6 @@ final class AdminApiRequestHandlerTest {
     private final AdminApiRequestHandler handler;
     private final RaftPartition raftPartition;
     private final ClusterConfigurationService clusterConfigurationService;
-    private final int nodeId = 1;
 
     StepdownRequest(
         @Mock final AtomixServerTransport transport,
@@ -378,9 +394,10 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       this.raftPartition = raftPartition;
       this.clusterConfigurationService = clusterConfigurationService;
+      final BrokerMemberId memberId = BrokerMemberId.from(1);
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, nodeId, null);
+              transport, adminAccess, raftPartition, clusterConfigurationService, memberId);
     }
 
     @BeforeEach
@@ -442,11 +459,11 @@ final class AdminApiRequestHandlerTest {
       // given
       when(raftPartition.getRole()).thenReturn(Role.LEADER);
       final var partitionId = 1;
-      final var primaryMemberId = io.atomix.cluster.MemberId.from("2");
+      final var primaryBrokerMemberId = io.atomix.cluster.BrokerMemberId.from("2");
       final var clusterConfig =
           Mockito.mock(io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.class);
       when(clusterConfig.getPrimaryMemberForPartition(partitionId))
-          .thenReturn(java.util.Optional.of(primaryMemberId));
+          .thenReturn(java.util.Optional.of(primaryBrokerMemberId.memberId()));
       when(clusterConfigurationService.getLatestClusterConfiguration())
           .thenReturn(
               io.camunda.zeebe.scheduler.future.CompletableActorFuture.completed(clusterConfig));
@@ -469,11 +486,12 @@ final class AdminApiRequestHandlerTest {
       // given
       when(raftPartition.getRole()).thenReturn(Role.LEADER);
       final var partitionId = 1;
-      final var primaryMemberId = io.atomix.cluster.MemberId.from("1"); // Same as nodeId
+      final var primaryBrokerMemberId =
+          io.atomix.cluster.BrokerMemberId.from("1"); // Same as nodeId
       final var clusterConfig =
           Mockito.mock(io.camunda.zeebe.dynamic.config.state.ClusterConfiguration.class);
       when(clusterConfig.getPrimaryMemberForPartition(partitionId))
-          .thenReturn(java.util.Optional.of(primaryMemberId));
+          .thenReturn(java.util.Optional.of(primaryBrokerMemberId.memberId()));
       when(clusterConfigurationService.getLatestClusterConfiguration())
           .thenReturn(
               io.camunda.zeebe.scheduler.future.CompletableActorFuture.completed(clusterConfig));

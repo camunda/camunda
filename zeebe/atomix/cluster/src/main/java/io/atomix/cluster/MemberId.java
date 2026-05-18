@@ -16,6 +16,8 @@
  */
 package io.atomix.cluster;
 
+import io.camunda.zeebe.util.MemberIdUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
@@ -88,6 +90,11 @@ public class MemberId extends NodeId {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
   }
 
+  @VisibleForTesting
+  public static MemberId from(final int nodeId) {
+    return from(null, nodeId);
+  }
+
   public int nodeIdx() {
     if (nodeIdx == null) {
       throw new IllegalStateException("No nodeIdx in this memberId: " + this);
@@ -121,11 +128,7 @@ public class MemberId extends NodeId {
   }
 
   private static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {
-    if (zone == null) {
-      return Integer.toString(nodeIdx);
-    } else {
-      return validateZone(zone) + "/" + nodeIdx;
-    }
+    return MemberIdUtil.memberIdString(zone, nodeIdx);
   }
 
   private static @Nullable Integer tryParseInt(final String s) {

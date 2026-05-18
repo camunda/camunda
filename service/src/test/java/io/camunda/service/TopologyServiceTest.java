@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
@@ -27,15 +28,24 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
+@NullMarked
 public class TopologyServiceTest {
 
+  private final int partitionId1 = 1;
+  private final int partitionId2 = 2;
+  private final int partitionId3 = 3;
+  private final BrokerMemberId leaderId1 = BrokerMemberId.from(1);
+  private final BrokerMemberId leaderId2 = BrokerMemberId.from(2);
+  private final BrokerMemberId leaderId3 = BrokerMemberId.from(3);
   private BrokerClient brokerClient;
   private BrokerClusterState clusterState;
   private TopologyServices services;
@@ -58,12 +68,6 @@ public class TopologyServiceTest {
 
   @Test
   void shouldReturnHealthyWhenAtLeastOnePartitionHasHealthyLeader() {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
     when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
@@ -92,12 +96,6 @@ public class TopologyServiceTest {
       mode = EnumSource.Mode.EXCLUDE)
   void shouldReturnUnhealthyWhenNoPartitionHasHealthyLeader(
       final PartitionHealthStatus unhealthyStatus) {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
     when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
@@ -154,12 +152,6 @@ public class TopologyServiceTest {
   @Test
   void shouldHandleMixedPartitionHealthStatuses() {
     // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int partitionId3 = 3;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-    final int leaderId3 = 3;
 
     when(clusterState.getPartitions())
         .thenReturn(List.of(partitionId1, partitionId2, partitionId3));
@@ -280,23 +272,23 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return 0;
+    public BrokerMemberId getLeaderForPartition(final int partition) {
+      return BrokerMemberId.from(0);
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
-      return Set.of(1);
+    public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(1));
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
-      return Set.of(2);
+    public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(2));
     }
 
     @Override
-    public int getRandomBroker() {
-      return ThreadLocalRandom.current().nextInt(0, 3);
+    public BrokerMemberId getRandomBroker() {
+      return BrokerMemberId.from(ThreadLocalRandom.current().nextInt(0, 3));
     }
 
     @Override
@@ -305,27 +297,28 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public List<Integer> getBrokers() {
-      return List.of(0, 1, 2);
+    public List<BrokerMemberId> getBrokers() {
+      return Stream.of(0, 1, 2).map(BrokerMemberId::from).toList();
     }
 
     @Override
-    public String getBrokerAddress(final int brokerId) {
-      return "localhost:" + (26501 + brokerId);
+    public String getBrokerAddress(final BrokerMemberId brokerId) {
+      return "localhost:" + (26501 + brokerId.nodeIdx());
     }
 
     @Override
-    public String getBrokerVersion(final int brokerId) {
+    public String getBrokerVersion(final BrokerMemberId brokerId) {
       return version;
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public PartitionHealthStatus getPartitionHealth(
+        final BrokerMemberId brokerId, final int partition) {
       if (partition != 1) {
         return PartitionHealthStatus.NULL_VAL;
       }
 
-      return switch (brokerId) {
+      return switch (brokerId.nodeIdx()) {
         case 0, 1 -> PartitionHealthStatus.HEALTHY;
         case 2 -> PartitionHealthStatus.UNHEALTHY;
         default -> PartitionHealthStatus.NULL_VAL;

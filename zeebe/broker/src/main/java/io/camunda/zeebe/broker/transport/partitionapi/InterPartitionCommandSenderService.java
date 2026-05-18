@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
@@ -74,7 +74,7 @@ public final class InterPartitionCommandSenderService extends Actor
   }
 
   @Override
-  public void onPartitionLeaderUpdated(final int leaderPartitionId, final MemberId leaderId) {
-    actor.submit(() -> commandSender.setCurrentLeader(leaderPartitionId, leaderId));
+  public void onPartitionLeaderUpdated(final int leaderPartitionId, final BrokerMemberId leaderId) {
+    actor.submit(() -> commandSender.setCurrentLeader(leaderPartitionId, leaderId.memberId()));
   }
 }

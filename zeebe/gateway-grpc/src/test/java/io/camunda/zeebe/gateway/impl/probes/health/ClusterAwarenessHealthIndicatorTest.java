@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class ClusterAwarenessHealthIndicatorTest {
   public void shouldReportUpIfListOfBrokersIsNotEmpty() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

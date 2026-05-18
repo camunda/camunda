@@ -66,7 +66,7 @@ public final class StubBroker implements AutoCloseable {
             .setClusterSize(1)
             .setReplicationFactor(1)
             .setPartitionsCount(1)
-            .setNodeId(nodeId)
+            .setBrokerId(nodeId, null)
             .setPartitionHealthy(1)
             .setLeaderForPartition(partitionId, 1);
     brokerInfo.setVersion(VersionUtil.getVersion());

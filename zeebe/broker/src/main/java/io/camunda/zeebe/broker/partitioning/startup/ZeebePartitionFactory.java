@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -178,7 +179,7 @@ public final class ZeebePartitionFactory {
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
         new PartitionStartupAndTransitionContextImpl(
-            localBroker.getNodeId(),
+            BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId()),
             localBroker.getPartitionsCount(),
             communicationService,
             raftPartition,

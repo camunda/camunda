@@ -7,15 +7,17 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public interface BrokerClusterState {
 
-  int UNKNOWN_NODE_ID = -1;
-  int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
-  int PARTITION_ID_NULL = NODE_ID_NULL - 1;
+  int PARTITION_ID_NULL = -3;
 
   boolean isInitialized();
 
@@ -25,27 +27,26 @@ public interface BrokerClusterState {
 
   int getReplicationFactor();
 
-  int getLeaderForPartition(int partition);
+  @Nullable BrokerMemberId getLeaderForPartition(int partition);
 
-  Set<Integer> getFollowersForPartition(int partition);
+  Set<BrokerMemberId> getFollowersForPartition(int partition);
 
-  Set<Integer> getInactiveNodesForPartition(int partition);
+  Set<BrokerMemberId> getInactiveNodesForPartition(int partition);
 
   /**
-   * @return the node id of a random broker or {@link BrokerClusterState#UNKNOWN_NODE_ID} if no
-   *     brokers are known
+   * @return the node id of a random broker or null if no brokers are known
    */
-  int getRandomBroker();
+  @Nullable BrokerMemberId getRandomBroker();
 
   List<Integer> getPartitions();
 
-  List<Integer> getBrokers();
+  List<BrokerMemberId> getBrokers();
 
-  String getBrokerAddress(int brokerId);
+  @Nullable String getBrokerAddress(BrokerMemberId brokerId);
 
-  String getBrokerVersion(int brokerId);
+  @Nullable String getBrokerVersion(BrokerMemberId brokerId);
 
-  PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
+  @Nullable PartitionHealthStatus getPartitionHealth(BrokerMemberId brokerId, int partition);
 
   long getLastCompletedChangeId();
 
