@@ -8,11 +8,13 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 
-import io.camunda.gateway.protocol.model.simple.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
@@ -50,7 +52,21 @@ public class AgentInstanceRequestValidator {
             }
           }
 
+          if (request.getLimits() != null) {
+            final var limits = request.getLimits();
+            violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
+            violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
+            violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
+          }
+
           return violations;
         });
+  }
+
+  private List<String> validateLimit(final String limitName, final Number limit) {
+    if (limit != null && limit.longValue() < -1) {
+      return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(limitName, limit, ">= -1"));
+    }
+    return Collections.emptyList();
   }
 }
