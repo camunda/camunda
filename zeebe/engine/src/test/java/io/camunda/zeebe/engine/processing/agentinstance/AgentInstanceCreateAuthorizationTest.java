@@ -90,14 +90,15 @@ public final class AgentInstanceCreateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    engine.agentInstances().withElementInstanceKey(elementInstanceKey).create(user.getUsername());
+    final var created =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .create(user.getUsername());
 
     // then
-    assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CREATED)
-                .filter(r -> r.getValue().getElementInstanceKey() == elementInstanceKey)
-                .findFirst())
-        .isPresent();
+    assertThat(created.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
+    assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
   }
 
   @Test
@@ -109,19 +110,15 @@ public final class AgentInstanceCreateAuthorizationTest {
     assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
 
     // when
-    engine
-        .agentInstances()
-        .withElementInstanceKey(elementInstanceKey)
-        .expectRejection()
-        .create(user.getUsername());
+    final var rejection =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .expectRejection()
+            .create(user.getUsername());
 
     // then - permission denial forwards as FORBIDDEN
-    assertThat(
-            RecordingExporter.agentInstanceRecords()
-                .onlyCommandRejections()
-                .getFirst()
-                .getRejectionType())
-        .isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
   }
 
   @Test
@@ -139,20 +136,16 @@ public final class AgentInstanceCreateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    engine
-        .agentInstances()
-        .withElementInstanceKey(elementInstanceKey)
-        .withAuthorizedTenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-        .expectRejection()
-        .create(user.getUsername());
+    final var rejection =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withAuthorizedTenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .expectRejection()
+            .create(user.getUsername());
 
     // then - tenant denial on an existing PROCESS_DEFINITION forwards as NOT_FOUND
-    assertThat(
-            RecordingExporter.agentInstanceRecords()
-                .onlyCommandRejections()
-                .getFirst()
-                .getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   private long deployAndStartProcessUnderTenant(final String tenantId) {
