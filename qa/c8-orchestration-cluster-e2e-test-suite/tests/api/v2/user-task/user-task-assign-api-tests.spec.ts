@@ -24,7 +24,9 @@ test.describe.parallel('Assign User Task Tests', () => {
     setupProcessInstanceForTests('user_task_api_test_process');
 
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Assign user task - success', async ({request}) => {

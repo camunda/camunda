@@ -250,6 +250,7 @@ test.describe('Process Instance History', () => {
 
     const mainProcessName = 'EmbeddedSubprocess';
     let expandingElementsInMainProcess;
+
     await test.step('Verify Main process has no nested element', async () => {
       expandingElementsInMainProcess =
         await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(

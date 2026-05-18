@@ -34,7 +34,7 @@ import {
   createRole,
   createGroupAndStoreResponseFields,
   createMappingRule,
-} from '@requestHelpers'
+} from '@requestHelpers';
 
 export async function assignUsersToTenant(
   request: APIRequestContext,

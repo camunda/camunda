@@ -29,9 +29,7 @@ import {
   grantUserResourceAuthorization,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  CREATE_CUSTOM_AUTHORIZATION_BODY,
-} from '../../../../utils/beans/requestBeans';
+import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
@@ -281,6 +279,7 @@ test.describe('Create Authorization for Client - Forbidden', () => {
       ]);
     },
   );
+
   test('Create Authorization for client - 403 Forbidden', async ({request}) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(

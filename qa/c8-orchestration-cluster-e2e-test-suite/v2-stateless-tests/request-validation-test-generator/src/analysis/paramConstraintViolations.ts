@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {
   OperationModel,
   ValidationScenario,
@@ -28,7 +36,6 @@ function resolveParamSchema(
   if (!schema) return undefined;
   const out: ResolvedParamSchema = {schema};
   function merge(s: any) {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!s || typeof s !== 'object') return;
     if (typeof s.pattern === 'string' && out.pattern === undefined)
       out.pattern = s.pattern;

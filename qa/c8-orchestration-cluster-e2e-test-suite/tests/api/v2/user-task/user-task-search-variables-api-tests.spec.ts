@@ -28,7 +28,9 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     );
 
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Search user task variables - success', async ({request}) => {

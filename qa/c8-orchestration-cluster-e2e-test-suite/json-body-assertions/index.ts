@@ -105,11 +105,10 @@ export function validateResponseShape<
   }
 
   // Call without throwing so we can filter forward-compat errors first.
-  const result = _generatedValidateResponseShape(
-    spec,
-    body,
-    {...options, throw: false},
-  ) as ValidationResult;
+  const result = _generatedValidateResponseShape(spec, body, {
+    ...options,
+    throw: false,
+  }) as ValidationResult;
 
   const filtered = _filterForwardCompatErrors(result);
   if (!filtered.ok) {

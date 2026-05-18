@@ -24,9 +24,7 @@ import {
   createUser,
   userFromState,
 } from '@requestHelpers';
-import {
-  defaultAssertionOptions,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 
@@ -237,7 +235,7 @@ test.describe.parallel('Group Users API Tests', () => {
       username: userFromState('groupId2', state) as string,
     };
     const res = await request.delete(
-      buildUrl(`/groups/${p.groupId}/users/${p.username}`,),
+      buildUrl(`/groups/${p.groupId}/users/${p.username}`),
       {
         headers: jsonHeaders(),
       },

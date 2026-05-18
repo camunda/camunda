@@ -84,18 +84,21 @@ type PlaywrightFixtures = {
 };
 
 const test = base.extend<PlaywrightFixtures>({
-  suppressHelperModals: [async ({page}, use) => {
-    await page.addInitScript(() => {
-      const current = JSON.parse(
-        window.localStorage.getItem('sharedState') || '{}',
-      );
-      window.localStorage.setItem(
-        'sharedState',
-        JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
-      );
-    });
-    await use();
-  }, {auto: true}],
+  suppressHelperModals: [
+    async ({page}, use) => {
+      await page.addInitScript(() => {
+        const current = JSON.parse(
+          window.localStorage.getItem('sharedState') || '{}',
+        );
+        window.localStorage.setItem(
+          'sharedState',
+          JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+        );
+      });
+      await use();
+    },
+    {auto: true},
+  ],
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
       new AxeBuilder({page}).withTags([

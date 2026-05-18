@@ -58,7 +58,7 @@ export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
   getLast24HoursRange,
-  type StatisticsJobItem
+  type StatisticsJobItem,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,

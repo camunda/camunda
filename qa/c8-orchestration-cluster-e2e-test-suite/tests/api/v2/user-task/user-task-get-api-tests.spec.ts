@@ -21,8 +21,11 @@ import {findUserTask} from '@requestHelpers';
 test.describe.parallel('Get User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
     setupProcessInstanceForTests('user_task_api_test_process');
+
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Get user task - success', async ({request}) => {
