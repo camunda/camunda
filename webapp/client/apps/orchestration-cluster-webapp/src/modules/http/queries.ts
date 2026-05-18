@@ -15,19 +15,20 @@ const queryKeys = {
 };
 
 const queries = {
-	getCurrentUser: queryOptions({
-		queryKey: queryKeys.currentUser(),
-		queryFn: async () => {
-			const {response, error} = await request(endpoints.getCurrentUser());
-			if (error !== null) {
-				throw error;
-			}
-			return response;
-		},
-		staleTime: Infinity,
-		gcTime: Infinity,
-		retry: false,
-	}),
+	getCurrentUser: () =>
+		queryOptions({
+			queryKey: queryKeys.currentUser(),
+			queryFn: async () => {
+				const {response, error} = await request(endpoints.getCurrentUser());
+				if (error !== null) {
+					throw error;
+				}
+				return response;
+			},
+			staleTime: Infinity,
+			gcTime: Infinity,
+			retry: false,
+		}),
 } as const;
 
 export {queries};
