@@ -242,7 +242,12 @@ final class AgentInstanceHandlerTest {
   }
 
   @ParameterizedTest(name = "[{index}] Should map protocol status \''{0}\' to entity status")
-  @EnumSource(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.class)
+  @EnumSource(
+      value = io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.class,
+      // The broker should never emit UNSPECIFIED;
+      // all other protocol statuses must map to an exporter status.
+      names = {"UNSPECIFIED"},
+      mode = Mode.EXCLUDE)
   void shouldMapAllProtocolStatuses(
       final io.camunda.zeebe.protocol.record.value.AgentInstanceStatus protocolStatus) {
     // given
@@ -262,7 +267,37 @@ final class AgentInstanceHandlerTest {
 
     // then
     assertThat(entity.getStatus()).isNotNull();
-    assertThat(entity.getStatus().name()).isEqualTo(protocolStatus.name());
+    assertThat(entity.getStatus().name())
+        .as(
+            """
+            Protocol status '%s' has no explicit mapping in 'AgentInstanceHandler.mapStatus()' \
+            and falls back to 'UNKNOWN' — add '%s' to '%s' entity enum and handle \
+            it explicitly in the switch, or exclude it from this test if UNKNOWN is intentional.\
+            """,
+            protocolStatus, protocolStatus, AgentInstanceStatus.class.getName())
+        .isEqualTo(protocolStatus.name());
+  }
+
+  @Test
+  void shouldMapUnexpectedStatusToUnknown() {
+    // given — UNSPECIFIED is not explicitly handled in mapStatus() and acts as a proxy
+    // for any unexpected/future protocol status that hits the default branch
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildMinimalRecordValue(1L))
+            .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.UNSPECIFIED)
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.CREATED).withValue(recordValue));
+    final var entity = new AgentInstanceEntity().setId("1");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStatus()).isEqualTo(AgentInstanceStatus.UNKNOWN);
   }
 
   @Test
