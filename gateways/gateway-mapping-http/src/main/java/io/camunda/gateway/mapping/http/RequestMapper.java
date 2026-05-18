@@ -30,6 +30,7 @@ import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestVa
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.gateway.mapping.http.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -474,19 +475,30 @@ public class RequestMapper {
       final String scopeKey,
       final Map<String, Object> variables,
       final boolean isMultiTenancyEnabled) {
-    final var validator =
-        validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
-    if (expression.isBlank()) {
+    if (expression == null || expression.isBlank()) {
       return Either.left(
           GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("expression"),
               INVALID_ARGUMENT.name()));
     }
-    return validator.map(
-        validTenantId ->
-            new ExpressionEvaluationRequest(
-                expression, validTenantId, keyToLongOrNull(scopeKey), variables));
+
+    final var scopeKeyValidation = validateScopeKey(scopeKey);
+    if (scopeKeyValidation.isPresent()) {
+      return Either.left(scopeKeyValidation.get());
+    }
+
+    return validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation")
+        .map(
+            tenant ->
+                new ExpressionEvaluationRequest(
+                    expression, tenant, keyToLongOrNull(scopeKey), variables));
+  }
+
+  private static Optional<ProblemDetail> validateScopeKey(final @Nullable String scopeKey) {
+    final List<String> validationErrors = new ArrayList<>();
+    validateKeyFormat(scopeKey, "scopeKey", validationErrors);
+    return createProblemDetail(validationErrors);
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
