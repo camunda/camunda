@@ -52,4 +52,9 @@ public class LinkedResourceBuilder {
     element.setLinkName(linkName);
     return this;
   }
+
+  public LinkedResourceBuilder variableName(final String variableName) {
+    element.setVariableName(variableName);
+    return this;
+  }
 }

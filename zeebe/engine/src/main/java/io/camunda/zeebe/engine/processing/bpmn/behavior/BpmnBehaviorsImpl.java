@@ -64,6 +64,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
   private final BpmnConditionalBehavior conditionalBehavior;
+  private final BpmnLinkedResourceBehavior linkedResourceBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
 
@@ -280,6 +281,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    linkedResourceBehavior =
+        new BpmnLinkedResourceBehavior(processingState.getResourceState(), stateBehavior);
   }
 
   @Override
@@ -395,6 +399,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public BpmnLinkedResourceBehavior linkedResourceBehavior() {
+    return linkedResourceBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

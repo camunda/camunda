@@ -212,6 +212,7 @@ public final class BpmnJobBehavior {
       }
       resourceProps.setResourceType(linkedResource.getResourceType());
       resourceProps.setLinkName(linkedResource.getLinkName());
+      resourceProps.setVariableName(linkedResource.getVariableName());
       linkedResourceProps.add(resourceProps);
     }
     return Either.right(linkedResourceProps);
@@ -750,6 +751,7 @@ public final class BpmnJobBehavior {
     private String resourceKey;
     private String resourceType;
     private String linkName;
+    private String variableName;
 
     public String getResourceKey() {
       return resourceKey;
@@ -773,6 +775,14 @@ public final class BpmnJobBehavior {
 
     public void setLinkName(final String linkName) {
       this.linkName = linkName;
+    }
+
+    public String getVariableName() {
+      return variableName;
+    }
+
+    public void setVariableName(final String variableName) {
+      this.variableName = variableName;
     }
   }
 }
