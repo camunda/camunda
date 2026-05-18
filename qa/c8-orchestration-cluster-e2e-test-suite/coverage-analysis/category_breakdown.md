@@ -30,9 +30,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: owner-entity-or-resource
 - **Files**: `authorization/create-authorization-for-client-api.spec.ts`, `authorization/create-authorization-for-group-api.spec.ts`, `authorization/create-authorization-for-mapping-rule-api.spec.ts`, `authorization/create-authorization-for-role-api.spec.ts`, `authorization/create-authorization-for-user-api.spec.ts`, `authorization/delete-authorization-api.spec.ts`, `authorization/get-authorization-api.spec.ts`, `authorization/search-authorization-api.spec.ts`, `authorization/update-authorization-api.spec.ts`
-- **Observation channel**: GET = 5, Search = 11
+- **Observation channel**: GET = 4, Search = 11
 - **Form-step counts**: create=10, observe-present-get=1, observe-present-search=6, mutate=5, delete=3, negative-create=34, negative-get=3, negative-search=5, negative-mutate=7, negative-delete=4
-- **Variants**: happy-path=25, observe-via-get=5, observe-via-search=11, pagination-sort=4, filter=5, bad-request=22, unauthorized=9, forbidden=9, not-found=8, conflict=5
+- **Variants**: happy-path=25, observe-via-get=4, observe-via-search=11, pagination-sort=4, filter=5, bad-request=22, unauthorized=9, forbidden=9, not-found=8, conflict=5
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -101,7 +101,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | bad-request, pagination-sort | `authorization/search-authorization-api.spec.ts:325` | Search Authorization - invalid sort field - 400 Bad Request |
 | negative-search | bad-request, filter | `authorization/search-authorization-api.spec.ts:348` | Search Authorization - invalid filter field - 400 Bad Request |
 | negative-search | unauthorized | `authorization/search-authorization-api.spec.ts:368` | Search Authorization - Unauthorized - 401 Unauthorized |
-| negative-search | forbidden, observe-via-get, happy-path | `authorization/search-authorization-api.spec.ts:380` | Search Authorization - Returns empty results for user without permission - 200 Success |
+| negative-search | forbidden, happy-path | `authorization/search-authorization-api.spec.ts:380` | Search Authorization - Returns empty results for user without permission - 200 Success |
 | negative-search | bad-request, pagination-sort | `authorization/search-authorization-api.spec.ts:445` | Search Authorization - Negative pagination values - 400 Bad Request |
 | negative-mutate | bad-request | `authorization/update-authorization-api.spec.ts:561` | Update User Authorization - empty requestBody - 400 bad request |
 | negative-mutate | unauthorized | `authorization/update-authorization-api.spec.ts:647` | Update User Authorization - Unauthorized |
@@ -119,9 +119,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: none
 - **Files**: `cluster-variables/cluster-variable-global-api-tests.spec.ts`, `cluster-variables/cluster-variable-search-api.spec.ts`, `cluster-variables/cluster-variable-tenant-api-tests.spec.ts`, `cluster-variables/cluster-variable-update-api-tests.spec.ts`
-- **Observation channel**: GET = 7, Search = 16
+- **Observation channel**: GET = 6, Search = 16
 - **Form-step counts**: create=3, observe-present-get=2, observe-present-search=12, mutate=23, delete=2, negative-create=7, negative-get=4, negative-search=3, negative-mutate=7, negative-delete=4
-- **Variants**: happy-path=1, observe-via-get=7, observe-via-search=16, pagination-sort=4, filter=6, bad-request=10, unauthorized=9, not-found=8, unlabeled=27
+- **Variants**: happy-path=1, observe-via-get=6, observe-via-search=16, pagination-sort=4, filter=6, bad-request=10, unauthorized=9, not-found=8, unlabeled=27
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -140,7 +140,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | pagination-sort | `cluster-variables/cluster-variable-search-api.spec.ts:283` | Search Cluster Variables Sort by Name ASC |
 | observe-present-search | pagination-sort | `cluster-variables/cluster-variable-search-api.spec.ts:315` | Search Cluster Variables Sort by Name DESC |
 | observe-present-search | — | `cluster-variables/cluster-variable-search-api.spec.ts:347` | Search Cluster Variables With truncateValues=false |
-| observe-present-search | observe-via-get | `cluster-variables/cluster-variable-search-api.spec.ts:475` | Search Cluster Variables By Non-Existent Name Returns Empty |
+| observe-present-search | — | `cluster-variables/cluster-variable-search-api.spec.ts:475` | Search Cluster Variables By Non-Existent Name Returns Empty |
 | observe-present-search | — | `cluster-variables/cluster-variable-search-api.spec.ts:507` | Search Finds Updated Cluster Variable Value |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:42` | Update Global Cluster Variable With Object Value |
 | mutate | unlabeled | `cluster-variables/cluster-variable-update-api-tests.spec.ts:60` | Update Global Cluster Variable With String Value |
@@ -197,9 +197,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: none
 - **Files**: `tenant/tenant-api-tests.spec.ts`, `tenant/tenant-role-api-tests.spec.ts`
-- **Observation channel**: GET = 4, Search = 10
+- **Observation channel**: GET = 3, Search = 10
 - **Form-step counts**: create=1, observe-present-get=1, observe-present-search=6, mutate=3, delete=2, negative-create=6, negative-get=2, negative-search=4, negative-mutate=7, negative-delete=5
-- **Variants**: happy-path=3, observe-via-get=4, observe-via-search=10, bad-request=6, unauthorized=8, not-found=8, conflict=2, unlabeled=3
+- **Variants**: happy-path=3, observe-via-get=3, observe-via-search=10, bad-request=6, unauthorized=8, not-found=8, conflict=2, unlabeled=3
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -210,7 +210,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | — | `tenant/tenant-api-tests.spec.ts:381` | Search Tenants By Tenant Id |
 | observe-present-search | — | `tenant/tenant-api-tests.spec.ts:420` | Search Tenants By Multiple Fields |
 | observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:231` | Search Tenant Roles |
-| observe-present-search | observe-via-get | `tenant/tenant-role-api-tests.spec.ts:262` | Search Tenant Roles Tenant With No Assignments Returns Empty |
+| observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:262` | Search Tenant Roles Tenant With No Assignments Returns Empty |
 | mutate | unlabeled | `tenant/tenant-api-tests.spec.ts:161` | Update Tenant |
 | mutate | happy-path | `tenant/tenant-api-tests.spec.ts:212` | Update Tenant Missing Description success 200 |
 | mutate | happy-path | `tenant/tenant-role-api-tests.spec.ts:43` | Assign Role To Tenant - Success |
@@ -286,9 +286,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: none
 - **Files**: `global-task-listener/global-task-listener-create-api-tests.spec.ts`, `global-task-listener/global-task-listener-delete-api-tests.spec.ts`, `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts`, `global-task-listener/global-task-listener-update-api-tests.spec.ts`
-- **Observation channel**: GET = 3, Search = 8
+- **Observation channel**: GET = 0, Search = 8
 - **Form-step counts**: create=3, observe-present-search=5, mutate=2, delete=1, observe-absence=1, negative-create=8, negative-search=3, negative-mutate=5, negative-delete=2
-- **Variants**: happy-path=6, observe-via-get=3, observe-via-search=8, observe-absence=1, pagination-sort=7, bad-request=9, unauthorized=4, forbidden=2, not-found=3, conflict=2
+- **Variants**: happy-path=6, observe-via-search=8, observe-absence=1, pagination-sort=7, bad-request=9, unauthorized=4, forbidden=2, not-found=3, conflict=2
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -312,8 +312,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-create | conflict | `global-task-listener/global-task-listener-create-api-tests.spec.ts:188` | Create Global Task Listener - duplicate id conflict |
 | negative-create | forbidden | `global-task-listener/global-task-listener-create-api-tests.spec.ts:262` | Create Global Task Listener - 403 Forbidden - user with no GLOBAL_LISTENER permissions |
 | negative-create | forbidden | `global-task-listener/global-task-listener-create-api-tests.spec.ts:282` | Create Global Task Listener - 403 Forbidden - user with READ-only GLOBAL_LISTENER permission |
-| negative-search | bad-request, pagination-sort, observe-via-get | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:232` | Search Global Task Listeners - invalid sort field returns 400 |
-| negative-search | bad-request, pagination-sort, observe-via-get | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:245` | Search Global Task Listeners - missing sort field returns 400 |
+| negative-search | bad-request, pagination-sort | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:232` | Search Global Task Listeners - invalid sort field returns 400 |
+| negative-search | bad-request, pagination-sort | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:245` | Search Global Task Listeners - missing sort field returns 400 |
 | negative-search | unauthorized | `global-task-listener/global-task-listener-search-sort-api-tests.spec.ts:258` | Search Global Task Listeners - unauthorized |
 | negative-mutate | unauthorized | `global-task-listener/global-task-listener-update-api-tests.spec.ts:110` | Update Global Task Listener - unauthorized |
 | negative-mutate | not-found | `global-task-listener/global-task-listener-update-api-tests.spec.ts:128` | Update Global Task Listener - not found |
@@ -468,22 +468,22 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: role + client, role + group, role + mapping-rule, role + user
 - **Files**: `role/role-clients-api-tests.spec.ts`, `role/role-groups-api-tests.spec.ts`, `role/role-mapping-rules-api-tests.spec.ts`, `role/role-users-api-tests.spec.ts`
-- **Observation channel**: GET = 3, Search = 18
+- **Observation channel**: GET = 0, Search = 18
 - **Form-step counts**: observe-present-search=12, mutate=7, delete=3, negative-create=4, negative-search=6, negative-mutate=10, negative-delete=12
-- **Variants**: happy-path=1, observe-via-get=3, observe-via-search=18, filter=4, unauthorized=12, not-found=16, conflict=4, unlabeled=9
+- **Variants**: happy-path=1, observe-via-search=18, filter=4, unauthorized=12, not-found=16, conflict=4, unlabeled=9
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
 | observe-present-search | — | `role/role-clients-api-tests.spec.ts:126` | Search Role Clients |
 | observe-present-search | — | `role/role-clients-api-tests.spec.ts:166` | Search Role Clients For Non Existent Role Empty |
 | observe-present-search | — | `role/role-groups-api-tests.spec.ts:253` | Search Role Groups |
-| observe-present-search | observe-via-get | `role/role-groups-api-tests.spec.ts:283` | Search Role Groups Role With No Assignments Returns Empty |
+| observe-present-search | — | `role/role-groups-api-tests.spec.ts:283` | Search Role Groups Role With No Assignments Returns Empty |
 | observe-present-search | — | `role/role-mapping-rules-api-tests.spec.ts:235` | Search Role Mapping Rules |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:283` | Search Role Mapping Rules Filter By mappingRuleId |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:320` | Search Role Mapping Rules Filter By name |
 | observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:355` | Search Role Mapping Rules Filter By multiple fields |
-| observe-present-search | filter, observe-via-get | `role/role-mapping-rules-api-tests.spec.ts:393` | Search Role Mapping Rules Filter Non Matching Returns Empty |
-| observe-present-search | observe-via-get | `role/role-mapping-rules-api-tests.spec.ts:423` | Search Role Mapping Rules Role With No Assignments Returns Empty |
+| observe-present-search | filter | `role/role-mapping-rules-api-tests.spec.ts:393` | Search Role Mapping Rules Filter Non Matching Returns Empty |
+| observe-present-search | — | `role/role-mapping-rules-api-tests.spec.ts:423` | Search Role Mapping Rules Role With No Assignments Returns Empty |
 | observe-present-search | — | `role/role-users-api-tests.spec.ts:142` | Search Role Users |
 | observe-present-search | — | `role/role-users-api-tests.spec.ts:183` | Search Role Users For Non Existent User Empty |
 | mutate | unlabeled | `role/role-clients-api-tests.spec.ts:54` | Assign Role To Client |
@@ -533,18 +533,18 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: tenant + client, tenant + group, tenant + mapping-rule, tenant + user
 - **Files**: `tenant/tenant-clients-api-tests.spec.ts`, `tenant/tenant-groups-api-tests.spec.ts`, `tenant/tenant-mapping-rule-api-tests.spec.ts`, `tenant/tenant-users-api-tests.spec.ts`
-- **Observation channel**: GET = 2, Search = 14
+- **Observation channel**: GET = 0, Search = 14
 - **Form-step counts**: observe-present-search=8, mutate=6, delete=4, negative-create=4, negative-search=6, negative-mutate=10, negative-delete=12
-- **Variants**: happy-path=6, observe-via-get=2, observe-via-search=14, unauthorized=12, not-found=16, conflict=4, unlabeled=6
+- **Variants**: happy-path=6, observe-via-search=14, unauthorized=12, not-found=16, conflict=4, unlabeled=6
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
 | observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:126` | Search Tenant Clients |
 | observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:166` | Search Tenant Clients For Non Existent Tenant Empty |
 | observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:232` | Search Tenant Groups |
-| observe-present-search | observe-via-get | `tenant/tenant-groups-api-tests.spec.ts:264` | Search Tenant Groups Tenant With No Assignments Returns Empty |
+| observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:264` | Search Tenant Groups Tenant With No Assignments Returns Empty |
 | observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:246` | Search Tenant Mapping Rules - Success |
-| observe-present-search | observe-via-get, happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:289` | Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success |
+| observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:289` | Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success |
 | observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:141` | Search Tenant Users |
 | observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:182` | Search Tenant Users For Non Existent User Empty |
 | mutate | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:52` | Assign Client To Tenant |
@@ -788,9 +788,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: deployed-process
 - **Files**: `process-instance/process-instance-api.spec.ts`, `process-instance/process-instance-business-id-api.spec.ts`, `process-instance/process-instance-business-id-api2.spec.ts`, `process-instance/process-instance-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-cancel-api.spec.ts`, `process-instance/process-instance-create-batch-to-delete-api.spec.ts`, `process-instance/process-instance-create-batch-to-migrate-api.spec.ts`, `process-instance/process-instance-create-batch-to-modify-api.spec.ts`, `process-instance/process-instance-create-batch-to-resolve-incidents-api.spec.ts`, `process-instance/process-instance-delete-api.spec.ts`, `process-instance/process-instance-get-api.spec.ts`, `process-instance/process-instance-get-call-hierachy-api.spec.ts`, `process-instance/process-instance-get-sequenceflows-api.spec.ts`, `process-instance/process-instance-get-statistics-api.spec.ts`, `process-instance/process-instance-migrate-api.spec.ts`, `process-instance/process-instance-modify-process-api.spec.ts`, `process-instance/process-instance-resolve-related-incident-api.spec.ts`, `process-instance/process-instance-search-api.spec.ts`, `process-instance/process-instance-search-incidents-api.spec.ts`
-- **Observation channel**: GET = 20, Search = 13
+- **Observation channel**: GET = 18, Search = 13
 - **Form-step counts**: create=18, observe-present-get=7, observe-present-search=9, mutate=3, delete=6, observe-absence=1, aggregate=2, negative-create=17, negative-get=7, negative-search=4, negative-mutate=13, negative-delete=12, negative-aggregate=2, other=12
-- **Variants**: happy-path=32, observe-via-get=20, observe-via-search=13, observe-absence=1, pagination-sort=1, filter=19, bad-request=28, unauthorized=16, forbidden=3, not-found=8, conflict=3, unlabeled=6
+- **Variants**: happy-path=32, observe-via-get=18, observe-via-search=13, observe-absence=1, pagination-sort=1, filter=19, bad-request=28, unauthorized=16, forbidden=3, not-found=8, conflict=3, unlabeled=6
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -819,9 +819,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-get | — | `process-instance/process-instance-get-call-hierachy-api.spec.ts:130` | Get Process Instance Call Hierarchy - No Items Found |
 | observe-present-get | happy-path | `process-instance/process-instance-get-sequenceflows-api.spec.ts:27` | Get Process Instance Sequence Flows - Success |
 | observe-present-get | — | `process-instance/process-instance-get-sequenceflows-api.spec.ts:99` | Get Process Instance Sequence Flows - No Items |
-| observe-present-search | observe-via-get | `process-instance/process-instance-business-id-api2.spec.ts:116` | Search by businessId returns only the matching process instance |
+| observe-present-search | — | `process-instance/process-instance-business-id-api2.spec.ts:116` | Search by businessId returns only the matching process instance |
 | observe-present-search | — | `process-instance/process-instance-business-id-api2.spec.ts:164` | Search results include businessId field for all items |
-| observe-present-search | observe-via-get | `process-instance/process-instance-business-id-api2.spec.ts:213` | Search by businessId returns empty when no instance matches |
+| observe-present-search | — | `process-instance/process-instance-business-id-api2.spec.ts:213` | Search by businessId returns empty when no instance matches |
 | observe-present-search | pagination-sort | `process-instance/process-instance-business-id-api2.spec.ts:241` | Search results can be sorted by businessId |
 | observe-present-search | happy-path | `process-instance/process-instance-search-api.spec.ts:30` | Search Process Instances - Success |
 | observe-present-search | filter, happy-path | `process-instance/process-instance-search-api.spec.ts:77` | Search Process Instance With Filter - Success |
@@ -918,9 +918,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: running-process-instance(s)
 - **Files**: `batch-operation/batch-operation-get-api.spec.ts`, `batch-operation/batch-operation-items-search-api.spec.ts`, `batch-operation/batch-operations-cancel-api-tests.spec.ts`, `batch-operation/batch-operations-search-api.spec.ts`, `batch-operation/batch-operations-suspend-api-tests.spec.ts`
-- **Observation channel**: GET = 14, Search = 16
+- **Observation channel**: GET = 3, Search = 16
 - **Form-step counts**: observe-present-get=1, observe-present-search=9, mutate=6, delete=5, negative-get=2, negative-search=7, negative-mutate=1, negative-delete=1
-- **Variants**: happy-path=6, observe-via-get=14, observe-via-search=16, pagination-sort=3, filter=4, bad-request=7, unauthorized=3, not-found=1, unlabeled=2
+- **Variants**: happy-path=6, observe-via-get=3, observe-via-search=16, pagination-sort=3, filter=4, bad-request=7, unauthorized=3, not-found=1, unlabeled=11
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -934,17 +934,17 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter | `batch-operation/batch-operations-search-api.spec.ts:72` | Search Batch Operations Filter By State And Type |
 | observe-present-search | pagination-sort | `batch-operation/batch-operations-search-api.spec.ts:105` | Search Batch Operations Cursor Pagination |
 | observe-present-search | — | `batch-operation/batch-operations-search-api.spec.ts:160` | Search Batch Operations Empty Result |
-| mutate | observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:35` | Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes |
+| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:35` | Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes |
 | mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:58` | Suspend batch operation twice fails on second request, finally resumes |
-| mutate | observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:86` | Suspend finished batch operation returns 404 |
-| mutate | observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:96` | Suspend batch operation with unknown key returns 404 |
-| mutate | observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:119` | Suspend batch operation without auth returns 401 |
-| mutate | observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:136` | Suspend active batch operation returns 204 and status becomes SUSPENDED without resume |
-| delete | observe-via-get | `batch-operation/batch-operations-cancel-api-tests.spec.ts:40` | Cancel active batch operation returns 204 and status becomes CANCELED |
+| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:86` | Suspend finished batch operation returns 404 |
+| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:96` | Suspend batch operation with unknown key returns 404 |
+| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:119` | Suspend batch operation without auth returns 401 |
+| mutate | unlabeled | `batch-operation/batch-operations-suspend-api-tests.spec.ts:136` | Suspend active batch operation returns 204 and status becomes SUSPENDED without resume |
+| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:40` | Cancel active batch operation returns 204 and status becomes CANCELED |
 | delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:58` | Cancel batch operation twice fails on second request |
-| delete | observe-via-get | `batch-operation/batch-operations-cancel-api-tests.spec.ts:81` | Cancel finished batch operation returns 404 |
-| delete | observe-via-get | `batch-operation/batch-operations-cancel-api-tests.spec.ts:93` | Cancel batch operation with unknown key returns 404 |
-| delete | observe-via-get | `batch-operation/batch-operations-cancel-api-tests.spec.ts:124` | Cancel batch operation without auth returns 401 |
+| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:81` | Cancel finished batch operation returns 404 |
+| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:93` | Cancel batch operation with unknown key returns 404 |
+| delete | unlabeled | `batch-operation/batch-operations-cancel-api-tests.spec.ts:124` | Cancel batch operation without auth returns 401 |
 | negative-get | not-found | `batch-operation/batch-operation-get-api.spec.ts:72` | Get Batch Operation - Not Found |
 | negative-get | unauthorized | `batch-operation/batch-operation-get-api.spec.ts:87` | Get Batch Operation - Unauthorized |
 | negative-search | unauthorized | `batch-operation/batch-operation-items-search-api.spec.ts:527` | Search Batch Operation Items - Unauthorized Request |
@@ -954,8 +954,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-search | unauthorized | `batch-operation/batch-operations-search-api.spec.ts:186` | Search Batch Operations Unauthorized |
 | negative-search | bad-request, pagination-sort | `batch-operation/batch-operations-search-api.spec.ts:194` | Search Batch Operations Invalid Pagination |
 | negative-search | bad-request, pagination-sort | `batch-operation/batch-operations-search-api.spec.ts:211` | Search Batch Operations Invalid Sort Field |
-| negative-mutate | bad-request, observe-via-get | `batch-operation/batch-operations-suspend-api-tests.spec.ts:104` | Suspend batch operation with invalid key returns 400 |
-| negative-delete | bad-request, observe-via-get | `batch-operation/batch-operations-cancel-api-tests.spec.ts:107` | Cancel batch operation with invalid key format returns 400 |
+| negative-mutate | bad-request | `batch-operation/batch-operations-suspend-api-tests.spec.ts:104` | Suspend batch operation with invalid key returns 400 |
+| negative-delete | bad-request | `batch-operation/batch-operations-cancel-api-tests.spec.ts:107` | Cancel batch operation with invalid key format returns 400 |
 
 ## F. User-Task Lifecycle
 
@@ -1194,9 +1194,9 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: running-process-instance
 - **Files**: `element-instance/element-instance-ad-hoc-activities-api.spec.ts`, `element-instance/element-instance-get-api.spec.ts`, `element-instance/element-instance-search-api.spec.ts`, `element-instance/element-instance-search-incident-api.spec.ts`, `element-instance/element-instance-update-api.spec.ts`
-- **Observation channel**: GET = 6, Search = 24
+- **Observation channel**: GET = 4, Search = 24
 - **Form-step counts**: observe-present-get=1, observe-present-search=14, mutate=2, negative-get=3, negative-search=10, other=5
-- **Variants**: happy-path=7, observe-via-get=6, observe-via-search=24, pagination-sort=5, filter=11, bad-request=7, unauthorized=4, forbidden=1, not-found=3, unlabeled=5
+- **Variants**: happy-path=7, observe-via-get=4, observe-via-search=24, pagination-sort=5, filter=11, bad-request=7, unauthorized=4, forbidden=1, not-found=3, unlabeled=5
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
@@ -1233,8 +1233,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | other | unlabeled | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:77` | Activate AdHoc Activities SucceedsWithValidElements |
 | other | unlabeled | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:108` | Activate AdHoc Activities SucceedsWithVariablesAndCancel |
 | other | unlabeled | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:143` | Activate AdHoc Activities FailsWithMissingElements |
-| other | unauthorized, observe-via-get | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:171` | Activate AdHoc Activities ReturnsUnauthorizedWithoutAuth |
-| other | not-found, observe-via-get | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:205` | Activate AdHoc Activities ReturnsNotFoundForRandomKey |
+| other | unauthorized | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:171` | Activate AdHoc Activities ReturnsUnauthorizedWithoutAuth |
+| other | not-found | `element-instance/element-instance-ad-hoc-activities-api.spec.ts:205` | Activate AdHoc Activities ReturnsNotFoundForRandomKey |
 
 ### `audit-log` — 17 tests
 
@@ -1367,13 +1367,13 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 - **Prerequisite to create**: none
 - **Files**: `conditional/conditional-evaluation-api-tests.spec.ts`
-- **Observation channel**: GET = 1, Search = 0
+- **Observation channel**: GET = 0, Search = 0
 - **Form-step counts**: observe-present-search=1, evaluate=12
-- **Variants**: happy-path=1, observe-via-get=1, bad-request=4, unauthorized=1, unlabeled=6
+- **Variants**: happy-path=1, bad-request=4, unauthorized=1, unlabeled=7
 
 | form step | variants | file:line | test name |
 |--|--|--|--|
-| observe-present-search | observe-via-get | `conditional/conditional-evaluation-api-tests.spec.ts:125` | Evaluate Conditional - No Match Returns Empty List |
+| observe-present-search | unlabeled | `conditional/conditional-evaluation-api-tests.spec.ts:125` | Evaluate Conditional - No Match Returns Empty List |
 | evaluate | happy-path | `conditional/conditional-evaluation-api-tests.spec.ts:48` | Evaluate Conditional - Single Match Success |
 | evaluate | unlabeled | `conditional/conditional-evaluation-api-tests.spec.ts:72` | Evaluate Conditional - Multiple Conditions Match |
 | evaluate | unlabeled | `conditional/conditional-evaluation-api-tests.spec.ts:99` | Evaluate Conditional - Partial Match |

@@ -19,14 +19,14 @@ and reason about coverage of the C8 Orchestration Cluster public REST API.
 
 ## Regenerating
 
-From this directory:
+From any directory:
 
 ```bash
-python3 build_coverage.py
+python3 path/to/coverage-analysis/build_coverage.py
 ```
 
-The script auto-locates the test directory via its own path, so it works from
-any CWD as long as the directory layout is unchanged.
+The script locates the test directory and the output directory relative to
+its own path (`__file__`), so the working directory does not matter.
 
 ## Headline numbers (snapshot)
 

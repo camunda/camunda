@@ -2,8 +2,11 @@
 """
 Build OC API v2 test coverage artifacts.
 
-Run from this script's directory (qa/c8-orchestration-cluster-e2e-test-suite/coverage-analysis/):
-    python3 build_coverage.py
+Run from any directory:
+    python3 path/to/coverage-analysis/build_coverage.py
+
+The script locates the test directory and the output directory relative to
+its own path (`__file__`), so the working directory does not matter.
 
 Scans ../tests/api/v2/**/*.spec.ts and writes outputs next to this script:
   - tests.csv                : per-test labels (file, line, entity, test_name, category,
@@ -124,7 +127,9 @@ VARIANT_RULES = [
     ('pagination-sort',      re.compile(r'pagin|sort|page (limit|size)|cursor', re.I)),
     ('filter',               re.compile(r'filter', re.I)),
     ('observe-via-search',   re.compile(r'search', re.I)),
-    ('observe-via-get',      re.compile(r'\bget\b|fetch|retrieve|return', re.I)),
+    # `return`/`returns` deliberately excluded — appears in many search
+    # tests ("Returns Empty", "returns 400") which observe via search, not GET.
+    ('observe-via-get',      re.compile(r'\bget\b|fetch|retrieve', re.I)),
     ('observe-absence',      re.compile(r'(after|once|when).*(delete|remove|cancel)|no longer|absen[ct]|gone|deleted .*not', re.I)),
     ('happy-path',           re.compile(r'success|should (create|get|update|delete|return|fetch|retrieve|search|list|assign|unassign|complete|cancel|publish|broadcast|correlate|evaluate|migrate|modify|resolve|deploy|suspend|resume|pin|reset)', re.I)),
 ]
