@@ -558,6 +558,7 @@ jobs:
 
       - name: Dump All Docker Container Logs on Failure
         if: failure()
+        timeout-minutes: 5
         shell: bash
         run: |
           echo "=== Fetching status of all containers (including stopped/failed ones) ==="
