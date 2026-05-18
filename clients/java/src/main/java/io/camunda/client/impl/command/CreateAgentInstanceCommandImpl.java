@@ -84,18 +84,21 @@ public class CreateAgentInstanceCommandImpl
 
   @Override
   public CreateAgentInstanceCommandStep5 maxTokens(final long maxTokens) {
+    ArgumentUtil.ensureGreaterThan("maxTokens", maxTokens, -2);
     ensureLimits().maxTokens(maxTokens);
     return this;
   }
 
   @Override
   public CreateAgentInstanceCommandStep5 maxModelCalls(final int maxModelCalls) {
+    ArgumentUtil.ensureGreaterThan("maxModelCalls", maxModelCalls, -2);
     ensureLimits().maxModelCalls(maxModelCalls);
     return this;
   }
 
   @Override
   public CreateAgentInstanceCommandStep5 maxToolCalls(final int maxToolCalls) {
+    ArgumentUtil.ensureGreaterThan("maxToolCalls", maxToolCalls, -2);
     ensureLimits().maxToolCalls(maxToolCalls);
     return this;
   }

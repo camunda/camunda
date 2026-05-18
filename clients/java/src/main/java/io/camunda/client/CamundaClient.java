@@ -3439,7 +3439,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *   CreateAgentInstanceResponse response = camundaClient
    *       .newCreateAgentInstanceCommand()
-   *       .elementInstanceKey("2251799813685248")
+   *       .elementInstanceKey(2251799813685248)
    *       .model("gpt-4o")
    *       .provider("openai")
    *       .systemPrompt("You are a helpful assistant.")
