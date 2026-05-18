@@ -39,6 +39,7 @@ const getWrapper = (initialPath = Paths.processesVariables()) => {
 describe('<VariableFilterModal />', () => {
   beforeEach(() => {
     variableFilterStore.reset();
+    sessionStorage.removeItem('operate.variableFilter.warningShown');
   });
 
   it('should render one empty row when no initial conditions', () => {
@@ -74,16 +75,70 @@ describe('<VariableFilterModal />', () => {
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
   });
 
-  it('should disable Add condition button when condition limit is reached', () => {
-    const conditions: VariableCondition[] = Array.from({length: 5}, (_, i) => ({
+  it('should never disable Add condition button due to count', () => {
+    const conditions: VariableCondition[] = Array.from(
+      {length: 10},
+      (_, i) => ({
+        name: `var${i}`,
+        operator: 'equals' as const,
+        value: `"val${i}"`,
+      }),
+    );
+    variableFilterStore.setConditions(conditions);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    expect(screen.getByRole('button', {name: 'Add condition'})).toBeEnabled();
+  });
+
+  it('should not show warning when adding conditions below the threshold', async () => {
+    const conditions: VariableCondition[] = Array.from({length: 6}, (_, i) => ({
       name: `var${i}`,
       operator: 'equals' as const,
       value: `"val${i}"`,
     }));
     variableFilterStore.setConditions(conditions);
-    render(<VariableFilterModal />, {wrapper: getWrapper()});
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    expect(screen.getByRole('button', {name: 'Add condition'})).toBeDisabled();
+    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+
+    expect(
+      screen.queryByText(/Filtering by many conditions/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show warning when adding the 8th condition', async () => {
+    const conditions: VariableCondition[] = Array.from({length: 7}, (_, i) => ({
+      name: `var${i}`,
+      operator: 'equals' as const,
+      value: `"val${i}"`,
+    }));
+    variableFilterStore.setConditions(conditions);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+
+    expect(
+      screen.getByText(
+        'Filtering by many conditions can be slow. Add conditions only if you need them.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should not show warning again once already shown in session', async () => {
+    sessionStorage.setItem('operate.variableFilter.warningShown', 'true');
+    const conditions: VariableCondition[] = Array.from({length: 7}, (_, i) => ({
+      name: `var${i}`,
+      operator: 'equals' as const,
+      value: `"val${i}"`,
+    }));
+    variableFilterStore.setConditions(conditions);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+
+    expect(
+      screen.queryByText(/Filtering by many conditions/),
+    ).not.toBeInTheDocument();
   });
 
   it('should update store and navigate on apply with valid conditions', async () => {
