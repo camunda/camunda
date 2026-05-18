@@ -31,8 +31,7 @@ import {
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe
-  .parallel('Get Process Instance Statistics By Error API Tests', () => {
+test.describe('Get Process Instance Statistics By Error API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
