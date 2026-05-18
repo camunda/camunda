@@ -10,6 +10,7 @@ import {useRouter} from '@tanstack/react-router';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {TextInput, PasswordInput, Column, Grid, Stack, InlineNotification, Button} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 import {CamundaLogo} from '#/modules/login/components/CamundaLogo';
 import {getCurrentCopyrightNoticeText} from '#/modules/login/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '#/modules/login/components/Disclaimer';
@@ -24,6 +25,7 @@ type FormValues = {
 
 const Login: React.FC = () => {
 	const router = useRouter();
+	const {t} = useTranslation();
 
 	return (
 		<Grid as="main" condensed className={styles['container']!}>
@@ -41,19 +43,16 @@ const Login: React.FC = () => {
 
 						if (error.variant === 'failed-response' && error.response.status === 401) {
 							return {
-								// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-								[FORM_ERROR]: 'Username and password do not match.',
+								[FORM_ERROR]: t('loginErrorUsernamePasswordMismatch'),
 							};
 						}
 
 						return {
-							// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-							[FORM_ERROR]: 'Credentials could not be verified. Please try again.',
+							[FORM_ERROR]: t('loginErrorCredentialsNotVerified'),
 						};
 					} catch {
 						return {
-							// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-							[FORM_ERROR]: 'Credentials could not be verified. Please try again.',
+							[FORM_ERROR]: t('loginErrorCredentialsNotVerified'),
 						};
 					}
 				}}
@@ -61,13 +60,11 @@ const Login: React.FC = () => {
 					const errors: {username?: string; password?: string} = {};
 
 					if (!username) {
-						// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-						errors.username = 'Username is required.';
+						errors.username = t('loginErrorUsernameRequired');
 					}
 
 					if (!password) {
-						// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-						errors.password = 'Password is required.';
+						errors.password = t('loginErrorPasswordRequired');
 					}
 
 					return errors;
@@ -94,8 +91,7 @@ const Login: React.FC = () => {
 						>
 							<Stack>
 								<div className={styles['logo']}>
-									{/* TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325 */}
-									<CamundaLogo aria-label="Camunda logo" />
+									<CamundaLogo aria-label={t('loginLogoLabel')} />
 								</div>
 							</Stack>
 							<Stack gap={3}>
@@ -110,10 +106,10 @@ const Login: React.FC = () => {
 												name={input.name}
 												id={input.name}
 												onChange={input.onChange}
-												labelText="Username"
+												labelText={t('loginUsernameFieldLabel')}
 												invalid={meta.error && meta.touched}
 												invalidText={meta.error}
-												placeholder="Username"
+												placeholder={t('loginUsernameFieldPlaceholder')}
 											/>
 										)}
 									</Field>
@@ -129,13 +125,12 @@ const Login: React.FC = () => {
 												onFocus={input.onFocus}
 												value={input.value}
 												type="password"
-												// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
-												hidePasswordLabel="Hide password"
-												showPasswordLabel="Show password"
-												labelText="Password"
+												hidePasswordLabel={t('loginHidePasswordButtonLabel')}
+												showPasswordLabel={t('loginShowPasswordButtonLabel')}
+												labelText={t('loginPasswordFieldLabel')}
 												invalid={meta.error && meta.touched}
 												invalidText={meta.error}
-												placeholder="Password"
+												placeholder={t('loginPasswordFieldPlaceholder')}
 											/>
 										)}
 									</Field>
@@ -146,8 +141,7 @@ const Login: React.FC = () => {
 									renderIcon={submitting ? LoadingSpinner : undefined}
 									className={styles['button']!}
 								>
-									{/* TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325 */}
-									{submitting ? 'Logging in...' : 'Login'}
+									{submitting ? t('loginLoggingInMessage') : t('loginButtonLabel')}
 								</Button>
 								<Disclaimer />
 							</Stack>

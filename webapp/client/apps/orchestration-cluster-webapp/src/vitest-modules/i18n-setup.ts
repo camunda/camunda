@@ -6,5 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import './i18n-setup';
-import '../index.scss';
+import i18n from 'i18next';
+import {initReactI18next} from 'react-i18next';
+import en from '#/modules/i18n/locales/en.json';
+
+if (!i18n.isInitialized) {
+	i18n.use(initReactI18next).init({
+		lng: 'en',
+		resources: {en},
+		interpolation: {escapeValue: false},
+	});
+}
