@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.config;
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
-import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdResolver;
-import io.camunda.zeebe.gateway.rest.util.PhysicalTenantResolver;
+import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
+import io.camunda.zeebe.gateway.rest.util.PhysicalTenantRegistry;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
@@ -35,11 +35,11 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   private final PhysicalTenantInterceptor interceptor;
 
-  public PhysicalTenantWebMvcConfig(final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    final PhysicalTenantResolver resolver =
-        resolverProvider.getIfAvailable(
+  public PhysicalTenantWebMvcConfig(final ObjectProvider<PhysicalTenantRegistry> registryProvider) {
+    final PhysicalTenantRegistry registry =
+        registryProvider.getIfAvailable(
             () -> PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID::equals);
-    interceptor = new PhysicalTenantInterceptor(resolver);
+    interceptor = new PhysicalTenantInterceptor(registry);
   }
 
   @Bean
@@ -60,7 +60,7 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   @Override
   public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
-    // Enables `@PhysicalTenant String physicalTenantId` injection on controller methods.
-    resolvers.add(new PhysicalTenantIdResolver());
+    // Enables `@PhysicalTenantId String physicalTenantId` injection on controller methods.
+    resolvers.add(new PhysicalTenantIdArgumentResolver());
   }
 }

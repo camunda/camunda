@@ -65,7 +65,7 @@ class PhysicalTenantInterceptorTest {
   }
 
   @Test
-  void shouldSetTenantWhenResolverAcceptsId() throws Exception {
+  void shouldSetTenantWhenRegistryAcceptsId() throws Exception {
     // given
     request.setAttribute(
         HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
@@ -82,7 +82,7 @@ class PhysicalTenantInterceptorTest {
   }
 
   @Test
-  void shouldRejectWith404WhenResolverUnknownsId() throws Exception {
+  void shouldRejectWith404WhenRegistryUnknownsId() throws Exception {
     // given
     request.setAttribute(
         HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,

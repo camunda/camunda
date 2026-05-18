@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * @CamundaPostMapping
  * public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
  *     @RequestBody final ProcessInstanceCreationInstruction request,
- *     @PhysicalTenant final String physicalTenantId) { ... }
+ *     @PhysicalTenantId final String physicalTenantId) { ... }
  * }</pre>
  */
 @Target(ElementType.PARAMETER)
