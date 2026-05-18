@@ -22,7 +22,11 @@ describe('authentication store', () => {
 	});
 
 	it('should login', async ({worker}) => {
-		worker.use(mockLoginEndpoint({successResponse: new HttpResponse('', {status: 200})}));
+		worker.use(
+			mockLoginEndpoint({
+				successResponse: new HttpResponse('', {status: 200}),
+			}),
+		);
 
 		authenticationStore.disableSession();
 		expect(authenticationStore.status).toBe('session-invalid');
@@ -32,7 +36,11 @@ describe('authentication store', () => {
 	});
 
 	it('should handle login failure', async ({worker}) => {
-		worker.use(mockLoginEndpoint({successResponse: new HttpResponse('', {status: 401})}));
+		worker.use(
+			mockLoginEndpoint({
+				successResponse: new HttpResponse('', {status: 401}),
+			}),
+		);
 
 		const result = await authenticationStore.handleLogin('demo', 'demo');
 
@@ -49,8 +57,12 @@ describe('authentication store', () => {
 
 	it('should logout', async ({worker}) => {
 		worker.use(
-			mockLoginEndpoint({successResponse: new HttpResponse('', {status: 200})}),
-			mockLogoutEndpoint({successResponse: new HttpResponse('', {status: 204})}),
+			mockLoginEndpoint({
+				successResponse: new HttpResponse('', {status: 200}),
+			}),
+			mockLogoutEndpoint({
+				successResponse: new HttpResponse('', {status: 204}),
+			}),
 		);
 
 		await authenticationStore.handleLogin('demo', 'demo');
