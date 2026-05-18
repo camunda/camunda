@@ -210,6 +210,22 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
+  void shouldThrowWhenResourceResolutionFails() throws IOException {
+    // given
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenThrow(new IOException("I/O error"));
+
+    // when / then
+    assertThatExceptionOfType(RuntimeException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            })
+        .withMessageContaining("Error resolving cluster variables resources for pattern");
+  }
+
+  @Test
   void shouldLoadVariablesFromMultipleResources() throws IOException {
     // given
     final Resource resource1 = mockJsonResource("{\"var1\": \"value1\"}");
