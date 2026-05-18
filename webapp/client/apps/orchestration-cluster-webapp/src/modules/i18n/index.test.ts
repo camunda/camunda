@@ -13,60 +13,57 @@ import {languageItems, translationResources, getCurrentDateLocale} from '.';
 import '#/vitest-modules/i18n-setup';
 
 describe('i18n module', () => {
-	describe('languageItems', () => {
-		it('should contain all supported languages', () => {
-			expect(languageItems).toHaveLength(4);
-			expect(languageItems).toEqual([
-				{id: 'en', label: 'English'},
-				{id: 'fr', label: 'Français'},
-				{id: 'de', label: 'Deutsch'},
-				{id: 'es', label: 'Español'},
-			]);
+	beforeEach(async () => {
+		await i18n.changeLanguage('en');
+	});
+
+	it('should contain all supported languages', () => {
+		expect(languageItems).toHaveLength(4);
+		expect(languageItems).toEqual([
+			{id: 'en', label: 'English'},
+			{id: 'fr', label: 'Français'},
+			{id: 'de', label: 'Deutsch'},
+			{id: 'es', label: 'Español'},
+		]);
+	});
+
+	it('should contain resources for all supported languages', () => {
+		expect(Object.keys(translationResources)).toEqual(['en', 'fr', 'de', 'es']);
+	});
+
+	it('should include translation keys in each resource', () => {
+		expect(translationResources).toMatchObject({
+			en: {
+				translation: {
+					loginButtonLabel: 'Login',
+					loginErrorUsernameRequired: 'Username is required',
+					loginErrorPasswordRequired: 'Password is required',
+				},
+			},
 		});
 	});
 
-	describe('translationResources', () => {
-		it('should contain resources for all supported languages', () => {
-			expect(Object.keys(translationResources)).toEqual(['en', 'fr', 'de', 'es']);
-		});
-
-		it('should include translation keys in each resource', () => {
-			expect((translationResources['en'] as {translation: Record<string, string>}).translation).toMatchObject({
-				loginButtonLabel: 'Login',
-				loginErrorUsernameRequired: 'Username is required',
-				loginErrorPasswordRequired: 'Password is required',
-			});
-		});
+	it('should return enUS locale for English', () => {
+		expect(getCurrentDateLocale()).toBe(enUS);
 	});
 
-	describe('getCurrentDateLocale', () => {
-		beforeEach(() => {
-			i18n.changeLanguage('en');
-		});
+	it('should return fr locale for French', async () => {
+		await i18n.changeLanguage('fr');
+		expect(getCurrentDateLocale()).toBe(fr);
+	});
 
-		it('should return enUS locale for English', () => {
-			i18n.changeLanguage('en');
-			expect(getCurrentDateLocale()).toBe(enUS);
-		});
+	it('should return de locale for German', async () => {
+		await i18n.changeLanguage('de');
+		expect(getCurrentDateLocale()).toBe(de);
+	});
 
-		it('should return fr locale for French', () => {
-			i18n.changeLanguage('fr');
-			expect(getCurrentDateLocale()).toBe(fr);
-		});
+	it('should return es locale for Spanish', async () => {
+		await i18n.changeLanguage('es');
+		expect(getCurrentDateLocale()).toBe(es);
+	});
 
-		it('should return de locale for German', () => {
-			i18n.changeLanguage('de');
-			expect(getCurrentDateLocale()).toBe(de);
-		});
-
-		it('should return es locale for Spanish', () => {
-			i18n.changeLanguage('es');
-			expect(getCurrentDateLocale()).toBe(es);
-		});
-
-		it('should fall back to enUS for unknown language', () => {
-			i18n.changeLanguage('unknown');
-			expect(getCurrentDateLocale()).toBe(enUS);
-		});
+	it('should fall back to enUS for unknown language', async () => {
+		await i18n.changeLanguage('unknown');
+		expect(getCurrentDateLocale()).toBe(enUS);
 	});
 });
