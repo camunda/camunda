@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Control interface to schedule tasks or follow-up tasks such that different tasks scheduled via
@@ -31,7 +31,8 @@ public interface ConcurrencyControl extends Executor {
    * @param callback the callback to call after the future has completed
    * @param <T> result type of the future
    */
-  <T> void runOnCompletion(final ActorFuture<T> future, final BiConsumer<T, Throwable> callback);
+  <T> void runOnCompletion(
+      final ActorFuture<T> future, final BiConsumer<T, @Nullable Throwable> callback);
 
   /**
    * Invoke the callback when the given futures are completed (successfully or exceptionally). This
@@ -45,7 +46,7 @@ public interface ConcurrencyControl extends Executor {
    *     Otherwise, it holds the exception of the last completed future.
    */
   <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback);
+      final Collection<ActorFuture<T>> futures, final Consumer<@Nullable Throwable> callback);
 
   /**
    * Schedules an action to be invoked (must be called from an actor thread)
@@ -82,12 +83,12 @@ public interface ConcurrencyControl extends Executor {
    * @param <V> value type of future
    * @return new completed future object
    */
-  default <V> ActorFuture<V> createCompletedFuture() {
-    return CompletableActorFuture.completed(null);
+  default <V extends @Nullable Object> ActorFuture<V> createCompletedFuture() {
+    return CompletableActorFuture.<V>completed(null);
   }
 
   @Override
-  default void execute(@NotNull final Runnable command) {
+  default void execute(final Runnable command) {
     run(command);
   }
 }

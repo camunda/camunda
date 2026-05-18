@@ -17,9 +17,11 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /** interface for actor futures */
-public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
+public interface ActorFuture<V extends @Nullable Object>
+    extends Future<V>, BiConsumer<V, @Nullable Throwable> {
   void complete(V value);
 
   void completeExceptionally(String failure, Throwable throwable);
@@ -57,7 +59,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *
    * @param consumer the consumer which should be called after the future was completed
    */
-  void onComplete(BiConsumer<V, Throwable> consumer);
+  void onComplete(BiConsumer<V, @Nullable Throwable> consumer);
 
   /**
    * Registers a consumer, which is executed after the future was completed. The consumer is
@@ -68,7 +70,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param consumer the callback which should be called after the future was completed
    * @param executor the executor on which the callback will be executed
    */
-  void onComplete(BiConsumer<V, Throwable> consumer, Executor executor);
+  void onComplete(BiConsumer<V, @Nullable Throwable> consumer, Executor executor);
 
   /**
    * Runs a callback when the future terminates successfully If the caller is not an actor, the
@@ -134,10 +136,10 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
 
   boolean isCompletedExceptionally();
 
-  Throwable getException();
+  @Nullable Throwable getException();
 
   @Override
-  default void accept(final V value, final Throwable throwable) {
+  default void accept(final V value, final @Nullable Throwable throwable) {
     if (throwable != null) {
       completeExceptionally(throwable);
     } else {
@@ -172,7 +174,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
    * does not require the result of this future.
    */
-  <U> ActorFuture<U> andThen(Supplier<ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      Supplier<ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
@@ -188,7 +191,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      Function<V, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link ActorFuture#andThen(Function, Executor)}}, but it allows to return a future
@@ -202,7 +206,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     ActorFuture#onComplete(BiConsumer)} method.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> andThen(BiFunction<V, Throwable, ActorFuture<U>> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> andThen(
+      BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
@@ -220,7 +225,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
+  <U extends @Nullable Object> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
@@ -240,5 +245,5 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     used for further chaining.
    * @param <U> the type of the new future
    */
-  <U> ActorFuture<U> thenApply(final Function<V, U> next);
+  <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next);
 }

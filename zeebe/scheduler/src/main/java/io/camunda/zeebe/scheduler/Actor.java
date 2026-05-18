@@ -18,6 +18,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 public abstract class Actor implements AutoCloseable, AsyncClosable, ConcurrencyControl {
 
@@ -99,7 +100,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   }
 
   @Override
-  public ActorFuture<Void> closeAsync() {
+  public ActorFuture<@Nullable Void> closeAsync() {
     return actor.close();
   }
 
@@ -122,13 +123,13 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
 
   @Override
   public <T> void runOnCompletion(
-      final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
+      final ActorFuture<T> future, final BiConsumer<T, @Nullable Throwable> callback) {
     actor.runOnCompletion(future, callback);
   }
 
   @Override
   public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> actorFutures, final Consumer<Throwable> callback) {
+      final Collection<ActorFuture<T>> actorFutures, final Consumer<@Nullable Throwable> callback) {
     actor.runOnCompletion(actorFutures, callback);
   }
 

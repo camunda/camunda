@@ -24,6 +24,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation of {@code ActorFuture} for use in tests. The main goal is to use this in tests
@@ -34,11 +36,12 @@ import org.agrona.LangUtil;
  *
  * @param <V>
  */
-public final class TestActorFuture<V> implements ActorFuture<V> {
+@NullMarked
+public final class TestActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
 
   private final CountDownLatch countDownLatch = new CountDownLatch(1);
-  private final List<BiConsumer<V, Throwable>> onCompleteCallbacks = new ArrayList<>();
-  private Either<Throwable, V> result;
+  private final List<BiConsumer<V, @Nullable Throwable>> onCompleteCallbacks = new ArrayList<>();
+  private @Nullable Either<Throwable, V> result;
 
   @Override
   public void complete(final V value) {
@@ -87,7 +90,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public void onComplete(final BiConsumer<V, Throwable> consumer) {
+  public void onComplete(final BiConsumer<V, @Nullable Throwable> consumer) {
     onCompleteCallbacks.add(consumer);
 
     if (isDone()) {
@@ -173,7 +176,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
     onCompleteCallbacks.forEach(this::triggerOnCompleteListener);
   }
 
-  private void triggerOnCompleteListener(final BiConsumer<V, Throwable> consumer) {
+  private void triggerOnCompleteListener(final BiConsumer<V, @Nullable Throwable> consumer) {
     result.ifRightOrLeft(
         value -> consumer.accept(value, null), error -> consumer.accept(null, error));
   }
@@ -194,6 +197,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
+  @SuppressWarnings("NullAway")
   public V get() throws InterruptedException, ExecutionException {
     countDownLatch.await();
 
@@ -205,6 +209,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
+  @SuppressWarnings("NullAway")
   public V get(final long timeout, final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
     if (!countDownLatch.await(timeout, unit)) {
