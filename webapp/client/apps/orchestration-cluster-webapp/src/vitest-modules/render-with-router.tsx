@@ -29,4 +29,4 @@ async function renderWithRouter(initialLocation = '/') {
 	return {...screen, router};
 }
 
-export {createTestRouter, renderWithRouter};
+export {renderWithRouter};
