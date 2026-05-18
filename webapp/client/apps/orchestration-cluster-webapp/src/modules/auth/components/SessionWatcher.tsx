@@ -10,14 +10,11 @@ import {observer} from 'mobx-react-lite';
 import {Navigate, useLocation} from '@tanstack/react-router';
 import {authenticationStore} from '#/modules/auth/authentication.store';
 
-const INITIAL_PATH = '/';
-
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();
 	const {status} = authenticationStore;
 
-	const isSessionExpired =
-		status === 'session-expired' || (status === 'session-invalid' && location.pathname !== INITIAL_PATH);
+	const isSessionExpired = status === 'session-expired' || (status === 'session-invalid' && location.pathname !== '/');
 
 	if (isSessionExpired) {
 		return <Navigate to="/login" search={location.href === '/' ? {} : {redirect: location.href}} replace />;
