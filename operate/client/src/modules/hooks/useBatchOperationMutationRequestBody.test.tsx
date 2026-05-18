@@ -112,11 +112,10 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should include variable filter', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1"',
-    });
+  it('should include variable conditions', () => {
+    variableFilterStore.setConditions([
+      {name: 'testVar', operator: 'equals', value: '"value1"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -134,11 +133,11 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should include multiple variable values', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '"value1", "value2", "value3"',
-    });
+  it('should include multiple variable conditions', () => {
+    variableFilterStore.setConditions([
+      {name: 'testVar', operator: 'equals', value: '"value1"'},
+      {name: 'status', operator: 'notEqual', value: '"draft"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -147,23 +146,20 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         variables: [
-          {
-            name: 'testVar',
-            value: {$in: ['"value1"', '"value2"', '"value3"']},
-          },
+          {name: 'testVar', value: '"value1"'},
+          {name: 'status', value: {$neq: '"draft"'}},
         ],
       },
     });
   });
 
-  it('should combine search params, selected keys, and variable filter', () => {
+  it('should combine search params, selected keys, and variable conditions', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
     processInstancesSelectionStore.state.selectedIds = ['123', '456'];
 
-    variableFilterStore.setVariable({
-      name: 'status',
-      values: '"active"',
-    });
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
@@ -185,27 +181,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should not include variable filter when variable name is missing', () => {
-    variableFilterStore.setVariable({
-      name: '',
-      values: '"value1"',
-    });
-
-    const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
-      wrapper: getWrapper(),
-    });
-
-    expect(result.current).toEqual({
-      filter: {},
-    });
-  });
-
-  it('should not include variable filter when variable values are missing', () => {
-    variableFilterStore.setVariable({
-      name: 'testVar',
-      values: '',
-    });
-
+  it('should not include variables when no conditions set', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
     });

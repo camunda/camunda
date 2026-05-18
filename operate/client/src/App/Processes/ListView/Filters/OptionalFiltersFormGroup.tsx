@@ -37,10 +37,8 @@ import {
   ButtonContainer,
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
-import {Variable} from './VariableField';
 import {VariableFilter} from './VariablesFilter';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -76,8 +74,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: MULTI_VARIABLE_FILTER ? [] : ['variableName', 'variableValues'],
-    label: MULTI_VARIABLE_FILTER ? 'Variables' : 'Variable',
+    keys: [],
+    label: 'Variables',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],
@@ -149,8 +147,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
     const location = useLocation() as LocationType;
     const form = useForm();
     const isOnVariablesRoute = useMatch(Paths.processesVariables()) !== null;
-    const hasActiveVariableFilters =
-      MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters;
+    const hasActiveVariableFilters = variableFilterStore.hasActiveFilters;
 
     useEffect(() => {
       const filters = getProcessInstanceFilters(location.search);
@@ -219,10 +216,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
-                    if (MULTI_VARIABLE_FILTER) {
-                      return <VariableFilter />;
-                    }
-                    return <Variable />;
+                    return <VariableFilter />;
                   case 'startDateRange':
                     return (
                       <DateRangeField
@@ -331,7 +325,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                       }
                     });
 
-                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
+                    if (filter === 'variable') {
                       variableFilterStore.setConditions([]);
                     }
 

@@ -9,7 +9,7 @@
 import {type Page, type Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Variable'
+  | 'Variables'
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
   | 'Business ID'
@@ -38,9 +38,7 @@ export class FiltersPanel {
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
-  readonly variableNameFilter: Locator;
-  readonly variableValueFilter: Locator;
-  readonly multipleVariablesSwitch: Locator;
+  readonly openVariableFilterModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -102,15 +100,9 @@ export class FiltersPanel {
       name: /start date range/i,
     });
 
-    this.variableNameFilter = this.panel.getByRole('textbox', {
-      name: /name/i,
-    });
-
-    this.variableValueFilter = this.panel.getByRole('textbox', {
-      name: /value/i,
-    });
-
-    this.multipleVariablesSwitch = this.panel.getByText(/^multiple$/i);
+    this.openVariableFilterModal = this.panel.getByTestId(
+      'open-variable-filter-modal',
+    );
   }
 
   async validateCheckedState({

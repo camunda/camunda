@@ -12,46 +12,25 @@ import {
 } from 'modules/utils/filter/processInstancesSearch';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable, VariableCondition} from 'modules/stores/variableFilter';
-import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
+import type {VariableCondition} from 'modules/stores/variableFilter';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type VariableEntry = NonNullable<
   NonNullable<QueryProcessInstancesRequestBody['filter']>['variables']
 >[number];
 
-function useProcessInstancesSearchFilter(
-  variable?: Variable,
-  conditions?: VariableCondition[],
-) {
+function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
     const filter = parseProcessInstancesSearchFilter(searchParams);
 
-    if (MULTI_VARIABLE_FILTER) {
-      if (filter && conditions && conditions.length > 0) {
-        filter.variables = conditions.map(buildVariableEntry);
-      }
-    } else {
-      if (filter && variable?.name && variable?.values) {
-        const parsed = (getValidVariableValues(variable.values) ?? []).map(
-          (v) => JSON.stringify(v),
-        );
-        if (parsed.length > 0) {
-          filter.variables = [
-            {
-              name: variable.name,
-              value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-            },
-          ];
-        }
-      }
+    if (filter && conditions && conditions.length > 0) {
+      filter.variables = conditions.map(buildVariableEntry);
     }
 
     return filter;
-  }, [searchParams, variable, conditions]);
+  }, [searchParams, conditions]);
 }
 
 function buildVariableEntry(condition: VariableCondition): VariableEntry {

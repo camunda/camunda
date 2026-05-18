@@ -156,22 +156,16 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
-                  const variable =
-                    'variable' in batchOperationQuery
-                      ? batchOperationQuery.variable
+                  const conditions =
+                    'conditions' in batchOperationQuery
+                      ? batchOperationQuery.conditions
                       : undefined;
 
                   const requestBody = buildMutationRequestBody({
                     searchParams,
                     includeIds,
                     excludeIds,
-                    variableFilter:
-                      variable !== undefined
-                        ? {
-                            name: variable.name,
-                            values: variable.values.join(','),
-                          }
-                        : undefined,
+                    conditions,
                     processDefinitionKey:
                       sourceProcessDefinition?.processDefinitionKey,
                   });

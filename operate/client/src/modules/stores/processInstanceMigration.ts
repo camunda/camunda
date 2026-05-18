@@ -20,10 +20,12 @@ const STEPS = {
   },
 };
 
+import type {VariableCondition} from 'modules/stores/variableFilter';
+
 type BatchOperationQuery = {
   ids?: string[];
   excludeIds?: string[];
-  variable?: {name: string; values: string[]};
+  conditions?: VariableCondition[];
 };
 
 type State = {

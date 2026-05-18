@@ -9,7 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Variable'
+  | 'Variables'
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
   | 'Batch Operation Key'
@@ -38,20 +38,14 @@ export class OperateFiltersPanelPage {
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
-  readonly variableNameFilter: Locator;
-  readonly variableValueFilter: Locator;
-  readonly multipleVariablesSwitch: Locator;
+  readonly openVariableFilterModalButton: Locator;
+  readonly variableFilterDialog: Locator;
   readonly moreFiltersButton: Locator;
   readonly dateFilterDialog: Locator;
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
   readonly fromDateInput: Locator;
   readonly applyButton: Locator;
-  readonly jsonEditorModalButton: Locator;
-  readonly variableEditorDialog: Locator;
-  readonly dialogEditVariableValueText: Locator;
-  readonly dialogEditMultipleVariableValueText: Locator;
-  readonly dialogCancelButton: Locator;
   readonly getOptionByName: (name: string, exact?: boolean) => Locator;
 
   constructor(page: Page) {
@@ -112,13 +106,12 @@ export class OperateFiltersPanelPage {
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
     });
-    this.variableNameFilter = this.page.getByTestId(
-      'optional-filter-variable-name',
+    this.openVariableFilterModalButton = page.getByTestId(
+      'open-variable-filter-modal',
     );
-    this.variableValueFilter = this.page.getByTestId(
-      'optional-filter-variable-value',
-    );
-    this.multipleVariablesSwitch = this.page.getByText('multiple');
+    this.variableFilterDialog = page.getByRole('dialog', {
+      name: 'Filter by variable',
+    });
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
@@ -127,18 +120,6 @@ export class OperateFiltersPanelPage {
     this.toTimeInput = page.getByTestId('toTime');
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
-    this.jsonEditorModalButton = this.page.getByRole('button', {
-      name: /open (json )?editor/i,
-    });
-    this.variableEditorDialog = this.page.getByRole('dialog');
-    this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
-      'edit variable value',
-    );
-    this.dialogEditMultipleVariableValueText =
-      this.variableEditorDialog.getByText('edit multiple variable values');
-    this.dialogCancelButton = this.variableEditorDialog.getByRole('button', {
-      name: 'cancel',
-    });
     this.getOptionByName = (name: string, exact = true) =>
       this.page.getByRole('option', {name, exact});
   }
@@ -208,17 +189,50 @@ export class OperateFiltersPanelPage {
     await this.getOptionByName(option, false).click();
   }
 
-  async fillVariableNameFilter(name: string) {
-    await expect(this.variableNameFilter).toBeVisible();
-    await expect(this.variableNameFilter).toBeEnabled();
-    await this.variableNameFilter.fill(name);
+  async openVariableFilterModal() {
+    await this.openVariableFilterModalButton.click();
+    await expect(this.variableFilterDialog).toBeVisible();
   }
 
-  async fillVariableValueFilter(value: string) {
-    await expect(this.variableValueFilter).toBeVisible();
-    await expect(this.variableValueFilter).toBeEnabled();
-    await this.variableValueFilter.fill(value);
-    await expect(this.variableValueFilter).toHaveValue(value);
+  async fillConditionRow(index: number, name: string, value: string) {
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-name-${index}`)
+      .fill(name);
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-value-${index}`)
+      .fill(value);
+  }
+
+  async addCondition() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Add condition'})
+      .click();
+  }
+
+  async applyVariableFilter() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Apply'})
+      .click();
+  }
+
+  async selectOperator(index: number, operatorLabel: string) {
+    await this.variableFilterDialog
+      .getByTestId(`variable-filter-operator-${index}`)
+      .click();
+    await this.page.getByRole('option', {name: operatorLabel}).click();
+  }
+
+  async openJsonEditorForRow(index: number) {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Open JSON editor'})
+      .nth(index)
+      .click();
+  }
+
+  async cancelVariableFilterModal() {
+    await this.variableFilterDialog
+      .getByRole('button', {name: 'Cancel'})
+      .click();
   }
 
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
@@ -299,18 +313,6 @@ export class OperateFiltersPanelPage {
     await expect(this.batchOperationKeyFilter).toBeEnabled();
     await this.batchOperationKeyFilter.fill(batchOperationKey);
     await expect(this.batchOperationKeyFilter).toHaveValue(batchOperationKey);
-  }
-
-  async clickJsonEditorModal() {
-    await this.jsonEditorModalButton.click();
-  }
-
-  async closeModalWithCancel() {
-    await this.dialogCancelButton.click();
-  }
-
-  async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
   }
 
   async clickRunningInstancesCheckbox(): Promise<void> {

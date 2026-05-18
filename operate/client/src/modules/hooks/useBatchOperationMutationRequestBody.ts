@@ -18,7 +18,7 @@ import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKe
 import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const useBatchOperationMutationRequestBody = () => {
-  const variable = variableFilterStore.variable;
+  const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
 
   const {selectedIds, excludedIds, checkedRunningIds} =
@@ -30,7 +30,7 @@ const useBatchOperationMutationRequestBody = () => {
     searchParams,
     includeIds,
     excludeIds: excludedIds,
-    variableFilter: variable,
+    conditions,
   });
 };
 
@@ -40,7 +40,7 @@ const useBatchOperationMutationRequestBody = () => {
  * finished instances (COMPLETED or TERMINATED).
  */
 const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
-  const variable = variableFilterStore.variable;
+  const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
 
   const {selectedIds, excludedIds, checkedFinishedIds} =
@@ -52,7 +52,7 @@ const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
     searchParams,
     includeIds,
     excludeIds: excludedIds,
-    variableFilter: variable,
+    conditions,
   });
 };
 

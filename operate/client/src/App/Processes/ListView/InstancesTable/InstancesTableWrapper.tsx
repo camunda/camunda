@@ -23,7 +23,6 @@ import {useSearchParams} from 'react-router-dom';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {useEffect, useMemo} from 'react';
-import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -46,11 +45,8 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const hasActiveFilter = searchParams.get('active') === 'true';
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
-  const variable = variableFilterStore.variable;
-  const conditions = MULTI_VARIABLE_FILTER
-    ? variableFilterStore.conditions
-    : undefined;
-  const filter = useProcessInstancesSearchFilter(variable, conditions);
+  const conditions = variableFilterStore.conditions;
+  const filter = useProcessInstancesSearchFilter(conditions);
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =
