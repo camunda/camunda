@@ -26,18 +26,36 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 const generateFutureDates = () => {
   const now = new Date();
   return {
-    dueDate: new Date(now.getFullYear() + 1, 11, 31, 23, 59, 59, 0).toISOString(),
-    followUpDate: new Date(now.getFullYear() + 1, 5, 15, 10, 0, 0, 0).toISOString(),
+    dueDate: new Date(
+      now.getFullYear() + 1,
+      11,
+      31,
+      23,
+      59,
+      59,
+      0,
+    ).toISOString(),
+    followUpDate: new Date(
+      now.getFullYear() + 1,
+      5,
+      15,
+      10,
+      0,
+      0,
+      0,
+    ).toISOString(),
   };
 };
-  
+
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Update User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
     setupProcessInstanceForTests('user_task_update_api_process');
 
   test.beforeAll(beforeAll);
+
   test.beforeEach(beforeEach);
+
   test.afterEach(afterEach);
 
   test('Update user task - success - update all fields', async ({request}) => {
@@ -197,7 +215,9 @@ test.describe.parallel('Update User Task Tests', () => {
     await assertStatusCode(res, 204);
   });
 
-  test('Update user task - bad request - empty changeset', async ({request}) => {
+  test('Update user task - bad request - empty changeset', async ({
+    request,
+  }) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
@@ -212,9 +232,7 @@ test.describe.parallel('Update User Task Tests', () => {
     await assertInvalidArgument(res, 400, 'changeset');
   });
 
-  test('Update user task - success - with custom action', async ({
-    request,
-  }) => {
+  test('Update user task - success - with custom action', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
@@ -367,25 +385,22 @@ test.describe.parallel('Update User Task Tests', () => {
       await completeUserTask(request, userTaskKey);
     });
 
-    await test.step(
-      'Attempt to update the completed user task',
-      async () => {
-        await expect(async () => {
-          const updateRes = await request.patch(
-            buildUrl(`/user-tasks/${userTaskKey}`),
-            {
-              headers: jsonHeaders(),
-              data: {
-                changeset: {
-                  priority: 50,
-                },
+    await test.step('Attempt to update the completed user task', async () => {
+      await expect(async () => {
+        const updateRes = await request.patch(
+          buildUrl(`/user-tasks/${userTaskKey}`),
+          {
+            headers: jsonHeaders(),
+            data: {
+              changeset: {
+                priority: 50,
               },
             },
-          );
-          await assertInvalidState(updateRes);
-        }).toPass(defaultAssertionOptions);
-      },
-    );
+          },
+        );
+        await assertInvalidState(updateRes);
+      }).toPass(defaultAssertionOptions);
+    });
 
     state['processCompleted'] = true;
   });

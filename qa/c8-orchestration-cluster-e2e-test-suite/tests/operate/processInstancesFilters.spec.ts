@@ -134,6 +134,7 @@ test.describe('Process Instances Filters', () => {
         'Always fails',
       );
     });
+
     await test.step('Select same flow node again and see filter is removed', async () => {
       await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
 
@@ -629,7 +630,8 @@ test.describe('Process Instances Filters', () => {
       await expect(operateOperationsDetailsPage.state).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
-          const batchOperationStatus = await operateOperationsDetailsPage.getBatchOperationStatus();
+          const batchOperationStatus =
+            await operateOperationsDetailsPage.getBatchOperationStatus();
           expect(batchOperationStatus).toBe('Completed');
         },
         onFailure: async () => {

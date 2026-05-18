@@ -97,7 +97,11 @@ test.describe
       }
 
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });
@@ -231,9 +235,13 @@ test.describe
           break;
         }
       }
-      
+
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });

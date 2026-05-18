@@ -55,8 +55,6 @@ export async function cleanupGlobalTaskListeners(
   );
 
   if (failed.length > 0) {
-    console.warn(
-      `Failed to clean up ${failed.length} global task listeners`,
-    );
+    console.warn(`Failed to clean up ${failed.length} global task listeners`);
   }
 }

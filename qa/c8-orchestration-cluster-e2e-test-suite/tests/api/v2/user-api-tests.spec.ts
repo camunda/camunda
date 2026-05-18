@@ -516,6 +516,7 @@ test.describe.parallel('Users API Tests', () => {
 
   test('Delete User', async ({request}) => {
     const p = {username: state['username3'] as string};
+
     await test.step('Delete User 204', async () => {
       await expect(async () => {
         const res = await request.delete(buildUrl('/users/{username}', p), {

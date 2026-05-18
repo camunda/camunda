@@ -23,6 +23,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Get XML API', () => {
   const state: Record<string, unknown> = {};
+
   test.beforeAll(async () => {
     const deployment = await deploy([
       './resources/process_definition_api_tests.bpmn',

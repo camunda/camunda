@@ -30,6 +30,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
 
   test('Modify process instance - success', async ({request}) => {
     const localStorage: Record<string, unknown> = {};
+
     await test.step('Create process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -101,6 +102,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
       );
       await assertStatusCode(res, 204);
     });
+
     await test.step('Verify second task is active and first task canceled', async () => {
       await expect(async () => {
         const res = await request.post(buildUrl('/user-tasks/search'), {

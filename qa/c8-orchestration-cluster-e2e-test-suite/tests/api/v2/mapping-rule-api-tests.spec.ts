@@ -469,7 +469,7 @@ test.describe.parallel('Mapping Rules API Tests', () => {
           data: updateBody,
         },
       );
-      
+
       await assertStatusCode(res, 200);
       await validateResponse(
         {

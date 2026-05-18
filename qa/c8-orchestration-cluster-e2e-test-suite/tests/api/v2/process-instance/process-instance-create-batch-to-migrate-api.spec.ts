@@ -23,11 +23,12 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {expectBatchState, findUserTask} from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   const instanceKeys: string[] = [];
+
   test.beforeAll(async () => {
     await deploy([
       './resources/test_migration_process_v1.bpmn',
@@ -367,6 +368,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       processInstanceKey2: '',
       targetProcessDefinitionKey: '',
     };
+
     await test.step('Create two process instances of version 1', async () => {
       const instances1 = await createInstances(
         'test_migration_process',
@@ -406,6 +408,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       localState.targetProcessDefinitionKey = instances[0].processDefinitionKey;
       instanceKeys.push(instances[0].processInstanceKey);
     });
+
     return localState;
   };
 });

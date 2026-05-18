@@ -11,7 +11,7 @@ import {APIRequestContext} from 'playwright-core';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {SearchElementInstancesResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export async function resolveAdHocSubProcessInstanceKey(
   request: APIRequestContext,

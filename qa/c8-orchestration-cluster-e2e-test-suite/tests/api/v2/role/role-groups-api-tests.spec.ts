@@ -160,6 +160,7 @@ test.describe.parallel('Role Groups API Tests', () => {
       groupId: groupIdFromState('roleId2', state) as string,
       roleId: state['roleId2'] as string,
     };
+
     await test.step('Unassign Role From Group', async () => {
       await expect(async () => {
         const res = await request.delete(

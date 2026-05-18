@@ -76,10 +76,10 @@ export async function grantUserResourceAuthorization(
     {
       path: '/authorizations',
       method: 'POST',
-      status: '201',  
+      status: '201',
     },
     authRes,
-   );
+  );
   const authBody = await authRes.json();
 
   await expect(async () => {

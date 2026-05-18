@@ -27,6 +27,7 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
 
   test('Get Process Instance Call Hierarchy - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),

@@ -162,6 +162,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
   }) => {
     let processInstanceKeyToCancel: string;
     let batchOperationKey: string;
+
     await test.step('Create process instance to cancel', async () => {
       processInstanceKeyToCancel = (
         await createSingleInstance('processWithAnError', 1)
@@ -262,6 +263,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     let processInstanceKey1: string;
     let processInstanceKey2: string;
     let batchOperationKey: string;
+
     await test.step('Create multiple process instances to cancel', async () => {
       const processInstances = await createInstances(
         'process_with_task_listener',
@@ -635,7 +637,11 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         },
       );
 
-      await assertInvalidArgument(res, 400, `The provided itemKey \'${invalidFilterValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`);
+      await assertInvalidArgument(
+        res,
+        400,
+        `The provided itemKey \'${invalidFilterValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`,
+      );
     }).toPass(defaultAssertionOptions);
   });
 });

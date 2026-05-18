@@ -31,7 +31,8 @@ import {
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe.parallel('Get Process Instance Statistics By Error API Tests', () => {
+test.describe
+  .parallel('Get Process Instance Statistics By Error API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
@@ -127,9 +128,9 @@ test.describe.parallel('Get Process Instance Statistics By Error API Tests', () 
           (item: {errorMessage: string}) => item.errorMessage === errorMessage,
         );
         expect(matchingItem).toBeDefined();
-        expect(matchingItem.activeInstancesWithErrorCount).toBeGreaterThanOrEqual(
-          1,
-        );
+        expect(
+          matchingItem.activeInstancesWithErrorCount,
+        ).toBeGreaterThanOrEqual(1);
       }).toPass(defaultAssertionOptions);
     });
   });
