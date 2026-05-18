@@ -7,7 +7,7 @@
  */
 
 import {lazy, Suspense, useRef, useState} from 'react';
-import {Button, Modal, Stack} from '@carbon/react';
+import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -36,7 +36,8 @@ const RichTextEditor = lazy(async () => {
   return {default: RichTextEditor};
 });
 
-const MAX_CONDITIONS = 5;
+const SOFT_WARNING_THRESHOLD = 8;
+const WARNING_STORAGE_KEY = 'operate.variableFilter.warningShown';
 
 type RowErrors = {
   name?: string;
@@ -113,6 +114,7 @@ const VariableFilterModal: React.FC = observer(() => {
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const editorRef = useRef<EditorRef | null>(null);
   const preEditValueRef = useRef('');
+  const [showWarning, setShowWarning] = useState(false);
 
   const handleSubmit = (
     values: FormValues,
@@ -262,12 +264,35 @@ const VariableFilterModal: React.FC = observer(() => {
                             }}
                           />
                         ))}
+                        {showWarning && (
+                          <InlineNotification
+                            kind="info"
+                            lowContrast
+                            hideCloseButton
+                            subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
+                            role="status"
+                          />
+                        )}
                         <Button
                           kind="ghost"
                           size="sm"
                           renderIcon={Add}
-                          disabled={(fields.length ?? 0) >= MAX_CONDITIONS}
-                          onClick={() => fields.push(createDraft())}
+                          onClick={() => {
+                            fields.push(createDraft());
+                            if (
+                              (fields.length ?? 0) + 1 >=
+                                SOFT_WARNING_THRESHOLD &&
+                              !showWarning &&
+                              sessionStorage.getItem(WARNING_STORAGE_KEY) ===
+                                null
+                            ) {
+                              setShowWarning(true);
+                              sessionStorage.setItem(
+                                WARNING_STORAGE_KEY,
+                                'true',
+                              );
+                            }
+                          }}
                         >
                           Add condition
                         </Button>
