@@ -22,7 +22,7 @@ defaults:
 jobs:
   cleanup-orphaned-vr-previews:
     name: Cleanup Orphaned Operate VR Report Previews
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       contents: write
