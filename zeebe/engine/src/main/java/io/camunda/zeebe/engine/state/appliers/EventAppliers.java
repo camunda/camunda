@@ -160,12 +160,15 @@ public final class EventAppliers implements EventApplier {
     registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
     registerJobMetricsBatchEventAppliers(state);
-    registerAgentInstanceEventAppliers();
+    registerAgentInstanceEventAppliers(state);
     return this;
   }
 
-  private void registerAgentInstanceEventAppliers() {
-    register(AgentInstanceIntent.CREATED, NOOP_EVENT_APPLIER);
+  private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {
+    register(
+        AgentInstanceIntent.CREATED,
+        new AgentInstanceCreatedApplier(
+            state.getAgentInstanceState(), state.getElementInstanceState()));
     register(AgentInstanceIntent.UPDATED, NOOP_EVENT_APPLIER);
     register(AgentInstanceIntent.COMPLETED, NOOP_EVENT_APPLIER);
   }

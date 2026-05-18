@@ -80,6 +80,7 @@ final class TestSupport {
       case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
       case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
       case GLOBAL_LISTENER -> config.globalListener = value;
+      case AGENT_INSTANCE -> config.agentInstance = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -140,8 +141,7 @@ final class TestSupport {
             ValueType.CONDITIONAL_EVALUATION,
             ValueType.EXPRESSION,
             ValueType.JOB_METRICS_BATCH,
-            ValueType.RESOURCE_REEXPORT,
-            ValueType.AGENT_INSTANCE);
+            ValueType.RESOURCE_REEXPORT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
