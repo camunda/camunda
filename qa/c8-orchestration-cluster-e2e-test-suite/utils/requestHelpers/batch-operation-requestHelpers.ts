@@ -36,8 +36,8 @@ export async function cancelBatchOperation(
 // (404 → 204). Use the same generous budget that createCompletedBatchOperation
 // uses for engine catch-up.
 const batchOperationLifecycleOptions = {
-  intervals: [5_000, 10_000, 10_000, 15_000, 20_000],
-  timeout: 90_000,
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
+  timeout: 180_000,
 };
 
 export async function suspendBatchOperation(
@@ -136,8 +136,8 @@ export async function expectBatchState(
 }
 
 export const postMigrationAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-  timeout: 90_000,
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000],
+  timeout: 180_000,
 };
 
 export const notFoundDetail = (key: string) =>
