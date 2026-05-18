@@ -33,14 +33,7 @@ global:
       valueFrom:
         fieldRef:
           fieldPath: metadata.namespace
-    # Optimize report evaluation meter (starter-only). Requires the Optimize backend to
-    # run with CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true (set in camunda-platform-values.yaml)
-    # and the dedicated `optimize-loadtest` Keycloak client declared under identity.clients[]
-    # in the same values file. Uses the OAuth 2.0 client_credentials grant — only client-id +
-    # client-secret are needed.
-    # Base URL, Keycloak URL, and realm default to the in-cluster service names
-    # (`http://optimize`, `http://keycloak`, `camunda-platform`) in application.yaml,
-    # which match the fullnameOverride values pinned in camunda-platform-values.yaml.
+    # Optimize report-evaluation meter (starter-only); see camunda-platform-values.yaml for backend setup.
     - name: LOAD_TESTER_OPTIMIZE_ENABLED
       value: "true"
     - name: OPTIMIZE_LOADTEST_CLIENT_SECRET

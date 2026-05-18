@@ -22,15 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Schedules periodic Optimize dashboard and report evaluations to exercise the Optimize REST API
- * under load. Owns an {@link OptimizeApiClient} and a single-threaded scheduler.
- *
- * <p>No Micrometer metrics are emitted; Optimize already publishes its own report-evaluation
- * timers. Failures are logged (throttled) and the next cycle continues.
- *
- * <p>Started from {@code Starter} when {@code load-tester.optimize.enabled=true}. Synchronous
- * execution per cycle (matches {@link io.camunda.zeebe.read.DataReadMeter}) to avoid pile-up when
- * Optimize is slow.
+ * Periodically evaluates Optimize dashboards and reports to exercise the Optimize REST API under
+ * load. Failures are throttled-logged and the next cycle continues.
  */
 public class OptimizeReportEvaluator implements AutoCloseable {
 

@@ -9,7 +9,7 @@ server:
 # Logging configuration
 logging:
   level:
-    root: ${LOG_LEVEL:INFO}
+    root: ${LOG_LEVEL:WARN}
     io.camunda.client.job.poller: ERROR
     # Apache HC5 (used by CamundaClient's REST transport) logs every 503 retry
     # at INFO, flooding starter/worker pod logs under benchmark load when
@@ -47,7 +47,7 @@ camunda:
     # Since the starter doesn't need any job worker execution threads
     execution-threads: 0
     auth:
-      method: ${ZEEBE_AUTH_METHOD:oidc}
+      method: ${ZEEBE_AUTH_METHOD:none}
       username: ${ZEEBE_AUTH_USERNAME:demo}
       password: ${ZEEBE_AUTH_PASSWORD:demo}
       client-id: ${ZEEBE_CLIENT_ID:orchestration}
@@ -105,11 +105,7 @@ load-tester:
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
 
-  # Optional Optimize report evaluation meter (starter-only). Polls Optimize REST endpoints
-  # periodically to emit query-latency timers under load. Requires the Optimize backend to
-  # be running PR camunda/camunda#46878 with api.jwtAuthForApiEnabled=true. Auth uses the
-  # OAuth 2.0 client_credentials grant against the dedicated `optimize-loadtest` Keycloak
-  # client (bootstrapped by Identity, see `identity.clients[]` in camunda-platform-values.yaml).
+  # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
   optimize:
     enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
     base-url: ${OPTIMIZE_BASE_URL:http://optimize}

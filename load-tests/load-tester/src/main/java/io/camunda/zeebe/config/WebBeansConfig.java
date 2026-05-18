@@ -14,10 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Declares ObjectMapper and WebClient.Builder beans because the load-tester pom omits
- * spring-boot-starter-web and runs as a non-reactive Spring app, so neither Jackson nor WebClient
- * autoconfig fires reliably. {@link ConditionalOnMissingBean} keeps these inert if autoconfig does
- * win.
+ * Fallback {@link ObjectMapper} and {@link WebClient.Builder} beans for when autoconfig is absent.
  */
 @Configuration
 public class WebBeansConfig {

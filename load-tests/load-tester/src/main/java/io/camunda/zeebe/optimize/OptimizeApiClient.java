@@ -21,15 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Talks to a deployed Optimize via its REST API. Authenticates with Keycloak using the OAuth 2.0
- * client credentials grant (requires Optimize {@code api.jwtAuthForApiEnabled=true}) and uses the
- * resulting JWT as a bearer token on every Optimize request. The Keycloak client used here is
- * bootstrapped by Identity with {@code write:*} on the {@code optimize-api} resource server (see
- * {@code identity.clients[]} in {@code load-tests/camunda-platform-values.yaml}), which is what
- * authorizes the {@code /api/**} calls.
- *
- * <p>Not a Spring bean — owned by {@link OptimizeReportEvaluator} so tests can construct it with a
- * fake {@link WebClient.Builder}.
+ * Optimize REST client. Authenticates against Keycloak via OAuth 2.0 client_credentials and uses
+ * the JWT as a bearer token on {@code /api/**} requests.
  */
 public class OptimizeApiClient {
 

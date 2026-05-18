@@ -64,20 +64,10 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
-  # Bootstrap a dedicated Keycloak client for the load-tester's Optimize meter. Identity
-  # (a) registers the confidential client with serviceAccountsEnabled=true,
-  # (b) attaches a hardcoded-audience mapper so tokens carry `aud=optimize-api`, and
-  # (c) grants the client's service-account user write access on the `optimize-api`
-  # resource server, so `/api/**` calls authorize without OPTIMIZE_SUPER_USER_IDS.
-  # The chart-managed `optimize` client used by the Optimize UI cookie flow is left
-  # untouched (different `id`).
+  # Dedicated M2M Keycloak client for the load-tester's Optimize meter, with `write:*` on optimize-api.
   clients:
     - id: optimize-loadtest
       name: Optimize Load Tester
-      # M2M = service-account user only (Identity sets serviceAccountsEnabled=true,
-      # standardFlowEnabled=false). The load-tester uses `client_credentials` against
-      # this client; the browser standard flow is never needed. M2M also skips the
-      # rootUrl validation in identity/.../ClientInitializationService.java:209.
       type: m2m
       secret:
         existingSecret: camunda-credentials
@@ -110,13 +100,9 @@ optimize:
     # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
     - name: OPTIMIZE_LOG_APPENDER
       value: Stackdriver
-    # Bearer-token (JWT) auth for /api/** added in camunda/camunda#46878. The load-tester's
-    # Optimize evaluator uses client_credentials against the `optimize-loadtest` Keycloak
-    # client (declared above under identity.clients[]); its tokens carry `aud=optimize-api`
-    # and the service-account user has `write:*` on the `optimize-api` resource server.
+    # Bearer-token (JWT) auth for /api/** (camunda/camunda#46878); consumed by the load-tester meter.
     - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
       value: "true"
-    # The `keycloak` Service exposes only port 80; inside the pod KC listens on 8080.
     - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
       value: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
   tolerations:
