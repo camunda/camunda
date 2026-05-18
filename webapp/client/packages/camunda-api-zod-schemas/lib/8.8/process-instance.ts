@@ -62,7 +62,7 @@ const queryProcessInstancesFilterSchema = z
 		hasIncident: z.boolean(),
 		tenantId: advancedStringFilterSchema,
 		variables: z.array(processInstanceVariableFilterSchema),
-		batchOperationId: advancedStringFilterSchema,
+		batchOperationKey: advancedStringFilterSchema,
 		errorMessage: advancedStringFilterSchema,
 		hasRetriesLeft: z.boolean(),
 		elementInstanceState: advancedProcessInstanceStateFilterSchema,

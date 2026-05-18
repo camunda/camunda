@@ -95,7 +95,7 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	processInstanceKey: basicStringFilterSchema,
 	parentProcessInstanceKey: basicStringFilterSchema,
 	parentElementInstanceKey: basicStringFilterSchema,
-	batchOperationId: advancedStringFilterSchema,
+	batchOperationKey: advancedStringFilterSchema,
 	errorMessage: advancedStringFilterSchema,
 	hasRetriesLeft: z.boolean(),
 	elementInstanceState: advancedProcessInstanceStateFilterSchema,
