@@ -127,7 +127,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
             .toList();
     if (allResources.isEmpty()) {
       throw new IllegalArgumentException(
-          "No resources found for cluster variables patterns:" + resourcePatterns);
+          "No resources found for cluster variables patterns: " + resourcePatterns);
     }
     for (final Resource resource : allResources) {
       try (final InputStream inputStream = resource.getInputStream()) {
@@ -138,7 +138,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
         variables.putAll(loaded);
       } catch (final Exception e) {
         throw new RuntimeException(
-            "Error reading cluster variables from resource:" + resource.getFilename(), e);
+            "Error reading cluster variables from resource: " + resource.getFilename(), e);
       }
     }
     return variables;
@@ -171,7 +171,8 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     try {
       return resourcePatternResolver.getResources(resourcePattern);
     } catch (final IOException e) {
-      return new Resource[0];
+      throw new RuntimeException(
+          "Error resolving cluster variables resources for pattern: " + resourcePattern, e);
     }
   }
 }
