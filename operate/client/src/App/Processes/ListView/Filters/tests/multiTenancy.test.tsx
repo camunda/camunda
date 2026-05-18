@@ -107,7 +107,7 @@ describe('Filters', () => {
       elementId: 'ServiceTask_0kt6c5i',
       variableName: 'foo',
       variableValue: 'bar',
-      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',

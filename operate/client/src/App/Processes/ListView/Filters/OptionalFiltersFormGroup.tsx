@@ -18,8 +18,8 @@ import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstance
 import {
   validateIdsCharacters,
   validateIdsLength,
-  validateOperationIdCharacters,
-  validateOperationIdComplete,
+  validateBatchOperationKeyCharacters,
+  validateBatchOperationKeyComplete,
   validateParentInstanceIdCharacters,
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
@@ -47,7 +47,7 @@ type OptionalFilter =
   | 'processInstanceKey'
   | 'parentProcessInstanceKey'
   | 'businessId'
-  | 'batchOperationId'
+  | 'batchOperationKey'
   | 'errorMessage'
   | 'hasRetriesLeft'
   | 'startDateRange'
@@ -57,7 +57,7 @@ const optionalFilters: Array<OptionalFilter> = [
   'variable',
   'processInstanceKey',
   'businessId',
-  'batchOperationId',
+  'batchOperationKey',
   'parentProcessInstanceKey',
   'errorMessage',
   'hasRetriesLeft',
@@ -96,13 +96,13 @@ const OPTIONAL_FILTER_FIELDS: Record<
     label: 'Business ID',
     type: 'text',
   },
-  batchOperationId: {
-    keys: ['batchOperationId'],
-    label: 'Operation ID',
+  batchOperationKey: {
+    keys: ['batchOperationKey'],
+    label: 'Batch Operation Key',
     type: 'text',
     validate: mergeValidators(
-      validateOperationIdCharacters,
-      validateOperationIdComplete,
+      validateBatchOperationKeyCharacters,
+      validateBatchOperationKeyComplete,
     ),
   },
   parentProcessInstanceKey: {

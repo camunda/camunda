@@ -300,35 +300,41 @@ describe('Validations', () => {
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
 
-  it('should validate operation id', async () => {
+  it('should validate batch operation key', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation ID'));
+    await user.click(screen.getByText('Batch Operation Key'));
 
-    await user.type(screen.getByLabelText(/^operation id$/i), 'g');
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'g');
 
     act(() => {
       vi.runOnlyPendingTimers();
     });
 
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.clear(screen.getByLabelText(/^operation id$/i));
+    await user.clear(screen.getByLabelText(/^batch operation key$/i));
 
-    expect(screen.queryByTitle(ERRORS.operationId)).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle(ERRORS.batchOperationKey),
+    ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/^operation id$/i), 'a');
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'a');
 
     act(() => {
       vi.runOnlyPendingTimers();
     });
 
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
   });
 });

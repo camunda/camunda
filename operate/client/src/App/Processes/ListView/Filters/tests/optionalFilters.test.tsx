@@ -41,7 +41,9 @@ describe('Optional Filters', () => {
     expect(
       screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/batch operation key/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/business id/i)).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText(/Parent Process Instance Key/i),
@@ -90,20 +92,20 @@ describe('Optional Filters', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should display operation id field on click', async () => {
+  it('should display batch operation key field on click', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-batchOperationId'),
+      screen.getByTestId('optional-filter-menuitem-batchOperationKey'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
-    expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-batchOperationId'),
+      screen.queryByTestId('optional-filter-menuitem-batchOperationKey'),
     ).not.toBeInTheDocument();
   });
 
@@ -207,7 +209,7 @@ describe('Optional Filters', () => {
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-batchOperationId'),
+      screen.getByTestId('optional-filter-menuitem-batchOperationKey'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(screen.getByTestId('optional-filter-menuitem-businessId'));
@@ -253,7 +255,7 @@ describe('Optional Filters', () => {
       endDateTo: '2021-02-23 18:17:18',
       endDateFrom: '2021-02-23 22:00:00',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -286,7 +288,7 @@ describe('Optional Filters', () => {
 
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
 
     await removeOptionalFilter({
@@ -311,7 +313,7 @@ describe('Optional Filters', () => {
             endDateTo: '2021-02-23 18:17:18',
             endDateFrom: '2021-02-23 22:00:00',
             elementId: 'ServiceTask_0kt6c5i',
-            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -346,7 +348,7 @@ describe('Optional Filters', () => {
             endDateTo: '2021-02-23 18:17:18',
             endDateFrom: '2021-02-23 22:00:00',
             elementId: 'ServiceTask_0kt6c5i',
-            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -375,7 +377,7 @@ describe('Optional Filters', () => {
             endDateTo: '2021-02-23 18:17:18',
             endDateFrom: '2021-02-23 22:00:00',
             elementId: 'ServiceTask_0kt6c5i',
-            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -400,7 +402,7 @@ describe('Optional Filters', () => {
             endDateTo: '2021-02-23 18:17:18',
             endDateFrom: '2021-02-23 22:00:00',
             elementId: 'ServiceTask_0kt6c5i',
-            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -423,7 +425,7 @@ describe('Optional Filters', () => {
             processDefinitionId: 'bigVarProcess',
             processDefinitionVersion: '1',
             elementId: 'ServiceTask_0kt6c5i',
-            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -446,7 +448,7 @@ describe('Optional Filters', () => {
           processDefinitionId: 'bigVarProcess',
           processDefinitionVersion: '1',
           elementId: 'ServiceTask_0kt6c5i',
-          batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
           active: 'true',
           incidents: 'true',
           completed: 'true',
@@ -465,7 +467,7 @@ describe('Optional Filters', () => {
       screen.queryByRole('textbox', {name: /^value$/i}),
     ).not.toBeInTheDocument();
 
-    await removeOptionalFilter({user, screen, label: 'Operation ID'});
+    await removeOptionalFilter({user, screen, label: 'Batch Operation Key'});
 
     vi.runOnlyPendingTimers();
 
@@ -485,7 +487,9 @@ describe('Optional Filters', () => {
         ).toString()}`,
       ),
     );
-    expect(screen.queryByLabelText('Operation ID')).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Batch Operation Key'),
+    ).not.toBeInTheDocument();
 
     await removeOptionalFilter({user, screen, label: 'Business ID'});
 
@@ -521,7 +525,7 @@ describe('Optional Filters', () => {
       endDateTo: '2021-02-23 18:17:18',
       endDateFrom: '2021-02-23 22:00:00',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -557,7 +561,7 @@ describe('Optional Filters', () => {
       screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^value$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^batch operation key$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^business id$/i)).toHaveValue('order-12345');
 
@@ -586,7 +590,9 @@ describe('Optional Filters', () => {
       screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^value$/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^batch operation key$/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^business id$/i)).not.toBeInTheDocument();
   });
 });

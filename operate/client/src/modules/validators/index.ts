@@ -24,7 +24,7 @@ const ERRORS = {
   parentInstanceId: 'Key has to be a 16 to 19 digit number',
   time: 'Time has to be in the format hh:mm:ss',
   timeRange: '"From time" is after "To time"',
-  operationId: 'Id has to be a 16 to 19 digit number or a UUID',
+  batchOperationKey: 'Key has to be a 16 to 19 digit number or a UUID',
   variables: {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
@@ -262,8 +262,8 @@ const validateMultipleVariableValuesValid: FieldValidator<
 /**
  * Validates if value contains only characters from a key or UUID
  */
-const validateOperationIdCharacters: FieldValidator<
-  ProcessInstanceFilters['batchOperationId']
+const validateBatchOperationKeyCharacters: FieldValidator<
+  ProcessInstanceFilters['batchOperationKey']
 > = (value = '') => {
   const schema = z.union([
     z.string().length(0),
@@ -272,7 +272,7 @@ const validateOperationIdCharacters: FieldValidator<
   ]);
 
   if (!schema.safeParse(value).success) {
-    return ERRORS.operationId;
+    return ERRORS.batchOperationKey;
   }
   return undefined;
 };
@@ -280,8 +280,8 @@ const validateOperationIdCharacters: FieldValidator<
 /**
  * Validates if value is a complete key (16-19 characters) or a complete UUID
  */
-const validateOperationIdComplete: FieldValidator<
-  ProcessInstanceFilters['batchOperationId']
+const validateBatchOperationKeyComplete: FieldValidator<
+  ProcessInstanceFilters['batchOperationKey']
 > = promisifyValidator((value = '') => {
   const schema = z.union([
     z.string().length(0),
@@ -290,7 +290,7 @@ const validateOperationIdComplete: FieldValidator<
   ]);
 
   if (!schema.safeParse(value).success) {
-    return ERRORS.operationId;
+    return ERRORS.batchOperationKey;
   }
   return undefined;
 }, VALIDATION_TIMEOUT);
@@ -304,8 +304,8 @@ export {
   validateParentInstanceIdNotTooLong,
   validateTimeComplete,
   validateTimeCharacters,
-  validateOperationIdCharacters,
-  validateOperationIdComplete,
+  validateBatchOperationKeyCharacters,
+  validateBatchOperationKeyComplete,
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValuesComplete,
