@@ -365,7 +365,7 @@ element-instance/element-instance-search-incident-api.spec.ts,347,element-instan
 element-instance/element-instance-search-incident-api.spec.ts,368,element-instance,J/K/L. Observation-only,search,negative-search,running-process-instance,unauthorized|observe-via-search,,Search for incidents of a specific element instance - Unauthorized
 element-instance/element-instance-search-incident-api.spec.ts,385,element-instance,J/K/L. Observation-only,search,negative-search,running-process-instance,forbidden|observe-via-search,,Search for incidents of a specific element instance - Forbidden
 element-instance/element-instance-search-incident-api.spec.ts,437,element-instance,J/K/L. Observation-only,search,negative-search,running-process-instance,bad-request|pagination-sort|observe-via-search,,Search for incidents of a specific element instance - with invalid pagination parameters
-element-instance/element-instance-update-api.spec.ts,41,element-instance,J/K/L. Observation-only,update,mutate,running-process-instance,unlabeled,,Update Element Instance - so that process ends with the 
+element-instance/element-instance-update-api.spec.ts,41,element-instance,J/K/L. Observation-only,update,mutate,running-process-instance,unlabeled,,"Update Element Instance - so that process ends with the ""end without extra"" end event"
 element-instance/element-instance-update-api.spec.ts,93,element-instance,J/K/L. Observation-only,update,mutate,running-process-instance,unlabeled,,Update Element Instance - local update overrides global variable
 group/group-api-tests.spec.ts,47,group,A. Entity Lifecycle (CRUD),create,create,none,unlabeled,,Create Group
 group/group-api-tests.spec.ts,70,group,A. Entity Lifecycle (CRUD),create,negative-create,none,unauthorized,,Create Group Unauthorized
@@ -602,7 +602,7 @@ job/job-api-tests.spec.ts,121,job,G. Job Lifecycle & Stats,other,other,running-p
 job/job-api-tests.spec.ts,133,job,G. Job Lifecycle & Stats,other,other,running-process-instance-with-job,bad-request,,Activate Jobs - invalid timeout
 job/job-api-tests.spec.ts,144,job,G. Job Lifecycle & Stats,other,other,running-process-instance-with-job,bad-request,,Activate Jobs - invalid maxJobsToActivate
 job/job-api-tests.spec.ts,160,job,G. Job Lifecycle & Stats,search,observe-present-search,running-process-instance-with-job,observe-via-search,,Search Jobs - no criteria
-job/job-api-tests.spec.ts,185,job,G. Job Lifecycle & Stats,search,observe-present-search,running-process-instance-with-job,pagination-sort|observe-via-search,,Search Jobs - sorted by field 
+job/job-api-tests.spec.ts,185,job,G. Job Lifecycle & Stats,search,observe-present-search,running-process-instance-with-job,pagination-sort|observe-via-search,,Search Jobs - sorted by field 'type'
 job/job-api-tests.spec.ts,221,job,G. Job Lifecycle & Stats,search,negative-search,running-process-instance-with-job,unauthorized|observe-via-search,,Search Jobs - Unauthorized
 job/job-api-tests.spec.ts,231,job,G. Job Lifecycle & Stats,search,negative-search,running-process-instance-with-job,bad-request|observe-via-search,,Search Jobs - invalid request
 job/job-completion-api-tests.spec.ts,52,job,G. Job Lifecycle & Stats,update,mutate,running-process-instance-with-job,happy-path,,Complete Job - success

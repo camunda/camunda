@@ -1043,7 +1043,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 |--|--|--|--|
 | create | unlabeled | `job/job-worker-statistics-test-setup.spec.ts:15` | Setup - Create jobs with different workers and types |
 | observe-present-search | — | `job/job-api-tests.spec.ts:160` | Search Jobs - no criteria |
-| observe-present-search | pagination-sort | `job/job-api-tests.spec.ts:185` | Search Jobs - sorted by field  |
+| observe-present-search | pagination-sort | `job/job-api-tests.spec.ts:185` | Search Jobs - sorted by field 'type' |
 | mutate | happy-path | `job/job-completion-api-tests.spec.ts:52` | Complete Job - success |
 | mutate | not-found | `job/job-completion-api-tests.spec.ts:66` | Complete Job - not found |
 | mutate | happy-path | `job/job-error-api-tests.spec.ts:45` | Throw Error for Job - success |
@@ -1215,7 +1215,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | observe-present-search | filter, happy-path | `element-instance/element-instance-search-incident-api.spec.ts:180` | Search for incidents of a specific element instance - filtered by processDefinitionKey and state - Single Result - Success |
 | observe-present-search | happy-path | `element-instance/element-instance-search-incident-api.spec.ts:219` | Search for incidents of a specific element instance - ascending order by errorMessage - Success |
 | observe-present-search | not-found | `element-instance/element-instance-search-incident-api.spec.ts:347` | Search for incidents of a specific element instance - Not Existing Element Instance Key - Not Found |
-| mutate | unlabeled | `element-instance/element-instance-update-api.spec.ts:41` | Update Element Instance - so that process ends with the  |
+| mutate | unlabeled | `element-instance/element-instance-update-api.spec.ts:41` | Update Element Instance - so that process ends with the "end without extra" end event |
 | mutate | unlabeled | `element-instance/element-instance-update-api.spec.ts:93` | Update Element Instance - local update overrides global variable |
 | negative-get | unauthorized | `element-instance/element-instance-get-api.spec.ts:73` | Get Element Instance - Unauthorized |
 | negative-get | not-found | `element-instance/element-instance-get-api.spec.ts:83` | Get Element Instance - Not Found |

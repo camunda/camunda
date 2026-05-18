@@ -24,17 +24,22 @@ ROOT = os.path.join(SCRIPT_DIR, '..', 'tests', 'api', 'v2')
 OUT = SCRIPT_DIR
 
 # ---------- 1. Extract every test() call ----------
+# Capture the opening quote (group 1) and the title up to the matching quote
+# (group 2). Supports escaped quotes (\') so test titles with embedded ' or "
+# are not truncated.
 TEST_RE = re.compile(
-    r"""(?m)^[ \t]*test(?:\.(?:skip|only|fixme|fail))?\s*\(\s*['"`]([^'"`]+)['"`]"""
+    r"""(?m)^[ \t]*test(?:\.(?:skip|only|fixme|fail))?\s*\(\s*(['"`])((?:\\.|(?!\1).)*)\1"""
 )
-# Parameterized loops with dynamic names
+# Parameterized loops with dynamic names — name is an identifier or
+# property access, e.g. `tc.description`.
 DYNAMIC_RE = re.compile(
     r"""(?m)^[ \t]*test(?:\.(?:skip|only|fixme|fail))?\s*\(\s*([A-Za-z_][\w.]*)\s*,"""
 )
 
 # Entity -> top-level directory (or root-file slug)
 def entity_of(path):
-    parts = os.path.relpath(path, ROOT).split('/')
+    # Use os.sep-aware split so the script works on Windows too.
+    parts = os.path.relpath(path, ROOT).split(os.sep)
     if len(parts) > 1:
         return parts[0]
     base = parts[0]
@@ -229,10 +234,12 @@ for root, _dirs, files in os.walk(ROOT):
         path = os.path.join(root, f)
         with open(path, encoding='utf-8') as fp:
             content = fp.read()
-        lines = content.splitlines()
-        # Find each test() with literal-string name and its line number
+        # Find each test() with literal-string name and its line number.
+        # group(1) is the opening quote, group(2) is the captured title.
+        # Un-escape backslash-escaped characters (e.g. \", \', \`, \\) so the
+        # extracted name matches what Playwright actually sees at runtime.
         for m in TEST_RE.finditer(content):
-            name = m.group(1)
+            name = re.sub(r'\\(.)', r'\1', m.group(2))
             line_no = content.count('\n', 0, m.start()) + 1
             ent = entity_of(path)
             op = op_of(name)
@@ -280,20 +287,21 @@ with open(csv_path, 'w', newline='', encoding='utf-8') as fp:
 print(f"wrote {csv_path} ({len(rows)} rows)")
 
 # ---------- 6. Coverage matrix: entity × operation, variant counts ----------
-# matrix[entity][op] = dict of variant -> count
+# matrix[entity][op] = dict of variant -> count (counts labels)
+# tests_per_eop[entity][op] = number of test declarations (counts tests)
+# These are kept separate so the matrix `total` reflects test count, not
+# label count — a single test can carry multiple variant labels.
 matrix = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+tests_per_eop = defaultdict(lambda: defaultdict(int))
 entity_totals = defaultdict(int)
 op_set = ['create','get','update','delete','search','other','parameterized']
 variant_set = ['happy-path','bad-request','unauthorized','forbidden','not-found','conflict','pagination-sort','filter','observe-absence','data-driven','unlabeled']
 
 for r in rows:
     entity_totals[r['entity']] += 1
+    tests_per_eop[r['entity']][r['operation']] += 1
     for v in (r['variants'].split('|') if r['variants'] else ['unlabeled']):
-        if v in variant_set:
-            matrix[r['entity']][r['operation']][v] += 1
-        else:
-            # secondary observation tags — still tally under a known bucket
-            matrix[r['entity']][r['operation']][v] = matrix[r['entity']][r['operation']].get(v, 0) + 1
+        matrix[r['entity']][r['operation']][v] += 1
 
 # CSV matrix
 mat_csv = os.path.join(OUT, 'coverage_matrix.csv')
@@ -302,10 +310,10 @@ with open(mat_csv, 'w', newline='', encoding='utf-8') as fp:
     w.writerow(['entity','operation','total'] + variant_set)
     for ent in sorted(entity_totals, key=lambda x: -entity_totals[x]):
         for op in op_set:
-            cell = matrix[ent].get(op, {})
-            total = sum(cell.values())
+            total = tests_per_eop[ent].get(op, 0)
             if total == 0:
                 continue
+            cell = matrix[ent].get(op, {})
             w.writerow([ent, op, total] + [cell.get(v, 0) for v in variant_set])
 print(f"wrote {mat_csv}")
 
@@ -314,7 +322,7 @@ md_path = os.path.join(OUT, 'coverage_matrix.md')
 with open(md_path, 'w', encoding='utf-8') as fp:
     fp.write('# OC API v2 — Coverage matrix (entity × operation × variant)\n\n')
     fp.write(f'Total test declarations: **{len(rows)}** across **{len(entity_totals)}** entities.\n\n')
-    fp.write('Variants are first-match labels from test names; one test can carry multiple labels (sum may exceed row total).\n\n')
+    fp.write('`total` counts **test declarations** for (entity, operation). Variant columns count **labels** — a single test can match multiple variants, so variant counts can sum to more than `total`.\n\n')
     fp.write('Legend: ✓ = at least 1, blank = 0.\n\n')
     # Compact "presence" matrix first
     fp.write('## At-a-glance presence (✓ = ≥1 test)\n\n')
@@ -324,10 +332,10 @@ with open(md_path, 'w', encoding='utf-8') as fp:
     fp.write('|--|--|--:|' + '|'.join(['--']*len(header_vars)) + '|\n')
     for ent in sorted(entity_totals, key=lambda x: -entity_totals[x]):
         for op in op_set:
-            cell = matrix[ent].get(op, {})
-            total = sum(cell.values())
+            total = tests_per_eop[ent].get(op, 0)
             if total == 0:
                 continue
+            cell = matrix[ent].get(op, {})
             marks = ['✓' if cell.get(v,0) > 0 else '' for v in var_keys]
             fp.write(f'| {ent} | {op} | {total} | ' + ' | '.join(marks) + ' |\n')
     fp.write('\n## Counts per cell\n\n')
@@ -335,42 +343,42 @@ with open(md_path, 'w', encoding='utf-8') as fp:
     fp.write('|--|--|--:|' + '|'.join(['--:']*len(header_vars)) + '|\n')
     for ent in sorted(entity_totals, key=lambda x: -entity_totals[x]):
         for op in op_set:
-            cell = matrix[ent].get(op, {})
-            total = sum(cell.values())
+            total = tests_per_eop[ent].get(op, 0)
             if total == 0:
                 continue
+            cell = matrix[ent].get(op, {})
             nums = [str(cell.get(v,0)) if cell.get(v,0)>0 else '' for v in var_keys]
             fp.write(f'| {ent} | {op} | {total} | ' + ' | '.join(nums) + ' |\n')
 print(f"wrote {md_path}")
 
 # Gap report: entities that have a 'create' but no 'observe-absence' on delete
-fp = open(os.path.join(OUT, 'gaps.md'), 'w')
-fp.write('# Coverage gaps (heuristic)\n\n')
-fp.write('## Entities missing delete-then-observe-absence variant\n\n')
-fp.write('Looks for entities with create + delete tests but no `observe-absence` tag.\n\n')
-for ent in sorted(entity_totals):
-    cell = matrix[ent]
-    has_create = sum(cell.get('create', {}).values()) > 0
-    has_delete = sum(cell.get('delete', {}).values()) > 0
-    absence_hits = sum(
-        cell.get(op, {}).get('observe-absence', 0) for op in op_set
-    )
-    if has_create and has_delete and absence_hits == 0:
-        fp.write(f'- **{ent}** — has create+delete but no "observe absence" test name\n')
+gaps_path = os.path.join(OUT, 'gaps.md')
+with open(gaps_path, 'w', encoding='utf-8') as fp:
+    fp.write('# Coverage gaps (heuristic)\n\n')
+    fp.write('## Entities missing delete-then-observe-absence variant\n\n')
+    fp.write('Looks for entities with create + delete tests but no `observe-absence` tag.\n\n')
+    for ent in sorted(entity_totals):
+        cell = matrix[ent]
+        has_create = sum(cell.get('create', {}).values()) > 0
+        has_delete = sum(cell.get('delete', {}).values()) > 0
+        absence_hits = sum(
+            cell.get(op, {}).get('observe-absence', 0) for op in op_set
+        )
+        if has_create and has_delete and absence_hits == 0:
+            fp.write(f'- **{ent}** — has create+delete but no "observe absence" test name\n')
 
-fp.write('\n## Entities with no unauthorized (401) coverage\n\n')
-for ent in sorted(entity_totals):
-    cell = matrix[ent]
-    if not any(c.get('unauthorized', 0) for c in cell.values()):
-        fp.write(f'- {ent}\n')
+    fp.write('\n## Entities with no unauthorized (401) coverage\n\n')
+    for ent in sorted(entity_totals):
+        cell = matrix[ent]
+        if not any(c.get('unauthorized', 0) for c in cell.values()):
+            fp.write(f'- {ent}\n')
 
-fp.write('\n## Entities with no bad-request (400) coverage\n\n')
-for ent in sorted(entity_totals):
-    cell = matrix[ent]
-    if not any(c.get('bad-request', 0) for c in cell.values()):
-        fp.write(f'- {ent}\n')
-fp.close()
-print(f"wrote {os.path.join(OUT,'gaps.md')}")
+    fp.write('\n## Entities with no bad-request (400) coverage\n\n')
+    for ent in sorted(entity_totals):
+        cell = matrix[ent]
+        if not any(c.get('bad-request', 0) for c in cell.values()):
+            fp.write(f'- {ent}\n')
+print(f"wrote {gaps_path}")
 
 # ---------- 7. Per-category breakdown ----------
 # For each category, group tests by entity, then by form_step, and emit:
