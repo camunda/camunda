@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   public void onPayloadReceived(
-      final PushStreamRequest pushStreamRequest, final ActorFuture<Void> responseFuture) {
+      final PushStreamRequest pushStreamRequest, final ActorFuture<@Nullable Void> responseFuture) {
     final var streamId = pushStreamRequest.streamId();
     final var payload = pushStreamRequest.payload();
 

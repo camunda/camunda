@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a consumer of a stream which can consume data pushed from the server. The data is
@@ -24,5 +25,5 @@ public interface ClientStreamConsumer {
    *
    * @param payload the data to be consumed by the client
    */
-  ActorFuture<Void> push(DirectBuffer payload);
+  ActorFuture<@Nullable Void> push(DirectBuffer payload);
 }

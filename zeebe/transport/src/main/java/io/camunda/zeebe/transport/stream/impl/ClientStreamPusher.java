@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ final class ClientStreamPusher {
   void push(
       final AggregatedClientStream<?> stream,
       final DirectBuffer payload,
-      final ActorFuture<Void> future) {
+      final ActorFuture<@Nullable Void> future) {
     final var streams = stream.clientStreams().values();
     if (streams.isEmpty()) {
       future.completeExceptionally(
@@ -80,7 +81,7 @@ final class ClientStreamPusher {
       final UUID streamId,
       final Queue<ClientStreamImpl<?>> targets,
       final DirectBuffer buffer,
-      final ActorFuture<Void> future,
+      final ActorFuture<@Nullable Void> future,
       final List<Throwable> errors) {
     final var clientStream = targets.poll();
     if (clientStream == null) {
@@ -104,7 +105,8 @@ final class ClientStreamPusher {
             });
   }
 
-  private ActorFuture<Void> push(final ClientStreamImpl<?> stream, final DirectBuffer payload) {
+  private ActorFuture<@Nullable Void> push(
+      final ClientStreamImpl<?> stream, final DirectBuffer payload) {
     try {
       return stream.clientStreamConsumer().push(payload);
     } catch (final Exception e) {
@@ -112,7 +114,8 @@ final class ClientStreamPusher {
     }
   }
 
-  private void failOnStreamExhausted(final ActorFuture<Void> future, final List<Throwable> errors) {
+  private void failOnStreamExhausted(
+      final ActorFuture<@Nullable Void> future, final List<Throwable> errors) {
     final StreamExhaustedException error =
         new StreamExhaustedException(
             "Failed to push data to all available clients. No more clients left to retry.");

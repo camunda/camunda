@@ -33,7 +33,7 @@ final class ClientStreamApiHandler {
   CompletableFuture<StreamResponse> handlePushRequest(final PushStreamRequest request) {
     final CompletableFuture<StreamResponse> responseFuture = new CompletableFuture<>();
 
-    final ActorFuture<Void> payloadPushed = new CompletableActorFuture<>();
+    final ActorFuture<@Nullable Void> payloadPushed = new CompletableActorFuture<>();
     clientStreamManager.onPayloadReceived(request, payloadPushed);
     payloadPushed.onComplete((ok, error) -> handlePayloadPushed(responseFuture, error), executor);
 

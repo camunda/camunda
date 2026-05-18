@@ -22,6 +22,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdGenerator;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public class AtomixServerTransport extends Actor implements ServerTransport {
@@ -68,7 +69,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
-  public ActorFuture<Void> subscribe(
+  public ActorFuture<@Nullable Void> subscribe(
       final int partitionId, final RequestType requestType, final RequestHandler requestHandler) {
     return actor.call(
         () -> {
@@ -80,7 +81,8 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
-  public ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
+  public ActorFuture<@Nullable Void> unsubscribe(
+      final int partitionId, final RequestType requestType) {
     return actor.call(() -> removeRequestHandlers(partitionId, requestType));
   }
 
