@@ -210,6 +210,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>analytics-exporter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
 
@@ -1110,6 +1115,9 @@
 
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
+
+            <!-- Analytics Exporter -->
+            <dependency>io.camunda:analytics-exporter</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
