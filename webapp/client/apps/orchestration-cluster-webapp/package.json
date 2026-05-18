@@ -26,7 +26,7 @@
 		"@tanstack/react-router-devtools": "1.166.13",
 		"@tanstack/router-plugin": "1.167.28",
 		"final-form": "5.0.0",
-		"mixpanel-browser": "2.78.0",
+		"mixpanel-browser": "2.79.0",
 		"mobx": "6.15.0",
 		"mobx-react-lite": "4.1.1",
 		"react": "19.2.5",
