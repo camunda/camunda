@@ -33,7 +33,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.api.model.config.headers.PermissionsPolicyConfig;
-import io.camunda.security.configuration.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;

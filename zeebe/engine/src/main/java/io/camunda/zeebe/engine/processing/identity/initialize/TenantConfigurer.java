@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.security.configuration.ConfiguredTenant;
+import io.camunda.security.api.model.config.initialization.ConfiguredTenant;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;

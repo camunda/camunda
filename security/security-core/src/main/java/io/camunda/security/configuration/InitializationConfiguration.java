@@ -7,6 +7,11 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredRole;
+import io.camunda.security.api.model.config.initialization.ConfiguredTenant;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
