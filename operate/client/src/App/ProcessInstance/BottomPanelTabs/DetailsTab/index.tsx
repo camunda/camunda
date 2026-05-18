@@ -17,6 +17,15 @@ import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProc
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
+<<<<<<< HEAD
+=======
+import {isMessageEventElement} from 'modules/bpmn-js/utils/isMessageEventElement';
+import {useSearchUserTasks} from 'modules/queries/userTasks/useSearchUserTasks';
+import {useMessageSubscriptions} from 'modules/queries/messageSubscriptions/useMessageSubscriptions';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import {mergePathname} from 'modules/request/mergePathname';
+>>>>>>> 2d45fdcc (feat: enhance element instance details on Operate)
 import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
@@ -77,6 +86,44 @@ const DetailsTab: React.FC = () => {
     },
   );
 
+<<<<<<< HEAD
+=======
+  const isCamundaTask =
+    resolvedElementType === 'USER_TASK' && isCamundaUserTask(businessObject);
+
+  const {data: userTaskSearchResult} = useSearchUserTasks(
+    {
+      filter: {elementInstanceKey: elementInstanceKey ?? ''},
+      page: {limit: 1},
+    },
+    {
+      enabled: !!elementInstanceKey && isCamundaTask,
+    },
+  );
+
+  const userTask = userTaskSearchResult?.items?.[0] ?? null;
+
+  const isMessageElement = isMessageEventElement(businessObject);
+
+  const {data: messageSubscriptionResult} = useMessageSubscriptions(
+    {
+      filter: {elementInstanceKey: {$eq: elementInstanceKey ?? ''}},
+      page: {limit: 1},
+    },
+    {
+      enabled: !!elementInstanceKey && isMessageElement,
+    },
+  );
+
+  const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
+
+  const {
+    agentInstance,
+    isLoading: isAgentLoading,
+    isError: isAgentError,
+  } = useAgentInstanceForElement(selectedElementId, elementInstanceKey);
+
+>>>>>>> 2d45fdcc (feat: enhance element instance details on Operate)
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
       instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
@@ -132,6 +179,20 @@ const DetailsTab: React.FC = () => {
             ),
           },
         ],
+      });
+    }
+
+    if (job?.type) {
+      baseRows.push({
+        key: 'job-type',
+        columns: [{cellContent: 'Job Type'}, {cellContent: job.type}],
+      });
+    }
+
+    if (job?.worker) {
+      baseRows.push({
+        key: 'worker',
+        columns: [{cellContent: 'Worker'}, {cellContent: job.worker}],
       });
     }
 
@@ -229,6 +290,96 @@ const DetailsTab: React.FC = () => {
       });
     }
 
+    if (isCamundaTask && userTask) {
+      baseRows.push(
+        {
+          key: 'assignee',
+          columns: [
+            {cellContent: 'Assignee'},
+            {cellContent: userTask.assignee ?? '-'},
+          ],
+        },
+        {
+          key: 'candidate-users',
+          columns: [
+            {cellContent: 'Candidate Users'},
+            {
+              cellContent:
+                userTask.candidateUsers.length > 0
+                  ? userTask.candidateUsers.join(', ')
+                  : '-',
+            },
+          ],
+        },
+        {
+          key: 'candidate-groups',
+          columns: [
+            {cellContent: 'Candidate Groups'},
+            {
+              cellContent:
+                userTask.candidateGroups.length > 0
+                  ? userTask.candidateGroups.join(', ')
+                  : '-',
+            },
+          ],
+        },
+        {
+          key: 'due-date',
+          columns: [
+            {cellContent: 'Due Date'},
+            {cellContent: userTask.dueDate ?? '-'},
+          ],
+        },
+        {
+          key: 'follow-up-date',
+          columns: [
+            {cellContent: 'Follow-up Date'},
+            {cellContent: userTask.followUpDate ?? '-'},
+          ],
+        },
+        {
+          key: 'priority',
+          columns: [
+            {cellContent: 'Priority'},
+            {cellContent: String(userTask.priority)},
+          ],
+        },
+        {
+          key: 'form-key',
+          columns: [
+            {cellContent: 'Form Key'},
+            {cellContent: userTask.formKey ?? '-'},
+          ],
+        },
+      );
+    }
+
+    if (isMessageElement && messageSubscription) {
+      baseRows.push(
+        {
+          key: 'message-name',
+          columns: [
+            {cellContent: 'Message Name'},
+            {cellContent: messageSubscription.messageName ?? '-'},
+          ],
+        },
+        {
+          key: 'correlation-key',
+          columns: [
+            {cellContent: 'Correlation Key'},
+            {cellContent: messageSubscription.correlationKey ?? '-'},
+          ],
+        },
+        {
+          key: 'message-subscription-state',
+          columns: [
+            {cellContent: 'Subscription State'},
+            {cellContent: messageSubscription.messageSubscriptionState ?? '-'},
+          ],
+        },
+      );
+    }
+
     return baseRows;
   }, [
     resolvedElementInstance,
@@ -239,6 +390,14 @@ const DetailsTab: React.FC = () => {
     calledProcessInstancesCount,
     processInstance,
     calledDecisionInstance,
+<<<<<<< HEAD
+=======
+    clientConfig.tasklistUrl,
+    isCamundaTask,
+    userTask,
+    isMessageElement,
+    messageSubscription,
+>>>>>>> 2d45fdcc (feat: enhance element instance details on Operate)
   ]);
 
   if (isFetchingElement) {
