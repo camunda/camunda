@@ -29,11 +29,7 @@
     "enabled": true
   },
   "lockFileMaintenance": {
-    "enabled": true,
-    "automerge": true,
-    "addLabels": [
-      "automerge"
-    ]
+    "enabled": false
   },
   "hostRules": [
     {
@@ -71,6 +67,22 @@
       "matchUpdateTypes": [
         "minor",
         "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable npm patch updates for frontend apps on stable branches.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchFileNames": [
+        "operate/**",
+        "tasklist/**",
+        "identity/**",
+        "optimize/**"
       ],
       "enabled": false
     },
