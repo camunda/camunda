@@ -1249,7 +1249,8 @@ final class JsonSerializableToJsonTest {
                   .setTimeToLive(timeToLive)
                   .setDeadline(22L)
                   .setMessageId(wrapString(messageId))
-                  .setTenantId("foo");
+                  .setTenantId("foo")
+                  .setBusinessId("biz-42");
             },
         """
                 {
@@ -1261,7 +1262,8 @@ final class JsonSerializableToJsonTest {
                   "messageId": "test-id",
                   "name": "test-message",
                   "deadline": 22,
-                  "tenantId": "foo"
+                  "tenantId": "foo",
+                  "businessId": "biz-42"
                 }
                 """
       },
@@ -1291,7 +1293,8 @@ final class JsonSerializableToJsonTest {
                   "messageId": "",
                   "name": "test-message",
                   "deadline": -1,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": ""
                 }
                 """
       },
@@ -1402,7 +1405,8 @@ final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setBusinessId("biz-42");
             },
         """
                 {
@@ -1417,7 +1421,8 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": "biz-42"
                 }
                 """
       },
@@ -1447,7 +1452,8 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "variables": {},
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "businessId": ""
                 }
                 """
       },
@@ -1482,7 +1488,8 @@ final class JsonSerializableToJsonTest {
                   .setVariables(VARIABLES_MSGPACK)
                   .setCorrelationKey(wrapString(correlationKey))
                   .setElementId(wrapString("A"))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setBusinessId("biz-42");
             },
         """
                 {
@@ -1499,7 +1506,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "A",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 5678
+                  "rootProcessInstanceKey": 5678,
+                  "businessId": "biz-42"
                 }
                 """
       },
@@ -1533,7 +1541,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": ""
                 }
                 """
       },
@@ -3123,7 +3132,8 @@ final class JsonSerializableToJsonTest {
                   .setMessageKey(messageKey)
                   .setRequestId(requestId)
                   .setRequestStreamId(requestStreamId)
-                  .setProcessDefinitionKey(5L);
+                  .setProcessDefinitionKey(5L)
+                  .setBusinessId("biz-42");
             },
         """
                 {
@@ -3137,7 +3147,8 @@ final class JsonSerializableToJsonTest {
                   "messageKey": 2,
                   "requestId": 3,
                   "requestStreamId": 4,
-                  "processDefinitionKey": 5
+                  "processDefinitionKey": 5,
+                  "businessId": "biz-42"
                 }
                 """
       },
@@ -3332,7 +3343,8 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "requestId": -1,
                   "requestStreamId": -1,
-                  "processDefinitionKey": -1
+                  "processDefinitionKey": -1,
+                  "businessId": ""
                 }
                 """
       },
