@@ -8,14 +8,14 @@ and reason about coverage of the C8 Orchestration Cluster public REST API.
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `build_coverage.py` | Regenerates every artifact below by re-scanning `../tests/api/v2/**/*.spec.ts`. |
+|          File           |                                                                                                    Purpose                                                                                                    |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `build_coverage.py`     | Regenerates every artifact below by re-scanning `../tests/api/v2/**/*.spec.ts`.                                                                                                                               |
 | `category_breakdown.md` | **Per-category narrative**: for each category, the canonical Form, the prerequisite to create, the GET-vs-search observation split, variant counts, and the **actual test names** with file:line. Start here. |
-| `tests.csv` | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,form_step,prerequisite,variants,dynamic,test_name`. |
-| `coverage_matrix.csv` | Entity × operation grid with one column per variant (counts). |
-| `coverage_matrix.md` | Same matrix in two views — "at-a-glance presence" (✓/blank) and "counts per cell". |
-| `gaps.md` | Heuristic gap report (entities missing 401/400 coverage and a — noisy — delete/observe-absence check). |
+| `tests.csv`             | One row per `test(...)` declaration. Columns: `file,line,entity,category,operation,form_step,prerequisite,variants,dynamic,test_name`.                                                                        |
+| `coverage_matrix.csv`   | Entity × operation grid with one column per variant (counts).                                                                                                                                                 |
+| `coverage_matrix.md`    | Same matrix in two views — "at-a-glance presence" (✓/blank) and "counts per cell".                                                                                                                            |
+| `gaps.md`               | Heuristic gap report (entities missing 401/400 coverage and a — noisy — delete/observe-absence check).                                                                                                        |
 
 ## Regenerating
 
@@ -42,39 +42,39 @@ any CWD as long as the directory layout is unchanged.
 
 ### Per-entity totals
 
-| Entity | Tests | Entity | Tests |
-|---|--:|---|--:|
-| process-instance | 113 | mapping-rule | 27 |
-| tenant | 87 | document | 23 |
-| role | 78 | decision-instance | 23 |
-| authorization | 78 | message | 22 |
-| cluster-variables | 67 | resource | 19 |
-| job | 57 | audit-log | 17 |
-| user-task | 51 | decision-requirements | 14 |
-| group | 48 | variable | 14 |
-| element-instance | 35 | conditional | 13 |
-| decision-definition | 33 | optimize | 6 |
-| batch-operation | 32 | signal | 5 |
-| user | 30 | authentication | 4 |
-| global-task-listener | 30 | usage-metrics | 4 |
-| process-definition | 30 | cluster | 3 |
-| incident | 28 | clock | 3 |
-| | | expression | 3 |
-| | | license | 2 |
-| | | message-subscriptions | 2 |
+|        Entity        | Tests |        Entity         | Tests |
+|----------------------|------:|-----------------------|------:|
+| process-instance     |   113 | mapping-rule          |    27 |
+| tenant               |    87 | document              |    23 |
+| role                 |    78 | decision-instance     |    23 |
+| authorization        |    78 | message               |    22 |
+| cluster-variables    |    67 | resource              |    19 |
+| job                  |    57 | audit-log             |    17 |
+| user-task            |    51 | decision-requirements |    14 |
+| group                |    48 | variable              |    14 |
+| element-instance     |    35 | conditional           |    13 |
+| decision-definition  |    33 | optimize              |     6 |
+| batch-operation      |    32 | signal                |     5 |
+| user                 |    30 | authentication        |     4 |
+| global-task-listener |    30 | usage-metrics         |     4 |
+| process-definition   |    30 | cluster               |     3 |
+| incident             |    28 | clock                 |     3 |
+|                      |       | expression            |     3 |
+|                      |       | license               |     2 |
+|                      |       | message-subscriptions |     2 |
 
 ### Variant distribution (cross-cutting)
 
-| Variant | Count |
-|---|--:|
-| Bad Request / validation | 218 |
-| Unauthorized (401) | 163 |
-| Success / happy path | 137 |
-| Not Found (404) | 123 |
-| Filter | 40 |
-| Pagination / sort | 29 |
-| Conflict (409) | 28 |
-| Forbidden / no permission | 28 |
+|          Variant          | Count |
+|---------------------------|------:|
+| Bad Request / validation  |   218 |
+| Unauthorized (401)        |   163 |
+| Success / happy path      |   137 |
+| Not Found (404)           |   123 |
+| Filter                    |    40 |
+| Pagination / sort         |    29 |
+| Conflict (409)            |    28 |
+| Forbidden / no permission |    28 |
 
 ## Categorisation scheme
 
@@ -83,21 +83,21 @@ Tests are bucketed into the following categories (see the `category` column of
 generator output — entity-driven where the API has a lifecycle, and
 behaviour-driven where it doesn't.
 
-| # | Category | What it means |
-|---|---|---|
-| A | Entity Lifecycle (CRUD) | Configurable resources with create/get/update/delete/search: `user`, `group`, `role`, `tenant`, `mapping-rule`, `authorization`, `cluster-variables`, `global-task-listener`, `document`. |
-| B | Membership / Association | "X assigned to Y" — e.g. `group-users`, `role-mapping-rules`, `tenant-clients`. Assign → Search members → Unassign → Search members. |
-| C | Deployment Lifecycle | Deploy resource → Get definition (JSON/XML) → Search → Delete. Covers `resource`, `process-definition`, `decision-definition`, `decision-requirements`. |
-| D | Process-Instance Lifecycle & Ops | Largest bucket. Single-instance ops (cancel, migrate, modify, delete, resolve-incident) plus batch creators. |
-| E | Batch-Operation Lifecycle | Created indirectly by batch APIs → Get → Search → Search items → Suspend → Cancel. |
-| F | User-Task Lifecycle | Assign / Unassign / Update / Complete / Search / Get form / Search variables. |
-| G | Job Lifecycle & Stats | Activate → Complete / Fail / Error / Update plus 5 statistics endpoints. |
-| H | Incident Lifecycle | Raised by failing jobs → Get → Search → Resolve → Statistics. |
-| I | Decision-Instance Lifecycle | Evaluate → Get → Search → Delete (single + batch). |
-| J–L | Observation-only | `element-instance`, `variable`, `audit-log` — perform actions elsewhere, observe state via search/get. |
-| M | Messaging / Signals | `message`, `signal`, `message-subscriptions`. Publish/Correlate/Broadcast + observation. |
-| N | Engine Evaluation | Stateless request/response: `expression`, `conditional`. |
-| O | System / Admin | `authentication`, `cluster`, `license`, `clock`, `usage-metrics`, `optimize`. |
+|  #  |             Category             |                                                                                       What it means                                                                                       |
+|-----|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A   | Entity Lifecycle (CRUD)          | Configurable resources with create/get/update/delete/search: `user`, `group`, `role`, `tenant`, `mapping-rule`, `authorization`, `cluster-variables`, `global-task-listener`, `document`. |
+| B   | Membership / Association         | "X assigned to Y" — e.g. `group-users`, `role-mapping-rules`, `tenant-clients`. Assign → Search members → Unassign → Search members.                                                      |
+| C   | Deployment Lifecycle             | Deploy resource → Get definition (JSON/XML) → Search → Delete. Covers `resource`, `process-definition`, `decision-definition`, `decision-requirements`.                                   |
+| D   | Process-Instance Lifecycle & Ops | Largest bucket. Single-instance ops (cancel, migrate, modify, delete, resolve-incident) plus batch creators.                                                                              |
+| E   | Batch-Operation Lifecycle        | Created indirectly by batch APIs → Get → Search → Search items → Suspend → Cancel.                                                                                                        |
+| F   | User-Task Lifecycle              | Assign / Unassign / Update / Complete / Search / Get form / Search variables.                                                                                                             |
+| G   | Job Lifecycle & Stats            | Activate → Complete / Fail / Error / Update plus 5 statistics endpoints.                                                                                                                  |
+| H   | Incident Lifecycle               | Raised by failing jobs → Get → Search → Resolve → Statistics.                                                                                                                             |
+| I   | Decision-Instance Lifecycle      | Evaluate → Get → Search → Delete (single + batch).                                                                                                                                        |
+| J–L | Observation-only                 | `element-instance`, `variable`, `audit-log` — perform actions elsewhere, observe state via search/get.                                                                                    |
+| M   | Messaging / Signals              | `message`, `signal`, `message-subscriptions`. Publish/Correlate/Broadcast + observation.                                                                                                  |
+| N   | Engine Evaluation                | Stateless request/response: `expression`, `conditional`.                                                                                                                                  |
+| O   | System / Admin                   | `authentication`, `cluster`, `license`, `clock`, `usage-metrics`, `optimize`.                                                                                                             |
 
 ### Lifecycle "form" examples
 
@@ -121,18 +121,18 @@ Common variants layered on top:
 
 `tests.csv` carries a `form_step` column that places each test inside the canonical lifecycle FORM:
 
-| form_step | meaning |
-|---|---|
-| `create` | Happy-path creation of the entity. |
-| `observe-present-get` | Reads the entity by id (or equivalent) to verify it exists. |
-| `observe-present-search` | Verifies presence via a search/list endpoint. |
-| `mutate` | Update / assign / complete / migrate / etc. on an existing entity. |
-| `delete` | Happy-path deletion (or cancellation). |
-| `observe-absence` | GET returns 404 after delete, or search no longer returns the entity. |
-| `aggregate` | Statistics / count / metric endpoint. |
-| `evaluate` | Stateless evaluation (expression, conditional). |
-| `negative-<step>` | Same step on an unhappy path (401/403/404/400/409). |
-| `parameterized` | Placeholder for `for (...) test(tc.description, ...)` loops. |
+|        form_step         |                                meaning                                |
+|--------------------------|-----------------------------------------------------------------------|
+| `create`                 | Happy-path creation of the entity.                                    |
+| `observe-present-get`    | Reads the entity by id (or equivalent) to verify it exists.           |
+| `observe-present-search` | Verifies presence via a search/list endpoint.                         |
+| `mutate`                 | Update / assign / complete / migrate / etc. on an existing entity.    |
+| `delete`                 | Happy-path deletion (or cancellation).                                |
+| `observe-absence`        | GET returns 404 after delete, or search no longer returns the entity. |
+| `aggregate`              | Statistics / count / metric endpoint.                                 |
+| `evaluate`               | Stateless evaluation (expression, conditional).                       |
+| `negative-<step>`        | Same step on an unhappy path (401/403/404/400/409).                   |
+| `parameterized`          | Placeholder for `for (...) test(tc.description, ...)` loops.          |
 
 ## Prerequisite labelling
 
@@ -143,15 +143,15 @@ Common variants layered on top:
 The `operation` column in `tests.csv` is a first-match-wins CRUD verb derived
 from the test name:
 
-| Operation | Trigger keywords (case-insensitive) |
-|---|---|
-| `create` | create, add, deploy, publish, broadcast, pin, register |
-| `delete` | delete, remove, unassign, cancel, reset |
-| `update` | update, assign, complete, migrate, modify, resolve, correlate, evaluate, fail, error, suspend, resume |
-| `search` | search, sort, filter, paginate, list, statistics |
-| `get` | get, fetch, retrieve, return, read, exists, by-id |
-| `parameterized` | rows synthesised from `for (const tc of …) test(tc.description, …)` patterns |
-| `other` | nothing matched |
+|    Operation    |                                  Trigger keywords (case-insensitive)                                  |
+|-----------------|-------------------------------------------------------------------------------------------------------|
+| `create`        | create, add, deploy, publish, broadcast, pin, register                                                |
+| `delete`        | delete, remove, unassign, cancel, reset                                                               |
+| `update`        | update, assign, complete, migrate, modify, resolve, correlate, evaluate, fail, error, suspend, resume |
+| `search`        | search, sort, filter, paginate, list, statistics                                                      |
+| `get`           | get, fetch, retrieve, return, read, exists, by-id                                                     |
+| `parameterized` | rows synthesised from `for (const tc of …) test(tc.description, …)` patterns                          |
+| `other`         | nothing matched                                                                                       |
 
 ## Variant labelling
 
@@ -159,21 +159,21 @@ The `variants` column is **multi-label** (pipe-joined). A test named
 *"Should fail to delete user when unauthorized"* gets tagged
 `delete + unauthorized + observe-via-get` etc.
 
-| Variant | What it captures |
-|---|---|
-| `happy-path` | "Should X successfully" / "Success" / verbed-without-error names. |
-| `bad-request` | invalid, missing required, empty/null, too-long, negative, exceed. |
-| `unauthorized` | 401 / "unauthorized". |
-| `forbidden` | 403 / "no permission", "no granted", "without permission". |
-| `not-found` | 404 / "not found", "non-existing", "does not exist". |
-| `conflict` | 409 / "duplicate", "already". |
-| `pagination-sort` | paginate, page size, cursor, sort. |
-| `filter` | "filter" present in name. |
-| `observe-via-get` | GET / fetch / retrieve language. |
-| `observe-via-search` | "search" present in name. |
-| `observe-absence` | "after delete / once removed / no longer / absent / gone". |
-| `data-driven` | placeholder row for a parameterised loop body. |
-| `unlabeled` | none of the above matched. |
+|       Variant        |                          What it captures                          |
+|----------------------|--------------------------------------------------------------------|
+| `happy-path`         | "Should X successfully" / "Success" / verbed-without-error names.  |
+| `bad-request`        | invalid, missing required, empty/null, too-long, negative, exceed. |
+| `unauthorized`       | 401 / "unauthorized".                                              |
+| `forbidden`          | 403 / "no permission", "no granted", "without permission".         |
+| `not-found`          | 404 / "not found", "non-existing", "does not exist".               |
+| `conflict`           | 409 / "duplicate", "already".                                      |
+| `pagination-sort`    | paginate, page size, cursor, sort.                                 |
+| `filter`             | "filter" present in name.                                          |
+| `observe-via-get`    | GET / fetch / retrieve language.                                   |
+| `observe-via-search` | "search" present in name.                                          |
+| `observe-absence`    | "after delete / once removed / no longer / absent / gone".         |
+| `data-driven`        | placeholder row for a parameterised loop body.                     |
+| `unlabeled`          | none of the above matched.                                         |
 
 ## Known caveats
 
@@ -204,3 +204,4 @@ A useful workflow:
    direction.
 3. For any "missing" cell, inspect the actual test names in `tests.csv` —
    sometimes the generator covers the case under a different operation tag.
+

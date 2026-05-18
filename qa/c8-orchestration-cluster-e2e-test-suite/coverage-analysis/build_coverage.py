@@ -94,12 +94,17 @@ def category_of(path, entity):
     return 'Z. Uncategorised'
 
 # ---------- 3. Operation (CRUD verb) — first match wins ----------
+# Order matters. search/get are checked before update so names like
+# "Search Incidents With Error Type Filter" classify as `search`, not
+# `update` — even though `error` is a verb in some job-mutation tests.
+# `update` keeps action-specific verbs only (no bare `error`/`failure`
+# anymore) to avoid swallowing names that merely *mention* an error type.
 OP_RULES = [
     ('create',   re.compile(r'\b(create|creating|created|add(ed|s|ing)?|deploy|publish|broadcast|pin|register)\b', re.I)),
     ('delete',   re.compile(r'\b(delete|delet(ed|ing)|remove|removed|removing|unassign|unassigned|unassigning|cancel|cancell(ed|ing)?|reset)\b', re.I)),
-    ('update',   re.compile(r'\b(update|updat(ed|ing)|assign|assigned|assigning|complete|completed|completing|migrate|modify|modified|modifying|resolve|resolved|resolving|correlate|correlat(ed|ing)|evaluate|evaluat(ed|ing)|fail|failure|error|resume|suspend)\b', re.I)),
     ('search',   re.compile(r'\b(search|sort|filter|pagin|list|listing|statistics)\b', re.I)),
     ('get',      re.compile(r'\b(get|getting|fetch|fetching|retrieve|retrieving|return|returning|read|reading|exists?|existence|by[ -]?id)\b', re.I)),
+    ('update',   re.compile(r'\b(update|updat(ed|ing)|assign|assigned|assigning|complete|completed|completing|migrate|modify|modified|modifying|resolve|resolved|resolving|correlate|correlat(ed|ing)|evaluate|evaluat(ed|ing)|fail\s+job|throw\s+error|report\s+error|raise\s+error|resume|suspend)\b', re.I)),
 ]
 def op_of(name):
     for op, pat in OP_RULES:
@@ -112,7 +117,9 @@ VARIANT_RULES = [
     ('unauthorized',         re.compile(r'unauthor', re.I)),
     ('forbidden',            re.compile(r'forbidden|no(t)?[ -]granted|no permission|missing.*permission|without.*permission', re.I)),
     ('not-found',            re.compile(r'not[ -]?found|non[ -]?existing|nonexistent|does not exist', re.I)),
-    ('bad-request',          re.compile(r'bad request|invalid|missing.*(field|param|body|required)|empty|null .*(field|value)|negative|exceed|too long|too short', re.I)),
+    # `empty` is qualified by an input-noun so happy-path "returns empty result"
+    # / "is empty" / "empty response" tests are no longer mislabelled.
+    ('bad-request',          re.compile(r'bad request|invalid|missing.*(field|param|body|required)|empty\s+(name|username|body|field|param|required|value|input|argument|id|payload|key)|null .*(field|value)|negative|exceed|too long|too short', re.I)),
     ('conflict',             re.compile(r'conflict|duplicate|already', re.I)),
     ('pagination-sort',      re.compile(r'pagin|sort|page (limit|size)|cursor', re.I)),
     ('filter',               re.compile(r'filter', re.I)),
