@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
 import {describe, expect, beforeEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {mockLoginEndpoint, mockLogoutEndpoint} from '#/shared-test-modules/mock-handlers';
 import {authenticationStore} from './authentication.store';
 
 describe('authentication store', () => {
@@ -21,7 +22,7 @@ describe('authentication store', () => {
 	});
 
 	it('should login', async ({worker}) => {
-		worker.use(http.post('/login', () => new HttpResponse('', {status: 200}), {once: true}));
+		worker.use(mockLoginEndpoint({successResponse: new HttpResponse('', {status: 200})}));
 
 		authenticationStore.disableSession();
 		expect(authenticationStore.status).toBe('session-invalid');
@@ -31,7 +32,7 @@ describe('authentication store', () => {
 	});
 
 	it('should handle login failure', async ({worker}) => {
-		worker.use(http.post('/login', () => new HttpResponse('', {status: 401}), {once: true}));
+		worker.use(mockLoginEndpoint({successResponse: new HttpResponse('', {status: 401})}));
 
 		const result = await authenticationStore.handleLogin('demo', 'demo');
 
@@ -48,8 +49,8 @@ describe('authentication store', () => {
 
 	it('should logout', async ({worker}) => {
 		worker.use(
-			http.post('/login', () => new HttpResponse('', {status: 200}), {once: true}),
-			http.post('/logout', () => new HttpResponse('', {status: 204}), {once: true}),
+			mockLoginEndpoint({successResponse: new HttpResponse('', {status: 200})}),
+			mockLogoutEndpoint({successResponse: new HttpResponse('', {status: 204})}),
 		);
 
 		await authenticationStore.handleLogin('demo', 'demo');
@@ -60,7 +61,7 @@ describe('authentication store', () => {
 	});
 
 	it('should handle logout failure', async ({worker}) => {
-		worker.use(http.post('/logout', () => new HttpResponse('', {status: 500}), {once: true}));
+		worker.use(mockLogoutEndpoint({successResponse: new HttpResponse('', {status: 500})}));
 
 		const result = await authenticationStore.handleLogout();
 		expect(result).toBeDefined();

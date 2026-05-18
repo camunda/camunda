@@ -7,7 +7,7 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {http, HttpResponse, delay} from 'msw';
+import {HttpResponse} from 'msw';
 import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/mock-handlers';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
@@ -73,10 +73,7 @@ test('should show a generic error message', async ({network, loginPage}) => {
 test('should show a loading state while the login form is submitting', async ({network, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-		http.post('/login', async () => {
-			await delay(500);
-			return new HttpResponse(null, {status: 200});
-		}),
+		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200}), delay: 500}),
 	);
 
 	await loginPage.goto();

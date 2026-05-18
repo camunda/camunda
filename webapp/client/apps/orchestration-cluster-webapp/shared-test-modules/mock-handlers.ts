@@ -18,4 +18,9 @@ const mockLoginEndpoint = createEndpointMock({
 	method: 'POST',
 });
 
-export {mockCurrentUserEndpoint, mockLoginEndpoint};
+const mockLogoutEndpoint = createEndpointMock({
+	endpoint: '/logout',
+	method: 'POST',
+});
+
+export {mockCurrentUserEndpoint, mockLoginEndpoint, mockLogoutEndpoint};
