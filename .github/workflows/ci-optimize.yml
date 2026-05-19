@@ -220,6 +220,23 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
+      - name: Install Google Chrome
+        # Required for TestCafe headless browser tests on self-hosted runners
+        # gcp-perf-core-8-default does not ship with Chrome preinstalled
+        run: |
+          set -euo pipefail
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates xdg-utils
+            wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+              | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+              | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends google-chrome-stable
+          fi
+          google-chrome --version
+
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@e560d3b1ec14ab36dc95b09b49bb0a2289554f85 # 3.0.3
