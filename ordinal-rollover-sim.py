@@ -67,7 +67,10 @@ class Simulation:
         self._check_for_finished_ordinals()
         self._apply_ilm_policies()
         ordinal_indexes = [index for index in self.indexes.values() if index.is_ordinal]
-        self.current_ordinal = self.ordinal_rollover.next_ordinal(ordinal_indexes, self.current_ordinal)
+        next_ordinal = self.ordinal_rollover.next_ordinal(ordinal_indexes, self.current_ordinal)
+        if next_ordinal != self.current_ordinal:
+          verbose(f"Rolling over to ordinal index: {next_ordinal} at time {self.current_time}")
+        self.current_ordinal = next_ordinal
 
     def run_deleter(self, only_if_no_ilm_deadline=False):
       for index in self.indexes.values():
