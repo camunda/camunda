@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -262,6 +263,18 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       String version) {
     public Broker {
       Objects.requireNonNull(brokerId, "Expected  memberId to not be null");
+    }
+
+    public int nodeIdx() {
+      return brokerId.nodeIdx();
+    }
+
+    public @Nullable String zone() {
+      return brokerId.zone();
+    }
+
+    public String brokerIdStr() {
+      return brokerId.id();
     }
 
     static class Builder {
