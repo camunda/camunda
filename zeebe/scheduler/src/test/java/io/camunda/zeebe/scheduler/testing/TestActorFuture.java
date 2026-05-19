@@ -99,7 +99,8 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
   }
 
   @Override
-  public void onComplete(final BiConsumer<V, Throwable> consumer, final Executor executor) {
+  public void onComplete(
+      final BiConsumer<V, @Nullable Throwable> consumer, final Executor executor) {
     onComplete((res, error) -> executor.execute(() -> consumer.accept(res, error)));
   }
 
@@ -110,16 +111,21 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
 
   @Override
   public Throwable getException() {
-    return result != null && result.isLeft() ? result.getLeft() : null;
+    if (result != null && result.isLeft()) {
+      return result.getLeft();
+    } else {
+      throw new IllegalStateException("Future is not completed exceptionally: " + result);
+    }
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
+      final Supplier<ActorFuture<U>> next, final Executor executor) {
     return andThen(ignored -> next.get(), executor);
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
       final Function<V, ActorFuture<U>> next, final Executor executor) {
     return andThen(
         (v, err) -> {
@@ -135,8 +141,8 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
   }
 
   @Override
-  public <U> ActorFuture<U> andThen(
-      final BiFunction<V, Throwable, ActorFuture<U>> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> andThen(
+      final BiFunction<V, @Nullable Throwable, ActorFuture<U>> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (thisResult, thisError) -> {
@@ -148,7 +154,8 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next, final Executor executor) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(
+      final Function<V, U> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new TestActorFuture<>();
     onComplete(
         (value, error) -> {
@@ -168,7 +175,7 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
   }
 
   @Override
-  public <U> ActorFuture<U> thenApply(final Function<V, U> next) {
+  public <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next) {
     return thenApply(next, Runnable::run);
   }
 
