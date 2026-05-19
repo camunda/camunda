@@ -40,6 +40,7 @@ public final class TestClusterBuilder {
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
   private boolean setNodeId = true;
+  private boolean multiZone = false;
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -298,7 +299,7 @@ public final class TestClusterBuilder {
   }
 
   private void validate() {
-    if (replicationFactor > brokersCount) {
+    if (!multiZone && replicationFactor > brokersCount) {
       throw new IllegalStateException(
           "Expected replicationFactor to be less than or equal to brokersCount, but was "
               + replicationFactor
@@ -395,5 +396,14 @@ public final class TestClusterBuilder {
     return brokers.values().stream()
         .map(builder -> builder.address(TestZeebePort.CLUSTER))
         .toList();
+  }
+
+  /**
+   * Marks this cluster as part of a multiple zone cluster. There are other brokers are configured
+   * in another TestCluster.
+   */
+  public TestClusterBuilder multiZone() {
+    multiZone = true;
+    return this;
   }
 }
