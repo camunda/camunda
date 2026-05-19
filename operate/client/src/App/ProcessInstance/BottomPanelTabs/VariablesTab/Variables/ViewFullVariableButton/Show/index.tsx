@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {tracking} from 'modules/tracking';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
@@ -50,7 +50,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
         <MaximizeButton onClick={handleOpen} />
       )}
       {fullVariableValue !== undefined && (
-        <JSONEditorModal
+        <RichTextEditorModal
           value={fullVariableValue}
           isVisible={isModalVisible}
           readOnly

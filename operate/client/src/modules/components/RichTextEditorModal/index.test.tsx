@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {JSONEditorModal} from './index';
+import {RichTextEditorModal} from './index';
 import {render, screen} from 'modules/testing-library';
 
-describe('<JSONEditorModal />', () => {
+describe('<RichTextEditorModal />', () => {
   it('should not render the modal', () => {
-    render(<JSONEditorModal isVisible={false} value="" />);
+    render(<RichTextEditorModal isVisible={false} value="" />);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -21,7 +21,7 @@ describe('<JSONEditorModal />', () => {
     const mockTitle = 'i am a title';
 
     const {rerender} = render(
-      <JSONEditorModal isVisible value={mockValue} title={mockTitle} />,
+      <RichTextEditorModal isVisible value={mockValue} title={mockTitle} />,
     );
 
     expect(
@@ -35,7 +35,7 @@ describe('<JSONEditorModal />', () => {
     expect(screen.getByRole('button', {name: /copy/i})).toBeInTheDocument();
 
     rerender(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         value={mockValue}
@@ -60,7 +60,7 @@ describe('<JSONEditorModal />', () => {
     const mockOnClose = vi.fn();
 
     const {user, rerender} = render(
-      <JSONEditorModal isVisible value="" onClose={mockOnClose} />,
+      <RichTextEditorModal isVisible value="" onClose={mockOnClose} />,
     );
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -68,7 +68,7 @@ describe('<JSONEditorModal />', () => {
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
     rerender(
-      <JSONEditorModal isVisible readOnly value="" onClose={mockOnClose} />,
+      <RichTextEditorModal isVisible readOnly value="" onClose={mockOnClose} />,
     );
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -81,7 +81,7 @@ describe('<JSONEditorModal />', () => {
     const mockValue = '"i am a value"';
 
     const {user} = render(
-      <JSONEditorModal isVisible value={mockValue} onApply={mockOnApply} />,
+      <RichTextEditorModal isVisible value={mockValue} onApply={mockOnApply} />,
     );
 
     await user.click(screen.getByRole('button', {name: /apply/i}));
@@ -95,7 +95,7 @@ describe('<JSONEditorModal />', () => {
     const mockUpdatedValue = '"i am an updated value"';
 
     const {user} = render(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         value={mockInitialValue}
         onApply={mockOnApply}
@@ -119,7 +119,7 @@ describe('<JSONEditorModal />', () => {
       writable: true,
     });
 
-    const {user} = render(<JSONEditorModal isVisible value={mockValue} />);
+    const {user} = render(<RichTextEditorModal isVisible value={mockValue} />);
 
     await user.click(screen.getByRole('button', {name: /^copy$/i}));
 
@@ -138,7 +138,7 @@ describe('<JSONEditorModal />', () => {
     });
 
     const {user} = render(
-      <JSONEditorModal isVisible readOnly value={mockValue} />,
+      <RichTextEditorModal isVisible readOnly value={mockValue} />,
     );
 
     await user.click(screen.getByRole('button', {name: /^copy$/i}));
@@ -152,7 +152,7 @@ describe('<JSONEditorModal />', () => {
   it('should not show mode toggle button when allowModeToggle is not set', () => {
     const mockValue = '"i am a value"';
 
-    render(<JSONEditorModal isVisible readOnly value={mockValue} />);
+    render(<RichTextEditorModal isVisible readOnly value={mockValue} />);
 
     expect(
       screen.queryByRole('button', {name: /^edit$/i}),
@@ -164,7 +164,7 @@ describe('<JSONEditorModal />', () => {
     const mockOnApply = vi.fn();
 
     render(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         allowModeToggle
@@ -187,7 +187,7 @@ describe('<JSONEditorModal />', () => {
     const mockEditTitle = 'Edit mode title';
 
     const {user} = render(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         allowModeToggle
@@ -225,7 +225,7 @@ describe('<JSONEditorModal />', () => {
     const mockOnApply = vi.fn();
 
     const {user} = render(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         allowModeToggle
@@ -256,7 +256,7 @@ describe('<JSONEditorModal />', () => {
     const mockOnClose = vi.fn();
 
     const {user, rerender} = render(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         allowModeToggle
@@ -275,7 +275,7 @@ describe('<JSONEditorModal />', () => {
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
     rerender(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible={false}
         readOnly
         allowModeToggle
@@ -286,7 +286,7 @@ describe('<JSONEditorModal />', () => {
     );
 
     rerender(
-      <JSONEditorModal
+      <RichTextEditorModal
         isVisible
         readOnly
         allowModeToggle

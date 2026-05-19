@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {useForm, useFormState} from 'react-final-form';
 import type {ViewFullVariableButtonAddProps} from '../types';
 import get from 'lodash/get';
@@ -40,7 +40,7 @@ const ViewFullVariableButtonAdd: React.FC<ViewFullVariableButtonAddProps> = ({
         }}
       />
       {isModalVisible && (
-        <JSONEditorModal
+        <RichTextEditorModal
           isVisible={isModalVisible}
           title="Edit a new Variable"
           value={get(formState.values, valueFieldName)}
