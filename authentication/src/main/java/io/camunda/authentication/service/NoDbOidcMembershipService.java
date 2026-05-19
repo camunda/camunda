@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.service;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
@@ -16,6 +18,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 @ConditionalOnSecondaryStorageDisabled
 public class NoDbOidcMembershipService implements OidcMembershipService {
 

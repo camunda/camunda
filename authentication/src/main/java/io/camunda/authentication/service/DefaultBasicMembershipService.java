@@ -9,10 +9,12 @@ package io.camunda.authentication.service;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @ConditionalOnSecondaryStorageEnabled
 public class DefaultBasicMembershipService implements BasicMembershipService {
 

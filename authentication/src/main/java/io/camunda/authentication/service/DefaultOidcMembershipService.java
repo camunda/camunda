@@ -10,11 +10,13 @@ package io.camunda.authentication.service;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.service.GroupServices;
@@ -35,6 +37,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 @ConditionalOnSecondaryStorageEnabled
 public class DefaultOidcMembershipService implements OidcMembershipService {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultOidcMembershipService.class);
