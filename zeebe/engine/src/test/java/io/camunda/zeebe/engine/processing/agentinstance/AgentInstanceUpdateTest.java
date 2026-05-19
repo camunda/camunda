@@ -65,6 +65,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
             .update();
 
     // then
@@ -146,6 +147,7 @@ public class AgentInstanceUpdateTest {
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.THINKING)
             .withMetricsDelta(1L, 1L, 1, 1)
+            .withChangedAttributes(List.of("status", "metrics"))
             .update();
 
     // then — UPDATED carries the effective changedAttributes (both "status" and "metrics").
@@ -313,6 +315,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(nonExistentKey)
             .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
             .expectRejection()
             .update();
 
@@ -349,6 +352,7 @@ public class AgentInstanceUpdateTest {
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withMetricsDelta(10L, 5L, 1, 0)
+        .withChangedAttributes(List.of("metrics"))
         .update();
 
     final var secondUpdate =
@@ -356,6 +360,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withMetricsDelta(20L, 15L, 2, 1)
+            .withChangedAttributes(List.of("metrics"))
             .update();
 
     // then
@@ -401,6 +406,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withMetricsDelta(-2L, 0L, 0, 0)
+            .withChangedAttributes(List.of("metrics"))
             .expectRejection()
             .update();
 
@@ -434,6 +440,7 @@ public class AgentInstanceUpdateTest {
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withMetricsDelta(10L, 20L, 1, 2)
+        .withChangedAttributes(List.of("metrics"))
         .update();
 
     // when — only inputTokens is provided; the other fields are -1 (not provided)
@@ -442,6 +449,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withMetricsDelta(5L, -1L, -1, -1)
+            .withChangedAttributes(List.of("metrics"))
             .update();
 
     // then — only inputTokens moves; not-provided fields are left untouched, and "metrics" still
@@ -481,6 +489,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withMetricsDelta(0L, -1L, 0, -1)
+            .withChangedAttributes(List.of("metrics"))
             .update();
 
     // then — UPDATED is still emitted, but the event signals that no field changed by omitting
@@ -521,6 +530,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withMetricsDelta(200L, 0L, 0, 0)
+            .withChangedAttributes(List.of("metrics"))
             .update();
 
     // then — UPDATED is emitted normally; no limit-based rejection.
@@ -553,12 +563,18 @@ public class AgentInstanceUpdateTest {
     final var secondTools = tools(tool("t2", "second tool", "t2-elem"));
 
     // when
-    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withTools(firstTools).update();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withTools(firstTools)
+        .withChangedAttributes(List.of("tools"))
+        .update();
     final var second =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withTools(secondTools)
+            .withChangedAttributes(List.of("tools"))
             .update();
 
     // then — final tools list contains only the second tool; the first is gone.
@@ -594,12 +610,14 @@ public class AgentInstanceUpdateTest {
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
         .withTools(tools(tool("t1", "first tool", "t1-elem")))
+        .withChangedAttributes(List.of("tools"))
         .update();
     final var cleared =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withTools(List.of())
+            .withChangedAttributes(List.of("tools"))
             .update();
 
     // then
@@ -634,6 +652,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.INITIALIZING)
+            .withChangedAttributes(List.of("status"))
             .update();
 
     // then
@@ -670,6 +689,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.UNSPECIFIED)
+            .withChangedAttributes(List.of("status"))
             .expectRejection()
             .update();
 
@@ -731,6 +751,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.COMPLETED)
+            .withChangedAttributes(List.of("status"))
             .expectRejection()
             .update();
 
@@ -778,11 +799,21 @@ public class AgentInstanceUpdateTest {
                 .getAgentInstanceKey();
         // Move the agent into the "from" state if necessary.
         if (from != AgentInstanceStatus.INITIALIZING) {
-          ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+          ENGINE
+              .agentInstances()
+              .withAgentInstanceKey(agentInstanceKey)
+              .withStatus(from)
+              .withChangedAttributes(List.of("status"))
+              .update();
         }
         // when
         final var updated =
-            ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(to).update();
+            ENGINE
+                .agentInstances()
+                .withAgentInstanceKey(agentInstanceKey)
+                .withStatus(to)
+                .withChangedAttributes(List.of("status"))
+                .update();
 
         // then
         assertThat(updated.getIntent())
@@ -813,7 +844,12 @@ public class AgentInstanceUpdateTest {
             .create()
             .getValue()
             .getAgentInstanceKey();
-    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withStatus(from)
+        .withChangedAttributes(List.of("status"))
+        .update();
 
     // when — attempt to transition back to INITIALIZING.
     final Record<?> rejection =
@@ -821,6 +857,7 @@ public class AgentInstanceUpdateTest {
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withStatus(AgentInstanceStatus.INITIALIZING)
+            .withChangedAttributes(List.of("status"))
             .expectRejection()
             .update();
 
