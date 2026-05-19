@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -186,6 +187,7 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
     final var process = deployedProcess.getProcess();
     final var startInstructions = command.startInstructions();
+    final var runtimeInstructions = command.runtimeInstructions();
     final var tags = command.getTags();
 
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
@@ -195,6 +197,8 @@ public class ProcessInstanceCreationHelper {
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
+        .flatMap(
+            valid -> validateRuntimeInstructionAfterElementsExist(process, runtimeInstructions))
         .flatMap(valid -> validateTags(tags))
         .map(valid -> deployedProcess);
   }
@@ -386,6 +390,24 @@ public class ProcessInstanceCreationHelper {
                         RejectionType.INVALID_ARGUMENT,
                         "Expected to create instance of process with start instructions but the element with id '%s' belongs to an event-based gateway. The creation of elements belonging to an event-based gateway is not supported."
                             .formatted(elementId))))
+        .orElse(VALID);
+  }
+
+  private Either<Rejection, ?> validateRuntimeInstructionAfterElementsExist(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
+
+    return runtimeInstructions.stream()
+        .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
+        .filter(elementId -> !isElementOfProcess(process, elementId))
+        .findAny()
+        .map(
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with runtime instructions but no element found with id '%s' in process definition '%s'."
+                            .formatted(elementId, bufferAsString(process.getId())))))
         .orElse(VALID);
   }
 
