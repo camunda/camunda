@@ -34,7 +34,6 @@ import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -275,10 +274,6 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
         .ifPresent(this::validateBatchOperationsConfig);
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -537,10 +532,6 @@ public final class SystemContext {
         security.getCertificateChainPath(),
         security.getPrivateKeyPath(),
         security.getKeyStore().getFilePath());
-  }
-
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    rocksdbCfg.validateRocksDbMemory(partitionsCount);
   }
 
   public ActorScheduler getScheduler() {
