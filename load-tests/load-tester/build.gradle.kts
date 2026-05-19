@@ -7,7 +7,6 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.com.typesafe.config)
     implementation(project(":zeebe-protocol"))
     implementation(libs.com.google.guava.guava)
     implementation(libs.io.grpc.grpc.api)
