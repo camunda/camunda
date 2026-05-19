@@ -90,7 +90,13 @@ export function useEnrichedGroups<P>(
     } finally {
       setLoading(false);
     }
-  }, [callSearchMembers, params, isCamundaGroupsEnabled, callSearchGroups]);
+  }, [
+    callSearchMembers,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
+    JSON.stringify(params),
+    isCamundaGroupsEnabled,
+    callSearchGroups,
+  ]);
 
   useEffect(() => {
     void fetch();

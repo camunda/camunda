@@ -90,7 +90,8 @@ export function useEnrichedUsers<P>(
     } finally {
       setLoading(false);
     }
-  }, [callSearchMembers, callSearchUser, isOIDC, params]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
+  }, [callSearchMembers, callSearchUser, isOIDC, JSON.stringify(params)]);
 
   useEffect(() => {
     void fetch();
