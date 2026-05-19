@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     api(libs.org.springframework.security.spring.security.oauth2.resource.server)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
     api(libs.org.springframework.boot.spring.boot.security)

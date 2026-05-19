@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":zeebe-broker-client"))
     implementation(project(":camunda-security-core"))
     implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.org.apache.commons.commons.lang3)
