@@ -439,6 +439,10 @@ public class MigrateUserTaskTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final String userTaskId = "A";
+    final String sourceAssigningListenerType = "source_assigning_listener";
+    final String sourceUpdatingListenerType = "source_updating_listener";
+    final String sourceCompletingListenerType = "source_completing_listener";
+    final String sourceCancelingListenerType = "source_canceling_listener";
     final String targetCreatingListenerType = "target_creating_listener";
     final String targetAssigningListenerType = "target_assigning_listener";
     final String targetUpdatingListenerType = "target_updating_listener";
@@ -451,7 +455,26 @@ public class MigrateUserTaskTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .userTask(userTaskId, u -> u.zeebeUserTask())
+                    .userTask(
+                        userTaskId,
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.assigning)
+                                            .type(sourceAssigningListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.updating)
+                                            .type(sourceUpdatingListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.completing)
+                                            .type(sourceCompletingListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.canceling)
+                                            .type(sourceCancelingListenerType)))
                     .endEvent()
                     .done())
             .withXmlResource(
@@ -525,6 +548,15 @@ public class MigrateUserTaskTest {
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
+                .withType(sourceAssigningListenerType)
+                .limit(1)
+                .exists())
+        .describedAs("Expect that source assigning listeners are not used after migration")
+        .isFalse();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withType(targetCreatingListenerType)
                 .limit(1)
                 .exists())
@@ -556,6 +588,15 @@ public class MigrateUserTaskTest {
               assertThat(v.getElementId()).isEqualTo(userTaskId);
             });
 
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(sourceUpdatingListenerType)
+                .limit(1)
+                .exists())
+        .describedAs("Expect that source updating listeners are not used after migration")
+        .isFalse();
+
     ENGINE.job().withKey(updatingJob.getKey()).complete();
     RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -579,6 +620,15 @@ public class MigrateUserTaskTest {
               assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
               assertThat(v.getElementId()).isEqualTo(userTaskId);
             });
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(sourceCompletingListenerType)
+                .limit(1)
+                .exists())
+        .describedAs("Expect that source completing listeners are not used after migration")
+        .isFalse();
 
     ENGINE.job().withKey(completingJob.getKey()).complete();
     RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
@@ -622,6 +672,15 @@ public class MigrateUserTaskTest {
               assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
               assertThat(v.getElementId()).isEqualTo(userTaskId);
             });
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(canceledProcessInstanceKey)
+                .withType(sourceCancelingListenerType)
+                .limit(1)
+                .exists())
+        .describedAs("Expect that source canceling listeners are not used after migration")
+        .isFalse();
   }
 
   @Test
