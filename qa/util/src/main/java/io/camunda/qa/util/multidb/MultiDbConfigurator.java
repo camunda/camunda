@@ -8,15 +8,19 @@
 package io.camunda.qa.util.multidb;
 
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TEST_INTEGRATION_RDBMS_FAST_INIT;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
+import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.GenericBeanDefinition;
 
 /**
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
@@ -251,6 +255,20 @@ public class MultiDbConfigurator {
       final String username,
       final String password) {
     final String tablePrefix = generateTablePrefix();
+
+    if ("true".equalsIgnoreCase(System.getProperty(TEST_INTEGRATION_RDBMS_FAST_INIT))) {
+      testApplication.withProperty("camunda.data.secondary-storage.rdbms.auto-ddl", "false");
+      if (testApplication instanceof final TestSpringApplication<?> springApp) {
+        springApp.withAdditionalInitializer(
+            ctx -> {
+              final var bd = new GenericBeanDefinition();
+              bd.setBeanClass(ScriptBasedSchemaManager.class);
+              bd.setPrimary(true);
+              ((BeanDefinitionRegistry) ctx.getBeanFactory())
+                  .registerBeanDefinition("rdbmsSchemaManager", bd);
+            });
+      }
+    }
 
     testApplication
         .withSecondaryStorageType(SecondaryStorageType.rdbms)
