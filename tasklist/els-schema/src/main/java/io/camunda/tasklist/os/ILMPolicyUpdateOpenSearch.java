@@ -43,8 +43,12 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   public void applyIlmPolicyToAllIndices() throws IOException {
     LOGGER.info("Applying ISM policy to index templates and existing indices");
 
-    // Ensure that the ISM policy exists before applying it to any templates or indices
-    schemaManager.createIndexLifeCyclesIfNotExist();
+    if (tasklistProperties.getArchiver().isIlmManagePolicy()) {
+      // Ensure that the ISM policy exists before applying it to any templates or indices
+      schemaManager.createIndexLifeCyclesIfNotExist();
+    } else {
+      LOGGER.info("ISM policy is not managed by tasklist, skipping creation");
+    }
 
     // Apply the ISM policy to the index templates
     applyIlmPolicyToIndexTemplate(true);
