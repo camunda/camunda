@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useRef, useState} from 'react';
 import {Button, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -111,15 +111,8 @@ const VariableFilterModal: React.FC = observer(() => {
   };
 
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
-  const [isEditorValid, setIsEditorValid] = useState(true);
   const editorRef = useRef<EditorRef | null>(null);
   const preEditValueRef = useRef('');
-
-  useEffect(() => {
-    if (isEditorValid) {
-      editorRef.current?.hideMarkers();
-    }
-  }, [isEditorValid]);
 
   const handleSubmit = (
     values: FormValues,
@@ -173,7 +166,10 @@ const VariableFilterModal: React.FC = observer(() => {
             secondaryButtonText="Cancel"
             onRequestSubmit={() => {
               if (isEditing) {
-                if (isEditorValid) {
+                const editorValue =
+                  form.getState().values?.['conditions']?.[editingRowIndex]
+                    ?.value ?? '';
+                if (!editorValue.trim() || isValidJSON(editorValue)) {
                   setEditingRowIndex(null);
                 } else {
                   editorRef.current?.showMarkers();
@@ -222,7 +218,11 @@ const VariableFilterModal: React.FC = observer(() => {
                         <JSONEditor
                           value={editorInput.value}
                           onChange={editorInput.onChange}
-                          onValidate={setIsEditorValid}
+                          onValidate={(valid) => {
+                            if (valid) {
+                              editorRef.current?.hideMarkers();
+                            }
+                          }}
                           onMount={(editor) => {
                             editorRef.current = editor;
                           }}
@@ -259,7 +259,6 @@ const VariableFilterModal: React.FC = observer(() => {
                                 beautifyJSON(val),
                               );
                               setEditingRowIndex(i);
-                              setIsEditorValid(true);
                             }}
                           />
                         ))}
