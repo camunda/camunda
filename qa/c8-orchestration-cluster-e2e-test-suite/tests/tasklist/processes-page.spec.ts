@@ -130,7 +130,11 @@ test.describe('process page', () => {
 
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.clickCompleteTaskButton();
-    await expect(page.getByText('Task completed')).toBeVisible();
+    // Completion round-trip can take longer than the default 10s on a
+    // loaded shared cluster.
+    await expect(page.getByText('Task completed')).toBeVisible({
+      timeout: 30000,
+    });
   });
 
   test('complete process with start node having deployed form', async ({

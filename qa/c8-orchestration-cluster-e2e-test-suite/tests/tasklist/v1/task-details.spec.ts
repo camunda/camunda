@@ -212,6 +212,9 @@ test.describe('task details page', () => {
     await taskPanelPageV1.filterBy('Completed');
     await taskPanelPageV1.assertCompletedHeadingVisible();
     await taskPanelPageV1.openTask('Zeebe_user_task');
+    // The variable-importer can take longer than the default 3-retry budget
+    // (3 × 60s with reload) to surface `zeebeVar` on a loaded cluster — the
+    // May 19 v1 nightly hit that ceiling. Give it more retries.
     await waitForAssertion({
       assertion: async () => {
         await expect(page.getByRole('cell', {name: 'zeebeVar'})).toBeVisible({
@@ -221,6 +224,7 @@ test.describe('task details page', () => {
       onFailure: async () => {
         await page.reload();
       },
+      maxRetries: 6,
     });
     await expect(taskDetailsPageV1.assignToMeButton).toBeHidden();
     await expect(taskDetailsPageV1.unassignButton).toBeHidden();

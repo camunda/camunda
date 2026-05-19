@@ -178,14 +178,27 @@ test.describe('Process Instance Listeners', () => {
     });
 
     await test.step('Select specific flow node instance and verify single listener', async () => {
-      await operateProcessInstancePage
-        .getInstanceHistoryElement('Service Task B')
-        .first()
-        .click();
-      await operateProcessInstancePage.openListenersTab();
-      await expect(
-        operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      // Re-select on reload + retry: between this step and the previous
+      // one, one of the two "Service Task B" instances can finish and drop
+      // from the active history before the click lands, leaving .first()
+      // pointing at the just-added instance whose listeners haven't been
+      // recorded yet. Reload restores both instances in history, and
+      // re-clicking + re-opening the listeners tab is cheap.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage
+            .getInstanceHistoryElement('Service Task B')
+            .first()
+            .click();
+          await operateProcessInstancePage.openListenersTab();
+          await expect(
+            operateProcessInstancePage.getListenerRows('execution'),
+          ).toHaveCount(1, {timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
   });
 

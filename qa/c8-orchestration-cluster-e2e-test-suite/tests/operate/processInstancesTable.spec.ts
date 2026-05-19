@@ -105,9 +105,12 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Check default sorting of processes', async () => {
+      // All three rows need the longer defaultAssertionOptions budget — the
+      // nth(0) row was using Playwright's 5s default and flaked first.
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(0).innerText(),
+        .poll(
+          () => operateProcessesPage.processInstancesTable.nth(0).innerText(),
+          defaultAssertionOptions,
         )
         .toContain(instanceIds[2].toString());
       await expect
@@ -275,15 +278,19 @@ test.describe('Process Instances Table', () => {
         'Process For Infinite Scroll',
       );
       await operateFiltersPanelPage.selectVersion('1');
+      // 350 instances can take longer than 10s to be indexed on a loaded
+      // shared cluster, and waitForAssertion's default 3 reloads aren't
+      // enough budget. Give each poll a longer timeout and more retries.
       await waitForAssertion({
         assertion: async () => {
           await expect(
             page.getByText(`${amountOfInstancesForInfiniteScroll} results`),
-          ).toBeVisible();
+          ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 6,
       });
       await operateProcessesPage.clickProcessInstanceKeySortButton();
       await expect(instanceRows).toHaveCount(50);

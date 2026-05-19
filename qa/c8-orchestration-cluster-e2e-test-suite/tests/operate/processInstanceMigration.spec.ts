@@ -973,14 +973,27 @@ test.describe('Parallel job-based user task migration', () => {
 
     await test.step('Open each task, unassign, assign to self, and complete', async () => {
       const taskNames = targetTaskCards.map((task) => task.name);
+      let firstIteration = true;
 
       for (const taskName of taskNames) {
         for (let i = 0; i < totalV2InstanceCount; i++) {
-          // Clicking the task card while the prior `Task completed` banner is
-          // still showing on the right panel sometimes leaves the panel stuck
-          // on the completed task — no Unassign button ever appears for the
-          // newly clicked task. Retry the click until the right panel
-          // actually advances to the new task (Unassign becomes visible).
+          // After completing a task, the right panel can stay stuck on the
+          // just-completed task's content (URL still /tasklist/{completedId})
+          // even after the "Task completed" banner dismisses. A subsequent
+          // side-panel click then doesn't reliably update the URL/panel, so
+          // Unassign never surfaces. Force a clean panel state between
+          // iterations by navigating back to the task list root.
+          if (firstIteration) {
+            firstIteration = false;
+          } else {
+            await page.goto(
+              `${process.env.CORE_APPLICATION_URL}/tasklist?filter=all-open`,
+            );
+            await expect(taskDetailsPage.pickATaskHeader).toBeVisible({
+              timeout: 30000,
+            });
+          }
+
           await waitForAssertion({
             assertion: async () => {
               // Always click .nth(0) — the completed task disappears so the
@@ -993,8 +1006,12 @@ test.describe('Parallel job-based user task migration', () => {
                 timeout: 10000,
               });
             },
-            onFailure: async () => {},
-            maxRetries: 3,
+            onFailure: async () => {
+              await page.goto(
+                `${process.env.CORE_APPLICATION_URL}/tasklist?filter=all-open`,
+              );
+            },
+            maxRetries: 5,
           });
 
           await taskDetailsPage.unassignReassignToMeAndComplete();

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Page, Locator} from '@playwright/test';
+import {expect, type Page, type Locator} from '@playwright/test';
 
 class TasklistProcessesPageV1 {
   private page: Page;
@@ -59,6 +59,12 @@ class TasklistProcessesPageV1 {
 
   async clickStartProcessSubButton(): Promise<void> {
     await this.startProcessSubButton.click();
+    // The start-process modal closes asynchronously after submit. If we
+    // return while its Carbon overlay (.cds--layer-one) is still mounted,
+    // the next click in the test (e.g. on the Tasks nav tab) gets
+    // intercepted by the modal header and times out. Wait for the dialog
+    // to be gone before letting the test proceed.
+    await expect(this.page.getByRole('dialog')).toBeHidden({timeout: 30000});
   }
 }
 
