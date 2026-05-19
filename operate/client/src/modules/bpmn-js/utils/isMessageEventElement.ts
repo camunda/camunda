@@ -10,13 +10,6 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {hasType} from './hasType';
 import {hasEventType} from './hasEventType';
 
-/**
- * Checks if an element is a message event element (receive task, message catch event,
- * or message boundary event).
- *
- * @param businessObject - The BPMN business object to check
- * @returns true if the element is a message event element
- */
 const isMessageEventElement = (
   businessObject?: BusinessObject | null,
 ): boolean => {
