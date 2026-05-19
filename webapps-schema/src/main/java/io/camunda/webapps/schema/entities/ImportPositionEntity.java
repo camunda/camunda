@@ -10,14 +10,14 @@ package io.camunda.webapps.schema.entities;
 public class ImportPositionEntity
     implements ExporterEntity<ImportPositionEntity>, PartitionedEntity<ImportPositionEntity> {
 
-  private String id;
-  private String aliasName;
-  private int partitionId;
-  private long position;
-  private long sequence;
-  private long postImporterPosition;
-  private String indexName;
-  private boolean completed;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private String aliasName;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private long position;
+  @BeforeVersion880 private long sequence;
+  @BeforeVersion880 private long postImporterPosition;
+  @BeforeVersion880 private String indexName;
+  @BeforeVersion880 private boolean completed;
 
   @Override
   public String getId() {
