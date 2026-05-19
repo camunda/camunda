@@ -70,7 +70,6 @@ public final class DeployResourceCommandImpl
   private boolean useRest;
   private final JsonMapper jsonMapper;
   private String tenantId;
-  private boolean hasResourceAdded = false;
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
@@ -93,7 +92,6 @@ public final class DeployResourceCommandImpl
   @Override
   public DeployResourceCommandStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
-    hasResourceAdded = true;
     multipartEntityBuilder.addBinaryBody(
         RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
     requestBuilder.addResources(
@@ -188,7 +186,7 @@ public final class DeployResourceCommandImpl
 
   @Override
   public CamundaFuture<DeploymentEvent> send() {
-    if (!hasResourceAdded) {
+    if (requestBuilder.getResourcesCount() == 0) {
       throw new IllegalStateException(
           "At least one resource must be added before sending the command");
     }
