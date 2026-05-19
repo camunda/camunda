@@ -129,7 +129,7 @@ public final class EndpointManager {
         .setNodeId(brokerId.nodeIdx())
         .setHost(address.host())
         .setPort(address.port())
-        .setMemberId(brokerId.memberId().id())
+        .setBrokerId(brokerId.memberId().id())
         .setZone(Optional.ofNullable(brokerId.zone()).orElse(""));
 
     final var brokerVersion = topology.getBrokerVersion(brokerId);

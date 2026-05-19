@@ -700,9 +700,9 @@ message BrokerInfo {
   repeated Partition partitions = 4;
   // broker version
   string version = 5;
-  // composite member identifier: "$zone/$nodeId" in zone-aware setups (e.g.
+  // composite broker identifier: "$zone/$nodeId" in zone-aware setups (e.g.
   // "us-east/0"), or the bare node ID as a string otherwise (e.g. "0")
-  string memberId = 6;
+  string brokerId = 6;
   // zone where this broker is running
   string zone = 7;
 }
