@@ -38,7 +38,7 @@
     "sass": "1.98.0",
     "styled-components": "6.3.12",
     "ts-pattern": "5.9.0",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "scripts": {
     "start": "vite",

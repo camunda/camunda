@@ -36,7 +36,7 @@
     "react-router-dom": "7.15.1",
     "react-transition-group": "4.4.5",
     "styled-components": "6.3.12",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/carbon__elements": "11.10.3",
