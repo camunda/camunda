@@ -120,10 +120,15 @@ public final class BpmnBufferedMessageStartEventBehavior {
               messageName,
               correlationKey,
               storedMessage -> {
-                // correlate the first message with same correlation key that was not correlated yet
-                // additionally, skip a buffered message whose businessId is currently taken by an
-                // active PI on this partition — leaving it in the buffer so a future release can
-                // pick it up
+                // correlate the first message with same correlation key that was not correlated
+                // yet. Additionally, when the feature is enabled, skip a buffered message whose
+                // businessId is currently taken by another active PI on this partition; the
+                // visitor returns true so the scan continues to subsequent buffered entries for
+                // the same correlation key — the queue itself is not stalled, only the skipped
+                // entry is left in the buffer until its TTL or until another K-keyed completion
+                // triggers a rescan. A businessId-keyed retry (so the skipped entry can be picked
+                // up the moment the holding PI ends, regardless of correlation key) is the job of
+                // the release-driven retry path added in a later increment.
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
@@ -151,6 +156,16 @@ public final class BpmnBufferedMessageStartEventBehavior {
     }
   }
 
+  /**
+   * Returns {@code true} when the feature is enabled, the buffered message carries a businessId,
+   * and an active root PI on this partition already holds that businessId for the same process
+   * definition. A {@code true} result causes the buffered-message scan to skip this entry and keep
+   * looking; the entry remains in the buffer subject to its TTL. There is no businessId-keyed
+   * retrigger here: the scan only fires on completion of a PI that holds the correlation-key lock,
+   * so an entry skipped because of a long-lived businessId holder on a different correlation key
+   * can be left untouched until TTL. The release-driven retry path added in a later increment
+   * closes that gap.
+   */
   private boolean isBufferedMessageBlockedByBusinessIdUniqueness(
       final StoredMessage storedMessage, final DeployedProcess process) {
     if (!businessIdUniquenessEnabled) {

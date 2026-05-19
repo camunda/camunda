@@ -78,7 +78,9 @@ public final class MessageCorrelateBehavior {
           // - allow multiple instance if correlation key is empty
           // additionally, when the published message carries a businessId, also enforce that no
           // active PI exists locally with the same businessId for this process definition (the
-          // local arm of the design's uniqueness check; cross-partition handling lands later)
+          // local arm of the design's uniqueness check; cross-partition handling lands later).
+          // A message suppressed here is left in the buffer subject to its TTL only; there is no
+          // businessId-keyed retry trigger yet — release-driven retries land in a later increment.
           if ((messageData.correlationKey().capacity() == 0
                   || !messageState.existActiveProcessInstance(
                       messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
@@ -225,12 +227,19 @@ public final class MessageCorrelateBehavior {
   /**
    * Local arm of the design's start-event uniqueness check: when the published message carries a
    * businessId and the feature is enabled, reject the start when a root PI with the same businessId
-   * is already active for this process definition on this partition. The message itself is left in
-   * the buffer (the existing TTL path), so it can correlate later when the holding instance ends.
+   * is already active for this process definition on this partition.
+   *
+   * <p>A suppressed message remains in the existing message buffer and is only freed by its TTL.
+   * There is no businessId-keyed retry trigger today: the existing buffered-message scan in {@link
+   * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior} is
+   * driven by completion of a PI that holds the correlation-key lock, so a suppressed message whose
+   * correlation key does not match an active holder's lock will not be retried even after the
+   * businessId is released. Release-driven retries — both same-partition and across partitions via
+   * the pull-based ask to {@code P_B} — are introduced in a later increment by design.
    *
    * <p>Cross-partition uniqueness (i.e. when the businessId hashes to a different partition than
-   * the correlation key) is intentionally out of scope here and is delegated to {@code P_B} in a
-   * later increment via a cross-partition ask. This method only resolves what {@code P_K} can
+   * the correlation key) is also intentionally out of scope here and is delegated to {@code P_B} in
+   * a later increment via a cross-partition ask. This method only resolves what {@code P_K} can
    * answer locally.
    */
   private boolean isBlockedByBusinessIdUniqueness(
