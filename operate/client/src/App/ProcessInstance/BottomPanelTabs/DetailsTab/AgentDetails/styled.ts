@@ -54,6 +54,18 @@ const MetricsRow = styled.div`
   flex-wrap: wrap;
 `;
 
+const ModelInfo = styled.p`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
+const ModelInfoLabel = styled.strong`
+  font-weight: 600;
+  color: var(--cds-text-primary);
+`;
+
 export {
   AgentDetailsContainer,
   AgentHeading,
@@ -62,4 +74,6 @@ export {
   StatusIconWrapper,
   StatusLabel,
   MetricsRow,
+  ModelInfo,
+  ModelInfoLabel,
 };
