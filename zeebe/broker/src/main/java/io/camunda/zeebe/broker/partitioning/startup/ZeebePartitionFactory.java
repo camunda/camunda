@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -56,7 +57,6 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -171,7 +171,7 @@ public final class ZeebePartitionFactory implements Closeable {
     final var partitionId = raftPartition.id().id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
     final var rocksDbResources =
-        getOrInitRocksDbResources(rocksDbConfiguration, membershipService.getLocalMember().id());
+        getOrInitRocksDbResources(databaseCfg, membershipService.getLocalMember().id());
 
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
@@ -220,7 +220,7 @@ public final class ZeebePartitionFactory implements Closeable {
   }
 
   private RocksDbResources getOrInitRocksDbResources(
-      final RocksDbConfiguration rocksDbConfiguration, final MemberId localMemberId) {
+      final RocksdbCfg rocksDbConfiguration, final MemberId localMemberId) {
     if (rocksDbResources != null) {
       return rocksDbResources;
     }
@@ -228,11 +228,15 @@ public final class ZeebePartitionFactory implements Closeable {
     final var runtimeInfo =
         new RuntimeInfo(
             getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg));
+    // after having the number of partitions per broker from the topology we can validate
+    // the config.
+    rocksDbConfiguration.validateRocksDbMemory(runtimeInfo.partitionCount());
     return LockUtil.withLock(
         rocksDbResourcesLock,
         () -> {
           if (rocksDbResources == null) {
-            rocksDbResources = RocksDbResources.of(rocksDbConfiguration, runtimeInfo);
+            rocksDbResources =
+                RocksDbResources.of(rocksDbConfiguration.createRocksDbConfiguration(), runtimeInfo);
           }
           return rocksDbResources;
         });
