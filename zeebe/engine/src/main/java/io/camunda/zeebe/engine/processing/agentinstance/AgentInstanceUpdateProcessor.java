@@ -165,6 +165,7 @@ public final class AgentInstanceUpdateProcessor
    * <p>Returns the effective {@code changedAttributes} for the UPDATED event — i.e. the subset of
    * {@code changed} whose values actually moved.
    */
+  @SuppressWarnings("checkstyle:MissingSwitchDefault") // exhaustive over ALLOWED_ATTRIBUTES
   private static List<String> applyPatch(
       final AgentInstanceRecord current,
       final AgentInstanceRecord delta,
