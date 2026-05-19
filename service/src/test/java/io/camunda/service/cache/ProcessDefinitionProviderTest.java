@@ -73,7 +73,8 @@ class ProcessDefinitionProviderTest {
     bpmn4 = loadBpmn("xmlUtil-test4.bpmn");
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID1);
-    when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY), any())).thenReturn(processDefinition);
+    when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY), any(), any()))
+        .thenReturn(processDefinition);
   }
 
   private void verifyElementsBpmn1(final ProcessCacheData processCacheData) {
@@ -198,7 +199,7 @@ class ProcessDefinitionProviderTest {
         new ProcessDefinitionEntity(2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "");
     final var processDefinition3 =
         new ProcessDefinitionEntity(3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "");
-    when(processDefinitionServices.search(any(), any()))
+    when(processDefinitionServices.search(any(), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
                 .items(List.of(processDefinition, processDefinition2, processDefinition3))
@@ -222,7 +223,7 @@ class ProcessDefinitionProviderTest {
     verifyElementsBpmn3(processData3);
 
     final var searchRequestCaptor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
-    verify(processDefinitionServices).search(searchRequestCaptor.capture(), any());
+    verify(processDefinitionServices).search(searchRequestCaptor.capture(), any(), any());
     final var actualQuery = searchRequestCaptor.getValue();
     assertThat(actualQuery.filter().processDefinitionKeys()).hasSize(3);
     assertThat(actualQuery.filter().processDefinitionKeys()).containsOnly(PROC_DEF_KEY, 2L, 3L);

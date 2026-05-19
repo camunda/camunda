@@ -57,6 +57,7 @@ public class GroupServiceTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(GroupSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
@@ -80,7 +81,7 @@ public class GroupServiceTest {
 
     // when
     final var createGroupRequest = new GroupDTO(groupId, groupName, description);
-    services.createGroup(createGroupRequest, authentication);
+    services.createGroup(createGroupRequest, authentication, "default");
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -103,7 +104,7 @@ public class GroupServiceTest {
     final var searchQuery = SearchQueryBuilders.groupSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -125,7 +126,7 @@ public class GroupServiceTest {
     when(client.getGroup(any())).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getGroup("groupId", authentication);
+    final var searchQueryResult = services.getGroup("groupId", authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -140,7 +141,7 @@ public class GroupServiceTest {
     final var description = "UpdatedDescription";
 
     // when
-    services.updateGroup(groupId, name, description, authentication);
+    services.updateGroup(groupId, name, description, authentication, "default");
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -162,7 +163,7 @@ public class GroupServiceTest {
     final var description = "";
 
     // when
-    services.updateGroup(groupId, name, description, authentication);
+    services.updateGroup(groupId, name, description, authentication, "default");
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -182,7 +183,7 @@ public class GroupServiceTest {
     final var groupId = String.valueOf(groupKey);
 
     // when
-    services.deleteGroup(groupId, authentication);
+    services.deleteGroup(groupId, authentication, "default");
 
     // then
     final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -201,7 +202,7 @@ public class GroupServiceTest {
     final var dto = new GroupMemberDTO(groupId, memberId, EntityType.USER);
 
     // when
-    services.assignMember(dto, authentication);
+    services.assignMember(dto, authentication, "default");
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -223,7 +224,7 @@ public class GroupServiceTest {
     final var dto = new GroupMemberDTO(groupId, username, EntityType.USER);
 
     // when
-    services.removeMember(dto, authentication);
+    services.removeMember(dto, authentication, "default");
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();

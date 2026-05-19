@@ -35,7 +35,8 @@ public class SignalServices extends ApiServices<SignalServices> {
       final String signalName,
       final Map<String, Object> variables,
       final String tenantId,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequestWithFullResponse(
         new BrokerBroadcastSignalRequest(signalName)
             .setVariables(getDocumentOrEmpty(variables))

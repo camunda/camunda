@@ -104,7 +104,7 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldSearchWithStartTimeAndEndTime() {
     // given
-    when(usageMetricsServices.search(any(), any()))
+    when(usageMetricsServices.search(any(), any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 Tuple.of(
@@ -131,6 +131,7 @@ public class SystemControllerTest extends RestControllerTest {
     verify(usageMetricsServices)
         .search(
             eq(UsageMetricsQuery.of(q -> q.filter(f -> f.startTime(startTime).endTime(endTime)))),
+            any(),
             any());
   }
 
@@ -149,7 +150,7 @@ public class SystemControllerTest extends RestControllerTest {
             new UsageMetricTUStatisticsEntityTenant(1L),
             "tenant2",
             new UsageMetricTUStatisticsEntityTenant(3L));
-    when(usageMetricsServices.search(any(), any()))
+    when(usageMetricsServices.search(any(), any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 Tuple.of(
@@ -178,6 +179,7 @@ public class SystemControllerTest extends RestControllerTest {
             eq(
                 UsageMetricsQuery.of(
                     q -> q.filter(f -> f.startTime(startTime).endTime(endTime).withTenants(true)))),
+            any(),
             any());
   }
 

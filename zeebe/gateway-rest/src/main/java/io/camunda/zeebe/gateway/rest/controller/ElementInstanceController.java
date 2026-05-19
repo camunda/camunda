@@ -29,6 +29,7 @@ import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -58,17 +59,22 @@ public class ElementInstanceController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> setVariables(
       @PathVariable final long elementInstanceKey,
-      @RequestBody final SetVariableRequest variableRequest) {
+      @RequestBody final SetVariableRequest variableRequest,
+      @PhysicalTenantId final String physicalTenantId) {
     return RequestMapper.toVariableRequest(variableRequest, elementInstanceKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::setVariables);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> setVariables(req, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> setVariables(
-      final SetVariablesRequest variablesRequest) {
+      final SetVariablesRequest variablesRequest, final String physicalTenantId) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             elementInstanceServices.setVariables(
-                variablesRequest, authenticationProvider.getCamundaAuthentication()));
+                variablesRequest,
+                authenticationProvider.getCamundaAuthentication(),
+                physicalTenantId));
   }
 
   @RequiresSecondaryStorage
@@ -98,19 +104,23 @@ public class ElementInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ElementInstanceSearchQueryResult> searchElementInstances(
-      @RequestBody(required = false) final ElementInstanceSearchQuery query) {
+      @RequestBody(required = false) final ElementInstanceSearchQuery query,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toElementInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{elementInstanceKey}")
   public ResponseEntity<ElementInstanceResult> getByKey(
-      @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
+      @PathVariable("elementInstanceKey") final Long elementInstanceKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       final FlowNodeInstanceEntity element =
           elementInstanceServices.getByKey(
-              elementInstanceKey, authenticationProvider.getCamundaAuthentication());
+              elementInstanceKey,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element));
     } catch (final Exception e) {
@@ -122,19 +132,21 @@ public class ElementInstanceController {
   @CamundaPostMapping(path = "/{elementInstanceKey}/incidents/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidentsForElementInstance(
       @PathVariable("elementInstanceKey") final long elementInstanceKey,
-      @RequestBody(required = false) final IncidentSearchQuery query) {
+      @RequestBody(required = false) final IncidentSearchQuery query,
+      @PhysicalTenantId final String physicalTenantId) {
 
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            incidentQuery -> searchIncidents(elementInstanceKey, incidentQuery));
+            incidentQuery -> searchIncidents(elementInstanceKey, incidentQuery, physicalTenantId));
   }
 
   private ResponseEntity<ElementInstanceSearchQueryResult> search(
-      final FlowNodeInstanceQuery query) {
+      final FlowNodeInstanceQuery query, final String physicalTenantId) {
     try {
       final var result =
-          elementInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
+          elementInstanceServices.search(
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
 
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
@@ -144,11 +156,14 @@ public class ElementInstanceController {
   }
 
   private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
-      final long elementInstanceKey, final IncidentQuery query) {
+      final long elementInstanceKey, final IncidentQuery query, final String physicalTenantId) {
     try {
       final var result =
           elementInstanceServices.searchIncidents(
-              elementInstanceKey, query, authenticationProvider.getCamundaAuthentication());
+              elementInstanceKey,
+              query,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {

@@ -88,7 +88,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   void getUserShouldReturnOk() {
     // given
     final var user = new UserEntity(100L, "username", "User Name", "email@email.com", "password");
-    when(userServices.getUser(eq(user.username()), any())).thenReturn(user);
+    when(userServices.getUser(eq(user.username()), any(), any())).thenReturn(user);
 
     // when
     webClient
@@ -109,7 +109,7 @@ public class UserQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).getUser(eq(user.username()), any());
+    verify(userServices, times(1)).getUser(eq(user.username()), any(), any());
   }
 
   @Test
@@ -117,7 +117,7 @@ public class UserQueryControllerTest extends RestControllerTest {
     // given
     final var username = Strings.newRandomValidIdentityId();
     final var path = "%s/%s".formatted("/v2/users", username);
-    when(userServices.getUser(eq(username), any()))
+    when(userServices.getUser(eq(username), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -145,13 +145,13 @@ public class UserQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).getUser(eq(username), any());
+    verify(userServices, times(1)).getUser(eq(username), any(), any());
   }
 
   @Test
   void shouldSearchUsersWithEmptyBody() {
     // given
-    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -164,13 +164,13 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userServices).search(eq(new UserQuery.Builder().build()), any());
+    verify(userServices).search(eq(new UserQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchUsersWithEmptyQuery() {
     // given
-    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
     webClient
@@ -187,13 +187,13 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userServices).search(eq(new UserQuery.Builder().build()), any());
+    verify(userServices).search(eq(new UserQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchUsersWithSorting() {
     // given
-    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -222,6 +222,7 @@ public class UserQueryControllerTest extends RestControllerTest {
     verify(userServices)
         .search(
             eq(new UserQuery.Builder().sort(new UserSort.Builder().name().desc().build()).build()),
+            any(),
             any());
   }
 
@@ -244,7 +245,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userServices, never()).search(any(UserQuery.class), any());
+    verify(userServices, never()).search(any(UserQuery.class), any(), any());
   }
 
   public static Stream<Arguments> invalidUserSearchQueries() {

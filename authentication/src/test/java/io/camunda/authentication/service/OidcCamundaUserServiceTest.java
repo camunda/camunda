@@ -140,7 +140,7 @@ public class OidcCamundaUserServiceTest {
   void shouldIncludeTenants() {
     // given
     when(camundaAuthentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class), any()))
+    when(tenantServices.search(any(TenantQuery.class), any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 new TenantEntity(1L, "tenant1", "name", "desc"),

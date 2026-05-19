@@ -50,18 +50,23 @@ public class MappingRuleServices
 
   @Override
   public SearchQueryResult<MappingRuleEntity> search(
-      final MappingRuleQuery query, final CamundaAuthentication authentication) {
+      final MappingRuleQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             mappingRuleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, MAPPING_RULE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchMappingRules(query));
   }
 
   public CompletableFuture<MappingRuleRecord> createMappingRule(
-      final MappingRuleDTO request, final CamundaAuthentication authentication) {
+      final MappingRuleDTO request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerMappingRuleCreateRequest()
             .setClaimName(request.claimName())
@@ -72,7 +77,9 @@ public class MappingRuleServices
   }
 
   public CompletableFuture<MappingRuleRecord> updateMappingRule(
-      final MappingRuleDTO request, final CamundaAuthentication authentication) {
+      final MappingRuleDTO request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerMappingRuleUpdateRequest()
             .setClaimName(request.claimName())
@@ -83,7 +90,9 @@ public class MappingRuleServices
   }
 
   public MappingRuleEntity getMappingRule(
-      final String mappingRuleId, final CamundaAuthentication authentication) {
+      final String mappingRuleId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             mappingRuleSearchClient
@@ -91,19 +100,25 @@ public class MappingRuleServices
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         withAuthorization(MAPPING_RULE_READ_AUTHORIZATION, mappingRuleId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getMappingRule(mappingRuleId));
   }
 
   public CompletableFuture<MappingRuleRecord> deleteMappingRule(
-      final String mappingRuleId, final CamundaAuthentication authentication) {
+      final String mappingRuleId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerMappingRuleDeleteRequest().setMappingRuleId(mappingRuleId), authentication);
   }
 
   public Stream<MappingRuleEntity> getMatchingMappingRules(
-      final Map<String, Object> claims, final CamundaAuthentication authentication) {
+      final Map<String, Object> claims,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return MappingRuleMatcher.matchingRules(
-        search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited), authentication)
+        search(
+            MappingRuleQuery.of(AbstractQueryBuilder::unlimited), authentication, physicalTenantId)
             .items()
             .stream(),
         claims);

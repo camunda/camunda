@@ -58,7 +58,7 @@ class DefaultMembershipServiceTest {
 
   @Test
   void mappingRuleIdsReturnsMatchingRules() {
-    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+    when(mappingRuleServices.getMatchingMappingRules(any(), any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
 
     assertThat(service.mappingRuleIds(baseQuery())).containsExactly("mr1");
@@ -72,7 +72,7 @@ class DefaultMembershipServiceTest {
 
   @Test
   void groupIdsLooksUpGroupsFromDb() {
-    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any(), any()))
         .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
@@ -81,7 +81,7 @@ class DefaultMembershipServiceTest {
 
   @Test
   void roleIdsIncludesGroupsInOwnerMap() {
-    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any(), any()))
         .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
     final var query = baseQuery().withMappingRuleIds(List.of()).withGroupIds(List.of("g1"));
 
@@ -90,7 +90,7 @@ class DefaultMembershipServiceTest {
 
   @Test
   void tenantIdsIncludesGroupsAndRolesInOwnerMap() {
-    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any(), any()))
         .thenReturn(List.of(new TenantEntity(1L, "t1", "tenant", null)));
     final var query =
         baseQuery()

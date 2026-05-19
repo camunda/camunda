@@ -47,14 +47,19 @@ public final class UsageMetricsServices
 
   @Override
   public SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
-      search(final UsageMetricsQuery query, final CamundaAuthentication authentication) {
+      search(
+          final UsageMetricsQuery query,
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
     }
     final UsageMetricsSearchClient authUsageMetricsSearchClient =
-        usageMetricsSearchClient.withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.system().readUsageMetric())));
+        usageMetricsSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication, Authorization.of(a -> a.system().readUsageMetric())))
+            .withPhysicalTenant(physicalTenantId);
 
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(

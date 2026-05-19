@@ -253,7 +253,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupName = "groupName";
     final var groupDescription = "groupDescription";
     final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription);
-    when(groupServices.getGroup(eq(group.groupId()), any())).thenReturn(group);
+    when(groupServices.getGroup(eq(group.groupId()), any(), any())).thenReturn(group);
 
     // when
     webClient
@@ -275,7 +275,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(groupServices, times(1)).getGroup(eq(group.groupId()), any());
+    verify(groupServices, times(1)).getGroup(eq(group.groupId()), any(), any());
   }
 
   @Test
@@ -283,7 +283,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
-    when(groupServices.getGroup(eq(groupId), any()))
+    when(groupServices.getGroup(eq(groupId), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -311,7 +311,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(groupServices, times(1)).getGroup(eq(groupId), any());
+    verify(groupServices, times(1)).getGroup(eq(groupId), any(), any());
   }
 
   @Test
@@ -329,7 +329,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var description1 = "Description 1";
     final var description2 = "Description 2";
     final var description3 = "Description 3";
-    when(groupServices.search(any(GroupQuery.class), any()))
+    when(groupServices.search(any(GroupQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
@@ -394,7 +394,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     description3),
             JsonCompareMode.STRICT);
 
-    verify(groupServices).search(eq(new GroupQuery.Builder().build()), any());
+    verify(groupServices).search(eq(new GroupQuery.Builder().build()), any(), any());
   }
 
   @Test
@@ -412,7 +412,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var description1 = "Description 1";
     final var description2 = "Description 2";
     final var description3 = "Description 3";
-    when(groupServices.search(any(GroupQuery.class), any()))
+    when(groupServices.search(any(GroupQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
@@ -485,6 +485,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     verify(groupServices)
         .search(
             eq(new GroupQuery.Builder().filter(fn -> fn.groupIds(groupId1, groupId2)).build()),
+            any(),
             any());
   }
 
@@ -503,7 +504,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var description1 = "Description 1";
     final var description2 = "Description 2";
     final var description3 = "Description 3";
-    when(groupServices.search(any(GroupQuery.class), any()))
+    when(groupServices.search(any(GroupQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
@@ -544,6 +545,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     .sort(GroupSort.of(builder -> builder.name().asc()))
                     .page(SearchQueryPage.of(builder -> builder.from(20).size(2)))
                     .build()),
+            any(),
             any());
   }
 
@@ -562,7 +564,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var description1 = "Description 1";
     final var description2 = "Description 2";
     final var description3 = "Description 3";
-    when(groupServices.search(any(GroupQuery.class), any()))
+    when(groupServices.search(any(GroupQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
@@ -603,13 +605,14 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     .sort(GroupSort.of(builder -> builder.name().asc()))
                     .page(SearchQueryPage.of(builder -> builder.size(20)))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchGroupUsersWithSorting() {
     // given
-    when(groupServices.searchMembers(any(GroupMemberQuery.class), any()))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_USER_ENTITIES.size())
@@ -642,7 +645,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupUsersWithEmptyQuery() {
     // given
-    when(groupServices.searchMembers(any(GroupMemberQuery.class), any()))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_USER_ENTITIES.size())
@@ -674,7 +677,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupMappingsWithSorting() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
@@ -707,7 +710,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupMappingsWithEmptyQuery() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
@@ -739,7 +742,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupRolesWithSorting() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
@@ -772,7 +775,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupRolesWithEmptyQuery() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
@@ -804,7 +807,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupClientsWithSorting() {
     // given
-    when(groupServices.searchMembers(any(GroupMemberQuery.class), any()))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_CLIENT_ENTITIES.size())
@@ -837,7 +840,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupClientsWithEmptyQuery() {
     // given
-    when(groupServices.searchMembers(any(GroupMemberQuery.class), any()))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_CLIENT_ENTITIES.size())
@@ -885,7 +888,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(groupServices, never()).search(any(GroupQuery.class), any());
+    verify(groupServices, never()).search(any(GroupQuery.class), any(), any());
   }
 
   public static Stream<Arguments> invalidGroupSearchQueries() {

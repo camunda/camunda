@@ -97,10 +97,10 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
-    when(decisionRequirementsServices.getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any()))
+    when(decisionRequirementsServices.getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any(), any()))
         .thenReturn(new DecisionRequirementsEntity(1L, "id", "name", 1, "rN", null, "t"));
 
-    when(decisionRequirementsServices.getByKey(eq(INVALID_DECISION_REQUIREMENTS_KEY), any()))
+    when(decisionRequirementsServices.getByKey(eq(INVALID_DECISION_REQUIREMENTS_KEY), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -113,7 +113,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   @Test
   void shouldSearchDecisionRequirementsWithEmptyBody() {
     // given
-    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any()))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -128,13 +128,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
-        .search(eq(new DecisionRequirementsQuery.Builder().build()), any());
+        .search(eq(new DecisionRequirementsQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchDecisionRequirementsWithEmptyQuery() {
     // given
-    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any()))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -153,13 +153,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
-        .search(eq(new DecisionRequirementsQuery.Builder().build()), any());
+        .search(eq(new DecisionRequirementsQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchDecisionRequirementsWithAllFilters() {
     // given
-    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any()))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -203,13 +203,14 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                             .resourceNames("rN")
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchDecisionRequirementsWithSorting() {
     // given
-    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any()))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -270,6 +271,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                             .asc()
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -313,7 +315,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, never())
-        .search(any(DecisionRequirementsQuery.class), any());
+        .search(any(DecisionRequirementsQuery.class), any(), any());
   }
 
   @Test
@@ -329,7 +331,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .json(DECISION_REQUIREMENTS_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1))
-        .getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any());
+        .getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any(), any());
   }
 
   @Test
@@ -357,7 +359,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1))
-        .getByKey(eq(INVALID_DECISION_REQUIREMENTS_KEY), any());
+        .getByKey(eq(INVALID_DECISION_REQUIREMENTS_KEY), any(), any());
   }
 
   @ParameterizedTest
@@ -401,15 +403,17 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   private static Stream<Pair<String, BiFunction<DecisionRequirementsServices, Long, ?>>>
       getDecisionRequirementsTestCasesParameters() {
     return Stream.of(
-        Pair.of(DECISION_REQUIREMENTS_GET_URL, (service, key) -> service.getByKey(eq(key), any())),
+        Pair.of(
+            DECISION_REQUIREMENTS_GET_URL,
+            (service, key) -> service.getByKey(eq(key), any(), any())),
         Pair.of(
             DECISION_REQUIREMENTS_GET_XML_URL,
-            (service, key) -> service.getDecisionRequirementsXml(eq(key), any())));
+            (service, key) -> service.getDecisionRequirementsXml(eq(key), any(), any())));
   }
 
   @Test
   public void shouldReturn500OnUnexpectedException() throws Exception {
-    when(decisionRequirementsServices.getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any()))
+    when(decisionRequirementsServices.getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any(), any()))
         .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient
@@ -433,7 +437,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1))
-        .getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any());
+        .getByKey(eq(VALID_DECISION_REQUIREMENTS_KEY), any(), any());
   }
 
   @Test
@@ -442,7 +446,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final Long decisionRequirementsKey = 1L;
     final String xml = "<xml/>";
     when(decisionRequirementsServices.getDecisionRequirementsXml(
-            eq(decisionRequirementsKey), any()))
+            eq(decisionRequirementsKey), any(), any()))
         .thenReturn(xml);
 
     // when/then
@@ -463,7 +467,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // given
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(
-            eq(decisionRequirementsKey), any()))
+            eq(decisionRequirementsKey), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -498,7 +502,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // given
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(
-            eq(decisionRequirementsKey), any()))
+            eq(decisionRequirementsKey), any(), any()))
         .thenThrow(new RuntimeException("Failed to get decision requirements xml."));
 
     // when/then

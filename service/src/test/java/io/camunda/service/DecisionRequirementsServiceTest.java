@@ -40,6 +40,7 @@ public final class DecisionRequirementsServiceTest {
     authentication = mock(CamundaAuthentication.class);
     client = mock(DecisionRequirementSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     services =
         new DecisionRequirementsServices(
             mock(BrokerClient.class),
@@ -59,7 +60,7 @@ public final class DecisionRequirementsServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(client.searchDecisionRequirements(any())).thenReturn(result);
     final SearchQueryResult<DecisionRequirementsEntity> searchQueryResult =
-        services.search(searchQuery, authentication);
+        services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(searchQueryResult);
@@ -74,7 +75,7 @@ public final class DecisionRequirementsServiceTest {
     when(client.getDecisionRequirements(eq(124L), eq(false))).thenReturn(decisionRequirementEntity);
 
     // when
-    final var searchQueryResult = services.getByKey(124L, authentication);
+    final var searchQueryResult = services.getByKey(124L, authentication, "default");
 
     // then
     final DecisionRequirementsEntity item = searchQueryResult;
@@ -92,7 +93,8 @@ public final class DecisionRequirementsServiceTest {
 
     // when
     final String expectedXml = "<xml/>";
-    final var searchQueryResult = services.getDecisionRequirementsXml(124L, authentication);
+    final var searchQueryResult =
+        services.getDecisionRequirementsXml(124L, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(expectedXml);
@@ -112,7 +114,7 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getByKey(124L, authentication))
+            .isThrownBy(() -> services.getByKey(124L, authentication, "default"))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -133,7 +135,7 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getDecisionRequirementsXml(124L, authentication))
+            .isThrownBy(() -> services.getDecisionRequirementsXml(124L, authentication, "default"))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(

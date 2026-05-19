@@ -41,6 +41,7 @@ public class VariableServiceTest {
   public void before() {
     client = mock(VariableSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
     services =
         new VariableServices(
@@ -61,7 +62,7 @@ public class VariableServiceTest {
     final var searchQuery = SearchQueryBuilders.variableSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -84,7 +85,7 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getByKey(1L, authentication);
+    final var searchQueryResult = services.getByKey(1L, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -99,7 +100,7 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.VARIABLE_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
 
     // then
     final var exception =

@@ -53,23 +53,28 @@ public class IncidentServices
 
   public SearchQueryResult<IncidentEntity> search(
       final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn,
-      final CamundaAuthentication authentication) {
-    return search(incidentSearchQuery(fn), authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return search(incidentSearchQuery(fn), authentication, physicalTenantId);
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> search(
-      final IncidentQuery query, final CamundaAuthentication authentication) {
+      final IncidentQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchIncidents(query));
   }
 
-  public IncidentEntity getByKey(final Long key, final CamundaAuthentication authentication) {
+  public IncidentEntity getByKey(
+      final Long key, final CamundaAuthentication authentication, final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
@@ -78,13 +83,15 @@ public class IncidentServices
                         authentication,
                         withAuthorization(
                             INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getIncident(key));
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(
       final long incidentKey,
       final Long operationReference,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest = new BrokerResolveIncidentRequest(incidentKey);
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
@@ -95,7 +102,8 @@ public class IncidentServices
   public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       incidentProcessInstanceStatisticsByError(
           final IncidentProcessInstanceStatisticsByErrorQuery query,
-          final CamundaAuthentication authentication) {
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     final var sanitizedQuery =
         IncidentProcessInstanceStatisticsByErrorQuery.of(
             b ->
@@ -108,19 +116,22 @@ public class IncidentServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .incidentProcessInstanceStatisticsByError(sanitizedQuery));
   }
 
   public SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       searchIncidentProcessInstanceStatisticsByDefinition(
           final IncidentProcessInstanceStatisticsByDefinitionQuery query,
-          final CamundaAuthentication authentication) {
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchIncidentProcessInstanceStatisticsByDefinition(query));
   }
 }

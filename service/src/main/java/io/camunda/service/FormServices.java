@@ -41,15 +41,19 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
 
   @Override
   public SearchQueryResult<FormEntity> search(
-      final FormQuery query, final CamundaAuthentication authentication) {
+      final FormQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             formSearchClient
                 .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .withPhysicalTenant(physicalTenantId)
                 .searchForms(query));
   }
 
-  public FormEntity getByKey(final Long key, final CamundaAuthentication authentication) {
+  public FormEntity getByKey(
+      final Long key, final CamundaAuthentication authentication, final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             formSearchClient
@@ -57,17 +61,22 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         withAuthorization(FORM_READ_AUTHORIZATION, FormEntity::formId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getForm(key));
   }
 
   public Optional<FormEntity> getLatestVersionByFormIdAndTenantId(
-      final String formId, final String tenantId, final CamundaAuthentication authentication) {
+      final String formId,
+      final String tenantId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
             SearchQueryBuilders.formSearchQuery()
                 .filter(f -> f.formIds(formId).tenantId(tenantId))
                 .sort(s -> s.version().desc())
                 .build(),
-            authentication)
+            authentication,
+            physicalTenantId)
         .items()
         .stream()
         .findFirst();

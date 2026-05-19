@@ -88,7 +88,7 @@ class SetupControllerTest extends RestControllerTest {
             .setEmail(dto.email())
             .setPassword(dto.password());
     whenNoAdminUserExists();
-    when(userServices.createInitialAdminUser(eq(dto), any()))
+    when(userServices.createInitialAdminUser(eq(dto), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
@@ -114,7 +114,7 @@ class SetupControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any());
+    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any(), any());
   }
 
   @Test
@@ -254,7 +254,7 @@ class SetupControllerTest extends RestControllerTest {
     final var dto = new UserDTO("foo", null, null, "zabraboof");
     final var userRecord = new UserRecord().setUsername(dto.username()).setPassword(dto.password());
     whenNoAdminUserExists();
-    when(userServices.createInitialAdminUser(eq(dto), any()))
+    when(userServices.createInitialAdminUser(eq(dto), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
@@ -280,7 +280,7 @@ class SetupControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any());
+    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any(), any());
   }
 
   @Test
@@ -352,12 +352,14 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private void whenNoAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
+    when(roleServices.hasMembersOfType(
+            eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any(), any()))
         .thenReturn(false);
   }
 
   private void whenAdminUserExists() {
-    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
+    when(roleServices.hasMembersOfType(
+            eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any(), any()))
         .thenReturn(true);
   }
 

@@ -86,7 +86,8 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
+    when(decisionServices.evaluateDecision(
+            anyString(), anyLong(), anyMap(), anyString(), any(), any()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
@@ -114,14 +115,20 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
         .evaluateDecision(
-            eq(""), eq(123456L), eq(Map.<String, Object>of("key", "value")), eq("tenantId"), any());
+            eq(""),
+            eq(123456L),
+            eq(Map.<String, Object>of("key", "value")),
+            eq("tenantId"),
+            any(),
+            any());
   }
 
   @Test
   void shouldEvaluateDecisionWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
+    when(decisionServices.evaluateDecision(
+            anyString(), anyLong(), anyMap(), anyString(), any(), any()))
         .thenReturn((buildResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
 
     final var request =
@@ -150,6 +157,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
             eq(123456L),
             eq(Map.<String, Object>of("key", "value")),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any(),
             any());
   }
 
@@ -159,7 +167,8 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
+    when(decisionServices.evaluateDecision(
+            anyString(), anyLong(), anyMap(), anyString(), any(), any()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
@@ -191,6 +200,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
             eq(-1L),
             eq(Map.<String, Object>of("key", "value")),
             eq("tenantId"),
+            any(),
             any());
   }
 

@@ -71,7 +71,9 @@ public class UserTaskTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
               userTaskServices.search(
-                  userTaskSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
+                  userTaskSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication(),
+                  "default")));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -89,7 +91,7 @@ public class UserTaskTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTask(
               userTaskServices.getByKey(
-                  userTaskKey, authenticationProvider.getCamundaAuthentication())));
+                  userTaskKey, authenticationProvider.getCamundaAuthentication(), "default")));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -144,7 +146,8 @@ public class UserTaskTools {
             assignmentRequest.assignee(),
             assignmentRequest.action(),
             assignmentRequest.allowOverride(),
-            authenticationProvider.getCamundaAuthentication()),
+            authenticationProvider.getCamundaAuthentication(),
+            "default"),
         r ->
             "User task with key %s assigned to %s."
                 .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));
@@ -157,7 +160,8 @@ public class UserTaskTools {
         userTaskServices.unassignUserTask(
             unassignRequest.userTaskKey(),
             unassignRequest.action(),
-            authenticationProvider.getCamundaAuthentication()),
+            authenticationProvider.getCamundaAuthentication(),
+            "default"),
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }
 
@@ -194,7 +198,8 @@ public class UserTaskTools {
               userTaskServices.searchUserTaskEffectiveVariables(
                   userTaskKey,
                   variableSearchQuery.get(),
-                  authenticationProvider.getCamundaAuthentication()),
+                  authenticationProvider.getCamundaAuthentication(),
+                  "default"),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

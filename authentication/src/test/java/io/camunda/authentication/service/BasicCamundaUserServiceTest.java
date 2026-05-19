@@ -56,7 +56,7 @@ public class BasicCamundaUserServiceTest {
     when(user.userKey()).thenReturn(100L);
     when(user.name()).thenReturn("Foo Bar");
     when(user.email()).thenReturn("foo@bar.com");
-    when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
+    when(userServices.getUser(eq("foo@bar.com"), any(), any())).thenReturn(user);
 
     basicCamundaUserService =
         new BasicCamundaUserService(
@@ -101,7 +101,7 @@ public class BasicCamundaUserServiceTest {
   void shouldIncludeTenants() {
     // given
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class), any()))
+    when(tenantServices.search(any(TenantQuery.class), any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 new TenantEntity(1L, "tenant1", "name", "desc"),

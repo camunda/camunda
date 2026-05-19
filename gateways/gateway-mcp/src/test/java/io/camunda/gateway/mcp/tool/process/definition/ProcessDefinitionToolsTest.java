@@ -97,7 +97,8 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldGetProcessDefinitionByKey() {
       // given
-      when(processDefinitionServices.getByKey(eq(5L), any())).thenReturn(PROCESS_DEFINITION_ENTITY);
+      when(processDefinitionServices.getByKey(eq(5L), any(), any()))
+          .thenReturn(PROCESS_DEFINITION_ENTITY);
 
       // when
       final CallToolResult result =
@@ -189,7 +190,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldSearchProcessDefinitionsWithFilterSortAndPaging() {
       // given
-      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
@@ -222,7 +223,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           .first()
           .satisfies(ProcessDefinitionToolsTest.this::assertExampleProcessDefinitionResult);
 
-      verify(processDefinitionServices).search(queryCaptor.capture(), any());
+      verify(processDefinitionServices).search(queryCaptor.capture(), any(), any());
       final ProcessDefinitionQuery capturedQuery = queryCaptor.getValue();
 
       final ProcessDefinitionFilter filter = capturedQuery.filter();
@@ -243,7 +244,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailSearchProcessDefinitionsOnException() {
       // given
-      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -267,7 +268,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldIgnoreTenantIdInFilter() {
       // given
-      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+      when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when (tenantId passed in arguments should be ignored by MCP filter schema)
@@ -277,7 +278,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
               .build());
 
       // then
-      verify(processDefinitionServices).search(queryCaptor.capture(), any());
+      verify(processDefinitionServices).search(queryCaptor.capture(), any(), any());
       final ProcessDefinitionQuery capturedQuery = queryCaptor.getValue();
       assertThat(capturedQuery.filter().tenantIds()).isEmpty();
     }
@@ -354,7 +355,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldGetProcessDefinitionXmlByKey() {
       // given
-      when(processDefinitionServices.getProcessDefinitionXml(any(), any()))
+      when(processDefinitionServices.getProcessDefinitionXml(any(), any(), any()))
           .thenReturn(Optional.of("<bpmn />"));
 
       // when
@@ -378,7 +379,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
     @Test
     void shouldReturnErrorWhenNoProcessDefinitionXmlAvailable() {
       // given
-      when(processDefinitionServices.getProcessDefinitionXml(any(), any()))
+      when(processDefinitionServices.getProcessDefinitionXml(any(), any(), any()))
           .thenReturn(Optional.empty());
 
       // when

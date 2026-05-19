@@ -60,7 +60,8 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getResultValue()).thenReturn("10");
     when(expressionRecord.getWarnings()).thenReturn(List.of());
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+    when(expressionServices.evaluateExpression(
+            any(ExpressionEvaluationRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -90,7 +91,7 @@ public class ExpressionControllerTest extends RestControllerTest {
             }""",
             JsonCompareMode.STRICT);
 
-    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
@@ -105,7 +106,8 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getResultValue()).thenReturn("10");
     when(expressionRecord.getWarnings()).thenReturn(List.of());
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+    when(expressionServices.evaluateExpression(
+            any(ExpressionEvaluationRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -139,7 +141,7 @@ public class ExpressionControllerTest extends RestControllerTest {
             }""",
             JsonCompareMode.STRICT);
 
-    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
@@ -155,7 +157,8 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getWarnings())
         .thenReturn(List.of("No function found with name 'invalid_function' and 0 parameters"));
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+    when(expressionServices.evaluateExpression(
+            any(ExpressionEvaluationRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -301,7 +304,7 @@ public class ExpressionControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
 
     verify(expressionServices, never())
-        .evaluateExpression(any(ExpressionEvaluationRequest.class), any());
+        .evaluateExpression(any(ExpressionEvaluationRequest.class), any(), any());
   }
 
   @Test
@@ -312,7 +315,8 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getResultValue()).thenReturn("1");
     when(expressionRecord.getWarnings()).thenReturn(List.of());
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+    when(expressionServices.evaluateExpression(
+            any(ExpressionEvaluationRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -334,7 +338,7 @@ public class ExpressionControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any(), any());
     final var captured = requestCaptor.getValue();
     assertThat(captured.scopeKey()).isEqualTo(2251799813685249L);
   }

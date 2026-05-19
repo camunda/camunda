@@ -202,7 +202,10 @@ public sealed interface AuthenticationHandler {
       final var userQuery =
           SearchQueryBuilders.userSearchQuery(
               fn -> fn.filter(f -> f.usernames(username)).page(p -> p.size(1)));
-      return userServices.search(userQuery, CamundaAuthentication.anonymous()).items().stream()
+      return userServices
+          .search(userQuery, CamundaAuthentication.anonymous(), "default")
+          .items()
+          .stream()
           .filter(Objects::nonNull)
           .findFirst();
     }

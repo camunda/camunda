@@ -217,7 +217,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchIncidentWithEmptyBody() {
     // given
-    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -230,13 +231,14 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any());
+    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchIncidentWithEmptyQuery() {
     // given
-    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final var request = "{}";
     // when / then
     webClient
@@ -253,12 +255,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any());
+    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchIncidentWithAllFilters() {
-    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -316,12 +319,14 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                             .tenantIds("tenantId")
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchIncidentWithFullSorting() {
-    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -354,12 +359,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 new IncidentQuery.Builder()
                     .sort(new IncidentSort.Builder().incidentKey().asc().build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldGetIncidentByKey() {
-    when(incidentServices.getByKey(any(Long.class), any())).thenReturn(GET_QUERY_RESULT);
+    when(incidentServices.getByKey(any(Long.class), any(), any())).thenReturn(GET_QUERY_RESULT);
     // when / then
     webClient
         .get()
@@ -372,12 +378,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_GET_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).getByKey(eq(23L), any());
+    verify(incidentServices).getByKey(eq(23L), any(), any());
   }
 
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
-    when(incidentServices.getByKey(any(Long.class), any()))
+    when(incidentServices.getByKey(any(Long.class), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
@@ -402,13 +408,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 """,
             JsonCompareMode.STRICT);
 
-    verify(incidentServices).getByKey(eq(5L), any());
+    verify(incidentServices).getByKey(eq(5L), any(), any());
   }
 
   @Test
   void shouldReturnIncidentProcessInstanceStatisticsByError() {
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     webClient
@@ -427,14 +433,14 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
-            eq(new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build()), any());
+            eq(new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSortIncidentProcessInstanceStatisticsByError() {
     // given
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     final var request =
@@ -476,6 +482,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
                     .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
                     .build()),
+            any(),
             any());
   }
 
@@ -483,7 +490,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void shouldPaginateIncidentProcessInstanceStatisticsByError() {
     // given
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     final var request =
@@ -516,6 +523,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
                     .page(p -> p.from(0).size(5))
                     .build()),
+            any(),
             any());
   }
 
@@ -523,7 +531,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void shouldReturnIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -554,7 +562,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
             .filter(f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
             .build();
-    verify(incidentServices).searchIncidentProcessInstanceStatisticsByDefinition(eq(result), any());
+    verify(incidentServices)
+        .searchIncidentProcessInstanceStatisticsByDefinition(eq(result), any(), any());
   }
 
   @Test
@@ -664,7 +673,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void shouldSortIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -722,6 +731,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                                 .activeInstancesWithErrorCount()
                                 .asc())
                     .build()),
+            any(),
             any());
   }
 
@@ -729,7 +739,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void shouldPaginateIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any(), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -765,6 +775,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                         f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
                     .page(p -> p.from(0).size(5))
                     .build()),
+            any(),
             any());
   }
 

@@ -48,6 +48,7 @@ public final class IncidentServiceTest {
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     authentication = mock(CamundaAuthentication.class);
 
@@ -69,7 +70,7 @@ public final class IncidentServiceTest {
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -81,7 +82,7 @@ public final class IncidentServiceTest {
     final var entity = Instancio.create(IncidentEntity.class);
     when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
-    final var searchQueryResult = services.getByKey(1L, authentication);
+    final var searchQueryResult = services.getByKey(1L, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -93,7 +94,7 @@ public final class IncidentServiceTest {
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
     // then
     final var exception =
         (ServiceException)
@@ -117,7 +118,8 @@ public final class IncidentServiceTest {
             SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery()
                 .filter(f -> f.states(IncidentState.ACTIVE.name()))
                 .build(),
-            authentication);
+            authentication,
+            "default");
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -147,7 +149,8 @@ public final class IncidentServiceTest {
             SearchQueryBuilders.incidentProcessInstanceStatisticsByDefinitionQuery()
                 .filter(f -> f.state(state).errorHashCode(errorHashCode))
                 .build(),
-            authentication);
+            authentication,
+            "default");
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -176,7 +179,7 @@ public final class IncidentServiceTest {
             .build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication);
+    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication, "default");
 
     // then
     final var queryCaptor =
@@ -198,7 +201,7 @@ public final class IncidentServiceTest {
         SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication);
+    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication, "default");
 
     // then
     final var queryCaptor =

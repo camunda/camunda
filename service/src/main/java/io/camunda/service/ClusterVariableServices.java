@@ -49,7 +49,9 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> createGloballyScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
@@ -59,7 +61,9 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> createTenantScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
@@ -69,14 +73,18 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteGloballyScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerDeleteClusterVariableRequest().setName(request.name()).setGlobalScope(),
         authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteTenantScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerDeleteClusterVariableRequest()
             .setName(request.name())
@@ -85,7 +93,9 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> updateGloballyScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
@@ -95,7 +105,9 @@ public final class ClusterVariableServices
   }
 
   public CompletableFuture<ClusterVariableRecord> updateTenantScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
@@ -105,7 +117,9 @@ public final class ClusterVariableServices
   }
 
   public ClusterVariableEntity getGloballyScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
@@ -114,11 +128,14 @@ public final class ClusterVariableServices
                         authentication,
                         withAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
+                .withPhysicalTenant(physicalTenantId)
                 .getClusterVariable(request.name()));
   }
 
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
+      final ClusterVariableRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
@@ -127,18 +144,22 @@ public final class ClusterVariableServices
                         authentication,
                         withAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
+                .withPhysicalTenant(physicalTenantId)
                 .getClusterVariable(request.name(), request.tenantId()));
   }
 
   @Override
   public SearchQueryResult<ClusterVariableEntity> search(
-      final ClusterVariableQuery query, final CamundaAuthentication authentication) {
+      final ClusterVariableQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, CLUSTER_VARIABLE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchClusterVariables(query));
   }
 

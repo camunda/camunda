@@ -130,17 +130,26 @@ public final class UserTaskServices
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(
-      final UserTaskQuery query, final CamundaAuthentication authentication) {
+      final UserTaskQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
         query,
-        securityContextProvider.provideSecurityContext(authentication, USER_TASK_AUTHORIZATIONS));
+        securityContextProvider.provideSecurityContext(authentication, USER_TASK_AUTHORIZATIONS),
+        physicalTenantId);
   }
 
   private SearchQueryResult<UserTaskEntity> search(
-      final UserTaskQuery query, final SecurityContext securityContext) {
+      final UserTaskQuery query,
+      final SecurityContext securityContext,
+      final String physicalTenantId) {
     final var result =
         executeSearchRequest(
-            () -> userTaskSearchClient.withSecurityContext(securityContext).searchUserTasks(query));
+            () ->
+                userTaskSearchClient
+                    .withSecurityContext(securityContext)
+                    .withPhysicalTenant(physicalTenantId)
+                    .searchUserTasks(query));
 
     return toCacheEnrichedResult(result);
   }
@@ -184,8 +193,9 @@ public final class UserTaskServices
 
   public SearchQueryResult<UserTaskEntity> search(
       final Function<Builder, ObjectBuilder<UserTaskQuery>> fn,
-      final CamundaAuthentication authentication) {
-    return search(userTaskSearchQuery(fn), authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return search(userTaskSearchQuery(fn), authentication, physicalTenantId);
   }
 
   public CompletableFuture<UserTaskRecord> assignUserTask(
@@ -193,7 +203,8 @@ public final class UserTaskServices
       final String assignee,
       final String action,
       final boolean allowOverride,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUserTaskAssignmentRequest(
             userTaskKey,
@@ -207,7 +218,8 @@ public final class UserTaskServices
       final long userTaskKey,
       final Map<String, Object> variables,
       final String action,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUserTaskCompletionRequest(
             userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength),
@@ -215,7 +227,10 @@ public final class UserTaskServices
   }
 
   public CompletableFuture<UserTaskRecord> unassignUserTask(
-      final long userTaskKey, final String action, final CamundaAuthentication authentication) {
+      final long userTaskKey,
+      final String action,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUserTaskAssignmentRequest(userTaskKey, "", action, UserTaskIntent.ASSIGN),
         authentication);
@@ -225,13 +240,16 @@ public final class UserTaskServices
       final long userTaskKey,
       final UserTaskRecord changeset,
       final String action,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action), authentication);
   }
 
   public UserTaskEntity getByKey(
-      final long userTaskKey, final CamundaAuthentication authentication) {
+      final long userTaskKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var result =
         executeSearchRequest(
             () ->
@@ -239,6 +257,7 @@ public final class UserTaskServices
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
                             authentication, USER_TASK_AUTHORIZATIONS))
+                    .withPhysicalTenant(physicalTenantId)
                     .getUserTask(userTaskKey));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
@@ -246,22 +265,28 @@ public final class UserTaskServices
   }
 
   public Optional<FormEntity> getUserTaskForm(
-      final long userTaskKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(userTaskKey, authentication))
+      final long userTaskKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return Optional.ofNullable(getByKey(userTaskKey, authentication, physicalTenantId))
         .map(UserTaskEntity::formKey)
-        .map(formKey -> formServices.getByKey(formKey, CamundaAuthentication.anonymous()));
+        .map(
+            formKey ->
+                formServices.getByKey(
+                    formKey, CamundaAuthentication.anonymous(), physicalTenantId));
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskVariables(
       final long userTaskKey,
       final VariableQuery variableQuery,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     // Fetch the user task by key
-    final var userTask = getByKey(userTaskKey, authentication);
+    final var userTask = getByKey(userTaskKey, authentication, physicalTenantId);
 
     // Retrieve the tree path for the flow node instance associated to the user task
-    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
+    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey(), physicalTenantId);
 
     // Convert the tree path to a list of scope keys
     final List<Long> treePathList =
@@ -281,17 +306,20 @@ public final class UserTaskServices
     return executeSearchRequest(
         () ->
             variableServices.search(
-                variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
+                variableQueryWithTreePathFilter,
+                CamundaAuthentication.anonymous(),
+                physicalTenantId));
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskEffectiveVariables(
       final long userTaskKey,
       final VariableQuery variableQuery,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
-    final var userTask = getByKey(userTaskKey, authentication);
+    final var userTask = getByKey(userTaskKey, authentication, physicalTenantId);
 
-    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
+    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey(), physicalTenantId);
 
     final List<Long> treePathList =
         treePath != null
@@ -303,7 +331,8 @@ public final class UserTaskServices
     // searchUserTaskVariables, but strip cursors since this endpoint does not support
     // cursor-based pagination (in the general case, we perform in-memory deduplication).
     if (treePathList.size() <= 1) {
-      final var result = searchUserTaskVariables(userTaskKey, variableQuery, authentication);
+      final var result =
+          searchUserTaskVariables(userTaskKey, variableQuery, authentication, physicalTenantId);
       return new SearchQueryResult<>(
           result.total(), result.hasMoreTotalItems(), result.items(), null, null);
     }
@@ -317,7 +346,9 @@ public final class UserTaskServices
 
     final var allVariables =
         executeSearchRequest(
-            () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
+            () ->
+                variableServices.search(
+                    unlimitedQuery, CamundaAuthentication.anonymous(), physicalTenantId));
 
     // Deduplicate variables by name, keeping the one from the innermost scope.
     // Since this is a sorted result set by the user's criteria, we iterate through
@@ -385,8 +416,10 @@ public final class UserTaskServices
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
       final long userTaskKey,
       final AuditLogQuery auditLogQuery,
-      final CamundaAuthentication authentication) {
-    getByKey(userTaskKey, authentication); // Ensure user task exists and is accessible
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    getByKey(
+        userTaskKey, authentication, physicalTenantId); // Ensure user task exists and is accessible
 
     // Create an audit log query with user task key filter
     final var auditLogWithUserTaskKeyFilter =
@@ -400,14 +433,17 @@ public final class UserTaskServices
     return executeSearchRequest(
         () ->
             auditLogServices.search(
-                auditLogWithUserTaskKeyFilter, CamundaAuthentication.anonymous()));
+                auditLogWithUserTaskKeyFilter,
+                CamundaAuthentication.anonymous(),
+                physicalTenantId));
   }
 
-  private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
+  private String fetchFlowNodeTreePath(
+      final long flowNodeInstanceKey, final String physicalTenantId) {
     return executeSearchRequest(
             () ->
                 elementInstanceServices.getByKey(
-                    flowNodeInstanceKey, CamundaAuthentication.anonymous()))
+                    flowNodeInstanceKey, CamundaAuthentication.anonymous(), physicalTenantId))
         .treePath();
   }
 }

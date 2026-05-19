@@ -58,7 +58,7 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
 
     try {
       return roleServices.hasMembersOfType(
-          ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous());
+          ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous(), "default");
     } catch (final RuntimeException ex) {
       LOG.error(
           "Error while searching for admin role members. This might indicate that secondary storage is down.",

@@ -39,6 +39,7 @@ public class MessageSubscriptionServiceTest {
   public void before() {
     client = mock(MessageSubscriptionSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
     services =
         new MessageSubscriptionServices(
@@ -58,7 +59,7 @@ public class MessageSubscriptionServiceTest {
     final var searchQuery = SearchQueryBuilders.messageSubscriptionSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -71,7 +72,7 @@ public class MessageSubscriptionServiceTest {
     when(client.getMessageSubscription(any(Long.class))).thenReturn(entity);
 
     // when
-    final var result = services.getByKey(1L, authentication);
+    final var result = services.getByKey(1L, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(entity);
@@ -86,7 +87,7 @@ public class MessageSubscriptionServiceTest {
                 Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
 
     // then
     final var exception =

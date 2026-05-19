@@ -66,7 +66,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             .setMappingRuleId(id)
             .setName(dto.name());
 
-    when(mappingRuleServices.createMappingRule(eq(dto), any()))
+    when(mappingRuleServices.createMappingRule(eq(dto), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -81,7 +81,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isCreated();
 
     // then
-    verify(mappingRuleServices, times(1)).createMappingRule(eq(dto), any());
+    verify(mappingRuleServices, times(1)).createMappingRule(eq(dto), any(), any());
   }
 
   @Test
@@ -279,7 +279,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
 
     final var mappingRecord = new MappingRuleRecord().setMappingRuleId(mappingId);
 
-    when(mappingRuleServices.deleteMappingRule(eq(mappingId), any()))
+    when(mappingRuleServices.deleteMappingRule(eq(mappingId), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -292,7 +292,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(mappingRuleServices, times(1)).deleteMappingRule(eq(mappingId), any());
+    verify(mappingRuleServices, times(1)).deleteMappingRule(eq(mappingId), any(), any());
   }
 
   @ParameterizedTest
@@ -315,7 +315,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             .setMappingRuleId(id)
             .setName(dto.name());
 
-    when(mappingRuleServices.updateMappingRule(eq(dto), any()))
+    when(mappingRuleServices.updateMappingRule(eq(dto), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -330,7 +330,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isOk();
 
     // then
-    verify(mappingRuleServices, times(1)).updateMappingRule(eq(dto), any());
+    verify(mappingRuleServices, times(1)).updateMappingRule(eq(dto), any(), any());
   }
 
   @Test

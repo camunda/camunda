@@ -274,7 +274,8 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             (authentication) ->
                 resourceServices.deployResources(
                     new DeployResourcesRequest(Map.of(classpathResource, bytes), tenantId),
-                    authentication));
+                    authentication,
+                    "default"));
       } else {
         throw new FileNotFoundException(classpathResource);
       }
@@ -304,7 +305,8 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
                     null,
                     Set.of(),
                     null),
-                authentication));
+                authentication,
+                "default"));
   }
 
   private <T> T executeCamundaServiceAnonymously(

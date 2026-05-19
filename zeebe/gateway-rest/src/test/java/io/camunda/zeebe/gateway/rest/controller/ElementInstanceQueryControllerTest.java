@@ -280,7 +280,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchElementInstancesWithEmptyBody() {
     // given
-    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -294,13 +294,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(elementInstanceServices).search(eq(new FlowNodeInstanceQuery.Builder().build()), any());
+    verify(elementInstanceServices)
+        .search(eq(new FlowNodeInstanceQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchElementInstancesWithEmptyQuery() {
     // given
-    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     final var request = "{}";
@@ -318,13 +319,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(elementInstanceServices).search(eq(new FlowNodeInstanceQuery.Builder().build()), any());
+    verify(elementInstanceServices)
+        .search(eq(new FlowNodeInstanceQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchElementInstancesWithAllFilters() {
     // given
-    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     final var request =
@@ -386,13 +388,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             .elementInstanceScopeKeys(2251799813685979L)
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchElementInstancesWithOrFilter() {
     // given
-    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     final var request =
@@ -438,13 +441,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                                     .build())
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   public void shouldSearchElementInstancesWithFullSorting() {
     // given
-    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -508,12 +512,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             .asc()
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldGetElementInstanceByKey() {
-    when(elementInstanceServices.getByKey(any(Long.class), any())).thenReturn(GET_QUERY_RESULT);
+    when(elementInstanceServices.getByKey(any(Long.class), any(), any()))
+        .thenReturn(GET_QUERY_RESULT);
     // when / then
     webClient
         .get()
@@ -524,12 +530,12 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_GET_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(elementInstanceServices).getByKey(eq(23L), any());
+    verify(elementInstanceServices).getByKey(eq(23L), any(), any());
   }
 
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetElementInstanceByKey() {
-    when(elementInstanceServices.getByKey(any(Long.class), any()))
+    when(elementInstanceServices.getByKey(any(Long.class), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
@@ -554,7 +560,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 """,
             JsonCompareMode.STRICT);
 
-    verify(elementInstanceServices).getByKey(eq(5L), any());
+    verify(elementInstanceServices).getByKey(eq(5L), any(), any());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -604,7 +610,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(elementInstanceServices.search(queryCaptor.capture(), any()))
+    when(elementInstanceServices.search(queryCaptor.capture(), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
@@ -623,13 +629,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(elementInstanceServices)
-        .search(eq(new FlowNodeInstanceQuery.Builder().filter(filter).build()), any());
+        .search(eq(new FlowNodeInstanceQuery.Builder().filter(filter).build()), any(), any());
   }
 
   @Test
   void shouldSearchIncidentsForElementInstance() {
     // given
-    when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class), any()))
+    when(elementInstanceServices.searchIncidents(
+            any(Long.class), any(IncidentQuery.class), any(), any()))
         .thenReturn(INCIDENT_SEARCH_RESULT);
     // when / then
     webClient
@@ -645,13 +652,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_INCIDENT_SEARCH_RESPONSE, JsonCompareMode.STRICT);
     verify(elementInstanceServices)
-        .searchIncidents(any(Long.class), any(IncidentQuery.class), any());
+        .searchIncidents(any(Long.class), any(IncidentQuery.class), any(), any());
   }
 
   @Test
   void shouldSearchIncidentsForElementInstanceWithNullBody() {
     // given
-    when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class), any()))
+    when(elementInstanceServices.searchIncidents(
+            any(Long.class), any(IncidentQuery.class), any(), any()))
         .thenReturn(INCIDENT_SEARCH_RESULT);
     // when / then
     webClient
@@ -666,7 +674,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_INCIDENT_SEARCH_RESPONSE, JsonCompareMode.STRICT);
     verify(elementInstanceServices)
-        .searchIncidents(any(Long.class), any(IncidentQuery.class), any());
+        .searchIncidents(any(Long.class), any(IncidentQuery.class), any(), any());
   }
 
   private static Stream<Arguments> provideAdvancedIncidentSearchParameters() {
@@ -767,7 +775,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "filter": %s
             }"""
             .formatted(filterString);
-    when(elementInstanceServices.searchIncidents(eq(123L), incidentQueryCaptor.capture(), any()))
+    when(elementInstanceServices.searchIncidents(
+            eq(123L), incidentQueryCaptor.capture(), any(), any()))
         .thenReturn(SEARCH_INCIDENT_QUERY_RESULT);
 
     // when / then
@@ -786,6 +795,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .consumeWith(result -> assertJsonNonExtensible(result.getResponseBody()));
 
     verify(elementInstanceServices)
-        .searchIncidents(eq(123L), eq(new IncidentQuery.Builder().filter(filter).build()), any());
+        .searchIncidents(
+            eq(123L), eq(new IncidentQuery.Builder().filter(filter).build()), any(), any());
   }
 }

@@ -32,6 +32,7 @@ public class JobServiceTest {
   public void before() {
     client = mock(JobSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
     services =
         new JobServices<>(
@@ -52,7 +53,7 @@ public class JobServiceTest {
     final var searchQuery = SearchQueryBuilders.jobSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

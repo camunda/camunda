@@ -67,7 +67,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
     // when — first request warms up the per-definition handler via the global handler;
     // subsequent requests use the per-definition handler and cycle through all partitions
     for (int i = 0; i < PARTITION_COUNT + 1; i++) {
-      services.createProcessInstance(createRequest(100L), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication, "default").join();
     }
 
     // then — the per-definition handler (requests 2..N) hit every partition
@@ -79,19 +79,19 @@ final class ProcessInstanceRoundRobinDispatchTest {
   void shouldDistributeIndependentlyPerDefinitionKey() {
     // given — warm up per-definition handlers for both definition keys
     final var partitions = capturePartitions();
-    services.createProcessInstance(createRequest(100L), authentication).join();
-    services.createProcessInstance(createRequest(200L), authentication).join();
+    services.createProcessInstance(createRequest(100L), authentication, "default").join();
+    services.createProcessInstance(createRequest(200L), authentication, "default").join();
     partitions.clear();
 
     // when — send PARTITION_COUNT requests for each process definition
     for (int i = 0; i < PARTITION_COUNT; i++) {
-      services.createProcessInstance(createRequest(100L), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication, "default").join();
     }
     final var partitionsA = List.copyOf(partitions);
     partitions.clear();
 
     for (int i = 0; i < PARTITION_COUNT; i++) {
-      services.createProcessInstance(createRequest(200L), authentication).join();
+      services.createProcessInstance(createRequest(200L), authentication, "default").join();
     }
     final var partitionsB = List.copyOf(partitions);
 
@@ -116,7 +116,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
             });
 
     try {
-      services.createProcessInstance(createRequest(100L), authentication).join();
+      services.createProcessInstance(createRequest(100L), authentication, "default").join();
     } catch (final Exception ignored) {
       // expected
     }
@@ -134,7 +134,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
             });
 
     // when — send a second request for the same definition key
-    services.createProcessInstance(createRequest(100L), authentication).join();
+    services.createProcessInstance(createRequest(100L), authentication, "default").join();
 
     // then — the second request used the global handler (not a per-definition one),
     // so its partition is the global handler's next offset, different from the first

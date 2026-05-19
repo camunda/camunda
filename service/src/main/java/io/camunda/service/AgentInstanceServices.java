@@ -44,29 +44,38 @@ public final class AgentInstanceServices
   }
 
   public CompletableFuture<AgentInstanceRecord> createAgentInstance(
-      final AgentInstanceRecord record, final CamundaAuthentication authentication) {
+      final AgentInstanceRecord record,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerCreateAgentInstanceRequest(record), authentication);
   }
 
   public CompletableFuture<AgentInstanceRecord> updateAgentInstance(
-      final AgentInstanceRecord record, final CamundaAuthentication authentication) {
+      final AgentInstanceRecord record,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerUpdateAgentInstanceRequest(record), authentication);
   }
 
   @Override
   public SearchQueryResult<AgentInstanceEntity> search(
-      final AgentInstanceQuery query, final CamundaAuthentication authentication) {
+      final AgentInstanceQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             agentInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, AGENT_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchAgentInstances(query));
   }
 
   public AgentInstanceEntity getByKey(
-      final long agentInstanceKey, final CamundaAuthentication authentication) {
+      final long agentInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             agentInstanceSearchClient
@@ -76,6 +85,7 @@ public final class AgentInstanceServices
                         withAuthorization(
                             AGENT_INSTANCE_READ_AUTHORIZATION,
                             AgentInstanceEntity::processDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getAgentInstance(agentInstanceKey));
   }
 }

@@ -85,7 +85,7 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   protected UserEntity getUser(final CamundaAuthentication authentication) {
     final var username = authentication.authenticatedUsername();
-    return userServices.getUser(username, CamundaAuthentication.anonymous());
+    return userServices.getUser(username, CamundaAuthentication.anonymous(), "default");
   }
 
   protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
@@ -114,7 +114,8 @@ public class BasicCamundaUserService implements CamundaUserService {
     return tenantServices
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
-            CamundaAuthentication.anonymous())
+            CamundaAuthentication.anonymous(),
+            "default")
         .items();
   }
 }

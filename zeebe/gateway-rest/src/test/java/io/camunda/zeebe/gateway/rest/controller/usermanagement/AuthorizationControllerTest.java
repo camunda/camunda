@@ -72,7 +72,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
       final CreateAuthorizationRequest expectedCreateRequest) {
     final var authorizationKey = 1L;
 
-    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class), any()))
+    when(authorizationServices.createAuthorization(
+            any(CreateAuthorizationRequest.class), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new AuthorizationRecord().setAuthorizationKey(authorizationKey)));
@@ -93,7 +94,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .build());
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices).createAuthorization(captor.capture(), any());
+    verify(authorizationServices).createAuthorization(captor.capture(), any(), any());
     final var capturedCreateRequest = captor.getValue();
     assertThat(capturedCreateRequest).isEqualTo(expectedCreateRequest);
   }
@@ -189,7 +190,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
 
-    when(authorizationServices.deleteAuthorization(eq(authorizationKey), any()))
+    when(authorizationServices.deleteAuthorization(eq(authorizationKey), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when
@@ -202,7 +203,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(authorizationServices).deleteAuthorization(eq(authorizationKey), any());
+    verify(authorizationServices).deleteAuthorization(eq(authorizationKey), any(), any());
   }
 
   @ParameterizedTest
@@ -213,7 +214,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     // given
     final long authorizationKey = expectedUpdateRequest.authorizationKey();
 
-    when(authorizationServices.updateAuthorization(any(), any()))
+    when(authorizationServices.updateAuthorization(any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
 
     // when
@@ -229,7 +230,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(UpdateAuthorizationRequest.class);
-    verify(authorizationServices).updateAuthorization(captor.capture(), any());
+    verify(authorizationServices).updateAuthorization(captor.capture(), any(), any());
     final var capturedUpdateRequest = captor.getValue();
     assertThat(capturedUpdateRequest).isEqualTo(expectedUpdateRequest);
   }

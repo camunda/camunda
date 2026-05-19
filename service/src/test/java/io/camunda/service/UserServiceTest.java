@@ -47,6 +47,7 @@ public class UserServiceTest {
   public void before() {
     client = mock(UserSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     brokerClient = mock(BrokerClient.class);
     authentication = mock(CamundaAuthentication.class);
     final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
@@ -74,7 +75,7 @@ public class UserServiceTest {
     final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -90,7 +91,7 @@ public class UserServiceTest {
     when(brokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
-    services.deleteUser(username, authentication);
+    services.deleteUser(username, authentication, "default");
 
     verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
@@ -106,7 +107,7 @@ public class UserServiceTest {
     when(client.getUser(eq("test"))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getUser(entity.username(), authentication);
+    final var searchQueryResult = services.getUser(entity.username(), authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

@@ -14,6 +14,7 @@ import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,10 +35,13 @@ public class FormController {
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{formKey}")
-  public ResponseEntity<FormResult> getFormByKey(@PathVariable("formKey") final Long formKey) {
+  public ResponseEntity<FormResult> getFormByKey(
+      @PathVariable("formKey") final Long formKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       final var form =
-          formServices.getByKey(formKey, authenticationProvider.getCamundaAuthentication());
+          formServices.getByKey(
+              formKey, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toFormItem(form));
     } catch (final Exception e) {

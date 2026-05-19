@@ -64,7 +64,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public CompletableFuture<DeploymentRecord> deployResources(
       final DeployResourcesRequest deployResourcesRequest,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest = new BrokerDeployResourceRequest();
     deployResourcesRequest.resources().forEach(brokerRequest::addResource);
     brokerRequest.setTenantId(deployResourcesRequest.tenantId());
@@ -72,13 +73,15 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   }
 
   public CompletableFuture<ResourceDeletionRecord> deleteResource(
-      final ResourceDeletionRequest request, final CamundaAuthentication authentication) {
+      final ResourceDeletionRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerDeleteResourceRequest()
             .setResourceKey(request.resourceKey())
             .setDeleteHistory(request.deleteHistory());
 
-    enrichResourceDeletionRecordWithHistoryDeletionData(request, brokerRequest);
+    enrichResourceDeletionRecordWithHistoryDeletionData(request, brokerRequest, physicalTenantId);
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -94,12 +97,15 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
    * then be in secondary storage, we retrieve the necessary data here and pass it along the broker.
    */
   private void enrichResourceDeletionRecordWithHistoryDeletionData(
-      final ResourceDeletionRequest request, final BrokerDeleteResourceRequest brokerRequest) {
+      final ResourceDeletionRequest request,
+      final BrokerDeleteResourceRequest brokerRequest,
+      final String physicalTenantId) {
     if (request.deleteHistory()) {
       final var processDefinition =
           processDefinitionSearchClient
               .withSecurityContext(
                   securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()))
+              .withPhysicalTenant(physicalTenantId)
               .searchProcessDefinitions(
                   processDefinitionSearchQuery()
                       .filter(f -> f.processDefinitionKeys(request.resourceKey()))
@@ -116,6 +122,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         CamundaAuthentication.anonymous()))
+                .withPhysicalTenant(physicalTenantId)
                 .searchDecisionRequirements(
                     decisionRequirementsSearchQuery()
                         .filter(f -> f.decisionRequirementsKeys(request.resourceKey()))
@@ -132,29 +139,37 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   }
 
   public CompletableFuture<DeployedResourceEntity> getByKey(
-      final long resourceKey, final CamundaAuthentication authentication) {
-    return fetchDeployedResource(resourceKey, authentication, false, null);
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return fetchDeployedResource(resourceKey, authentication, false, null, physicalTenantId);
   }
 
   public CompletableFuture<DeployedResourceEntity> getContentByKey(
-      final long resourceKey, final CamundaAuthentication authentication) {
-    return fetchDeployedResource(resourceKey, authentication, true, null);
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return fetchDeployedResource(resourceKey, authentication, true, null, physicalTenantId);
   }
 
   public CompletableFuture<DeployedResourceEntity> getContentByKeyFilteredByType(
       final long resourceKey,
       final String resourceType,
-      final CamundaAuthentication authentication) {
-    return fetchDeployedResource(resourceKey, authentication, true, resourceType);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return fetchDeployedResource(resourceKey, authentication, true, resourceType, physicalTenantId);
   }
 
   public SearchQueryResult<DeployedResourceEntity> search(
-      final DeployedResourceQuery query, final CamundaAuthentication authentication) {
+      final DeployedResourceQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     try {
       return deployedResourceSearchClient
           .withSecurityContext(
               securityContextProvider.provideSecurityContext(
                   authentication, RESOURCE_READ_AUTHORIZATION))
+          .withPhysicalTenant(physicalTenantId)
           .searchDeployedResources(query);
     } catch (final CamundaSearchException e) {
       throw ErrorMapper.mapSearchError(e);
@@ -165,10 +180,11 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final long resourceKey,
       final CamundaAuthentication authentication,
       final boolean includeContent,
-      final String resourceTypeFilter) {
+      final String resourceTypeFilter,
+      final String physicalTenantId) {
     if (secondaryStorageEnabled) {
       return fetchFromSecondaryStorage(
-          resourceKey, authentication, includeContent, resourceTypeFilter);
+          resourceKey, authentication, includeContent, resourceTypeFilter, physicalTenantId);
     }
     return fetchFromBroker(resourceKey, authentication, includeContent, resourceTypeFilter);
   }
@@ -177,7 +193,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final long resourceKey,
       final CamundaAuthentication authentication,
       final boolean includeContent,
-      final String resourceTypeFilter) {
+      final String resourceTypeFilter,
+      final String physicalTenantId) {
     final var securityContext =
         securityContextProvider.provideSecurityContext(
             authentication,
@@ -185,7 +202,10 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     return CompletableFuture.supplyAsync(
         () -> {
           try {
-            final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
+            final var client =
+                deployedResourceSearchClient
+                    .withSecurityContext(securityContext)
+                    .withPhysicalTenant(physicalTenantId);
             final DeployedResourceEntity entity =
                 includeContent
                     ? client.getDeployedResource(resourceKey)

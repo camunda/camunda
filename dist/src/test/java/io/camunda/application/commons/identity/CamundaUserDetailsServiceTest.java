@@ -38,7 +38,7 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsIsLoaded() {
     // given
-    when(userService.getUser(any(), any()))
+    when(userService.getUser(any(), any(), any()))
         .thenReturn(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1"));
 
     // when
@@ -52,7 +52,7 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsNotFound() {
     // given
-    when(userService.getUser(any(), any()))
+    when(userService.getUser(any(), any(), any()))
         .thenThrow(new ServiceException("not found", Status.NOT_FOUND));
 
     // when/then

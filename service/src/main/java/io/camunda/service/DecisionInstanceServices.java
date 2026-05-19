@@ -56,13 +56,16 @@ public final class DecisionInstanceServices
    */
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(
-      final DecisionInstanceQuery query, final CamundaAuthentication authentication) {
+      final DecisionInstanceQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, DECISION_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchDecisionInstances(
                     decisionInstanceSearchQuery(
                         q -> q.filter(query.filter()).sort(query.sort()).page(query.page()))));
@@ -77,7 +80,9 @@ public final class DecisionInstanceServices
    *     once
    */
   public DecisionInstanceEntity getById(
-      final String decisionInstanceId, final CamundaAuthentication authentication) {
+      final String decisionInstanceId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionInstanceSearchClient
@@ -87,6 +92,7 @@ public final class DecisionInstanceServices
                         withAuthorization(
                             DECISION_INSTANCE_READ_AUTHORIZATION,
                             DecisionInstanceEntity::decisionDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getDecisionInstance(decisionInstanceId));
   }
 
@@ -101,7 +107,8 @@ public final class DecisionInstanceServices
   public CompletableFuture<HistoryDeletionRecord> deleteDecisionInstance(
       final long decisionEvaluationKey,
       final Long operationReference,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     // Check if the decision instance exists using anonymous authentication.
     // This bypasses authorization checks to distinguish between:
@@ -115,6 +122,7 @@ public final class DecisionInstanceServices
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
                             CamundaAuthentication.anonymous()))
+                    .withPhysicalTenant(physicalTenantId)
                     .searchDecisionInstances(
                         decisionInstanceSearchQuery(
                             q -> q.filter(f -> f.decisionInstanceKeys(decisionEvaluationKey)))));
@@ -143,7 +151,9 @@ public final class DecisionInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> deleteDecisionInstancesBatchOperation(
-      final DecisionInstanceFilter filter, final CamundaAuthentication authentication) {
+      final DecisionInstanceFilter filter,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)

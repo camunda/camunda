@@ -79,7 +79,8 @@ public class DefaultMembershipService implements MembershipPort {
     }
     final var ids =
         mappingRuleServices
-            .getMatchingMappingRules(query.tokenClaims(), CamundaAuthentication.anonymous())
+            .getMatchingMappingRules(
+                query.tokenClaims(), CamundaAuthentication.anonymous(), "default")
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
     if (ids.isEmpty()) {
@@ -101,7 +102,7 @@ public class DefaultMembershipService implements MembershipPort {
     final var owners = buildOwners(query);
     final var ids =
         groupServices
-            .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+            .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous(), "default")
             .stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
@@ -116,7 +117,7 @@ public class DefaultMembershipService implements MembershipPort {
     }
     final var ids =
         roleServices
-            .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+            .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous(), "default")
             .stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
@@ -133,7 +134,7 @@ public class DefaultMembershipService implements MembershipPort {
       owners.put(EntityType.ROLE, new HashSet<>(query.resolvedRoleIds()));
     }
     return tenantServices
-        .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+        .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous(), "default")
         .stream()
         .map(TenantEntity::tenantId)
         .toList();

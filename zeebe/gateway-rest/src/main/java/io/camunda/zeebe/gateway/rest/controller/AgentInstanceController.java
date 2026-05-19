@@ -24,6 +24,7 @@ import io.camunda.service.AgentInstanceServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -53,29 +54,34 @@ public class AgentInstanceController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createAgentInstance(
-      @RequestBody final AgentInstanceCreationRequest request) {
+      @RequestBody final AgentInstanceCreationRequest request,
+      @PhysicalTenantId final String physicalTenantId) {
     return mapper
         .toCreateAgentInstanceRecord(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> create(r, physicalTenantId));
   }
 
   @CamundaPatchMapping(path = "/{agentInstanceKey}")
   public CompletableFuture<ResponseEntity<Object>> updateAgentInstance(
       @PathVariable final String agentInstanceKey,
-      @RequestBody final AgentInstanceUpdateRequest request) {
+      @RequestBody final AgentInstanceUpdateRequest request,
+      @PhysicalTenantId final String physicalTenantId) {
     return mapper
         .toUpdateAgentInstanceRecord(agentInstanceKey, request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> update(r, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{agentInstanceKey}")
   public ResponseEntity<AgentInstanceResult> getAgentInstance(
-      @PathVariable("agentInstanceKey") final long agentInstanceKey) {
+      @PathVariable("agentInstanceKey") final long agentInstanceKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       final var agentInstance =
           agentInstanceServices.getByKey(
-              agentInstanceKey, authenticationProvider.getCamundaAuthentication());
+              agentInstanceKey,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toAgentInstanceResult(agentInstance));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -85,29 +91,34 @@ public class AgentInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<AgentInstanceSearchQueryResult> searchAgentInstances(
-      @RequestBody(required = false) final AgentInstanceSearchQuery request) {
+      @RequestBody(required = false) final AgentInstanceSearchQuery request,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toAgentInstanceQuery(request)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> create(final AgentInstanceRecord record) {
+  private CompletableFuture<ResponseEntity<Object>> create(
+      final AgentInstanceRecord record, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> agentInstanceServices.createAgentInstance(record, authentication),
+        () -> agentInstanceServices.createAgentInstance(record, authentication, physicalTenantId),
         mapper::toAgentInstanceCreationResult,
         HttpStatus.OK);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> update(final AgentInstanceRecord record) {
+  private CompletableFuture<ResponseEntity<Object>> update(
+      final AgentInstanceRecord record, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> agentInstanceServices.updateAgentInstance(record, authentication));
+        () -> agentInstanceServices.updateAgentInstance(record, authentication, physicalTenantId));
   }
 
-  private ResponseEntity<AgentInstanceSearchQueryResult> search(final AgentInstanceQuery query) {
+  private ResponseEntity<AgentInstanceSearchQueryResult> search(
+      final AgentInstanceQuery query, final String physicalTenantId) {
     try {
       final var result =
-          agentInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
+          agentInstanceServices.search(
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAgentInstanceSearchQueryResponse(result));
     } catch (final Exception e) {

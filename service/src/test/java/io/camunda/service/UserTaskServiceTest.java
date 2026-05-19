@@ -100,7 +100,9 @@ public class UserTaskServiceTest {
 
       // when
       final ThrowingCallable executable =
-          () -> services.searchUserTaskVariables(1L, variableSearchQuery().build(), authentication);
+          () ->
+              services.searchUserTaskVariables(
+                  1L, variableSearchQuery().build(), authentication, "default");
 
       // then
       final var exception =
@@ -108,8 +110,8 @@ public class UserTaskServiceTest {
               assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
       assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
-      verify(elementInstanceServices, never()).search(any(), any());
-      verify(variableServices, never()).search(any(), any());
+      verify(elementInstanceServices, never()).search(any(), any(), any());
+      verify(variableServices, never()).search(any(), any(), any());
     }
 
     @Test
@@ -126,14 +128,14 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any())).thenReturn(SearchQueryResult.of(variable));
+      when(variableServices.search(any(), any(), any())).thenReturn(SearchQueryResult.of(variable));
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
           services.searchUserTaskVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then
       assertThat(searchQueryResult.total()).isEqualTo(1);
@@ -160,15 +162,15 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(outerVar, innerVar));
 
       // when
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then — innermost scope (3) wins, only one "city" returned
       assertThat(result.total()).isEqualTo(1);
@@ -193,15 +195,15 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(rootVar, midVar, leafVar));
 
       // when
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then — leaf (innermost) wins
       assertThat(result.total()).isEqualTo(1);
@@ -228,15 +230,15 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then — 3 unique names after dedup, total reflects deduplicated count
       assertThat(result.total()).isEqualTo(3);
@@ -267,17 +269,18 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by name ASC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by name ASC after deduplication
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.name().asc())));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(
+              entity.userTaskKey(), query, authentication, "default");
 
       // then — 3 unique variables after dedup, sorted by name ASC
       assertThat(result.total()).isEqualTo(3);
@@ -306,17 +309,18 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by value DESC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by value DESC after deduplication
       final var query =
           VariableQuery.of(q -> q.sort(SortOptionBuilders.variable(s -> s.value().desc())));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(
+              entity.userTaskKey(), query, authentication, "default");
 
       // then — 3 unique variables, sorted by value DESC (zebra > charlie > bravo)
       assertThat(result.total()).isEqualTo(3);
@@ -346,10 +350,10 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by name ASC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by name ASC, then paginate from=1, size=2
@@ -359,7 +363,8 @@ public class UserTaskServiceTest {
                   q.sort(SortOptionBuilders.variable(s -> s.name().asc()))
                       .page(p -> p.from(1).size(2)));
       final SearchQueryResult<VariableEntity> result =
-          services.searchUserTaskEffectiveVariables(entity.userTaskKey(), query, authentication);
+          services.searchUserTaskEffectiveVariables(
+              entity.userTaskKey(), query, authentication, "default");
 
       // then — 4 unique after dedup, page returns items at index 1 and 2 (b-inner, c)
       assertThat(result.total()).isEqualTo(4);
@@ -387,16 +392,16 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
       // The search backend returns cursors, but the early-exit must strip them
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
 
       // when
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then — items are returned but cursors are stripped (null)
       assertThat(result.total()).isEqualTo(2);
@@ -422,16 +427,16 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(
-              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any(), any()))
           .thenReturn(flowNodeInstanceEntity);
       // The search backend returns cursors, but the service should strip them
-      when(variableServices.search(any(), any()))
+      when(variableServices.search(any(), any(), any()))
           .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
 
       // when
       final SearchQueryResult<VariableEntity> result =
           services.searchUserTaskEffectiveVariables(
-              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+              entity.userTaskKey(), variableSearchQuery().build(), authentication, "default");
 
       // then — items are returned but cursors are always null
       assertThat(result.total()).isEqualTo(2);
@@ -454,7 +459,9 @@ public class UserTaskServiceTest {
 
       // when
       final ThrowingCallable executable =
-          () -> services.searchUserTaskAuditLogs(1L, auditLogSearchQuery().build(), authentication);
+          () ->
+              services.searchUserTaskAuditLogs(
+                  1L, auditLogSearchQuery().build(), authentication, "default");
 
       // then
       final var exception =
@@ -462,8 +469,8 @@ public class UserTaskServiceTest {
               assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
       assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
-      verify(elementInstanceServices, never()).search(any(), any());
-      verify(auditLogServices, never()).search(any(), any());
+      verify(elementInstanceServices, never()).search(any(), any(), any());
+      verify(auditLogServices, never()).search(any(), any(), any());
     }
 
     @Test
@@ -474,13 +481,14 @@ public class UserTaskServiceTest {
       final var outputEntity = Instancio.create(AuditLogEntity.class);
       when(auditLogServices.search(
               eq(auditLogSearchQuery(q -> q.filter(f -> f.userTaskKeys(entity.userTaskKey())))),
+              any(),
               any()))
           .thenReturn(SearchQueryResult.of(outputEntity));
 
       // when
       final SearchQueryResult<AuditLogEntity> searchQueryResult =
           services.searchUserTaskAuditLogs(
-              entity.userTaskKey(), auditLogSearchQuery().build(), authentication);
+              entity.userTaskKey(), auditLogSearchQuery().build(), authentication, "default");
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(outputEntity);
@@ -497,10 +505,10 @@ public class UserTaskServiceTest {
           Instancio.of(FormEntity.class).set(field(FormEntity::formKey), entity.formKey()).create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(formServices.getByKey(eq(entity.formKey()), any())).thenReturn(form);
+      when(formServices.getByKey(eq(entity.formKey()), any(), any())).thenReturn(form);
 
       // when
-      final var result = services.getUserTaskForm(entity.userTaskKey(), authentication);
+      final var result = services.getUserTaskForm(entity.userTaskKey(), authentication, "default");
 
       // then
       assertThat(result).isPresent();
@@ -516,7 +524,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
       // when
-      final var result = services.getUserTaskForm(1L, authentication);
+      final var result = services.getUserTaskForm(1L, authentication, "default");
 
       // then
       assertThat(result).isEmpty();
@@ -532,7 +540,8 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
-      final var searchQueryResult = services.getByKey(entity.userTaskKey(), authentication);
+      final var searchQueryResult =
+          services.getByKey(entity.userTaskKey(), authentication, "default");
 
       assertThat(searchQueryResult).isEqualTo(entity);
     }
@@ -550,7 +559,7 @@ public class UserTaskServiceTest {
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication, "default");
 
       assertThat(foundEntity.name()).isEqualTo("cached name");
     }
@@ -565,7 +574,7 @@ public class UserTaskServiceTest {
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication, "default");
 
       assertThat(foundEntity.processName()).isEqualTo("ProcessName");
     }
@@ -579,7 +588,7 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication, "default");
 
       assertThat(foundEntity.name()).isEqualTo(entity.elementId());
       assertThat(foundEntity.processName()).isEqualTo(entity.processName());
@@ -595,7 +604,7 @@ public class UserTaskServiceTest {
                   Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
 
       final ThrowingCallable executable =
-          () -> services.getByKey(entity.userTaskKey(), authentication);
+          () -> services.getByKey(entity.userTaskKey(), authentication, "default");
 
       final var exception =
           (ServiceException)
@@ -613,7 +622,8 @@ public class UserTaskServiceTest {
       final var entity = Instancio.create(UserTaskEntity.class);
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+      final var searchQueryResult =
+          services.search(UserTaskQuery.of(q -> q), authentication, "default");
 
       assertThat(searchQueryResult.items()).contains(entity);
     }
@@ -628,7 +638,8 @@ public class UserTaskServiceTest {
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+      final var searchQueryResult =
+          services.search(UserTaskQuery.of(q -> q), authentication, "default");
 
       assertThat(searchQueryResult.items()).contains(entity.withName("cached name"));
     }
@@ -643,7 +654,8 @@ public class UserTaskServiceTest {
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+      final var searchQueryResult =
+          services.search(UserTaskQuery.of(q -> q), authentication, "default");
 
       assertThat(searchQueryResult.items()).contains(entity.withProcessName("ProcessName"));
     }
@@ -654,7 +666,8 @@ public class UserTaskServiceTest {
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
+      final var searchQueryResult =
+          services.search(UserTaskQuery.of(q -> q), authentication, "default");
 
       assertThat(searchQueryResult.items()).contains(entity.withName(entity.elementId()));
     }

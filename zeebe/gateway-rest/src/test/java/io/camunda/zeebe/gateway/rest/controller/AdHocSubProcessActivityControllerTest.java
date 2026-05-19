@@ -59,7 +59,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     @ValueSource(booleans = {true, false})
     void shouldActivateActivities(final boolean cancelRemainingInstances) {
       when(adHocSubProcessActivityServices.activateActivities(
-              any(AdHocSubProcessActivateActivitiesRequest.class), any()))
+              any(AdHocSubProcessActivateActivitiesRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
@@ -116,13 +116,14 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                               assertThat(element.variables()).isEmpty();
                             });
                   }),
+              any(),
               any());
     }
 
     @Test
     void shouldActivateActivitiesWithMissingCancelRemainingActivitiesFlag() {
       when(adHocSubProcessActivityServices.activateActivities(
-              any(AdHocSubProcessActivateActivitiesRequest.class), any()))
+              any(AdHocSubProcessActivateActivitiesRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
@@ -157,6 +158,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                               assertThat(element.variables()).isEmpty();
                             });
                   }),
+              any(),
               any());
     }
 

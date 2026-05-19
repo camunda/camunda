@@ -70,6 +70,7 @@ class DecisionInstanceServiceTest {
     brokerClient = mock(BrokerClient.class);
     securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     services =
         new DecisionInstanceServices(
@@ -92,7 +93,7 @@ class DecisionInstanceServiceTest {
     final DecisionInstanceQuery query = SearchQueryBuilders.decisionInstanceSearchQuery().build();
 
     // when
-    final var response = services.search(query, authentication);
+    final var response = services.search(query, authentication, "default");
 
     // then
     assertThat(response).isEqualTo(result);
@@ -109,7 +110,7 @@ class DecisionInstanceServiceTest {
                     .page(p -> p.size(20)));
 
     // when
-    services.search(query, authentication);
+    services.search(query, authentication, "default");
 
     // then
     verify(client)
@@ -136,7 +137,8 @@ class DecisionInstanceServiceTest {
             services.search(
                 decisionInstanceSearchQuery(
                     q -> q.filter(f -> f.decisionInstanceKeys(DECISION_INSTANCE_KEY))),
-                authentication);
+                authentication,
+                "default");
 
     // then
     final var exception =
@@ -162,7 +164,7 @@ class DecisionInstanceServiceTest {
     when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
 
     // when
-    final var result = services.getById(DECISION_INSTANCE_ID, authentication);
+    final var result = services.getById(DECISION_INSTANCE_ID, authentication, "default");
 
     // then
     verify(client).getDecisionInstance(DECISION_INSTANCE_ID);
@@ -198,7 +200,7 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
+    services.deleteDecisionInstance(decisionInstanceKey, null, authentication, "default").join();
 
     // then
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
@@ -217,7 +219,10 @@ class DecisionInstanceServiceTest {
 
     // when/then
     assertThatThrownBy(
-            () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
+            () ->
+                services
+                    .deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication, "default")
+                    .join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found")
         .extracting(e -> ((ServiceException) e).getStatus())
@@ -235,7 +240,10 @@ class DecisionInstanceServiceTest {
 
     // when/then
     assertThatThrownBy(
-            () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
+            () ->
+                services
+                    .deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication, "default")
+                    .join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
   }
@@ -264,7 +272,7 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
+    services.deleteDecisionInstance(decisionInstanceKey, null, authentication, "default").join();
 
     // then - verify that anonymous authentication was used for the existence check
     final var authCaptor = ArgumentCaptor.forClass(CamundaAuthentication.class);
@@ -296,7 +304,7 @@ class DecisionInstanceServiceTest {
 
     // when
     final var result =
-        services.deleteDecisionInstancesBatchOperation(filter, authentication).join();
+        services.deleteDecisionInstancesBatchOperation(filter, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);

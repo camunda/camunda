@@ -31,7 +31,9 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
   }
 
   public CompletableFuture<ExpressionRecord> evaluateExpression(
-      final ExpressionEvaluationRequest request, final CamundaAuthentication authentication) {
+      final ExpressionEvaluationRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerExpressionEvaluationRequest()
             .setExpression(request.expression())

@@ -72,7 +72,7 @@ public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any(), any());
   }
 
   @ParameterizedTest
@@ -113,6 +113,6 @@ public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any(), any());
   }
 }

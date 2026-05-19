@@ -67,7 +67,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     when(clusterVariableEntity.scope()).thenReturn(ClusterVariableScope.GLOBAL);
 
     when(clusterVariableServices.getGloballyScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(clusterVariableEntity);
 
     // when / then
@@ -80,7 +80,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .getGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
+        .getGloballyScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
@@ -119,7 +119,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldCreateGlobalClusterVariable() {
     // given
     when(clusterVariableServices.createGloballyScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     final var request =
@@ -141,7 +141,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .createGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
+        .createGloballyScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("bar");
@@ -261,7 +261,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldDeleteGlobalClusterVariable() {
     // given
     when(clusterVariableServices.deleteGloballyScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     // when / then
@@ -274,7 +274,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isNoContent();
 
     verify(clusterVariableServices)
-        .deleteGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
+        .deleteGloballyScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
@@ -285,7 +285,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldUpdateGlobalClusterVariable() {
     // given
     when(clusterVariableServices.updateGloballyScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     final var request =
@@ -306,7 +306,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .updateGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
+        .updateGloballyScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("newValue");
@@ -420,7 +420,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     when(clusterVariableEntity.tenantId()).thenReturn("tenant1");
 
     when(clusterVariableServices.getTenantScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(clusterVariableEntity);
 
     // when / then
@@ -433,7 +433,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .getTenantScopedClusterVariable(createRequestCaptor.capture(), any());
+        .getTenantScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
@@ -500,7 +500,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldCreateTenantClusterVariable() {
     // given
     when(clusterVariableServices.createTenantScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     final var request =
@@ -522,7 +522,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .createTenantScopedClusterVariable(createRequestCaptor.capture(), any());
+        .createTenantScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("bar");
@@ -679,7 +679,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldDeleteTenantClusterVariable() {
     // given
     when(clusterVariableServices.deleteTenantScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     // when / then
@@ -692,7 +692,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isNoContent();
 
     verify(clusterVariableServices)
-        .deleteTenantScopedClusterVariable(createRequestCaptor.capture(), any());
+        .deleteTenantScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
@@ -703,7 +703,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   void shouldUpdateTenantClusterVariable() {
     // given
     when(clusterVariableServices.updateTenantScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
+            any(ClusterVariableRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
 
     final var request =
@@ -724,7 +724,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .isOk();
 
     verify(clusterVariableServices)
-        .updateTenantScopedClusterVariable(createRequestCaptor.capture(), any());
+        .updateTenantScopedClusterVariable(createRequestCaptor.capture(), any(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("newValue");

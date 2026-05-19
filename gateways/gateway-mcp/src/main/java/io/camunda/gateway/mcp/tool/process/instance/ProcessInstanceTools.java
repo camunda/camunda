@@ -63,7 +63,9 @@ public class ProcessInstanceTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
               processInstanceServices.search(
-                  processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
+                  processInstanceQuery.get(),
+                  authenticationProvider.getCamundaAuthentication(),
+                  "default")));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -84,7 +86,9 @@ public class ProcessInstanceTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstance(
               processInstanceServices.getByKey(
-                  processInstanceKey, authenticationProvider.getCamundaAuthentication())));
+                  processInstanceKey,
+                  authenticationProvider.getCamundaAuthentication(),
+                  "default")));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -117,13 +121,13 @@ public class ProcessInstanceTools {
       if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
             processInstanceServices.createProcessInstanceWithResult(
-                processInstanceCreateRequest, camundaAuthentication),
+                processInstanceCreateRequest, camundaAuthentication, "default"),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
           processInstanceServices.createProcessInstance(
-              processInstanceCreateRequest, camundaAuthentication),
+              processInstanceCreateRequest, camundaAuthentication, "default"),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

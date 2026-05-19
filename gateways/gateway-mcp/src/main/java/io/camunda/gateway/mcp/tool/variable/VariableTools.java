@@ -72,7 +72,9 @@ public class VariableTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               variableServices.search(
-                  variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
+                  variableSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication(),
+                  "default"),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -92,7 +94,7 @@ public class VariableTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableItem(
               variableServices.getByKey(
-                  variableKey, authenticationProvider.getCamundaAuthentication())));
+                  variableKey, authenticationProvider.getCamundaAuthentication(), "default")));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

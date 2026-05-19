@@ -172,7 +172,7 @@ public class AuditLogControllerTest extends RestControllerTest {
   void shouldSearchAuditLogsWithEmptyBody() {
     // given
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any(), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -186,7 +186,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     final var captor = ArgumentCaptor.forClass(AuditLogQuery.class);
-    verify(auditLogServices).search(captor.capture(), any());
+    verify(auditLogServices).search(captor.capture(), any(), any());
     assertThat(captor.getValue()).isNotNull();
   }
 
@@ -194,7 +194,7 @@ public class AuditLogControllerTest extends RestControllerTest {
   void shouldGetAuditLogByKey() {
     // given
     final var auditLogKey = "123";
-    when(auditLogServices.getAuditLog(eq(auditLogKey), any())).thenReturn(AUDIT_LOG_ENTITY);
+    when(auditLogServices.getAuditLog(eq(auditLogKey), any(), any())).thenReturn(AUDIT_LOG_ENTITY);
 
     // when/then
     webClient
@@ -207,7 +207,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_GET_BY_KEY_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(auditLogServices).getAuditLog(eq(auditLogKey), any());
+    verify(auditLogServices).getAuditLog(eq(auditLogKey), any(), any());
   }
 
   @Test
@@ -227,7 +227,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         }
         """;
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any(), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -256,7 +256,8 @@ public class AuditLogControllerTest extends RestControllerTest {
                     AuditLogCategoryEnum.DEPLOYED_RESOURCES))
             .results(AuditLogResultConverter.toInternalResultAsString(AuditLogResultEnum.SUCCESS))
             .build();
-    verify(auditLogServices).search(eq(new AuditLogQuery.Builder().filter(filter).build()), any());
+    verify(auditLogServices)
+        .search(eq(new AuditLogQuery.Builder().filter(filter).build()), any(), any());
   }
 
   @Test
@@ -296,7 +297,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any());
+    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any(), any());
   }
 
   @Test
@@ -318,7 +319,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         }
         """;
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any(), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -344,6 +345,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                             .asc()
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -387,6 +389,6 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any());
+    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any(), any());
   }
 }

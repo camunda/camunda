@@ -34,6 +34,7 @@ public class AuthorizationServiceTest {
     authentication = mock(CamundaAuthentication.class);
     client = mock(AuthorizationSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     services =
         new AuthorizationServices(
             mock(BrokerClient.class),
@@ -53,7 +54,7 @@ public class AuthorizationServiceTest {
     final var searchQuery = SearchQueryBuilders.authorizationSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -67,7 +68,7 @@ public class AuthorizationServiceTest {
 
     // when
     final var searchQueryResult =
-        services.getAuthorization(entity.authorizationKey(), authentication);
+        services.getAuthorization(entity.authorizationKey(), authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

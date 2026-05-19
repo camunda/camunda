@@ -241,7 +241,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var tenantId = "tenant-id";
     final var tenantDescription = "Tenant Description";
     final var tenant = new TenantEntity(100L, tenantId, tenantName, tenantDescription);
-    when(tenantServices.getById(eq(tenant.tenantId()), any())).thenReturn(tenant);
+    when(tenantServices.getById(eq(tenant.tenantId()), any(), any())).thenReturn(tenant);
 
     // when
     webClient
@@ -264,7 +264,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(tenantServices, times(1)).getById(eq(tenant.tenantId()), any());
+    verify(tenantServices, times(1)).getById(eq(tenant.tenantId()), any(), any());
   }
 
   @Test
@@ -272,7 +272,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantId = "non-existing-tenant";
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-    when(tenantServices.getById(eq(tenantId), any()))
+    when(tenantServices.getById(eq(tenantId), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -300,13 +300,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(tenantServices, times(1)).getById(eq(tenantId), any());
+    verify(tenantServices, times(1)).getById(eq(tenantId), any(), any());
   }
 
   @Test
   void shouldSearchTenantsWithEmptyQuery() {
     // given
-    when(tenantServices.search(any(TenantQuery.class), any()))
+    when(tenantServices.search(any(TenantQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(3)
@@ -330,13 +330,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(tenantServices).search(eq(new TenantQuery.Builder().build()), any());
+    verify(tenantServices).search(eq(new TenantQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchTenantsWithSorting() {
     // given
-    when(tenantServices.search(any(TenantQuery.class), any()))
+    when(tenantServices.search(any(TenantQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(TENANT_ENTITIES.size())
@@ -371,13 +371,14 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 new TenantQuery.Builder()
                     .sort(TenantSort.of(builder -> builder.tenantId().asc()))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchTenantMappingsWithSorting() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPING_ENTITIES.size())
@@ -410,7 +411,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchTenantMappingsWithEmptyQuery() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPING_ENTITIES.size())
@@ -442,7 +443,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchTenantRolesWithSorting() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
@@ -475,7 +476,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchTenantRolesWithEmptyQuery() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
@@ -523,13 +524,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(tenantServices, never()).search(any(TenantQuery.class), any());
+    verify(tenantServices, never()).search(any(TenantQuery.class), any(), any());
   }
 
   @Test
   void shouldListMembersOfTypeClient() {
     // given
-    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any()))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
@@ -575,7 +576,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeUser() {
     // given
-    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any()))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
@@ -621,7 +622,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeGroup() {
     // given
-    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any()))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)

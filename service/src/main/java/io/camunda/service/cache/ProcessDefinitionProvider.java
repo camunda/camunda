@@ -35,7 +35,7 @@ public class ProcessDefinitionProvider {
     try {
       final var processDefinition =
           processDefinitionServices.getByKey(
-              processDefinitionKey, CamundaAuthentication.anonymous());
+              processDefinitionKey, CamundaAuthentication.anonymous(), "default");
       return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
@@ -63,7 +63,8 @@ public class ProcessDefinitionProvider {
                       q.filter(f -> f.processDefinitionKeys(keysList))
                           .page(p -> p.size(keysList.size()))
                           .resultConfig(c -> c.includeXml(true))),
-              CamundaAuthentication.anonymous());
+              CamundaAuthentication.anonymous(),
+              "default");
 
       if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn(

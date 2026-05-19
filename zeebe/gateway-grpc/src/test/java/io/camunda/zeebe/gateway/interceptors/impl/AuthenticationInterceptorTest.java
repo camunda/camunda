@@ -78,7 +78,7 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
@@ -104,7 +104,7 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(
@@ -127,7 +127,7 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
     new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
@@ -150,7 +150,7 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
@@ -619,7 +619,7 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
@@ -654,7 +654,7 @@ public class AuthenticationInterceptorTest {
     // not demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1b");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches("demo", "demo")).thenReturn(true);
@@ -688,7 +688,7 @@ public class AuthenticationInterceptorTest {
     final var capturingCall = new CloseStatusCapturingServerCall();
     final Metadata metadata = new Metadata();
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any(), any()))
+    when(userServices.search(any(), any(), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches("demo", "demo")).thenReturn(true);

@@ -28,6 +28,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
@@ -55,17 +56,18 @@ public class ProcessDefinitionController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitions(
-      @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
+      @RequestBody(required = false) final ProcessDefinitionSearchQuery query,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   private ResponseEntity<ProcessDefinitionSearchQueryResult> search(
-      final ProcessDefinitionQuery query) {
+      final ProcessDefinitionQuery query, final String physicalTenantId) {
     try {
       final var result =
           processDefinitionServices.search(
-              query, authenticationProvider.getCamundaAuthentication());
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -76,7 +78,8 @@ public class ProcessDefinitionController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processDefinitionKey}")
   public ResponseEntity<Object> getByKey(
-      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       // Success case: Return the left side with the ProcessDefinitionEntity wrapped in
       // ResponseEntity
@@ -84,7 +87,9 @@ public class ProcessDefinitionController {
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
                   processDefinitionServices.getByKey(
-                      processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
+                      processDefinitionKey,
+                      authenticationProvider.getCamundaAuthentication(),
+                      physicalTenantId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -95,11 +100,14 @@ public class ProcessDefinitionController {
       path = "/{processDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getProcessDefinitionXml(
-      @PathVariable("processDefinitionKey") final long processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final long processDefinitionKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       return processDefinitionServices
           .getProcessDefinitionXml(
-              processDefinitionKey, authenticationProvider.getCamundaAuthentication())
+              processDefinitionKey,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId)
           .map(
               s ->
                   ResponseEntity.ok()
@@ -114,11 +122,14 @@ public class ProcessDefinitionController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processDefinitionKey}/form")
   public ResponseEntity<FormResult> getStartProcessForm(
-      @PathVariable("processDefinitionKey") final long processDefinitionKey) {
+      @PathVariable("processDefinitionKey") final long processDefinitionKey,
+      @PhysicalTenantId final String physicalTenantId) {
     try {
       return processDefinitionServices
           .getProcessDefinitionStartForm(
-              processDefinitionKey, authenticationProvider.getCamundaAuthentication())
+              processDefinitionKey,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId)
           .map(SearchQueryResponseMapper::toFormItem)
           .map(s -> ResponseEntity.ok().body(s))
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -131,9 +142,12 @@ public class ProcessDefinitionController {
   @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/element-instances")
   public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       @PathVariable("processDefinitionKey") final long processDefinitionKey,
-      @RequestBody(required = false) final ProcessDefinitionElementStatisticsQuery query) {
+      @RequestBody(required = false) final ProcessDefinitionElementStatisticsQuery query,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(processDefinitionKey, query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            filter -> elementStatistics(filter, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
@@ -141,37 +155,44 @@ public class ProcessDefinitionController {
   public ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
       messageSubscriptionStatistics(
           @RequestBody(required = false)
-              final ProcessDefinitionMessageSubscriptionStatisticsQuery searchRequest) {
+              final ProcessDefinitionMessageSubscriptionStatisticsQuery searchRequest,
+          @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toProcessDefinitionMessageSubscriptionStatisticsQuery(
             searchRequest)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getMessageSubscriptionStatistics);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> getMessageSubscriptionStatistics(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/process-instances")
   public ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult> processInstanceStatistics(
-      @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query) {
+      @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getProcessDefinitionInstanceStatistics);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> getProcessDefinitionInstanceStatistics(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/process-instances-by-version")
   public ResponseEntity<ProcessDefinitionInstanceVersionStatisticsQueryResult>
       processInstanceVersionStatistics(
-          @RequestBody() final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+          @RequestBody() final ProcessDefinitionInstanceVersionStatisticsQuery query,
+          @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            this::searchProcessDefinitionInstanceVersionStatistics);
+            q -> searchProcessDefinitionInstanceVersionStatistics(q, physicalTenantId));
   }
 
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
+      final ProcessDefinitionStatisticsFilter filter, final String physicalTenantId) {
     try {
       final var result =
           processDefinitionServices.elementStatistics(
-              filter, authenticationProvider.getCamundaAuthentication());
+              filter, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
     } catch (final Exception e) {
@@ -181,11 +202,12 @@ public class ProcessDefinitionController {
 
   private ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult>
       getProcessDefinitionInstanceStatistics(
-          final io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery query) {
+          final io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery query,
+          final String physicalTenantId) {
     try {
       final var result =
           processDefinitionServices.getProcessDefinitionInstanceStatistics(
-              query, authenticationProvider.getCamundaAuthentication());
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
     } catch (final Exception e) {
@@ -195,11 +217,12 @@ public class ProcessDefinitionController {
 
   private ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
       getMessageSubscriptionStatistics(
-          final io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
+          final io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery query,
+          final String physicalTenantId) {
     try {
       final var result =
           processDefinitionServices.getProcessDefinitionMessageSubscriptionStatistics(
-              query, authenticationProvider.getCamundaAuthentication());
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
               result));
@@ -210,11 +233,12 @@ public class ProcessDefinitionController {
 
   private ResponseEntity<ProcessDefinitionInstanceVersionStatisticsQueryResult>
       searchProcessDefinitionInstanceVersionStatistics(
-          final io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery query) {
+          final io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery query,
+          final String physicalTenantId) {
     try {
       final var result =
           processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
-              query, authenticationProvider.getCamundaAuthentication());
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceVersionStatisticsQueryResult(result));
     } catch (final Exception e) {

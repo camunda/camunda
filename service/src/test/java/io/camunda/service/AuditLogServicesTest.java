@@ -80,6 +80,7 @@ class AuditLogServicesTest {
     MockitoAnnotations.openMocks(this);
 
     when(auditLogSearchClient.withSecurityContext(any())).thenReturn(auditLogSearchClient);
+    when(auditLogSearchClient.withPhysicalTenant(any())).thenReturn(auditLogSearchClient);
 
     auditLogServices =
         new AuditLogServices(
@@ -99,7 +100,7 @@ class AuditLogServicesTest {
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final var result = auditLogServices.search(query, authentication);
+    final var result = auditLogServices.search(query, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(searchResult);
@@ -117,7 +118,7 @@ class AuditLogServicesTest {
     when(auditLogSearchClient.getAuditLog(key)).thenReturn(AUDIT_LOG_ENTITY);
 
     // when
-    final var result = auditLogServices.getAuditLog(key, authentication);
+    final var result = auditLogServices.getAuditLog(key, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(AUDIT_LOG_ENTITY);
@@ -132,7 +133,8 @@ class AuditLogServicesTest {
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final ThrowingCallable executeSearch = () -> auditLogServices.search(query, authentication);
+    final ThrowingCallable executeSearch =
+        () -> auditLogServices.search(query, authentication, "default");
 
     // then
     final var exception =
@@ -153,7 +155,7 @@ class AuditLogServicesTest {
 
     // when
     final ThrowingCallable executeGetByKey =
-        () -> auditLogServices.getAuditLog(key, authentication);
+        () -> auditLogServices.getAuditLog(key, authentication, "default");
 
     // then
     final var exception =

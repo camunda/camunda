@@ -108,7 +108,7 @@ class VariableToolsTest extends OperationalToolsTest {
     @Test
     void shouldGetVariableByKey() {
       // given
-      when(variableServices.getByKey(any(), any())).thenReturn(VARIABLE_ENTITY);
+      when(variableServices.getByKey(any(), any(), any())).thenReturn(VARIABLE_ENTITY);
 
       // when
       final CallToolResult result =
@@ -125,7 +125,7 @@ class VariableToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), VariableResult.class);
       assertExampleVariable(variable);
 
-      verify(variableServices).getByKey(eq(123L), any());
+      verify(variableServices).getByKey(eq(123L), any(), any());
 
       assertTextContentFallback(result);
     }
@@ -133,7 +133,7 @@ class VariableToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailGetVariableByKeyOnException() {
       // given
-      when(variableServices.getByKey(any(), any()))
+      when(variableServices.getByKey(any(), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -223,7 +223,7 @@ class VariableToolsTest extends OperationalToolsTest {
     @Test
     void shouldSearchVariablesWithNonTruncatedValue() {
       // given
-      when(variableServices.search(any(VariableQuery.class), any()))
+      when(variableServices.search(any(VariableQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
@@ -269,7 +269,7 @@ class VariableToolsTest extends OperationalToolsTest {
     @Test
     void shouldSearchVariablesWithFilterSortAndPaging() {
       // given
-      when(variableServices.search(any(VariableQuery.class), any()))
+      when(variableServices.search(any(VariableQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
@@ -307,7 +307,7 @@ class VariableToolsTest extends OperationalToolsTest {
                 assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
               });
 
-      verify(variableServices).search(queryCaptor.capture(), any());
+      verify(variableServices).search(queryCaptor.capture(), any(), any());
       final VariableQuery capturedQuery = queryCaptor.getValue();
 
       final VariableFilter filter = capturedQuery.filter();
@@ -336,7 +336,7 @@ class VariableToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailSearchVariablesOnException() {
       // given
-      when(variableServices.search(any(VariableQuery.class), any()))
+      when(variableServices.search(any(VariableQuery.class), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when

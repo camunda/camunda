@@ -49,7 +49,7 @@ public class IncidentControllerTest extends RestControllerTest {
   @Test
   void shouldResolveIncident() {
     // given
-    when(incidentServices.resolveIncident(anyLong(), any(), any()))
+    when(incidentServices.resolveIncident(anyLong(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
     final String request =
@@ -69,13 +69,13 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(incidentServices).resolveIncident(eq(1L), eq(12345678L), any());
+    verify(incidentServices).resolveIncident(eq(1L), eq(12345678L), any(), any());
   }
 
   @Test
   void shouldReturnNotFoundIfIncidentNotFound() {
     // given
-    Mockito.when(incidentServices.resolveIncident(anyLong(), any(), any()))
+    Mockito.when(incidentServices.resolveIncident(anyLong(), any(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -110,6 +110,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(incidentServices).resolveIncident(eq(1L), isNull(), any());
+    verify(incidentServices).resolveIncident(eq(1L), isNull(), any(), any());
   }
 }

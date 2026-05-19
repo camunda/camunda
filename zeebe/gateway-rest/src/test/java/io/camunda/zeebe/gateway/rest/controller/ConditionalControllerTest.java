@@ -65,7 +65,8 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
+    when(conditionalServices.evaluateConditional(
+            any(EvaluateConditionalRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -92,7 +93,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedApiResponse, JsonCompareMode.STRICT);
 
-    verify(conditionalServices).evaluateConditional(requestCaptor.capture(), any());
+    verify(conditionalServices).evaluateConditional(requestCaptor.capture(), any(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.variables()).containsEntry("x", 100).containsEntry("y", 50);
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1);
@@ -181,7 +182,8 @@ public class ConditionalControllerTest extends RestControllerTest {
 
     final var expectedError = "This is an expected error";
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
+    when(conditionalServices.evaluateConditional(
+            any(EvaluateConditionalRequest.class), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(expectedError, ServiceException.Status.INVALID_ARGUMENT)));
@@ -264,7 +266,8 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
+    when(conditionalServices.evaluateConditional(
+            any(EvaluateConditionalRequest.class), any(), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.processDefinition().createProcessInstance())));

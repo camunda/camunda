@@ -32,6 +32,7 @@ public final class FormServiceTest {
     authentication = mock(CamundaAuthentication.class);
     client = mock(FormSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     services =
         new FormServices(
             mock(BrokerClient.class),
@@ -51,7 +52,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -67,7 +68,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

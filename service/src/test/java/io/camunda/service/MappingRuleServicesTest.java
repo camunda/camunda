@@ -60,6 +60,7 @@ public class MappingRuleServicesTest {
     client = mock(MappingRuleSearchClient.class);
     result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     when(client.searchMappingRules(any())).thenReturn(result);
     mappingRuleDeleteRequestArgumentCaptor =
         ArgumentCaptor.forClass(BrokerMappingRuleDeleteRequest.class);
@@ -84,7 +85,7 @@ public class MappingRuleServicesTest {
         new MappingRuleDTO("newClaimName", "newClaimValue", "mappingRuleName", "mappingRuleId");
 
     // when
-    services.createMappingRule(mappingRuleDTO, authentication);
+    services.createMappingRule(mappingRuleDTO, authentication, "default");
 
     // then
     final BrokerMappingRuleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -106,7 +107,7 @@ public class MappingRuleServicesTest {
     final var searchQuery = SearchQueryBuilders.mappingRuleSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -127,7 +128,8 @@ public class MappingRuleServicesTest {
     when(client.getMappingRule(any(String.class))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getMappingRule("mappingRuleId", authentication);
+    final var searchQueryResult =
+        services.getMappingRule("mappingRuleId", authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -153,7 +155,7 @@ public class MappingRuleServicesTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRuleRecord)));
 
     //  when
-    testMappingRuleServices.deleteMappingRule("id", testAuthentication);
+    testMappingRuleServices.deleteMappingRule("id", testAuthentication, "default");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleDeleteRequestArgumentCaptor.capture());
@@ -188,7 +190,7 @@ public class MappingRuleServicesTest {
             mappingRuleRecord.getMappingRuleId());
 
     //  when
-    testMappingRuleServices.updateMappingRule(mappingRuleDTO, testAuthentication);
+    testMappingRuleServices.updateMappingRule(mappingRuleDTO, testAuthentication, "default");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleUpdateRequestArgumentCaptor.capture());
@@ -206,7 +208,7 @@ public class MappingRuleServicesTest {
     final Map<String, Object> claims =
         Map.of("c1", "v1", "c2", List.of("v2.1", "v2.2"), "c3", 300, "c4", true);
     // when
-    services.getMatchingMappingRules(claims, authentication);
+    services.getMatchingMappingRules(claims, authentication, "default");
     // then
     final ArgumentCaptor<MappingRuleQuery> queryCaptor =
         ArgumentCaptor.forClass(MappingRuleQuery.class);

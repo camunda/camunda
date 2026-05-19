@@ -157,7 +157,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchProcessDefinitionWithEmptyBody() {
     // given
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -172,13 +172,13 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
-        .search(eq(new ProcessDefinitionQuery.Builder().build()), any());
+        .search(eq(new ProcessDefinitionQuery.Builder().build()), any(), any());
   }
 
   @Test
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
-    when(processDefinitionServices.getByKey(eq(17L), any()))
+    when(processDefinitionServices.getByKey(eq(17L), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -206,13 +206,14 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
-    verify(processDefinitionServices).getByKey(eq(17L), any());
+    verify(processDefinitionServices).getByKey(eq(17L), any(), any());
   }
 
   @Test
   public void shouldReturnProcessDefinitionForValidKey() {
     // given
-    when(processDefinitionServices.getByKey(eq(23L), any())).thenReturn(PROCESS_DEFINITION_ENTITY);
+    when(processDefinitionServices.getByKey(eq(23L), any(), any()))
+        .thenReturn(PROCESS_DEFINITION_ENTITY);
 
     // when / then
     webClient
@@ -226,7 +227,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(PROCESS_DEFINITION_ENTITY_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
-    verify(processDefinitionServices).getByKey(eq(23L), any());
+    verify(processDefinitionServices).getByKey(eq(23L), any(), any());
   }
 
   @ParameterizedTest
@@ -270,13 +271,15 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   private static Stream<Pair<String, BiFunction<ProcessDefinitionServices, Long, ?>>>
       getProcessDefinitionTestCasesParameters() {
     return Stream.of(
-        Pair.of(PROCESS_DEFINITION_URL + "%d", (service, key) -> service.getByKey(eq(key), any())),
+        Pair.of(
+            PROCESS_DEFINITION_URL + "%d",
+            (service, key) -> service.getByKey(eq(key), any(), any())),
         Pair.of(
             PROCESS_DEFINITION_URL + "%d/xml",
-            (service, key) -> service.getProcessDefinitionXml(eq(key), any())),
+            (service, key) -> service.getProcessDefinitionXml(eq(key), any(), any())),
         Pair.of(
             PROCESS_DEFINITION_URL + "%d/form",
-            (service, key) -> service.getProcessDefinitionStartForm(eq(key), any())));
+            (service, key) -> service.getProcessDefinitionStartForm(eq(key), any(), any())));
   }
 
   @Test
@@ -284,7 +287,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final long processDefinitionKey = 1L;
     final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processDefinitionServices.elementStatistics(any(), any())).thenReturn(stats);
+    when(processDefinitionServices.elementStatistics(any(), any(), any())).thenReturn(stats);
     final var request =
         """
             {
@@ -325,6 +328,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
                     .hasIncident(true)
                     .build()),
+            any(),
             any());
   }
 
@@ -333,7 +337,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final long processDefinitionKey = 1L;
     final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processDefinitionServices.elementStatistics(any(), any())).thenReturn(stats);
+    when(processDefinitionServices.elementStatistics(any(), any(), any())).thenReturn(stats);
     final var request =
         """
             {
@@ -387,6 +391,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                             .hasFlowNodeInstanceIncident(true)
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -428,13 +433,13 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, never()).elementStatistics(any(), any());
+    verify(processDefinitionServices, never()).elementStatistics(any(), any(), any());
   }
 
   @Test
   public void shouldGetProcessDefinitionXml() {
     // given
-    when(processDefinitionServices.getProcessDefinitionXml(eq(23L), any()))
+    when(processDefinitionServices.getProcessDefinitionXml(eq(23L), any(), any()))
         .thenReturn(Optional.of("<xml/>"));
     // when / then
     webClient
@@ -447,13 +452,13 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .xml("<xml/>");
     // Verify that the service was called with the valid key
-    verify(processDefinitionServices).getProcessDefinitionXml(eq(23L), any());
+    verify(processDefinitionServices).getProcessDefinitionXml(eq(23L), any(), any());
   }
 
   @Test
   public void shouldGetProcessDefinitionXmlHasNoXml() {
     // given
-    when(processDefinitionServices.getProcessDefinitionXml(eq(23L), any()))
+    when(processDefinitionServices.getProcessDefinitionXml(eq(23L), any(), any()))
         .thenReturn(Optional.empty());
     // when / then
     webClient
@@ -464,12 +469,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
     // Verify that the service was called with the valid key
-    verify(processDefinitionServices).getProcessDefinitionXml(eq(23L), any());
+    verify(processDefinitionServices).getProcessDefinitionXml(eq(23L), any(), any());
   }
 
   @Test
   public void shouldReturnFormItemForValidFormKey() {
-    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any(), any()))
         .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
@@ -482,12 +487,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, times(1)).getProcessDefinitionStartForm(eq(1L), any());
+    verify(processDefinitionServices, times(1)).getProcessDefinitionStartForm(eq(1L), any(), any());
   }
 
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() {
-    when(processDefinitionServices.getProcessDefinitionStartForm(eq(999L), any()))
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(999L), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -516,7 +521,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturn500OnUnexpectedException() {
-    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any()))
+    when(processDefinitionServices.getProcessDefinitionStartForm(eq(1L), any(), any()))
         .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient
@@ -567,7 +572,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 "filter": %s
             }"""
             .formatted(filterString);
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
@@ -586,7 +591,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
-        .search(eq(new ProcessDefinitionQuery.Builder().filter(filter).build()), any());
+        .search(eq(new ProcessDefinitionQuery.Builder().filter(filter).build()), any(), any());
   }
 
   @Test
@@ -600,7 +605,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .startCursor(null)
             .endCursor(null)
             .build();
-    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any()))
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any(), any()))
         .thenReturn(statsResult);
 
     final var request = "{ \"filter\": {} }";
@@ -639,7 +644,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .startCursor(null)
             .endCursor(null)
             .build();
-    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any()))
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any(), any()))
         .thenReturn(statsResult);
 
     final var request = "{}";
@@ -672,7 +677,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(response, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
-        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture(), any());
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture(), any(), any());
     final var capturedQuery = instanceStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
     final var filter = capturedQuery.filter();
@@ -691,7 +696,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .startCursor(null)
             .endCursor(null)
             .build();
-    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any()))
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any(), any(), any()))
         .thenReturn(statsResult);
 
     final var response =
@@ -721,7 +726,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(response, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
-        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture(), any());
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture(), any(), any());
     final var capturedQuery = instanceStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
     final var filter = capturedQuery.filter();
@@ -745,7 +750,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .endCursor(null)
             .build();
     when(processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
-            any(ProcessDefinitionInstanceVersionStatisticsQuery.class), any()))
+            any(ProcessDefinitionInstanceVersionStatisticsQuery.class), any(), any()))
         .thenReturn(statsResult);
     final var request =
         """
@@ -798,7 +803,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .searchProcessDefinitionInstanceVersionStatistics(
-            instanceVersionStatsQueryCaptor.capture(), any());
+            instanceVersionStatsQueryCaptor.capture(), any(), any());
     final var capturedQuery = instanceVersionStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
     assertThat(capturedQuery.filter().processDefinitionId()).isEqualTo(processDefinitionId);
@@ -947,7 +952,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices, never())
+        .search(any(ProcessDefinitionQuery.class), any(), any());
   }
 
   @Test
@@ -989,7 +995,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices, never())
+        .search(any(ProcessDefinitionQuery.class), any(), any());
   }
 
   @Test
@@ -1031,7 +1038,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices, never())
+        .search(any(ProcessDefinitionQuery.class), any(), any());
   }
 
   @ParameterizedTest
@@ -1083,7 +1091,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices, never())
+        .search(any(ProcessDefinitionQuery.class), any(), any());
   }
 
   @Test
@@ -1100,7 +1109,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                     "limit": 10
                 }
             }""";
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -1117,7 +1126,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class), any(), any());
   }
 
   @ParameterizedTest
@@ -1142,7 +1151,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 ]
             }""",
             supportedField.getValue());
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -1159,6 +1168,6 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class), any());
+    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class), any(), any());
   }
 }

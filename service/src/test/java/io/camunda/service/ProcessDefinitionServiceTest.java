@@ -46,6 +46,8 @@ public class ProcessDefinitionServiceTest {
     processDefinitionSearchClient = mock(ProcessDefinitionSearchClient.class);
     when(processDefinitionSearchClient.withSecurityContext(any()))
         .thenReturn(processDefinitionSearchClient);
+    when(processDefinitionSearchClient.withPhysicalTenant(any()))
+        .thenReturn(processDefinitionSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     authentication = CamundaAuthentication.none();
     brokerClient = mock(BrokerClient.class);
@@ -82,7 +84,8 @@ public class ProcessDefinitionServiceTest {
     final var query = new ProcessDefinitionInstanceStatisticsQuery.Builder().build();
 
     // when
-    final var result = services.getProcessDefinitionInstanceStatistics(query, authentication);
+    final var result =
+        services.getProcessDefinitionInstanceStatistics(query, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -113,7 +116,7 @@ public class ProcessDefinitionServiceTest {
 
     // when
     final var result =
-        services.searchProcessDefinitionInstanceVersionStatistics(query, authentication);
+        services.searchProcessDefinitionInstanceVersionStatistics(query, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -140,7 +143,7 @@ public class ProcessDefinitionServiceTest {
         .thenReturn(statistics);
 
     // when
-    final var result = services.elementStatistics(filter, authentication);
+    final var result = services.elementStatistics(filter, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(statistics);

@@ -132,7 +132,7 @@ public class JobQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchJobWithEmptyBody() {
     // given
-    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -146,13 +146,13 @@ public class JobQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(jobServices).search(eq(new JobQuery.Builder().build()), any());
+    verify(jobServices).search(eq(new JobQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchJobWithAllFilters() {
     // given
-    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     final var request =
         """
@@ -231,6 +231,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                             .lastUpdateTimes(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -266,7 +267,7 @@ public class JobQueryControllerTest extends RestControllerTest {
             .startCursor("abc")
             .endCursor("def")
             .build();
-    when(jobServices.search(any(JobQuery.class), any())).thenReturn(cancelElResult);
+    when(jobServices.search(any(JobQuery.class), any(), any())).thenReturn(cancelElResult);
 
     final var request =
         """
@@ -338,13 +339,14 @@ public class JobQueryControllerTest extends RestControllerTest {
                             .listenerEventTypes(ListenerEventType.CANCEL.name())
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchJobWithFullSorting() {
     // given
-    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     final var request =
         """
@@ -439,6 +441,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .tenantId()
                                 .desc())
                     .build()),
+            any(),
             any());
   }
 
@@ -464,7 +467,7 @@ public class JobQueryControllerTest extends RestControllerTest {
             .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
             .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
             .build();
-    when(jobServices.search(any(JobQuery.class), any()))
+    when(jobServices.search(any(JobQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<JobEntity>()
                 .total(1L)

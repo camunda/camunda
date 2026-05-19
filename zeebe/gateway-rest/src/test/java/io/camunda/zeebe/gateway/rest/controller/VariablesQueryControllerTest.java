@@ -157,19 +157,20 @@ public class VariablesQueryControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
-    when(variableServices.getByKey(eq(VALID_VARIABLE_KEY), any()))
+    when(variableServices.getByKey(eq(VALID_VARIABLE_KEY), any(), any()))
         .thenReturn(new VariableEntity(0L, "n", "v", null, false, 2L, 3L, 4L, "bpid", "<default>"));
-    when(variableServices.getByKey(eq(VALID_TRUNCATED_VARIABLE_KEY), any()))
+    when(variableServices.getByKey(eq(VALID_TRUNCATED_VARIABLE_KEY), any(), any()))
         .thenReturn(new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, 4L, "bpid", "<default>"));
 
-    when(variableServices.getByKey(eq(INVALID_VARIABLE_KEY), any()))
+    when(variableServices.getByKey(eq(INVALID_VARIABLE_KEY), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
                     String.format("Variable with key %d not found", INVALID_VARIABLE_KEY),
                     CamundaSearchException.Reason.NOT_FOUND)));
 
-    when(variableServices.search(any(VariableQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(variableServices.search(any(VariableQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
   }
 
   @Test
@@ -186,7 +187,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any());
+    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any(), any());
   }
 
   @Test
@@ -203,7 +204,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_UNTRUNCATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any());
+    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any(), any());
   }
 
   @Test
@@ -223,13 +224,14 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any());
+    verify(variableServices).search(eq(new VariableQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchVariableWithSorting() {
     // given
-    when(variableServices.search(any(VariableQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(variableServices.search(any(VariableQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -265,6 +267,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 new VariableQuery.Builder()
                     .sort(new VariableSort.Builder().name().desc().value().asc().build())
                     .build()),
+            any(),
             any());
   }
 
@@ -307,7 +310,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(variableServices, never()).search(any(VariableQuery.class), any());
+    verify(variableServices, never()).search(any(VariableQuery.class), any(), any());
   }
 
   @Test
@@ -348,7 +351,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(variableServices, never()).search(any(VariableQuery.class), any());
+    verify(variableServices, never()).search(any(VariableQuery.class), any(), any());
   }
 
   @Test
@@ -388,7 +391,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(variableServices, never()).search(any(VariableQuery.class), any());
+    verify(variableServices, never()).search(any(VariableQuery.class), any(), any());
   }
 
   @Test
@@ -428,7 +431,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(variableServices, never()).search(any(VariableQuery.class), any());
+    verify(variableServices, never()).search(any(VariableQuery.class), any(), any());
   }
 
   @Test
@@ -445,7 +448,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECT_SINGLE_VARIABLE_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).getByKey(eq(VALID_VARIABLE_KEY), any());
+    verify(variableServices).getByKey(eq(VALID_VARIABLE_KEY), any(), any());
   }
 
   @Test
@@ -462,7 +465,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).getByKey(eq(VALID_TRUNCATED_VARIABLE_KEY), any());
+    verify(variableServices).getByKey(eq(VALID_TRUNCATED_VARIABLE_KEY), any(), any());
   }
 
   @Test
@@ -488,7 +491,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 }""",
             JsonCompareMode.STRICT);
 
-    verify(variableServices).getByKey(eq(INVALID_VARIABLE_KEY), any());
+    verify(variableServices).getByKey(eq(INVALID_VARIABLE_KEY), any(), any());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -522,7 +525,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(variableServices.search(variableQueryCaptor.capture(), any()))
+    when(variableServices.search(variableQueryCaptor.capture(), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
@@ -540,6 +543,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(variableServices).search(eq(new VariableQuery.Builder().filter(filter).build()), any());
+    verify(variableServices)
+        .search(eq(new VariableQuery.Builder().filter(filter).build()), any(), any());
   }
 }

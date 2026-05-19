@@ -54,7 +54,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // given
     final var mappingRule =
         new MappingRuleEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingRuleServices.getMappingRule(eq(mappingRule.mappingRuleId()), any()))
+    when(mappingRuleServices.getMappingRule(eq(mappingRule.mappingRuleId()), any(), any()))
         .thenReturn(mappingRule);
 
     // when
@@ -77,7 +77,8 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(mappingRuleServices, times(1)).getMappingRule(eq(mappingRule.mappingRuleId()), any());
+    verify(mappingRuleServices, times(1))
+        .getMappingRule(eq(mappingRule.mappingRuleId()), any(), any());
   }
 
   @Test
@@ -85,7 +86,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // given
     final var mappingRuleId = "id";
     final var path = "%s/%s".formatted(MAPPING_RULE_BASE_URL, mappingRuleId);
-    when(mappingRuleServices.getMappingRule(eq(mappingRuleId), any()))
+    when(mappingRuleServices.getMappingRule(eq(mappingRuleId), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -113,13 +114,13 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(mappingRuleServices, times(1)).getMappingRule(eq(mappingRuleId), any());
+    verify(mappingRuleServices, times(1)).getMappingRule(eq(mappingRuleId), any(), any());
   }
 
   @Test
   void shouldSearchMappingRulesWithEmptyQuery() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -180,13 +181,13 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
            }""",
             JsonCompareMode.STRICT);
 
-    verify(mappingRuleServices).search(eq(new MappingRuleQuery.Builder().build()), any());
+    verify(mappingRuleServices).search(eq(new MappingRuleQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSortAndPaginateSearchResult() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -224,13 +225,14 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                     .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
                     .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSortAndPaginateByLimitOnlySearchResult() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -268,13 +270,14 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                     .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
                     .page(SearchQueryPage.of(builder -> builder.size(10)))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSortAndPaginateSearchResultByName() {
     // given
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -312,6 +315,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                     .sort(MappingRuleSort.of(builder -> builder.name().asc()))
                     .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
                     .build()),
+            any(),
             any());
   }
 }

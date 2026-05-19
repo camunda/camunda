@@ -51,7 +51,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(eq(1L), eq(123L), any()))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(1L), eq(123L), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -71,7 +71,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(eq(1L), eq(123L), any());
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(1L), eq(123L), any(), any());
   }
 
   @Test
@@ -81,7 +81,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(eq(2L), isNull(), any()))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(2L), isNull(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when / then
@@ -93,7 +93,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(eq(2L), isNull(), any());
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(2L), isNull(), any(), any());
   }
 
   @Test
@@ -103,7 +103,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(eq(3L), isNull(), any()))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(3L), isNull(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -121,13 +121,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(eq(3L), isNull(), any());
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(3L), isNull(), any(), any());
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnDecisionInstanceNotFound() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance(eq(999L), isNull(), any()))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(999L), isNull(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -158,13 +158,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance(eq(999L), isNull(), any());
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(999L), isNull(), any(), any());
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnForbidden() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance(eq(4L), isNull(), any()))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(4L), isNull(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -195,7 +195,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance(eq(4L), isNull(), any());
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(4L), isNull(), any(), any());
   }
 
   @Test
@@ -206,7 +206,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
     when(decisionInstanceServices.deleteDecisionInstancesBatchOperation(
-            any(DecisionInstanceFilter.class), any()))
+            any(DecisionInstanceFilter.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -238,7 +238,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices)
-        .deleteDecisionInstancesBatchOperation(any(DecisionInstanceFilter.class), any());
+        .deleteDecisionInstancesBatchOperation(any(DecisionInstanceFilter.class), any(), any());
   }
 
   @Test

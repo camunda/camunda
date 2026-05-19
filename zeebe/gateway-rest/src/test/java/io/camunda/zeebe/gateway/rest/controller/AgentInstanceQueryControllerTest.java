@@ -146,7 +146,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldGetAgentInstance() {
     // given
-    when(agentInstanceServices.getByKey(eq(AGENT_INSTANCE_KEY), any()))
+    when(agentInstanceServices.getByKey(eq(AGENT_INSTANCE_KEY), any(), any()))
         .thenReturn(AGENT_INSTANCE_ENTITY);
 
     // when / then
@@ -210,14 +210,14 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                     ELEMENT_INSTANCE_KEY),
             JsonCompareMode.STRICT);
 
-    verify(agentInstanceServices).getByKey(eq(AGENT_INSTANCE_KEY), any());
+    verify(agentInstanceServices).getByKey(eq(AGENT_INSTANCE_KEY), any(), any());
   }
 
   @Test
   void shouldReturnNotFoundForUnknownAgentInstanceKey() {
     // given
     final var path = "%s/%d".formatted(AGENT_INSTANCES_URL, AGENT_INSTANCE_KEY);
-    when(agentInstanceServices.getByKey(eq(AGENT_INSTANCE_KEY), any()))
+    when(agentInstanceServices.getByKey(eq(AGENT_INSTANCE_KEY), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -248,7 +248,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchAgentInstancesWithEmptyBody() {
     // given
-    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<AgentInstanceEntity>()
                 .total(1)
@@ -271,13 +271,14 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(agentInstanceServices).search(eq(new AgentInstanceQuery.Builder().build()), any());
+    verify(agentInstanceServices)
+        .search(eq(new AgentInstanceQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchAgentInstancesWithStatusFilter() {
     // given
-    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<AgentInstanceEntity>()
                 .total(1)
@@ -317,6 +318,7 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                             .statusOperations(List.of(Operation.eq("COMPLETED")))
                             .build())
                     .build()),
+            any(),
             any());
   }
 }

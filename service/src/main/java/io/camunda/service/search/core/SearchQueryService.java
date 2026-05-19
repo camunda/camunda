@@ -35,7 +35,7 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   }
 
   public abstract SearchQueryResult<D> search(
-      final Q query, final CamundaAuthentication authentication);
+      final Q query, final CamundaAuthentication authentication, final String physicalTenantId);
 
   protected <R> R executeSearchRequest(final Supplier<R> searchRequest) {
     try {

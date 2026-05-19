@@ -24,6 +24,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -65,7 +66,7 @@ public class SetupController {
 
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
-      @RequestBody final UserRequest request) {
+      @RequestBody final UserRequest request, @PhysicalTenantId final String physicalTenantId) {
     if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
@@ -74,7 +75,8 @@ public class SetupController {
     }
 
     final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
-    if (roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
+    if (roleServices.hasMembersOfType(
+        DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth, physicalTenantId)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
           GatewayErrorMapper.mapErrorToProblem(exception));
@@ -86,7 +88,7 @@ public class SetupController {
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
                 RequestExecutor.executeServiceMethod(
-                    () -> userServices.createInitialAdminUser(dto, anonymousAuth),
+                    () -> userServices.createInitialAdminUser(dto, anonymousAuth, physicalTenantId),
                     ResponseMapper::toUserCreateResponse,
                     HttpStatus.CREATED));
   }

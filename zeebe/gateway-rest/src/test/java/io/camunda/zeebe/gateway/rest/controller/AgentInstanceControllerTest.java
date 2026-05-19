@@ -52,7 +52,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     // given
     final var responseRecord = new AgentInstanceRecord();
     responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
-    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
     final var requestBody =
@@ -99,6 +99,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
                   assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
                 }),
+            any(),
             any());
   }
 
@@ -107,7 +108,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
     // given
     final var responseRecord = new AgentInstanceRecord();
     responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
-    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(responseRecord));
 
     final var requestBody =
@@ -147,6 +148,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(10);
                   assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(50);
                 }),
+            any(),
             any());
   }
 
@@ -284,7 +286,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldReturn5xxOnServiceError() {
     // given
-    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
 
     final var requestBody =
@@ -315,7 +317,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldUpdateAgentInstanceWithStatus() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
 
     final var requestBody =
@@ -347,13 +349,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getStatus().name()).isEqualTo("THINKING");
                   assertThat(record.getChangedAttributes()).containsExactly("status");
                 }),
+            any(),
             any());
   }
 
   @Test
   void shouldUpdateAgentInstanceWithMetrics() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
 
     final var requestBody =
@@ -391,13 +394,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
                   assertThat(record.getChangedAttributes()).containsExactly("metrics");
                 }),
+            any(),
             any());
   }
 
   @Test
   void shouldUpdateAgentInstanceWithTools() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
 
     final var requestBody =
@@ -437,13 +441,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getTools().get(0).getElementId()).isEqualTo("searchTask");
                   assertThat(record.getChangedAttributes()).containsExactly("tools");
                 }),
+            any(),
             any());
   }
 
   @Test
   void shouldUpdateAgentInstanceWithEmptyToolsList() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
 
     final var requestBody =
@@ -473,13 +478,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getTools()).isEmpty();
                   assertThat(record.getChangedAttributes()).containsExactly("tools");
                 }),
+            any(),
             any());
   }
 
   @Test
   void shouldUpdateAgentInstanceWithOnlyElementInstanceKey() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
 
     final var requestBody =
@@ -507,6 +513,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 record -> {
                   assertThat(record.getChangedAttributes()).isEmpty();
                 }),
+            any(),
             any());
   }
 
@@ -637,7 +644,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldReturn5xxOnUpdateServiceError() {
     // given
-    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any(), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
 
     // when / then

@@ -105,7 +105,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
             .formatted(filterString);
 
     // when / then
-    when(batchOperationServices.searchItems(any(BatchOperationItemQuery.class), any()))
+    when(batchOperationServices.searchItems(any(BatchOperationItemQuery.class), any(), any()))
         .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
 
     webClient
@@ -143,7 +143,8 @@ class BatchOperationItemControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(batchOperationServices)
-        .searchItems(eq(new BatchOperationItemQuery.Builder().filter(filter).build()), any());
+        .searchItems(
+            eq(new BatchOperationItemQuery.Builder().filter(filter).build()), any(), any());
   }
 
   private static BatchOperationItemEntity getBatchOperationItemEntity(

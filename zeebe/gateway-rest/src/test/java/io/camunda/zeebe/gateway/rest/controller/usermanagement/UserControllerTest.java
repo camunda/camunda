@@ -91,7 +91,7 @@ public class UserControllerTest {
               .setEmail(dto.email())
               .setPassword(dto.password());
 
-      when(userServices.createUser(eq(dto), any()))
+      when(userServices.createUser(eq(dto), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
@@ -117,7 +117,7 @@ public class UserControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(userServices, times(1)).createUser(eq(dto), any());
+      verify(userServices, times(1)).createUser(eq(dto), any(), any());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class UserControllerTest {
 
       final var dto = validCreateUserRequest("foo");
 
-      when(userServices.createUser(eq(dto), any()))
+      when(userServices.createUser(eq(dto), any(), any()))
           .thenThrow(
               ErrorMapper.mapBrokerRejection(
                   new BrokerRejection(
@@ -240,7 +240,7 @@ public class UserControllerTest {
       final var dto = new UserDTO("foo", null, null, "zabraboof");
       final var userRecord =
           new UserRecord().setUsername(dto.username()).setPassword(dto.password());
-      when(userServices.createUser(eq(dto), any()))
+      when(userServices.createUser(eq(dto), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
@@ -266,7 +266,7 @@ public class UserControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(userServices, times(1)).createUser(eq(dto), any());
+      verify(userServices, times(1)).createUser(eq(dto), any(), any());
     }
 
     @Test
@@ -344,7 +344,7 @@ public class UserControllerTest {
 
       final var userRecord = new UserRecord().setUsername(username);
 
-      when(userServices.deleteUser(eq(username), any()))
+      when(userServices.deleteUser(eq(username), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
@@ -357,7 +357,7 @@ public class UserControllerTest {
           .isNoContent();
 
       // then
-      verify(userServices, times(1)).deleteUser(eq(username), any());
+      verify(userServices, times(1)).deleteUser(eq(username), any(), any());
     }
 
     @Test
@@ -365,7 +365,7 @@ public class UserControllerTest {
       // given
       final String username = "alice-test";
       final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
-      when(userServices.updateUser(any(), any()))
+      when(userServices.updateUser(any(), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new UserRecord()
@@ -389,7 +389,7 @@ public class UserControllerTest {
           .expectStatus()
           .isOk();
 
-      verify(userServices, times(1)).updateUser(eq(user), any());
+      verify(userServices, times(1)).updateUser(eq(user), any(), any());
     }
 
     private UserDTO validCreateUserRequest(final String username) {

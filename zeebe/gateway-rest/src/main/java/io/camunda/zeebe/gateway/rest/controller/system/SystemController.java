@@ -26,6 +26,7 @@ import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
@@ -72,10 +73,11 @@ public class SystemController {
       @RequestParam final String startTime,
       @RequestParam final String endTime,
       @RequestParam(required = false) final String tenantId,
-      @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
+      @RequestParam(required = false, defaultValue = "false") final boolean withTenants,
+      @PhysicalTenantId final String physicalTenantId) {
 
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> getMetrics(q, physicalTenantId));
   }
 
   @CamundaGetMapping(path = "/configuration")
@@ -140,11 +142,13 @@ public class SystemController {
         .build();
   }
 
-  private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
+  private ResponseEntity<UsageMetricsResponse> getMetrics(
+      final UsageMetricsQuery query, final String physicalTenantId) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUsageMetricsResponse(
-              usageMetricsServices.search(query, authenticationProvider.getCamundaAuthentication()),
+              usageMetricsServices.search(
+                  query, authenticationProvider.getCamundaAuthentication(), physicalTenantId),
               query.filter().withTenants()));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

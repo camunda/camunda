@@ -62,7 +62,7 @@ class ProcessCacheTest {
         new ProcessCache(
             configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
 
-    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any()))
+    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any(), any()))
         .thenReturn(entity);
   }
 
@@ -87,21 +87,23 @@ class ProcessCacheTest {
     final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
+    verify(processDefinitionServices, times(1))
+        .getByKey(eq(entity.processDefinitionKey()), any(), any());
     assertThat(cacheItem).isNotEqualTo(ProcessCacheItem.EMPTY);
   }
 
   @Test
   void shouldNotPopulateCacheWhenNotFound() {
     // given
-    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any()))
+    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any(), any()))
         .thenThrow(new NoSuchElementException());
 
     // when
     final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
+    verify(processDefinitionServices, times(1))
+        .getByKey(eq(entity.processDefinitionKey()), any(), any());
     assertThat(cacheItem).isEqualTo(ProcessCacheItem.EMPTY);
   }
 
@@ -113,7 +115,8 @@ class ProcessCacheTest {
     processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
+    verify(processDefinitionServices, times(1))
+        .getByKey(eq(entity.processDefinitionKey()), any(), any());
   }
 
   @Test
@@ -124,7 +127,7 @@ class ProcessCacheTest {
             .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
             .create();
 
-    when(processDefinitionServices.search(any(), any()))
+    when(processDefinitionServices.search(any(), any(), any()))
         .thenReturn(SearchQueryResult.of(entity, otherEntity));
 
     // when
@@ -133,7 +136,7 @@ class ProcessCacheTest {
             Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
 
     // then
-    verify(processDefinitionServices, times(1)).search(any(), any());
+    verify(processDefinitionServices, times(1)).search(any(), any(), any());
     final var cacheMap = getCacheMap();
     assertThat(cacheMap)
         .containsOnlyKeys(entity.processDefinitionKey(), otherEntity.processDefinitionKey());
@@ -198,7 +201,7 @@ class ProcessCacheTest {
               .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
               .create();
 
-      when(processDefinitionServices.search(any(), any()))
+      when(processDefinitionServices.search(any(), any(), any()))
           .thenReturn(SearchQueryResult.of(entity, otherEntity));
 
       // when

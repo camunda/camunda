@@ -103,7 +103,7 @@ public class ProcessesToolRepository implements ToolRepository {
 
     // combine static and dynamic tools
     return Stream.concat(
-            messageSubscriptionServices.search(query, auth).items().stream()
+            messageSubscriptionServices.search(query, auth, "default").items().stream()
                 .map(ProcessesToolRepository::buildTool),
             staticTools.stream().map(SyncToolSpecification::tool))
         .toList();
@@ -142,7 +142,7 @@ public class ProcessesToolRepository implements ToolRepository {
 
     // find the message subscription based on the key
     final var auth = authenticationProvider.getCamundaAuthentication();
-    final var entity = messageSubscriptionServices.getByKey(subscriptionKey, auth);
+    final var entity = messageSubscriptionServices.getByKey(subscriptionKey, auth, "default");
 
     if (entity == null) {
       return Either.left("Tool not found: " + toolName);
@@ -166,7 +166,8 @@ public class ProcessesToolRepository implements ToolRepository {
                   UUID.randomUUID().toString(),
                   arguments,
                   entity.tenantId()),
-              authenticationProvider.getCamundaAuthentication()),
+              authenticationProvider.getCamundaAuthentication(),
+              "default"),
           record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
     };
   }

@@ -120,7 +120,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldGetIncidentByKey() {
       // given
-      when(incidentServices.getByKey(any(), any())).thenReturn(INCIDENT_ENTITY);
+      when(incidentServices.getByKey(any(), any(), any())).thenReturn(INCIDENT_ENTITY);
 
       // when
       final CallToolResult result =
@@ -135,7 +135,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
       assertExampleIncident(incident);
 
-      verify(incidentServices).getByKey(eq(5L), any());
+      verify(incidentServices).getByKey(eq(5L), any(), any());
 
       assertTextContentFallback(result);
     }
@@ -143,7 +143,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailGetIncidentByKeyOnException() {
       // given
-      when(incidentServices.getByKey(any(), any()))
+      when(incidentServices.getByKey(any(), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -231,7 +231,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldSearchIncidentsWithCreationTimeDateRangeFilter() {
       // given
-      when(incidentServices.search(any(IncidentQuery.class), any()))
+      when(incidentServices.search(any(IncidentQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       final var creationTimeFrom = OffsetDateTime.of(2025, 5, 23, 9, 35, 12, 0, ZoneOffset.UTC);
@@ -253,7 +253,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(incidentServices).search(queryCaptor.capture(), any());
+      verify(incidentServices).search(queryCaptor.capture(), any(), any());
       final IncidentQuery capturedQuery = queryCaptor.getValue();
 
       assertThat(capturedQuery.filter().creationTimeOperations())
@@ -266,7 +266,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldSearchIncidentsWithFilterSortAndPaging() {
       // given
-      when(incidentServices.search(any(IncidentQuery.class), any()))
+      when(incidentServices.search(any(IncidentQuery.class), any(), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
@@ -298,7 +298,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           .first()
           .satisfies(IncidentToolsTest.this::assertExampleIncident);
 
-      verify(incidentServices).search(queryCaptor.capture(), any());
+      verify(incidentServices).search(queryCaptor.capture(), any(), any());
       final IncidentQuery capturedQuery = queryCaptor.getValue();
 
       final IncidentFilter filter = capturedQuery.filter();
@@ -323,7 +323,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailSearchIncidentsOnException() {
       // given
-      when(incidentServices.search(any(IncidentQuery.class), any()))
+      when(incidentServices.search(any(IncidentQuery.class), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -397,7 +397,7 @@ class IncidentToolsTest extends OperationalToolsTest {
     @Test
     void shouldResolveIncidentByKey() {
       // given
-      when(incidentServices.resolveIncident(anyLong(), any(), any()))
+      when(incidentServices.resolveIncident(anyLong(), any(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
       // when
@@ -417,7 +417,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
-      verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
+      verify(incidentServices).resolveIncident(eq(5L), isNull(), any(), any());
     }
 
     @Test
@@ -425,14 +425,14 @@ class IncidentToolsTest extends OperationalToolsTest {
       // given
       final var incidentEntity = mock(IncidentEntity.class);
       // noinspection unchecked
-      when(incidentServices.resolveIncident(anyLong(), any(), any()))
+      when(incidentServices.resolveIncident(anyLong(), any(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("no retries left", Status.INVALID_STATE)),
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
-      when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any()))
+      when(incidentServices.getByKey(anyLong(), any(), any())).thenReturn(incidentEntity);
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
       // when
@@ -452,9 +452,10 @@ class IncidentToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
-      verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any());
-      verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
+      verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any(), any());
+      verify(incidentServices).getByKey(eq(5L), any(), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any(), any());
     }
 
     @Test
@@ -462,14 +463,14 @@ class IncidentToolsTest extends OperationalToolsTest {
       // given
       final var incidentEntity = mock(IncidentEntity.class);
       // noinspection unchecked
-      when(incidentServices.resolveIncident(anyLong(), any(), any()))
+      when(incidentServices.resolveIncident(anyLong(), any(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("no retries left", Status.INVALID_STATE)),
               CompletableFuture.completedFuture(new IncidentRecord()));
       when(incidentEntity.jobKey()).thenReturn(4L);
-      when(incidentServices.getByKey(anyLong(), any())).thenReturn(incidentEntity);
-      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any()))
+      when(incidentServices.getByKey(anyLong(), any(), any())).thenReturn(incidentEntity);
+      when(jobServices.updateJob(anyLong(), any(), any(UpdateJobChangeset.class), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));
@@ -491,9 +492,10 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
-      verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
-      verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
+      verify(incidentServices).resolveIncident(eq(5L), isNull(), any(), any());
+      verify(incidentServices).getByKey(eq(5L), any(), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any(), any());
 
       assertTextContentFallback(result);
     }

@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +39,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +63,7 @@ public class TenantServiceTest {
     authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
@@ -85,7 +86,7 @@ public class TenantServiceTest {
     final var searchQuery = SearchQueryBuilders.tenantSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -97,7 +98,7 @@ public class TenantServiceTest {
     when(client.getTenant(eq("tenant-id"))).thenReturn(tenantEntity);
 
     // when
-    final var searchQueryResult = services.getById("tenant-id", authentication);
+    final var searchQueryResult = services.getById("tenant-id", authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -110,7 +111,7 @@ public class TenantServiceTest {
         new TenantRequest(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
-    services.createTenant(tenantDTO, authentication);
+    services.createTenant(tenantDTO, authentication, "default");
 
     // then
     final BrokerTenantCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -129,7 +130,7 @@ public class TenantServiceTest {
         new TenantRequest(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
-    services.updateTenant(tenantDTO, authentication);
+    services.updateTenant(tenantDTO, authentication, "default");
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -149,7 +150,7 @@ public class TenantServiceTest {
             tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
 
     // when
-    services.updateTenant(tenantDTO, authentication);
+    services.updateTenant(tenantDTO, authentication, "default");
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -163,7 +164,7 @@ public class TenantServiceTest {
   @Test
   public void shouldDeleteTenant() {
     // when
-    services.deleteTenant(tenantEntity.tenantId(), authentication);
+    services.deleteTenant(tenantEntity.tenantId(), authentication, "default");
 
     // then
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -183,7 +184,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.addMember(tenantMemberRequest, authentication);
+    services.addMember(tenantMemberRequest, authentication, "default");
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -207,7 +208,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.removeMember(tenantMemberRequest, authentication);
+    services.removeMember(tenantMemberRequest, authentication, "default");
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -224,10 +225,10 @@ public class TenantServiceTest {
   public void shouldRejectUpdateOfDefaultTenant() {
     // given
     final var tenantDTO =
-        new TenantRequest(null, TenantOwned.DEFAULT_TENANT_IDENTIFIER, "NewName", "NewDescription");
+        new TenantRequest(null, DEFAULT_TENANT_IDENTIFIER, "NewName", "NewDescription");
 
     // when
-    final var future = services.updateTenant(tenantDTO, authentication);
+    final var future = services.updateTenant(tenantDTO, authentication, "default");
 
     // then
     assertThat(future).isCompletedExceptionally();
@@ -243,7 +244,7 @@ public class TenantServiceTest {
   @Test
   public void shouldRejectDeleteOfDefaultTenant() {
     // when
-    final var future = services.deleteTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, authentication);
+    final var future = services.deleteTenant(DEFAULT_TENANT_IDENTIFIER, authentication, "default");
 
     // then
     assertThat(future).isCompletedExceptionally();
@@ -263,7 +264,7 @@ public class TenantServiceTest {
 
     final var exception =
         (ServiceException)
-            assertThatThrownBy(() -> services.getById("tenant-id", authentication))
+            assertThatThrownBy(() -> services.getById("tenant-id", authentication, "default"))
                 .isInstanceOf(ServiceException.class)
                 .actual();
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);

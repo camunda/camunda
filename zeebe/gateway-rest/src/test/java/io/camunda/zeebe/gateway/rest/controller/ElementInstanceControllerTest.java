@@ -149,7 +149,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldSetSetVariables() {
     // given
-    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new VariableDocumentRecord()));
 
     final var request =
@@ -173,7 +173,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture(), any());
+    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture(), any(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.elementInstanceKey()).isEqualTo(123L);
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("key", "value"));
@@ -292,7 +292,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldReturnGatewayTimeoutWhenSetVariablesTimesOut() {
     // given
-    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked set variables"))));

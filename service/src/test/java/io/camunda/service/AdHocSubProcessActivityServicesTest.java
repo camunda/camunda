@@ -90,7 +90,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final CompletableFuture<AdHocSubProcessInstructionRecord> result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication);
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, "default");
 
     // then
     assertThat(result).isNotCompleted();
@@ -119,7 +119,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final AdHocSubProcessInstructionRecord result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication).join();
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, "default").join();
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
@@ -143,7 +143,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request, authentication).join();
+    services.activateActivities(request, authentication, "default").join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();
@@ -175,7 +175,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request, authentication).join();
+    services.activateActivities(request, authentication, "default").join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();

@@ -418,7 +418,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
     // Mock the behavior of userTaskServices for a valid key
-    when(userTaskServices.getByKey(eq(VALID_USER_TASK_KEY), any()))
+    when(userTaskServices.getByKey(eq(VALID_USER_TASK_KEY), any(), any()))
         .thenReturn(
             new UserTaskEntity(
                 0L,
@@ -446,7 +446,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 50,
                 Set.of()));
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
-    when(userTaskServices.getByKey(eq(INVALID_USER_TASK_KEY), any()))
+    when(userTaskServices.getByKey(eq(INVALID_USER_TASK_KEY), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -457,7 +457,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchUserTasksWithEmptyBody() {
     // given
-    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userTaskServices.search(any(UserTaskQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -470,13 +471,14 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userTaskServices).search(eq(new UserTaskQuery.Builder().build()), any());
+    verify(userTaskServices).search(eq(new UserTaskQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchUserTasksWithEmptyQuery() {
     // given
-    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userTaskServices.search(any(UserTaskQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
     webClient
@@ -493,13 +495,14 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userTaskServices).search(eq(new UserTaskQuery.Builder().build()), any());
+    verify(userTaskServices).search(eq(new UserTaskQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchUserTasksWithSorting() {
     // given
-    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userTaskServices.search(any(UserTaskQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
                 {
@@ -541,6 +544,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                             .asc()
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -585,7 +589,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -628,7 +632,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -672,7 +676,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -715,7 +719,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -757,7 +761,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -799,7 +803,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -840,7 +844,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -880,7 +884,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any());
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class), any(), any());
   }
 
   @Test
@@ -897,7 +901,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(USER_TASK_ITEM_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid userTaskKey
-    verify(userTaskServices).getByKey(eq(VALID_USER_TASK_KEY), any());
+    verify(userTaskServices).getByKey(eq(VALID_USER_TASK_KEY), any(), any());
   }
 
   @Test
@@ -926,12 +930,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid userTaskKey
-    verify(userTaskServices).getByKey(eq(INVALID_USER_TASK_KEY), any());
+    verify(userTaskServices).getByKey(eq(INVALID_USER_TASK_KEY), any(), any());
   }
 
   @Test
   public void shouldReturnFormItemForValidFormKey() {
-    when(userTaskServices.getUserTaskForm(eq(VALID_FORM_KEY), any()))
+    when(userTaskServices.getUserTaskForm(eq(VALID_FORM_KEY), any(), any()))
         .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "bpmn-1", "schema", 1L)));
 
     webClient
@@ -944,13 +948,13 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
-    verify(userTaskServices).getUserTaskForm(eq(VALID_FORM_KEY), any());
+    verify(userTaskServices).getUserTaskForm(eq(VALID_FORM_KEY), any(), any());
   }
 
   @Test
   public void shouldReturn404ForFormInvalidUserTaskKey() {
     // given
-    when(userTaskServices.getUserTaskForm(eq(INVALID_USER_TASK_KEY), any()))
+    when(userTaskServices.getUserTaskForm(eq(INVALID_USER_TASK_KEY), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -981,7 +985,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturn500OnUnexpectedException() throws Exception {
-    when(userTaskServices.getUserTaskForm(eq(VALID_FORM_KEY), any()))
+    when(userTaskServices.getUserTaskForm(eq(VALID_FORM_KEY), any(), any()))
         .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient
@@ -1023,6 +1027,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
@@ -1045,6 +1050,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any());
   }
 
@@ -1066,6 +1072,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
@@ -1088,6 +1095,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any());
   }
 
@@ -1109,6 +1117,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any()))
         .thenReturn(SEARCH_EFFECTIVE_VAR_QUERY_RESULT);
     // when and then
@@ -1131,6 +1140,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 variableSearchQuery()
                     .filter(f -> f.nameOperations(Operation.eq("varName")))
                     .build()),
+            any(),
             any());
   }
 
@@ -1174,7 +1184,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(userTaskServices.search(any(UserTaskQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(userTaskServices.search(any(UserTaskQuery.class), any(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -1191,7 +1202,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userTaskServices).search(eq(new UserTaskQuery.Builder().filter(filter).build()), any());
+    verify(userTaskServices)
+        .search(eq(new UserTaskQuery.Builder().filter(filter).build()), any(), any());
   }
 
   @Test
@@ -1209,6 +1221,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     when(userTaskServices.searchUserTaskAuditLogs(
             eq(VALID_USER_TASK_KEY),
             eq(auditLogSearchQuery().filter(f -> f.actorIds("1")).build()),
+            any(),
             any()))
         .thenReturn(SEARCH_AUDIT_LOG_QUERY_RESULT);
     // when and then
@@ -1228,6 +1241,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .searchUserTaskAuditLogs(
             eq(VALID_USER_TASK_KEY),
             eq(auditLogSearchQuery().filter(f -> f.actorIds("1")).build()),
+            any(),
             any());
   }
 }

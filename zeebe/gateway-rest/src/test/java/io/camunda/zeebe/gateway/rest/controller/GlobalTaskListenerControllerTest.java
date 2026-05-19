@@ -72,7 +72,8 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             GlobalListenerSource.API,
             GlobalListenerType.USER_TASK);
 
-    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class), any()))
+    when(globalListenerServices.getGlobalTaskListener(
+            any(GlobalListenerRecord.class), any(), any()))
         .thenReturn(entity);
 
     // when / then
@@ -84,7 +85,8 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(globalListenerServices).getGlobalTaskListener(listenerRecordCaptor.capture(), any());
+    verify(globalListenerServices)
+        .getGlobalTaskListener(listenerRecordCaptor.capture(), any(), any());
     final var capturedRequest = listenerRecordCaptor.getValue();
     assertThat(capturedRequest.getId()).isEqualTo("my-listener");
     assertThat(capturedRequest.getListenerType())
@@ -152,7 +154,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             .items(List.of(entity1, entity2))
             .build();
 
-    when(globalListenerServices.search(any(GlobalListenerQuery.class), any()))
+    when(globalListenerServices.search(any(GlobalListenerQuery.class), any(), any()))
         .thenReturn(searchResult);
 
     final var requestBody =
@@ -172,14 +174,15 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(globalListenerServices).search(searchQueryCaptor.capture(), any());
+    verify(globalListenerServices).search(searchQueryCaptor.capture(), any(), any());
     assertThat(searchQueryCaptor.getValue()).isNotNull();
   }
 
   @Test
   void shouldHandleErrorInGetGlobalTaskListener() {
     // given
-    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class), any()))
+    when(globalListenerServices.getGlobalTaskListener(
+            any(GlobalListenerRecord.class), any(), any()))
         .thenThrow(new RuntimeException("Test error"));
 
     // when / then
@@ -195,7 +198,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
   @Test
   void shouldHandleErrorInSearch() {
     // given
-    when(globalListenerServices.search(any(GlobalListenerQuery.class), any()))
+    when(globalListenerServices.search(any(GlobalListenerQuery.class), any(), any()))
         .thenThrow(new RuntimeException("Test error"));
 
     final var requestBody =

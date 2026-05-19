@@ -92,7 +92,7 @@ public class TenantControllerTest {
       final var tenantName = "Test Tenant";
       final var tenantDescription = "Test description";
       when(tenantServices.createTenant(
-              eq(new TenantRequest(null, id, tenantName, tenantDescription)), any()))
+              eq(new TenantRequest(null, id, tenantName, tenantDescription)), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -118,7 +118,8 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .createTenant(eq(new TenantRequest(null, id, tenantName, tenantDescription)), any());
+          .createTenant(
+              eq(new TenantRequest(null, id, tenantName, tenantDescription)), any(), any());
     }
 
     @Test
@@ -128,7 +129,7 @@ public class TenantControllerTest {
       final var tenantId = "tenantId";
       final var tenantDescription = "Test description";
       when(tenantServices.createTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -166,7 +167,7 @@ public class TenantControllerTest {
       // then
       verify(tenantServices, times(1))
           .createTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any());
     }
 
     @Test
@@ -282,7 +283,7 @@ public class TenantControllerTest {
       final var tenantId = "tenant-test-id";
       final var tenantDescription = "Updated description";
       when(tenantServices.updateTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -319,7 +320,7 @@ public class TenantControllerTest {
       // then
       verify(tenantServices, times(1))
           .updateTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any());
     }
 
     @Test
@@ -363,7 +364,7 @@ public class TenantControllerTest {
       final var tenantDescription = "My tenant description";
       final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
       when(tenantServices.updateTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -387,7 +388,7 @@ public class TenantControllerTest {
 
       verify(tenantServices, times(1))
           .updateTenant(
-              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any(), any());
     }
 
     @Test
@@ -397,7 +398,7 @@ public class TenantControllerTest {
 
       final var tenantRecord = new TenantRecord().setTenantId(tenantId);
 
-      when(tenantServices.deleteTenant(eq(tenantId), any()))
+      when(tenantServices.deleteTenant(eq(tenantId), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(tenantRecord));
 
       // when
@@ -410,7 +411,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).deleteTenant(eq(tenantId), any());
+      verify(tenantServices, times(1)).deleteTenant(eq(tenantId), any(), any());
     }
 
     @ParameterizedTest
@@ -421,7 +422,7 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(eq(request), any()))
+      when(tenantServices.addMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -434,7 +435,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).addMember(eq(request), any());
+      verify(tenantServices, times(1)).addMember(eq(request), any(), any());
     }
 
     @ParameterizedTest
@@ -446,7 +447,7 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(eq(request), any()))
+      when(tenantServices.addMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -484,7 +485,7 @@ public class TenantControllerTest {
       final var entityId = "invalidEntityId!";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(eq(request), any()))
+      when(tenantServices.addMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -521,7 +522,7 @@ public class TenantControllerTest {
       final var entityId = "entity-id";
       final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(eq(tenantMemberRequest), any()))
+      when(tenantServices.removeMember(eq(tenantMemberRequest), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -534,7 +535,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).removeMember(eq(tenantMemberRequest), any());
+      verify(tenantServices, times(1)).removeMember(eq(tenantMemberRequest), any(), any());
     }
 
     @ParameterizedTest
@@ -546,7 +547,7 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(eq(request), any()))
+      when(tenantServices.removeMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -584,7 +585,7 @@ public class TenantControllerTest {
       final var entityId = "invalidEntityId!";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(eq(request), any()))
+      when(tenantServices.removeMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -659,7 +660,7 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(tenantServices.addMember(eq(request), any()))
+      when(tenantServices.addMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -672,7 +673,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).addMember(eq(request), any());
+      verify(tenantServices, times(1)).addMember(eq(request), any(), any());
     }
 
     /**
@@ -686,7 +687,7 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(tenantServices.removeMember(eq(request), any()))
+      when(tenantServices.removeMember(eq(request), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -699,7 +700,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).removeMember(eq(request), any());
+      verify(tenantServices, times(1)).removeMember(eq(request), any(), any());
     }
 
     @TestConfiguration

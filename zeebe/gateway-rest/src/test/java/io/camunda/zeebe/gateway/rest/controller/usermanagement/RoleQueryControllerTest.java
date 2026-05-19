@@ -65,7 +65,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void getRoleShouldReturnOk() {
     // given
     final var role = new RoleEntity(100L, "roleId", "Role Name", "description");
-    when(roleServices.getRole(eq(role.roleId()), any())).thenReturn(role);
+    when(roleServices.getRole(eq(role.roleId()), any(), any())).thenReturn(role);
 
     // when
     webClient
@@ -86,7 +86,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(roleServices, times(1)).getRole(eq(role.roleId()), any());
+    verify(roleServices, times(1)).getRole(eq(role.roleId()), any(), any());
   }
 
   @Test
@@ -94,7 +94,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s".formatted(ROLE_BASE_URL, roleId);
-    when(roleServices.getRole(eq(roleId), any()))
+    when(roleServices.getRole(eq(roleId), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -122,13 +122,13 @@ public class RoleQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(roleServices, times(1)).getRole(eq(roleId), any());
+    verify(roleServices, times(1)).getRole(eq(roleId), any(), any());
   }
 
   @Test
   void shouldSearchRolesWithEmptyQuery() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
@@ -183,13 +183,13 @@ public class RoleQueryControllerTest extends RestControllerTest {
            }""",
             JsonCompareMode.STRICT);
 
-    verify(roleServices).search(eq(new RoleQuery.Builder().build()), any());
+    verify(roleServices).search(eq(new RoleQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSortAndPaginateSearchResult() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
@@ -224,13 +224,14 @@ public class RoleQueryControllerTest extends RestControllerTest {
                     .sort(RoleSort.of(builder -> builder.name().asc()))
                     .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSortAndPaginateByLimitOnlySearchResult() {
     // given
-    when(roleServices.search(any(RoleQuery.class), any()))
+    when(roleServices.search(any(RoleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
@@ -265,6 +266,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                     .sort(RoleSort.of(builder -> builder.name().asc()))
                     .page(SearchQueryPage.of(builder -> builder.size(10)))
                     .build()),
+            any(),
             any());
   }
 
@@ -272,7 +274,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleMemberQuery.class), any()))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -325,6 +327,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 new RoleMemberQuery.Builder()
                     .filter(f -> f.memberType(EntityType.USER).roleId(roleId))
                     .build()),
+            any(),
             any());
   }
 
@@ -332,7 +335,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchMappingsByRole() {
     // given
     final var roleId = "roleId";
-    when(mappingRuleServices.search(any(MappingRuleQuery.class), any()))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -394,6 +397,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 new MappingRuleQuery.Builder()
                     .filter(f -> f.roleId(roleId).claimNames(List.of()))
                     .build()),
+            any(),
             any());
   }
 
@@ -401,7 +405,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   public void shouldSearchClientsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleMemberQuery.class), any()))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -454,6 +458,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 new RoleMemberQuery.Builder()
                     .filter(f -> f.roleId(roleId).memberType(EntityType.CLIENT))
                     .build()),
+            any(),
             any());
   }
 
@@ -461,7 +466,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchGroupsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleMemberQuery.class), any()))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class), any(), any()))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(2)
@@ -509,6 +514,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 new RoleMemberQuery.Builder()
                     .filter(f -> f.roleId(roleId).memberType(EntityType.GROUP))
                     .build()),
+            any(),
             any());
   }
 }

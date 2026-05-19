@@ -151,7 +151,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             Set.of(PermissionType.CREATE));
 
     final Long authorizationKey = authorizationEntity.authorizationKey();
-    when(authorizationServices.getAuthorization(eq(authorizationKey), any()))
+    when(authorizationServices.getAuthorization(eq(authorizationKey), any(), any()))
         .thenReturn(authorizationEntity);
 
     // when
@@ -177,7 +177,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any());
+    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any(), any());
   }
 
   @Test
@@ -185,7 +185,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     // given
     final var authorizationKey = 100L;
     final var path = "%s/%s".formatted("/v2/authorizations", authorizationKey);
-    when(authorizationServices.getAuthorization(eq(authorizationKey), any()))
+    when(authorizationServices.getAuthorization(eq(authorizationKey), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -213,13 +213,13 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any());
+    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any(), any());
   }
 
   @Test
   void shouldSearchAuthorizationsWithEmptyBody() {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
 
@@ -234,13 +234,14 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(eq(new AuthorizationQuery.Builder().build()), any());
+    verify(authorizationServices)
+        .search(eq(new AuthorizationQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchAuthorizationsWithEmptyQuery() {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -258,7 +259,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(eq(new AuthorizationQuery.Builder().build()), any());
+    verify(authorizationServices)
+        .search(eq(new AuthorizationQuery.Builder().build()), any(), any());
   }
 
   @ParameterizedTest
@@ -266,7 +268,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
   void shouldSearchAuthorizationsWithValidQueries(
       final String request, final AuthorizationQuery query) {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
@@ -284,7 +286,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(eq(query), any());
+    verify(authorizationServices).search(eq(query), any(), any());
   }
 
   @ParameterizedTest
@@ -306,7 +308,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(authorizationServices, never()).search(any(AuthorizationQuery.class), any());
+    verify(authorizationServices, never()).search(any(AuthorizationQuery.class), any(), any());
   }
 
   public static Stream<Arguments> validAuthorizationSearchQueries() {

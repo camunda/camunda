@@ -94,7 +94,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchDecisionDefinitionsWithEmptyBody() {
     // given
-    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any()))
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -109,13 +109,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices)
-        .search(eq(new DecisionDefinitionQuery.Builder().build()), any());
+        .search(eq(new DecisionDefinitionQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchDecisionDefinitionsWithEmptyQuery() {
     // given
-    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any()))
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -134,13 +134,13 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices)
-        .search(eq(new DecisionDefinitionQuery.Builder().build()), any());
+        .search(eq(new DecisionDefinitionQuery.Builder().build()), any(), any());
   }
 
   @Test
   void shouldSearchDecisionDefinitionsWithAllFilters() {
     // given
-    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any()))
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -190,13 +190,14 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                             .decisionRequirementsVersions(2)
                             .build())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   void shouldSearchDecisionDefinitionsWithFullSorting() {
     // given
-    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any()))
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class), any(), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -275,6 +276,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                             .asc()
                             .build())
                     .build()),
+            any(),
             any());
   }
 
@@ -316,7 +318,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(decisionDefinitionServices, never()).search(any(DecisionDefinitionQuery.class), any());
+    verify(decisionDefinitionServices, never())
+        .search(any(DecisionDefinitionQuery.class), any(), any());
   }
 
   @Test
@@ -324,7 +327,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final Long decisionDefinitionKey = 1L;
     final String xml = "<xml/>";
-    when(decisionDefinitionServices.getDecisionDefinitionXml(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getDecisionDefinitionXml(
+            eq(decisionDefinitionKey), any(), any()))
         .thenReturn(xml);
 
     // when/then
@@ -344,7 +348,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForNotFoundDecisionDefinition() {
     // given
     final Long decisionDefinitionKey = 1L;
-    when(decisionDefinitionServices.getDecisionDefinitionXml(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getDecisionDefinitionXml(
+            eq(decisionDefinitionKey), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -378,7 +383,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn500ForInternalError() {
     // given
     final Long decisionDefinitionKey = 1L;
-    when(decisionDefinitionServices.getDecisionDefinitionXml(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getDecisionDefinitionXml(
+            eq(decisionDefinitionKey), any(), any()))
         .thenThrow(new RuntimeException("Failed to get decision definition xml."));
 
     // when/then
@@ -438,7 +444,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final Long decisionDefinitionKey = 1L;
     final DecisionDefinitionEntity decisionDefinitionEntity =
         new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "drN", 2, "t");
-    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any(), any()))
         .thenReturn(decisionDefinitionEntity);
     final var expectedResponse =
         """
@@ -470,7 +476,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForNotFoundDecisionDefinitionByKey() {
     // given
     final Long decisionDefinitionKey = 1L;
-    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any(), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -503,7 +509,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
     // given
     final Long decisionDefinitionKey = 1L;
-    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any()))
+    when(decisionDefinitionServices.getByKey(eq(decisionDefinitionKey), any(), any()))
         .thenThrow(new RuntimeException("Failed to get decision definition."));
 
     // when/then
@@ -569,9 +575,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   private static Stream<Pair<String, BiFunction<DecisionDefinitionServices, Long, ?>>>
       getDecisionDecisionTestCasesParameters() {
     return Stream.of(
-        Pair.of(DECISION_DEFINITIONS_GET_URL, (service, key) -> service.getByKey(eq(key), any())),
+        Pair.of(
+            DECISION_DEFINITIONS_GET_URL,
+            (service, key) -> service.getByKey(eq(key), any(), any())),
         Pair.of(
             DECISION_DEFINITIONS_GET_XML_URL,
-            (service, key) -> service.getDecisionDefinitionXml(eq(key), any())));
+            (service, key) -> service.getDecisionDefinitionXml(eq(key), any(), any())));
   }
 }

@@ -156,7 +156,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldSearchMessageSubscriptionsWithEmptyBody() {
     // given
-    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -170,13 +170,13 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any());
+    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any(), any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithEmptyQuery() {
     // given
-    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -192,13 +192,13 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any());
+    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any(), any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithFilters() {
     // given
-    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -263,13 +263,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .toolNames("myTool")
                                 .inboundConnectorTypes("io.camunda:http-webhook:1"))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithSorting() {
     // given
-    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -388,13 +389,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .inboundConnectorType()
                                 .desc())
                     .build()),
+            any(),
             any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithEmptyBody() {
     // given
-    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -409,13 +411,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_CORRELATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services)
-        .searchCorrelated(eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any());
+        .searchCorrelated(
+            eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any(), any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithEmptyQuery() {
     // given
-    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -432,13 +435,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_CORRELATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services)
-        .searchCorrelated(eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any());
+        .searchCorrelated(
+            eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any(), any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithFilters() {
     // given
-    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -491,13 +495,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .subscriptionKeys(2251799813685860L)
                                 .tenantIds("test-tenant"))
                     .build()),
+            any(),
             any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithSorting() {
     // given
-    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -598,6 +603,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .tenantId()
                                 .asc())
                     .build()),
+            any(),
             any());
   }
 }

@@ -46,6 +46,7 @@ public final class DecisionDefinitionServiceTest {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementServices = mock(DecisionRequirementsServices.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
@@ -67,7 +68,7 @@ public final class DecisionDefinitionServiceTest {
 
     // when
     final SearchQueryResult<DecisionDefinitionEntity> searchQueryResult =
-        services.search(searchQuery, authentication);
+        services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -80,11 +81,11 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
-    when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class), any()))
+    when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class), any(), any()))
         .thenReturn("<foo>bar</foo>");
 
     // when
-    final var xml = services.getDecisionDefinitionXml(42L, authentication);
+    final var xml = services.getDecisionDefinitionXml(42L, authentication, "default");
 
     // then
     assertThat(xml).isEqualTo("<foo>bar</foo>");
@@ -101,7 +102,8 @@ public final class DecisionDefinitionServiceTest {
     when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
 
     // when
-    final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L, authentication);
+    final DecisionDefinitionEntity decisionDefinition =
+        services.getByKey(42L, authentication, "default");
 
     // then
     assertThat(decisionDefinition.decisionDefinitionKey()).isEqualTo(42L);
@@ -120,7 +122,7 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executable = () -> services.getByKey(1L, authentication);
+    final ThrowingCallable executable = () -> services.getByKey(1L, authentication, "default");
 
     // then
     final var exception =
@@ -143,7 +145,8 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executable = () -> services.getDecisionDefinitionXml(1L, authentication);
+    final ThrowingCallable executable =
+        () -> services.getDecisionDefinitionXml(1L, authentication, "default");
 
     // then
     final var exception =
@@ -152,6 +155,7 @@ public final class DecisionDefinitionServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-    verify(decisionRequirementServices, never()).getDecisionRequirementsXml(any(Long.class), any());
+    verify(decisionRequirementServices, never())
+        .getDecisionRequirementsXml(any(Long.class), any(), any());
   }
 }

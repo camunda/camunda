@@ -52,7 +52,8 @@ public final class MessageServices extends ApiServices<MessageServices> {
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
       final CorrelateMessageRequest correlationRequest,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
@@ -62,7 +63,9 @@ public final class MessageServices extends ApiServices<MessageServices> {
   }
 
   public CompletableFuture<BrokerResponse<MessageRecord>> publishMessage(
-      final PublicationMessageRequest request, final CamundaAuthentication authentication) {
+      final PublicationMessageRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerPublishMessageRequest(request.name, request.correlationKey)
             .setTimeToLive(request.timeToLive)

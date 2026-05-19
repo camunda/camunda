@@ -53,29 +53,37 @@ public final class BatchOperationServices
 
   @Override
   public SearchQueryResult<BatchOperationEntity> search(
-      final BatchOperationQuery query, final CamundaAuthentication authentication) {
+      final BatchOperationQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, BATCH_OPERATION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchBatchOperations(query));
   }
 
   public SearchQueryResult<BatchOperationItemEntity> searchItems(
-      final BatchOperationItemQuery query, final CamundaAuthentication authentication) {
+      final BatchOperationItemQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, BATCH_OPERATION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchBatchOperationItems(query));
   }
 
   public BatchOperationEntity getById(
-      final String batchOperationKey, final CamundaAuthentication authentication) {
+      final String batchOperationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
@@ -83,11 +91,14 @@ public final class BatchOperationServices
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         withAuthorization(BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
+                .withPhysicalTenant(physicalTenantId)
                 .getBatchOperation(batchOperationKey));
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(
-      final String batchOperationKey, final CamundaAuthentication authentication) {
+      final String batchOperationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     LOGGER.debug("Cancelling batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
@@ -98,7 +109,9 @@ public final class BatchOperationServices
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> suspend(
-      final String batchOperationKey, final CamundaAuthentication authentication) {
+      final String batchOperationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     LOGGER.debug("Suspending batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
@@ -109,7 +122,9 @@ public final class BatchOperationServices
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(
-      final String batchOperationKey, final CamundaAuthentication authentication) {
+      final String batchOperationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     LOGGER.debug("Resuming batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =

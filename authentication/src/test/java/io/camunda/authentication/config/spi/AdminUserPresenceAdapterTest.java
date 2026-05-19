@@ -52,7 +52,7 @@ class AdminUserPresenceAdapterTest {
   void shouldReturnTrueWhenLiveStoreReportsAdminMember() {
     // given
     when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class), any()))
         .thenReturn(true);
 
     // when / then
@@ -63,7 +63,7 @@ class AdminUserPresenceAdapterTest {
   void shouldReturnFalseWhenNoConfiguredOrLiveAdminUser() {
     // given
     when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class), any()))
         .thenReturn(false);
 
     // when / then
@@ -74,7 +74,7 @@ class AdminUserPresenceAdapterTest {
   void shouldReturnTrueWhenLiveStoreThrows() {
     // given — mirror AdminUserCheckFilter: don't block traffic on transient failures
     when(roleServices.hasMembersOfType(
-            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class)))
+            eq(ADMIN_ROLE_ID), eq(EntityType.USER), any(CamundaAuthentication.class), any()))
         .thenThrow(new RuntimeException("secondary storage down"));
 
     // when / then

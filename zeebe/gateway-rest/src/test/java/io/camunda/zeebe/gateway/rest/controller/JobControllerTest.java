@@ -78,7 +78,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldFailJob() {
     // given
-    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any()))
+    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -103,13 +103,13 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .failJob(eq(1L), eq(1), eq("error"), eq(1L), eq(Map.of("foo", "bar")), any());
+        .failJob(eq(1L), eq(1), eq("error"), eq(1L), eq(Map.of("foo", "bar")), any(), any());
   }
 
   @Test
   void shouldFailJobWithoutBody() {
     // given
-    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any()))
+    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     // when/then
@@ -121,13 +121,13 @@ public class JobControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isNoContent();
-    Mockito.verify(jobServices).failJob(eq(1L), eq(0), eq(""), eq(0L), eq(Map.of()), any());
+    Mockito.verify(jobServices).failJob(eq(1L), eq(0), eq(""), eq(0L), eq(Map.of()), any(), any());
   }
 
   @Test
   void shouldFailJobWithEmptyBody() {
     // given
-    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any()))
+    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -146,13 +146,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).failJob(eq(1L), eq(0), eq(""), eq(0L), eq(Map.of()), any());
+    Mockito.verify(jobServices).failJob(eq(1L), eq(0), eq(""), eq(0L), eq(Map.of()), any(), any());
   }
 
   @Test
   void shouldThrowErrorJob() {
     // given
-    when(jobServices.errorJob(anyLong(), anyString(), anyString(), any(), any()))
+    when(jobServices.errorJob(anyLong(), anyString(), anyString(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -176,7 +176,7 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .errorJob(eq(1L), eq("400"), eq("error"), eq(Map.of("foo", "bar")), any());
+        .errorJob(eq(1L), eq("400"), eq("error"), eq(Map.of("foo", "bar")), any(), any());
   }
 
   @Test
@@ -330,7 +330,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJob() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
     // when/then
     webClient
@@ -342,13 +342,14 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).completeJob(eq(1L), eq(Map.of()), any(JobResult.class), any());
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), any(JobResult.class), any(), any());
   }
 
   @Test
   void shouldCompleteJobWithResultDeniedTrue() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -376,14 +377,14 @@ public class JobControllerTest extends RestControllerTest {
     final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
     assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
   }
 
   @Test
   void shouldCompleteJobWithResultDeniedTrueAndDeniedReason() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -412,7 +413,7 @@ public class JobControllerTest extends RestControllerTest {
     final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
     assertThat(jobResultArgumentCaptor.getValue().isDenied()).isTrue();
     assertThat(jobResultArgumentCaptor.getValue().getDeniedReason())
         .isEqualTo("Reason to deny lifecycle transition");
@@ -421,7 +422,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJobWithResultWithCorrections() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -456,7 +457,7 @@ public class JobControllerTest extends RestControllerTest {
     final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrections())
         .isEqualTo(
@@ -481,7 +482,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJobWithResultWithCorrectionsPartiallySet() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -514,7 +515,7 @@ public class JobControllerTest extends RestControllerTest {
     final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrections())
         .isEqualTo(
@@ -535,7 +536,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJobWithResultWithCorrectionsPartiallySetAndDefault() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -567,7 +568,7 @@ public class JobControllerTest extends RestControllerTest {
 
     final var jobResultArgumentCaptor = ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrections())
         .isEqualTo(
@@ -588,7 +589,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJobWithResultDeniedFalse() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -616,7 +617,7 @@ public class JobControllerTest extends RestControllerTest {
     final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any());
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), any(), any());
     assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
     assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
   }
@@ -624,7 +625,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJobWithVariables() {
     // given
-    when(jobServices.completeJob(anyLong(), any(), any(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -648,13 +649,13 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of("foo", "bar")), any(JobResult.class), any());
+        .completeJob(eq(1L), eq(Map.of("foo", "bar")), any(JobResult.class), any(), any());
   }
 
   @Test
   void shouldUpdateJob() {
     // given
-    when(jobServices.updateJob(anyLong(), any(), any(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -678,13 +679,13 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, 1000L)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, 1000L)), any(), any());
   }
 
   @Test
   void shouldUpdateJobWithOnlyRetries() {
     // given
-    when(jobServices.updateJob(anyLong(), any(), any(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -707,13 +708,13 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, null)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, null)), any(), any());
   }
 
   @Test
   void shouldUpdateJobWithOnlyTimeout() {
     // given
-    when(jobServices.updateJob(anyLong(), any(), any(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -735,13 +736,13 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(null, 1000L)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(null, 1000L)), any(), any());
   }
 
   @Test
   void shouldUpdateJobWithOperationReference() {
     // given
-    when(jobServices.updateJob(anyLong(), any(), any(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -764,7 +765,7 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), eq(12345678L), eq(new UpdateJobChangeset(null, 1000L)), any());
+        .updateJob(eq(1L), eq(12345678L), eq(new UpdateJobChangeset(null, 1000L)), any(), any());
   }
 
   @Test
@@ -939,7 +940,7 @@ public class JobControllerTest extends RestControllerTest {
             new StatusMetric(5, lastUpdatedAt),
             false);
 
-    when(jobServices.getGlobalStatistics(any(), any())).thenReturn(statisticsEntity);
+    when(jobServices.getGlobalStatistics(any(), any(), any())).thenReturn(statisticsEntity);
 
     final var expectedResponse =
         """
@@ -1029,7 +1030,7 @@ public class JobControllerTest extends RestControllerTest {
             .endCursor("endCursor")
             .build();
 
-    when(jobServices.getJobTypeStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobTypeStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1120,7 +1121,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(statisticsEntity))
             .build();
 
-    when(jobServices.getJobTypeStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobTypeStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1198,7 +1199,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(statisticsEntity))
             .build();
 
-    when(jobServices.getJobTypeStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobTypeStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1407,7 +1408,7 @@ public class JobControllerTest extends RestControllerTest {
 
     Mockito.doNothing()
         .when(jobServices)
-        .activateJobs(requestCaptor.capture(), any(), any(), any());
+        .activateJobs(requestCaptor.capture(), any(), any(), any(), any());
 
     final var request =
         """
@@ -1457,7 +1458,7 @@ public class JobControllerTest extends RestControllerTest {
 
     Mockito.doNothing()
         .when(jobServices)
-        .activateJobs(requestCaptor.capture(), any(), any(), any());
+        .activateJobs(requestCaptor.capture(), any(), any(), any(), any());
 
     final var request =
         """
@@ -1509,7 +1510,7 @@ public class JobControllerTest extends RestControllerTest {
 
     Mockito.doNothing()
         .when(jobServices)
-        .activateJobs(requestCaptor.capture(), any(), any(), any());
+        .activateJobs(requestCaptor.capture(), any(), any(), any(), any());
 
     final var request =
         """
@@ -1565,7 +1566,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(workerEntity1, workerEntity2))
             .build();
 
-    when(jobServices.getJobWorkerStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobWorkerStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1654,7 +1655,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(workerEntity))
             .build();
 
-    when(jobServices.getJobWorkerStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobWorkerStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1901,7 +1902,7 @@ public class JobControllerTest extends RestControllerTest {
             .endCursor("endCursor")
             .build();
 
-    when(jobServices.getJobTimeSeriesStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobTimeSeriesStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -1971,7 +1972,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(entity))
             .build();
 
-    when(jobServices.getJobTimeSeriesStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobTimeSeriesStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -2199,7 +2200,7 @@ public class JobControllerTest extends RestControllerTest {
             .endCursor("endCursor")
             .build();
 
-    when(jobServices.getJobErrorStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobErrorStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """
@@ -2262,7 +2263,7 @@ public class JobControllerTest extends RestControllerTest {
             .items(List.of(entity))
             .build();
 
-    when(jobServices.getJobErrorStatistics(any(), any())).thenReturn(searchResult);
+    when(jobServices.getJobErrorStatistics(any(), any(), any())).thenReturn(searchResult);
 
     final var request =
         """

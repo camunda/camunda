@@ -36,6 +36,7 @@ public final class UsageMetricsServiceTest {
   public void before() {
     client = mock(UsageMetricsSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     authentication = mock(CamundaAuthentication.class);
     services =
         new UsageMetricsServices(
@@ -63,7 +64,7 @@ public final class UsageMetricsServiceTest {
             .build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult.items().getFirst())

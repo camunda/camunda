@@ -62,6 +62,7 @@ public class RoleServicesTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(RoleSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.withPhysicalTenant(any())).thenReturn(client);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
@@ -82,7 +83,8 @@ public class RoleServicesTest {
     final var description = "description";
 
     // when
-    services.createRole(new CreateRoleRequest(roleId, roleName, description), authentication);
+    services.createRole(
+        new CreateRoleRequest(roleId, roleName, description), authentication, "default");
 
     // then
     final BrokerRoleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -105,7 +107,7 @@ public class RoleServicesTest {
     final var searchQuery = SearchQueryBuilders.roleSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication);
+    final var searchQueryResult = services.search(searchQuery, authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -127,7 +129,7 @@ public class RoleServicesTest {
     when(client.getRole(eq("roleId"))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getRole(entity.roleId(), authentication);
+    final var searchQueryResult = services.getRole(entity.roleId(), authentication, "default");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -141,7 +143,8 @@ public class RoleServicesTest {
     final var description = "UpdatedDescription";
 
     // when
-    services.updateRole(new UpdateRoleRequest(roleId, name, description), authentication);
+    services.updateRole(
+        new UpdateRoleRequest(roleId, name, description), authentication, "default");
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -161,7 +164,8 @@ public class RoleServicesTest {
     final var entityId = "entityId";
 
     // when
-    services.addMember(new RoleMemberRequest(roleId, entityId, EntityType.USER), authentication);
+    services.addMember(
+        new RoleMemberRequest(roleId, entityId, EntityType.USER), authentication, "default");
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -181,7 +185,8 @@ public class RoleServicesTest {
     final var username = "42";
 
     // when
-    services.removeMember(new RoleMemberRequest(roleId, username, EntityType.USER), authentication);
+    services.removeMember(
+        new RoleMemberRequest(roleId, username, EntityType.USER), authentication, "default");
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -213,7 +218,8 @@ public class RoleServicesTest {
                     q ->
                         q.filter(f -> f.memberId(memberId).childMemberType(memberType))
                             .unlimited()),
-                authentication)
+                authentication,
+                "default")
             .items();
 
     // then

@@ -17,6 +17,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -42,29 +43,35 @@ public class AuditLogController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
-      @RequestBody(required = false) final AuditLogSearchQueryRequest query) {
+      @RequestBody(required = false) final AuditLogSearchQueryRequest query,
+      @PhysicalTenantId final String physicalTenantId) {
     return SearchQueryRequestMapper.toAuditLogQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{auditLogKey}")
-  public ResponseEntity<AuditLogResult> getAuditLog(@PathVariable final String auditLogKey) {
+  public ResponseEntity<AuditLogResult> getAuditLog(
+      @PathVariable final String auditLogKey, @PhysicalTenantId final String physicalTenantId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toAuditLog(
                   auditLogServices.getAuditLog(
-                      auditLogKey, authenticationProvider.getCamundaAuthentication())));
+                      auditLogKey,
+                      authenticationProvider.getCamundaAuthentication(),
+                      physicalTenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
-  private ResponseEntity<AuditLogSearchQueryResult> search(final AuditLogQuery query) {
+  private ResponseEntity<AuditLogSearchQueryResult> search(
+      final AuditLogQuery query, final String physicalTenantId) {
     try {
       final var result =
-          auditLogServices.search(query, authenticationProvider.getCamundaAuthentication());
+          auditLogServices.search(
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
