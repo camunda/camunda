@@ -136,7 +136,11 @@ public interface ActorFuture<V extends @Nullable Object>
 
   boolean isCompletedExceptionally();
 
-  @Nullable Throwable getException();
+  /**
+   * @return the throwable if this future completed exceptionally
+   * @throws IllegalStateException if the future is not completed exceptionally
+   */
+  Throwable getException();
 
   @Override
   default void accept(final V value, final @Nullable Throwable throwable) {

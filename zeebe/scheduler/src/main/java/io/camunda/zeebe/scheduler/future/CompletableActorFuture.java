@@ -308,13 +308,13 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public @Nullable Throwable getException() {
+  public Throwable getException() {
     if (!isCompletedExceptionally()) {
       throw new IllegalStateException(
           "Cannot call getException(); future is not completed exceptionally.");
     }
 
-    return failureCause;
+    return uncheckedCastToNonNull(failureCause);
   }
 
   @Override
