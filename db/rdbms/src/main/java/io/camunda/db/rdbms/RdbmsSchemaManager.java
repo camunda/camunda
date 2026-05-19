@@ -15,4 +15,8 @@ package io.camunda.db.rdbms;
 public interface RdbmsSchemaManager {
 
   boolean isInitialized();
+
+  default boolean isInitialized(final String physicalTenantId) {
+    return isInitialized();
+  }
 }
