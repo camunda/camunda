@@ -16,7 +16,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {
   createUser,
   grantUserResourceAuthorization,
@@ -144,7 +144,7 @@ test.describe
         expect(extendedItem.created.count).toBe(item.created.count);
         expect(extendedItem.completed.count).toBe(item.completed.count);
         expect(extendedItem.failed.count).toBe(item.failed.count);
-      }).toPass(defaultAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -292,7 +292,7 @@ test.describe
         expect(extendedItem.created.count).toBe(item.created.count);
         expect(extendedItem.completed.count).toBe(item.completed.count);
         expect(extendedItem.failed.count).toBe(item.failed.count);
-      }).toPass(defaultAssertionOptions);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
