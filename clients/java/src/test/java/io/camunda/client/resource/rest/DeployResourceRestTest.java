@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.client.impl.response.DecisionImpl;
@@ -472,6 +473,25 @@ public class DeployResourceRestTest extends ClientRestTest {
         .containsExactly(
             new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),
             new FormImpl(formId2, 1, 2, filename2, DEFAULT_TENANT));
+  }
+
+  @Test
+  public void shouldDeployResourceWhenTransportSwitchedFromGrpcToRestAfterAddingResource() {
+    // given
+    final String filename = BPMN_1_FILENAME.substring(1);
+    gatewayService.onDeploymentsRequest(DUMMY_RESPONSE);
+
+    // when - resource is added while gRPC transport is active, then switched to REST before send
+    final DeployResourceCommandStep2 cmd = client.newDeployResourceCommand().batch();
+    cmd.useGrpc();
+    cmd.addResourceFromClasspath(filename);
+    cmd.useRest();
+    cmd.send().join();
+
+    // then
+    LoggedRequestAssert.assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getDeploymentsUrl());
   }
 
   private byte[] getBytes(final String filename) {
