@@ -124,6 +124,10 @@ public class AgentInstanceHandler
 
   @Override
   public void flush(final AgentInstanceEntity entity, final BatchRequest batchRequest) {
+    // `creationDate` is intentionally excluded: it is handler-derived from
+    // `record.getTimestamp()` and only populated by `updateEntity()` on the CREATED
+    // intent. Including it here would overwrite the existing index value with null on
+    // every UPDATED / COMPLETED event.
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(STATUS, entity.getStatus());
     updateFields.put(INPUT_TOKENS, entity.getInputTokens());
@@ -133,9 +137,7 @@ public class AgentInstanceHandler
     updateFields.put(TOOLS, entity.getTools());
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
-    if (entity.getCompletionDate() != null) {
-      updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
-    }
+    updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
