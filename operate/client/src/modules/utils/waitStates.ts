@@ -38,14 +38,14 @@ function getWaitStateStatusItems(
     switch (waitState.waitStateType) {
       case 'MESSAGE': {
         const messageName =
-          (waitState.details.messageName as string) ?? 'unknown';
+          (waitState.details['messageName'] as string) ?? 'unknown';
         return {
           icon: 'message' as const,
           text: `Waiting for message: ${messageName}`,
         };
       }
       case 'TIMER': {
-        const dueDate = waitState.details.dueDate as string | undefined;
+        const dueDate = waitState.details['dueDate'] as string | undefined;
         if (dueDate) {
           return {
             icon: 'time' as const,
@@ -59,9 +59,9 @@ function getWaitStateStatusItems(
       }
       case 'SIGNAL': {
         const signalName =
-          (waitState.details.signalName as string) ?? 'unknown';
+          (waitState.details['signalName'] as string) ?? 'unknown';
         return {
-          icon: 'signal' as const,
+          icon: 'time' as const,
           text: `Waiting for signal: ${signalName}`,
         };
       }
@@ -72,8 +72,8 @@ function getWaitStateStatusItems(
         };
       }
       case 'JOB': {
-        const jobType = (waitState.details.jobType as string) ?? 'unknown';
-        const jobKind = waitState.details.jobKind as string | undefined;
+        const jobType = (waitState.details['jobType'] as string) ?? 'unknown';
+        const jobKind = waitState.details['jobKind'] as string | undefined;
         if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
           return {
             icon: 'job' as const,
@@ -104,7 +104,7 @@ function getEarliestTimerDueDate(
   waitStates: ElementInstanceInspection[],
 ): string | null {
   const timerWaitStates = waitStates.filter(
-    (ws) => ws.waitStateType === 'TIMER' && ws.details.dueDate,
+    (ws) => ws.waitStateType === 'TIMER' && ws.details['dueDate'],
   );
 
   if (timerWaitStates.length === 0) {
@@ -112,7 +112,7 @@ function getEarliestTimerDueDate(
   }
 
   const dates = timerWaitStates
-    .map((ws) => ws.details.dueDate as string)
+    .map((ws) => ws.details['dueDate'] as string)
     .sort();
 
   return dates[0] ?? null;
