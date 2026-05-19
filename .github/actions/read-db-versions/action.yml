@@ -52,7 +52,7 @@ runs:
         python-version: "3.x"
     - name: Install Python dependencies
       shell: bash
-      run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
+      run: python3 -m pip install -q --disable-pip-version-check -r .github/actions/read-db-versions/requirements.txt
     - name: Parse DB versions
       id: parse
       shell: bash

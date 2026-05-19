@@ -1,3 +1,4 @@
+# owner: @camunda/data-layer
 """
 Reads .ci/db-versions.yml and writes every database version as a key=value
 line to stdout, ready to be appended to $GITHUB_OUTPUT.
@@ -7,7 +8,6 @@ Run manually for testing:
 """
 
 import json
-import sys
 import yaml
 
 
@@ -33,9 +33,9 @@ set_output("saas",            versions["elasticsearch"]["saas"])
 
 
 # ── ES/OS matrix (zeebe-search-integration-tests.yml) ────────────────────────
-# Min and max of each major series — oldest supported minor to catch regressions,
-# newest to validate against the latest release. Intermediate versions are skipped
-# to keep CI costs proportional to the number of supported minors.
+# Min and max version to test for each major series — oldest supported minor to
+# catch regressions, newest to validate against the latest release. Intermediate
+# versions are skipped to keep CI costs proportional to supported minors.
 # database-type encodes both the DB family and the version for test filtering.
 def version_slug(v):
     return v.replace(".", "_").replace("-", "_")
