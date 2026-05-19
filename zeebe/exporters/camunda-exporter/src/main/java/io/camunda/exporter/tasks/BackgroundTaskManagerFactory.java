@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
@@ -184,7 +185,10 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-    final var importPositionIndex = resourceProvider.getIndexDescriptor(ImportPositionIndex.class);
+    final var importPositionIndex =
+        new ImportPositionIndex(
+            config.getConnect().getIndexPrefix(),
+            ConnectionTypes.isElasticSearch(config.getConnect().getType()));
     return new OpenSearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
@@ -238,7 +242,10 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-    final var importPositionIndex = resourceProvider.getIndexDescriptor(ImportPositionIndex.class);
+    final var importPositionIndex =
+        new ImportPositionIndex(
+            config.getConnect().getIndexPrefix(),
+            ConnectionTypes.isElasticSearch(config.getConnect().getType()));
     return new ElasticsearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),

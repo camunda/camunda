@@ -16,7 +16,6 @@ import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
@@ -89,7 +88,6 @@ public class IndexDescriptors {
                 new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
                 new AuditLogTemplate(indexPrefix, isElasticsearch),
                 new HistoryDeletionIndex(indexPrefix, isElasticsearch),
-                new ImportPositionIndex(indexPrefix, isElasticsearch),
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
                 new GlobalListenerIndex(indexPrefix, isElasticsearch))
