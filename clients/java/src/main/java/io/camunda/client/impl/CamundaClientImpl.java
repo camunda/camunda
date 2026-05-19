@@ -43,6 +43,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
@@ -225,6 +226,7 @@ import io.camunda.client.impl.command.CancelBatchOperationCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.client.impl.command.CreateAgentInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatchOperationCommandStep1Impl;
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
@@ -1708,6 +1710,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ResourceContentGetRequest newResourceContentBinaryGetRequest(final long resourceKey) {
     return new ResourceContentBinaryGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand() {
+    return new CreateAgentInstanceCommandImpl(httpClient, jsonMapper);
   }
 
   @Override

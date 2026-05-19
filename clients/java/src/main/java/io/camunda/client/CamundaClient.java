@@ -35,6 +35,7 @@ import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
@@ -3431,6 +3432,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a resource content as binary
    */
   ResourceContentGetRequest newResourceContentBinaryGetRequest(long resourceKey);
+
+  /**
+   * Creates a command to create a new agent instance.
+   *
+   * <pre>
+   *   CreateAgentInstanceResponse response = camundaClient
+   *       .newCreateAgentInstanceCommand()
+   *       .elementInstanceKey(2251799813685248)
+   *       .model("gpt-4o")
+   *       .provider("openai")
+   *       .systemPrompt("You are a helpful assistant.")
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @return a builder for creating an agent instance
+   */
+  CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
 
   /**
    * Creates a request to create a new global task listener.
