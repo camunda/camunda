@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
 }
 
 description = "Operate Webjar"

@@ -10,7 +10,7 @@
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
     id("com.google.protobuf")
 }
 

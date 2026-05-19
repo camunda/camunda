@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier
 import java.net.URLClassLoader
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
 }
 
 val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")

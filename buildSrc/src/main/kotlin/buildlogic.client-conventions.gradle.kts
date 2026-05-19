@@ -1,7 +1,7 @@
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
-    id("buildlogic.common-conventions")
+    id("buildlogic.java-conventions")
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")

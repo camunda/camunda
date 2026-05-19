@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
 }
 
 tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {

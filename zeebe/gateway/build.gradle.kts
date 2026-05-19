@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
     id("buildlogic.netty-tcnative-runtime-conventions")
 }
 

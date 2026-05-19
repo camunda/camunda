@@ -7,7 +7,7 @@ import org.gradle.jvm.tasks.Jar
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
     alias(libs.plugins.spring.boot)
     id("org.openapi.generator")
 }

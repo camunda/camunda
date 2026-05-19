@@ -6,7 +6,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
 }
 
 val backwardsCompatVersion = "8.8.0"

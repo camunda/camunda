@@ -5,7 +5,7 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.server-conventions")
 }
 
 tasks.named<ProcessResources>("processResources") {
