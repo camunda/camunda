@@ -42,7 +42,7 @@
     "react-transition-group": "4.4.5",
     "styled-components": "6.3.12",
     "tiny-svg": "4.1.4",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "scripts": {
     "start": "vite",

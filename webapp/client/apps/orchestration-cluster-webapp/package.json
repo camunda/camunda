@@ -37,7 +37,7 @@
 		"react-final-form": "7.0.0",
 		"react-i18next": "17.0.2",
 		"sass": "1.99.0",
-		"zod": "4.3.6"
+		"zod": "4.4.3"
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.11.2",
