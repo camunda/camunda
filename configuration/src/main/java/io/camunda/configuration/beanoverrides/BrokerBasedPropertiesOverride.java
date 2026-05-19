@@ -29,6 +29,7 @@ import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.Region;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
@@ -61,6 +62,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -453,6 +455,14 @@ public class BrokerBasedPropertiesOverride {
       final var fixedPartitionCfgList =
           partitioning.getFixed().stream().map(FixedPartition::toFixedPartitionCfg).toList();
       partitioningCfg.setFixed(fixedPartitionCfgList);
+    }
+
+    if (partitioning.getScheme() == Partitioning.Scheme.REGION_AWARE) {
+      final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
+      partitioningCfg.setScheme(Scheme.REGION_AWARE);
+      final var regionCfgList =
+          partitioning.getZoneAware().regions().stream().map(Region::toRegionCfg).toList();
+      partitioningCfg.setZoneAware(new ZoneAwareCfg(regionCfgList));
     }
   }
 
