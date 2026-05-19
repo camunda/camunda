@@ -92,6 +92,13 @@ class Simulation:
         biggest_size = max(biggest_size, len(index.process_instances))
       return biggest_size
 
+    def get_count_indexes_with_ilm_deadline(self):
+      count = 0
+      for index in self.indexes.values():
+        if index.ilm_deadline is not None:
+          count += 1
+      return count
+
     def _ensure_index_exists(self, index_name):
       index = self.indexes.get(index_name)
       if index is None:
@@ -231,6 +238,7 @@ if __name__ == "__main__":
       verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
 
     print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
+    print(f"Indexes with ILM deadline: {sim.get_count_indexes_with_ilm_deadline()}")
     print(f"Biggest index size: {biggest_index_size}")
     print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
     print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
