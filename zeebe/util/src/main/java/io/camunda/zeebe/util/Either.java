@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents either a {@link Left} or a {@link Right}. By convention, right is used for success and
@@ -58,7 +59,7 @@ import java.util.stream.Collector;
  * @param <L> The left type
  * @param <R> The right type
  */
-public sealed interface Either<L, R> {
+public sealed interface Either<L extends @Nullable Object, R extends @Nullable Object> {
 
   /**
    * Returns a {@link Right} describing the given value.
@@ -68,7 +69,8 @@ public sealed interface Either<L, R> {
    * @param <R> the type of the right value
    * @return a {@link Right} of the value
    */
-  static <L, R> Either<L, R> right(final R right) {
+  static <L extends @Nullable Object, R extends @Nullable Object> Either<L, R> right(
+      final R right) {
     return new Right<>(right);
   }
 
@@ -80,7 +82,7 @@ public sealed interface Either<L, R> {
    * @param <R> the type of the right value
    * @return a {@link Left} of the value
    */
-  static <L, R> Either<L, R> left(final L left) {
+  static <L extends @Nullable Object, R extends @Nullable Object> Either<L, R> left(final L left) {
     return new Left<>(left);
   }
 
@@ -104,7 +106,7 @@ public sealed interface Either<L, R> {
    * @return An intermediary representation {@link EitherOptional}
    */
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  static <R> EitherOptional<R> ofOptional(final Optional<R> right) {
+  static <R extends @Nullable Object> EitherOptional<R> ofOptional(final Optional<R> right) {
     return new EitherOptional<>(right);
   }
 
@@ -138,7 +140,7 @@ public sealed interface Either<L, R> {
    * @param <R> the type of the right values
    * @return a collector that favors left over right
    */
-  static <L, R>
+  static <L extends @Nullable Object, R extends @Nullable Object>
       Collector<Either<L, R>, Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> collector() {
     return Collector.of(
         () -> new Tuple<>(new ArrayList<>(), new ArrayList<>()),
@@ -189,7 +191,7 @@ public sealed interface Either<L, R> {
    * @param <R> the type of the right values
    * @return a collector that favors left over right
    */
-  static <L, R>
+  static <L extends @Nullable Object, R extends @Nullable Object>
       Collector<Either<L, R>, Tuple<Optional<L>, List<R>>, Either<L, List<R>>>
           collectorFoldingLeft() {
     return Collector.of(
@@ -253,7 +255,7 @@ public sealed interface Either<L, R> {
    * @param <T> the type of the resulting right value
    * @return a mapped {@link Right} or the same {@link Left}
    */
-  <T> Either<L, T> map(Function<? super R, ? extends T> right);
+  <T extends @Nullable Object> Either<L, T> map(Function<? super R, ? extends T> right);
 
   /**
    * Maps the left value, if this is a {@link Left}.
@@ -262,7 +264,7 @@ public sealed interface Either<L, R> {
    * @param <T> the type of the resulting left value
    * @return a mapped {@link Left} or the same {@link Right}
    */
-  <T> Either<T, R> mapLeft(Function<? super L, ? extends T> left);
+  <T extends @Nullable Object> Either<T, R> mapLeft(Function<? super L, ? extends T> left);
 
   /**
    * Flatmaps the right value into a new Either, if this is a {@link Right}.
@@ -283,7 +285,8 @@ public sealed interface Either<L, R> {
    * @return either a mapped {@link Right} or a new {@link Left} if this is a right; otherwise the
    *     same left, but cast to consider the new type of the right.
    */
-  <T> Either<L, T> flatMap(Function<? super R, ? extends Either<L, T>> right);
+  <T extends @Nullable Object> Either<L, T> flatMap(
+      Function<? super R, ? extends Either<L, T>> right);
 
   /**
    * Executes the given action with the right value if this is a {@link Right}, otherwise does
@@ -365,7 +368,8 @@ public sealed interface Either<L, R> {
    * @return either a mapped {@link Left} or {@link Right}, folded to the new type
    * @param <T> the type of the resulting value
    */
-  <T> T fold(Function<? super L, ? extends T> leftFn, Function<? super R, ? extends T> rightFn);
+  <T extends @Nullable Object> T fold(
+      Function<? super L, ? extends T> leftFn, Function<? super R, ? extends T> rightFn);
 
   /**
    * A right for either a left or right. By convention, right is used for success and left for
@@ -375,7 +379,8 @@ public sealed interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  record Right<L, R>(R value) implements Either<L, R> {
+  record Right<L extends @Nullable Object, R extends @Nullable Object>(R value)
+      implements Either<L, R> {
     @Override
     public boolean isRight() {
       return true;
@@ -402,18 +407,21 @@ public sealed interface Either<L, R> {
     }
 
     @Override
-    public <T> Either<L, T> map(final Function<? super R, ? extends T> right) {
+    public <T extends @Nullable Object> Either<L, T> map(
+        final Function<? super R, ? extends T> right) {
       return Either.right(right.apply(value));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Either<T, R> mapLeft(final Function<? super L, ? extends T> left) {
+    public <T extends @Nullable Object> Either<T, R> mapLeft(
+        final Function<? super L, ? extends T> left) {
       return (Either<T, R>) this;
     }
 
     @Override
-    public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
+    public <T extends @Nullable Object> Either<L, T> flatMap(
+        final Function<? super R, ? extends Either<L, T>> right) {
       return right.apply(value);
     }
 
@@ -439,7 +447,7 @@ public sealed interface Either<L, R> {
     }
 
     @Override
-    public <T> T fold(
+    public <T extends @Nullable Object> T fold(
         final Function<? super L, ? extends T> leftFn,
         final Function<? super R, ? extends T> rightFn) {
       return rightFn.apply(value);
@@ -453,7 +461,8 @@ public sealed interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  record Left<L, R>(L value) implements Either<L, R> {
+  record Left<L extends @Nullable Object, R extends @Nullable Object>(L value)
+      implements Either<L, R> {
 
     @Override
     public boolean isRight() {
@@ -482,18 +491,21 @@ public sealed interface Either<L, R> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Either<L, T> map(final Function<? super R, ? extends T> right) {
+    public <T extends @Nullable Object> Either<L, T> map(
+        final Function<? super R, ? extends T> right) {
       return (Either<L, T>) this;
     }
 
     @Override
-    public <T> Either<T, R> mapLeft(final Function<? super L, ? extends T> left) {
+    public <T extends @Nullable Object> Either<T, R> mapLeft(
+        final Function<? super L, ? extends T> left) {
       return Either.left(left.apply(value));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
+    public <T extends @Nullable Object> Either<L, T> flatMap(
+        final Function<? super R, ? extends Either<L, T>> right) {
       return (Either<L, T>) this;
     }
 
@@ -518,15 +530,15 @@ public sealed interface Either<L, R> {
     }
 
     @Override
-    public <T> T fold(
+    public <T extends @Nullable Object> T fold(
         final Function<? super L, ? extends T> leftFn,
         final Function<? super R, ? extends T> rightFn) {
       return leftFn.apply(value);
     }
   }
 
-  record EitherOptional<R>(Optional<R> right) {
-    public <L> Either<L, R> orElse(final L left) {
+  record EitherOptional<R extends @Nullable Object>(Optional<R> right) {
+    public <L extends @Nullable Object> Either<L, R> orElse(final L left) {
       return right.<Either<L, R>>map(Either::right).orElse(Either.left(left));
     }
   }
