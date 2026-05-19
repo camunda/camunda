@@ -433,10 +433,12 @@ class TaskDetailsPage {
     // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
 
-    // Complete the task, wait for the banner to appear, then disappear
+    // Complete the task, wait for the banner to appear, then disappear.
+    // The completion round-trip can take longer than the default 10s on
+    // loaded shared clusters; allow 30s for the banner to surface.
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
     await this.clickCompleteTaskButton();
-    await expect(this.taskCompletedBanner).toBeVisible();
+    await expect(this.taskCompletedBanner).toBeVisible({timeout: 30000});
     await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
   }
 }
