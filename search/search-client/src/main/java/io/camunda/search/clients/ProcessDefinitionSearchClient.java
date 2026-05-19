@@ -33,6 +33,8 @@ public interface ProcessDefinitionSearchClient {
 
   ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
 
+  ProcessDefinitionSearchClient withPhysicalTenant(String physicalTenant);
+
   SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> processDefinitionInstanceStatistics(
       final ProcessDefinitionInstanceStatisticsQuery query);
 

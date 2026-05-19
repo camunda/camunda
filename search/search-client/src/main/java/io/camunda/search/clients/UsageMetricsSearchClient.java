@@ -17,6 +17,8 @@ public interface UsageMetricsSearchClient {
 
   UsageMetricsSearchClient withSecurityContext(SecurityContext securityContext);
 
+  UsageMetricsSearchClient withPhysicalTenant(String physicalTenant);
+
   UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query);
 
   UsageMetricTUStatisticsEntity usageMetricTUStatistics(final UsageMetricsTUQuery query);

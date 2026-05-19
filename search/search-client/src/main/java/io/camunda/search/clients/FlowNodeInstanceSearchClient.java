@@ -19,4 +19,6 @@ public interface FlowNodeInstanceSearchClient {
   SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(FlowNodeInstanceQuery filter);
 
   FlowNodeInstanceSearchClient withSecurityContext(SecurityContext securityContext);
+
+  FlowNodeInstanceSearchClient withPhysicalTenant(String physicalTenant);
 }

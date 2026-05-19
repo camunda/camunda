@@ -22,4 +22,6 @@ public interface DeployedResourceSearchClient {
   SearchQueryResult<DeployedResourceEntity> searchDeployedResources(DeployedResourceQuery query);
 
   DeployedResourceSearchClient withSecurityContext(SecurityContext securityContext);
+
+  DeployedResourceSearchClient withPhysicalTenant(String physicalTenant);
 }

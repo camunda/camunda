@@ -19,4 +19,6 @@ public interface AgentInstanceSearchClient {
   SearchQueryResult<AgentInstanceEntity> searchAgentInstances(AgentInstanceQuery query);
 
   AgentInstanceSearchClient withSecurityContext(SecurityContext securityContext);
+
+  AgentInstanceSearchClient withPhysicalTenant(String physicalTenant);
 }

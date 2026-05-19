@@ -19,4 +19,6 @@ public interface UserSearchClient {
   SearchQueryResult<UserEntity> searchUsers(UserQuery userQuery);
 
   UserSearchClient withSecurityContext(SecurityContext securityContext);
+
+  UserSearchClient withPhysicalTenant(String physicalTenant);
 }

@@ -24,4 +24,6 @@ public interface BatchOperationSearchClient {
       BatchOperationItemQuery query);
 
   BatchOperationSearchClient withSecurityContext(SecurityContext securityContext);
+
+  BatchOperationSearchClient withPhysicalTenant(String physicalTenant);
 }

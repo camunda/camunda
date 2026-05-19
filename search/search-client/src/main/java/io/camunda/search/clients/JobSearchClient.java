@@ -39,4 +39,6 @@ public interface JobSearchClient {
   SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(JobErrorStatisticsQuery query);
 
   JobSearchClient withSecurityContext(SecurityContext securityContext);
+
+  JobSearchClient withPhysicalTenant(String physicalTenant);
 }

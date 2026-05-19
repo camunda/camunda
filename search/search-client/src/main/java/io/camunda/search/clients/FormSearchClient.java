@@ -19,4 +19,6 @@ public interface FormSearchClient {
   SearchQueryResult<FormEntity> searchForms(FormQuery filter);
 
   FormSearchClient withSecurityContext(SecurityContext securityContext);
+
+  FormSearchClient withPhysicalTenant(String physicalTenant);
 }

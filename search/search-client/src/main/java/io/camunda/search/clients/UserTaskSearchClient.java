@@ -19,4 +19,6 @@ public interface UserTaskSearchClient {
   SearchQueryResult<UserTaskEntity> searchUserTasks(UserTaskQuery filter);
 
   UserTaskSearchClient withSecurityContext(SecurityContext securityContext);
+
+  UserTaskSearchClient withPhysicalTenant(String physicalTenant);
 }

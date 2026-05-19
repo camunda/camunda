@@ -23,4 +23,6 @@ public interface RoleSearchClient {
   SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleMemberQuery filter);
 
   RoleSearchClient withSecurityContext(SecurityContext securityContext);
+
+  RoleSearchClient withPhysicalTenant(String physicalTenant);
 }

@@ -23,4 +23,6 @@ public interface GroupSearchClient {
   SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupMemberQuery query);
 
   GroupSearchClient withSecurityContext(SecurityContext securityContext);
+
+  GroupSearchClient withPhysicalTenant(String physicalTenant);
 }
