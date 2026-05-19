@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -430,6 +431,197 @@ public class MigrateUserTaskTest {
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
+  }
+
+  @Test
+  public void shouldFireTargetTaskListenersAfterMigratingNativeUserTask() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final String userTaskId = "A";
+    final String targetCreatingListenerType = "target_creating_listener";
+    final String targetAssigningListenerType = "target_assigning_listener";
+    final String targetUpdatingListenerType = "target_updating_listener";
+    final String targetCompletingListenerType = "target_completing_listener";
+    final String targetCancelingListenerType = "target_canceling_listener";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(userTaskId, u -> u.zeebeUserTask())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask(
+                        userTaskId,
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.creating)
+                                            .type(targetCreatingListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.assigning)
+                                            .type(targetAssigningListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.updating)
+                                            .type(targetUpdatingListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.completing)
+                                            .type(targetCompletingListenerType))
+                                .zeebeTaskListener(
+                                    l ->
+                                        l.eventType(ZeebeTaskListenerEventType.canceling)
+                                            .type(targetCancelingListenerType)))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(userTaskId)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(userTaskId, userTaskId)
+        .migrate();
+
+    // then
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("userA").assign();
+    final var assigningJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.ASSIGNING)
+            .withType(targetAssigningListenerType)
+            .getFirst();
+
+    assertThat(assigningJob.getValue())
+        .describedAs(
+            "Expect an ASSIGNING task listener job to be created from the target process after migration")
+        .satisfies(
+            v -> {
+              assertThat(v.getProcessDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+              assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
+              assertThat(v.getElementId()).isEqualTo(userTaskId);
+            });
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(targetCreatingListenerType)
+                .limit(1)
+                .exists())
+        .describedAs(
+            "Expect that the target creating task listener does not fire for an already created task")
+        .isFalse();
+
+    ENGINE.job().withKey(assigningJob.getKey()).complete();
+    RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withCandidateUsers("candidateuser").update();
+    final var updatingJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.UPDATING)
+            .withType(targetUpdatingListenerType)
+            .getFirst();
+
+    assertThat(updatingJob.getValue())
+        .describedAs(
+            "Expect an UPDATING task listener job to be created from the target process after migration")
+        .satisfies(
+            v -> {
+              assertThat(v.getProcessDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+              assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
+              assertThat(v.getElementId()).isEqualTo(userTaskId);
+            });
+
+    ENGINE.job().withKey(updatingJob.getKey()).complete();
+    RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var completingJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.COMPLETING)
+            .withType(targetCompletingListenerType)
+            .getFirst();
+
+    assertThat(completingJob.getValue())
+        .describedAs(
+            "Expect a COMPLETING task listener job to be created from the target process after migration")
+        .satisfies(
+            v -> {
+              assertThat(v.getProcessDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+              assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
+              assertThat(v.getElementId()).isEqualTo(userTaskId);
+            });
+
+    ENGINE.job().withKey(completingJob.getKey()).complete();
+    RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    final var canceledProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(canceledProcessInstanceKey)
+        .withElementId(userTaskId)
+        .await();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(canceledProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction(userTaskId, userTaskId)
+        .migrate();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(canceledProcessInstanceKey)
+        .expectTerminating()
+        .cancel();
+    final var cancelingJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(canceledProcessInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .withJobListenerEventType(JobListenerEventType.CANCELING)
+            .withType(targetCancelingListenerType)
+            .getFirst();
+
+    assertThat(cancelingJob.getValue())
+        .describedAs(
+            "Expect a CANCELING task listener job to be created from the target process after migration")
+        .satisfies(
+            v -> {
+              assertThat(v.getProcessDefinitionKey()).isEqualTo(targetProcessDefinitionKey);
+              assertThat(v.getBpmnProcessId()).isEqualTo(targetProcessId);
+              assertThat(v.getElementId()).isEqualTo(userTaskId);
+            });
   }
 
   @Test
