@@ -15,11 +15,13 @@ import {ThemeProvider} from '#/modules/theme/ThemeProvider';
 import {tracking} from '#/modules/tracking';
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
 import {initI18next} from '#/modules/i18n/i18next';
+import {getBootConfig} from '#/modules/config/getBootConfig';
 
 initI18next();
 
 const router = createRouter({
 	routeTree,
+	basepath: getBootConfig().baseName,
 	defaultPreload: 'intent',
 	defaultPreloadStaleTime: 0,
 	scrollRestoration: true,

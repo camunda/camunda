@@ -7,11 +7,14 @@
  */
 
 import {Link} from '@carbon/react';
+import {getBootConfig} from '#/modules/config/getBootConfig';
 import styles from './styles.module.scss';
 
 const Disclaimer: React.FC = () => {
-	// TODO: render conditionally based on getClientConfig().isEnterprise
-	// depends on https://github.com/camunda/camunda/issues/51322
+	if (getBootConfig().isEnterprise) {
+		return null;
+	}
+
 	return (
 		<span className={styles['container']}>
 			Non-Production License. If you would like information on production usage, please refer to our{' '}

@@ -7,9 +7,11 @@
  */
 
 import {Mixpanel} from 'mixpanel-browser';
+import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 export declare global {
 	interface Window {
+		clientConfig?: GetSystemConfigurationResponseBody;
 		Osano?: {
 			cm?: {
 				analytics: boolean;

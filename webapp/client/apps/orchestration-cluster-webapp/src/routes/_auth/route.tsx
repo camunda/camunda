@@ -13,7 +13,12 @@ import {queries} from '#/modules/http/queries';
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
 		try {
-			await queryClient.ensureQueryData(queries.getCurrentUser());
+			const [, systemConfig] = await Promise.all([
+				queryClient.ensureQueryData(queries.getCurrentUser()),
+				queryClient.ensureQueryData(queries.getSystemConfiguration()),
+			]);
+
+			window.clientConfig = systemConfig;
 		} catch {
 			throw redirect({
 				to: '/login',
