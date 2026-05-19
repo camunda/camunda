@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.agentinstance;
 
 public enum AgentInstanceStatus {
+  UNKNOWN,
   INITIALIZING,
   TOOL_DISCOVERY,
   IDLE,
