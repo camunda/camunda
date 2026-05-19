@@ -534,10 +534,6 @@ public final class SystemContext {
         security.getKeyStore().getFilePath());
   }
 
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsPerBrokerCount) {
-    rocksdbCfg.validateRocksDbMemory(partitionsPerBrokerCount);
-  }
-
   public ActorScheduler getScheduler() {
     return scheduler;
   }
