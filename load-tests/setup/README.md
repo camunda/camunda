@@ -83,7 +83,7 @@ By default, a load test deploys the full Camunda Platform, including:
 * **Connectors** with OIDC authentication
 * **Identity + Keycloak** for OIDC-based authentication
 
-All components are configured in `camunda-platform-values.yaml`.
+All components are configured in `camunda-platform-values-elasticsearch.yaml`.
 
 ### How to set up a load test namespace
 
@@ -121,9 +121,12 @@ This will source and run the `newLoadTest.sh` script. A new folder is created wi
 The template files live under `setup/default/`:
 
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
-- `values/` — Helm values files. Only the values relevant to the chosen
-  `secondaryStorage` are copied into the namespace folder (flat, alongside
-  the Makefile). For example, `elasticsearch` copies `camunda-platform-values.yaml`,
+- `values/` — Helm values files. Every storage variant has its own
+  `camunda-platform-values-${secondaryStorage}.yaml`. All installs start from
+  `camunda-platform-values-elasticsearch.yaml` as the shared base (it holds the
+  full default platform config); non-ES storages layer their storage-specific
+  override on top. For example, `elasticsearch` copies
+  `camunda-platform-values-elasticsearch.yaml`,
   `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
   `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
 - `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
@@ -164,7 +167,7 @@ In the GitHub workflow, set the `enable-optimize` input to `false`.
 
 ### How to configure a load test
 
-The load test configuration is done via the `camunda-platform-values.yaml` file (copied to your namespace folder).
+The load test configuration is done via the `camunda-platform-values-elasticsearch.yaml` file (copied to your namespace folder as the base values for all storage types).
 You can also modify the Makefile to pass additional Helm arguments if needed.
 
 #### Use different Camunda Snapshot
@@ -183,7 +186,7 @@ docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry
 docker push registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Update the `camunda-platform-values.yaml` file in your namespace folder and set the newly created image tag.
+Update the `camunda-platform-values-elasticsearch.yaml` file in your namespace folder and set the newly created image tag.
 
 The changes should look similar to this:
 
@@ -291,7 +294,7 @@ The local namespace folder is left in place — keep it if you may want to recre
 ## Running on stable VMs
 
 By default, load tests deploy onto preemptible (spot) GKE nodes — defined inline
-in `camunda-platform-values.yaml`. To deploy onto the stable (non-spot) nodepool
+in `camunda-platform-values-elasticsearch.yaml`. To deploy onto the stable (non-spot) nodepool
 instead, use `make install-stable`. This applies `values-stable.yaml` on top of
 the platform values, swapping the orchestration `nodeSelector` and tolerations
 to target the `benchmark-n2-standard-4-stable` nodepool.

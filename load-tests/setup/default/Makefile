@@ -49,15 +49,14 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+platform_values := -f camunda-platform-values-elasticsearch.yaml
 
 # Add secondary storage values
-ifeq ($(secondary_storage),postgresql)
-	platform_values += -f camunda-platform-values-rdbms.yaml
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
+	platform_values += -f camunda-platform-values-none.yaml
+	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 
 # Disable Optimize if not enabled
