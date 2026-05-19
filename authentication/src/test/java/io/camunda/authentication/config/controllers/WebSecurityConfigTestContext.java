@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.MembershipService.MembershipResolver;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
@@ -98,6 +100,36 @@ public class WebSecurityConfigTestContext {
   @Bean
   public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
     return new TenantServices(null, null, null, executorProvider, null);
+  }
+
+  /**
+   * Slice tests don't exercise membership resolution — provide a resolver that returns empty lists
+   * so {@link BasicAuthBeansConfiguration#usernamePasswordAuthenticationConverter} can wire.
+   */
+  @Bean
+  public MembershipService membershipService() {
+    return (tokenClaims, principalId, principalType) ->
+        new MembershipResolver() {
+          @Override
+          public List<String> groups() {
+            return List.of();
+          }
+
+          @Override
+          public List<String> roles() {
+            return List.of();
+          }
+
+          @Override
+          public List<String> tenants() {
+            return List.of();
+          }
+
+          @Override
+          public List<String> mappingRules() {
+            return List.of();
+          }
+        };
   }
 
   @Bean

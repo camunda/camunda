@@ -16,8 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.MembershipService.PrincipalType;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -39,7 +39,7 @@ public class DefaultMembershipServiceTest {
   @Mock private GroupServices groupServices;
   @Mock private SecurityConfiguration securityConfiguration;
   @Mock private AuthenticationConfiguration authenticationConfiguration;
-  @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+  @Mock private OidcConfiguration oidcAuthenticationConfiguration;
 
   private DefaultMembershipService membershipService;
 

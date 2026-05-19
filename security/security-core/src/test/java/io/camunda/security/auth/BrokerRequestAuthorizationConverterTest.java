@@ -194,7 +194,7 @@ public class BrokerRequestAuthorizationConverterTest {
     // given — OIDC with groupsClaim (camundaGroupsEnabled=false), but both authorization and
     // multi-tenancy are off, so the engine will not consume the groups.
     final var invoked = new AtomicBoolean();
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthentication().setMethod(OIDC);
@@ -226,7 +226,7 @@ public class BrokerRequestAuthorizationConverterTest {
     // given — OIDC with groupsClaim (camundaGroupsEnabled=false) and authorizations enabled;
     // the engine consumes the groups, so the supplier must run exactly once.
     final var invoked = new AtomicBoolean();
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthentication().setMethod(OIDC);
