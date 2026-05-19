@@ -218,6 +218,8 @@ public class CamundaMultiDBExtension
       "test.integration.aurora.aws.username";
   public static final String TEST_INTEGRATION_AURORA_AWS_PASSWORD =
       "test.integration.aurora.aws.password";
+  public static final String TEST_INTEGRATION_RDBMS_FAST_INIT =
+      "test.integration.camunda.database.fast-init";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
