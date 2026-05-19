@@ -11,12 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateJobDetails;
+import io.camunda.search.entities.WaitStateMessageDetails;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -38,6 +44,94 @@ import org.springframework.test.json.JsonCompareMode;
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
+  static final String INSPECTION_URL = ELEMENTS_BASE_URL + "/inspection";
+
+  private static final String EXPECTED_INSPECTION_RESPONSE =
+      """
+      {
+        "items": [
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685251",
+            "elementId": "payment-task",
+            "elementType": "SERVICE_TASK",
+            "waitStateType": "JOB",
+            "details": {
+              "jobKey": "2251799813685252",
+              "jobType": "payment-service",
+              "jobKind": "BPMN_ELEMENT"
+            }
+          },
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685253",
+            "elementId": "order-received",
+            "elementType": "INTERMEDIATE_CATCH_EVENT",
+            "waitStateType": "MESSAGE",
+            "details": {
+              "messageName": "order-confirmed",
+              "correlationKey": "order-42"
+            }
+          },
+          {
+            "rootProcessInstanceKey": "2251799813685249",
+            "processInstanceKey": "2251799813685249",
+            "elementInstanceKey": "2251799813685261",
+            "elementId": "notify-task",
+            "elementType": "SERVICE_TASK",
+            "waitStateType": "JOB",
+            "details": {
+              "jobKey": "2251799813685260",
+              "jobType": "notification-service",
+              "jobKind": "BPMN_ELEMENT"
+            }
+          }
+        ]
+      }
+      """;
+
+  private static final List<WaitStateEntity> DUMMY_INSPECTION_ITEMS =
+      List.of(
+          new WaitStateEntity.Builder()
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685251L)
+              .elementId("payment-task")
+              .elementType(FlowNodeType.SERVICE_TASK)
+              .rootProcessInstanceKey(2251799813685249L)
+              .details(
+                  new WaitStateJobDetails.Builder()
+                      .jobKey(2251799813685252L)
+                      .jobType("payment-service")
+                      .jobKind(JobKind.BPMN_ELEMENT)
+                      .build())
+              .build(),
+          new WaitStateEntity.Builder()
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685253L)
+              .elementId("order-received")
+              .elementType(FlowNodeType.INTERMEDIATE_CATCH_EVENT)
+              .rootProcessInstanceKey(2251799813685249L)
+              .details(
+                  new WaitStateMessageDetails.Builder()
+                      .messageName("order-confirmed")
+                      .correlationKey("order-42")
+                      .build())
+              .build(),
+          new WaitStateEntity.Builder()
+              .processInstanceKey(2251799813685249L)
+              .elementInstanceKey(2251799813685261L)
+              .elementId("notify-task")
+              .elementType(FlowNodeType.SERVICE_TASK)
+              .rootProcessInstanceKey(2251799813685249L)
+              .details(
+                  new WaitStateJobDetails.Builder()
+                      .jobKey(2251799813685260L)
+                      .jobType("notification-service")
+                      .jobKind(JobKind.BPMN_ELEMENT)
+                      .build())
+              .build());
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -227,5 +321,49 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
         .jsonPath("$.status")
         .isEqualTo(504);
+  }
+
+  @Test
+  void shouldInspectWithEmptyBody() {
+    // given
+    when(elementInstanceServices.inspect(any(), any())).thenReturn(DUMMY_INSPECTION_ITEMS);
+
+    // when / then
+    webClient
+        .post()
+        .uri(INSPECTION_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_INSPECTION_RESPONSE, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldInspectWithFilterByProcessInstanceKey() {
+    // given
+    when(elementInstanceServices.inspect(any(), any())).thenReturn(DUMMY_INSPECTION_ITEMS);
+
+    final var request =
+        """
+        {
+          "filter": {
+            "processInstanceKey": "2251799813685249"
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(INSPECTION_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_INSPECTION_RESPONSE, JsonCompareMode.LENIENT);
   }
 }
