@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
     outputs:
       matrix: ${{ steps.create-matrix.outputs.matrix }}
       is-main: ${{ steps.branch-info.outputs.is-main }}
@@ -218,30 +219,48 @@ jobs:
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
 
-      - name: Restore tested combinations cache
+      - name: Restore tested combinations from previous run
         id: restore-tested
         if: inputs.skip_cache != true
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: /tmp/compatibility-state/tested-combinations.txt
-          key: client-compatibility-tested-${{ github.ref_name }}
-          restore-keys: |
-            client-compatibility-tested-${{ github.ref_name }}-
-
-      - name: Load tested combinations
-        id: load-tested
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p /tmp/compatibility-state
 
-          if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
-            touch /tmp/compatibility-state/tested-combinations.txt
-            echo "Skipping cache - will test all combinations"
-          elif [[ -f /tmp/compatibility-state/tested-combinations.txt ]]; then
-            echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
-          else
-            touch /tmp/compatibility-state/tested-combinations.txt
-            echo "No previous test history found - starting fresh"
+          # Find the most recent tested-combinations artifact for this branch
+          ARTIFACT_NAME="tested-combinations-${{ github.ref_name }}"
+          ARTIFACT_NAME="${ARTIFACT_NAME//\//-}"  # Replace / with - for artifact naming
+
+          # Query for the artifact directly by name across recent runs
+          if ! ARTIFACT_URL=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            --jq '.artifacts[0].archive_download_url // empty' 2>&1); then
+            echo "::warning::Failed to query artifacts API: $ARTIFACT_URL"
+            ARTIFACT_URL=""
           fi
+
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            echo "Found previous tested-combinations artifact, downloading..."
+            if ! gh api "$ARTIFACT_URL" > /tmp/artifact.zip 2>&1; then
+              echo "::warning::Failed to download artifact from $ARTIFACT_URL"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            elif ! unzip -q /tmp/artifact.zip -d /tmp/compatibility-state; then
+              echo "::warning::Downloaded file is not a valid zip archive - starting fresh"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            else
+              echo "Loaded $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
+            fi
+          else
+            echo "No previous test history found - starting fresh"
+            touch /tmp/compatibility-state/tested-combinations.txt
+          fi
+
+      - name: Load tested combinations
+        id: load-tested
+        if: inputs.skip_cache == true
+        run: |
+          mkdir -p /tmp/compatibility-state
+          touch /tmp/compatibility-state/tested-combinations.txt
+          echo "Skipping cache - will test all combinations"
 
       - name: Create version matrix
         id: create-matrix
@@ -400,18 +419,39 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Restore previous tested combinations cache
-        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: /tmp/compatibility-state/tested-combinations.txt
-          key: client-compatibility-tested-${{ github.ref_name }}
-          restore-keys: |
-            client-compatibility-tested-${{ github.ref_name }}-
+      - name: Restore previous tested combinations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/compatibility-state
 
-      - name: Download all tested combinations
+          ARTIFACT_NAME="tested-combinations-${GITHUB_REF_NAME//\//-}"
+
+          if ! ARTIFACT_URL=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+            --jq '.artifacts[0].archive_download_url // empty' 2>&1); then
+            echo "::warning::Failed to query artifacts API: $ARTIFACT_URL"
+            ARTIFACT_URL=""
+          fi
+
+          if [[ -n "$ARTIFACT_URL" ]]; then
+            if ! gh api "$ARTIFACT_URL" > /tmp/artifact.zip 2>&1; then
+              echo "::warning::Failed to download artifact from $ARTIFACT_URL"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            elif ! unzip -q /tmp/artifact.zip -d /tmp/compatibility-state; then
+              echo "::warning::Downloaded file is not a valid zip archive"
+              touch /tmp/compatibility-state/tested-combinations.txt
+            else
+              echo "Restored $(wc -l < /tmp/compatibility-state/tested-combinations.txt) previously tested combinations"
+            fi
+          else
+            touch /tmp/compatibility-state/tested-combinations.txt
+          fi
+
+      - name: Download all tested combinations from this run
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: tested-combo-*
@@ -420,10 +460,7 @@ jobs:
 
       - name: Merge tested combinations
         run: |
-          mkdir -p /tmp/compatibility-state
-          touch /tmp/compatibility-state/tested-combinations.txt
-
-          # Merge new results with existing (if any)
+          # Merge new results with existing
           if [[ -d compatibility-test-results ]]; then
             cat compatibility-test-results/*.txt >> /tmp/compatibility-state/tested-combinations.txt 2>/dev/null || true
           fi
@@ -431,14 +468,22 @@ jobs:
           # Remove duplicates and sort
           sort -u /tmp/compatibility-state/tested-combinations.txt -o /tmp/compatibility-state/tested-combinations.txt
 
-          echo "All tested combinations:"
+          echo "Total tested combinations: $(wc -l < /tmp/compatibility-state/tested-combinations.txt)"
           cat /tmp/compatibility-state/tested-combinations.txt
 
-      - name: Save tested combinations cache
-        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      - name: Determine artifact name
+        id: artifact-name
+        run: |
+          NAME="tested-combinations-${GITHUB_REF_NAME//\//-}"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Save tested combinations artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
+          name: ${{ steps.artifact-name.outputs.name }}
           path: /tmp/compatibility-state/tested-combinations.txt
-          key: client-compatibility-tested-${{ github.ref_name }}-${{ github.run_id }}
+          retention-days: 90
+          overwrite: true
 
       - name: Observe build status
         if: always()
