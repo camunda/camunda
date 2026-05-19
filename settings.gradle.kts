@@ -116,6 +116,7 @@ dependencyResolutionManagement {
             version("archunit", pomVersion("version.archunit"))
             version("assertj", pomVersion("version.assertj"))
             version("auth0", pomVersion("version.auth0"))
+            version("java-jwt", pomVersion("version.java-jwt"))
             version("awaitility", pomVersion("version.awaitility"))
             version("awssdk", pomVersion("version.awssdk"))
             version("bouncycastle", pomVersion("version.bouncycastle"))
@@ -310,7 +311,7 @@ dependencyResolutionManagement {
             version("zeebe-test-container", pomVersion("version.zeebe-test-container"))
 
             library("co-elastic-clients-elasticsearch-java", "co.elastic.clients", "elasticsearch-java").versionRef("co-elastic-clients-elasticsearch-java")
-            library("com-auth0-java-jwt", "com.auth0", "java-jwt").versionRef("auth0")
+            library("com-auth0-java-jwt", "com.auth0", "java-jwt").versionRef("java-jwt")
             library("com-azure-azure-sdk-bom", "com.azure", "azure-sdk-bom").versionRef("azure-sdk")
             library("com-azure-azure-core", "com.azure", "azure-core").withoutVersion()
             library("com-azure-azure-identity", "com.azure", "azure-identity").withoutVersion()
