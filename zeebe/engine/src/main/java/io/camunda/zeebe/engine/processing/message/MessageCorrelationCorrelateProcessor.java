@@ -202,7 +202,8 @@ public final class MessageCorrelationCorrelateProcessor
         messageCorrelationRecord.getNameBuffer(),
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
-        messageCorrelationRecord.getTenantId());
+        messageCorrelationRecord.getTenantId(),
+        messageCorrelationRecord.getBusinessIdBuffer());
   }
 
   private Optional<Rejection> isAuthorizedForAllSubscriptions(

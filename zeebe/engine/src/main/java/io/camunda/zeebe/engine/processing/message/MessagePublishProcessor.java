@@ -170,6 +170,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         messageCorrelationRecord.getNameBuffer(),
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
-        messageCorrelationRecord.getTenantId());
+        messageCorrelationRecord.getTenantId(),
+        messageCorrelationRecord.getBusinessIdBuffer());
   }
 }
