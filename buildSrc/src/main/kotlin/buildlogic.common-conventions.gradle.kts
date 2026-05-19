@@ -1,0 +1,94 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
+plugins {
+    `java-library`
+    `maven-publish`
+    id("com.diffplug.spotless")
+    id("net.ltgt.errorprone")
+}
+
+group = "io.camunda"
+version = "8.10.0-SNAPSHOT"
+java.sourceCompatibility = JavaVersion.VERSION_21
+
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val junitJupiterVersion =
+    versionCatalog.findVersion("org-junit-jupiter-junit-jupiter-api-x1").get().requiredVersion
+val junitPlatformVersion =
+    versionCatalog.findVersion("org-junit-platform-junit-platform-commons-x1").get().requiredVersion
+val errorProneVersion =
+    versionCatalog.findVersion("com-google-errorprone-error-prone-core").get().requiredVersion
+val nullAwayVersion =
+    versionCatalog.findVersion("com-uber-nullaway-nullaway").get().requiredVersion
+val googleJavaFormatVersion =
+    versionCatalog.findVersion("com-google-googlejavaformat-google-java-format").get().requiredVersion
+val isCi = providers.environmentVariable("CI")
+    .map { it.equals("true", ignoreCase = true) }
+    .getOrElse(false)
+
+dependencies {
+    add("errorprone", "com.google.errorprone:error_prone_core:$errorProneVersion")
+    add("errorprone", "com.uber.nullaway:nullaway:$nullAwayVersion")
+    add("testImplementation", "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    add("testImplementation", "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
+    add("testRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
+}
+
+extensions.configure<SpotlessExtension> {
+    isEnforceCheck = isCi
+
+    java {
+        target("src/**/*.java")
+        googleJavaFormat(googleJavaFormatVersion).style("GOOGLE")
+    }
+}
+
+publishing {
+    publications.create<MavenPublication>("maven") {
+        from(components["java"])
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "utf-8"
+    options.compilerArgs.add("-parameters")
+    options.errorprone.isEnabled.set(name == "compileJava")
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    options.compilerArgs.addAll(
+        listOf(
+            "-XDcompilePolicy=simple",
+            "--should-stop=ifError=FLOW",
+            "-XDaddTypeAnnotationsToSymbol=true",
+        )
+    )
+    options.errorprone.disableAllChecks.set(true)
+    options.errorprone.error("NullAway")
+    options.errorprone.excludedPaths.set(
+        ".*/build/(generated|generated-sources|generated-test-sources|tmp|classes)/.*"
+    )
+    options.errorprone.option("NullAway:JSpecifyMode", "true")
+    options.errorprone.option("NullAway:OnlyNullMarked", "true")
+    options.errorprone.option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
+}
+
+tasks.withType<Javadoc> {
+    options.encoding = "utf-8"
+}
+
+tasks.withType<Test> {
+    jvmArgs(
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.nio=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+    )
+
+    useJUnitPlatform()
+}
