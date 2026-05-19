@@ -376,6 +376,9 @@ public interface BackupCompatibilityAcceptance {
                     .withPrefix(imageName.asCanonicalNameString()))
             .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
+            // Previous-version monolith needs 50–60 s to reach /ready on a contended CI
+            // runner; the default 1 min budget sits on the cliff and flakes.
+            .withStartupTimeout(Duration.ofSeconds(90))
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     // Apply backup store specific env vars
