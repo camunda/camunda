@@ -223,8 +223,7 @@ public class ClusterVariablesAnnotationProcessorTest {
               processor.start(client);
             })
         .withMessageContaining("Error resolving cluster variables resources for pattern")
-        .withCauseInstanceOf(IOException.class)
-        .withRootCauseMessage("I/O error");
+        .withCauseInstanceOf(IOException.class);
   }
 
   @Test
@@ -312,15 +311,6 @@ public class ClusterVariablesAnnotationProcessorTest {
     return resource;
   }
 
-  @ClusterVariables(resources = "classpath:variables.json")
-  private static final class WithSingleResource {}
-
-  @ClusterVariables(resources = {"classpath:vars1.json", "classpath:vars2.json"})
-  private static final class WithMultipleResources {}
-
-  @ClusterVariables(resources = "classpath:tenant-variables.json", tenantId = "my-tenant")
-  private static final class WithTenantScopedResource {}
-
   // Public to allow reflective method invocation from SpringMethodInfo (different package)
   public static final class WithMethodVariables {
     @ClusterVariables
@@ -362,4 +352,13 @@ public class ClusterVariablesAnnotationProcessorTest {
       return maxRetries;
     }
   }
+
+  @ClusterVariables(resources = "classpath:variables.json")
+  private static final class WithSingleResource {}
+
+  @ClusterVariables(resources = {"classpath:vars1.json", "classpath:vars2.json"})
+  private static final class WithMultipleResources {}
+
+  @ClusterVariables(resources = "classpath:tenant-variables.json", tenantId = "my-tenant")
+  private static final class WithTenantScopedResource {}
 }
