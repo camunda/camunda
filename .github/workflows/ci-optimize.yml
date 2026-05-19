@@ -241,10 +241,6 @@ jobs:
         with:
           directory: ./optimize/client
 
-      - name: Start frontend
-        working-directory: ./optimize/client
-        run: yarn start &
-
       - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
         uses: ./.github/actions/compose
         with:
@@ -262,6 +258,10 @@ jobs:
         working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
+
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
 
       - name: Wait for import to complete
         run: |
