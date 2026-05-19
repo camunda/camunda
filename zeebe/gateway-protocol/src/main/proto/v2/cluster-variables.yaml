@@ -32,6 +32,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: A cluster variable with this name already exists.
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
@@ -84,6 +86,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: A cluster variable with this name already exists for the given tenant.
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
