@@ -147,6 +147,20 @@ class OrdinalRollover:
 
     def next_ordinal(self, ordinal_indexes, current_ordinal):
         self.time_since_last_rollover += 1
+        if self.time_since_last_rollover >= self.rollover_interval:
+            return self._rollover(ordinal_indexes, current_ordinal)
+        current_index = None
+        for index in ordinal_indexes:
+          if index.ordinal == current_ordinal:
+            current_index = index
+            break
+        if current_index is not None:
+          if len(current_index.process_instances) >= self.rollover_size:
+              return self._rollover(ordinal_indexes, current_ordinal)
+        return current_ordinal
+
+    def _rollover(self, ordinal_indexes, current_ordinal):
+        self.time_since_last_rollover = 0
         if self.max_ordinals is not None and len(ordinal_indexes) >= self.max_ordinals:
           if self.circular_ordinals:
             open_ordinals = [index for index in ordinal_indexes if index.ilm_deadline is None]
@@ -162,21 +176,11 @@ class OrdinalRollover:
                 self.time_since_last_rollover = 0
                 return open_ordinals[next_ordinal_index].ordinal
           return current_ordinal
-        if self.time_since_last_rollover >= self.rollover_interval:
-            return self._rollover(current_ordinal)
-        current_index = None
+        highest_ordinal = current_ordinal
         for index in ordinal_indexes:
-          if index.ordinal == current_ordinal:
-            current_index = index
-            break
-        if current_index is not None:
-          if len(current_index.process_instances) >= self.rollover_size:
-              return self._rollover(current_ordinal)
-        return current_ordinal
-
-    def _rollover(self, current_ordinal):
-        self.time_since_last_rollover = 0
-        return current_ordinal + 1
+          if index.ordinal > highest_ordinal:
+            highest_ordinal = index.ordinal
+        return highest_ordinal + 1
 
 
 if __name__ == "__main__":
