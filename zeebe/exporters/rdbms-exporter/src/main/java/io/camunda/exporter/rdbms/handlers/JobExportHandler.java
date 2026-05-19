@@ -24,6 +24,11 @@ import java.util.Set;
 
 public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
 
+  private static final Set<JobIntent> FAILED_JOB_EVENTS =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
+  private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN, JobIntent.RETRIES_UPDATED);
+
   private static final Set<JobIntent> EXPORTABLE_INTENTS =
       Set.of(
           JobIntent.CREATED,
@@ -106,8 +111,11 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
       builder.deadline(DateUtil.toOffsetDateTime(value.getDeadline()));
     }
 
-    if (intent.equals(JobIntent.FAILED) || intent.equals(JobIntent.ERROR_THROWN)) {
+    if (INTENTS_RETAINING_ELEMENT_ID.contains(intent)) {
       builder.elementId(null);
+    }
+
+    if (FAILED_JOB_EVENTS.contains(intent)) {
       builder.hasFailedWithRetriesLeft(value.getRetries() > 0);
     }
     return builder.build();
