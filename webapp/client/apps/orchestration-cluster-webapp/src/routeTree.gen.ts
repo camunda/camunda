@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
-import { Route as AuthAboutRouteImport } from './routes/_auth/about'
 import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
 import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
@@ -32,11 +31,6 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthAboutRoute = AuthAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
@@ -76,14 +70,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
-  '/about': typeof AuthAboutRoute
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/': typeof AuthTasklistIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/about': typeof AuthAboutRoute
   '/': typeof AuthIndexRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
@@ -96,7 +88,6 @@ export interface FileRoutesById {
   '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
-  '/_auth/about': typeof AuthAboutRoute
   '/_auth/': typeof AuthIndexRoute
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
@@ -110,12 +101,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
-    | '/about'
     | '/admin/'
     | '/operate/'
     | '/tasklist/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/about' | '/' | '/admin' | '/operate' | '/tasklist'
+  to: '/login' | '/' | '/admin' | '/operate' | '/tasklist'
   id:
     | '__root__'
     | '/_auth'
@@ -123,7 +113,6 @@ export interface FileRouteTypes {
     | '/_auth/admin'
     | '/_auth/operate'
     | '/_auth/tasklist'
-    | '/_auth/about'
     | '/_auth/'
     | '/_auth/admin/'
     | '/_auth/operate/'
@@ -156,13 +145,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof AuthRouteRoute
-    }
-    '/_auth/about': {
-      id: '/_auth/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AuthAboutRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/tasklist': {
@@ -248,7 +230,6 @@ interface AuthRouteRouteChildren {
   AuthAdminRouteRoute: typeof AuthAdminRouteRouteWithChildren
   AuthOperateRouteRoute: typeof AuthOperateRouteRouteWithChildren
   AuthTasklistRouteRoute: typeof AuthTasklistRouteRouteWithChildren
-  AuthAboutRoute: typeof AuthAboutRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
@@ -256,7 +237,6 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthAdminRouteRoute: AuthAdminRouteRouteWithChildren,
   AuthOperateRouteRoute: AuthOperateRouteRouteWithChildren,
   AuthTasklistRouteRoute: AuthTasklistRouteRouteWithChildren,
-  AuthAboutRoute: AuthAboutRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
 

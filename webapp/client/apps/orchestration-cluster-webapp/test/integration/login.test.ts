@@ -52,11 +52,14 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 			successResponse: new HttpResponse(null, {status: 200}),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(mockSystemConfiguration),
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
 		}),
 	);
 
-	await page.goto('/about');
+	await page.goto('/operate');
 	await expect(loginPage.usernameInput).toBeVisible();
 
 	network.use(
@@ -64,14 +67,17 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 			successResponse: HttpResponse.json({}),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(mockSystemConfiguration),
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
 		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/about');
+	await expect(page).toHaveURL('/operate');
 });
 
 test('should show an error for wrong credentials', async ({network, loginPage}) => {
