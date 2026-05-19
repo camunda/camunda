@@ -33,6 +33,8 @@ dependencies {
     implementation(project(":zeebe-elasticsearch-exporter"))
     implementation(project(":camunda-exporter"))
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(libs.io.github.openfeign.feign.core)
     implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
     implementation(libs.io.github.openfeign.feign.jackson)
