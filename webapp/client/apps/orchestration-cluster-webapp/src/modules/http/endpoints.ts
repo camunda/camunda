@@ -17,7 +17,7 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
 
 function getFullURL(url: string) {
 	if (typeof window.location.origin !== 'string') {
-		throw new Error('window.location.origin is not a set');
+		throw new Error('window.location.origin is not set');
 	}
 
 	return new URL(mergePathname(getBootConfig().contextPath, url), window.location.origin);
