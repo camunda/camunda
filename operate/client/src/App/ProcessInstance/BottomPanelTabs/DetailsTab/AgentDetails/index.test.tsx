@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {AgentDetails} from './index';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -137,5 +137,58 @@ describe('<AgentDetails />', () => {
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
     expect(screen.getByText('Unable to load agent status')).toBeInTheDocument();
+  });
+
+  it('should render usage metrics section with model calls', () => {
+    render(
+      <AgentDetails
+        agentInstance={mockAgentInstance}
+        isLoading={false}
+        isError={false}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Model Calls'});
+
+    expect(container).toBeInTheDocument();
+    expect(within(container).getByText('3')).toBeInTheDocument();
+    expect(within(container).getByText('of 10 limit')).toBeInTheDocument();
+  });
+
+  it('should render usage metrics section with tokens used', () => {
+    render(
+      <AgentDetails
+        agentInstance={mockAgentInstance}
+        isLoading={false}
+        isError={false}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Tokens Used'});
+
+    expect(container).toBeInTheDocument();
+    expect(within(container).getByText('150')).toBeInTheDocument();
+    expect(within(container).getByText('Input')).toBeInTheDocument();
+    expect(within(container).getByText('100')).toBeInTheDocument();
+    expect(within(container).getByText('Output')).toBeInTheDocument();
+    expect(within(container).getByText('50')).toBeInTheDocument();
+  });
+
+  it('should render usage metrics section with tools called', () => {
+    render(
+      <AgentDetails
+        agentInstance={mockAgentInstance}
+        isLoading={false}
+        isError={false}
+      />,
+    );
+
+    const container = screen.getByRole('article', {name: 'Tools Called'});
+
+    expect(container).toBeInTheDocument();
+    expect(within(container).getByText('2')).toBeInTheDocument();
+    expect(
+      within(container).getByText('Across all model calls in this instance.'),
+    ).toBeInTheDocument();
   });
 });

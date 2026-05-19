@@ -10,19 +10,27 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+import {AccordionItem} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
   CheckmarkOutline,
   Time,
+  MeterAlt,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
   AgentHeading,
+  Accordion,
   StatusRow,
   StatusIconWrapper,
   StatusLabel,
+  MetricsRow,
 } from './styled';
+import {ModelCallsMetric} from './AgentMetrics/ModelCallsMetric';
+import {TokensUsedMetric} from './AgentMetrics/TokensUsedMetric';
+import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
+import {SectionTitle} from './SectionTitle';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   INITIALIZING: 'Initializing',
@@ -87,6 +95,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
+  const {metrics, limits} = agentInstance;
 
   return (
     <AgentDetailsContainer data-testid="agent-details">
@@ -97,6 +106,26 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         </StatusIconWrapper>
         <StatusLabel>Status: {statusLabel}</StatusLabel>
       </StatusRow>
+      <Accordion align="start">
+        <AccordionItem
+          data-testid="agent-usage-section"
+          title={
+            <SectionTitle icon={<MeterAlt size={16} />}>Usage</SectionTitle>
+          }
+        >
+          <MetricsRow>
+            <ModelCallsMetric
+              modelCalls={metrics.modelCalls}
+              maxModelCalls={limits.maxModelCalls}
+            />
+            <TokensUsedMetric
+              inputTokens={metrics.inputTokens}
+              outputTokens={metrics.outputTokens}
+            />
+            <ToolsCalledMetric toolCalls={metrics.toolCalls} />
+          </MetricsRow>
+        </AccordionItem>
+      </Accordion>
     </AgentDetailsContainer>
   );
 };
