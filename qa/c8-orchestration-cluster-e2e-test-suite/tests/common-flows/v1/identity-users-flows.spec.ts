@@ -21,8 +21,16 @@ import {cleanupUsers} from 'utils/usersCleanup';
 test.describe('Identity User Flows', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/simpleProcessForIdentity.bpmn']);
-    await sleep(500);
-    await createInstances('identityProcess', 1, 1);
+    // The 500ms sleep after deploy is not always enough — createInstances
+    // can race the broker's process-definition propagation and fail with
+    // 404 "process definition with process ID 'identityProcess' and
+    // version '1' not found". Retry until the definition is visible.
+    await expect(async () => {
+      await createInstances('identityProcess', 1, 1);
+    }).toPass({
+      intervals: [1_000, 2_000, 5_000, 5_000],
+      timeout: 30_000,
+    });
   });
 
   const createdUsernames: string[] = [];
@@ -195,6 +203,15 @@ test.describe('Identity User Flows', () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await verifyAccess(page, true, 'tasklist');
+      // Tasklist's header is still mounting after verifyAccess returns —
+      // clicking the settings button immediately hits a DOM node that
+      // React detaches mid-rerender ("element was detached from the DOM,
+      // retrying"). Wait for the Tasks nav link (Tasklist-only) before
+      // touching the header. `exact: true` avoids matching the "Camunda
+      // logo Tasklist" link, whose accessible name contains "Tasks".
+      await expect(
+        page.getByRole('link', {name: 'Tasks', exact: true}),
+      ).toBeVisible({timeout: 30000});
       await identityHeader.logout();
     });
 
