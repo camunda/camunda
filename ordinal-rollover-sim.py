@@ -141,11 +141,12 @@ class Simulation:
 
 
 class OrdinalRollover:
-    def __init__(self, rollover_interval=1, rollover_size=1000, max_ordinals=30, circular_ordinals=False):
+    def __init__(self, rollover_interval=1, rollover_size=1000, max_ordinals=30, circular_ordinals=False, circular_reverse=False):
         self.rollover_interval = rollover_interval
         self.rollover_size = rollover_size
         self.max_ordinals = max_ordinals
         self.circular_ordinals = circular_ordinals
+        self.circular_reverse = circular_reverse
         self.time_since_last_rollover = 0
 
     def next_ordinal(self, ordinal_indexes, current_ordinal):
@@ -168,7 +169,7 @@ class OrdinalRollover:
           if self.circular_ordinals:
             open_ordinals = [index for index in ordinal_indexes if index.ilm_deadline is None]
             if len(open_ordinals) > 1:
-              open_ordinals.sort(key=lambda index: index.ordinal)
+              open_ordinals.sort(key=lambda index: index.ordinal, reverse=self.circular_reverse)
               current_ordinal_index = -1
               for i, index in enumerate(open_ordinals):
                 if index.ordinal == current_ordinal:
@@ -199,6 +200,7 @@ if __name__ == "__main__":
     parser.add_argument("--rollover-size", type=int, default=None, help="Rollover once the number of process instances in the current ordinal index reaches this size")
     parser.add_argument("--max-ordinals", type=int, default=None, help="Maximum number of ordinal indexes")
     parser.add_argument("--circular-ordinals", action="store_true", help="Whether to reuse ordinal indexes in a circular manner once the maximum number of ordinals is reached")
+    parser.add_argument("--circular-reverse", action="store_true", help="Whether circular reuse proceeds in reverse order (starting with the highest ordinal index)")
     parser.add_argument("--run-deleter", action="store_true", help="Whether to run the deleter")
     parser.add_argument("--deleter-only-if-no-ilm", action="store_true", help="Whether to run the deleter on indexes that will be dropped by ILM")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed output")
@@ -214,7 +216,8 @@ if __name__ == "__main__":
       rollover_interval=args.rollover_interval,
       rollover_size=args.rollover_size,
       max_ordinals=args.max_ordinals,
-      circular_ordinals=args.circular_ordinals
+      circular_ordinals=args.circular_ordinals,
+      circular_reverse=args.circular_reverse
     )
     sim = Simulation(rollover)
     if args.mode == "main":
