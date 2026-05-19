@@ -194,19 +194,22 @@ public class TopologyServiceTest {
         new Topology(
             List.of(
                 new Broker(
-                    BrokerMemberId.from(0),
+                    null,
+                    0,
                     "localhost",
                     26501,
                     List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
                     version),
                 new Broker(
-                    BrokerMemberId.from(1),
+                    null,
+                    1,
                     "localhost",
                     26502,
                     List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                     version),
                 new Broker(
-                    BrokerMemberId.from(2),
+                    null,
+                    2,
                     "localhost",
                     26503,
                     List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),

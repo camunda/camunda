@@ -261,6 +261,17 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       Integer port,
       List<Partition> partitions,
       String version) {
+
+    public Broker(
+        @Nullable final String zone,
+        final int nodeId,
+        final String host,
+        final Integer port,
+        final List<Partition> partitions,
+        final String version) {
+      this(BrokerMemberId.from(zone, nodeId), host, port, partitions, version);
+    }
+
     public Broker {
       Objects.requireNonNull(brokerId, "Expected  memberId to not be null");
     }
