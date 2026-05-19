@@ -186,13 +186,22 @@ typed output.
 
 Three layers is the budget. Don't nest.
 
-- **No page-shaped modules.** A `modules/<page>/` mirroring a whole
-  page means page logic leaked.
+- **No page-shaped modules** — unless the page is small and
+  self-contained. A `modules/<page>/` mirroring a large page means
+  page logic leaked. A tiny feature that fits in one module folder
+  is fine (e.g. `login`).
 - **No deep module trees.** Cap depth at
   `modules/<thing>/components/<Component>/`.
-- **No parent → child state plumbing.** Push it to the URL; children
-  read directly.
 - **No abstractions for hypothetical use.** Wait until the shape is forced.
+
+Two data-flow rules:
+
+- **API data → props.** The route reads the loader query and passes
+  data down through props. This keeps pages testable and dependencies
+  explicit.
+- **View state → URL.** Filters, sort, cursor, selection live in
+  search params. Children read the URL directly via `useSearch` —
+  no parent → child plumbing for view state.
 
 Three similar lines beats a premature wrapper.
 
