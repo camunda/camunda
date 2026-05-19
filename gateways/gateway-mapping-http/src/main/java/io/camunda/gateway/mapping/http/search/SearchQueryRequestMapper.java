@@ -1147,4 +1147,10 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(
         filterResult, sortResult, pageResult, SearchQueryBuilders::deployedResourceSearchQuery);
   }
+
+  public static @Nullable Object toElementInstanceInspectionFilter(
+      final ElementInstanceInspectionQuery query) {
+    // TODO not implemented yet
+    return null;
+  }
 }
