@@ -39,11 +39,10 @@ import org.junit.jupiter.api.Test;
 
 public final class EvaluateExpressionTest extends ClientRestTest {
 
-  private static Map<String, Object> variablesMap(
-      final String k1, final Object v1, final String k2, final Object v2) {
+  private static Map<String, Object> variablesMap() {
     final Map<String, Object> map = new HashMap<>();
-    map.put(k1, v1);
-    map.put(k2, v2);
+    map.put("x", 10);
+    map.put("y", 20);
     return map;
   }
 
@@ -88,7 +87,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
   void shouldEvaluateExpressionWithVariablesAsMap() {
     // given
     final String expression = "=x + y";
-    final Map<String, Object> variables = variablesMap("x", 10, "y", 20);
+    final Map<String, Object> variables = variablesMap();
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult().expression(expression).result(30));
 
@@ -132,7 +131,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .variables(variablesMap("x", 10, "y", 20)));
+                .variables(variablesMap()));
   }
 
   @Test
@@ -160,7 +159,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .variables(variablesMap("x", 10, "y", 20)));
+                .variables(variablesMap()));
   }
 
   @Test
@@ -239,5 +238,85 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     assertThat(response.getWarnings())
         .extracting(EvaluationWarning::getMessage)
         .containsExactly("Warning 1", "Warning 2");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithScopeKey() {
+    // given
+    final String expression = "=x + y";
+    final long scopeKey = 1234567890L;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client.newEvaluateExpressionCommand().expression(expression).scopeKey(scopeKey).send().join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .scopeKey(String.valueOf(scopeKey)));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithScopeKeyAndVariables() {
+    // given
+    final String expression = "=x + y";
+    final long scopeKey = 9876543210L;
+    final Map<String, Object> variables = variablesMap();
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .scopeKey(scopeKey)
+        .variables(variables)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .scopeKey(String.valueOf(scopeKey))
+                .variables(variables));
+  }
+
+  @Test
+  void shouldReceiveExpressionEvaluationResultWithScopeKey() {
+    // given
+    final String expression = "=x + y";
+    final Object resultValue = 30;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult()
+            .expression(expression)
+            .result(resultValue)
+            .warnings(Collections.emptyList()));
+
+    // when
+    final EvaluateExpressionResponse response =
+        client
+            .newEvaluateExpressionCommand()
+            .expression(expression)
+            .scopeKey(1234567890L)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getExpression()).isEqualTo(expression);
+    assertThat(response.getResult()).isEqualTo(resultValue);
+    assertThat(response.getWarnings()).isEmpty();
   }
 }
