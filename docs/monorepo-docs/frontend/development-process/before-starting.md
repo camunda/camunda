@@ -56,6 +56,16 @@ Default to pessimistic UI. Reach for optimistic updates only with an
 explicit reconciliation plan, because the next read may not show your write
 yet.
 
+## Does the page need live data?
+
+Not every page needs to poll. Default to static loads — fetch once on
+mount. Add `refetchInterval` on the `useSuspenseQuery` only when the
+page must reflect server-side changes without user interaction (e.g., a
+running process instance view, a task inbox). Polling adds complexity
+to tests because assertions must account for ongoing background
+requests. Keep the interval as slow as acceptable. See
+[Data loading](../data-loading.md) for the query patterns.
+
 ## Does it trigger a long-running operation?
 
 Batch operations don't complete inline. The POST returns a
