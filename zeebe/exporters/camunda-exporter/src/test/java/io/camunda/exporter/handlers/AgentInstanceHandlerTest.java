@@ -337,7 +337,9 @@ final class AgentInstanceHandlerTest {
     expectedUpdateFields.put(TOOLS, entity.getTools());
     expectedUpdateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     expectedUpdateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
-    // completionDate absent: UPDATED intent does not set it
+    // completionDate is null on UPDATED intent but still written so the upsert script
+    // payload is identical across intents (no-op when null overwrites null in the index).
+    expectedUpdateFields.put(COMPLETION_DATE, null);
 
     verify(mockRequest, times(1)).upsert(indexName, entity.getId(), entity, expectedUpdateFields);
   }
