@@ -599,7 +599,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.12.1",
+	"packageManager": "npm@11.14.1",
 	"devDependencies": {
 		"@types/node": "25.8.0",
 		"changelogen": "0.6.2",
