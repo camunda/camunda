@@ -50,6 +50,7 @@ import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -183,6 +184,7 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+    final var importPositionIndex = resourceProvider.getIndexDescriptor(ImportPositionIndex.class);
     return new OpenSearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
@@ -191,6 +193,7 @@ public final class BackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        importPositionIndex.getFullQualifiedName(),
         asyncClient,
         executor,
         logger);
@@ -235,6 +238,7 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+    final var importPositionIndex = resourceProvider.getIndexDescriptor(ImportPositionIndex.class);
     return new ElasticsearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
@@ -243,6 +247,7 @@ public final class BackgroundTaskManagerFactory {
         listViewTemplate.getFullQualifiedName(),
         flowNodeTemplate.getAlias(),
         operationTemplate.getAlias(),
+        importPositionIndex.getFullQualifiedName(),
         asyncClient,
         executor,
         logger);

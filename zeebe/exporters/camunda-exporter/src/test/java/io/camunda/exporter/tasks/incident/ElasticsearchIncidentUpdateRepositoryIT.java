@@ -57,6 +57,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
         listViewTemplate.getFullQualifiedName(),
         flowNodeInstanceTemplate.getAlias(),
         operationTemplate.getAlias(),
+        importPositionIndex.getFullQualifiedName(),
         client,
         Runnable::run,
         LOGGER);
