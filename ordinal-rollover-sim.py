@@ -41,6 +41,7 @@ class Simulation:
         self._main_index = self._ensure_index_exists("main")
         self.indexing_operations = 0
         self.delete_operations = 0
+        self.operations_cost_estimate = 0
 
     def new_ordinal_process_instance(self, duration):
       index = self.add_new_process_instance(f"ordinal-{self.current_ordinal:05}", duration)
@@ -56,6 +57,7 @@ class Simulation:
         index.process_instances[self.next_id] = process_instance
         self.next_id += 1
         self.indexing_operations += 1
+        self.operations_cost_estimate += len(index.process_instances)
 
         return index
 
@@ -76,6 +78,7 @@ class Simulation:
             if (process_instance.end_date + self.retention_period) <= self.current_time:
               del index.process_instances[process_instance.id]
               self.delete_operations += 1
+              self.operations_cost_estimate += len(index.process_instances)
 
     def get_num_process_instances(self):
       num_processes = 0
@@ -104,8 +107,10 @@ class Simulation:
             dated_index.ilm_deadline = self.current_time + self.retention_period
           dated_index.process_instances[process_instance.id] = process_instance
           self.indexing_operations += 1
+          self.operations_cost_estimate += len(dated_index.process_instances)
           del self._main_index.process_instances[process_instance.id]
           self.delete_operations += 1
+          self.operations_cost_estimate += len(self._main_index.process_instances)
 
     def _check_for_finished_ordinals(self):
       for index in self.indexes.values():
@@ -208,6 +213,7 @@ if __name__ == "__main__":
     print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
     print(f"Biggest index size: {biggest_index_size}")
     print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
+    print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
 
 
 
