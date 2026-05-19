@@ -26,7 +26,9 @@ const WaitingStatus: React.FC<Props> = ({waitStates}) => {
     <StatusContainer data-testid="waiting-status">
       <StatusHeading>Status</StatusHeading>
       {statusItems.map((item, index) => (
-        <StatusItem key={`${waitStates[index]!.elementInstanceKey}-${waitStates[index]!.waitStateType}`}>
+        <StatusItem
+          key={`${waitStates[index]!.elementInstanceKey}-${waitStates[index]!.waitStateType}`}
+        >
           <Time size={16} />
           <span>{item.text}</span>
         </StatusItem>
