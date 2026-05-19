@@ -44,7 +44,7 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+platform_values := -f camunda-platform-values-elasticsearch.yaml
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
@@ -56,7 +56,7 @@ ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 else ifeq ($(secondary_storage),opensearch)
 	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
+	platform_values += -f camunda-platform-values-none.yaml
 	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 
@@ -122,19 +122,19 @@ create-credentials:
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
-	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
+	# Install MySQL database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mariadb)
 	@echo "Installing MariaDB database for namespace $(namespace)..."
-	# Install MariaDB database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mariadb.yaml
+	# Install MariaDB database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-mariadb.yaml
 	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
 		$(platform_values)
