@@ -16,7 +16,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -38,15 +38,15 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ToolsConfiguration toolConfig;
+  private final ExtensionPropertyConfiguration extensionPropertyConfig;
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ToolsConfiguration toolConfig) {
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
-    this.toolConfig = toolConfig;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -99,11 +99,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
         .toolProperties(
             ProcessCacheUtil.getToolProperties(
-                ext, toolConfig.getExtensionPropertyPrefixToolProperties()))
-        .toolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+                ext, extensionPropertyConfig.getToolPropertiesPrefix()))
+        .toolName(ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
         .inboundConnectorType(
             ProcessCacheUtil.getInboundConnectorType(
-                ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+                ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
         .build();
   }
 }

@@ -192,7 +192,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                configuration.getExtensionProperties()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     decisionRequirementsCache =
@@ -282,7 +283,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                processCache,
+                configuration.getExtensionProperties()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -292,11 +295,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
                 exporterMetadata,
                 processCache,
-                configuration.getTools()),
+                configuration.getExtensionProperties()),
             new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
                 processCache,
-                configuration.getTools()),
+                configuration.getExtensionProperties()),
             new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,

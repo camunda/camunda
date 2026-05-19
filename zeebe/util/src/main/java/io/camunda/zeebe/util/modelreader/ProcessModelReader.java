@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,13 +96,13 @@ public final class ProcessModelReader {
 
   /**
    * Returns a map of elementId → zeebe:properties (name→value) for all flow nodes that carry
-   * zeebe:properties extension elements.
+   * zeebe:properties extension elements, retaining only entries whose name passes the given filter.
    */
   public static Map<String, Map<String, String>> extractExtensionProperties(
-      final Collection<FlowNode> flowNodes) {
+      final Collection<FlowNode> flowNodes, final Predicate<String> propertyNameFilter) {
     final Map<String, Map<String, String>> result = new HashMap<>();
     for (final FlowNode flowNode : flowNodes) {
-      final var props = zeebePropertiesAsMap(flowNode);
+      final var props = zeebePropertiesAsMap(flowNode, propertyNameFilter);
       if (!props.isEmpty()) {
         result.put(flowNode.getId(), props);
       }
@@ -108,7 +110,8 @@ public final class ProcessModelReader {
     return result;
   }
 
-  private static Map<String, String> zeebePropertiesAsMap(final BaseElement element) {
+  private static Map<String, String> zeebePropertiesAsMap(
+      final BaseElement element, final Predicate<String> propertyNameFilter) {
     return getExtensionElementQuery(element, ZeebeProperties.class)
         .flatMap(Query::findSingleResult)
         .map(
@@ -119,7 +122,9 @@ public final class ProcessModelReader {
                       p -> {
                         final String name = p.getName();
                         final String value = p.getValue();
-                        if (name != null && !name.isBlank() && value != null && !value.isBlank()) {
+                        if (StringUtils.isNotBlank(name)
+                            && StringUtils.isNotBlank(value)
+                            && propertyNameFilter.test(name)) {
                           map.put(name, value);
                         }
                       });

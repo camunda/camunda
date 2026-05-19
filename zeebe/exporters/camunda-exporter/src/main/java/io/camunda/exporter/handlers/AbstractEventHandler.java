@@ -38,7 +38,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -50,11 +50,12 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
-  protected final ToolsConfiguration toolConfig;
+  protected final ExtensionPropertyConfiguration extensionPropertyConfig;
 
-  public AbstractEventHandler(final String indexName, final ToolsConfiguration toolConfig) {
+  public AbstractEventHandler(
+      final String indexName, final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.indexName = indexName;
-    this.toolConfig = toolConfig;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -151,13 +152,14 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setToolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+          .setToolName(
+              ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
           .setInboundConnectorType(
               ProcessCacheUtil.getInboundConnectorType(
-                  ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+                  ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
           .setToolProperties(
               ProcessCacheUtil.getToolProperties(
-                  ext, toolConfig.getExtensionPropertyPrefixToolProperties()));
+                  ext, extensionPropertyConfig.getToolPropertiesPrefix()));
     }
   }
 }

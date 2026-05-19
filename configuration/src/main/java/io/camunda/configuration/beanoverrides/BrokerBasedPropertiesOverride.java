@@ -872,7 +872,8 @@ public class BrokerBasedPropertiesOverride {
                   CamundaExporterConfigurationApplier.applyIncidentNotifier(
                       config, unifiedConfiguration);
                   CamundaExporterConfigurationApplier.applyMisc(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyTools(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyExtensionProperties(
+                      config, unifiedConfiguration);
                 })
             .toArgs());
   }
@@ -983,20 +984,20 @@ public class BrokerBasedPropertiesOverride {
                         .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
                   }
 
-                  applyRdbmsToolsConfiguration(
-                      config.getTools(), unifiedConfiguration.getCamunda().getData().getTools());
+                  applyRdbmsExtensionPropertyConfiguration(
+                      config.getExtensionProperties(),
+                      unifiedConfiguration.getCamunda().getData().getExtensionProperties());
                 })
             .toArgs());
   }
 
-  private void applyRdbmsToolsConfiguration(
-      final io.camunda.zeebe.exporter.common.tools.ToolsConfiguration tools,
-      final io.camunda.configuration.Tools source) {
-    tools.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
-    tools.setExtensionPropertyInboundConnectorType(
-        source.getExtensionPropertyInboundConnectorType());
-    tools.setExtensionPropertyPrefixToolProperties(
-        source.getExtensionPropertyPrefixToolProperties());
+  private void applyRdbmsExtensionPropertyConfiguration(
+      final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
+          extensionProperties,
+      final io.camunda.configuration.ExtensionProperties source) {
+    extensionProperties.setToolNameProperty(source.getToolNameProperty());
+    extensionProperties.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private void applyRdbmsHistoryExporterConfiguration(

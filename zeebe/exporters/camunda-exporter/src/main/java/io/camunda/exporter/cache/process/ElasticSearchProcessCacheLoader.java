@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -22,11 +23,15 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
 
   private final ElasticsearchClient client;
   private final String processIndexName;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ElasticSearchProcessCacheLoader(
-      final ElasticsearchClient client, final String processIndexName) {
+      final ElasticsearchClient client,
+      final String processIndexName,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -39,7 +44,9 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
       final var processEntity = response.source();
       final var processDiagramData =
           ProcessCacheUtil.extractProcessDiagramData(
-              processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
+              processEntity.getBpmnXml(),
+              processEntity.getBpmnProcessId(),
+              extensionPropertiesConfiguration);
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersion(),

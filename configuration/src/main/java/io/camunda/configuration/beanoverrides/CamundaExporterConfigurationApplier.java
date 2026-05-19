@@ -8,11 +8,11 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.ExtensionProperties;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.Tools;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
@@ -22,7 +22,7 @@ import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
-import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,18 +247,17 @@ public final class CamundaExporterConfigurationApplier {
     exporterConfiguration.getFormCache().setMaxCacheSize(source.getFormCache().getMaxSize());
   }
 
-  public static void applyTools(
+  public static void applyExtensionProperties(
       final ExporterConfiguration exporterConfiguration,
       final UnifiedConfiguration unifiedConfiguration) {
 
-    final Tools source = unifiedConfiguration.getCamunda().getData().getTools();
-    final ToolsConfiguration target = exporterConfiguration.getTools();
+    final ExtensionProperties source =
+        unifiedConfiguration.getCamunda().getData().getExtensionProperties();
+    final ExtensionPropertyConfiguration target = exporterConfiguration.getExtensionProperties();
 
-    target.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
-    target.setExtensionPropertyInboundConnectorType(
-        source.getExtensionPropertyInboundConnectorType());
-    target.setExtensionPropertyPrefixToolProperties(
-        source.getExtensionPropertyPrefixToolProperties());
+    target.setToolNameProperty(source.getToolNameProperty());
+    target.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    target.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(

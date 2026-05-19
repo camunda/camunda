@@ -25,6 +25,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
@@ -175,7 +176,8 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
+            new ElasticSearchProcessCacheLoader(
+                SEARCH_DB.esClient(), indexName, new ExtensionPropertyConfiguration()),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
@@ -185,7 +187,8 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
+            new OpenSearchProcessCacheLoader(
+                SEARCH_DB.osClient(), indexName, new ExtensionPropertyConfiguration()),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);

@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,7 +52,7 @@ public final class RdbmsCacheRegistry {
         createCache(
             config.getProcessCache().getMaxSize(),
             "process",
-            processLoader(rdbmsService),
+            processLoader(rdbmsService, config.getExtensionProperties()),
             meterRegistry);
     decisionRequirementsCache =
         createCache(
@@ -94,7 +95,8 @@ public final class RdbmsCacheRegistry {
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(
-      final RdbmsService rdbmsService) {
+      final RdbmsService rdbmsService,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
     return new RdbmsEntityCacheLoader<>(
         "Process",
@@ -106,7 +108,7 @@ public final class RdbmsCacheRegistry {
                         .resultConfig(c -> c.includeXml(true))),
         query -> reader.search(query).items(),
         ProcessDefinitionEntity::processDefinitionKey,
-        RdbmsCacheRegistry::toCachedProcessEntity);
+        entity -> toCachedProcessEntity(entity, extensionPropertiesConfiguration));
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedDecisionRequirementsEntity>
@@ -137,9 +139,11 @@ public final class RdbmsCacheRegistry {
   }
 
   private static CachedProcessEntity toCachedProcessEntity(
-      final ProcessDefinitionEntity processDefinitionEntity) {
+      final ProcessDefinitionEntity processDefinitionEntity,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     final var processDiagramData =
-        ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity);
+        ProcessCacheUtil.extractProcessDiagramData(
+            processDefinitionEntity, extensionPropertiesConfiguration);
     return new CachedProcessEntity(
         processDefinitionEntity.name(),
         processDefinitionEntity.version(),
