@@ -40,5 +40,5 @@
     "dotenv": "^17.0.0",
     "mailslurp-client": "^17.0.0"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.14.1"
 }
