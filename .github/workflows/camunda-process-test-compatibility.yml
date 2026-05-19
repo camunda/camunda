@@ -561,14 +561,24 @@ jobs:
         timeout-minutes: 5
         shell: bash
         run: |
+          mkdir -p cpt-docker-logs
+
           echo "=== Fetching status of all containers (including stopped/failed ones) ==="
-          docker ps -a
+          docker ps -a | tee cpt-docker-logs/containers.txt
 
           echo "=== Fetching logs for all available containers ==="
-          for container_id in $(docker ps -a -q); do
-            echo "--- Logs for Container: $(docker inspect --format '{{.Name}}' $container_id) ($container_id) ---"
-            docker logs $container_id || true
-          done
+          while read -r container_id container_name; do
+            echo "--- Logs for Container: ${container_name} (${container_id}) ---"
+            docker logs "${container_id}" > "cpt-docker-logs/${container_name}-${container_id}.log" 2>&1 || true
+          done < <(docker ps -a --format '{{.ID}} {{.Names}}')
+
+      - name: Upload Docker container logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cpt-docker-logs-${{ matrix.client }}-${{ matrix.server }}
+          path: cpt-docker-logs
+          retention-days: 30
 
       - name: Record tested combination
         if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
