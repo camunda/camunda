@@ -871,7 +871,7 @@ public final class ResponseMapper {
   private static BrokerInfo toBrokerInfo(final Broker broker) {
     final var partitions = buildPartitions(broker.partitions());
     return BrokerInfo.Builder.create()
-        .nodeId(broker.nodeId())
+        .nodeId(broker.brokerId().nodeIdx())
         .host(broker.host())
         .port(broker.port())
         .partitions(partitions)
