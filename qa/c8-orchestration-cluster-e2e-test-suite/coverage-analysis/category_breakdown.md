@@ -6,8 +6,8 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 ## Table of contents
 
-- [A. Entity Lifecycle (CRUD)](#a-entity-lifecycle-crud) — 333 tests
-- [B. Membership/Association](#b-membershipassociation) — 135 tests
+- [A. Entity Lifecycle (CRUD)](#a-entity-lifecycle-crud) — 320 tests
+- [B. Membership/Association](#b-membershipassociation) — 148 tests
 - [C. Deployment Lifecycle](#c-deployment-lifecycle) — 96 tests
 - [D. Process-Instance Lifecycle & Ops](#d-process-instance-lifecycle--ops) — 113 tests
 - [E. Batch-Operation Lifecycle](#e-batch-operation-lifecycle) — 32 tests
@@ -24,7 +24,7 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 **Form**: Create Entity → Get Entity (Observe Present) → Update Entity → Search Entity (Observe via list) → Delete Entity → Get Entity (Observe Absence)
 
-**Total tests**: 333
+**Total tests**: 320
 
 ### `authorization` — 78 tests
 
@@ -193,54 +193,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-delete | unauthorized | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:242` | Delete Tenant Cluster Variable Unauthorized |
 | negative-delete | not-found | `cluster-variables/cluster-variable-tenant-api-tests.spec.ts:265` | Delete Tenant Cluster Variable Not Found |
 
-### `tenant` — 37 tests
-
-- **Prerequisite to create**: none
-- **Files**: `tenant/tenant-api-tests.spec.ts`, `tenant/tenant-role-api-tests.spec.ts`
-- **Observation channel**: GET = 3, Search = 10
-- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=6, mutate=3, delete=2, negative-create=6, negative-get=2, negative-search=4, negative-mutate=7, negative-delete=5
-- **Variants**: happy-path=3, observe-via-get=3, observe-via-search=10, bad-request=6, unauthorized=8, not-found=8, conflict=2, unlabeled=3
-
-| form step | variants | file:line | test name |
-|--|--|--|--|
-| create | unlabeled | `tenant/tenant-api-tests.spec.ts:41` | Create Tenant |
-| observe-present-get | — | `tenant/tenant-api-tests.spec.ts:116` | Get Tenant |
-| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:306` | Search Tenants |
-| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:342` | Search Tenants By Name |
-| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:381` | Search Tenants By Tenant Id |
-| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:420` | Search Tenants By Multiple Fields |
-| observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:231` | Search Tenant Roles |
-| observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:262` | Search Tenant Roles Tenant With No Assignments Returns Empty |
-| mutate | unlabeled | `tenant/tenant-api-tests.spec.ts:161` | Update Tenant |
-| mutate | happy-path | `tenant/tenant-api-tests.spec.ts:212` | Update Tenant Missing Description success 200 |
-| mutate | happy-path | `tenant/tenant-role-api-tests.spec.ts:43` | Assign Role To Tenant - Success |
-| delete | unlabeled | `tenant/tenant-api-tests.spec.ts:262` | Delete tenant |
-| delete | happy-path | `tenant/tenant-role-api-tests.spec.ts:136` | Unassign Role From Tenant - Success |
-| negative-create | unauthorized | `tenant/tenant-api-tests.spec.ts:63` | Create Tenant Unauthorized |
-| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:71` | Create Tenant Missing Name Invalid Body 400 |
-| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:80` | Create Tenant Empty Name Invalid Body 400 |
-| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:89` | Create Tenant Missing Tenant Id Invalid Body 400 |
-| negative-create | conflict | `tenant/tenant-api-tests.spec.ts:103` | Create Tenant Conflict |
-| negative-create | conflict | `tenant/tenant-role-api-tests.spec.ts:118` | Assign Already Added Role To Tenant - Conflict |
-| negative-get | unauthorized | `tenant/tenant-api-tests.spec.ts:142` | Get Tenant Unauthorized |
-| negative-get | not-found | `tenant/tenant-api-tests.spec.ts:150` | Get Tenant Not Found |
-| negative-search | bad-request | `tenant/tenant-api-tests.spec.ts:458` | Search Tenants By Invalid Id |
-| negative-search | unauthorized | `tenant/tenant-api-tests.spec.ts:485` | Search Tenants Unauthorized |
-| negative-search | unauthorized | `tenant/tenant-role-api-tests.spec.ts:289` | Search Tenant Roles - Unauthorized |
-| negative-search | not-found | `tenant/tenant-role-api-tests.spec.ts:298` | Search Tenant Roles Tenant - Not Found (empty response) |
-| negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:188` | Update Tenant Empty Name Invalid Body 400 |
-| negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:200` | Update Tenant Missing Name Invalid Body 400 |
-| negative-mutate | unauthorized | `tenant/tenant-api-tests.spec.ts:239` | Update Tenant Unauthorized |
-| negative-mutate | not-found | `tenant/tenant-api-tests.spec.ts:250` | Update Tenant Not Found |
-| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:61` | Assign Role To Tenant Non Existent Role - Not Found |
-| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:81` | Assign Role To Tenant Non Existent Tenant - Not Found |
-| negative-mutate | unauthorized | `tenant/tenant-role-api-tests.spec.ts:101` | Assign Role To Tenant - Unauthorized |
-| negative-delete | unauthorized | `tenant/tenant-api-tests.spec.ts:287` | Delete tenant Unauthorized |
-| negative-delete | not-found | `tenant/tenant-api-tests.spec.ts:295` | Delete tenant Not Found |
-| negative-delete | unauthorized | `tenant/tenant-role-api-tests.spec.ts:179` | Unassign Role From Tenant - Unauthorized |
-| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:193` | Unassign Role From Tenant Non Existent Role - Not Found |
-| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:212` | Unassign Role From Tenant Non Existent Tenant - Not Found |
-
 ### `user` — 30 tests
 
 - **Prerequisite to create**: none
@@ -396,6 +348,41 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-delete | unauthorized | `role/role-api-tests.spec.ts:294` | Delete Role Unauthorized |
 | negative-delete | not-found | `role/role-api-tests.spec.ts:302` | Delete Role Not Found |
 
+### `tenant` — 24 tests
+
+- **Prerequisite to create**: none
+- **Files**: `tenant/tenant-api-tests.spec.ts`
+- **Observation channel**: GET = 3, Search = 6
+- **Form-step counts**: create=1, observe-present-get=1, observe-present-search=4, mutate=2, delete=1, negative-create=5, negative-get=2, negative-search=2, negative-mutate=4, negative-delete=2
+- **Variants**: happy-path=1, observe-via-get=3, observe-via-search=6, bad-request=6, unauthorized=5, not-found=3, conflict=1, unlabeled=3
+
+| form step | variants | file:line | test name |
+|--|--|--|--|
+| create | unlabeled | `tenant/tenant-api-tests.spec.ts:41` | Create Tenant |
+| observe-present-get | — | `tenant/tenant-api-tests.spec.ts:116` | Get Tenant |
+| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:306` | Search Tenants |
+| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:342` | Search Tenants By Name |
+| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:381` | Search Tenants By Tenant Id |
+| observe-present-search | — | `tenant/tenant-api-tests.spec.ts:420` | Search Tenants By Multiple Fields |
+| mutate | unlabeled | `tenant/tenant-api-tests.spec.ts:161` | Update Tenant |
+| mutate | happy-path | `tenant/tenant-api-tests.spec.ts:212` | Update Tenant Missing Description success 200 |
+| delete | unlabeled | `tenant/tenant-api-tests.spec.ts:262` | Delete tenant |
+| negative-create | unauthorized | `tenant/tenant-api-tests.spec.ts:63` | Create Tenant Unauthorized |
+| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:71` | Create Tenant Missing Name Invalid Body 400 |
+| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:80` | Create Tenant Empty Name Invalid Body 400 |
+| negative-create | bad-request | `tenant/tenant-api-tests.spec.ts:89` | Create Tenant Missing Tenant Id Invalid Body 400 |
+| negative-create | conflict | `tenant/tenant-api-tests.spec.ts:103` | Create Tenant Conflict |
+| negative-get | unauthorized | `tenant/tenant-api-tests.spec.ts:142` | Get Tenant Unauthorized |
+| negative-get | not-found | `tenant/tenant-api-tests.spec.ts:150` | Get Tenant Not Found |
+| negative-search | bad-request | `tenant/tenant-api-tests.spec.ts:458` | Search Tenants By Invalid Id |
+| negative-search | unauthorized | `tenant/tenant-api-tests.spec.ts:485` | Search Tenants Unauthorized |
+| negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:188` | Update Tenant Empty Name Invalid Body 400 |
+| negative-mutate | bad-request | `tenant/tenant-api-tests.spec.ts:200` | Update Tenant Missing Name Invalid Body 400 |
+| negative-mutate | unauthorized | `tenant/tenant-api-tests.spec.ts:239` | Update Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-api-tests.spec.ts:250` | Update Tenant Not Found |
+| negative-delete | unauthorized | `tenant/tenant-api-tests.spec.ts:287` | Delete tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-api-tests.spec.ts:295` | Delete tenant Not Found |
+
 ### `document` — 23 tests
 
 - **Prerequisite to create**: none
@@ -462,7 +449,81 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 
 **Form**: Create parent + member (prerequisite) → Assign member → Search members (Observe Present) → Unassign member → Search members (Observe Absence)
 
-**Total tests**: 135
+**Total tests**: 148
+
+### `tenant` — 63 tests
+
+- **Prerequisite to create**: tenant + client, tenant + group, tenant + mapping-rule, tenant + role, tenant + user
+- **Files**: `tenant/tenant-clients-api-tests.spec.ts`, `tenant/tenant-groups-api-tests.spec.ts`, `tenant/tenant-mapping-rule-api-tests.spec.ts`, `tenant/tenant-role-api-tests.spec.ts`, `tenant/tenant-users-api-tests.spec.ts`
+- **Observation channel**: GET = 0, Search = 18
+- **Form-step counts**: observe-present-search=10, mutate=7, delete=5, negative-create=5, negative-search=8, negative-mutate=13, negative-delete=15
+- **Variants**: happy-path=8, observe-via-search=18, unauthorized=15, not-found=21, conflict=5, unlabeled=6
+
+| form step | variants | file:line | test name |
+|--|--|--|--|
+| observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:126` | Search Tenant Clients |
+| observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:166` | Search Tenant Clients For Non Existent Tenant Empty |
+| observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:232` | Search Tenant Groups |
+| observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:264` | Search Tenant Groups Tenant With No Assignments Returns Empty |
+| observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:246` | Search Tenant Mapping Rules - Success |
+| observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:289` | Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success |
+| observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:231` | Search Tenant Roles |
+| observe-present-search | — | `tenant/tenant-role-api-tests.spec.ts:262` | Search Tenant Roles Tenant With No Assignments Returns Empty |
+| observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:141` | Search Tenant Users |
+| observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:182` | Search Tenant Users For Non Existent User Empty |
+| mutate | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:52` | Assign Client To Tenant |
+| mutate | happy-path | `tenant/tenant-clients-api-tests.spec.ts:66` | Assign Client To Tenant Non Existent Client Success |
+| mutate | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:43` | Assign Group To Tenant |
+| mutate | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:42` | Assign Mapping Rule To Tenant - Success |
+| mutate | happy-path | `tenant/tenant-role-api-tests.spec.ts:43` | Assign Role To Tenant - Success |
+| mutate | unlabeled | `tenant/tenant-users-api-tests.spec.ts:55` | Assign User To Tenant |
+| mutate | happy-path | `tenant/tenant-users-api-tests.spec.ts:77` | Assign User To Tenant Non Existent User Success |
+| delete | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:188` | Unassign Client From Tenant |
+| delete | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:137` | Unassign Group From Tenant |
+| delete | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:149` | Unassign Mapping Rule From Tenant - Success |
+| delete | happy-path | `tenant/tenant-role-api-tests.spec.ts:136` | Unassign Role From Tenant - Success |
+| delete | unlabeled | `tenant/tenant-users-api-tests.spec.ts:203` | Unassign User From Tenant |
+| negative-create | conflict | `tenant/tenant-clients-api-tests.spec.ts:112` | Assign Already Added Client To Tenant Conflict |
+| negative-create | conflict | `tenant/tenant-groups-api-tests.spec.ts:119` | Assign Already Added Group To Tenant Conflict |
+| negative-create | conflict | `tenant/tenant-mapping-rule-api-tests.spec.ts:126` | Assign Already Added Mapping Rule To Tenant - Conflict |
+| negative-create | conflict | `tenant/tenant-role-api-tests.spec.ts:118` | Assign Already Added Role To Tenant - Conflict |
+| negative-create | conflict | `tenant/tenant-users-api-tests.spec.ts:125` | Assign Already Added User To Tenant Conflict |
+| negative-search | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:157` | Search Tenant Clients Unauthorized |
+| negative-search | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:291` | Search Tenant Groups Unauthorized |
+| negative-search | not-found | `tenant/tenant-groups-api-tests.spec.ts:300` | Search Tenant Groups Tenant Not Found |
+| negative-search | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:316` | Search Tenant Mapping Rules - Unauthorized |
+| negative-search | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:325` | Search Tenant Mapping Rules Tenant Not Found - Not Found |
+| negative-search | unauthorized | `tenant/tenant-role-api-tests.spec.ts:289` | Search Tenant Roles - Unauthorized |
+| negative-search | not-found | `tenant/tenant-role-api-tests.spec.ts:298` | Search Tenant Roles Tenant - Not Found (empty response) |
+| negative-search | unauthorized | `tenant/tenant-users-api-tests.spec.ts:172` | Search Tenant Users Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-clients-api-tests.spec.ts:80` | Assign Client To Tenant Non Existent Tenant Not Found |
+| negative-mutate | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:97` | Assign Client To Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:62` | Assign Group To Tenant Non Existent Group Not Found |
+| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:82` | Assign Group To Tenant Non Existent Tenant Not Found |
+| negative-mutate | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:102` | Assign Group To Tenant Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:60` | Assign Mapping Rule To Tenant Non Existent Mapping Rule - Not Found |
+| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:83` | Assign Mapping Rule To Tenant Non Existent Tenant - Not Found |
+| negative-mutate | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:106` | Assign Mapping Rule To Tenant - Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:61` | Assign Role To Tenant Non Existent Role - Not Found |
+| negative-mutate | not-found | `tenant/tenant-role-api-tests.spec.ts:81` | Assign Role To Tenant Non Existent Tenant - Not Found |
+| negative-mutate | unauthorized | `tenant/tenant-role-api-tests.spec.ts:101` | Assign Role To Tenant - Unauthorized |
+| negative-mutate | not-found | `tenant/tenant-users-api-tests.spec.ts:92` | Assign User To Tenant Non Existent Tenant Not Found |
+| negative-mutate | unauthorized | `tenant/tenant-users-api-tests.spec.ts:109` | Assign User To Tenant Unauthorized |
+| negative-delete | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:225` | Unassign Client From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:237` | Unassign Client From Tenant Non Existent Client Not Found |
+| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:254` | Unassign Client From Tenant Non Existent Tenant Not Found |
+| negative-delete | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:180` | Unassign Group From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:194` | Unassign Group From Tenant Non Existent Group Not Found |
+| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:213` | Unassign Group From Tenant Non Existent Tenant Not Found |
+| negative-delete | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:192` | Unassign Mapping Rule From Tenant - Unauthorized |
+| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:208` | Unassign Mapping Rule From Tenant Non Existent Mapping Rule - Not Found |
+| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:227` | Unassign Mapping Rule From Tenant Non Existent Tenant - Not Found |
+| negative-delete | unauthorized | `tenant/tenant-role-api-tests.spec.ts:179` | Unassign Role From Tenant - Unauthorized |
+| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:193` | Unassign Role From Tenant Non Existent Role - Not Found |
+| negative-delete | not-found | `tenant/tenant-role-api-tests.spec.ts:212` | Unassign Role From Tenant Non Existent Tenant - Not Found |
+| negative-delete | unauthorized | `tenant/tenant-users-api-tests.spec.ts:243` | Unassign User From Tenant Unauthorized |
+| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:256` | Unassign User From Tenant Non Existent User Not Found |
+| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:273` | Unassign User From Tenant Non Existent Tenant Not Found |
 
 ### `role` — 54 tests
 
@@ -528,67 +589,6 @@ This file answers, per category: **(1) Form** (the canonical sequence the tests 
 | negative-delete | unauthorized | `role/role-users-api-tests.spec.ts:244` | Unassign Role From User Unauthorized |
 | negative-delete | not-found | `role/role-users-api-tests.spec.ts:257` | Unassign Role From User Non Existent User Not Found |
 | negative-delete | not-found | `role/role-users-api-tests.spec.ts:274` | Unassign Role From User Non Existent Role Not Found |
-
-### `tenant` — 50 tests
-
-- **Prerequisite to create**: tenant + client, tenant + group, tenant + mapping-rule, tenant + user
-- **Files**: `tenant/tenant-clients-api-tests.spec.ts`, `tenant/tenant-groups-api-tests.spec.ts`, `tenant/tenant-mapping-rule-api-tests.spec.ts`, `tenant/tenant-users-api-tests.spec.ts`
-- **Observation channel**: GET = 0, Search = 14
-- **Form-step counts**: observe-present-search=8, mutate=6, delete=4, negative-create=4, negative-search=6, negative-mutate=10, negative-delete=12
-- **Variants**: happy-path=6, observe-via-search=14, unauthorized=12, not-found=16, conflict=4, unlabeled=6
-
-| form step | variants | file:line | test name |
-|--|--|--|--|
-| observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:126` | Search Tenant Clients |
-| observe-present-search | — | `tenant/tenant-clients-api-tests.spec.ts:166` | Search Tenant Clients For Non Existent Tenant Empty |
-| observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:232` | Search Tenant Groups |
-| observe-present-search | — | `tenant/tenant-groups-api-tests.spec.ts:264` | Search Tenant Groups Tenant With No Assignments Returns Empty |
-| observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:246` | Search Tenant Mapping Rules - Success |
-| observe-present-search | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:289` | Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success |
-| observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:141` | Search Tenant Users |
-| observe-present-search | — | `tenant/tenant-users-api-tests.spec.ts:182` | Search Tenant Users For Non Existent User Empty |
-| mutate | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:52` | Assign Client To Tenant |
-| mutate | happy-path | `tenant/tenant-clients-api-tests.spec.ts:66` | Assign Client To Tenant Non Existent Client Success |
-| mutate | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:43` | Assign Group To Tenant |
-| mutate | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:42` | Assign Mapping Rule To Tenant - Success |
-| mutate | unlabeled | `tenant/tenant-users-api-tests.spec.ts:55` | Assign User To Tenant |
-| mutate | happy-path | `tenant/tenant-users-api-tests.spec.ts:77` | Assign User To Tenant Non Existent User Success |
-| delete | unlabeled | `tenant/tenant-clients-api-tests.spec.ts:188` | Unassign Client From Tenant |
-| delete | unlabeled | `tenant/tenant-groups-api-tests.spec.ts:137` | Unassign Group From Tenant |
-| delete | happy-path | `tenant/tenant-mapping-rule-api-tests.spec.ts:149` | Unassign Mapping Rule From Tenant - Success |
-| delete | unlabeled | `tenant/tenant-users-api-tests.spec.ts:203` | Unassign User From Tenant |
-| negative-create | conflict | `tenant/tenant-clients-api-tests.spec.ts:112` | Assign Already Added Client To Tenant Conflict |
-| negative-create | conflict | `tenant/tenant-groups-api-tests.spec.ts:119` | Assign Already Added Group To Tenant Conflict |
-| negative-create | conflict | `tenant/tenant-mapping-rule-api-tests.spec.ts:126` | Assign Already Added Mapping Rule To Tenant - Conflict |
-| negative-create | conflict | `tenant/tenant-users-api-tests.spec.ts:125` | Assign Already Added User To Tenant Conflict |
-| negative-search | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:157` | Search Tenant Clients Unauthorized |
-| negative-search | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:291` | Search Tenant Groups Unauthorized |
-| negative-search | not-found | `tenant/tenant-groups-api-tests.spec.ts:300` | Search Tenant Groups Tenant Not Found |
-| negative-search | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:316` | Search Tenant Mapping Rules - Unauthorized |
-| negative-search | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:325` | Search Tenant Mapping Rules Tenant Not Found - Not Found |
-| negative-search | unauthorized | `tenant/tenant-users-api-tests.spec.ts:172` | Search Tenant Users Unauthorized |
-| negative-mutate | not-found | `tenant/tenant-clients-api-tests.spec.ts:80` | Assign Client To Tenant Non Existent Tenant Not Found |
-| negative-mutate | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:97` | Assign Client To Tenant Unauthorized |
-| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:62` | Assign Group To Tenant Non Existent Group Not Found |
-| negative-mutate | not-found | `tenant/tenant-groups-api-tests.spec.ts:82` | Assign Group To Tenant Non Existent Tenant Not Found |
-| negative-mutate | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:102` | Assign Group To Tenant Unauthorized |
-| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:60` | Assign Mapping Rule To Tenant Non Existent Mapping Rule - Not Found |
-| negative-mutate | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:83` | Assign Mapping Rule To Tenant Non Existent Tenant - Not Found |
-| negative-mutate | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:106` | Assign Mapping Rule To Tenant - Unauthorized |
-| negative-mutate | not-found | `tenant/tenant-users-api-tests.spec.ts:92` | Assign User To Tenant Non Existent Tenant Not Found |
-| negative-mutate | unauthorized | `tenant/tenant-users-api-tests.spec.ts:109` | Assign User To Tenant Unauthorized |
-| negative-delete | unauthorized | `tenant/tenant-clients-api-tests.spec.ts:225` | Unassign Client From Tenant Unauthorized |
-| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:237` | Unassign Client From Tenant Non Existent Client Not Found |
-| negative-delete | not-found | `tenant/tenant-clients-api-tests.spec.ts:254` | Unassign Client From Tenant Non Existent Tenant Not Found |
-| negative-delete | unauthorized | `tenant/tenant-groups-api-tests.spec.ts:180` | Unassign Group From Tenant Unauthorized |
-| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:194` | Unassign Group From Tenant Non Existent Group Not Found |
-| negative-delete | not-found | `tenant/tenant-groups-api-tests.spec.ts:213` | Unassign Group From Tenant Non Existent Tenant Not Found |
-| negative-delete | unauthorized | `tenant/tenant-mapping-rule-api-tests.spec.ts:192` | Unassign Mapping Rule From Tenant - Unauthorized |
-| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:208` | Unassign Mapping Rule From Tenant Non Existent Mapping Rule - Not Found |
-| negative-delete | not-found | `tenant/tenant-mapping-rule-api-tests.spec.ts:227` | Unassign Mapping Rule From Tenant Non Existent Tenant - Not Found |
-| negative-delete | unauthorized | `tenant/tenant-users-api-tests.spec.ts:243` | Unassign User From Tenant Unauthorized |
-| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:256` | Unassign User From Tenant Non Existent User Not Found |
-| negative-delete | not-found | `tenant/tenant-users-api-tests.spec.ts:273` | Unassign User From Tenant Non Existent Tenant Not Found |
 
 ### `group` — 31 tests
 

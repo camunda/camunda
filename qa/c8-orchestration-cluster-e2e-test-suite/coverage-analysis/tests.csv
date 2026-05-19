@@ -906,19 +906,19 @@ tenant/tenant-mapping-rule-api-tests.spec.ts,246,tenant,B. Membership/Associatio
 tenant/tenant-mapping-rule-api-tests.spec.ts,289,tenant,B. Membership/Association,search,observe-present-search,tenant + mapping-rule,no,observe-via-search|happy-path,,Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success
 tenant/tenant-mapping-rule-api-tests.spec.ts,316,tenant,B. Membership/Association,search,negative-search,tenant + mapping-rule,no,unauthorized|observe-via-search,,Search Tenant Mapping Rules - Unauthorized
 tenant/tenant-mapping-rule-api-tests.spec.ts,325,tenant,B. Membership/Association,search,negative-search,tenant + mapping-rule,no,not-found|observe-via-search,,Search Tenant Mapping Rules Tenant Not Found - Not Found
-tenant/tenant-role-api-tests.spec.ts,43,tenant,A. Entity Lifecycle (CRUD),update,mutate,none,no,happy-path,,Assign Role To Tenant - Success
-tenant/tenant-role-api-tests.spec.ts,61,tenant,A. Entity Lifecycle (CRUD),update,negative-mutate,none,no,not-found,,Assign Role To Tenant Non Existent Role - Not Found
-tenant/tenant-role-api-tests.spec.ts,81,tenant,A. Entity Lifecycle (CRUD),update,negative-mutate,none,no,not-found,,Assign Role To Tenant Non Existent Tenant - Not Found
-tenant/tenant-role-api-tests.spec.ts,101,tenant,A. Entity Lifecycle (CRUD),update,negative-mutate,none,no,unauthorized,,Assign Role To Tenant - Unauthorized
-tenant/tenant-role-api-tests.spec.ts,118,tenant,A. Entity Lifecycle (CRUD),create,negative-create,none,no,conflict,,Assign Already Added Role To Tenant - Conflict
-tenant/tenant-role-api-tests.spec.ts,136,tenant,A. Entity Lifecycle (CRUD),delete,delete,none,no,happy-path,,Unassign Role From Tenant - Success
-tenant/tenant-role-api-tests.spec.ts,179,tenant,A. Entity Lifecycle (CRUD),delete,negative-delete,none,no,unauthorized,,Unassign Role From Tenant - Unauthorized
-tenant/tenant-role-api-tests.spec.ts,193,tenant,A. Entity Lifecycle (CRUD),delete,negative-delete,none,no,not-found,,Unassign Role From Tenant Non Existent Role - Not Found
-tenant/tenant-role-api-tests.spec.ts,212,tenant,A. Entity Lifecycle (CRUD),delete,negative-delete,none,no,not-found,,Unassign Role From Tenant Non Existent Tenant - Not Found
-tenant/tenant-role-api-tests.spec.ts,231,tenant,A. Entity Lifecycle (CRUD),search,observe-present-search,none,no,observe-via-search,,Search Tenant Roles
-tenant/tenant-role-api-tests.spec.ts,262,tenant,A. Entity Lifecycle (CRUD),search,observe-present-search,none,no,observe-via-search,,Search Tenant Roles Tenant With No Assignments Returns Empty
-tenant/tenant-role-api-tests.spec.ts,289,tenant,A. Entity Lifecycle (CRUD),search,negative-search,none,no,unauthorized|observe-via-search,,Search Tenant Roles - Unauthorized
-tenant/tenant-role-api-tests.spec.ts,298,tenant,A. Entity Lifecycle (CRUD),search,negative-search,none,no,not-found|observe-via-search,,Search Tenant Roles Tenant - Not Found (empty response)
+tenant/tenant-role-api-tests.spec.ts,43,tenant,B. Membership/Association,update,mutate,tenant + role,no,happy-path,,Assign Role To Tenant - Success
+tenant/tenant-role-api-tests.spec.ts,61,tenant,B. Membership/Association,update,negative-mutate,tenant + role,no,not-found,,Assign Role To Tenant Non Existent Role - Not Found
+tenant/tenant-role-api-tests.spec.ts,81,tenant,B. Membership/Association,update,negative-mutate,tenant + role,no,not-found,,Assign Role To Tenant Non Existent Tenant - Not Found
+tenant/tenant-role-api-tests.spec.ts,101,tenant,B. Membership/Association,update,negative-mutate,tenant + role,no,unauthorized,,Assign Role To Tenant - Unauthorized
+tenant/tenant-role-api-tests.spec.ts,118,tenant,B. Membership/Association,create,negative-create,tenant + role,no,conflict,,Assign Already Added Role To Tenant - Conflict
+tenant/tenant-role-api-tests.spec.ts,136,tenant,B. Membership/Association,delete,delete,tenant + role,no,happy-path,,Unassign Role From Tenant - Success
+tenant/tenant-role-api-tests.spec.ts,179,tenant,B. Membership/Association,delete,negative-delete,tenant + role,no,unauthorized,,Unassign Role From Tenant - Unauthorized
+tenant/tenant-role-api-tests.spec.ts,193,tenant,B. Membership/Association,delete,negative-delete,tenant + role,no,not-found,,Unassign Role From Tenant Non Existent Role - Not Found
+tenant/tenant-role-api-tests.spec.ts,212,tenant,B. Membership/Association,delete,negative-delete,tenant + role,no,not-found,,Unassign Role From Tenant Non Existent Tenant - Not Found
+tenant/tenant-role-api-tests.spec.ts,231,tenant,B. Membership/Association,search,observe-present-search,tenant + role,no,observe-via-search,,Search Tenant Roles
+tenant/tenant-role-api-tests.spec.ts,262,tenant,B. Membership/Association,search,observe-present-search,tenant + role,no,observe-via-search,,Search Tenant Roles Tenant With No Assignments Returns Empty
+tenant/tenant-role-api-tests.spec.ts,289,tenant,B. Membership/Association,search,negative-search,tenant + role,no,unauthorized|observe-via-search,,Search Tenant Roles - Unauthorized
+tenant/tenant-role-api-tests.spec.ts,298,tenant,B. Membership/Association,search,negative-search,tenant + role,no,not-found|observe-via-search,,Search Tenant Roles Tenant - Not Found (empty response)
 tenant/tenant-users-api-tests.spec.ts,55,tenant,B. Membership/Association,update,mutate,tenant + user,no,unlabeled,,Assign User To Tenant
 tenant/tenant-users-api-tests.spec.ts,77,tenant,B. Membership/Association,update,mutate,tenant + user,no,happy-path,,Assign User To Tenant Non Existent User Success
 tenant/tenant-users-api-tests.spec.ts,92,tenant,B. Membership/Association,update,negative-mutate,tenant + user,no,not-found,,Assign User To Tenant Non Existent Tenant Not Found

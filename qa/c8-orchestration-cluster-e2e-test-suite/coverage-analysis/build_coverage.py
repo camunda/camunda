@@ -54,7 +54,10 @@ CRUD_ENTITIES = {
     'cluster-variables', 'global-task-listener', 'document',
 }
 MEMBERSHIP_FILE_RE = re.compile(
-    r'(group|role|tenant)-(users|clients|mapping-rules?|roles|groups)-api-tests\.spec\.ts$'
+    # `roles?` mirrors the existing `mapping-rules?` — needed because
+    # `tenant-role-api-tests.spec.ts` uses the singular form (the other
+    # membership files all use plural).
+    r'(group|role|tenant)-(users|clients|mapping-rules?|roles?|groups)-api-tests\.spec\.ts$'
 )
 DEPLOYMENT_ENTITIES = {
     'resource', 'process-definition', 'decision-definition', 'decision-requirements',
