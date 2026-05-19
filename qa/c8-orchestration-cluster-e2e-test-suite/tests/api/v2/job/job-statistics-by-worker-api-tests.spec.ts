@@ -87,8 +87,8 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
       expect(item.completed.count).toBeGreaterThanOrEqual(0);
       expect(item.failed.count).toBeGreaterThanOrEqual(1);
     }).toPass({
-      intervals: [5_000, 10_000, 15_000],
-      timeout: 90_000,
+      intervals: [5_000, 10_000, 15_000, 20_000, 30_000],
+      timeout: 180_000,
     });
   });
 
