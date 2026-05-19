@@ -699,9 +699,7 @@ describe('<DetailsTab />', () => {
       ...mockElementInstance,
       type: 'USER_TASK',
     });
-    mockSearchUserTasks().withSuccess(
-      searchResult([mockUserTaskWithDetails]),
-    );
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTaskWithDetails]));
 
     render(<DetailsTab />, {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
