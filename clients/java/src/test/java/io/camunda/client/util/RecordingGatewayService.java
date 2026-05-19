@@ -160,7 +160,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .setHost(host)
         .setPort(port)
         .setVersion(version)
-        .setMemberId(String.valueOf(nodeId))
+        .setBrokerId(String.valueOf(nodeId))
         .addAllPartitions(Arrays.asList(partitions))
         .build();
   }

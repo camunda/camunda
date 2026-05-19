@@ -28,7 +28,7 @@ final class BrokerInfoImplTest {
     final GatewayOuterClass.BrokerInfo proto =
         GatewayOuterClass.BrokerInfo.newBuilder()
             .setNodeId(0)
-            .setMemberId("us-east/0")
+            .setBrokerId("us-east/0")
             .setZone("us-east")
             .setHost("localhost")
             .setPort(26501)
@@ -49,7 +49,7 @@ final class BrokerInfoImplTest {
     final GatewayOuterClass.BrokerInfo proto =
         GatewayOuterClass.BrokerInfo.newBuilder()
             .setNodeId(0)
-            .setMemberId("0")
+            .setBrokerId("0")
             .setZone("")
             .setHost("localhost")
             .setPort(26501)
@@ -69,7 +69,7 @@ final class BrokerInfoImplTest {
     final GatewayOuterClass.BrokerInfo proto =
         GatewayOuterClass.BrokerInfo.newBuilder()
             .setNodeId(3)
-            .setMemberId("")
+            .setBrokerId("")
             .setHost("localhost")
             .setPort(26501)
             .setVersion("1.0.0")

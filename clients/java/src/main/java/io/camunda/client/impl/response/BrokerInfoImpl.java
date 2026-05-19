@@ -37,7 +37,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
     nodeId = grpcBrokerInfo.getNodeId();
-    memberId = memberId(grpcBrokerInfo.getMemberId(), nodeId);
+    memberId = memberId(grpcBrokerInfo.getBrokerId(), nodeId);
     final String rawZone = grpcBrokerInfo.getZone();
     zone = rawZone.isEmpty() ? null : rawZone;
     host = grpcBrokerInfo.getHost();
