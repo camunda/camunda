@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="8"
+  id="0" version="9"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -221,6 +221,7 @@
          version
          partitionHealth
          zone
+         partitionGroup
      -->
     <group name="partitionHealth" id="15" sinceVersion="3">
       <field name="partitionId" id="16" type="int32"/>
@@ -228,5 +229,6 @@
     </group>
     <data name="version" id="14" type="varDataEncoding"/>
     <data name="zone" id="18" type="varDataEncoding" sinceVersion="8"/>
+    <data name="partitionGroup" id="19" type="varDataEncoding" sinceVersion="9"/>
   </sbe:message>
 </sbe:messageSchema>
