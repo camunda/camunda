@@ -20,12 +20,15 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {useSearchUserTasks} from 'modules/queries/userTasks/useSearchUserTasks';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
+import {AgentDetails} from './AgentDetails';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const formatTaskLink = (
@@ -113,6 +116,12 @@ const DetailsTab: React.FC = () => {
   );
 
   const userTask = userTaskSearchResult?.items?.[0] ?? null;
+
+  const {
+    agentInstance,
+    isLoading: isAgentLoading,
+    isError: isAgentError,
+  } = useAgentInstanceForElement(selectedElementId, elementInstanceKey);
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
@@ -357,6 +366,14 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
+      {IS_AI_AGENT_ENABLED &&
+        (agentInstance !== undefined || isAgentLoading || isAgentError) && (
+          <AgentDetails
+            agentInstance={agentInstance}
+            isLoading={isAgentLoading}
+            isError={isAgentError}
+          />
+        )}
     </Container>
   );
 };

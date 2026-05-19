@@ -7,5 +7,6 @@
  */
 
 const MULTI_VARIABLE_FILTER = false;
+const IS_AI_AGENT_ENABLED = false;
 
-export {MULTI_VARIABLE_FILTER};
+export {IS_AI_AGENT_ENABLED, MULTI_VARIABLE_FILTER};
