@@ -113,6 +113,9 @@ public final class Protocol {
   /** Linked resources header used in service task */
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
 
+  /** The partition group name used by the default physical tenant. */
+  public static final String DEFAULT_PARTITION_GROUP_NAME = "default";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     if (key < 0) {
       throw new IllegalArgumentException(

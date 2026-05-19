@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLe
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
@@ -58,7 +59,7 @@ import org.slf4j.Logger;
 @NullMarked
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
-  public static final String DEFAULT_PARTITION_GROUP = "default";
+  public static final String DEFAULT_PARTITION_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
