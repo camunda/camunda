@@ -110,17 +110,26 @@
     </addColumn>
   </changeSet>
 
-  <changeSet id="create_variable_pdk_name_index" author="camunda">
+  <changeSet id="drop_variable_name_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <indexExists indexName="${prefix}IDX_VARIABLE_NAME"
+        tableName="${prefix}VARIABLE"/>
+    </preConditions>
+    <dropIndex tableName="${prefix}VARIABLE"
+      indexName="${prefix}IDX_VARIABLE_NAME"/>
+  </changeSet>
+
+  <changeSet id="recreate_variable_name_index_with_pdk" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
-        <indexExists indexName="${prefix}IDX_VARIABLE_PDK_NAME"
+        <indexExists indexName="${prefix}IDX_VARIABLE_NAME"
           tableName="${prefix}VARIABLE"/>
       </not>
     </preConditions>
     <createIndex tableName="${prefix}VARIABLE"
-      indexName="${prefix}IDX_VARIABLE_PDK_NAME">
-      <column name="PROCESS_DEFINITION_KEY"/>
+      indexName="${prefix}IDX_VARIABLE_NAME">
       <column name="VAR_NAME"/>
+      <column name="PROCESS_DEFINITION_KEY"/>
     </createIndex>
   </changeSet>
 
