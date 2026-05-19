@@ -95,6 +95,7 @@ import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -3450,6 +3451,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for creating an agent instance
    */
   CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand();
+
+  /**
+   * Creates a command to update an existing agent instance.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newUpdateAgentInstanceCommand(agentInstanceKey)
+   *       .elementInstanceKey(elementInstanceKey)
+   *       .status(AgentInstanceStatus.COMPLETED)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance to update
+   * @return a builder for updating the agent instance
+   */
+  UpdateAgentInstanceCommandStep1 newUpdateAgentInstanceCommand(long agentInstanceKey);
 
   /**
    * Creates a request to create a new global task listener.
