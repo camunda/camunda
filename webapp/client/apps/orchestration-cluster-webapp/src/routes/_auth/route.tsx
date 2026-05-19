@@ -21,6 +21,8 @@ export const Route = createFileRoute('/_auth')({
 
 			storeSessionState('clientConfig', systemConfig);
 		} catch {
+			queryClient.cancelQueries();
+			queryClient.clear();
 			throw redirect({
 				to: '/login',
 				search: location.href === '/' ? {} : {redirect: location.href},
