@@ -94,12 +94,8 @@ public final class DeployResourceCommandImpl
   public DeployResourceCommandStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
     hasResourceAdded = true;
-    if (useRest) {
-      multipartEntityBuilder.addBinaryBody(
-          RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
-      return this;
-    }
-
+    multipartEntityBuilder.addBinaryBody(
+        RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
     requestBuilder.addResources(
         Resource.newBuilder()
             .setName(resourceName)
