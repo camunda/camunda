@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id("buildlogic.java-conventions")
+    id("buildlogic.client-conventions")
 }
 
 val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
