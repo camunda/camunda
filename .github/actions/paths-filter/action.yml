@@ -243,7 +243,8 @@ outputs:
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
-        steps.filter-common.outputs.gradle-change == 'true'
+        steps.filter-common.outputs.gradle-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
       }}
 
 runs:
