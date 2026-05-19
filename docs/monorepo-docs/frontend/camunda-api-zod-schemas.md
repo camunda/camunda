@@ -49,3 +49,14 @@ under `packages/camunda-api-zod-schemas/lib/` — for example
      the new version.
 3. Update the `@camunda/camunda-api-zod-schemas` dependency version in
    Operate, Admin, and Tasklist.
+
+### When the schema update is part of a new feature
+
+1. Update the schema and changelog, increment the version in
+   `package.json`, and open a PR.
+2. Merge the PR to `main`.
+3. Immediately publish the new version from `main` using the GitHub
+   Action above.
+4. Open follow-up PRs in Operate, Tasklist, and Admin bumping
+   `@camunda/camunda-api-zod-schemas` to the new version.
+5. Use the updated schema in the feature PR.
