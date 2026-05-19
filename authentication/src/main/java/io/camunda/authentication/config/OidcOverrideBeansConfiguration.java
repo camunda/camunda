@@ -62,7 +62,6 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -250,31 +249,6 @@ public class OidcOverrideBeansConfiguration {
       final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
     return new ClientAwareOAuth2AuthorizationRequestResolver(
         clientRegistrationRepository, oidcProviderRepository);
-  }
-
-  @Bean
-  public ClientRegistrationRepository clientRegistrationRepository(
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-    final var clientRegistrations =
-        oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
-            .map(e -> createClientRegistration(e.getKey(), e.getValue()))
-            .toList();
-    return new InMemoryClientRegistrationRepository(clientRegistrations);
-  }
-
-  private ClientRegistration createClientRegistration(
-      final String registrationId, final OidcConfiguration configuration) {
-    try {
-      return ClientRegistrationFactory.createClientRegistration(registrationId, configuration);
-    } catch (final Exception e) {
-      final String issuerUri = configuration.getIssuerUri();
-      throw new IllegalStateException(
-          "Unable to connect to the Identity Provider endpoint `"
-              + issuerUri
-              + "'. Double check that it is configured correctly, and if the problem persists, "
-              + "contact your external Identity provider.",
-          e);
-    }
   }
 
   private List<ClientRegistration> extractClientRegistrations(
