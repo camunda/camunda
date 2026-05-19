@@ -229,14 +229,14 @@ const DetailsTab: React.FC = () => {
       });
     }
 
-    if (job?.type) {
+    if (job?.type !== undefined) {
       baseRows.push({
         key: 'job-type',
         columns: [{cellContent: 'Job Type'}, {cellContent: job.type}],
       });
     }
 
-    if (job?.worker) {
+    if (job?.worker !== undefined) {
       baseRows.push({
         key: 'worker',
         columns: [{cellContent: 'Worker'}, {cellContent: job.worker}],
@@ -337,7 +337,7 @@ const DetailsTab: React.FC = () => {
       });
     }
 
-    if (isCamundaTask && userTask) {
+    if (isCamundaTask && userTask !== null) {
       baseRows.push(
         {
           key: 'assignee',
@@ -401,7 +401,7 @@ const DetailsTab: React.FC = () => {
       );
     }
 
-    if (isMessageElement && messageSubscription) {
+    if (isMessageElement && messageSubscription !== null) {
       baseRows.push(
         {
           key: 'message-name',
