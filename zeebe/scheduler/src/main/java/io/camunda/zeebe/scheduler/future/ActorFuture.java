@@ -24,7 +24,7 @@ public interface ActorFuture<V extends @Nullable Object>
     extends Future<V>, BiConsumer<V, @Nullable Throwable> {
   void complete(V value);
 
-  void completeExceptionally(String failure, Throwable throwable);
+  void completeExceptionally(@Nullable String failure, Throwable throwable);
 
   void completeExceptionally(Throwable throwable);
 
