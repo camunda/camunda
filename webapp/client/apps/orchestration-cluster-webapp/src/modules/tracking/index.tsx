@@ -166,7 +166,7 @@ class Tracking {
 
 	#loadMixpanel = async (): Promise<void> => {
 		const token = getBootConfig().mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN;
-		const apiHost = getBootConfig().mixpanelApiHost ?? import.meta.env.VITE_MIXPANEL_HOST;
+		const api_host = getBootConfig().mixpanelApiHost ?? import.meta.env.VITE_MIXPANEL_HOST;
 
 		if (!token) {
 			return;
@@ -174,7 +174,7 @@ class Tracking {
 
 		return import('mixpanel-browser').then(({default: mixpanel}) => {
 			mixpanel.init(token, {
-				api_host: apiHost || undefined,
+				api_host,
 				opt_out_tracking_by_default: true,
 			});
 			mixpanel.register(this.#baseProperties);
