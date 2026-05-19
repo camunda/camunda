@@ -19,12 +19,98 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class BrokerInfoTest {
+
+  @Test
+  void shouldReturnDefaultPropertyNameForDefaultPartitionGroup() {
+    assertThat(BrokerInfo.brokerInfoPropertyName(BrokerInfo.DEFAULT_PARTITION_GROUP))
+        .isEqualTo("brokerInfo");
+  }
+
+  @Test
+  void shouldReturnNamespacedPropertyNameForNonDefaultPartitionGroup() {
+    assertThat(BrokerInfo.brokerInfoPropertyName("tenant1")).isEqualTo("brokerInfo:tenant1");
+  }
+
+  @Test
+  void shouldCopyBrokerLevelFieldsWithNewPartitionGroup() {
+    // given
+    final BrokerInfo original =
+        new BrokerInfo()
+            .setBrokerId(3, "us-east-1a")
+            .setPartitionsCount(3)
+            .setClusterSize(3)
+            .setReplicationFactor(1)
+            .setPartitionGroup("default");
+    original.setVersion("8.10.0");
+    original.setCommandApiAddress("10.0.0.1:26501");
+    original.setLeaderForPartition(1, 5L);
+
+    // when
+    final var copy = original.withPartitionGroup("tenant1");
+
+    // then -- broker-level fields are copied
+    assertThat(copy.getNodeId()).isEqualTo(3);
+    assertThat(copy.getZone()).isEqualTo("us-east-1a");
+    assertThat(copy.getPartitionsCount()).isEqualTo(3);
+    assertThat(copy.getClusterSize()).isEqualTo(3);
+    assertThat(copy.getReplicationFactor()).isEqualTo(1);
+    assertThat(copy.getVersion()).isEqualTo("8.10.0");
+    assertThat(copy.getCommandApiAddress()).isEqualTo("10.0.0.1:26501");
+    assertThat(copy.getPartitionGroup()).isEqualTo("tenant1");
+    // partition state is NOT copied
+    assertThat(copy.getPartitionRoles()).isEmpty();
+    assertThat(copy.getPartitionLeaderTerms()).isEmpty();
+    // original is unchanged
+    assertThat(original.getPartitionGroup()).isEqualTo("default");
+    assertThat(original.getPartitionRoles()).hasSize(1);
+  }
+
+  @Test
+  void shouldWriteToNamespacedPropertyKeyForNonDefaultGroup() {
+    // given
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1)
+            .setPartitionGroup("tenant1");
+
+    // when
+    final Properties props = new Properties();
+    brokerInfo.writeIntoProperties(props);
+
+    // then -- written under the namespaced key, not the legacy key
+    assertThat(props.getProperty("brokerInfo:tenant1")).isNotNull();
+    assertThat(props.getProperty("brokerInfo")).isNull();
+  }
+
+  @Test
+  void shouldWriteToLegacyKeyForDefaultGroup() {
+    // given
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1);
+    // partitionGroup not set → defaults to "default"
+
+    // when
+    final Properties props = new Properties();
+    brokerInfo.writeIntoProperties(props);
+
+    // then -- written under the legacy key for backward compatibility
+    assertThat(props.getProperty("brokerInfo")).isNotNull();
+    assertThat(props.getProperty("brokerInfo:default")).isNull();
+  }
 
   @Test
   void shouldEncodeDecodePartitionGroup() {

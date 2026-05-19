@@ -118,8 +118,12 @@ public final class PartitionManagerImpl
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
     brokerMeterRegistry = meterRegistry;
+    // Each physical tenant needs its own BrokerInfo instance so that concurrent TopologyManagerImpl
+    // actors don't overwrite each other's partition state. withPartitionGroup copies the
+    // broker-level fields and sets the correct group name for this tenant.
+    final var tenantBroker = localBroker.withPartitionGroup(partitionGroup);
     // TODO: Do this as a separate step before starting the partition manager
-    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
+    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), tenantBroker);
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);

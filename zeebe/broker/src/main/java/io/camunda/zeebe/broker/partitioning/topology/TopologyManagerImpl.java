@@ -46,7 +46,7 @@ public final class TopologyManagerImpl extends Actor
     this.membershipService = membershipService;
     this.localBroker = localBroker;
 
-    actorName = "TopologyManager";
+    actorName = "TopologyManager-" + localBroker.getPartitionGroup();
   }
 
   @Override
