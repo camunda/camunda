@@ -159,3 +159,31 @@ Ensure the backend is started with `yarn start-backend` and the frontend with `y
 ```bash
 yarn run e2e
 ```
+
+### Start self-managed E2E services locally (same as CI)
+
+The CI workflow step
+`uses: ./.github/actions/compose` with:
+
+- `compose_file: optimize/client/docker-compose.yml`
+- `project_name: e2e`
+- `additional_flags: "--profile self-managed"`
+
+is equivalent to running this from the repository root:
+
+```bash
+docker compose -f optimize/client/docker-compose.yml --project-name e2e --profile self-managed up -d
+```
+
+Useful follow-up commands:
+
+```bash
+# Show container status
+docker compose -f optimize/client/docker-compose.yml --project-name e2e ps
+
+# Tail logs
+docker compose -f optimize/client/docker-compose.yml --project-name e2e logs -f
+
+# Stop and clean up
+docker compose -f optimize/client/docker-compose.yml --project-name e2e --profile self-managed down
+```
