@@ -178,6 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("--rate", type=int, default=5, help="Number of new process instances per tick")
     parser.add_argument("--duration-min", type=int, default=10, help="Minimum of how many ticks process instances last")
     parser.add_argument("--duration-max", type=int, default=10, help="Maximum of how many ticks process instances last")
+    parser.add_argument("--duration-random", choices=["uniform", "gauss"], default="uniform", help="How to randomize process instance durations")
     parser.add_argument("--retention-period", type=int, default=30, help="How many ticks finished process instances are retained before deletion")
     parser.add_argument("--mode", choices=["main", "ordinal"], default="main", help="Whether to create process instances in the main index or in ordinal indexes")
     parser.add_argument("--rollover-interval", type=int, default=1, help="How many ticks between ordinal rollovers")
@@ -212,7 +213,10 @@ if __name__ == "__main__":
     biggest_index_size = 0
     for _ in range(args.ticks):
       for _ in range(args.rate):
-        duration = random.randint(args.duration_min, args.duration_max)
+        if args.duration_random == "uniform":
+          duration = random.randint(args.duration_min, args.duration_max)
+        else:
+          duration = max(1, int(random.gauss((args.duration_min + args.duration_max) / 2, (args.duration_max - args.duration_min) / 6)))
         start_process_instance(duration=duration)
       sim.tick()
       if args.run_deleter:
