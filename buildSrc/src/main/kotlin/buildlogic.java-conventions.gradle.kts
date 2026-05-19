@@ -58,13 +58,7 @@ dependencies {
     add("implementation", platform(versionCatalog.findLibrary("org-testcontainers-testcontainers-bom").get()))
     add("implementation", platform(versionCatalog.findLibrary("software-amazon-awssdk-bom").get()))
     add("implementation", platform(versionCatalog.findLibrary("tools-jackson-jackson-bom").get()))
-    // Spring Boot BOM upgrades elasticsearch-java to 9.x; POM pins 8.x explicitly before the BOM import.
-    // Replicate Maven's "first entry wins" semantics with a strict constraint.
-    constraints {
-        add("implementation", "co.elastic.clients:elasticsearch-java") {
-            version { strictly(esJavaVersion) }
-        }
-    }
+    add("annotationProcessor", platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()))
     add("errorprone", "com.google.errorprone:error_prone_core:$errorProneVersion")
     add("errorprone", "com.uber.nullaway:nullaway:$nullAwayVersion")
     add("testImplementation", "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
@@ -81,6 +75,12 @@ extensions.configure<SpotlessExtension> {
         target("src/**/*.java")
         googleJavaFormat(googleJavaFormatVersion).style("GOOGLE")
     }
+}
+
+// Spring Boot 4 BOM uses strictly constraints for elasticsearch-java (upgrades 8.x → 9.x).
+// Force the POM-pinned 8.x version to win over enforced BOM constraints.
+configurations.all {
+    resolutionStrategy.force("co.elastic.clients:elasticsearch-java:$esJavaVersion")
 }
 
 publishing {
