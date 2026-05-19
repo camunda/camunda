@@ -107,6 +107,12 @@ public final class AgentInstanceCreateProcessor
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
       final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
+      // The stored record carries the changedAttributes from the last UPDATE that touched it. On
+      // CREATED that field is contractually empty (see
+      // AgentInstanceRecordValue#getChangedAttributes),
+      // so strip it before responding. getRecord returns a fresh deserialization, so this mutation
+      // does not leak back into state.
+      existingRecord.setChangedAttributes(List.of());
       rejectionWriter.appendRejection(
           command,
           RejectionType.ALREADY_EXISTS,
