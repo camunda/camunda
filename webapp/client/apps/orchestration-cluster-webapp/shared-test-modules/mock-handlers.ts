@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createEndpointMock} from './mock-endpoint';
 
 const mockCurrentUserEndpoint = createEndpointMock({
-	endpoint: '/v2/authentication/me',
+	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: 'GET',
 });
 
@@ -23,4 +24,9 @@ const mockLogoutEndpoint = createEndpointMock({
 	method: 'POST',
 });
 
-export {mockCurrentUserEndpoint, mockLoginEndpoint, mockLogoutEndpoint};
+const mockSystemConfigurationEndpoint = createEndpointMock({
+	endpoint: endpoints.getSystemConfiguration.getUrl(),
+	method: 'GET',
+});
+
+export {mockCurrentUserEndpoint, mockLoginEndpoint, mockLogoutEndpoint, mockSystemConfigurationEndpoint};

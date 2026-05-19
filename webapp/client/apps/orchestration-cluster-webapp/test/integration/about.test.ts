@@ -9,7 +9,8 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockCurrentUserEndpoint, mockSystemConfigurationEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 const ABOUT_MESSAGE = 'About page loaded';
 
@@ -17,6 +18,9 @@ test('should render mocked about data', async ({network, page}) => {
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(mockSystemConfiguration),
 		}),
 	);
 

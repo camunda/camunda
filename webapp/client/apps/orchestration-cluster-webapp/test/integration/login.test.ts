@@ -8,7 +8,12 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
-import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockLoginEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -27,6 +32,9 @@ test('should redirect to the initial page on success', async ({network, page, lo
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
 		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(mockSystemConfiguration),
+		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
@@ -43,6 +51,9 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 		mockLoginEndpoint({
 			successResponse: new HttpResponse(null, {status: 200}),
 		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(mockSystemConfiguration),
+		}),
 	);
 
 	await page.goto('/about');
@@ -51,6 +62,9 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(mockSystemConfiguration),
 		}),
 	);
 

@@ -9,6 +9,7 @@
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
 import {SessionWatcher} from '#/modules/auth/components/SessionWatcher';
 import {queries} from '#/modules/http/queries';
+import {storeSessionState} from '#/modules/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/_auth')({
 				queryClient.ensureQueryData(queries.getSystemConfiguration()),
 			]);
 
-			window.clientConfig = systemConfig;
+			storeSessionState('clientConfig', systemConfig);
 		} catch {
 			throw redirect({
 				to: '/login',

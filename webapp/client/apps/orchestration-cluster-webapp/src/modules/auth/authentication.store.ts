@@ -11,7 +11,7 @@ import {endpoints} from '#/modules/http/endpoints';
 import {getClientConfig} from '#/modules/config/getClientConfig';
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
 import {request} from '#/modules/http/request';
-import {getStateLocally, storeStateLocally} from '#/modules/local-storage/local-storage';
+import {getStateLocally, storeStateLocally} from '#/modules/browser-storage/local-storage';
 import {z} from 'zod';
 
 type Status =

@@ -7,7 +7,7 @@
  */
 
 import {action, computed, makeObservable, observable} from 'mobx';
-import {getStateLocally, storeStateLocally} from '#/modules/local-storage/local-storage';
+import {getStateLocally, storeStateLocally} from '#/modules/browser-storage/local-storage';
 
 type ThemeOption = 'system' | 'dark' | 'light';
 

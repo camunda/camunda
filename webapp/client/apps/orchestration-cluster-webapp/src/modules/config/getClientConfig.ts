@@ -7,12 +7,14 @@
  */
 
 import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getSessionState} from '#/modules/browser-storage/session-storage';
 
 function getClientConfig(): GetSystemConfigurationResponseBody {
-	if (window.clientConfig === undefined) {
+	const config = getSessionState('clientConfig');
+	if (config === null) {
 		throw new Error('Client config not initialized. This can only be called after authentication.');
 	}
-	return window.clientConfig;
+	return config;
 }
 
 export {getClientConfig};
