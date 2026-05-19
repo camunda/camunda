@@ -33,6 +33,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapp-webjar</artifactId>
       <scope>runtime</scope>
     </dependency>
