@@ -266,6 +266,43 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
+  public void shouldRejectAttemptToUpdateLimits() {
+    // given — limits is a legitimate field on CREATE but is intentionally not in the
+    // ALLOWED_ATTRIBUTES set for UPDATE, so naming it must be rejected as unknown.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withChangedAttributes(List.of("limits"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("limits");
+  }
+
+  @Test
   public void shouldRejectWhenAgentInstanceNotFound() {
     // given
     final var nonExistentKey = 987654321L;
