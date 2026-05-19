@@ -1982,6 +1982,79 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
+  openapi-x-added-in-version-check:
+    name: "Lint / C8 REST OpenAPI x-added-in-version (warnings only)"
+    # Non-blocking PR check that runs the camunda/update-openapi-spec verifier
+    # against the spec files in this PR and surfaces each finding as a GitHub
+    # Actions `::warning::` annotation. Intentionally NOT included in the
+    # check-results `needs:` list and uses continue-on-error so it cannot
+    # block merges; PR authors get early feedback without gating the queue.
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+      - name: Configure git auth for transitive clones
+        env:
+          CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
+          git config --global \
+            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
+      - name: Clone update-openapi-spec to temp directory
+        id: tool
+        run: |
+          TOOL_DIR=$(mktemp -d)
+          git clone --depth 1 \
+            "https://github.com/camunda/update-openapi-spec" \
+            "$TOOL_DIR"
+          echo "dir=$TOOL_DIR" >> "$GITHUB_OUTPUT"
+      - name: Install verifier dependencies
+        working-directory: ${{ steps.tool.outputs.dir }}
+        run: npm ci
+      - name: Build verifier artefacts (endpoint-map + version-map)
+        working-directory: ${{ steps.tool.outputs.dir }}
+        env:
+          CAMUNDA_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          ENDPOINT_MAP_PATH: ${{ steps.tool.outputs.dir }}/endpoint-map.json
+          VERSION_MAP_PATH: ${{ steps.tool.outputs.dir }}/version-map.json
+        run: npm run build:artefacts
+      - name: Run PR verifier (warnings only)
+        # Belt-and-braces: the verifier itself exits 0, but keep
+        # continue-on-error so unexpected crashes also do not block PRs.
+        continue-on-error: true
+        working-directory: ${{ steps.tool.outputs.dir }}
+        env:
+          OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
+          ENDPOINT_MAP_PATH: ${{ steps.tool.outputs.dir }}/endpoint-map.json
+          VERSION_MAP_PATH: ${{ steps.tool.outputs.dir }}/version-map.json
+          ANNOTATION_PATH_PREFIX: zeebe/gateway-protocol/src/main/proto/v2
+        run: npm run --silent verify:specs:ci
+      - name: Cleanup temp tool clone
+        if: always()
+        run: rm -rf "${{ steps.tool.outputs.dir }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "General"
+
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
     name: "Lint / Renovate Config Validator"
