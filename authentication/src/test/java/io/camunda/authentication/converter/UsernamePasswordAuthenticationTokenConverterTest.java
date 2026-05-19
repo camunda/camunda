@@ -8,14 +8,13 @@
 package io.camunda.authentication.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.MembershipService;
-import io.camunda.authentication.service.MembershipService.MembershipResolver;
+import io.camunda.authentication.service.BasicMembershipService;
+import io.camunda.authentication.service.MembershipResolver;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 public class UsernamePasswordAuthenticationTokenConverterTest {
 
-  @Mock private MembershipService membershipService;
+  @Mock private BasicMembershipService membershipService;
   @Mock private MembershipResolver resolver;
   private UsernamePasswordAuthenticationTokenConverter authenticationConverter;
 
@@ -99,9 +98,8 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
     // when
     authenticationConverter.convert(authentication);
 
-    // then — converter delegates resolver creation to the service using the username overload
+    // then — converter delegates resolver creation to the BASIC service using the username
     verify(membershipService).newResolver("test-user");
-    verify(membershipService, never()).newResolver(any(), any(), any());
   }
 
   private Authentication usernamePassword(final String username) {

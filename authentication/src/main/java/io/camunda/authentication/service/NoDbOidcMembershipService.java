@@ -17,12 +17,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnSecondaryStorageDisabled
-public class NoDBMembershipService implements MembershipService {
+public class NoDbOidcMembershipService implements OidcMembershipService {
 
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
-  public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
+  public NoDbOidcMembershipService(final SecurityConfiguration securityConfiguration) {
     oidcGroupsExtractor =
         new OidcGroupsExtractor(
             securityConfiguration.getAuthentication().getOidc().getGroupsClaim());

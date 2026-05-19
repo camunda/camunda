@@ -31,15 +31,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
-@Primary
 @ConditionalOnSecondaryStorageEnabled
-public class DefaultMembershipService implements MembershipService {
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
+public class DefaultOidcMembershipService implements OidcMembershipService {
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultOidcMembershipService.class);
 
   private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
@@ -48,7 +46,7 @@ public class DefaultMembershipService implements MembershipService {
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
-  public DefaultMembershipService(
+  public DefaultOidcMembershipService(
       final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,

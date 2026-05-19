@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.authentication.config.BasicAuthenticationNoDbConfiguration;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
-import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.authentication.service.NoDbOidcMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -110,16 +110,16 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public NoDBMembershipService noDBMembershipService(
+    public NoDbOidcMembershipService noDbOidcMembershipService(
         final SecurityConfiguration securityConfiguration) {
-      return new NoDBMembershipService(securityConfiguration);
+      return new NoDbOidcMembershipService(securityConfiguration);
     }
 
     @Bean
     public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final SecurityConfiguration securityConfiguration,
-        final NoDBMembershipService noDBMembershipService) {
-      return new TokenClaimsConverter(securityConfiguration, noDBMembershipService);
+        final NoDbOidcMembershipService noDbOidcMembershipService) {
+      return new TokenClaimsConverter(securityConfiguration, noDbOidcMembershipService);
     }
   }
 }

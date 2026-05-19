@@ -149,7 +149,7 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     verify(tokenClaimsConverter).convert(claimsCaptor.capture());
 
     // The customer's acceptance criterion: groups must arrive at TokenClaimsConverter so that
-    // MembershipService.resolveMemberships(...) can grant group-based authorizations. On current
+    // OidcMembershipService.newResolver(...) can grant group-based authorizations. On current
     // code this assertion fails because only JWT claims are passed through.
     assertThat(claimsCaptor.getValue())
         .containsEntry("sub", "alice")

@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.converter;
 
-import io.camunda.authentication.service.MembershipService;
-import io.camunda.authentication.service.MembershipService.PrincipalType;
+import io.camunda.authentication.service.OidcMembershipService;
+import io.camunda.authentication.service.OidcMembershipService.PrincipalType;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -23,11 +23,11 @@ public class TokenClaimsConverter {
   private final String usernameClaim;
   private final String clientIdClaim;
   private final boolean preferUsernameClaim;
-  private final MembershipService membershipService;
+  private final OidcMembershipService membershipService;
 
   public TokenClaimsConverter(
       final SecurityConfiguration securityConfiguration,
-      final MembershipService membershipService) {
+      final OidcMembershipService membershipService) {
     this.membershipService = membershipService;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();

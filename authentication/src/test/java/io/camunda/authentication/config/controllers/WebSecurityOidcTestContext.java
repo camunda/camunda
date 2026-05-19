@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import io.camunda.authentication.service.DefaultMembershipService;
+import io.camunda.authentication.service.DefaultOidcMembershipService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
@@ -28,13 +28,13 @@ public class WebSecurityOidcTestContext {
   }
 
   @Bean
-  public DefaultMembershipService createMembershipService(
+  public DefaultOidcMembershipService createMembershipService(
       final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
       final SecurityConfiguration securityConfiguration) {
-    return new DefaultMembershipService(
+    return new DefaultOidcMembershipService(
         mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
   }
 }

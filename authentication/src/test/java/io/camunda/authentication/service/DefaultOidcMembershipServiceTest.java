@@ -14,7 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.MembershipService.PrincipalType;
+import io.camunda.authentication.service.OidcMembershipService.PrincipalType;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class DefaultMembershipServiceTest {
+public class DefaultOidcMembershipServiceTest {
 
   @Mock private MappingRuleServices mappingRuleServices;
   @Mock private TenantServices tenantServices;
@@ -41,7 +41,7 @@ public class DefaultMembershipServiceTest {
   @Mock private AuthenticationConfiguration authenticationConfiguration;
   @Mock private OidcConfiguration oidcAuthenticationConfiguration;
 
-  private DefaultMembershipService membershipService;
+  private DefaultOidcMembershipService membershipService;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -54,7 +54,7 @@ public class DefaultMembershipServiceTest {
     when(mappingRuleServices.getMatchingMappingRules(any(), any())).thenReturn(Stream.empty());
 
     membershipService =
-        new DefaultMembershipService(
+        new DefaultOidcMembershipService(
             mappingRuleServices,
             tenantServices,
             roleServices,
@@ -106,18 +106,5 @@ public class DefaultMembershipServiceTest {
     verify(mappingRuleServices).getMatchingMappingRules(any(), any());
     verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
     verify(roleServices).getRolesByMemberTypeAndMemberIds(any(), any());
-  }
-
-  @Test
-  void basicAuthOverloadShouldUseEmptyClaimsAndUserPrincipal() {
-    // given — convenience overload for the BASIC-auth callers
-    final var resolver = membershipService.newResolver("demo");
-
-    // when
-    resolver.groups();
-
-    // then — the resolver is constructed against empty claims as a USER principal, so the
-    // group lookup runs against an ownerType map seeded only with the USER entry
-    verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
 }

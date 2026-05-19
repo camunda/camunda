@@ -9,7 +9,7 @@ package io.camunda.authentication.config;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
-import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.BasicMembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -65,7 +65,7 @@ public class BasicAuthBeansConfiguration {
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-      final MembershipService membershipService) {
+      final BasicMembershipService membershipService) {
     return new UsernamePasswordAuthenticationTokenConverter(membershipService);
   }
 }

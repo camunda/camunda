@@ -13,7 +13,7 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.OidcMembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -113,7 +113,7 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public TokenClaimsConverter tokenClaimsConverter(
       final SecurityConfiguration securityConfiguration,
-      final MembershipService membershipService) {
+      final OidcMembershipService membershipService) {
     return new TokenClaimsConverter(securityConfiguration, membershipService);
   }
 

@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.authentication.service.MembershipService;
-import io.camunda.authentication.service.MembershipService.MembershipResolver;
+import io.camunda.authentication.service.BasicMembershipService;
+import io.camunda.authentication.service.MembershipResolver;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -105,10 +106,13 @@ public class WebSecurityConfigTestContext {
   /**
    * Slice tests don't exercise membership resolution — provide a resolver that returns empty lists
    * so {@link BasicAuthBeansConfiguration#usernamePasswordAuthenticationConverter} can wire.
+   * Skipped when a real {@link BasicMembershipService} is already present (e.g. tests that
+   * component-scan {@code io.camunda.authentication}).
    */
   @Bean
-  public MembershipService membershipService() {
-    return (tokenClaims, principalId, principalType) ->
+  @ConditionalOnMissingBean(BasicMembershipService.class)
+  public BasicMembershipService basicMembershipService() {
+    return username ->
         new MembershipResolver() {
           @Override
           public List<String> groups() {

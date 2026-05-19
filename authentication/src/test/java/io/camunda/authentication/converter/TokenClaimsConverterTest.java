@@ -14,8 +14,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.DefaultMembershipService;
-import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.DefaultOidcMembershipService;
+import io.camunda.authentication.service.OidcMembershipService;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -50,7 +50,7 @@ public class TokenClaimsConverterTest {
   private static final String USERNAME_CLAIM = "email";
   private static final String APPLICATION_ID_CLAIM = "client-id";
   private TokenClaimsConverter converter;
-  private MembershipService membershipService;
+  private OidcMembershipService membershipService;
 
   @Nested
   class ClientIdClaimConfiguration {
@@ -73,7 +73,7 @@ public class TokenClaimsConverterTest {
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
       membershipService =
-          new DefaultMembershipService(
+          new DefaultOidcMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -180,7 +180,7 @@ public class TokenClaimsConverterTest {
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
       membershipService =
-          new DefaultMembershipService(
+          new DefaultOidcMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -414,7 +414,7 @@ public class TokenClaimsConverterTest {
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
 
       membershipService =
-          new DefaultMembershipService(
+          new DefaultOidcMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,
@@ -451,7 +451,7 @@ public class TokenClaimsConverterTest {
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("$.groups['name']");
 
       membershipService =
-          new DefaultMembershipService(
+          new DefaultOidcMembershipService(
               mappingRuleServices,
               tenantServices,
               roleServices,

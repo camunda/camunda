@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.converter;
 
-import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.BasicMembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,9 +16,10 @@ import org.springframework.security.core.Authentication;
 public class UsernamePasswordAuthenticationTokenConverter
     implements CamundaAuthenticationConverter<Authentication> {
 
-  private final MembershipService membershipService;
+  private final BasicMembershipService membershipService;
 
-  public UsernamePasswordAuthenticationTokenConverter(final MembershipService membershipService) {
+  public UsernamePasswordAuthenticationTokenConverter(
+      final BasicMembershipService membershipService) {
     this.membershipService = membershipService;
   }
 
