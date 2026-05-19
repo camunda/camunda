@@ -8,7 +8,8 @@ live in [Data loading](../data-loading.md).
 
 A page spans three folders in `apps/orchestration-cluster-webapp/src/`:
 
-- `modules/`: components, hooks, stores, utilities.
+- `modules/`: components, hooks, stores, utilities
+  (see [Modules](../orchestration-cluster-webapp.md#modules)).
 - `pages/`: one file per page, wires modules together.
 - `routes/`: [TanStack Router](https://tanstack.com/router/latest)
   mount points. Owns the loader, `pendingComponent`, and
