@@ -51,6 +51,13 @@
 /load-tests/ @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
 
+##################
+## Data Layer  ##
+##################
+
+/.github/actions/read-db-versions/        @camunda/data-layer
+/.github/workflows/check-saas-version.yml @camunda/data-layer
+
 ####################
 ## Claude skills  ##
 ####################
