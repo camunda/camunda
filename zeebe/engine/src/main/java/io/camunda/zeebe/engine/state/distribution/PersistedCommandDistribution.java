@@ -18,10 +18,12 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
-public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
+public class PersistedCommandDistribution extends UnpackedObject
+    implements DbValue, ProjectionOf<CommandDistributionRecord, PersistedCommandDistribution> {
 
   private final StringProperty queueIdProperty = new StringProperty("queueId", "");
   private final EnumProperty<ValueType> valueTypeProperty =
@@ -41,6 +43,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
         .declareProperty(authInfoProperty);
   }
 
+  @Override
   public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
     if (commandDistributionRecord.getQueueId() != null) {
