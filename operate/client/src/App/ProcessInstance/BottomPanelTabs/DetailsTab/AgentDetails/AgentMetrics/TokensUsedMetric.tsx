@@ -23,7 +23,7 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   return (
     <MetricCard title="Tokens Used" value={totalTokens}>
       <TokenBreakdownContainer>
-        <TokenBreakdown $dotColor="var(--cds-link-primary)">
+        <TokenBreakdown $dotColor="var(--cds-interactive)">
           <span>Input</span>
           <span>{inputTokens}</span>
         </TokenBreakdown>
