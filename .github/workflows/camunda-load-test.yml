@@ -196,6 +196,14 @@ env:
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  # Workaround to prevent the Kubernetes client SDK from failing while
+  # https://github.com/gravitational/teleport/issues/64188 is opened.
+  # See https://app.incident.io/camunda/incidents/5624 for more details.
+  # This needs to be applied to all the subcommands run in this workflow.
+  # Consider removing this once
+  # https://github.com/gravitational/teleport/issues/64188 has been fixed and
+  # deployed.
+  KUBE_FEATURE_WatchListClient: "false"
 
 defaults:
   run:
