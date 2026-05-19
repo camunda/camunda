@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.jspecify.annotations.Nullable;
 
 public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
@@ -35,7 +36,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * @param actor the actor to submit
    */
   @Override
-  public ActorFuture<Void> submitActor(final Actor actor) {
+  public ActorFuture<@Nullable Void> submitActor(final Actor actor) {
     return submitActor(actor, SchedulingHints.cpuBound());
   }
 
@@ -57,7 +58,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * @param schedulingHints additional scheduling hint
    */
   @Override
-  public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints schedulingHints) {
+  public ActorFuture<@Nullable Void> submitActor(
+      final Actor actor, final SchedulingHints schedulingHints) {
     checkRunningState();
 
     final ActorTask task = actor.actor.task;
@@ -83,7 +85,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
-  public Future<Void> stop() {
+  public Future<@Nullable Void> stop() {
     if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING)) {
 
       return actorTaskExecutor.closeAsync().thenRun(() -> state.set(SchedulerState.TERMINATED));

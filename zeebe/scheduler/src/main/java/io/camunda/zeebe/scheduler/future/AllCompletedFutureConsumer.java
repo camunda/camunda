@@ -9,20 +9,22 @@ package io.camunda.zeebe.scheduler.future;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
-public final class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
-  private final Consumer<Throwable> callback;
+public final class AllCompletedFutureConsumer<T> implements BiConsumer<T, @Nullable Throwable> {
+  private final Consumer<@Nullable Throwable> callback;
   private int pendingFutures;
 
-  private Throwable occuredFailure = null;
+  private @Nullable Throwable occuredFailure = null;
 
-  public AllCompletedFutureConsumer(final int pendingFutures, final Consumer<Throwable> callback) {
+  public AllCompletedFutureConsumer(
+      final int pendingFutures, final Consumer<@Nullable Throwable> callback) {
     this.pendingFutures = pendingFutures;
     this.callback = callback;
   }
 
   @Override
-  public void accept(final T result, final Throwable failure) {
+  public void accept(final T result, final @Nullable Throwable failure) {
     pendingFutures -= 1;
 
     if (failure != null) {

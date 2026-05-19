@@ -22,6 +22,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Aggregates a number of {@code ActorFuture} objects into a single one. The aggregated future is
@@ -37,7 +38,7 @@ import java.util.stream.Collector;
  *
  * @param <V> type of the value of each future
  */
-public final class ActorFutureCollector<V>
+public final class ActorFutureCollector<V extends @Nullable Object>
     implements Collector<ActorFuture<V>, List<ActorFuture<V>>, ActorFuture<List<V>>> {
 
   private final ConcurrencyControl concurrencyControl;
@@ -74,12 +75,11 @@ public final class ActorFutureCollector<V>
     return emptySet();
   }
 
-  private static final class CompletionWaiter<V> implements Supplier<ActorFuture<List<V>>> {
+  private static final class CompletionWaiter<V extends @Nullable Object>
+      implements Supplier<ActorFuture<List<V>>> {
     private final ConcurrencyControl concurrencyControl;
     private final List<ActorFuture<V>> pendingFutures;
     private final Either<Throwable, V>[] results;
-
-    private ActorFuture<List<V>> aggregated;
 
     private CompletionWaiter(
         final ConcurrencyControl concurrencyControl, final List<ActorFuture<V>> pendingFutures) {
@@ -90,7 +90,7 @@ public final class ActorFutureCollector<V>
 
     @Override
     public ActorFuture<List<V>> get() {
-      aggregated = concurrencyControl.createFuture();
+      final ActorFuture<List<V>> aggregated = concurrencyControl.createFuture();
 
       if (pendingFutures.isEmpty()) {
         aggregated.complete(Collections.emptyList());
@@ -101,7 +101,8 @@ public final class ActorFutureCollector<V>
           final var currentIndex = index;
           concurrencyControl.runOnCompletion(
               pendingFuture,
-              (result, error) -> handleCompletion(pendingFuture, currentIndex, result, error));
+              (result, error) ->
+                  handleCompletion(aggregated, pendingFuture, currentIndex, result, error));
         }
       }
 
@@ -109,20 +110,21 @@ public final class ActorFutureCollector<V>
     }
 
     private void handleCompletion(
+        final ActorFuture<List<V>> aggregated,
         final ActorFuture<V> pendingFuture,
         final int currentIndex,
         final V result,
-        final Throwable error) {
+        final @Nullable Throwable error) {
       pendingFutures.remove(pendingFuture);
 
       results[currentIndex] = error == null ? Either.right(result) : Either.left(error);
 
       if (pendingFutures.isEmpty()) {
-        completeAggregatedFuture();
+        completeAggregatedFuture(aggregated);
       }
     }
 
-    private void completeAggregatedFuture() {
+    private void completeAggregatedFuture(final ActorFuture<List<V>> aggregated) {
       final var aggregatedResult = stream(results).collect(Either.collector());
 
       if (aggregatedResult.isRight()) {

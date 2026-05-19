@@ -116,7 +116,6 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -166,6 +165,8 @@
           <ignoredNonTestScopedDependencies>
             <!-- When not set, we get error "Non-test scoped test only dependencies found". If we set the scope to test only, the build fails. -->
             <ignoredNonTestScopedDependency>io.camunda:zeebe-atomix-utils</ignoredNonTestScopedDependency>
+            <!-- Required by javac annotation processor for nullaway -->
+            <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>

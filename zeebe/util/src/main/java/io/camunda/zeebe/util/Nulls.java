@@ -5,20 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.scheduler.retry;
+package io.camunda.zeebe.util;
 
 import org.jspecify.annotations.Nullable;
 
-public final class RetryLimitExceededException extends RuntimeException {
+public final class Nulls {
+  private Nulls() {}
 
-  private final int retryLimit;
-
-  public RetryLimitExceededException(final int retryLimit, final @Nullable Throwable cause) {
-    super("Retry limit of " + retryLimit + " exceeded", cause);
-    this.retryLimit = retryLimit;
-  }
-
-  public int getRetryLimit() {
-    return retryLimit;
+  @SuppressWarnings("NullAway")
+  public static <V extends @Nullable Object> V uncheckedCastToNonNull(@Nullable final V value) {
+    return value;
   }
 }
