@@ -506,7 +506,18 @@ components:
         Request to update the mutable state of an agent instance. At least one of
         status, metrics, or tools must be provided.
       type: object
+      required:
+        - elementInstanceKey
       properties:
+        elementInstanceKey:
+          nullable: false
+          description: |
+            The key of the AHSP or AI Agent Task element instance.
+            The engine uses this key to infer processInstanceKey, elementId,
+            processDefinitionKey, and tenantId.
+            This is used to validate that the agent instance being updated belongs to the expected process instance and to link the agent instance to the element instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         status:
           description: The new status of the agent instance.
           allOf:
