@@ -2,11 +2,11 @@
   "scenario": "max",
   "metrics": {
     "process-instances-started": {
-      "per-second": 300,
+      "expected": 540000,
       "tolerance-percent": 5
     },
     "process-instances-completed": {
-      "per-second": 300,
+      "expected": 540000,
       "tolerance-percent": 5
     },
     "throughput-per-second": {

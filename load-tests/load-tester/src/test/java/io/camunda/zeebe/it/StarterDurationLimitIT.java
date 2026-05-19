@@ -22,18 +22,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test for the starter's {@code duration-limit} stop condition. Verifies that the
- * starter creation loop terminates on its own once the configured window elapses, leaving the
- * {@code starter.run.finished} gauge at 1.
- *
- * <p>The unit under test is {@code Starter#createContinuationCondition()}: when {@code
- * duration-limit > 0}, the loop's {@code BooleanSupplier} flips to {@code false} after the
- * deadline, the latch counts down, and {@code CommandLineRunner#run} returns. Because Spring's
- * startup blocks on that runner, the test method only executes after the starter has finished — no
- * Awaitility needed.
- *
- * <p>Activates only the {@code starter} and {@code it} profiles (no {@code worker}) to avoid the
- * known {@code @SpringBootTest} hang when the {@code worker} profile is on the active set.
+ * Verifies the starter loop self-terminates when {@code duration-limit} elapses, leaving {@code
+ * starter.run.finished} at 1. Spring startup blocks on the {@code CommandLineRunner}, so the test
+ * body runs after the starter exits — no Awaitility. Excludes the {@code worker} profile to avoid
+ * the known {@code @SpringBootTest} hang.
  */
 @Testcontainers
 @SpringBootTest(
