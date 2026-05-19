@@ -19,8 +19,10 @@ import java.util.List;
 
 public interface BrokerInfo {
   /**
+   * @deprecated use {@link BrokerInfo#getMemberId} instead
    * @return the node if of the broker
    */
+  @Deprecated
   int getNodeId();
 
   /**

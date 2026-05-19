@@ -27,6 +27,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   private final int nodeId;
   private final String zone;
+  // memberId always represents $zone/$nodeId or $nodeId if zone is unset.
+  // however, it's constructed in the server, hence the "duplication"
   private final String memberId;
   private final String host;
   private final int port;
@@ -35,8 +37,9 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
     nodeId = grpcBrokerInfo.getNodeId();
-    memberId = grpcBrokerInfo.getMemberId();
-    zone = grpcBrokerInfo.getZone();
+    memberId = memberId(grpcBrokerInfo.getMemberId(), nodeId);
+    final String rawZone = grpcBrokerInfo.getZone();
+    zone = rawZone.isEmpty() ? null : rawZone;
     host = grpcBrokerInfo.getHost();
     port = grpcBrokerInfo.getPort();
     version = grpcBrokerInfo.getVersion();
@@ -50,8 +53,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
   public BrokerInfoImpl(final io.camunda.client.protocol.rest.BrokerInfo httpBrokerInfo) {
     nodeId = httpBrokerInfo.getNodeId();
     // TODO: use httpBrokerInfo.getZone() once the REST protocol carries the zone (see #51998)
-    zone = "";
-    memberId = "";
+    zone = null;
+    memberId = memberId("", nodeId);
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
     version = httpBrokerInfo.getVersion();
@@ -74,11 +77,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   @Override
   public String getMemberId() {
-    if (memberId == null || memberId.isEmpty()) {
-      return String.valueOf(nodeId);
-    } else {
-      return memberId;
-    }
+    return memberId;
   }
 
   @Override
@@ -108,7 +107,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodeId, zone, host, port, version, partitions);
+    return Objects.hash(nodeId, zone, memberId, host, port, version, partitions);
   }
 
   @Override
@@ -125,6 +124,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     return nodeId == that.nodeId
         && port == that.port
         && Objects.equals(zone, that.zone)
+        && Objects.equals(memberId, that.memberId)
         && Objects.equals(host, that.host)
         && Objects.equals(version, that.version)
         && Objects.equals(partitions, that.partitions);
@@ -138,6 +138,9 @@ public final class BrokerInfoImpl implements BrokerInfo {
         + ", zone='"
         + zone
         + '\''
+        + ", memberId='"
+        + memberId
+        + '\''
         + ", host='"
         + host
         + '\''
@@ -148,5 +151,13 @@ public final class BrokerInfoImpl implements BrokerInfo {
         + ", partitions="
         + partitions
         + '}';
+  }
+
+  private static String memberId(final String memberId, final int nodeId) {
+    if (memberId.isEmpty()) {
+      return String.valueOf(nodeId);
+    } else {
+      return memberId;
+    }
   }
 }
