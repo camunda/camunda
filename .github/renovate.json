@@ -111,7 +111,6 @@
       "matchManagers": [
         "dockerfile",
         "maven-wrapper",
-        "gradle-wrapper",
         "github-actions",
         "nvm",
         "helmv3"
@@ -146,8 +145,7 @@
     {
       "description": "Identify updates related to backend dependencies.",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "addLabels": [
         "area/backend"
@@ -169,8 +167,7 @@
     },
     {
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "org.opensearch.client**",
@@ -220,8 +217,7 @@
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "org.apache.lucene**"
@@ -237,8 +233,7 @@
         "/^stable\\/8\\.[6-8]/"
       ],
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "org.apache.lucene**"
@@ -251,8 +246,7 @@
     },
     {
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "com.graphql-java**"
@@ -266,7 +260,6 @@
       "description": "Exclude major updates to Spring, we will do those manually",
       "matchManagers": [
         "maven",
-        "gradle",
         "custom.regex"
       ],
       "matchPackageNames": [
@@ -281,7 +274,6 @@
       "description": "Spring updates are often security-relevant, get those first (prio 10)",
       "matchManagers": [
         "maven",
-        "gradle",
         "custom.regex"
       ],
       "matchPackageNames": [
@@ -306,8 +298,7 @@
     },
     {
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "org.jacoco**"
@@ -317,8 +308,7 @@
     {
       "description": "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "/.*/"
@@ -328,8 +318,7 @@
     {
       "description": "Exclude Maven/Gradle dependencies lacking metadata.",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchPackageNames": [
         "/net.jcip:jcip-annotations/"
@@ -403,8 +392,7 @@
     {
       "description": "Exclude Optimize backend dependencies",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchFileNames": [
         "optimize/**"
@@ -430,8 +418,7 @@
     {
       "description": "Disable internal io.camunda Maven/Gradle updates on stable branches; versions are controlled by the release process.",
       "matchManagers": [
-        "maven",
-        "gradle"
+        "maven"
       ],
       "matchBaseBranches": [
         "/^stable\\/8\\..*/"
