@@ -74,6 +74,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metrics:
+        description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
@@ -164,6 +169,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metrics:
+        description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -236,6 +246,7 @@ jobs:
           | TTL (days) | `${{ inputs.ttl }}` |
           | Stable VMs | `${{ inputs.stable-vms }}` |
           | Enable Optimize | `${{ inputs.enable-optimize }}` |
+          | Enable Optimize report metrics | `${{ inputs.enable-optimize-report-metrics }}` |
           | Build frontend | `${{ inputs.build-frontend }}` |
           | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
           | Optimize tag | ${{ inputs.optimize-tag || '—' }} |
@@ -521,7 +532,7 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} true ${{ inputs.enable-optimize-report-metrics }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}

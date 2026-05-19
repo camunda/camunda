@@ -187,14 +187,6 @@ public class OptimizeApiClient {
     return reportIds;
   }
 
-  String getAccessTokenForTesting() {
-    return accessToken;
-  }
-
-  long getTokenExpiresAtForTesting() {
-    return tokenExpiresAtMillis;
-  }
-
   private List<ReportEvaluationResult> fetchAllReportMetrics(final String dashboardBody) {
     final List<String> reportIds = extractReportIdsFromDashboard(dashboardBody);
     final List<ReportEvaluationResult> results = new ArrayList<>();

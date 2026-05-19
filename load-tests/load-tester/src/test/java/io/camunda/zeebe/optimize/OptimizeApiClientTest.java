@@ -66,22 +66,23 @@ final class OptimizeApiClientTest {
     exchange.respond(
         req -> req.url().getHost().equals("keycloak"),
         jsonResponse(HttpStatus.OK, "{\"access_token\":\"tok-1\",\"expires_in\":300}"));
+    exchange.respond(
+        req -> req.url().getPath().equals("/api/dashboard/management"),
+        jsonResponse(HttpStatus.OK, "{\"tiles\":[]}"));
     clockMillis.set(1_000L);
 
     // when
     client.authenticate();
+    client.evaluateHomepage();
 
-    // then
-    assertThat(client.getAccessTokenForTesting()).isEqualTo("tok-1");
-    assertThat(client.getTokenExpiresAtForTesting()).isEqualTo(1_000L + 300_000L);
-
-    final ClientRequest capturedRequest = exchange.requests().get(0);
-    assertThat(capturedRequest.url().toString())
+    // then - keycloak called once with the client_credentials form body
+    final ClientRequest authRequest = exchange.requests().get(0);
+    assertThat(authRequest.url().toString())
         .isEqualTo(KEYCLOAK_BASE + "/auth/realms/camunda-platform/protocol/openid-connect/token");
-    assertThat(capturedRequest.headers().getContentType())
+    assertThat(authRequest.headers().getContentType())
         .isEqualTo(MediaType.APPLICATION_FORM_URLENCODED);
 
-    final String formBody = extractBody(capturedRequest);
+    final String formBody = extractBody(authRequest);
     assertThat(formBody)
         .contains("grant_type=client_credentials")
         .contains("client_id=optimize")
@@ -90,27 +91,45 @@ final class OptimizeApiClientTest {
         .doesNotContain("username=")
         .doesNotContain("password=")
         .doesNotContain("grant_type=password");
+
+    // and - the cached token is propagated as a bearer header on subsequent requests
+    final ClientRequest dashboardRequest =
+        exchange.requests().stream()
+            .filter(r -> r.url().getPath().equals("/api/dashboard/management"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(dashboardRequest.headers().getFirst("Authorization")).isEqualTo("Bearer tok-1");
   }
 
   @Test
   void shouldRefreshTokenBeforeExpiry() {
-    // given - first auth returns tok-1 with TTL 60s; skew is 30s
+    // given - first auth returns tok-1 with TTL 60s; refresh skew is 30s
     exchange.respond(
         req -> req.url().getHost().equals("keycloak"),
         jsonResponse(HttpStatus.OK, "{\"access_token\":\"tok-1\",\"expires_in\":60}"));
+    exchange.respond(
+        req -> req.url().getPath().equals("/api/dashboard/management"),
+        jsonResponse(HttpStatus.OK, "{\"tiles\":[]}"));
     clockMillis.set(0L);
-    client.ensureValidToken();
-    assertThat(client.getAccessTokenForTesting()).isEqualTo("tok-1");
+    client.evaluateHomepage();
 
-    // when - clock crosses into the skew window
+    // when - re-prime keycloak with a fresh token, advance clock into the skew window
     exchange.respond(
         req -> req.url().getHost().equals("keycloak"),
         jsonResponse(HttpStatus.OK, "{\"access_token\":\"tok-2\",\"expires_in\":60}"));
     clockMillis.set(31_000L);
-    client.ensureValidToken();
+    client.evaluateHomepage();
 
-    // then
-    assertThat(client.getAccessTokenForTesting()).isEqualTo("tok-2");
+    // then - the two dashboard requests carry the pre- and post-refresh tokens
+    final List<ClientRequest> dashboardRequests =
+        exchange.requests().stream()
+            .filter(r -> r.url().getPath().equals("/api/dashboard/management"))
+            .toList();
+    assertThat(dashboardRequests).hasSize(2);
+    assertThat(dashboardRequests.get(0).headers().getFirst("Authorization"))
+        .isEqualTo("Bearer tok-1");
+    assertThat(dashboardRequests.get(1).headers().getFirst("Authorization"))
+        .isEqualTo("Bearer tok-2");
   }
 
   @Test

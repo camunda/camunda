@@ -51,7 +51,6 @@ final class OptimizeReportEvaluatorTest {
     props.setEvaluationInterval(Duration.ofMillis(50));
     props.setInitialDelay(Duration.ofMillis(10));
     props.setAuthRetryDelay(Duration.ofMillis(1));
-    props.setAuthRetryMaxAttempts(3);
   }
 
   @AfterEach
@@ -92,8 +91,8 @@ final class OptimizeReportEvaluatorTest {
         .thenReturn(new DetailedPageResult(200, 1L, List.of()));
     evaluator = new OptimizeReportEvaluator(props, apiClient, executor);
 
-    // when - first cycle blows up inside evaluateHomepage; runOneCycleSafely catches the
-    // exception that bubbles out of evaluateDetailedPage's catch is unaffected.
+    // when - first cycle: evaluateHomepage throws and is swallowed by its private
+    // try/catch, so evaluateDetailedPage still runs. Second cycle runs both cleanly.
     evaluator.runOneCycleSafely();
     evaluator.runOneCycleSafely();
 
@@ -105,6 +104,7 @@ final class OptimizeReportEvaluatorTest {
   @Test
   void shouldRetryAuthOnStartUpToMaxAttempts() {
     // given
+    props.setAuthRetryMaxAttempts(3);
     doThrow(new OptimizeAuthException("nope", 503))
         .doThrow(new OptimizeAuthException("nope", 503))
         .doNothing()
