@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.command.StreamUtil;
@@ -489,9 +490,11 @@ public class DeployResourceRestTest extends ClientRestTest {
     cmd.send().join();
 
     // then
-    LoggedRequestAssert.assertThat(RestGatewayService.getLastRequest())
+    final LoggedRequest lastRequest = RestGatewayService.getLastRequest();
+    LoggedRequestAssert.assertThat(lastRequest)
         .hasMethod(RequestMethod.POST)
         .hasUrl(RestGatewayPaths.getDeploymentsUrl());
+    assertThat(lastRequest.getBodyAsString()).contains(filename);
   }
 
   private byte[] getBytes(final String filename) {
