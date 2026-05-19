@@ -12,6 +12,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.ElementInstanceInspectionQuery;
+import io.camunda.gateway.protocol.model.ElementInstanceInspectionQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
@@ -67,6 +69,22 @@ public class ElementInstanceController {
         () ->
             elementInstanceServices.setVariables(
                 variablesRequest, authenticationProvider.getCamundaAuthentication()));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/inspection")
+  public ResponseEntity<ElementInstanceInspectionQueryResult> inspectElementInstances(
+      @RequestBody(required = false) final ElementInstanceInspectionQuery query) {
+    try {
+      final var filter = SearchQueryRequestMapper.toElementInstanceInspectionFilter(query);
+      final var items =
+          elementInstanceServices.inspect(
+              filter, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toElementInstanceInspectionQueryResult(items));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @RequiresSecondaryStorage
