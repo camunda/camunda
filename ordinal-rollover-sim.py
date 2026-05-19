@@ -158,7 +158,7 @@ class OrdinalRollover:
             current_index = index
             break
         if current_index is not None:
-          if len(current_index.process_instances) >= self.rollover_size:
+          if self.rollover_size and len(current_index.process_instances) >= self.rollover_size:
               return self._rollover(ordinal_indexes, current_ordinal)
         return current_ordinal
 
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     parser.add_argument("--retention-period", type=int, default=30, help="How many ticks finished process instances are retained before deletion")
     parser.add_argument("--mode", choices=["main", "ordinal"], default="main", help="Whether to create process instances in the main index or in ordinal indexes")
     parser.add_argument("--rollover-interval", type=int, default=1, help="How many ticks between ordinal rollovers")
-    parser.add_argument("--rollover-size", type=int, default=1000, help="Rollover once the number of process instances in the current ordinal index reaches this size")
+    parser.add_argument("--rollover-size", type=int, default=None, help="Rollover once the number of process instances in the current ordinal index reaches this size")
     parser.add_argument("--max-ordinals", type=int, default=None, help="Maximum number of ordinal indexes")
     parser.add_argument("--circular-ordinals", action="store_true", help="Whether to reuse ordinal indexes in a circular manner once the maximum number of ordinals is reached")
     parser.add_argument("--run-deleter", action="store_true", help="Whether to run the deleter")
