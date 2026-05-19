@@ -16,6 +16,7 @@ const useAgentInstanceForElement = (
 ) => {
   const {
     data: activeAgentInstancesResult,
+    isSuccess,
     isLoading: isLoadingActive,
     isError: isErrorActive,
   } = useProcessInstanceAgentInstances();
@@ -28,6 +29,7 @@ const useAgentInstanceForElement = (
 
   const needsFallback =
     IS_AI_AGENT_ENABLED &&
+    isSuccess &&
     cachedAgentInstance === undefined &&
     !!elementInstanceKey;
 
