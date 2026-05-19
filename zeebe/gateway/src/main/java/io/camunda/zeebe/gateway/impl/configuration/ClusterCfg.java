@@ -14,7 +14,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
-import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
+import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.atomix.utils.net.Address;
@@ -149,7 +149,7 @@ public final class ClusterCfg {
   }
 
   public ClusterCfg setInitialContactPoints(final List<String> initialContactPoints) {
-    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
+    this.initialContactPoints = sanitizeList(initialContactPoints);
     return this;
   }
 
