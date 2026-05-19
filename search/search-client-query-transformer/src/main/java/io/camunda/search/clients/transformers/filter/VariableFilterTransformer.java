@@ -18,6 +18,7 @@ import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.BP
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.IS_PREVIEW;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
@@ -45,6 +46,7 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
     queries.addAll(getVariablesQuery(filter.valueOperations()));
     queries.addAll(getScopeKeyQuery(filter.scopeKeyOperations()));
     queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
+    queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
     queries.addAll(getVariableKeyQuery(filter.variableKeyOperations()));
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
@@ -67,6 +69,11 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
   private List<SearchQuery> getProcessInstanceKeyQuery(
       final List<Operation<Long>> processInstanceKey) {
     return longOperations(PROCESS_INSTANCE_KEY, processInstanceKey);
+  }
+
+  private List<SearchQuery> getProcessDefinitionKeyQuery(
+      final List<Operation<Long>> processDefinitionKey) {
+    return longOperations(PROCESS_DEFINITION_KEY, processDefinitionKey);
   }
 
   private List<SearchQuery> getVariableKeyQuery(final List<Operation<Long>> variableKeys) {
