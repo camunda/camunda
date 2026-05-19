@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -188,6 +189,7 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
@@ -207,6 +209,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
@@ -383,7 +386,7 @@ public final class ProcessInstanceModificationModifyProcessor
           final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
           terminateElement(elementInstance);
-          terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
+          terminateFlowScopes(flowScopeKey, requiredKeysForActivation, process);
         });
 
     stateWriter.appendFollowUpEvent(
@@ -1429,7 +1432,9 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private void terminateFlowScopes(
-      final long elementInstanceKey, final Set<Long> requiredKeysForActivation) {
+      final long elementInstanceKey,
+      final Set<Long> requiredKeysForActivation,
+      final DeployedProcess process) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
@@ -1442,6 +1447,19 @@ public final class ProcessInstanceModificationModifyProcessor
         throw new TerminatedChildProcessException(
             ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED.formatted(
                 currentElementInstanceRecord.getBpmnProcessId()));
+      }
+
+      // Delegate process-level termination to the BPMN stream processor only when the process
+      // declares at least one cancel execution listener, so that the cancel listener chain runs
+      // before the process reaches ELEMENT_TERMINATED. Otherwise the process is terminated
+      // directly to keep the record stream byte-identical to previous broker versions.
+      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
+          && process.getProcess().hasCancelExecutionListeners()) {
+        commandWriter.appendFollowUpCommand(
+            currentElementInstance.getKey(),
+            ProcessInstanceIntent.TERMINATE_ELEMENT,
+            currentElementInstanceRecord);
+        return;
       }
 
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();

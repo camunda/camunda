@@ -740,4 +740,34 @@ public class DeploymentRejectionTest {
         .contains(
             "The BPMN 2.0 schema requires flow element references to appear before event definitions");
   }
+
+  @Test
+  public void shouldRejectDeploymentIfCancelExecutionListenerIsDefinedOnNonProcessElement() {
+    // given: a service task carrying a cancel execution listener (only valid on the process)
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("service")
+                        .zeebeCancelExecutionListener("cancel_execution_listener_job"))
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "The 'cancel' execution listener event type is not supported for the 'serviceTask' element. "
+                + "The 'cancel' event type is only supported on the 'process' element.");
+  }
 }

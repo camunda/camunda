@@ -86,6 +86,14 @@ public final class BpmnStateTransitionBehavior {
     this.incidentBehavior = incidentBehavior;
   }
 
+  public void continueTerminating(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+    commandWriter.appendFollowUpCommand(
+        context.getElementInstanceKey(),
+        ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT,
+        context.getRecordValue());
+  }
+
   /**
    * @return context with updated intent
    */
@@ -205,10 +213,20 @@ public final class BpmnStateTransitionBehavior {
     final var illegalStateException =
         new IllegalStateException(
             String.format(ALREADY_MIGRATED_ERROR_MSG, context.getBpmnElementType(), methodName));
-    if (Arrays.stream(illegalStateException.getStackTrace())
-        .noneMatch(ele -> ele.getMethodName().equals("attemptToContinueProcessProcessing"))) {
+    if (!isIncidentResolving(illegalStateException)) {
       throw illegalStateException;
     }
+  }
+
+  /** see {{@link #verifyIncidentResolving(BpmnElementContext, String)} */
+  private boolean isIncidentResolving() {
+    final var illegalStateException = new IllegalStateException();
+    return isIncidentResolving(illegalStateException);
+  }
+
+  private boolean isIncidentResolving(final Exception exception) {
+    return Arrays.stream(exception.getStackTrace())
+        .anyMatch(ele -> ele.getMethodName().equals("attemptToContinueProcessProcessing"));
   }
 
   /**
@@ -265,6 +283,19 @@ public final class BpmnStateTransitionBehavior {
               context.getBpmnElementType(),
               "#transitionToTerminating"));
     }
+
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_TERMINATING
+        && isIncidentResolving()) {
+      // if the element is already terminating, then the Terminate_Element command is processed as a
+      // result of resolving an incident. We don't have to transition again. Just update the
+      // context
+      return context.copy(
+          context.getElementInstanceKey(),
+          context.getRecordValue(),
+          ProcessInstanceIntent.ELEMENT_TERMINATING);
+    }
+
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
