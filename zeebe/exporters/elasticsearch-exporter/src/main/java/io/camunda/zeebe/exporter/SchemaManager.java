@@ -57,8 +57,10 @@ public class SchemaManager {
     final boolean acknowledged;
     if (configuration.retention.isEnabled()) {
       acknowledged = client.bulkPutIndexLifecycleSettings(configuration.retention.getPolicyName());
-    } else {
+    } else if (configuration.retention.isManagePolicy()) {
       acknowledged = client.bulkPutIndexLifecycleSettings(null);
+    } else {
+      return;
     }
 
     if (!acknowledged) {

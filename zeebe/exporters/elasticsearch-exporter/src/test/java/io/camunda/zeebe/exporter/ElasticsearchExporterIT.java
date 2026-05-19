@@ -337,6 +337,31 @@ final class ElasticsearchExporterIT {
       assertIndexSettingsHasNoLifecyclePolicy(response1);
     }
 
+    @Test
+    void shouldPreserveExistingLifecyclePolicyWhenManagePolicyIsDisabled() {
+      // given retention is enabled and a record is exported so the policy is set
+      configureExporter(true);
+      final var record1 = generateRecord(ValueType.JOB);
+      export(record1);
+
+      final var index1 = indexRouter.indexFor(record1);
+      var response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
+
+      // when retention is disabled but the exporter is told not to manage policies
+      configureExporter(
+          config -> {
+            config.retention.setEnabled(false);
+            config.retention.setManagePolicy(false);
+          });
+      final var record2 = generateRecord(ValueType.JOB);
+      export(record2);
+
+      // then the pre-existing policy must remain on the existing index
+      response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
+    }
+
     /**
      * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
      *
