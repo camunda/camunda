@@ -31,6 +31,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: Role with this id already exists.
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":

@@ -26,6 +26,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "409":
+          description: A user with this username already exists.
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
