@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -36,12 +37,9 @@ public class AgentInstanceUpdateTest {
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
-  /**
-   * Deploys a process, creates a process instance, awaits the service-task activation, sends a
-   * CREATE agent instance command and returns the agentInstanceKey from the resulting CREATED
-   * event.
-   */
-  private long createAgentInstance() {
+  @Test
+  public void shouldEmitUpdatedEventForValidUpdateCommand() {
+    // given
     ENGINE
         .deployment()
         .withXmlResource(
@@ -51,28 +49,15 @@ public class AgentInstanceUpdateTest {
                 .endEvent()
                 .done())
         .deploy();
-
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    final var serviceTaskInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .withElementId(SERVICE_TASK_ID)
-            .getFirst();
-
-    return ENGINE
-        .agentInstances()
-        .withElementInstanceKey(serviceTaskInstance.getKey())
-        .create()
-        .getValue()
-        .getAgentInstanceKey();
-  }
-
-  @Test
-  public void shouldEmitUpdatedEventForValidUpdateCommand() {
-    // given
-    final var agentInstanceKey = createAgentInstance();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final var updated =
@@ -91,7 +76,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldOnlyUpdateAttributesNamedInChangedAttributes() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — the command attempts to set status, metrics, and tools, but only "status" is
     // listed in changedAttributes via the escape hatch — the other fields must be ignored.
@@ -118,7 +120,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldEmitUpdatedEventCarryingChangedAttributes() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — both status and metrics are updated.
     final var updated =
@@ -137,7 +156,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldRejectEmptyChangedAttributes() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final Record<?> rejection =
@@ -157,7 +193,24 @@ public class AgentInstanceUpdateTest {
   public void shouldDedupeDuplicateAttributesInChangedAttributes() {
     // given — a duplicated "metrics" entry in changedAttributes. Without dedup the delta would
     // be applied twice; the processor iterates the validated set so each attribute is patched once.
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final var updated =
@@ -179,7 +232,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldRejectUnknownAttributeInChangedAttributes() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final Record<?> rejection =
@@ -218,7 +288,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldAccumulateMetricsAsDeltas() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     ENGINE
@@ -252,7 +339,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldRejectMetricDeltaBelowNotProvidedSentinel() {
     // given — anything below -1 (the not-provided sentinel) is invalid
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final Record<?> rejection =
@@ -271,7 +375,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldTreatMetricDeltaOfMinusOneAsNotProvided() {
     // given — bring metrics to a known baseline
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
@@ -298,7 +419,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldDropMetricsFromChangedAttributesWhenAllDeltasAreNoOp() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — all deltas are either 0 (provided but no change) or -1 (not provided)
     final var updated =
@@ -321,7 +459,24 @@ public class AgentInstanceUpdateTest {
   public void shouldNotEnforceLimits() {
     // given — CREATE the agent instance directly (limits are reset on CREATE anyway, so the
     // intent here is to assert the UPDATE processor does not enforce maxTokens / etc.).
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — UPDATE with input-tokens delta of 200, well above any reasonable max-tokens.
     final var updated =
@@ -339,7 +494,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldReplaceToolsListEntirely() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
     final var firstTools = tools(tool("t1", "first tool", "t1-elem"));
     final var secondTools = tools(tool("t2", "second tool", "t2-elem"));
 
@@ -361,7 +533,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldClearToolsListWhenEmptyListProvided() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — first add a tool, then clear with an empty list.
     ENGINE
@@ -383,7 +572,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldDropStatusFromChangedAttributesOnNoOpStatusUpdate() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — set status to the same value as current (INITIALIZING)
     final var updated =
@@ -401,7 +607,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldRejectStatusUnspecifiedWhenStatusInChangedAttributes() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when — explicitly UNSPECIFIED with status named in changedAttributes; this falls into the
     // transition matrix (UNSPECIFIED is not an active target state) and is rejected as such.
@@ -446,7 +669,24 @@ public class AgentInstanceUpdateTest {
   @Test
   public void shouldRejectUpdateSettingStatusToCompleted() {
     // given
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
 
     // when
     final Record<?> rejection =
@@ -461,9 +701,81 @@ public class AgentInstanceUpdateTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
+  @Test
+  public void shouldAllowStatusTransitionsBetweenActiveStates() {
+    // given — verify the matrix of active-state -> active-state transitions, including same-state.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var activeStates =
+        List.of(
+            AgentInstanceStatus.INITIALIZING,
+            AgentInstanceStatus.TOOL_DISCOVERY,
+            AgentInstanceStatus.THINKING,
+            AgentInstanceStatus.TOOL_CALLING,
+            AgentInstanceStatus.IDLE);
+
+    for (final var from : activeStates) {
+      for (final var to : activeStates) {
+        // Skip transitions to INITIALIZING from non-INITIALIZING states — those are rejected.
+        if (to == AgentInstanceStatus.INITIALIZING && from != AgentInstanceStatus.INITIALIZING) {
+          continue;
+        }
+        // Spin up a fresh process instance + agent instance per matrix cell so each transition
+        // starts from a known baseline.
+        final var processInstanceKey =
+            ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+        final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+        final var agentInstanceKey =
+            ENGINE
+                .agentInstances()
+                .withElementInstanceKey(serviceTaskInstance.getKey())
+                .create()
+                .getValue()
+                .getAgentInstanceKey();
+        // Move the agent into the "from" state if necessary.
+        if (from != AgentInstanceStatus.INITIALIZING) {
+          ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+        }
+        // when
+        final var updated =
+            ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(to).update();
+
+        // then
+        assertThat(updated.getIntent())
+            .as("expected transition from %s to %s to be allowed", from, to)
+            .isEqualTo(AgentInstanceIntent.UPDATED);
+        assertThat(updated.getValue().getStatus()).isEqualTo(to);
+      }
+    }
+  }
+
   private void assertRejectsTransitionToInitializingFrom(final AgentInstanceStatus from) {
     // given — move the agent from INITIALIZING into the requested "from" state.
-    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
     ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
 
     // when — attempt to transition back to INITIALIZING.
@@ -481,38 +793,12 @@ public class AgentInstanceUpdateTest {
         .isEqualTo(RejectionType.INVALID_STATE);
   }
 
-  @Test
-  public void shouldAllowStatusTransitionsBetweenActiveStates() {
-    // given — verify the matrix of active-state -> active-state transitions, including same-state.
-    final var activeStates =
-        List.of(
-            AgentInstanceStatus.INITIALIZING,
-            AgentInstanceStatus.TOOL_DISCOVERY,
-            AgentInstanceStatus.THINKING,
-            AgentInstanceStatus.TOOL_CALLING,
-            AgentInstanceStatus.IDLE);
-
-    for (final var from : activeStates) {
-      for (final var to : activeStates) {
-        // Skip transitions to INITIALIZING from non-INITIALIZING states — those are rejected.
-        if (to == AgentInstanceStatus.INITIALIZING && from != AgentInstanceStatus.INITIALIZING) {
-          continue;
-        }
-        final var agentInstanceKey = createAgentInstance();
-        // Move the agent into the "from" state if necessary.
-        if (from != AgentInstanceStatus.INITIALIZING) {
-          ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
-        }
-        // when
-        final var updated =
-            ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(to).update();
-
-        // then
-        assertThat(updated.getIntent())
-            .as("expected transition from %s to %s to be allowed", from, to)
-            .isEqualTo(AgentInstanceIntent.UPDATED);
-        assertThat(updated.getValue().getStatus()).isEqualTo(to);
-      }
-    }
+  private static Record<ProcessInstanceRecordValue> awaitServiceTaskActivated(
+      final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withElementId(SERVICE_TASK_ID)
+        .getFirst();
   }
 }
