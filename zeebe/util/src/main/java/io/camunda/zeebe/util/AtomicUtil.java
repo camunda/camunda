@@ -37,7 +37,7 @@ public final class AtomicUtil {
    * @return The previous value of the atomic reference, or null if the value was not replaced
    * @param <T> The type of the value of the atomic reference
    */
-  public static <T> @Nullable T replace(
+  public static <T extends @Nullable Object> @Nullable T replace(
       final AtomicReference<T> ref,
       final Function<T, Optional<T>> replacer,
       final Consumer<T> rollback) {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.collection;
 
 import java.util.Arrays;
 import java.util.function.IntFunction;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An m-array is a multidimensional array, where each dimension has a finite bound, and represented
@@ -19,7 +20,7 @@ import java.util.function.IntFunction;
  */
 public final class MArray<T> {
   private final int[] offsets;
-  private final T[] items;
+  private final @Nullable T[] items;
 
   private MArray(final int[] offsets, final T[] items) {
     this.offsets = offsets;
@@ -62,7 +63,7 @@ public final class MArray<T> {
    *
    * @throws IllegalArgumentException if the index vector is smaller than the number of dimensions
    */
-  public T get(final int... indices) {
+  public @Nullable T get(final int... indices) {
     final var index = mapToIndex(indices);
     return items[index];
   }
