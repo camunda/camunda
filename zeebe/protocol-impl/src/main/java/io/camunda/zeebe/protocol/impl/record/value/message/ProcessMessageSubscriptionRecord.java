@@ -42,6 +42,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -60,9 +61,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty ordinalKeyProperty = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public ProcessMessageSubscriptionRecord() {
-    super(13);
+    super(14);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -75,7 +77,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(ordinalKeyProperty);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -92,6 +95,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setElementId(record.getElementIdBuffer());
     setTenantId(record.getTenantId());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
+    setOrdinalKey(record.getOrdinalKey());
   }
 
   @JsonIgnore
@@ -135,22 +139,17 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
+  }
+
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
 
   public ProcessMessageSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
-  }
-
-  public ProcessMessageSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
     return this;
   }
 
@@ -224,6 +223,11 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  public ProcessMessageSubscriptionRecord setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProp.setValue(key);
+    return this;
+  }
+
   public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
@@ -246,6 +250,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProperty.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProperty.setValue(ordinal);
     return this;
   }
 }

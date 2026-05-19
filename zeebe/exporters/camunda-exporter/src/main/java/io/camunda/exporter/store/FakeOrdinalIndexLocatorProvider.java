@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.OrdinalKeyBased;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,7 +43,20 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
   @Override
   public IndexLocator createIndexLocator(final Record<?> record) {
-    // TODO stop using instanceof
+    if (record.getValue() instanceof final OrdinalKeyBased ordinalKeyBased) {
+      final var suffix = getOrCreateOrdinalSuffix(ordinalKeyBased.getOrdinalKey());
+      return new SingleSuffixOrdinalIndexLocator(suffix);
+    } else {
+      LOGGER.warn(
+          "Processing a record that is not an instance of OrdinalKeyBased. Record key: {}, "
+              + "position: {}, type: {}, value type: {}. This may lead to suboptimal index usage.",
+          record.getKey(),
+          record.getPosition(),
+          record.getRecordType(),
+          record.getValueType());
+    }
+
+    // TODO(yohanfernando): Remove this and revert to only use the above ^^^
     if (record.getValue() instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
       final long rootProcessInstanceKey = processInstanceRelated.getRootProcessInstanceKey();
       if (rootProcessInstanceKey > 0) {

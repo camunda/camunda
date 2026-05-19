@@ -25,7 +25,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceModificationRecordValue.Builder.class)
 public interface ProcessInstanceModificationRecordValue
-    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
+    extends RecordValue,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        OrdinalKeyBased,
+        TenantOwned {
 
   /** Returns a list of terminate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationTerminateInstructionValue> getTerminateInstructions();
@@ -57,6 +61,7 @@ public interface ProcessInstanceModificationRecordValue
    *
    * @return the key of the root process instance, or {@code -1} if not set
    */
+  @Override
   long getRootProcessInstanceKey();
 
   @Value.Immutable

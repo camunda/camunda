@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -37,6 +38,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
@@ -51,9 +53,10 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final IntegerProperty ordinalKeyProperty = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public MessageSubscriptionRecord() {
-    super(10);
+    super(11);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
@@ -63,7 +66,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(ordinalKeyProperty);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -77,6 +81,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
+    setOrdinalKey(record.getOrdinalKey());
   }
 
   @JsonIgnore
@@ -95,13 +100,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
   @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
   @Override
@@ -154,13 +159,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public MessageSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
+  public MessageSubscriptionRecord setElementInstanceKey(final long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public MessageSubscriptionRecord setElementInstanceKey(final long key) {
-    elementInstanceKeyProp.setValue(key);
+  public MessageSubscriptionRecord setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProp.setValue(key);
     return this;
   }
 
@@ -196,6 +201,16 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProperty.getValue();
+  }
+
+  public MessageSubscriptionRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProperty.setValue(ordinal);
     return this;
   }
 }

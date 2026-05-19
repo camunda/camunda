@@ -38,6 +38,15 @@ public interface BpmnElementContext {
    */
   long getRootProcessInstanceKey();
 
+  /**
+   * Returns the ordinal key of the root process instance in the hierarchy, either ordinal key
+   * determined by the rollover policy or the default value.
+   *
+   * <p>TODO (yohanfernando): Look at usage of above getRootProcessInstanceKey() and add ordinal to
+   * all same places
+   */
+  int getOrdinalKey();
+
   int getProcessVersion();
 
   DirectBuffer getBpmnProcessId();

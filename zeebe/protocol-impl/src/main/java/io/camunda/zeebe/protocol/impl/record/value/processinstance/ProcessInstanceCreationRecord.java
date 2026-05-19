@@ -48,6 +48,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -72,9 +73,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
+  private final IntegerProperty ordinalKeyProperty = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public ProcessInstanceCreationRecord() {
-    super(12);
+    super(13);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -86,12 +88,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProperty)
         .declareProperty(tagsProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(businessIdProperty);
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
+        .declareProperty(businessIdProperty)
+        .declareProperty(ordinalKeyProperty);
   }
 
   @Override
@@ -159,10 +157,9 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return rootProcessInstanceKeyProperty.getValue();
   }
 
-  public ProcessInstanceCreationRecord setRootProcessInstanceKey(
-      final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
-    return this;
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
   }
 
   @Override
@@ -180,11 +177,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
-  public ProcessInstanceCreationRecord setVersion(final int version) {
-    versionProperty.setValue(version);
-    return this;
-  }
-
   public ProcessInstanceCreationRecord setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
@@ -192,6 +184,27 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setRootProcessInstanceKey(
+      final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setVersion(final int version) {
+    versionProperty.setValue(version);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProperty.setValue(ordinal);
     return this;
   }
 

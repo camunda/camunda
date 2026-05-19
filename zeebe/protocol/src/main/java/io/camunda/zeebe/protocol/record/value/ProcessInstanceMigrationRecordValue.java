@@ -23,7 +23,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceMigrationRecordValue.Builder.class)
 public interface ProcessInstanceMigrationRecordValue
-    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
+    extends RecordValue,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        OrdinalKeyBased,
+        TenantOwned {
 
   /**
    * @return the key of the process definition to migrate to
@@ -46,6 +50,7 @@ public interface ProcessInstanceMigrationRecordValue
    *
    * @return the key of the root process instance, or {@code -1} if not set
    */
+  @Override
   long getRootProcessInstanceKey();
 
   /**

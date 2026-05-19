@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
+import io.camunda.zeebe.protocol.record.value.OrdinalKeyBased;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.lang.reflect.Method;
@@ -86,7 +87,8 @@ final class ImmutableProtocolArchTest {
     return Predicates.equivalentTo(ProcessInstanceRelated.class)
         .or(Predicates.equivalentTo(BatchOperationRelated.class))
         .or(Predicates.equivalentTo(TenantOwned.class))
-        .or(Predicates.equivalentTo(AuditLogProcessInstanceRelated.class));
+        .or(Predicates.equivalentTo(AuditLogProcessInstanceRelated.class))
+        .or(Predicates.equivalentTo(OrdinalKeyBased.class));
   }
 
   private static final class BuilderCondition extends ArchCondition<JavaClass> {

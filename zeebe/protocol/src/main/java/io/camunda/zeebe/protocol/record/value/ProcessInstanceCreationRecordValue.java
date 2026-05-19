@@ -27,13 +27,8 @@ public interface ProcessInstanceCreationRecordValue
     extends RecordValueWithVariables,
         ProcessInstanceRelated,
         AuditLogProcessInstanceRelated,
+        OrdinalKeyBased,
         TenantOwned {
-  /**
-   * @return the BPMN process id to create a process from
-   */
-  @Override
-  String getBpmnProcessId();
-
   /**
    * @return the version of the BPMN process to create a process from
    */
@@ -65,7 +60,14 @@ public interface ProcessInstanceCreationRecordValue
    *
    * @return the key of the root process instance, or {@code -1} if not set
    */
+  @Override
   long getRootProcessInstanceKey();
+
+  /**
+   * @return the BPMN process id to create a process from
+   */
+  @Override
+  String getBpmnProcessId();
 
   /**
    * Returns the business id for the process instance to be created. The business id is an

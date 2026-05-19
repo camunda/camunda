@@ -65,6 +65,7 @@ public final class BpmnVariableMappingBehavior {
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
     final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
+    final int ordinalKey = context.getOrdinalKey();
 
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
@@ -76,6 +77,7 @@ public final class BpmnVariableMappingBehavior {
                     processDefinitionKey,
                     processInstanceKey,
                     rootProcessInstanceKey,
+                    ordinalKey,
                     bpmnProcessId,
                     context.getTenantId(),
                     result);
@@ -99,6 +101,7 @@ public final class BpmnVariableMappingBehavior {
     final long processDefinitionKey = record.getProcessDefinitionKey();
     final long processInstanceKey = record.getProcessInstanceKey();
     final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
+    final int ordinalKey = context.getOrdinalKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final long scopeKey = getVariableScopeKey(context);
     final String tenantId = context.getTenantId();
@@ -129,6 +132,7 @@ public final class BpmnVariableMappingBehavior {
             processDefinitionKey,
             processInstanceKey,
             rootProcessInstanceKey,
+            ordinalKey,
             bpmnProcessId,
             context.getTenantId(),
             variables);
@@ -157,6 +161,7 @@ public final class BpmnVariableMappingBehavior {
                     processDefinitionKey,
                     processInstanceKey,
                     rootProcessInstanceKey,
+                    ordinalKey,
                     bpmnProcessId,
                     context.getTenantId(),
                     resultDoc);
@@ -170,6 +175,7 @@ public final class BpmnVariableMappingBehavior {
           processDefinitionKey,
           processInstanceKey,
           rootProcessInstanceKey,
+          ordinalKey,
           bpmnProcessId,
           context.getTenantId(),
           variables);
@@ -183,6 +189,7 @@ public final class BpmnVariableMappingBehavior {
           processDefinitionKey,
           processInstanceKey,
           rootProcessInstanceKey,
+          ordinalKey,
           bpmnProcessId,
           context.getTenantId(),
           localVariables);

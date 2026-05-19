@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -40,6 +41,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
@@ -64,9 +66,10 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
+  private final IntegerProperty ordinalKeyProperty = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public ProcessInstanceModificationRecord() {
-    super(9);
+    super(10);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
@@ -75,7 +78,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(bpmnProcessIdProperty);
+        .declareProperty(bpmnProcessIdProperty)
+        .declareProperty(ordinalKeyProperty);
   }
 
   /**
@@ -251,6 +255,16 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   public ProcessInstanceModificationRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProperty.setValue(ordinal);
     return this;
   }
 }

@@ -87,6 +87,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -129,9 +130,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public JobRecord() {
-    super(24);
+    super(25);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -156,7 +158,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(resultProp)
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(ordinalKeyProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -186,6 +189,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
     setTags(record.getTags());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    ordinalKeyProp.setValue(record.getOrdinalKey());
   }
 
   public void wrap(final JobRecord record) {
@@ -274,6 +278,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return bufferAsString(bpmnProcessIdProp.getValue());
   }
@@ -356,16 +365,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return isJobToUserTaskMigrationProp.getValue();
   }
 
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
-    return this;
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -378,6 +377,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
@@ -455,6 +459,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public JobRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProp.setValue(ordinal);
+    return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {

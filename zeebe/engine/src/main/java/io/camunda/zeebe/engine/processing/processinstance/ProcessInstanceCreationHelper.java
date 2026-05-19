@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -69,6 +70,7 @@ public class ProcessInstanceCreationHelper {
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final OrdinalKeyProvider ordinalKeyProvider;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
@@ -76,6 +78,7 @@ public class ProcessInstanceCreationHelper {
       final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
@@ -83,6 +86,7 @@ public class ProcessInstanceCreationHelper {
     this.authCheckBehavior = authCheckBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.ordinalKeyProvider = ordinalKeyProvider;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
@@ -115,6 +119,7 @@ public class ProcessInstanceCreationHelper {
         .setProcessDefinitionKey(process.getKey())
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
+        .setOrdinalKey(ordinalKeyProvider.getOrdinal(processInstanceKey))
         .setBpmnElementType(BpmnElementType.PROCESS)
         .setElementId(process.getProcess().getId())
         .setFlowScopeKey(-1)
@@ -228,6 +233,7 @@ public class ProcessInstanceCreationHelper {
     record
         .setProcessInstanceKey(processInstance.getProcessInstanceKey())
         .setRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
+        .setOrdinalKey(processInstance.getOrdinalKey())
         .setBpmnProcessId(processInstance.getBpmnProcessId())
         .setVersion(processInstance.getVersion())
         .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
@@ -241,6 +247,7 @@ public class ProcessInstanceCreationHelper {
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessInstanceKey(),
         processInstance.getRootProcessInstanceKey(),
+        processInstance.getOrdinalKey(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
         variablesBuffer);

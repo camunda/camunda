@@ -74,6 +74,7 @@ public final class BpmnAdHocSubProcessBehavior {
           context.getProcessDefinitionKey(),
           context.getProcessInstanceKey(),
           context.getRootProcessInstanceKey(),
+          context.getOrdinalKey(),
           context.getBpmnProcessId(),
           context.getTenantId(),
           variablesBuffer);

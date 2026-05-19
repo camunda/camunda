@@ -379,6 +379,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                     context.getProcessDefinitionKey(),
                     context.getProcessInstanceKey(),
                     context.getRootProcessInstanceKey(),
+                    context.getOrdinalKey(),
                     context.getBpmnProcessId(),
                     context.getTenantId(),
                     eventTrigger.getVariables());

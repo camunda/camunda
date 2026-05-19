@@ -54,6 +54,8 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.ordinals.FakeOrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
@@ -110,6 +112,8 @@ public final class EngineProcessors {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
+    final var ordinalKeyProvider = new FakeOrdinalKeyProvider(partitionsCount);
+
     final var routingInfo =
         RoutingInfo.dynamic(
             processingState.getRoutingState(), RoutingInfo.forStaticPartitions(partitionsCount));
@@ -228,6 +232,7 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            ordinalKeyProvider,
             asyncRequestBehavior,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
@@ -481,6 +486,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -498,6 +504,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        ordinalKeyProvider,
         asyncRequestBehavior,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,

@@ -242,6 +242,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getRootProcessInstanceKey(),
+        context.getOrdinalKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variablesAsDocument);
@@ -251,20 +252,30 @@ public final class BpmnStateBehavior {
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetOrdinalKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetOrdinalKey,
+        targetProcess,
+        variables);
   }
 
   public void copyLocalVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetOrdinalKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesLocalAsDocument(sourceScopeKey);
     copyVariablesToProcessInstance(
-        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
+        targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
+        targetOrdinalKey,
+        targetProcess,
+        variables);
   }
 
   /**
@@ -282,6 +293,7 @@ public final class BpmnStateBehavior {
   private void copyVariablesToProcessInstance(
       final long targetProcessInstanceKey,
       final long targetRootProcessInstanceKey,
+      final int targetOrdinalKey,
       final DeployedProcess targetProcess,
       final DirectBuffer variables) {
     variableBehavior.mergeDocument(
@@ -289,6 +301,7 @@ public final class BpmnStateBehavior {
         targetProcess.getKey(),
         targetProcessInstanceKey,
         targetRootProcessInstanceKey,
+        targetOrdinalKey,
         targetProcess.getBpmnProcessId(),
         targetProcess.getTenantId(),
         variables);

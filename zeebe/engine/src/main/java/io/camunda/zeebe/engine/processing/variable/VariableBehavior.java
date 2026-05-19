@@ -91,6 +91,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int ordinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document) {
@@ -104,6 +105,7 @@ public final class VariableBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setOrdinalKey(ordinalKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setSource(variableSourceRecord);
@@ -144,6 +146,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int ordinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer document) {
@@ -160,6 +163,7 @@ public final class VariableBehavior {
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setOrdinalKey(ordinalKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setSource(variableSourceRecord);
