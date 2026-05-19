@@ -134,7 +134,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
-  public String memberIdString() {
+  public String brokerIdStr() {
     return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
