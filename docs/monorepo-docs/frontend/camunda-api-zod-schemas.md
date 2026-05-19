@@ -39,7 +39,8 @@ under `packages/camunda-api-zod-schemas/lib/` — for example
 
 ## Publishing a new version
 
-1. Increment the version in `package.json`, update the dependency
+1. Increment the version in the `camunda-api-zod-schemas` `package.json`
+   (this is manual for now; we plan to automate it in the future), update the dependency
    version in any consumer npm workspace packages, run `npm i`, and
    push the changes to `main`.
 2. Run the [Publish Zod Schemas to npm](https://github.com/camunda/camunda/actions/workflows/publish-zod-schemas.yml)
