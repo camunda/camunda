@@ -269,7 +269,7 @@ test.describe('authorization scenarios', () => {
     await test.step(`Create component authorization for user`, async () => {
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: testUser.name,
+        ownerId: testUser.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
