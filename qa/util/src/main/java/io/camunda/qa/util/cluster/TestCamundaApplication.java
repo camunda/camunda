@@ -229,7 +229,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
+    return MemberId.from(
+        unifiedConfig.getCluster().getZone(), unifiedConfig.getCluster().getNodeId());
   }
 
   @Override

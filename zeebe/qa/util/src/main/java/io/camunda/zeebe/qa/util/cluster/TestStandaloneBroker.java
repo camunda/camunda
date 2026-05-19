@@ -186,17 +186,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
+    final var zone = unifiedConfig.getCluster().getZone();
     if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
       // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
       // id provider. If the broker is not started yet, return "null" as node id
       if (isStarted()) {
-        return MemberId.from(
-            String.valueOf(bean(BrokerBasedProperties.class).getCluster().getNodeId()));
+        final var cluster = bean(BrokerBasedProperties.class).getCluster();
+        return MemberId.from(zone, cluster.getNodeId());
       } else {
         return MemberId.from("null");
       }
     }
-    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
+    return MemberId.from(zone, unifiedConfig.getCluster().getNodeId());
   }
 
   @Override
