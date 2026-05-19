@@ -284,6 +284,16 @@ public final class EventHandle {
         .setRootProcessInstanceKey(processInstanceKey)
         .setTenantId(tenantId);
 
+    // Mirror the businessId stamping onto the PROCESS_INSTANCE_CREATION:CREATED event so that
+    // consumers reading ProcessInstanceCreationRecordValue.getBusinessId() see the same value as
+    // PIs created via the PROCESS_INSTANCE_CREATION command path. Reset to "" when absent so a
+    // stale value from a previous invocation of this reused record cannot leak through.
+    if (businessId != null && businessId.capacity() > 0) {
+      recordForPICreationEvent.setBusinessId(businessId);
+    } else {
+      recordForPICreationEvent.setBusinessId("");
+    }
+
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceCreationIntent.CREATED, recordForPICreationEvent);
   }

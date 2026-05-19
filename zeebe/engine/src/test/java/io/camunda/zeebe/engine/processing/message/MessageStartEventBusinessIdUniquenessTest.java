@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -190,6 +191,16 @@ public final class MessageStartEventBusinessIdUniquenessTest {
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
     assertThat(processActivating.getValue().getBusinessId()).isEqualTo("biz-stamped");
+
+    // and the PROCESS_INSTANCE_CREATION:CREATED follow-up event carries it as well, so consumers
+    // of ProcessInstanceCreationRecordValue.getBusinessId() observe the same value as for a PI
+    // created via the PROCESS_INSTANCE_CREATION command path
+    final var creationCreated =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processActivating.getValue().getProcessInstanceKey())
+            .getFirst();
+    assertThat(creationCreated.getValue().getBusinessId()).isEqualTo("biz-stamped");
   }
 
   @Test
