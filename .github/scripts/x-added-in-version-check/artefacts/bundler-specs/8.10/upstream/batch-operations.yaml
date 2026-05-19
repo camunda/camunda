@@ -1,0 +1,857 @@
+## Endpoint definitions
+
+paths:
+  /batch-operations/{batchOperationKey}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Batch operation
+      operationId: getBatchOperation
+      summary: Get batch operation
+      description: Get batch operation by key.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: The key (or operate legacy ID) of the batch operation.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+      responses:
+        "200":
+          description: The batch operation was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchOperationResponse'
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "404":
+          description: The batch operation is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /batch-operations/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Batch operation
+      operationId: searchBatchOperations
+      summary: Search batch operations
+      description: Search for batch operations based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchOperationSearchQuery'
+      responses:
+        "200":
+          description: The batch operation search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchOperationSearchQueryResult'
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /batch-operations/{batchOperationKey}/cancellation:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Batch operation
+      operationId: cancelBatchOperation
+      summary: Cancel Batch operation
+      description: |
+        Cancels a running batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: The key (or operate legacy ID) of the batch operation.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+      requestBody:
+        content:
+          application/json: {}
+        required: false
+      responses:
+        "204":
+          description: The batch operation cancel request was created.
+          content: {}
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+  /batch-operations/{batchOperationKey}/suspension:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Batch operation
+      operationId: suspendBatchOperation
+      summary: Suspend Batch operation
+      description: |
+        Suspends a running batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: The key (or operate legacy ID) of the batch operation.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+      requestBody:
+        content:
+          application/json: {}
+        required: false
+      responses:
+        "204":
+          description: The batch operation pause request was created.
+          content: {}
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /batch-operations/{batchOperationKey}/resumption:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Batch operation
+      operationId: resumeBatchOperation
+      summary: Resume Batch operation
+      description: |
+        Resumes a suspended batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: The key (or operate legacy ID) of the batch operation.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+      requestBody:
+        content:
+          application/json: {}
+        required: false
+      responses:
+        "204":
+          description: The batch operation resume request was created.
+          content: {}
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
+
+  /batch-operation-items/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Batch operation
+      operationId: searchBatchOperationItems
+      summary: Search batch operation items
+      description: Search for batch operation items based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchOperationItemSearchQuery'
+      responses:
+        "200":
+          description: The batch operation search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchOperationItemSearchQueryResult'
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
+
+## Schema definitions
+
+components:
+  schemas:
+    BatchOperationCreatedResult:
+      required:
+        - batchOperationKey
+        - batchOperationType
+      description: The created batch operation.
+      x-semantic-provider:
+        - batchOperationKey
+      type: object
+      properties:
+        batchOperationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+          description: Key of the batch operation.
+        batchOperationType:
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
+      x-properties-added-in-version:
+        - propertyName: batchOperationKey
+          addedInVersion: "8.8"
+        - propertyName: batchOperationType
+          addedInVersion: "8.8"
+
+    BatchOperationSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - batchOperationKey
+            - operationType
+            - state
+            - startDate
+            - endDate
+            - actorType
+            - actorId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    BatchOperationSearchQuery:
+      additionalProperties: false
+      description: Batch operation search request.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationFilter'
+          description: The batch operation search filters.
+
+    BatchOperationFilter:
+      description: Batch operation filter request.
+      type: object
+      properties:
+        batchOperationKey:
+          description: The key (or operate legacy ID) of the batch operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        operationType:
+          description: The type of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
+        state:
+          description: The state of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationStateFilterProperty'
+        actorType:
+          description: The type of the actor who performed the operation.
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+        actorId:
+          description: The ID of the actor who performed the operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: actorType
+          addedInVersion: "8.9"
+        - propertyName: actorId
+          addedInVersion: "8.9"
+
+    BatchOperationSearchQueryResult:
+      description: The batch operation search query result.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching batch operations.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationResponse'
+
+    BatchOperationResponse:
+      required:
+        - batchOperationKey
+        - batchOperationType
+        - state
+        - operationsCompletedCount
+        - operationsFailedCount
+        - operationsTotalCount
+        - actorType
+        - actorId
+        - errors
+        - endDate
+        - startDate
+      type: object
+      properties:
+        batchOperationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+          description: Key or (Operate Legacy ID = UUID) of the batch operation.
+        state:
+          $ref: '#/components/schemas/BatchOperationStateEnum'
+        batchOperationType:
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
+        startDate:
+          type: string
+          description: |
+            The start date of the batch operation.
+            This is `null` if the batch operation has not yet started.
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          description: |
+            The end date of the batch operation.
+            This is `null` if the batch operation is still running.
+          format: date-time
+          nullable: true
+        actorType:
+          description: |
+            The type of the actor who performed the operation.
+            This is `null` if the batch operation was created before 8.9,
+            or if the actor information is not available.
+          nullable: true
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+        actorId:
+          type: string
+          description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
+          nullable: true
+        operationsTotalCount:
+          type: integer
+          description: The total number of items contained in this batch operation.
+          format: int32
+        operationsFailedCount:
+          type: integer
+          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the Zeebe engine).
+          format: int32
+        operationsCompletedCount:
+          type: integer
+          description: The number of successfully completed tasks.
+          format: int32
+        errors:
+          description: The errors that occurred per partition during the batch operation.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationError'
+      x-properties-added-in-version:
+        - propertyName: actorType
+          addedInVersion: "8.9"
+        - propertyName: actorId
+          addedInVersion: "8.9"
+
+    BatchOperationError:
+      required:
+        - message
+        - partitionId
+        - type
+      type: object
+      properties:
+        partitionId:
+          description: The partition ID where the error occurred.
+          type: integer
+          format: int32
+        type:
+          description: The type of the error that occurred during the batch operation.
+          type: string
+          enum:
+            - QUERY_FAILED
+            - RESULT_BUFFER_SIZE_EXCEEDED
+        message:
+          description: The error message that occurred during the batch operation.
+          type: string
+
+    BatchOperationItemSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - batchOperationKey
+            - itemKey
+            - processInstanceKey
+            - processedDate
+            - state
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    BatchOperationItemSearchQuery:
+      description: Batch operation item search request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationItemSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemFilter'
+          description: The batch operation item search filters.
+
+    BatchOperationItemFilter:
+      description: Batch operation item filter request.
+      type: object
+      properties:
+        batchOperationKey:
+          description: The key (or operate legacy ID) of the batch operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        itemKey:
+          description: The key of the item, e.g. a process instance key.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        processInstanceKey:
+          description: The process instance key of the processed item.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        state:
+          type: string
+          description: The state of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateFilterProperty'
+        operationType:
+          description: The type of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: operationType
+          addedInVersion: "8.9"
+
+    BatchOperationItemSearchQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching batch operation items.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationItemResponse'
+
+    BatchOperationItemResponse:
+      type: object
+      required:
+        - rootProcessInstanceKey
+        - batchOperationKey
+        - errorMessage
+        - itemKey
+        - operationType
+        - processedDate
+        - processInstanceKey
+        - state
+      properties:
+        operationType:
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
+        batchOperationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+          description: The key (or operate legacy ID) of the batch operation.
+        itemKey:
+          description: Key of the item, e.g. a process instance key.
+          type: string
+        processInstanceKey:
+          description: |
+            The process instance key of the processed item. Null for batch-op types whose targets
+            are not process instances (e.g. DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION,
+            DELETE_PROCESS_DEFINITION).
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        state:
+          description: State of the item.
+          type: string
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - SKIPPED
+            - CANCELED
+            - FAILED
+        processedDate:
+          description: |
+            The date this item was processed.
+            This is `null` if the item has not yet been processed.
+          nullable: true
+          type: string
+          format: date-time
+        errorMessage:
+          description: The error message from the engine in case of a failed operation.
+          nullable: true
+          type: string
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+
+    DecisionInstanceDeletionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The decision instance filter that defines which decision instances should be deleted.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'decision-instances.yaml#/components/schemas/DecisionInstanceFilter'
+          description: The decision instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
+    ProcessInstanceCancellationBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be canceled.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
+
+    ProcessInstanceIncidentResolutionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should have their incidents resolved.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
+
+    ProcessInstanceDeletionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be deleted.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
+    ProcessInstanceMigrationBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        migrationPlan:
+          allOf:
+            - $ref: '#/components/schemas/ProcessInstanceMigrationBatchOperationPlan'
+          description: The migration plan.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+        - migrationPlan
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
+
+    ProcessInstanceMigrationBatchOperationPlan:
+      type: object
+      description: |
+        The migration instructions describe how to migrate a process instance from one process definition to another.
+      properties:
+        targetProcessDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The target process definition key.
+        mappingInstructions:
+          type: array
+          items:
+            $ref: 'process-instances.yaml#/components/schemas/MigrateProcessInstanceMappingInstruction'
+          description: The mapping instructions.
+      required:
+        - targetProcessDefinitionKey
+        - mappingInstructions
+
+    ProcessInstanceModificationBatchOperationRequest:
+      additionalProperties: false
+      type: object
+      description: |
+        The process instance filter to define on which process instances tokens should be moved,
+        and new element instances should be activated or terminated.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        moveInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceModificationMoveBatchOperationInstruction'
+          description: Instructions for moving tokens between elements.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+        - moveInstructions
+      x-properties-added-in-version:
+        - propertyName: operationReference
+          addedInVersion: "8.9"
+
+    ProcessInstanceModificationMoveBatchOperationInstruction:
+      description: |
+        Instructions describing a move operation. This instruction will terminate all active
+        element instances at `sourceElementId` and activate a new element instance for each
+        terminated one at `targetElementId`. The new element instances are created in the parent
+        scope of the source element instances.
+      type: object
+      properties:
+        sourceElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The source element ID.
+        targetElementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The target element ID.
+      required:
+        - sourceElementId
+        - targetElementId
+
+    ## Enums
+
+    BatchOperationItemStateEnum:
+      description: The batch operation item state.
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELED
+        - FAILED
+
+    BatchOperationStateEnum:
+      description: The batch operation state.
+      type: string
+      enum:
+        - ACTIVE
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - FAILED
+        - PARTIALLY_COMPLETED
+        - SUSPENDED
+
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+        - ADD_VARIABLE
+        - CANCEL_PROCESS_INSTANCE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_DECISION_INSTANCE
+        - DELETE_PROCESS_DEFINITION
+        - DELETE_PROCESS_INSTANCE
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - UPDATE_VARIABLE
+
+    ## Filters
+
+    BatchOperationTypeFilterProperty:
+      description: BatchOperationTypeEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationTypeFilter'
+
+    AdvancedBatchOperationTypeFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$like"
+          addedInVersion: "8.8"
+
+    BatchOperationStateFilterProperty:
+      description: BatchOperationStateEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationStateFilter'
+
+    AdvancedBatchOperationStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationItemStateFilterProperty:
+      description: BatchOperationItemStateEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        - $ref: '#/components/schemas/AdvancedBatchOperationItemStateFilter'
+
+    AdvancedBatchOperationItemStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationItemStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'

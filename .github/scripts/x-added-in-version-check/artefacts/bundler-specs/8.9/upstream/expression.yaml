@@ -1,0 +1,89 @@
+## Endpoint definitions
+
+paths:
+  /expression/evaluation:
+    post:
+      operationId: evaluateExpression
+      x-eventually-consistent: false
+      tags:
+        - Expression
+      summary: Evaluate an expression
+      description: Evaluates a FEEL expression and returns the result. Supports references to tenant scoped cluster variables when a tenant ID is provided.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpressionEvaluationRequest'
+      responses:
+        '200':
+          description: Expression evaluated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpressionEvaluationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.9"
+
+components:
+  schemas:
+    ExpressionEvaluationRequest:
+      type: object
+      required:
+        - expression
+      properties:
+        expression:
+          type: string
+          description: The expression to evaluate (e.g., "=x + y")
+          example: "=x + y"
+        tenantId:
+          type: string
+          description: Required when the expression references tenant-scoped cluster variables
+          example: "tenant_123"
+        variables:
+          type: object
+          description: Optional variables for expression evaluation. These variables are only used for the current evaluation and do not persist beyond it.
+          example:
+            x: 10
+            y: 20
+          additionalProperties: true
+          nullable: true
+    ExpressionEvaluationResult:
+      type: object
+      required:
+        - expression
+        - result
+        - warnings
+      properties:
+        expression:
+          type: string
+          description: The evaluated expression
+          example: "=x + y"
+        result:
+          description: The result value. Its type can vary.
+          # Omitting type for this field generates Object in Java, and signals Any to other consumers. It can be anything.
+          example: 30
+          nullable: true
+        warnings:
+          type: array
+          description: List of warnings generated during expression evaluation
+          items:
+            $ref: '#/components/schemas/ExpressionEvaluationWarningItem'
+          example: [ ]
+    ExpressionEvaluationWarningItem:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: The warning message
+          example: "No function found with name 'random' and 1 parameters"
+

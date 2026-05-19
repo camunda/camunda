@@ -43,60 +43,23 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Configure git auth for transitive clones
-        # The build:version-map script spawns its own `git clone` from inside
-        # Node, which doesn't inherit the auth header that actions/checkout
-        # sets on the host repo. Rewrite all github.com URLs globally so any
-        # anonymous clone in this job is transparently authenticated.
-        #
-        # Prefer CROSS_REPO_TOKEN (a PAT/App token with access to both
-        # camunda/update-openapi-spec and camunda/return-of-api-added-in-analysis)
-        # when available; fall back to the default GITHUB_TOKEN, which works
-        # locally with `act -s GITHUB_TOKEN="$(gh auth token)"` provided your
-        # account has access to both repos.
-        env:
-          CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
-          git config --global \
-            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-          # Fail fast instead of hanging on an interactive auth prompt.
-          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
-
-      - name: Clone update-openapi-spec to temp directory
-        id: tool
-        run: |
-          TOOL_DIR=$(mktemp -d)
-          # Auth handled by the global insteadOf rewrite above.
-          git clone --depth 1 \
-            "https://github.com/camunda/update-openapi-spec" \
-            "$TOOL_DIR"
-          echo "dir=$TOOL_DIR" >> "$GITHUB_OUTPUT"
-
       - name: Install verifier dependencies
-        working-directory: ${{ steps.tool.outputs.dir }}
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         run: npm ci
 
       - name: Build verifier artefacts (endpoint-map + version-map)
-        working-directory: ${{ steps.tool.outputs.dir }}
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
           CAMUNDA_REF: ${{ steps.ref.outputs.ref }}
-          ENDPOINT_MAP_PATH: ${{ steps.tool.outputs.dir }}/endpoint-map.json
-          VERSION_MAP_PATH: ${{ steps.tool.outputs.dir }}/version-map.json
         run: npm run build:artefacts
 
       - name: Run CI verifier
         id: verify
-        working-directory: ${{ steps.tool.outputs.dir }}
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
           # Spec lives in the host checkout (camunda/camunda at the requested ref).
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
-          # Artefacts produced by the previous step.
           CAMUNDA_REF: ${{ steps.ref.outputs.ref }}
-          ENDPOINT_MAP_PATH: ${{ steps.tool.outputs.dir }}/endpoint-map.json
-          VERSION_MAP_PATH: ${{ steps.tool.outputs.dir }}/version-map.json
           # Have the verifier write its Markdown report directly into the
           # workflow's reports/ directory; it always produces this file
           # (success or failure).
@@ -125,7 +88,3 @@ jobs:
         with:
           name: verify-${{ steps.ref.outputs.safe }}
           path: ${{ github.workspace }}/reports/
-
-      - name: Cleanup temp tool clone
-        if: always()
-        run: rm -rf "${{ steps.tool.outputs.dir }}"

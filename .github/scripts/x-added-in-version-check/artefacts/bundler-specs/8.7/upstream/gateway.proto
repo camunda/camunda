@@ -1,0 +1,1018 @@
+syntax = 'proto3';
+package gateway_protocol;
+
+option java_multiple_files = false;
+option java_package = "io.camunda.zeebe.gateway.protocol";
+option go_package = "./;pb";
+
+// For a more complete documentation, refer to Zeebe documentation at:
+// https://docs.camunda.io/docs/reference/grpc
+
+message StreamActivatedJobsRequest {
+  // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+  // type="payment-service" />)
+  string type = 1;
+  // the name of the worker activating the jobs, mostly used for logging purposes
+  string worker = 2;
+  // a job returned after this call will not be activated by another call until the
+  // timeout (in ms) has been reached
+  int64 timeout = 3;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
+  repeated string fetchVariable = 5;
+  // a list of identifiers of tenants for which to stream jobs
+  repeated string tenantIds = 6;
+}
+
+message ActivateJobsRequest {
+  // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+  // type="payment-service" />)
+  string type = 1;
+  // the name of the worker activating the jobs, mostly used for logging purposes
+  string worker = 2;
+  // a job returned after this call will not be activated by another call until the
+  // timeout (in ms) has been reached
+  int64 timeout = 3;
+  // the maximum jobs to activate by this request
+  int32 maxJobsToActivate = 4;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
+  repeated string fetchVariable = 5;
+  // The request will be completed when at least one job is activated or after the requestTimeout (in ms).
+  // if the requestTimeout = 0, a default timeout is used.
+  // if the requestTimeout < 0, long polling is disabled and the request is completed immediately, even when no job is activated.
+  int64 requestTimeout = 6;
+  // a list of IDs of tenants for which to activate jobs
+  repeated string tenantIds = 7;
+}
+
+message ActivateJobsResponse {
+  // list of activated jobs
+  repeated ActivatedJob jobs = 1;
+}
+
+message ActivatedJob {
+  // the key, a unique identifier for the job
+  int64 key = 1;
+  // the type of the job (should match what was requested)
+  string type = 2;
+  // the job's process instance key
+  int64 processInstanceKey = 3;
+  // the bpmn process ID of the job process definition
+  string bpmnProcessId = 4;
+  // the version of the job process definition
+  int32 processDefinitionVersion = 5;
+  // the key of the job process definition
+  int64 processDefinitionKey = 6;
+  // the associated task element ID
+  string elementId = 7;
+  // the unique key identifying the associated task, unique within the scope of the
+  // process instance
+  int64 elementInstanceKey = 8;
+  // a set of custom headers defined during modelling; returned as a serialized
+  // JSON document
+  string customHeaders = 9;
+  // the name of the worker which activated this job
+  string worker = 10;
+  // the amount of retries left to this job (should always be positive)
+  int32 retries = 11;
+  // when the job can be activated again, sent as a UNIX epoch timestamp
+  int64 deadline = 12;
+  // JSON document, computed at activation time, consisting of all visible variables to
+  // the task scope
+  string variables = 13;
+  // the id of the tenant that owns the job
+  string tenantId = 14;
+}
+
+message CancelProcessInstanceRequest {
+  // the process instance key (as, for example, obtained from
+  // CreateProcessInstanceResponse)
+  int64 processInstanceKey = 1;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 2;
+}
+
+message CancelProcessInstanceResponse {
+}
+
+message CompleteJobRequest {
+  // the unique job identifier, as obtained from ActivateJobsResponse
+  int64 jobKey = 1;
+  // a JSON document representing the variables in the current task scope
+  string variables = 2;
+}
+
+message CompleteJobResponse {
+}
+
+message CreateProcessInstanceRequest {
+  // the unique key identifying the process definition (e.g. returned from a process
+  // in the DeployProcessResponse message)
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition
+  string bpmnProcessId = 2;
+  // the version of the process; set to -1 to use the latest version
+  int32 version = 3;
+  // JSON document that will instantiate the variables for the root variable scope of the
+  // process instance; it must be a JSON object, as variables will be mapped in a
+  // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+  // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+  // valid argument, as the root of the JSON document is an array and not an object.
+  string variables = 4;
+  // List of start instructions. If empty (default) the process instance
+  // will start at the start event. If non-empty the process instance will apply start
+  // instructions after it has been created
+  repeated ProcessInstanceCreationStartInstruction startInstructions = 5;
+  // the tenant id of the process definition
+  string tenantId = 6;
+
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 7;
+}
+
+message ProcessInstanceCreationStartInstruction {
+
+  // future extensions might include
+  // - different types of start instructions
+  // - ability to set local variables for different flow scopes
+
+  // for now, however, the start instruction is implicitly a
+  // "startBeforeElement" instruction
+
+  // element ID
+  string elementId = 1;
+}
+
+message CreateProcessInstanceResponse {
+  // the key of the process definition which was used to create the process instance
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition which was used to create the process
+  // instance
+  string bpmnProcessId = 2;
+  // the version of the process definition which was used to create the process instance
+  int32 version = 3;
+  // the unique identifier of the created process instance; to be used wherever a request
+  // needs a process instance key (e.g. CancelProcessInstanceRequest)
+  int64 processInstanceKey = 4;
+  // the tenant identifier of the created process instance
+  string tenantId = 5;
+}
+
+message CreateProcessInstanceWithResultRequest {
+  CreateProcessInstanceRequest request = 1;
+  // timeout (in ms). the request will be closed if the process is not completed
+  // before the requestTimeout.
+  // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
+  int64 requestTimeout = 2;
+  // list of names of variables to be included in `CreateProcessInstanceWithResultResponse.variables`
+  // if empty, all visible variables in the root scope will be returned.
+  repeated string fetchVariables = 3;
+}
+
+message CreateProcessInstanceWithResultResponse {
+  // the key of the process definition which was used to create the process instance
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition which was used to create the process
+  // instance
+  string bpmnProcessId = 2;
+  // the version of the process definition which was used to create the process instance
+  int32 version = 3;
+  // the unique identifier of the created process instance; to be used wherever a request
+  // needs a process instance key (e.g. CancelProcessInstanceRequest)
+  int64 processInstanceKey = 4;
+  // JSON document
+  // consists of visible variables in the root scope
+  string variables = 5;
+  // the tenant identifier of the process definition
+  string tenantId = 6;
+}
+
+message EvaluateDecisionRequest {
+  // the unique key identifying the decision to be evaluated (e.g. returned
+  // from a decision in the DeployResourceResponse message)
+  int64 decisionKey = 1;
+  // the ID of the decision to be evaluated
+  string decisionId = 2;
+  // JSON document that will instantiate the variables for the decision to be
+  // evaluated; it must be a JSON object, as variables will be mapped in a
+  // key-value fashion, e.g. { "a": 1, "b": 2 } will create two variables,
+  // named "a" and "b" respectively, with their associated values.
+  // [{ "a": 1, "b": 2 }] would not be a valid argument, as the root of the
+  // JSON document is an array and not an object.
+  string variables = 3;
+  // the tenant identifier of the decision
+  string tenantId = 4;
+}
+
+message EvaluateDecisionResponse {
+  // the unique key identifying the decision which was evaluated (e.g. returned
+  // from a decision in the DeployResourceResponse message)
+  int64 decisionKey = 1;
+  // the ID of the decision which was evaluated
+  string decisionId = 2;
+  // the name of the decision which was evaluated
+  string decisionName = 3;
+  // the version of the decision which was evaluated
+  int32 decisionVersion = 4;
+  // the ID of the decision requirements graph that the decision which was
+  // evaluated is part of.
+  string decisionRequirementsId = 5;
+  // the unique key identifying the decision requirements graph that the
+  // decision which was evaluated is part of.
+  int64 decisionRequirementsKey = 6;
+  // JSON document that will instantiate the result of the decision which was
+  // evaluated; it will be a JSON object, as the result output will be mapped
+  // in a key-value fashion, e.g. { "a": 1 }.
+  string decisionOutput = 7;
+  // a list of decisions that were evaluated within the requested decision evaluation
+  repeated EvaluatedDecision evaluatedDecisions = 8;
+  // an optional string indicating the ID of the decision which
+  // failed during evaluation
+  string failedDecisionId = 9;
+  // an optional message describing why the decision which was evaluated failed
+  string failureMessage = 10;
+  // the tenant identifier of the evaluated decision
+  string tenantId = 11;
+  // the unique key identifying this decision evaluation
+  int64 decisionInstanceKey = 12;
+}
+
+message EvaluatedDecision {
+  // the unique key identifying the decision which was evaluated (e.g. returned
+  // from a decision in the DeployResourceResponse message)
+  int64 decisionKey = 1;
+  // the ID of the decision which was evaluated
+  string decisionId = 2;
+  // the name of the decision which was evaluated
+  string decisionName = 3;
+  // the version of the decision which was evaluated
+  int32 decisionVersion = 4;
+  // the type of the decision which was evaluated
+  string decisionType = 5;
+  // JSON document that will instantiate the result of the decision which was
+  // evaluated; it will be a JSON object, as the result output will be mapped
+  // in a key-value fashion, e.g. { "a": 1 }.
+  string decisionOutput = 6;
+  // the decision rules that matched within this decision evaluation
+  repeated MatchedDecisionRule matchedRules = 7;
+  // the decision inputs that were evaluated within this decision evaluation
+  repeated EvaluatedDecisionInput evaluatedInputs = 8;
+  // the tenant identifier of the evaluated decision
+  string tenantId = 9;
+}
+
+message EvaluatedDecisionInput {
+  // the id of the evaluated decision input
+  string inputId = 1;
+  // the name of the evaluated decision input
+  string inputName = 2;
+  // the value of the evaluated decision input
+  string inputValue = 3;
+}
+
+message EvaluatedDecisionOutput {
+  // the id of the evaluated decision output
+  string outputId = 1;
+  // the name of the evaluated decision output
+  string outputName = 2;
+  // the value of the evaluated decision output
+  string outputValue = 3;
+}
+
+message MatchedDecisionRule {
+  // the id of the matched rule
+  string ruleId = 1;
+  // the index of the matched rule
+  int32 ruleIndex = 2;
+  // the evaluated decision outputs
+  repeated EvaluatedDecisionOutput evaluatedOutputs = 3;
+}
+
+message DeployProcessRequest {
+  // since 8, replaced by DeployResourceRequest
+  option deprecated = true;
+  // List of process resources to deploy
+  repeated ProcessRequestObject processes = 1;
+}
+
+message ProcessRequestObject {
+  // since 8, replaced by Resource
+  option deprecated = true;
+  // the resource basename, e.g. myProcess.bpmn
+  string name = 1;
+  // the process definition as a UTF8-encoded string
+  bytes definition = 2;
+}
+
+message DeployProcessResponse {
+  // since 8, replaced by DeployResourceResponse
+  option deprecated = true;
+  // the unique key identifying the deployment
+  int64 key = 1;
+  // a list of deployed processes
+  repeated ProcessMetadata processes = 2;
+}
+
+message DeployResourceRequest {
+  // list of resources to deploy
+  repeated Resource resources = 1;
+  // the tenant id of the resources to deploy
+  string tenantId = 2;
+}
+
+message Resource {
+  // the resource name, e.g. myProcess.bpmn or myDecision.dmn
+  string name = 1;
+  // the file content as a UTF8-encoded string
+  bytes content = 2;
+}
+
+message DeployResourceResponse {
+  // the unique key identifying the deployment
+  int64 key = 1;
+  // a list of deployed resources, e.g. processes
+  repeated Deployment deployments = 2;
+  // the tenant id of the deployed resources
+  string tenantId = 3;
+}
+
+message Deployment {
+  // each deployment has only one metadata
+  oneof Metadata {
+    // metadata of a deployed process
+    ProcessMetadata process = 1;
+    // metadata of a deployed decision
+    DecisionMetadata decision = 2;
+    // metadata of a deployed decision requirements
+    DecisionRequirementsMetadata decisionRequirements = 3;
+    // metadata of a deployed form
+    FormMetadata form = 4;
+  }
+}
+
+message ProcessMetadata {
+  // the bpmn process ID, as parsed during deployment; together with the version forms a
+  // unique identifier for a specific process definition
+  string bpmnProcessId = 1;
+  // the assigned process version
+  int32 version = 2;
+  // the assigned key, which acts as a unique identifier for this process
+  int64 processDefinitionKey = 3;
+  // the resource name (see: ProcessRequestObject.name) from which this process was
+  // parsed
+  string resourceName = 4;
+  // the tenant id of the deployed process
+  string tenantId = 5;
+}
+
+message DecisionMetadata {
+  // the dmn decision ID, as parsed during deployment; together with the
+  // versions forms a unique identifier for a specific decision
+  string dmnDecisionId = 1;
+  // the dmn name of the decision, as parsed during deployment
+  string dmnDecisionName = 2;
+  // the assigned decision version
+  int32 version = 3;
+  // the assigned decision key, which acts as a unique identifier for this
+  // decision
+  int64 decisionKey = 4;
+  // the dmn ID of the decision requirements graph that this decision is part
+  // of, as parsed during deployment
+  string dmnDecisionRequirementsId = 5;
+  // the assigned key of the decision requirements graph that this decision is
+  // part of
+  int64 decisionRequirementsKey = 6;
+  // the tenant id of the deployed decision
+  string tenantId = 7;
+}
+
+message DecisionRequirementsMetadata {
+  // the dmn decision requirements ID, as parsed during deployment; together
+  // with the versions forms a unique identifier for a specific decision
+  string dmnDecisionRequirementsId = 1;
+  // the dmn name of the decision requirements, as parsed during deployment
+  string dmnDecisionRequirementsName = 2;
+  // the assigned decision requirements version
+  int32 version = 3;
+  // the assigned decision requirements key, which acts as a unique identifier
+  // for this decision requirements
+  int64 decisionRequirementsKey = 4;
+  // the resource name (see: Resource.name) from which this decision
+  // requirements was parsed
+  string resourceName = 5;
+  // the tenant id of the deployed decision requirements
+  string tenantId = 6;
+}
+
+message FormMetadata {
+  // the form ID, as parsed during deployment; together with the
+  // versions forms a unique identifier for a specific form
+  string formId = 1;
+  // the assigned form version
+  int32 version = 2;
+  // the assigned key, which acts as a unique identifier for this form
+  int64 formKey = 3;
+  // the resource name
+  string resourceName = 4;
+  // the tenant id of the deployed form
+  string tenantId = 5;
+}
+
+message FailJobRequest {
+  // the unique job identifier, as obtained when activating the job
+  int64 jobKey = 1;
+  // the amount of retries the job should have left
+  int32 retries = 2;
+  // an optional message describing why the job failed
+  // this is particularly useful if a job runs out of retries and an incident is raised,
+  // as it this message can help explain why an incident was raised
+  string errorMessage = 3;
+  // the backoff timeout (in ms) for the next retry
+  int64 retryBackOff = 4;
+  // JSON document that will instantiate the variables at the local scope of the
+  // job's associated task; it must be a JSON object, as variables will be mapped in a
+  // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+  // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+  // valid argument, as the root of the JSON document is an array and not an object.
+  string variables = 5;
+}
+
+message FailJobResponse {
+}
+
+message ThrowErrorRequest {
+  // the unique job identifier, as obtained when activating the job
+  int64 jobKey = 1;
+  // the error code that will be matched with an error catch event
+  string errorCode = 2;
+  // an optional error message that provides additional context
+  string errorMessage = 3;
+  // JSON document that will instantiate the variables at the local scope of the
+  // error catch event that catches the thrown error; it must be a JSON object, as variables will be mapped in a
+  // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+  // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+  // valid argument, as the root of the JSON document is an array and not an object.
+  string variables = 4;
+}
+
+message ThrowErrorResponse {
+}
+
+message PublishMessageRequest {
+  // the name of the message
+  string name = 1;
+  // the correlation key of the message
+  string correlationKey = 2;
+  // how long the message should be buffered on the broker, in milliseconds
+  int64 timeToLive = 3;
+  // the unique ID of the message; can be omitted. only useful to ensure only one message
+  // with the given ID will ever be published (during its lifetime)
+  string messageId = 4;
+  // the message variables as a JSON document; to be valid, the root of the document must be an
+  // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
+  string variables = 5;
+  // the tenant id of the message
+  string tenantId = 6;
+}
+
+message PublishMessageResponse {
+  // the unique ID of the message that was published
+  int64 key = 1;
+  // the tenant id of the message
+  string tenantId = 2;
+}
+
+message ResolveIncidentRequest {
+  // the unique ID of the incident to resolve
+  int64 incidentKey = 1;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 2;
+}
+
+message ResolveIncidentResponse {
+}
+
+message TopologyRequest {
+}
+
+message TopologyResponse {
+  // list of brokers part of this cluster
+  repeated BrokerInfo brokers = 1;
+  // how many nodes are in the cluster
+  int32 clusterSize = 2;
+  // how many partitions are spread across the cluster
+  int32 partitionsCount = 3;
+  // configured replication factor for this cluster
+  int32 replicationFactor = 4;
+  // gateway version
+  string gatewayVersion = 5;
+}
+
+message BrokerInfo {
+  // unique (within a cluster) node ID for the broker
+  int32 nodeId = 1;
+  // hostname of the broker
+  string host = 2;
+  // port for the broker
+  int32 port = 3;
+  // list of partitions managed or replicated on this broker
+  repeated Partition partitions = 4;
+  // broker version
+  string version = 5;
+}
+
+message Partition {
+  // Describes the Raft role of the broker for a given partition
+  enum PartitionBrokerRole {
+    LEADER = 0;
+    FOLLOWER = 1;
+    INACTIVE = 2;
+  }
+
+  // Describes the current health of the partition
+  enum PartitionBrokerHealth {
+    HEALTHY = 0;
+    UNHEALTHY = 1;
+    DEAD = 2;
+  }
+
+  // the unique ID of this partition
+  int32 partitionId = 1;
+  // the role of the broker for this partition
+  PartitionBrokerRole role = 2;
+  // the health of this partition
+  PartitionBrokerHealth health = 3;
+}
+
+message UpdateJobRetriesRequest {
+  // the unique job identifier, as obtained through ActivateJobs
+  int64 jobKey = 1;
+  // the new amount of retries for the job; must be positive
+  int32 retries = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
+}
+
+message UpdateJobRetriesResponse {
+}
+
+message UpdateJobTimeoutRequest {
+  // the unique job identifier, as obtained from ActivateJobsResponse
+  int64 jobKey = 1;
+  // the duration of the new timeout in ms, starting from the current moment
+  int64 timeout = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
+}
+
+message UpdateJobTimeoutResponse {
+}
+
+message SetVariablesRequest {
+  // the unique identifier of a particular element; can be the process instance key (as
+  // obtained during instance creation), or a given element, such as a service task (see
+  // elementInstanceKey on the job message)
+  int64 elementInstanceKey = 1;
+  // a JSON serialized document describing variables as key value pairs; the root of the document
+  // must be an object
+  string variables = 2;
+  // if true, the variables will be merged strictly into the local scope (as indicated by
+  // elementInstanceKey); this means the variables is not propagated to upper scopes.
+  // for example, let's say we have two scopes, '1' and '2', with each having effective variables as:
+  // 1 => `{ "foo" : 2 }`, and 2 => `{ "bar" : 1 }`. if we send an update request with
+  // elementInstanceKey = 2, variables `{ "foo" : 5 }`, and local is true, then scope 1 will
+  // be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
+  // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
+  bool local = 3;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 4;
+}
+
+message SetVariablesResponse {
+  // the unique key of the set variables command
+  int64 key = 1;
+}
+
+message ModifyProcessInstanceRequest {
+  // the key of the process instance that should be modified
+  int64 processInstanceKey = 1;
+  // instructions describing which elements should be activated in which scopes,
+  // and which variables should be created
+  repeated ActivateInstruction activateInstructions = 2;
+  // instructions describing which elements should be terminated
+  repeated TerminateInstruction terminateInstructions = 3;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 4;
+
+  message ActivateInstruction {
+    // the id of the element that should be activated
+    string elementId = 1;
+    // the key of the ancestor scope the element instance should be created in;
+    // set to -1 to create the new element instance within an existing element
+    // instance of the flow scope
+    int64 ancestorElementInstanceKey = 2;
+    // instructions describing which variables should be created
+    repeated VariableInstruction variableInstructions = 3;
+  }
+
+  message VariableInstruction {
+    // JSON document that will instantiate the variables for the root variable scope of the
+    // process instance; it must be a JSON object, as variables will be mapped in a
+    // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+    // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+    // valid argument, as the root of the JSON document is an array and not an object.
+    string variables = 1;
+    // the id of the element in which scope the variables should be created;
+    // leave empty to create the variables in the global scope of the process instance
+    string scopeId = 2;
+  }
+
+  message TerminateInstruction {
+    // the id of the element that should be terminated
+    int64 elementInstanceKey = 1;
+  }
+}
+
+message ModifyProcessInstanceResponse {
+
+}
+
+message MigrateProcessInstanceRequest {
+  // key of the process instance to migrate
+  int64 processInstanceKey = 1;
+  // the migration plan that defines target process and element mappings
+  MigrationPlan migrationPlan = 2;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 3;
+
+  message MigrationPlan {
+    // the key of process definition to migrate the process instance to
+    int64 targetProcessDefinitionKey = 1;
+    // the mapping instructions describe how to map elements from the source process definition to the target process definition
+    repeated MappingInstruction mappingInstructions = 2;
+  }
+
+  message MappingInstruction {
+    // the element id to migrate from
+    string sourceElementId = 1;
+    // the element id to migrate into
+    string targetElementId = 2;
+  }
+}
+
+message MigrateProcessInstanceResponse {
+
+}
+
+message DeleteResourceRequest {
+  // The key of the resource that should be deleted. This can either be the key
+  // of a process definition, the key of a decision requirements definition or the key of a form.
+  int64 resourceKey = 1;
+  // a reference key chosen by the user and will be part of all records resulted from this operation
+  optional uint64 operationReference = 2;
+}
+
+message DeleteResourceResponse {
+
+}
+
+message BroadcastSignalRequest {
+  // The name of the signal
+  string signalName = 1;
+  // the signal variables as a JSON document; to be valid, the root of the document must be an
+  // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
+  string variables = 2;
+  // the id of the tenant that owns the signal.
+  string tenantId = 3;
+}
+
+message BroadcastSignalResponse {
+  // the unique ID of the signal that was broadcasted.
+  int64 key = 1;
+  // the tenant id of the signal that was broadcasted.
+  string tenantId = 2;
+}
+
+service Gateway {
+  /*
+    Iterates through all known partitions round-robin and activates up to the requested
+    maximum and streams them back to the client as they are activated.
+
+    Errors:
+     INVALID_ARGUMENT:
+      - type is blank (empty string, null)
+      - worker is blank (empty string, null)
+      - timeout less than 1
+      - maxJobsToActivate is less than 1
+   */
+  rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
+  }
+
+  /*
+   Registers client to a job stream that will stream jobs back to the client as
+   they become activatable.
+
+   Errors:
+     INVALID_ARGUMENT:
+      - type is blank (empty string, null)
+      - timeout less than 1
+      - If multi-tenancy is enabled, and tenantIds is empty (empty list)
+      - If multi-tenancy is enabled, and an invalid tenant ID is provided. A tenant ID is considered invalid if:
+        - The tenant ID is blank (empty string, null)
+        - The tenant ID is longer than 31 characters
+        - The tenant ID contains anything other than alphanumeric characters, dot (.), dash (-), or underscore (_)
+      - If multi-tenancy is disabled, and tenantIds is not empty (empty list), or has an ID other than <default>
+  */
+  rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
+  }
+
+  /*
+    Cancels a running process instance
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key
+   */
+  rpc CancelProcessInstance (CancelProcessInstanceRequest) returns (CancelProcessInstanceResponse) {
+  }
+
+  /*
+    Completes a job with the given variables, which allows completing the associated service task.
+
+    Errors:
+      NOT_FOUND:
+        - no job exists with the given job key. Note that since jobs are removed once completed,
+          it could be that this job did exist at some point.
+
+      FAILED_PRECONDITION:
+        - the job was marked as failed. In that case, the related incident must be resolved before
+          the job can be activated again and completed.
+   */
+  rpc CompleteJob (CompleteJobRequest) returns (CompleteJobResponse) {
+  }
+
+  /*
+    Creates and starts an instance of the specified process. The process definition to use to
+    create the instance can be specified either using its unique key (as returned by
+    DeployProcess), or using the BPMN process ID and a version. Pass -1 as the version to use the
+    latest deployed version. Note that only processes with none start events can be started through
+    this command.
+
+    Errors:
+      NOT_FOUND:
+        - no process with the given key exists (if processDefinitionKey was given)
+        - no process with the given process ID exists (if bpmnProcessId was given but version was -1)
+        - no process with the given process ID and version exists (if both bpmnProcessId and version were given)
+
+      FAILED_PRECONDITION:
+        - the process definition does not contain a none start event; only processes with none
+          start event can be started manually.
+
+      INVALID_ARGUMENT:
+        - the given variables argument is not a valid JSON document; it is expected to be a valid
+          JSON document where the root node is an object.
+   */
+  rpc CreateProcessInstance (CreateProcessInstanceRequest) returns (CreateProcessInstanceResponse) {
+  }
+
+  /*
+    Behaves similarly to `rpc CreateProcessInstance`, except that a successful response is received when the process completes successfully.
+  */
+  rpc CreateProcessInstanceWithResult (CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {
+  }
+
+  /*
+    Evaluates a decision. The decision to evaluate can be specified either by
+    using its unique key (as returned by DeployResource), or using the decision
+    ID. When using the decision ID, the latest deployed version of the decision
+    is used.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - no decision with the given key exists (if decisionKey was given)
+        - no decision with the given decision ID exists (if decisionId was given)
+        - both decision ID and decision KEY were provided, or are missing
+   */
+  rpc EvaluateDecision (EvaluateDecisionRequest) returns (EvaluateDecisionResponse) {
+  }
+
+  /*
+    Deploys one or more processes to Zeebe. Note that this is an atomic call,
+    i.e. either all processes are deployed, or none of them are.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - no resources given.
+        - if at least one resource is invalid. A resource is considered invalid if:
+          - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
+          - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+   */
+  rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
+    // since 8, replaced by DeployResource
+    option deprecated = true;
+  }
+
+  /*
+    Deploys one or more resources (e.g. processes or decision models) to Zeebe.
+    Note that this is an atomic call, i.e. either all resources are deployed, or none of them are.
+
+    Errors:
+      PERMISSION_DENIED:
+        - if a deployment to an unauthorized tenant is performed
+      INVALID_ARGUMENT:
+        - no resources given.
+        - if at least one resource is invalid. A resource is considered invalid if:
+          - the content is not deserializable (e.g. detected as BPMN, but it's broken XML)
+          - the content is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+        - if multi-tenancy is enabled, and:
+          - a tenant id is not provided
+          - a tenant id with an invalid format is provided
+        - if multi-tenancy is disabled and a tenant id is provided
+  */
+  rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
+  }
+
+
+  /*
+    Marks the job as failed; if the retries argument is positive, then the job will be immediately
+    activatable again, and a worker could try again to process it. If it is zero or negative however,
+    an incident will be raised, tagged with the given errorMessage, and the job will not be
+    activatable until the incident is resolved.
+
+    Errors:
+      NOT_FOUND:
+        - no job was found with the given key
+
+      FAILED_PRECONDITION:
+        - the job was not activated
+        - the job is already in a failed state, i.e. ran out of retries
+   */
+  rpc FailJob (FailJobRequest) returns (FailJobResponse) {
+  }
+
+  /*
+    Reports a business error (i.e. non-technical) that occurs while processing a job. The error is handled in the process by an error catch event. If there is no error catch event with the specified errorCode then an incident will be raised instead.
+
+    Errors:
+      NOT_FOUND:
+        - no job was found with the given key
+
+      FAILED_PRECONDITION:
+        - the job is not in an activated state
+   */
+  rpc ThrowError (ThrowErrorRequest) returns (ThrowErrorResponse) {
+  }
+
+  /*
+    Publishes a single message. Messages are published to specific partitions computed from their
+    correlation keys.
+
+    Errors:
+      ALREADY_EXISTS:
+        - a message with the same ID was previously published (and is still alive)
+   */
+  rpc PublishMessage (PublishMessageRequest) returns (PublishMessageResponse) {
+  }
+
+  /*
+    Resolves a given incident. This simply marks the incident as resolved; most likely a call to
+    UpdateJobRetries or SetVariables will be necessary to actually resolve the
+    problem, following by this call.
+
+    Errors:
+      NOT_FOUND:
+        - no incident with the given key exists
+   */
+  rpc ResolveIncident (ResolveIncidentRequest) returns (ResolveIncidentResponse) {
+  }
+
+  /*
+    Updates all the variables of a particular scope (e.g. process instance, flow element instance)
+    from the given JSON document.
+
+    Errors:
+      NOT_FOUND:
+        - no element with the given elementInstanceKey exists
+      INVALID_ARGUMENT:
+        - the given variables document is not a valid JSON document; valid documents are expected to
+          be JSON documents where the root node is an object.
+   */
+  rpc SetVariables (SetVariablesRequest) returns (SetVariablesResponse) {
+  }
+
+  /*
+    Obtains the current topology of the cluster the gateway is part of.
+   */
+  rpc Topology (TopologyRequest) returns (TopologyResponse) {
+  }
+
+  /*
+    Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
+    retries, should the underlying problem be solved.
+
+    Errors:
+      NOT_FOUND:
+        - no job exists with the given key
+
+      INVALID_ARGUMENT:
+        - retries is not greater than 0
+   */
+  rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
+  }
+
+  /*
+    Modifies the process instance. This is done by activating and/or terminating specific elements of the instance.
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key
+
+      FAILED_PRECONDITION:
+        - trying to activate element inside of a multi-instance
+
+      INVALID_ARGUMENT:
+        - activating or terminating unknown element
+        - ancestor of element for activation doesn't exist
+        - scope of variable is unknown
+   */
+  rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
+  }
+
+  /*
+    Migrates the process instance to the specified process definition.
+    In simple terms, this is handled by updating the active element's process.
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key, or it is not active
+        - no process definition exists with the given target definition key
+        - no process instance exists with the given key for the tenants the user is authorized to work with.
+
+      FAILED_PRECONDITION:
+        - not all active elements in the given process instance are mapped to the elements in the target process definition
+        - a mapping instruction changes the type of an element or event
+        - a mapping instruction changes the implementation of a task
+        - a mapping instruction detaches a boundary event from an active element
+        - a mapping instruction refers to an unsupported element (i.e. some elements will be supported later on)
+        - a mapping instruction refers to element in unsupported scenarios.
+          (i.e. migration is not supported when process instance or target process elements contains event subscriptions)
+        - multiple mapping instructions target the same boundary event
+
+      INVALID_ARGUMENT:
+        - A `sourceElementId` does not refer to an element in the process instance's process definition
+        - A `targetElementId` does not refer to an element in the target process definition
+        - A `sourceElementId` is mapped by multiple mapping instructions.
+          For example, the engine cannot determine how to migrate a process instance when the instructions are: [A->B, A->C].
+   */
+  rpc MigrateProcessInstance (MigrateProcessInstanceRequest) returns (MigrateProcessInstanceResponse) {
+
+  }
+
+  /*
+  Updates the deadline of a job using the timeout (in ms) provided. This can be used
+  for extending or shortening the job deadline.
+
+  Errors:
+    NOT_FOUND:
+      - no job exists with the given key
+
+    INVALID_STATE:
+      - no deadline exists for the given job key
+ */
+  rpc UpdateJobTimeout (UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {
+  }
+
+  /*
+    Deletes a resource from the state. Once a resource has been deleted it cannot
+    be recovered. If the resource needs to be available again, a new deployment
+    of the resource is required.
+
+    Deleting a process will cancel any running instances of this process
+    definition. New instances of a deleted process are created using
+    the lastest version that hasn't been deleted. Creating a new
+    process instance is impossible when all versions have been
+    deleted.
+
+    Deleting a decision requirement definitions could cause incidents in process
+    instances referencing these decisions in a business rule task. A decision
+    will be evaluated with the latest version that hasn't been deleted. If all
+    versions of a decision have been deleted the evaluation is rejected.
+
+    Errors:
+      NOT_FOUND:
+        - No resource exists with the given key
+
+   */
+  rpc DeleteResource (DeleteResourceRequest) returns (DeleteResourceResponse) {
+
+  }
+
+  /*
+    Broadcasts a signal.
+   */
+  rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
+
+  }
+}

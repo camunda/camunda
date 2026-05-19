@@ -1,0 +1,417 @@
+openapi: "3.0.3"
+info:
+  title: Zeebe REST API
+  version: "0.1"
+  description: API for communicating with the Zeebe cluster.
+  license:
+    name: Camunda License Version 1.0
+    url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
+externalDocs:
+  description: Find out more
+  url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
+
+servers:
+  - url: "{schema}://{host}:{port}/v1"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of the Zeebe REST Gateway.
+      port:
+        default: "8080"
+        description: The port of the Zeebe REST API server.
+      schema:
+        default: http
+        description: The schema of the Zeebe REST API server.
+
+paths:
+  /topology:
+    get:
+      tags:
+        - Cluster
+      summary: Get cluster topology
+      description: Obtains the current topology of the cluster the gateway is part of.
+      responses:
+        '200':
+          $ref: "#/components/responses/TopologyResponse"
+
+  /user-tasks/{userTaskKey}/completion:
+    post:
+      tags:
+        - User task
+      summary: Complete a user task
+      description: Completes a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskCompletionRequest"
+
+      responses:
+        '204':
+          description: The user task was completed successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '400':
+          description: >
+            The user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/assignment:
+    post:
+      tags:
+        - User task
+      summary: Assign a user task
+      description: Assigns a user task with the given key to the given assignee.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to assign.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskAssignmentRequest"
+      responses:
+        '204':
+          description: The user task's assignment was adjusted.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '400':
+          description: >
+            The assignment of the user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}:
+    patch:
+      tags:
+        - User task
+      summary: Update a user task
+      description: Update a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskUpdateRequest"
+      responses:
+        '204':
+          description: The user task was updated successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '400':
+          description: >
+            The user task with the given key cannot be updated.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/assignee:
+    delete:
+      tags:
+        - User task
+      summary: Unassign a user task
+      description: Removes the assignee of a task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: The user task was unassigned successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '400':
+          description: >
+            The user task with the given key cannot be unassigned.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+components:
+  responses:
+    TopologyResponse:
+      description: Obtains the current topology of the cluster the gateway is part of.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/TopologyResponse"
+
+  schemas:
+    TopologyResponse:
+      description: The response of a topology request.
+      type: object
+      properties:
+        brokers:
+          description: A list of brokers that are part of this cluster.
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/BrokerInfo"
+        clusterSize:
+          description: The number of brokers in the cluster.
+          type: integer
+          format: int32
+          nullable: true
+        partitionsCount:
+          description: The number of partitions are spread across the cluster.
+          type: integer
+          format: int32
+          nullable: true
+        replicationFactor:
+          description: The configured replication factor for this cluster.
+          type: integer
+          format: int32
+          nullable: true
+        gatewayVersion:
+          description: The version of the Zeebe Gateway.
+          type: string
+          nullable: true
+    BrokerInfo:
+      description: Provides information on a broker node.
+      type: object
+      properties:
+        nodeId:
+          description: The unique (within a cluster) node ID for the broker.
+          type: integer
+          format: int32
+        host:
+          description: The hostname for reaching the broker.
+          type: string
+        port:
+          description: The port for reaching the broker.
+          type: integer
+          format: int32
+        partitions:
+          description: A list of partitions managed or replicated on this broker.
+          type: array
+          items:
+            $ref: "#/components/schemas/Partition"
+        version:
+          description: The broker version.
+          type: string
+    Partition:
+      description: Provides information on a partition within a broker node.
+      type: object
+      properties:
+        partitionId:
+          description: The unique ID of this partition.
+          type: integer
+          format: int32
+        role:
+          description: Describes the Raft role of the broker for a given partition.
+          type: string
+          enum:
+            - leader
+            - follower
+            - inactive
+        health:
+          description: Describes the current health of the partition.
+          type: string
+          enum:
+            - healthy
+            - unhealthy
+            - dead
+    UserTaskCompletionRequest:
+      type: object
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the user task with.
+          type: object
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "complete".
+          type: string
+          nullable: true
+    UserTaskAssignmentRequest:
+      type: object
+      properties:
+        assignee:
+          description: The assignee for the user task. The assignee must not be empty or `null`.
+          type: string
+          nullable: false
+        allowOverride:
+          description: >
+            By default, the task is reassigned if it was already assigned. Set this to `false`
+            to return an error in such cases. The task must then first be unassigned to
+            be assigned again. Use this when you have users picking from group task
+            queues to prevent race conditions.
+          type: boolean
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "assign".
+          type: string
+          nullable: true
+    UserTaskUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          allOf:
+            - $ref: "#/components/schemas/Changeset"
+          description: |
+            JSON object with changed task attribute values.
+
+            The following attributes can be adjusted with this endpoint, additional attributes
+            will be ignored:
+
+            * `candidateGroups` - reset by providing an empty list
+            * `candidateUsers` - reset by providing an empty list
+            * `dueDate` - reset by providing an empty String
+            * `followUpDate` - reset by providing an empty String
+            * `priority` - minimum 0, maximum 100, default 50
+
+            Providing any of those attributes with a `null` value or omitting it preserves
+            the persisted attribute's value.
+
+            The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
+            This ensures correct event emission for assignee changes.
+          type: object
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "update".
+          type: string
+          nullable: true
+    Variables:
+      description: A map of variables.
+      type: object
+      additionalProperties: true
+    Changeset:
+      description: A map of changes.
+      type: object
+      additionalProperties: true
+      properties:
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task. Reset by providing an empty String.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task. Reset by providing an empty String.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
+          nullable: true
+    ProblemDetail:
+      description: >
+        A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
+        There may be additional properties specific to the problem type.
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI identifying the problem type.
+          default: about:blank
+        title:
+          type: string
+          description: A summary of the problem type.
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code for this problem.
+          minimum: 400
+          maximum: 600
+        detail:
+          type: string
+          description: An explanation of the problem in more detail.
+        instance:
+          type: string
+          format: uri
+          description: A URI identifying the origin of the problem.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
