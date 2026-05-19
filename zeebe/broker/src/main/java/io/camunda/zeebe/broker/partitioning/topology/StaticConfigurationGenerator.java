@@ -76,7 +76,7 @@ public final class StaticConfigurationGenerator {
 
   private static ZoneAwarePartitionDistributor buildZoneAwarePartitionDistributor(
       final PartitioningCfg config) {
-    final List<ZoneSpec> specs =
+    final var specs =
         config.getZoneAware().regions().stream()
             .map(r -> new ZoneSpec(r.name(), r.numberOfReplicas(), r.priority()))
             .toList();
