@@ -20,6 +20,7 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {useSearchUserTasks} from 'modules/queries/userTasks/useSearchUserTasks';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
@@ -365,7 +366,7 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
-      {clientConfig.isAiAgentEnabled &&
+      {IS_AI_AGENT_ENABLED &&
         (agentInstance !== undefined || isAgentLoading || isAgentError) && (
           <AgentDetails
             agentInstance={agentInstance}
