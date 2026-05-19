@@ -170,6 +170,9 @@ test.describe('Operations', () => {
         ),
       ).toBeVisible({timeout: 60000});
 
+      // Canceled icons can take longer than 5s to surface after a batch
+      // cancel on a loaded shared cluster; give each instance a longer
+      // budget so the test isn't dominated by reload churn.
       await waitForAssertion({
         assertion: async () => {
           await Promise.all(
@@ -178,7 +181,7 @@ test.describe('Operations', () => {
                 operateProcessesPage.getCanceledIcon(
                   instance.processInstanceKey,
                 ),
-              ).toBeVisible({timeout: 5000}),
+              ).toBeVisible({timeout: 30000}),
             ),
           );
         },

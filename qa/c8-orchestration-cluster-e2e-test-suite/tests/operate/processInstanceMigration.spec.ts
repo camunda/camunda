@@ -979,8 +979,12 @@ test.describe('Parallel job-based user task migration', () => {
           // Clicking the task card while the prior `Task completed` banner is
           // still showing on the right panel sometimes leaves the panel stuck
           // on the completed task — no Unassign button ever appears for the
-          // newly clicked task. Retry the click until the right panel
-          // actually advances to the new task (Unassign becomes visible).
+          // newly clicked task. Wait for the banner to disappear first, then
+          // retry the click until the right panel actually advances to the
+          // new task (Unassign becomes visible).
+          await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+            timeout: 30000,
+          });
           await waitForAssertion({
             assertion: async () => {
               // Always click .nth(0) — the completed task disappears so the
@@ -993,8 +997,10 @@ test.describe('Parallel job-based user task migration', () => {
                 timeout: 10000,
               });
             },
-            onFailure: async () => {},
-            maxRetries: 3,
+            onFailure: async () => {
+              await page.reload();
+            },
+            maxRetries: 5,
           });
 
           await taskDetailsPage.unassignReassignToMeAndComplete();
