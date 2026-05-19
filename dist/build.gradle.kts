@@ -452,7 +452,7 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.named("assemble") {
-    dependsOn(assembleDist, distTar, distZip)
+    dependsOn(assembleDist)
 }
 
 configurations.named("runtimeClasspath") {
