@@ -206,7 +206,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   @Override
-  public void completeExceptionally(final String failure, final Throwable throwable) {
+  public void completeExceptionally(final @Nullable String failure, final Throwable throwable) {
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
@@ -228,8 +228,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   @Override
   public void completeExceptionally(final Throwable throwable) {
     ensureValidThrowable(throwable);
-    final var message = throwable.getMessage() != null ? throwable.getMessage() : "";
-    completeExceptionally(message, throwable);
+    completeExceptionally(throwable.getMessage(), throwable);
   }
 
   @Override

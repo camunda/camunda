@@ -51,7 +51,7 @@ public final class TestActorFuture<V extends @Nullable Object> implements ActorF
   }
 
   @Override
-  public void completeExceptionally(final String failure, final Throwable throwable) {
+  public void completeExceptionally(final @Nullable String failure, final Throwable throwable) {
     completeExceptionally(throwable);
   }
 
