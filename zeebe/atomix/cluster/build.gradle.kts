@@ -19,7 +19,7 @@ tasks.named<JavaExec>("generateSbe") {
 }
 
 val libsCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val nettyVersion = libsCatalog.findVersion("io-netty-netty-transport-native-epoll").get().requiredVersion
+val nettyVersion = libsCatalog.findVersion("netty").get().requiredVersion
 
 dependencies {
     api(project(":zeebe-atomix-utils"))

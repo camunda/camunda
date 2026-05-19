@@ -15,8 +15,8 @@ plugins {
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val protobufVersion = versionCatalog.findVersion("com-google-protobuf-protobuf-java").get().requiredVersion
-val grpcVersion = versionCatalog.findVersion("io-grpc-grpc-api").get().requiredVersion
+val protobufVersion = versionCatalog.findVersion("protobuf").get().requiredVersion
+val grpcVersion = versionCatalog.findVersion("grpc").get().requiredVersion
 
 protobuf {
     protoc {
