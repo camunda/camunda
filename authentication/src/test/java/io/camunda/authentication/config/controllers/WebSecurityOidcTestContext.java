@@ -7,7 +7,10 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import io.camunda.authentication.service.DefaultOidcMembershipService;
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.OidcMembershipService;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
@@ -19,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 
 /** Additional dependency beans for the OIDC setup */
 @Configuration
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class WebSecurityOidcTestContext {
 
   @Bean
@@ -28,13 +32,13 @@ public class WebSecurityOidcTestContext {
   }
 
   @Bean
-  public DefaultOidcMembershipService createMembershipService(
+  public MembershipService createMembershipService(
       final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
       final SecurityConfiguration securityConfiguration) {
-    return new DefaultOidcMembershipService(
+    return new OidcMembershipService(
         mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
   }
 }

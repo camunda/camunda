@@ -13,8 +13,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.BasicMembershipService;
-import io.camunda.authentication.service.MembershipResolver;
+import io.camunda.authentication.service.MembershipProvider;
+import io.camunda.authentication.service.MembershipService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,14 +26,14 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 public class UsernamePasswordAuthenticationTokenConverterTest {
 
-  @Mock private BasicMembershipService membershipService;
-  @Mock private MembershipResolver resolver;
+  @Mock private MembershipService membershipService;
+  @Mock private MembershipProvider provider;
   private UsernamePasswordAuthenticationTokenConverter authenticationConverter;
 
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    when(membershipService.newResolver("test-user")).thenReturn(resolver);
+    when(membershipService.createProviderForUser("test-user")).thenReturn(provider);
     authenticationConverter = new UsernamePasswordAuthenticationTokenConverter(membershipService);
   }
 
@@ -62,16 +62,16 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   }
 
   @Test
-  void shouldBuildAuthenticationFromResolver() {
+  void shouldBuildAuthenticationFromProvider() {
     // given
-    when(resolver.groups()).thenReturn(List.of("g1"));
-    when(resolver.roles()).thenReturn(List.of("r1"));
-    when(resolver.tenants()).thenReturn(List.of("t1"));
+    when(provider.groups()).thenReturn(List.of("g1"));
+    when(provider.roles()).thenReturn(List.of("r1"));
+    when(provider.tenants()).thenReturn(List.of("t1"));
 
     // when
     final var auth = authenticationConverter.convert(usernamePassword("test-user"));
 
-    // then — username plus the three resolver-backed memberships are wired through
+    // then — username plus the three provider-backed memberships are wired through
     assertThat(auth.authenticatedUsername()).isEqualTo("test-user");
     assertThat(auth.authenticatedGroupIds()).containsExactly("g1");
     assertThat(auth.authenticatedRoleIds()).containsExactly("r1");
@@ -81,25 +81,26 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   @Test
   void shouldNotWireMappingRulesSupplierForBasicAuth() {
     // given — BASIC auth has no token claims, so mappingRules must remain empty without ever
-    // calling the resolver.
+    // calling the provider.
     // when
     final var auth = authenticationConverter.convert(usernamePassword("test-user"));
 
     // then
     assertThat(auth.authenticatedMappingRuleIds()).isEmpty();
-    verify(resolver, never()).mappingRules();
+    verify(provider, never()).mappingRules();
   }
 
   @Test
-  void shouldRequestResolverFromServiceWithUsername() {
+  void shouldRequestProviderFromServiceWithUsername() {
     // given
     final var authentication = usernamePassword("test-user");
 
     // when
     authenticationConverter.convert(authentication);
 
-    // then — converter delegates resolver creation to the BASIC service using the username
-    verify(membershipService).newResolver("test-user");
+    // then — converter delegates through the USER/no-claims convenience overload (BASIC auth has
+    // no notion of CLIENT principals and carries no token claims).
+    verify(membershipService).createProviderForUser("test-user");
   }
 
   private Authentication usernamePassword(final String username) {

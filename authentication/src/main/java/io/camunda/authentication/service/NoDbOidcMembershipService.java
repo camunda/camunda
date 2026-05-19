@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 @ConditionalOnSecondaryStorageDisabled
-public class NoDbOidcMembershipService implements OidcMembershipService {
+public class NoDbOidcMembershipService implements MembershipService {
 
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
@@ -34,20 +34,18 @@ public class NoDbOidcMembershipService implements OidcMembershipService {
   }
 
   @Override
-  public MembershipResolver newResolver(
-      final Map<String, Object> tokenClaims,
-      final String principalId,
-      final PrincipalType principalType)
+  public MembershipProvider createProvider(
+      final String principalId, final PrincipalType type, final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
     // No secondary storage means roles/tenants/mappingRules can't be resolved at all, and groups
     // only come from the OIDC token claim when one is configured. Evaluate the claim eagerly so
     // malformed input fails fast.
     final List<String> groups =
-        isGroupsClaimConfigured ? List.copyOf(oidcGroupsExtractor.extract(tokenClaims)) : List.of();
-    return new StaticResolver(groups);
+        isGroupsClaimConfigured ? List.copyOf(oidcGroupsExtractor.extract(claims)) : List.of();
+    return new StaticProvider(groups);
   }
 
-  private record StaticResolver(List<String> groups) implements MembershipResolver {
+  private record StaticProvider(List<String> groups) implements MembershipProvider {
 
     @Override
     public List<String> roles() {

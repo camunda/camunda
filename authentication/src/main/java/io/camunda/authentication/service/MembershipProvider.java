@@ -14,7 +14,7 @@ import java.util.List;
  * memoize so concurrent or repeated reads share work; callers wire these as the {@code *Supplier}
  * arguments on the {@code CamundaAuthentication} builder.
  */
-public interface MembershipResolver {
+public interface MembershipProvider {
 
   List<String> groups();
 

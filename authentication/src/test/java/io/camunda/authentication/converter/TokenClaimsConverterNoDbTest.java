@@ -10,8 +10,8 @@ package io.camunda.authentication.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDbOidcMembershipService;
-import io.camunda.authentication.service.OidcMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -24,7 +24,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 public class TokenClaimsConverterNoDbTest {
 
   private TokenClaimsConverter tokenClaimsConverter;
-  private OidcMembershipService membershipService;
+  private MembershipService membershipService;
   private SecurityConfiguration securityConfiguration;
 
   @BeforeEach

@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.converter;
 
-import io.camunda.authentication.service.OidcMembershipService;
-import io.camunda.authentication.service.OidcMembershipService.PrincipalType;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.MembershipService.PrincipalType;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -23,11 +23,11 @@ public class TokenClaimsConverter {
   private final String usernameClaim;
   private final String clientIdClaim;
   private final boolean preferUsernameClaim;
-  private final OidcMembershipService membershipService;
+  private final MembershipService membershipService;
 
   public TokenClaimsConverter(
       final SecurityConfiguration securityConfiguration,
-      final OidcMembershipService membershipService) {
+      final MembershipService membershipService) {
     this.membershipService = membershipService;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
@@ -59,7 +59,8 @@ public class TokenClaimsConverter {
       principalType = PrincipalType.CLIENT;
     }
 
-    final var resolver = membershipService.newResolver(tokenClaims, principalName, principalType);
+    final var provider =
+        membershipService.createProvider(principalName, principalType, tokenClaims);
     return CamundaAuthentication.of(
         a -> {
           if (principalType == PrincipalType.CLIENT) {
@@ -67,10 +68,10 @@ public class TokenClaimsConverter {
           } else {
             a.user(principalName);
           }
-          return a.mappingRulesSupplier(resolver::mappingRules)
-              .groupIdsSupplier(resolver::groups)
-              .roleIdsSupplier(resolver::roles)
-              .tenantsSupplier(resolver::tenants)
+          return a.mappingRulesSupplier(provider::mappingRules)
+              .groupIdsSupplier(provider::groups)
+              .roleIdsSupplier(provider::roles)
+              .tenantsSupplier(provider::tenants)
               .claims(tokenClaims);
         });
   }

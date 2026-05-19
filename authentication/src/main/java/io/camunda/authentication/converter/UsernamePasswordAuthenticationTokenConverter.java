@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.converter;
 
-import io.camunda.authentication.service.BasicMembershipService;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,10 +16,9 @@ import org.springframework.security.core.Authentication;
 public class UsernamePasswordAuthenticationTokenConverter
     implements CamundaAuthenticationConverter<Authentication> {
 
-  private final BasicMembershipService membershipService;
+  private final MembershipService membershipService;
 
-  public UsernamePasswordAuthenticationTokenConverter(
-      final BasicMembershipService membershipService) {
+  public UsernamePasswordAuthenticationTokenConverter(final MembershipService membershipService) {
     this.membershipService = membershipService;
   }
 
@@ -31,14 +30,14 @@ public class UsernamePasswordAuthenticationTokenConverter
   @Override
   public CamundaAuthentication convert(final Authentication authentication) {
     final var username = authentication.getName();
-    final var resolver = membershipService.newResolver(username);
+    final var provider = membershipService.createProviderForUser(username);
     // BASIC auth has no token claims to match mapping rules against, so we deliberately skip
     // wiring mappingRulesSupplier — authenticatedMappingRuleIds() will simply return List.of().
     return CamundaAuthentication.of(
         a ->
             a.user(username)
-                .groupIdsSupplier(resolver::groups)
-                .roleIdsSupplier(resolver::roles)
-                .tenantsSupplier(resolver::tenants));
+                .groupIdsSupplier(provider::groups)
+                .roleIdsSupplier(provider::roles)
+                .tenantsSupplier(provider::tenants));
   }
 }

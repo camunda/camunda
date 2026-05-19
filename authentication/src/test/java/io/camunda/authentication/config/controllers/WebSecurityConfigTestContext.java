@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.authentication.service.BasicMembershipService;
-import io.camunda.authentication.service.MembershipResolver;
+import io.camunda.authentication.service.MembershipProvider;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
@@ -104,16 +104,17 @@ public class WebSecurityConfigTestContext {
   }
 
   /**
-   * Slice tests don't exercise membership resolution — provide a resolver that returns empty lists
-   * so {@link BasicAuthBeansConfiguration#usernamePasswordAuthenticationConverter} can wire.
-   * Skipped when a real {@link BasicMembershipService} is already present (e.g. tests that
+   * Slice tests don't exercise membership resolution — provide a stub {@link MembershipService}
+   * that returns an empty {@link MembershipProvider} regardless of which overload is called, so the
+   * converters from both {@link BasicAuthBeansConfiguration} and OIDC bean configs can wire.
+   * Skipped when a real {@link MembershipService} is already present (e.g. tests that
    * component-scan {@code io.camunda.authentication}).
    */
   @Bean
-  @ConditionalOnMissingBean(BasicMembershipService.class)
-  public BasicMembershipService basicMembershipService() {
-    return username ->
-        new MembershipResolver() {
+  @ConditionalOnMissingBean(MembershipService.class)
+  public MembershipService membershipService() {
+    final MembershipProvider emptyProvider =
+        new MembershipProvider() {
           @Override
           public List<String> groups() {
             return List.of();
@@ -134,6 +135,7 @@ public class WebSecurityConfigTestContext {
             return List.of();
           }
         };
+    return (principalId, type, claims) -> emptyProvider;
   }
 
   @Bean

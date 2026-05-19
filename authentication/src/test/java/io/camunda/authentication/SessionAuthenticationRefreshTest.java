@@ -17,7 +17,7 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
-import io.camunda.authentication.service.OidcMembershipService;
+import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
@@ -252,7 +252,7 @@ public class SessionAuthenticationRefreshTest {
   @AutoConfigureWebMvc
   @ActiveProfiles("consolidated-auth")
   class OidcAuthTest extends BaseTest {
-    @MockitoBean private OidcMembershipService membershipService;
+    @MockitoBean private MembershipService membershipService;
     @TestBean private ClientRegistrationRepository clientRegistrationRepository;
     @MockitoBean private JwtDecoder jwtDecoder;
 
