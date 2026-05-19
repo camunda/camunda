@@ -48,9 +48,11 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -157,12 +159,57 @@ public class MyBatisConfiguration {
 
   @Bean
   public SqlSessionFactory sqlSessionFactory(
+      final Map<String, SqlSessionFactory> sqlSessionFactories) {
+    return sqlSessionFactories.get(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public Map<String, SqlSessionFactory> sqlSessionFactories(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver,
+      final DatabaseIdProvider databaseIdProvider)
+      throws Exception {
+    final var factories = new LinkedHashMap<String, SqlSessionFactory>();
+    for (final var physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
+      final var prefix =
+          physicalTenantResolver
+              .forPhysicalTenant(physicalTenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms()
+              .getPrefix();
+      factories.put(
+          physicalTenantId,
+          buildSqlSessionFactory(
+              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              databaseIdProvider,
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
+              prefix));
+    }
+    return Map.copyOf(factories);
+  }
+
+  @Bean
+  public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
+      final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final RdbmsDataSources rdbmsDataSources) {
+    final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
+    for (final var entry : sqlSessionFactories.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      bundles.put(
+          physicalTenantId,
+          RdbmsMapperBundle.from(
+              entry.getValue(), rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+    }
+    return Map.copyOf(bundles);
+  }
+
+  private SqlSessionFactory buildSqlSessionFactory(
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+      final String prefix)
       throws Exception {
-
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
