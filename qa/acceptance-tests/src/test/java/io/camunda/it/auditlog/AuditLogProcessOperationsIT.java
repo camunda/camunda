@@ -9,10 +9,13 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
+import static io.camunda.it.util.TestHelper.deployProcessForTenantAndWaitForIt;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessageForTenant;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForJobs;
+import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -38,6 +41,7 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -72,8 +76,10 @@ public class AuditLogProcessOperationsIT {
   private static final String SERVICE_TASKS_PROCESS_ID = "service_tasks_v1";
   private static final String DECISION_ID = "decision_1";
   private static final String PROCESS_WITH_BUSINESS_RULE_TASK_ID = "business_rule_task_process";
+  private static final String PROCESS_WITH_MESSAGE_START = "process_with_message_start";
+  private static final String PROCESS_WITH_MESSAGE_START_2 = "process_with_message_start_2";
+  private static final String PROCESS_WITH_SIGNAL_START = "process_with_signal_start";
   private static CamundaClient adminClient;
-  private static AuditLogUtils utils;
 
   // Pre-created process instance for tests that only read/add variables
   private static long sharedProcessInstanceKey;
@@ -81,7 +87,7 @@ public class AuditLogProcessOperationsIT {
 
   @BeforeAll
   static void setup() {
-    utils = new AuditLogUtils(adminClient).init();
+    new AuditLogUtils(adminClient).init();
 
     final var deploymentFutures =
         java.util.stream.Stream.of(
@@ -90,7 +96,10 @@ public class AuditLogProcessOperationsIT {
                 "process/service_tasks_v1.bpmn",
                 "process/incident_process_v1.bpmn",
                 "decisions/decision_model.dmn",
-                "process/business_rule_task_process.bpmn")
+                "process/business_rule_task_process.bpmn",
+                "process/process_with_message_start.bpmn",
+                "process/process_with_message_start_2.bpmn",
+                "process/process_with_signal_start.bpmn")
             .map(
                 resource ->
                     adminClient
@@ -150,6 +159,152 @@ public class AuditLogProcessOperationsIT {
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID);
+  }
+
+  @Test
+  void shouldTrackProcessInstanceCreationViaMessageCorrelation(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - correlate a message that starts the process instance
+    startProcessInstanceWithMessageForTenant(client, PROCESS_WITH_MESSAGE_START, TENANT_A);
+    final var processInstance =
+        waitForProcessInstances(client, f -> f.processDefinitionId(PROCESS_WITH_MESSAGE_START), 1)
+            .getFirst();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.CREATE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        PROCESS_WITH_MESSAGE_START);
+  }
+
+  @Test
+  void shouldTrackProcessInstanceCreationViaMessagePublication(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - publish a message that starts the process instance
+    client
+        .newPublishMessageCommand()
+        .messageName(PROCESS_WITH_MESSAGE_START_2)
+        .withoutCorrelationKey()
+        .tenantId(TENANT_A)
+        .execute();
+    final var processInstance =
+        waitForProcessInstances(client, f -> f.processDefinitionId(PROCESS_WITH_MESSAGE_START_2), 1)
+            .getFirst();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.CREATE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        PROCESS_WITH_MESSAGE_START_2);
+  }
+
+  @Test
+  void shouldTrackProcessInstanceCreationViaSignalBroadcast(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - broadcast a signal that starts the process instance
+    client
+        .newBroadcastSignalCommand()
+        .signalName(PROCESS_WITH_SIGNAL_START)
+        .tenantId(TENANT_A)
+        .send()
+        .join();
+    final var processInstance =
+        waitForProcessInstances(client, f -> f.processDefinitionId(PROCESS_WITH_SIGNAL_START), 1)
+            .getFirst();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.CREATE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        PROCESS_WITH_SIGNAL_START);
+  }
+
+  @Test
+  void shouldTrackProcessInstanceCreationViaConditionalEvaluation(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - deploy a process with a conditional start event
+    final var processId = "conditional-eval-start-process";
+    final var process =
+        deployProcessForTenantAndWaitForIt(
+            client,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .condition(c -> c.condition("=x > y"))
+                .endEvent()
+                .done(),
+            processId + ".bpmn",
+            TENANT_A);
+
+    // when - evaluate the conditional start event with matching variables
+    final var evaluationResponse =
+        client
+            .newEvaluateConditionalCommand()
+            .variables(Map.of("x", 1000, "y", 100))
+            .processDefinitionKey(process.getProcessDefinitionKey())
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    assertThat(evaluationResponse.getProcessInstances()).hasSize(1);
+    final var processInstanceKey =
+        evaluationResponse.getProcessInstances().getFirst().getProcessInstanceKey();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.CREATE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.CREATE,
+        processInstanceKey,
+        process.getProcessDefinitionKey(),
+        processId);
   }
 
   @Test

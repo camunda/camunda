@@ -129,10 +129,30 @@ public final class TestHelper {
       final BpmnModelInstance processDefinition,
       final String resourceName) {
     final var event =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(processDefinition, resourceName)
-            .execute()
+        deployResource(client, processDefinition, resourceName).getProcesses().getFirst();
+
+    // sync with secondary database
+    waitForProcessesToBeDeployed(
+        client, f -> f.processDefinitionKey(event.getProcessDefinitionKey()), 1);
+
+    return event;
+  }
+
+  /**
+   * Deploys a process for a tenant and waits for it to be available in the secondary database.
+   *
+   * @param client ... CamundaClient
+   * @param processDefinition ... BpmnModelInstance of the process definition
+   * @param tenantId the tenant to deploy the process for
+   * @return the deployed process
+   */
+  public static Process deployProcessForTenantAndWaitForIt(
+      final CamundaClient client,
+      final BpmnModelInstance processDefinition,
+      final String resourceName,
+      final String tenantId) {
+    final var event =
+        deployResourceForTenant(client, processDefinition, resourceName, tenantId)
             .getProcesses()
             .getFirst();
 
@@ -271,6 +291,16 @@ public final class TestHelper {
         .newCorrelateMessageCommand()
         .messageName(messageName)
         .withoutCorrelationKey()
+        .execute();
+  }
+
+  public static CorrelateMessageResponse startProcessInstanceWithMessageForTenant(
+      final CamundaClient camundaClient, final String messageName, final String tenantId) {
+    return camundaClient
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .withoutCorrelationKey()
+        .tenantId(tenantId)
         .execute();
   }
 
@@ -1198,11 +1228,11 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForProcessInstances(
+  public static List<ProcessInstance> waitForProcessInstances(
       final CamundaClient camundaClient,
       final Consumer<ProcessInstanceFilter> fn,
       final int expectedProcessInstances) {
-    waitForItemsPaginated(
+    return waitForItemsPaginated(
         "should wait until process instances are available",
         expectedProcessInstances,
         page -> camundaClient.newProcessInstanceSearchRequest().filter(fn).page(page).execute());

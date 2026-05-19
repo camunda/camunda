@@ -19,10 +19,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -34,6 +36,8 @@ public final class EventHandle {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
+  private final ProcessInstanceCreationRecord recordForPICreationEvent =
+      new ProcessInstanceCreationRecord();
   private final MessageStartEventSubscriptionRecord startEventSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
@@ -247,5 +251,18 @@ public final class EventHandle {
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+
+    // emit CREATED event to indicate instance creation by an event trigger
+    // picked up by appliers and exporters accordingly, e.g., for metrics and audit logs
+    recordForPICreationEvent
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setProcessDefinitionKey(process.getKey())
+        .setVersion(process.getVersion())
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
+
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, recordForPICreationEvent);
   }
 }
