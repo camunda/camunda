@@ -85,20 +85,27 @@ public final class MessageStartEventBusinessIdUniquenessTest {
     final var firstJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
 
     // when a second message with the same businessId is published with TTL=0 so we get a
-    // deterministic terminal (EXPIRED) to bound the assertion stream on
-    engine
-        .message()
-        .withName(MESSAGE_NAME)
-        .withCorrelationKey("")
-        .withBusinessId("biz-42")
-        .withVariables(Map.of("seq", 2))
-        .withTimeToLive(0L)
-        .publish();
+    // deterministic terminal (EXPIRED for this specific message) to bound the assertion stream on
+    final var suppressedPublish =
+        engine
+            .message()
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey("")
+            .withBusinessId("biz-42")
+            .withVariables(Map.of("seq", 2))
+            .withTimeToLive(0L)
+            .publish();
 
-    // then no second PI is created up to the EXPIRED terminal of the suppressed message
+    // then no second PI is created up to the EXPIRED terminal of the suppressed message.
+    // The limit predicate keys on the suppressed message's record key (not just intent) so that
+    // an unrelated EXPIRED — e.g. introduced by future test-setup changes — cannot short-circuit
+    // the bound and silently mask a regression.
     final long secondPiCount =
         RecordingExporter.records()
-            .limit(r -> r.getIntent() == MessageIntent.EXPIRED)
+            .limit(
+                r ->
+                    r.getIntent() == MessageIntent.EXPIRED
+                        && r.getKey() == suppressedPublish.getKey())
             .processInstanceRecords()
             .withElementType(BpmnElementType.PROCESS)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
