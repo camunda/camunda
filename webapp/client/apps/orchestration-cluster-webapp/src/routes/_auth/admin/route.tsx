@@ -23,6 +23,13 @@ export const Route = createFileRoute('/_auth/admin')({
 		throw error;
 	},
 	component: AdminLayout,
+	head: () => ({
+		meta: [
+			{
+				title: 'Admin - Camunda',
+			},
+		],
+	}),
 });
 
 function AdminLayout() {

@@ -33,14 +33,17 @@ test('should redirect to the initial page on success', async ({network, page, lo
 			successResponse: HttpResponse.json({}),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(mockSystemConfiguration),
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
 		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/');
+	await expect(page).toHaveURL('/operate');
 });
 
 test('should redirect to the referrer page', async ({network, page, loginPage}) => {

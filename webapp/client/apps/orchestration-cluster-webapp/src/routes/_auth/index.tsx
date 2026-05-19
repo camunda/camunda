@@ -6,19 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, redirect} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_auth/')({
-	component: App,
+	beforeLoad: () => {
+		throw redirect({to: '/operate', replace: true});
+	},
 	head: () => ({
 		meta: [
 			{
-				title: 'Orchestration Cluster',
+				title: 'Camunda',
 			},
 		],
 	}),
 });
-
-function App() {
-	return null;
-}

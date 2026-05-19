@@ -23,6 +23,13 @@ export const Route = createFileRoute('/_auth/operate')({
 		throw error;
 	},
 	component: OperateLayout,
+	head: () => ({
+		meta: [
+			{
+				title: 'Operate - Camunda',
+			},
+		],
+	}),
 });
 
 function OperateLayout() {

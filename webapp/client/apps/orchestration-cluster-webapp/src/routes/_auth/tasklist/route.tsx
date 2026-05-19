@@ -23,6 +23,13 @@ export const Route = createFileRoute('/_auth/tasklist')({
 		throw error;
 	},
 	component: TasklistLayout,
+	head: () => ({
+		meta: [
+			{
+				title: 'Tasklist - Camunda',
+			},
+		],
+	}),
 });
 
 function TasklistLayout() {
