@@ -7,7 +7,7 @@
     <bpmn:sequenceFlow id="Flow_1adhqwx" sourceRef="StartEvent_1" targetRef="Activity_0go4m6w" />
     <bpmn:scriptTask id="Activity_0go4m6w" name="Random value">
       <bpmn:extensionElements>
-        <zeebe:script expression="=&#34;PT&#34; + string(ceiling(random number() * 60)) + &#34;M&#34;" resultVariable="sleep" />
+        <zeebe:script expression="=&#34;PT&#34; + string(ceiling(random number() * 240)) + &#34;M&#34;" resultVariable="sleep" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1adhqwx</bpmn:incoming>
       <bpmn:outgoing>Flow_1ib1o0y</bpmn:outgoing>
