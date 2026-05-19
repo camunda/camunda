@@ -157,7 +157,7 @@ mkdir -p "$namespace"
 # so the per-namespace Makefile's -f <file>.yaml references resolve as before.
 cp -v  default/Makefile                              "$namespace/"
 cp -rv default/resources/                            "$namespace/"
-cp -v  default/values/camunda-platform-values.yaml          "$namespace/"
+cp -v  default/values/camunda-platform-values-elasticsearch.yaml "$namespace/"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
@@ -167,21 +167,18 @@ case "$secondaryStorage" in
   elasticsearch)
     cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
     ;;
-  opensearch)
-    cp -v default/values/camunda-platform-values-opensearch.yaml "$namespace/"
+  opensearch|none)
+    cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
     ;;
   postgresql|mysql|mariadb)
-    cp -v default/values/camunda-platform-values-rdbms.yaml          "$namespace/"
+    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
     cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
     ;;
   mssql|oracle)
-    cp -v default/values/camunda-platform-values-rdbms.yaml          "$namespace/"
+    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
     cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
     mkdir -p "$namespace/databases"
-    cp -v "default/databases/${secondaryStorage}.yaml" "$namespace/databases/"
-    ;;
-  none)
-    cp -v default/values/camunda-platform-no-secondary-storage.yaml "$namespace/"
+    cp -v "default/databases/${secondaryStorage}.yaml"                       "$namespace/databases/"
     ;;
 esac
 
