@@ -123,7 +123,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var address = Address.from(brokerAddress);
 
     broker
-        .nodeId(brokerId.nodeIdx())
+        .memberId(brokerId)
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
@@ -255,23 +255,17 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      @Deprecated
-          // use memberId
-          Integer nodeId,
       BrokerMemberId brokerId,
       String host,
       Integer port,
       List<Partition> partitions,
       String version) {
     public Broker {
-      Objects.requireNonNull(nodeId, "Expected nodeId to not be null");
       Objects.requireNonNull(brokerId, "Expected  memberId to not be null");
     }
 
     static class Builder {
-      Integer nodeId;
-      String zone;
-      String memberId;
+      BrokerMemberId memberId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -281,17 +275,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         return new Builder();
       }
 
-      public Builder nodeId(final Integer nodeId) {
-        this.nodeId = nodeId;
-        return this;
-      }
-
-      public Builder zone(final String zone) {
-        this.zone = zone;
-        return this;
-      }
-
-      public Builder memberId(final String memberId) {
+      public Builder memberId(final BrokerMemberId memberId) {
         this.memberId = memberId;
         return this;
       }
@@ -317,8 +301,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(
-            nodeId, BrokerMemberId.from(zone, nodeId), host, port, partitions, version);
+        return new Broker(memberId, host, port, partitions, version);
       }
     }
   }

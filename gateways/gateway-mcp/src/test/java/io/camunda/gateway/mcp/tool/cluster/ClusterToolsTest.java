@@ -11,6 +11,7 @@ import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextCon
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.Partition;
@@ -158,25 +159,19 @@ class ClusterToolsTest extends OperationalToolsTest {
           new Topology(
               List.of(
                   new Broker(
-                      0,
-                      null,
-                      "0",
+                      BrokerMemberId.from(0),
                       "localhost",
                       26501,
                       List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
                       version),
                   new Broker(
-                      1,
-                      null,
-                      "1",
+                      BrokerMemberId.from(1),
                       "localhost",
                       26502,
                       List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                       version),
                   new Broker(
-                      2,
-                      null,
-                      "2",
+                      BrokerMemberId.from(2),
                       "localhost",
                       26503,
                       List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
