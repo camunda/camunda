@@ -220,3 +220,9 @@ dependencies {
 }
 
 description = "Camunda Gateway Model"
+
+extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+    java {
+        targetExclude("src/tool/**/*.java")
+    }
+}
