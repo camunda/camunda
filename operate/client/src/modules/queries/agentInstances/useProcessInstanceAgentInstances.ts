@@ -8,7 +8,7 @@
 
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {getClientConfig} from 'modules/utils/getClientConfig';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {useAgentInstancesSearch} from './useAgentInstancesSearch';
 
 const ACTIVE_STATUSES: AgentInstance['status'][] = [
@@ -21,7 +21,6 @@ const ACTIVE_STATUSES: AgentInstance['status'][] = [
 
 const useProcessInstanceAgentInstances = () => {
   const {processInstanceId} = useProcessInstancePageParams();
-  const {isAiAgentEnabled} = getClientConfig();
 
   return useAgentInstancesSearch(
     {
@@ -31,7 +30,7 @@ const useProcessInstanceAgentInstances = () => {
       },
     },
     {
-      enabled: isAiAgentEnabled && !!processInstanceId,
+      enabled: IS_AI_AGENT_ENABLED && !!processInstanceId,
       refetchInterval: 5000,
     },
   );

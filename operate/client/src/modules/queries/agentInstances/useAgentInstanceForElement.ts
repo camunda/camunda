@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getClientConfig} from 'modules/utils/getClientConfig';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {useProcessInstanceAgentInstances} from './useProcessInstanceAgentInstances';
 import {useAgentInstancesSearch} from './useAgentInstancesSearch';
 
@@ -14,8 +14,6 @@ const useAgentInstanceForElement = (
   selectedElementId: string | null,
   elementInstanceKey: string | null,
 ) => {
-  const {isAiAgentEnabled} = getClientConfig();
-
   const {
     data: activeAgentInstancesResult,
     isLoading: isLoadingActive,
@@ -29,7 +27,7 @@ const useAgentInstanceForElement = (
     : undefined;
 
   const needsFallback =
-    isAiAgentEnabled &&
+    IS_AI_AGENT_ENABLED &&
     cachedAgentInstance === undefined &&
     !!elementInstanceKey;
 
