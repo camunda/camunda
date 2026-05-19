@@ -30,11 +30,41 @@ val nullAwayVersion =
     versionCatalog.findVersion("com-uber-nullaway-nullaway").get().requiredVersion
 val googleJavaFormatVersion =
     versionCatalog.findVersion("com-google-googlejavaformat-google-java-format").get().requiredVersion
+val esJavaVersion =
+    versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
 val isCi = providers.environmentVariable("CI")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
 
 dependencies {
+    add("implementation", platform(versionCatalog.findLibrary("com-azure-azure-sdk-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("com-fasterxml-jackson-jackson-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("com-google-cloud-libraries-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("com-google-protobuf-protobuf-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-github-openfeign-feign-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-grpc-grpc-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-micrometer-micrometer-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-modelcontextprotocol-sdk-mcp-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-netty-netty-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-opentelemetry-opentelemetry-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("io-rest-assured-rest-assured-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-junit-junit-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-mockito-mockito-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-springframework-ai-spring-ai-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-springframework-boot-spring-boot-dependencies").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-springframework-spring-framework-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-springframework-security-spring-security-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("org-testcontainers-testcontainers-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("software-amazon-awssdk-bom").get()))
+    add("implementation", platform(versionCatalog.findLibrary("tools-jackson-jackson-bom").get()))
+    // Spring Boot BOM upgrades elasticsearch-java to 9.x; POM pins 8.x explicitly before the BOM import.
+    // Replicate Maven's "first entry wins" semantics with a strict constraint.
+    constraints {
+        add("implementation", "co.elastic.clients:elasticsearch-java") {
+            version { strictly(esJavaVersion) }
+        }
+    }
     add("errorprone", "com.google.errorprone:error_prone_core:$errorProneVersion")
     add("errorprone", "com.uber.nullaway:nullaway:$nullAwayVersion")
     add("testImplementation", "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
