@@ -96,13 +96,13 @@ public interface DeployResourceCommandStep1
   DeployResourceCommandStep2 addProcessModel(
       BpmnModelInstance processDefinition, String resourceName);
 
-    /**
-     * Returns a step2 command that allows adding resources without requiring
-     * at least one resource to be added first.
-     *
-     * @return the builder for this command allowing batch addition of resources.
-     */
-    DeployResourceCommandStep2 batch();
+  /**
+   * Returns a step2 command that allows adding resources without requiring at least one resource to
+   * be added first.
+   *
+   * @return the builder for this command allowing batch addition of resources.
+   */
+  DeployResourceCommandStep2 batch();
 
   interface DeployResourceCommandStep2
       extends DeployResourceCommandStep1,

@@ -39,7 +39,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.grpc.stub.StreamObserver;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -50,212 +49,211 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
 
 public final class DeployResourceCommandImpl
-        implements DeployResourceCommandStep1, DeployResourceCommandStep2 {
+    implements DeployResourceCommandStep1, DeployResourceCommandStep2 {
 
-    private static final String RESOURCES_FIELD_NAME = "resources";
-    private static final String TENANT_FIELD_NAME = "tenantId";
+  private static final String RESOURCES_FIELD_NAME = "resources";
+  private static final String TENANT_FIELD_NAME = "tenantId";
 
-    private final MultipartEntityBuilder multipartEntityBuilder =
-            MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
-    private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
-    private final GatewayStub asyncStub;
-    private final Predicate<StatusCode> retryPredicate;
-    private Duration requestTimeout;
-    private final HttpClient httpClient;
-    private final RequestConfig.Builder httpRequestConfig;
-    private boolean useRest;
-    private final JsonMapper jsonMapper;
-    private String tenantId;
-    private boolean hasResourceAdded = false;
+  private final MultipartEntityBuilder multipartEntityBuilder =
+      MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
+  private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
+  private final GatewayStub asyncStub;
+  private final Predicate<StatusCode> retryPredicate;
+  private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private boolean useRest;
+  private final JsonMapper jsonMapper;
+  private String tenantId;
+  private boolean hasResourceAdded = false;
 
-    public DeployResourceCommandImpl(
-            final GatewayStub asyncStub,
-            final CamundaClientConfiguration config,
-            final Predicate<StatusCode> retryPredicate,
-            final HttpClient httpClient,
-            final boolean preferRestOverGrpc,
-            final JsonMapper jsonMapper) {
-        this.asyncStub = asyncStub;
-        requestTimeout = config.getDefaultRequestTimeout();
-        this.retryPredicate = retryPredicate;
-        tenantId(config.getDefaultTenantId());
-        this.httpClient = httpClient;
-        httpRequestConfig = httpClient.newRequestConfig();
-        useRest = preferRestOverGrpc;
-        this.jsonMapper = jsonMapper;
-        requestTimeout(requestTimeout);
+  public DeployResourceCommandImpl(
+      final GatewayStub asyncStub,
+      final CamundaClientConfiguration config,
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
+    this.asyncStub = asyncStub;
+    requestTimeout = config.getDefaultRequestTimeout();
+    this.retryPredicate = retryPredicate;
+    tenantId(config.getDefaultTenantId());
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    useRest = preferRestOverGrpc;
+    this.jsonMapper = jsonMapper;
+    requestTimeout(requestTimeout);
+  }
+
+  @Override
+  public DeployResourceCommandStep2 addResourceBytes(
+      final byte[] resource, final String resourceName) {
+    hasResourceAdded = true;
+    if (useRest) {
+      multipartEntityBuilder.addBinaryBody(
+          RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
+      return this;
     }
 
-    @Override
-    public DeployResourceCommandStep2 addResourceBytes(
-            final byte[] resource, final String resourceName) {
-        hasResourceAdded = true;
-        if (useRest) {
-            multipartEntityBuilder.addBinaryBody(
-                    RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
-            return this;
-        }
+    requestBuilder.addResources(
+        Resource.newBuilder()
+            .setName(resourceName)
+            .setContent(ByteString.copyFrom(resource))
+            .build());
+    return this;
+  }
 
-        requestBuilder.addResources(
-                Resource.newBuilder()
-                        .setName(resourceName)
-                        .setContent(ByteString.copyFrom(resource))
-                        .build());
-        return this;
+  @Override
+  public DeployResourceCommandStep2 addResourceString(
+      final String resource, final Charset charset, final String resourceName) {
+    return addResourceBytes(resource.getBytes(charset), resourceName);
+  }
+
+  @Override
+  public DeployResourceCommandStep2 addResourceStringUtf8(
+      final String resourceString, final String resourceName) {
+    return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
+  }
+
+  @Override
+  public DeployResourceCommandStep2 addResourceStream(
+      final InputStream resourceStream, final String resourceName) {
+    ensureNotNull("resource stream", resourceStream);
+
+    try {
+      final byte[] bytes = StreamUtil.readInputStream(resourceStream);
+
+      return addResourceBytes(bytes, resourceName);
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy bpmn resource from stream. %s", e.getMessage());
+      throw new ClientException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployResourceCommandStep2 addResourceString(
-            final String resource, final Charset charset, final String resourceName) {
-        return addResourceBytes(resource.getBytes(charset), resourceName);
+  @Override
+  public DeployResourceCommandStep2 addResourceFromClasspath(final String classpathResource) {
+    ensureNotNull("classpath resource", classpathResource);
+
+    try (final InputStream resourceStream =
+        getClass().getClassLoader().getResourceAsStream(classpathResource)) {
+      if (resourceStream != null) {
+        return addResourceStream(resourceStream, classpathResource);
+      } else {
+        throw new FileNotFoundException(classpathResource);
+      }
+
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from classpath. %s", e.getMessage());
+      throw new RuntimeException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployResourceCommandStep2 addResourceStringUtf8(
-            final String resourceString, final String resourceName) {
-        return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
+  @Override
+  public DeployResourceCommandStep2 addResourceFile(final String filename) {
+    ensureNotNull("filename", filename);
+
+    try (final InputStream resourceStream = new FileInputStream(filename)) {
+      return addResourceStream(resourceStream, filename);
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from file. %s", e.getMessage());
+      throw new RuntimeException(exceptionMsg, e);
     }
+  }
 
-    @Override
-    public DeployResourceCommandStep2 addResourceStream(
-            final InputStream resourceStream, final String resourceName) {
-        ensureNotNull("resource stream", resourceStream);
+  @Override
+  public DeployResourceCommandStep2 addProcessModel(
+      final BpmnModelInstance processDefinition, final String resourceName) {
+    ensureNotNull("process model", processDefinition);
 
-        try {
-            final byte[] bytes = StreamUtil.readInputStream(resourceStream);
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, processDefinition);
+    return addResourceBytes(outStream.toByteArray(), resourceName);
+  }
 
-            return addResourceBytes(bytes, resourceName);
-        } catch (final IOException e) {
-            final String exceptionMsg =
-                    String.format("Cannot deploy bpmn resource from stream. %s", e.getMessage());
-            throw new ClientException(exceptionMsg, e);
-        }
+  @Override
+  public DeployResourceCommandStep2 batch() {
+    return this;
+  }
+
+  @Override
+  public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    return this;
+  }
+
+  @Override
+  public CamundaFuture<DeploymentEvent> send() {
+    if (!hasResourceAdded) {
+      throw new IllegalStateException(
+          "At least one resource must be added before sending the command");
     }
-
-    @Override
-    public DeployResourceCommandStep2 addResourceFromClasspath(final String classpathResource) {
-        ensureNotNull("classpath resource", classpathResource);
-
-        try (final InputStream resourceStream =
-                     getClass().getClassLoader().getResourceAsStream(classpathResource)) {
-            if (resourceStream != null) {
-                return addResourceStream(resourceStream, classpathResource);
-            } else {
-                throw new FileNotFoundException(classpathResource);
-            }
-
-        } catch (final IOException e) {
-            final String exceptionMsg =
-                    String.format("Cannot deploy resource from classpath. %s", e.getMessage());
-            throw new RuntimeException(exceptionMsg, e);
-        }
+    if (useRest) {
+      // adding here the tenantId because in the multipart request fields are only appended
+      multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
     }
+  }
 
-    @Override
-    public DeployResourceCommandStep2 addResourceFile(final String filename) {
-        ensureNotNull("filename", filename);
+  @Override
+  public DeployResourceCommandStep2 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    requestBuilder.setTenantId(tenantId);
+    return this;
+  }
 
-        try (final InputStream resourceStream = new FileInputStream(filename)) {
-            return addResourceStream(resourceStream, filename);
-        } catch (final IOException e) {
-            final String exceptionMsg =
-                    String.format("Cannot deploy resource from file. %s", e.getMessage());
-            throw new RuntimeException(exceptionMsg, e);
-        }
-    }
+  @Override
+  public DeployResourceCommandStep2 useRest() {
+    useRest = true;
+    return this;
+  }
 
-    @Override
-    public DeployResourceCommandStep2 addProcessModel(
-            final BpmnModelInstance processDefinition, final String resourceName) {
-        ensureNotNull("process model", processDefinition);
+  @Override
+  public DeployResourceCommandStep2 useGrpc() {
+    useRest = false;
+    return this;
+  }
 
-        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        Bpmn.writeModelToStream(outStream, processDefinition);
-        return addResourceBytes(outStream.toByteArray(), resourceName);
-    }
+  private CamundaFuture<DeploymentEvent> sendRestRequest() {
+    final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
+    httpClient.postMultipart(
+        "/deployments",
+        multipartEntityBuilder,
+        httpRequestConfig.build(),
+        DeploymentResult.class,
+        DeploymentEventImpl::new,
+        result);
+    return result;
+  }
 
-    @Override
-    public DeployResourceCommandStep2 batch() {
-        return this;
-    }
+  private CamundaFuture<DeploymentEvent> sendGrpcRequest() {
+    final DeployResourceRequest request = requestBuilder.build();
 
-    @Override
-    public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
-        this.requestTimeout = requestTimeout;
-        httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-        return this;
-    }
+    final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =
+        new RetriableClientFutureImpl<>(
+            DeploymentEventImpl::new,
+            retryPredicate,
+            streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    @Override
-    public CamundaFuture<DeploymentEvent> send() {
-        if (!hasResourceAdded) {
-            throw new IllegalStateException(
-                    "At least one resource must be added before sending the command");
-        }
-        if (useRest) {
-            // adding here the tenantId because in the multipart request fields are only appended
-            multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
-            return sendRestRequest();
-        } else {
-            return sendGrpcRequest();
-        }
-    }
+    sendGrpcRequest(request, future);
 
-    @Override
-    public DeployResourceCommandStep2 tenantId(final String tenantId) {
-        this.tenantId = tenantId;
-        requestBuilder.setTenantId(tenantId);
-        return this;
-    }
+    return future;
+  }
 
-    @Override
-    public DeployResourceCommandStep2 useRest() {
-        useRest = true;
-        return this;
-    }
-
-    @Override
-    public DeployResourceCommandStep2 useGrpc() {
-        useRest = false;
-        return this;
-    }
-
-    private CamundaFuture<DeploymentEvent> sendRestRequest() {
-        final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
-        httpClient.postMultipart(
-                "/deployments",
-                multipartEntityBuilder,
-                httpRequestConfig.build(),
-                DeploymentResult.class,
-                DeploymentEventImpl::new,
-                result);
-        return result;
-    }
-
-    private CamundaFuture<DeploymentEvent> sendGrpcRequest() {
-        final DeployResourceRequest request = requestBuilder.build();
-
-        final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =
-                new RetriableClientFutureImpl<>(
-                        DeploymentEventImpl::new,
-                        retryPredicate,
-                        streamObserver -> sendGrpcRequest(request, streamObserver));
-
-        sendGrpcRequest(request, future);
-
-        return future;
-    }
-
-    private void sendGrpcRequest(
-            final DeployResourceRequest request, final StreamObserver streamObserver) {
-        asyncStub
-                .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .deployResource(request, streamObserver);
-    }
+  private void sendGrpcRequest(
+      final DeployResourceRequest request, final StreamObserver streamObserver) {
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .deployResource(request, streamObserver);
+  }
 }
