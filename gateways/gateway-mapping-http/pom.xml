@@ -54,7 +54,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
+      <artifactId>camunda-security-library-api</artifactId>
     </dependency>
 
     <dependency>
