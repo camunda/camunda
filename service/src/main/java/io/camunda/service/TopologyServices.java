@@ -10,7 +10,6 @@ package io.camunda.service;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.service.TopologyServices.Topology.Builder;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -124,7 +123,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var address = Address.from(brokerAddress);
 
     broker
-        .memberId(brokerId)
+        .brokerId(brokerId)
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
@@ -273,7 +272,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     }
 
     public Broker {
-      Objects.requireNonNull(brokerId, "Expected  memberId to not be null");
+      Objects.requireNonNull(brokerId, "Expected brokerId to not be null");
     }
 
     public int nodeIdx() {
@@ -289,7 +288,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     }
 
     static class Builder {
-      BrokerMemberId memberId;
+      BrokerMemberId brokerId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -299,8 +298,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         return new Builder();
       }
 
-      public Builder memberId(final BrokerMemberId memberId) {
-        this.memberId = memberId;
+      public Builder brokerId(final BrokerMemberId brokerId) {
+        this.brokerId = brokerId;
         return this;
       }
 
@@ -325,7 +324,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(memberId, host, port, partitions, version);
+        return new Broker(brokerId, host, port, partitions, version);
       }
     }
   }
