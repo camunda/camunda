@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.response.DecisionImpl;
 import io.camunda.client.impl.response.DecisionRequirementsImpl;
@@ -478,5 +479,25 @@ public final class DeployResourceTest extends ClientTest {
     assertThatThrownBy(() -> client.newDeployResourceCommand().batch().send().join())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("At least one resource must be added");
+  }
+
+  @Test
+  public void shouldDeployResourceWhenTransportSwitchedFromRestToGrpcAfterAddingResource() {
+    // given
+    final String filename = BPMN_1_FILENAME.substring(1);
+
+    // when - resource is added while REST transport is active, then switched to gRPC before send
+    final DeployResourceCommandStep2 cmd = client.newDeployResourceCommand().batch();
+    cmd.useRest();
+    cmd.addResourceFromClasspath(filename);
+    cmd.useGrpc();
+    cmd.send().join();
+
+    // then
+    final DeployResourceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResourcesList()).hasSize(1);
+    assertThat(request.getResources(0).getName()).isEqualTo(filename);
+    assertThat(request.getResources(0).getContent().toByteArray())
+        .isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 }
