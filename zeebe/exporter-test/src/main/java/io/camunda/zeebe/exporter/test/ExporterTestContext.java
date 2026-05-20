@@ -31,6 +31,7 @@ public final class ExporterTestContext implements Context {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
   private String clusterId = "";
+  private String licenseKey;
   private InstantSource clock = InstantSource.system();
 
   @Override
@@ -70,6 +71,16 @@ public final class ExporterTestContext implements Context {
 
   public ExporterTestContext setClusterId(final String clusterId) {
     this.clusterId = Objects.requireNonNull(clusterId, "must specify a cluster ID");
+    return this;
+  }
+
+  @Override
+  public String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public ExporterTestContext setLicenseKey(final String licenseKey) {
+    this.licenseKey = licenseKey;
     return this;
   }
 
