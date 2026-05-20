@@ -57,8 +57,10 @@ public class ElasticsearchExporterSchemaManager {
     final boolean acknowledged;
     if (configuration.retention.isEnabled()) {
       acknowledged = client.bulkPutIndexLifecycleSettings(configuration.retention.getPolicyName());
-    } else {
+    } else if (configuration.retention.isManagePolicy()) {
       acknowledged = client.bulkPutIndexLifecycleSettings(null);
+    } else {
+      return;
     }
 
     if (!acknowledged) {
@@ -67,7 +69,7 @@ public class ElasticsearchExporterSchemaManager {
   }
 
   private void createIndexTemplates(final String version) {
-    if (configuration.retention.isEnabled()) {
+    if (configuration.retention.isEnabled() && configuration.retention.isManagePolicy()) {
       createIndexLifecycleManagementPolicy();
     }
 
