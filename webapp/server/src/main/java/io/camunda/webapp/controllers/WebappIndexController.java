@@ -10,6 +10,7 @@ package io.camunda.webapp.controllers;
 import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
@@ -59,8 +60,11 @@ public class WebappIndexController {
         "mixpanelToken", nullToEmpty(webappConfiguration.getCloud().getMixpanelToken()));
     model.addAttribute(
         "mixpanelApiHost", nullToEmpty(webappConfiguration.getCloud().getMixpanelApiHost()));
-    model.addAttribute("organizationId", nullToEmpty(getOrganizationId()));
-    model.addAttribute("clusterId", nullToEmpty(getClusterId()));
+    model.addAttribute(
+        "organizationId",
+        nullToEmpty(SaasConfigurationHelper.organizationId(securityConfiguration)));
+    model.addAttribute(
+        "clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(securityConfiguration)));
     return "webapp/index";
   }
 
@@ -108,18 +112,6 @@ public class WebappIndexController {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
-  }
-
-  private String getOrganizationId() {
-    return securityConfiguration != null && securityConfiguration.getSaas() != null
-        ? securityConfiguration.getSaas().getOrganizationId()
-        : null;
-  }
-
-  private String getClusterId() {
-    return securityConfiguration != null && securityConfiguration.getSaas() != null
-        ? securityConfiguration.getSaas().getClusterId()
-        : null;
   }
 
   private static String nullToEmpty(final String value) {
