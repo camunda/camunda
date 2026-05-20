@@ -62,6 +62,7 @@ jobs:
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
+      deps-changed: ${{ steps.filter.outputs.deps-changed }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1628,6 +1629,40 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "Identity"
 
+  pr-vuln-check:
+    name: "Security / Dependency Vulnerability Gate"
+    # Runs on all PRs (including forks) that change dependency manifests.
+    # Skip backport PRs: code already gated on main. Skip the backport bot.
+    if: >-
+      needs.detect-changes.outputs.deps-changed == 'true'
+      && github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'backport')
+      && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true # pilot phase: observe without blocking merges
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check for vulnerable dependencies
+        uses: ./.github/actions/dependency-vuln-check
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
@@ -1989,6 +2024,7 @@ jobs:
       - operate-ci
       - optimize-ci
       - pin-check
+      - pr-vuln-check
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
