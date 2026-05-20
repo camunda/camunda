@@ -44,8 +44,7 @@ public class AnalyticsExporter implements Exporter {
   private AnalyticsExporterConfig config;
   private Controller controller;
   private HandlerRegistry handlers;
-  private int partitionId;
-  private String clusterId;
+  private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
 
   public AnalyticsExporter() {
@@ -59,14 +58,10 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
-    partitionId = context.getPartitionId();
-    try {
-      clusterId = context.getClusterId();
-    } catch (final NoSuchMethodError ex) {
-      // Fallback for customers testing this exporter on 8.8 where getClusterId does not exist.
-      final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
-      clusterId = fromEnv != null ? fromEnv : "";
-    }
+
+    analyticsContext =
+        AnalyticsExporterContext.create(
+            context.getLicenseKey(), context.getClusterId(), context.getPartitionId());
 
     handlers =
         new HandlerRegistry()
@@ -74,9 +69,10 @@ public class AnalyticsExporter implements Exporter {
             .apply(context);
 
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
         config.getEndpoint(),
-        clusterId);
+        analyticsContext.clusterId(),
+        analyticsContext.partitionId());
   }
 
   @Override
@@ -87,7 +83,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, clusterId, partitionId, metadata);
+    otelSdkManager.initialize(config, analyticsContext, metadata);
     LOG.info("Analytics exporter opened");
   }
 

@@ -33,18 +33,19 @@ class OtelSdkManager {
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
   private static final String OTLP_LOGS_PATH = "/v1/logs";
 
+  static final String HEADER_FINGERPRINT = "x-camunda-fingerprint";
+  static final String HEADER_CLUSTER_ID = "x-camunda-cluster-id";
+
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
   private AnalyticsExporterMetadata metadata;
 
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
-      final String clusterId,
-      final int partitionId,
+      final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata) {
     this.metadata = metadata;
-    final var resource = buildResource(clusterId, partitionId);
-    final var loggerProvider = createLoggerProvider(config, resource);
+    final var loggerProvider = createLoggerProvider(config, context);
 
     sdk = OpenTelemetrySdk.builder().setLoggerProvider(loggerProvider).build();
     otelLogger =
@@ -76,11 +77,11 @@ class OtelSdkManager {
    * Override in tests that need full pipeline control (e.g. sync processor, custom queue sizes).
    */
   protected SdkLoggerProvider createLoggerProvider(
-      final AnalyticsExporterConfig config, final Resource resource) {
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     return SdkLoggerProvider.builder()
-        .setResource(resource)
+        .setResource(buildResource(context.clusterId(), context.partitionId()))
         .addLogRecordProcessor(
-            BatchLogRecordProcessor.builder(createLogExporter(config))
+            BatchLogRecordProcessor.builder(createLogExporter(config, context))
                 .setMaxQueueSize(config.getMaxQueueSize())
                 .setMaxExportBatchSize(config.getMaxBatchSize())
                 .setScheduleDelay(config.getPushInterval())
@@ -89,9 +90,12 @@ class OtelSdkManager {
   }
 
   /** Override in tests to swap the OTLP transport for an in-memory exporter. */
-  protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig config) {
+  protected LogRecordExporter createLogExporter(
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     return OtlpHttpLogRecordExporter.builder()
         .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
+        .addHeader(HEADER_FINGERPRINT, context.fingerprint())
+        .addHeader(HEADER_CLUSTER_ID, context.clusterId())
         .build();
   }
 

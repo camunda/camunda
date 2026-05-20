@@ -46,13 +46,28 @@ class AnalyticsExporterTest {
   }
 
   @Test
+  void shouldRejectMissingLicenseKey() {
+    // given
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()));
+
+    // when / then
+    assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("CAMUNDA_LICENSE_KEY");
+  }
+
+  @Test
   void shouldRejectMissingEndpoint() {
     // given
     final var context =
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>(
-                    "analytics", new AnalyticsExporterConfig().setEndpoint("")));
+                    "analytics", new AnalyticsExporterConfig().setEndpoint("")))
+            .setLicenseKey("test-license-key");
 
     // when / then
     assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
@@ -222,9 +237,9 @@ class AnalyticsExporterTest {
         new OtelSdkManager() {
           @Override
           protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg, final Resource resource) {
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return SdkLoggerProvider.builder()
-                .setResource(resource)
+                .setResource(Resource.getDefault())
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
                 .build();
           }
@@ -254,7 +269,8 @@ class AnalyticsExporterTest {
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
             .setClusterId("test-cluster")
-            .setPartitionId(1);
+            .setPartitionId(1)
+            .setLicenseKey("test-license-key");
     final var exporter = new AnalyticsExporter(otelSdkManager);
     exporter.configure(context);
     exporter.open(controller);

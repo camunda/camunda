@@ -127,7 +127,8 @@ class AnalyticsExporterOtelIT {
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics-it", config))
             .setClusterId("test-cluster")
-            .setPartitionId(1);
+            .setPartitionId(1)
+            .setLicenseKey("it-test-license-key");
     final var exporter = new AnalyticsExporter();
     exporter.configure(context);
     exporter.open(new ExporterTestController());
