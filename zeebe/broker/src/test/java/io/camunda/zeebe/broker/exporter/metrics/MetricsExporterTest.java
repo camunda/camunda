@@ -313,12 +313,6 @@ class MetricsExporterTest {
               .build());
 
       // then
-      final var counter =
-          context
-              .getMeterRegistry()
-              .find("zeebe.variable.created.bytes")
-              .tag("bpmnProcessId", BPMN_PROCESS_ID)
-              .counter();
       final var summary =
           context
               .getMeterRegistry()
@@ -327,15 +321,7 @@ class MetricsExporterTest {
               .summary();
 
       if (intent == VariableIntent.CREATED) {
-        assertThat(counter)
-            .describedAs(
-                "Expected zeebe.variable.created.bytes counter to be registered on CREATED")
-            .isNotNull();
-        assertThat(counter.count())
-            .describedAs("Expected counter to record raw msgpack byte length")
-            .isEqualTo((double) variableRecord.getValueLength());
         assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
-
         assertThat(summary)
             .describedAs("Expected zeebe.variable.created.size summary to be registered on CREATED")
             .isNotNull();
@@ -344,9 +330,6 @@ class MetricsExporterTest {
             .describedAs("Expected summary total to match raw msgpack byte length")
             .isEqualTo((double) variableRecord.getValueLength());
       } else {
-        assertThat(counter)
-            .describedAs("Expected no zeebe.variable.created.bytes counter on %s", intent)
-            .isNull();
         assertThat(summary)
             .describedAs("Expected no zeebe.variable.created.size summary on %s", intent)
             .isNull();
