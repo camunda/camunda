@@ -6,11 +6,19 @@
 
 **Architecture:** Per-tenant `SecurityFilterChain` pairs (webapp + api) registered programmatically from `PhysicalTenantResolver.getAll()`. Browser-side isolation via cookie `Path` scoping. CSL's auto-config is opted out on the `pt-security` profile. The chain factory and per-tenant collaborator slice are designed portable to a future child-context model (approach C). End-to-end IT drives two Keycloak Testcontainers; a `PtPocLocalIdpRunner` exposes the same realms for browser-based developer iteration.
 
-**Tech Stack:**
-- Spring Boot 3 / Spring Security 6 (`oauth2Login`, `oauth2ResourceServer`)
+**Tech Stack** (confirmed against `parent/pom.xml`):
+- Spring Boot **4.0.6** / Spring Security **7.0.5** (`oauth2Login`, `oauth2ResourceServer`)
 - Spring Session (existing `WebSessionRepository` reused per-tenant via a key-prefixing decorator)
 - `dasniko/testcontainers-keycloak` (already a project dependency, used by `OidcAuthOverRestIT`)
-- JUnit 5 + AssertJ + Awaitility (project conventions)
+- JUnit **6.0.3** + AssertJ + Awaitility (project conventions)
+
+**Spring Security 7 / Boot 4 API notes** the engineer should keep in mind:
+- `HttpSecurity` configurer lambdas (`csrf(c -> ...)`, `oauth2Login(l -> ...)`, `authorizeHttpRequests(a -> ...)`) are the canonical style; the legacy builder-chain syntax is removed in 7.
+- `CookieCsrfTokenRepository.withHttpOnlyFalse()` was removed/relocated in Security 7. Equivalent: `new CookieCsrfTokenRepository()` plus `setCookieCustomizer(c -> c.httpOnly(false))`. Engineer verifies the exact factory name when implementing Task 11.
+- `SecurityContextPersistenceFilter` (referenced as an anchor for `addFilterBefore` in Tasks 11–12) was removed in Security 6; use `org.springframework.security.web.context.SecurityContextHolderFilter.class` as the anchor instead.
+- `SessionRepositoryFilter` (Spring Session) still accepts a custom `HttpSessionIdResolver` via `setHttpSessionIdResolver`.
+- `oauth2Login(...).authorizationEndpoint(ae -> ae.baseUri(...))` and `redirectionEndpoint(re -> re.baseUri(...))` remain the per-chain customisation hooks.
+- JUnit 6: parameter resolution and `@Test` semantics unchanged; some `Assertions` overloads were deprecated, but AssertJ is the project convention so this is moot.
 
 **Spec:** [`docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md`](../specs/2026-05-20-physical-tenant-spring-security-poc-design.md)
 
@@ -71,6 +79,12 @@ Run the IT:
 ./mvnw verify -pl dist -Dit.test=PhysicalTenantSecurityIT -DskipTests=false -DskipUTs -Dquickly -T1C
 ```
 
+**Subagent guardrails:**
+
+- The spec (`docs/superpowers/specs/...`) and this plan are tracked files. **Never** `git checkout --` or `git restore` them autonomously, even if `spotless` reformats them as a side-effect. If `spotless` touches a doc file, leave the working-tree change alone and call it out in your status report — the controller decides whether to revert, amend, or accept the reformat.
+- Stage only the files explicitly listed in your task. Use `git add <path1> <path2>` with explicit paths, never `git add .` or `git add -A`.
+- Do not push. The controller handles pushes at checkpoint boundaries.
+
 ---
 
 ## Task 1: Profile scaffold + verify CSL opts out
@@ -83,6 +97,10 @@ Run the IT:
 - Create: `authentication/src/test/java/io/camunda/authentication/pt/PtSecurityProfileBootTest.java`
 
 - [ ] **Step 1: Write the failing test**
+
+The test must be **load-bearing**: the minimal `@SpringBootApplication` only scans its own package, so it doesn't pick up `WebSecurityConfig` (which lives in `io.camunda.authentication.config` and is loaded by host apps via `@Import`, not auto-config). Without an explicit `@Import`, the assertion `chains.isEmpty()` is vacuously true regardless of the `pt-security` profile.
+
+The fix: parametrise the test by toggling `pt-security` on and off, with `@Import(WebSecurityConfig.class)` so CSL's chains actually get a chance to register. Without `pt-security`, CSL produces a non-empty chain set; with `pt-security`, the profile expression on `WebSecurityConfig` keeps the import inert and `chains` is empty.
 
 `authentication/src/test/java/io/camunda/authentication/pt/PtSecurityProfileBootTest.java`:
 
@@ -98,44 +116,69 @@ package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.config.WebSecurityConfig;
+import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(classes = PtSecurityProfileBootTest.MinimalApp.class)
-@ActiveProfiles({"consolidated-auth", "pt-security"})
-@TestPropertySource(properties = {"camunda.security.authentication.method=oidc"})
 class PtSecurityProfileBootTest {
 
-  @org.springframework.boot.autoconfigure.SpringBootApplication
-  static class MinimalApp {}
+  @SpringBootApplication
+  @Import(WebSecurityConfig.class)
+  static class App {}
 
-  @Test
-  void shouldNotRegisterAnySecurityFilterChainOnPtSecurityProfile(
-      final ApplicationContext context) {
-    // given - the pt-security profile is active alongside consolidated-auth
-    // when we collect every SecurityFilterChain in the context
-    final var chains = context.getBeansOfType(SecurityFilterChain.class);
+  @Nested
+  @SpringBootTest(classes = App.class)
+  @ActiveProfiles({"consolidated-auth"})
+  @TestPropertySource(properties = {"camunda.security.authentication.method=oidc"})
+  class WithoutPtSecurity {
 
-    // then no chain is registered yet — PhysicalTenantSecurityConfiguration is the
-    // only allowed producer and it does not exist in this task. CSL's
-    // CamundaSecurityAutoConfiguration must back off because WebSecurityConfig is
-    // excluded from the active profile set.
-    assertThat(chains).isEmpty();
+    @Test
+    void shouldRegisterCslFilterChainsByDefault(final ApplicationContext context) {
+      // given - consolidated-auth without pt-security
+      // when we collect every SecurityFilterChain in the context
+      final Map<String, SecurityFilterChain> chains =
+          context.getBeansOfType(SecurityFilterChain.class);
+      // then CSL's chains are present (proves the @Import is load-bearing)
+      assertThat(chains).isNotEmpty();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = App.class)
+  @ActiveProfiles({"consolidated-auth", "pt-security"})
+  @TestPropertySource(properties = {"camunda.security.authentication.method=oidc"})
+  class WithPtSecurity {
+
+    @Test
+    void shouldRegisterZeroFilterChainsWhenPtSecurityIsActive(final ApplicationContext context) {
+      // given - both profiles active
+      // when we collect every SecurityFilterChain in the context
+      final Map<String, SecurityFilterChain> chains =
+          context.getBeansOfType(SecurityFilterChain.class);
+      // then WebSecurityConfig has opted out and so have its CSL imports
+      assertThat(chains).isEmpty();
+    }
   }
 }
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails (today CSL produces chains)**
+- [ ] **Step 2: Run the test and confirm `WithoutPtSecurity` passes while `WithPtSecurity` fails**
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PtSecurityProfileBootTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: FAIL — at least one of CSL's filter chains is registered.
+Expected: `WithoutPtSecurity.shouldRegisterCslFilterChainsByDefault` passes (proving the import is load-bearing), and `WithPtSecurity.shouldRegisterZeroFilterChainsWhenPtSecurityIsActive` fails (CSL still active because `WebSecurityConfig`'s profile expression hasn't been updated yet).
+
+If both pass before the profile change, the `@Import` isn't pulling CSL in — investigate the `@ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)` on `WebSecurityConfig` and add it explicitly to `App` if necessary.
 
 - [ ] **Step 3: Make `WebSecurityConfig` profile-aware**
 
@@ -1575,7 +1618,7 @@ public final class PerTenantSecurityChainFactory {
     http
         .securityMatcher(prefix + "/**")
         .addFilterBefore(new PhysicalTenantWebFilter(slice.tenantId()), SessionRepositoryFilter.class)
-        .addFilterBefore(sessionFilter, org.springframework.security.web.context.SecurityContextPersistenceFilter.class)
+        .addFilterBefore(sessionFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
         .csrf(c -> c.csrfTokenRepository(csrfTokenRepository(prefix)))
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
         .authorizeHttpRequests(a -> a.anyRequest().authenticated())
@@ -1725,7 +1768,7 @@ public SecurityFilterChain buildApiChain(
       .securityMatcher(prefix + "/**")
       .addFilterBefore(
           new PhysicalTenantWebFilter(slice.tenantId()),
-          org.springframework.security.web.context.SecurityContextPersistenceFilter.class)
+          org.springframework.security.web.context.SecurityContextHolderFilter.class)
       .csrf(c -> c.disable())
       .sessionManagement(
           sm ->
