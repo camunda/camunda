@@ -2,6 +2,15 @@
 
 Walking-skeleton OIDC login against a per-tenant Spring Security chain, backed by two Keycloak realms in Testcontainers and an in-memory H2 database. Two helper scripts at the repo root drive everything.
 
+## Design and plan
+
+For background, rationale, and the full implementation roadmap, start here — both files are the source of truth for what this PoC is, why each decision was made, and what is or isn't in scope:
+
+- **Spec** — [`docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md`](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md): architectural decisions (D1–D6), component design, configuration shape, end-to-end demo path, and open questions.
+- **Plan** — [`docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md`](docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md): the 16-task walking-skeleton implementation roadmap that this PoC follows. Each task is bite-sized with code, tests, and commands.
+
+The [Status](#status) section below tracks per-task progress against the plan.
+
 ## Prerequisites
 
 - Docker running (the Keycloak runner pulls `quay.io/keycloak/keycloak`; first run takes ~30–60s).
@@ -119,7 +128,7 @@ Docker `ps` should show no `quay.io/keycloak/keycloak` containers after both ter
 
 ## Status
 
-Tracking implementation tasks defined in `docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md`. The current task is **bolded**.
+Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md) (designed against the [spec](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md)). The current task is **bolded**.
 
 | #  | Task                                                         | State       |
 |----|--------------------------------------------------------------|-------------|
