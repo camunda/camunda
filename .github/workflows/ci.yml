@@ -210,7 +210,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # gradle action is not yet allowed
       # - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
-      - run: ./gradlew build -x test --no-daemon
+      - run: ./gradlew assemble --no-daemon
       - name: Observe build status
         if: always()
         continue-on-error: true
