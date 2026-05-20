@@ -9,14 +9,23 @@
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
+const waitStateBadge = {
+  background: '#fcf5d',
+  color: '#dbb340',
+};
+
 const Container = styled(Stack)<{$theme: 'dark' | 'light'}>`
   align-items: center;
   font-weight: 400;
   font-size: 12px;
   border-radius: 11px;
-  border: 1px solid #dbb340;
-  background-color: color-mix(in srgb, #fcf5d7 20%, transparent);
-  color: #dbb340;
+  border: 1px solid ${waitStateBadge.color};
+  background-color: color-mix(
+    in srgb,
+    ${waitStateBadge.background} 20%,
+    transparent
+  );
+  color: ${waitStateBadge.color};
   padding: var(--cds-spacing-02) var(--cds-spacing-04);
   white-space: nowrap;
 `;
