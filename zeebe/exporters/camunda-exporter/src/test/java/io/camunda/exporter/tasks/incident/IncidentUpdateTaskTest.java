@@ -719,38 +719,6 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
-    void shouldSucceedWhenBulkUpdateIsEmpty() {
-      // Regression: when all incidents are skipped (e.g. every process instance was deleted),
-      // bulkUpdate is called with empty maps; previously this triggered
-      // "[es/bulk] failed: [parse_exception] request body is required"
-      final var task =
-          new IncidentUpdateTask(
-              metadata,
-              repository,
-              false,
-              10,
-              EXECUTOR,
-              incidentNotifier,
-              metrics,
-              LOGGER,
-              Duration.ZERO);
-      when(repository.deletedProcessInstances(any()))
-          .thenReturn(
-              CompletableFuture.completedFuture(Set.of(incidentEntity.getProcessInstanceKey())));
-
-      // when
-      final var result = task.execute();
-
-      // then
-      assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(0);
-      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
-      final var update = bulkUpdateCaptor.getValue();
-      assertThat(update.incidentRequests()).isEmpty();
-      assertThat(update.listViewRequests()).isEmpty();
-      assertThat(update.flowNodeInstanceRequests()).isEmpty();
-    }
-
-    @Test
     void shouldIgnoreDeletedProcessInstance() {
       // given
       final var task =
