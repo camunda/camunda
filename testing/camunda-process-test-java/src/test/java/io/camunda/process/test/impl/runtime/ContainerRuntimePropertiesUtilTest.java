@@ -101,15 +101,17 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
+    // git branch is no longer consulted - the tag is derived from the property value (the Maven
+    // ${project.version}). With no property set, the hardcoded default "SNAPSHOT" is used.
     "main, SNAPSHOT",
-    "stable/8.8, 8.8-SNAPSHOT",
-    "backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "stable/8.8, SNAPSHOT",
+    "backport-123-to-stable/8.8, SNAPSHOT",
     " , SNAPSHOT",
     "feature-123, SNAPSHOT"
   })
-  void shouldReturnDefaultVersionsBasedOnGitBranch(
+  void shouldFallBackToDefaultSnapshotWhenPropertyValueIsUnset(
       final String branchName, final String expectedVersion) {
-    // given
+    // given - no camundaDockerImageVersion property is set
     final Properties properties = new Properties();
 
     final Properties gitProperties = new Properties();
@@ -171,30 +173,35 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    // minor releases
+    // The git branch column is retained to show that the resolved tag is now branch-independent:
+    // identical property values produce identical tags regardless of the branch the test runs on.
+    // minor releases (returned as-is)
     "8.8.0, main, 8.8.0",
     "8.8.0, stable/8.8, 8.8.0",
     "8.8.0, backport-123-to-stable/8.8, 8.8.0",
     "8.8.0, , 8.8.0",
-    // patch releases
+    "8.8.0, feature-123-targeting-stable-8.8, 8.8.0",
+    // patch releases (returned as-is)
     "8.8.1, main, 8.8.1",
     "8.8.1, stable/8.8, 8.8.1",
     "8.8.1, backport-123-to-stable/8.8, 8.8.1",
     "8.8.1, , 8.8.1",
-    // SNAPSHOT versions
-    "8.9.0-SNAPSHOT, main, SNAPSHOT",
-    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, , SNAPSHOT",
-    "8.8.1-SNAPSHOT, main, SNAPSHOT",
+    // SNAPSHOT versions: tag is MAJOR.MINOR-SNAPSHOT of the property value, branch-independent
+    "8.9.0-SNAPSHOT, main, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, , 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, feature-123-targeting-stable-8.8, 8.9-SNAPSHOT",
+    "8.8.1-SNAPSHOT, main, 8.8-SNAPSHOT",
     "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
     "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.8.1-SNAPSHOT, , SNAPSHOT",
-    "8.8.2-SNAPSHOT, main, SNAPSHOT",
+    "8.8.1-SNAPSHOT, , 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, feature-123-targeting-stable-8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, main, 8.8-SNAPSHOT",
     "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
     "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.8.2-SNAPSHOT, , SNAPSHOT",
-    // rc/alpha versions
+    "8.8.2-SNAPSHOT, , 8.8-SNAPSHOT",
+    // rc/alpha versions (returned as-is)
     "8.8.0-rc1, main, 8.8.0-rc1",
     "8.8.0-rc1, stable/8.8, 8.8.0-rc1",
     "8.8.0-rc1, backport-123-to-stable/8.8, 8.8.0-rc1",
@@ -211,7 +218,7 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.8.0-alpha1-rc1, stable/8.8, 8.8.0-alpha1-rc1",
     "8.8.0-alpha1-rc1, backport-123-to-stable/8.8, 8.8.0-alpha1-rc1",
     "8.8.0-alpha1-rc1, , 8.8.0-alpha1-rc1",
-    // custom versions
+    // custom versions (returned as-is)
     "8.8.0-optimize, main, 8.8.0-optimize",
     "8.8.0-optimize, stable/8.8, 8.8.0-optimize",
     "8.8.0-optimize, backport-123-to-stable/8.8, 8.8.0-optimize",
@@ -266,30 +273,35 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    // minor releases
+    // The git branch column is retained to show that the resolved tag is now branch-independent:
+    // identical property values produce identical tags regardless of the branch the test runs on.
+    // minor releases (returned as-is)
     "8.8.0, main, 8.8.0",
     "8.8.0, stable/8.8, 8.8.0",
     "8.8.0, backport-123-to-stable/8.8, 8.8.0",
     "8.8.0, , 8.8.0",
-    // patch releases
+    "8.8.0, feature-123-targeting-stable-8.8, 8.8.0",
+    // patch releases (returned as-is)
     "8.8.1, main, 8.8.1",
     "8.8.1, stable/8.8, 8.8.1",
     "8.8.1, backport-123-to-stable/8.8, 8.8.1",
     "8.8.1, , 8.8.1",
-    // SNAPSHOT versions
-    "8.9.0-SNAPSHOT, main, SNAPSHOT",
-    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, , SNAPSHOT",
-    "8.8.1-SNAPSHOT, main, SNAPSHOT",
+    // SNAPSHOT versions: tag is MAJOR.MINOR-SNAPSHOT of the property value, branch-independent
+    "8.9.0-SNAPSHOT, main, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, , 8.9-SNAPSHOT",
+    "8.9.0-SNAPSHOT, feature-123-targeting-stable-8.8, 8.9-SNAPSHOT",
+    "8.8.1-SNAPSHOT, main, 8.8-SNAPSHOT",
     "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
     "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.8.1-SNAPSHOT, , SNAPSHOT",
-    "8.8.2-SNAPSHOT, main, SNAPSHOT",
+    "8.8.1-SNAPSHOT, , 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, feature-123-targeting-stable-8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, main, 8.8-SNAPSHOT",
     "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
     "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
-    "8.8.2-SNAPSHOT, , SNAPSHOT",
-    // rc/alpha versions
+    "8.8.2-SNAPSHOT, , 8.8-SNAPSHOT",
+    // rc/alpha versions (returned as-is)
     "8.8.0-rc1, main, 8.8.0-rc1",
     "8.8.0-rc1, stable/8.8, 8.8.0-rc1",
     "8.8.0-rc1, backport-123-to-stable/8.8, 8.8.0-rc1",
@@ -306,7 +318,7 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.8.0-alpha1-rc1, stable/8.8, 8.8.0-alpha1-rc1",
     "8.8.0-alpha1-rc1, backport-123-to-stable/8.8, 8.8.0-alpha1-rc1",
     "8.8.0-alpha1-rc1, , 8.8.0-alpha1-rc1",
-    // custom versions
+    // custom versions (returned as-is)
     "8.8.0-optimize, main, 8.8.0-optimize",
     "8.8.0-optimize, stable/8.8, 8.8.0-optimize",
     "8.8.0-optimize, backport-123-to-stable/8.8, 8.8.0-optimize",
