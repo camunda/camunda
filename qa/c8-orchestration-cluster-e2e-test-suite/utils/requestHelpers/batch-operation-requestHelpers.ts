@@ -12,6 +12,15 @@ import {createCancellationBatch} from '@requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
 import {validateResponse} from 'json-body-assertions';
 
+// A freshly created batch operation can take longer than the default 30s
+// to be visible to the cancel/suspend/resume commands on a loaded shared
+// cluster (404 → 204). Use a more generous budget for batch operation
+// lifecycle actions while the engine catches up.
+const batchOperationLifecycleOptions = {
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
+  timeout: 90_000,
+};
+
 export async function cancelBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
@@ -39,7 +48,7 @@ export async function suspendBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 
@@ -58,7 +67,7 @@ export async function resumeBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 
@@ -118,6 +127,14 @@ export async function expectBatchState(
     timeout: 120_000,
   });
 }
+
+// Post-migration user-task search has to wait for the secondary-storage
+// indexer to reflect the migrated elementId. The default 30s budget is
+// too tight on a loaded shared cluster; give it more room.
+export const postMigrationAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
 
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;

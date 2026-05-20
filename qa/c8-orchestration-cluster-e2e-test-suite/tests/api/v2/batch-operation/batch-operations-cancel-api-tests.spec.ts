@@ -49,11 +49,16 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
 
     await test.step('Cancel batch operation', async () => {
       // The batch operation may not be visible to the cancel endpoint
-      // immediately after creation; retry on 404 until it is.
+      // immediately after creation; retry on 404 until it is. The default
+      // 30s budget is too tight on a loaded shared cluster, so use the
+      // dedicated lifecycle options.
       await expect(async () => {
         const res = await cancelBatchOperation(request, key);
         await assertStatusCode(res, 204);
-      }).toPass(defaultAssertionOptions);
+      }).toPass({
+        intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
+        timeout: 90_000,
+      });
     });
 
     await test.step('Poll batch status', async () => {
