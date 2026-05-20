@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.66
+
+### 🚀 Enhancements
+
+- Add `batchOperationKey` field
+- Mark `batchOperationId` field deprecated
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
 ## v0.0.65
 
 ### 🚀 Enhancements
