@@ -226,18 +226,32 @@ def main(args):
     max_num_processes = max(max_num_processes, sim.get_num_process_instances())
     biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
 
-
-  num_processes = 0
   for index_name in sorted(sim.indexes.keys()):
     index = sim.indexes[index_name]
     verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
 
-  print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
-  print(f"Indexes with ILM deadline: {sim.get_count_indexes_with_ilm_deadline()}")
-  print(f"Indexes dropped by ILM: {sim.indexes_dropped_by_ilm}, Docs dropped by ILM: {sim.docs_dropped_by_ilm}")
-  print(f"Biggest index size: {biggest_index_size}")
-  print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
-  print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
+  output_data = [
+    ("Total indexes", len(sim.indexes)),
+    ("Max process instances", max_num_processes),
+    ("Indexes with ILM deadline", sim.get_count_indexes_with_ilm_deadline()),
+    ("Indexes dropped by ILM", sim.indexes_dropped_by_ilm),
+    ("Docs dropped by ILM", sim.docs_dropped_by_ilm),
+    ("Biggest index size", biggest_index_size),
+    ("Total indexing operations", sim.indexing_operations),
+    ("Total delete operations", sim.delete_operations),
+    ("Estimated total operations cost", sim.operations_cost_estimate)
+  ]
+
+  if args.csv_row:
+    import csv
+    import sys
+    writer = csv.writer(sys.stdout)
+    if args.csv_header:
+      writer.writerow([header for header, _ in output_data])
+    writer.writerow([data for _, data in output_data])
+  else:
+    for header, data in output_data:
+      print(f"{header}: {data}")
 
 
 if __name__ == "__main__":
@@ -257,6 +271,8 @@ if __name__ == "__main__":
     parser.add_argument("--run-deleter", action="store_true", help="Whether to run the deleter")
     parser.add_argument("--deleter-only-if-no-ilm", action="store_true", help="Whether to run the deleter on indexes that will be dropped by ILM")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed output")
+    parser.add_argument("--csv-row", action="store_true", help="Whether to output results as a single CSV row")
+    parser.add_argument("--csv-header", action="store_true", help="Whether to output header for CSV columns (only if --csv-row is set)")
     args = parser.parse_args()
 
     if args.verbose:
