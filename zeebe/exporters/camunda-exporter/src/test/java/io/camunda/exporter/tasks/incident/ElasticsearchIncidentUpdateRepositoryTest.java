@@ -10,13 +10,16 @@ package io.camunda.exporter.tasks.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -106,6 +109,20 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     assertThat(result).failsWithin(Duration.ofSeconds(5));
     inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/pull/53585")
+  void shouldSkipBulkCallWhenUpdateIsEmpty() {
+    // given
+    final var repository = createRepository();
+
+    // when
+    final var result = repository.bulkUpdate(new IncidentBulkUpdate());
+
+    // then - client.bulk() must not be invoked; previously this sent an empty body and ES threw
+    // "[es/bulk] failed: [parse_exception] request body is required"
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of());
+    Mockito.verify(client, Mockito.never()).bulk(Mockito.any(BulkRequest.class));
   }
 
   @Test
