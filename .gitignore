@@ -70,3 +70,14 @@ c8run/*.class
 
 cmd/renovate/renovate*/
 .cache/
+
+# HTTP test private environment files
+**/http-client.private.env.json
+
+# local dev tooling
+.c8dev
+/output/
+scripts/codeowners-utils/output/
+
+# playwright test output
+**/test-results
