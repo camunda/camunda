@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -91,7 +92,7 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, inputEntity.getIncidentKey());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

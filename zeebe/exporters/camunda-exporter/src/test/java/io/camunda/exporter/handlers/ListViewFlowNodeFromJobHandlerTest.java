@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
@@ -141,7 +142,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

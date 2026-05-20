@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -107,7 +108,10 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   }
 
   @Override
-  public void flush(final OperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final OperationEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(OperationTemplate.BATCH_OPERATION_ID, entity.getBatchOperationId());
@@ -118,7 +122,8 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.COMPLETED_DATE, entity.getCompletedDate());
     updateFields.put(OperationTemplate.ERROR_MSG, entity.getErrorMessage());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
     LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
   }
 

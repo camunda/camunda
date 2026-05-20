@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
@@ -131,7 +132,7 @@ class AuditLogHandlerTest {
     batch.setAuditLogEntity(new AuditLogEntity());
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(batch, batchRequest);
+    handler.flush(DefaultIndexLocator.INSTANCE, batch, batchRequest);
 
     verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
     verify(batchRequest, never()).add(eq(CLEANUP_INDEX_NAME), any());
@@ -144,7 +145,7 @@ class AuditLogHandlerTest {
     batch.setAuditLogCleanupEntity(new AuditLogCleanupEntity().setId(ENTITY_ID));
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(batch, batchRequest);
+    handler.flush(DefaultIndexLocator.INSTANCE, batch, batchRequest);
 
     verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
     verify(batchRequest).add(CLEANUP_INDEX_NAME, batch.getAuditLogCleanupEntity());

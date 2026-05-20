@@ -12,6 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
@@ -256,7 +257,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(expectedIndexName, entity);

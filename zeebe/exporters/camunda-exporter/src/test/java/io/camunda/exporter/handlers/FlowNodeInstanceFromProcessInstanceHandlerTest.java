@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -199,7 +200,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.POSITION, inputEntity.getPosition());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
         .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
@@ -235,7 +236,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
         .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);

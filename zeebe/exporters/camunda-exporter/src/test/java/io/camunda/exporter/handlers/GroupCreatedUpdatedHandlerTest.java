@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -123,7 +124,7 @@ public class GroupCreatedUpdatedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);

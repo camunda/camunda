@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
@@ -137,7 +138,10 @@ public class UserTaskCompletionVariableHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
+    underTest.flush(
+        DefaultIndexLocator.INSTANCE,
+        new SnapshotTaskVariableBatch("123", List.of(inputEntity)),
+        mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();

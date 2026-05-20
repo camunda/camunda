@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
@@ -216,7 +217,7 @@ public class UserTaskVariableHandlerTest {
     final ArgumentCaptor<String> routingCaptor = ArgumentCaptor.forClass(String.class);
 
     // when
-    underTest.flush(variableBatch, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, variableBatch, mockRequest);
 
     // then
     assertThat(variableBatch.getVariables()).hasSize(2);

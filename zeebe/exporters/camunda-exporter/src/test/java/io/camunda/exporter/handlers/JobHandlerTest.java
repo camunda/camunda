@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -515,7 +516,7 @@ final class JobHandlerTest {
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, jobEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
@@ -582,7 +583,7 @@ final class JobHandlerTest {
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, jobEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JO
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_POSITION;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -104,7 +105,9 @@ public class ListViewFlowNodeFromJobHandler
 
   @Override
   public void flush(
-      final FlowNodeInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final IndexLocator indexLocator,
+      final FlowNodeInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug(
         "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
@@ -117,7 +120,11 @@ public class ListViewFlowNodeFromJobHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(processInstanceKey));
   }
 
   @Override

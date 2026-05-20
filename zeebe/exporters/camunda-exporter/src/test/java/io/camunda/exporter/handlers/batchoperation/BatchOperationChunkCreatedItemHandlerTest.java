@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -167,7 +168,10 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest); // Assuming null is acceptable for this test
+    underTest.flush(
+        DefaultIndexLocator.INSTANCE,
+        entity,
+        mockRequest); // Assuming null is acceptable for this test
 
     // then
     final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
@@ -190,7 +194,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, entity, mockRequest);
 
     // then
     verify(batchOperationCache).get("42"); // verify cache was consulted

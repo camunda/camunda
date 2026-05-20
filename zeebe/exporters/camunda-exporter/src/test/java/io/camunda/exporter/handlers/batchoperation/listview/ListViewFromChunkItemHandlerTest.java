@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -113,7 +114,7 @@ class ListViewFromChunkItemHandlerTest {
 
     // when
     final var batchRequest = mock(BatchRequest.class);
-    underTest.flush(entity, batchRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, entity, batchRequest);
 
     // then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)

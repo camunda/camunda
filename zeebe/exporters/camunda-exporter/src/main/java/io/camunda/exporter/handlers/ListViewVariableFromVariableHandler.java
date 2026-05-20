@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VA
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -99,7 +100,10 @@ public class ListViewVariableFromVariableHandler
   }
 
   @Override
-  public void flush(final VariableForListViewEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final VariableForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug("Variable for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
@@ -110,7 +114,11 @@ public class ListViewVariableFromVariableHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(processInstanceKey));
   }
 
   @Override

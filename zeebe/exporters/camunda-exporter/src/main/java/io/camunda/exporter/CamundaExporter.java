@@ -329,6 +329,7 @@ public class CamundaExporter implements Exporter {
         ExporterBatchWriter.Builder.begin(metrics)
             .withCustomErrorHandlers(provider.getCustomErrorHandlers());
     provider.getExportHandlers().forEach(builder::withHandler);
+    builder.withIndexLocatorProvider(provider.getIndexLocatorProvider());
     return builder.build();
   }
 

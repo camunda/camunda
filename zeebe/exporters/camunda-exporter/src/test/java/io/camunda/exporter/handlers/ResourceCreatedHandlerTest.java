@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -130,7 +131,7 @@ public class ResourceCreatedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, entity);

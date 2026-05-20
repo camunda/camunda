@@ -73,7 +73,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: true
+        default: false
       build-frontend:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
@@ -87,7 +87,7 @@ on:
       ttl:
         description: '── Lifecycle & advanced ──────────── Days before the namespace is auto-deleted'
         type: number
-        default: 1
+        default: 2
         required: false
       orchestration-tag:
         description: 'Official Docker Hub image tag (docker.io/camunda/camunda). Uses Docker Hub instead of building. ⚠ Cannot be used with reuse-tag.'
@@ -123,7 +123,7 @@ on:
       ttl:
         description: 'Specifies after how many days the load test namespace should be deleted'
         type: number
-        default: 1
+        default: 2
         required: false
       reuse-tag:
         description: 'Reuse Tag: Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the docker image build step. Cannot be used together with orchestration-tag.'
@@ -163,7 +163,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: true
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean

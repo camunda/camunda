@@ -85,7 +85,7 @@ identity:
       effect: NoSchedule
 
 optimize:
-  enabled: true
+  enabled: false
   fullnameOverride: optimize # we override the names for simplicity of the deployment
   extraConfiguration:
     - file: application.yml

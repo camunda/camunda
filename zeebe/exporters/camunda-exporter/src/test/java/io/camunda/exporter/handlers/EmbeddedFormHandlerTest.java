@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.entities.form.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -102,7 +103,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, batch, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);
@@ -119,7 +120,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, batch, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, firstInputEntity);
@@ -134,7 +135,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verifyNoInteractions(mockRequest);

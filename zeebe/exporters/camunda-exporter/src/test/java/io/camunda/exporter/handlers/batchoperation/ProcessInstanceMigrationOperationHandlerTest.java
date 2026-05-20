@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -197,7 +198,7 @@ class ProcessInstanceMigrationOperationHandlerTest {
     entity.setCompletedDate(OffsetDateTime.now());
     entity.setErrorMessage("error message");
     final var mockRequest = mock(BatchRequest.class);
-    handler.flush(entity, mockRequest);
+    handler.flush(DefaultIndexLocator.INSTANCE, entity, mockRequest);
     verify(mockRequest, times(1))
         .upsert(
             indexName,

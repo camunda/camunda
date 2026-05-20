@@ -96,9 +96,12 @@ import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandle
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.store.FakeOrdinalIndexLocatorProvider;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -144,6 +147,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -166,6 +170,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+  private IndexLocatorProvider indexLocatorProvider;
 
   @Override
   public void init(
@@ -428,6 +433,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
+
+    final Set<String> ordinalBasedIndexes = new HashSet<>();
+    final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
+    ordinalBasedIndexes.add(listViewName);
+
+    // TODO tmp exempt batch operation items from ordinal indexes (history deletion jobs would need
+    // updating to be ordinal aware for this to work properly or we do exempt and then need
+    // different archiving strategy)
+    final var operationIndexName =
+        indexDescriptors.get(OperationTemplate.class).getFullQualifiedName();
+    final var nonOrdinalIndexes = Set.of(operationIndexName);
+    for (final var indexDescriptor : indexDescriptors.templates()) {
+      final var indexName = indexDescriptor.getFullQualifiedName();
+      if (nonOrdinalIndexes.contains(indexName)) {
+        continue;
+      }
+      if (indexDescriptor instanceof ProcessInstanceDependant) {
+        ordinalBasedIndexes.add(indexName);
+      }
+    }
+
+    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
   }
 
   @Override
@@ -454,6 +481,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       decisionRequirementsCache.clear();
       decisionRequirementsCache = null;
     }
+    indexLocatorProvider = null;
   }
 
   @Override
@@ -491,6 +519,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public BiConsumer<String, Error> getCustomErrorHandlers() {
     return (index, error) -> {
+      // strip of any ordinal to get the "main" index name
+      index = index.replaceAll("ord.*$", "");
       indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
     };
   }
@@ -509,6 +539,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return formCache;
+  }
+
+  @Override
+  public IndexLocatorProvider getIndexLocatorProvider() {
+    return indexLocatorProvider;
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {

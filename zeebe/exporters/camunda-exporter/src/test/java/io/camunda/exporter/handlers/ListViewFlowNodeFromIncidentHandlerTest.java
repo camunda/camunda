@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -81,7 +82,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
     expectedUpdateFields.put(ERROR_MESSAGE, inputEntity.getErrorMessage());
     expectedUpdateFields.put(INCIDENT_POSITION, inputEntity.getPositionIncident());
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(

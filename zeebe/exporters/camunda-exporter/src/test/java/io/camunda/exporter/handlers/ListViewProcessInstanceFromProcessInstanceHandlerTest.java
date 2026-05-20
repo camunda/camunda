@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
@@ -188,7 +189,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
@@ -219,7 +220,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);

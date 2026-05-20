@@ -15,6 +15,8 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.store.DefaultIndexLocatorProvider;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -90,5 +92,10 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
   @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return null;
+  }
+
+  @Override
+  public IndexLocatorProvider getIndexLocatorProvider() {
+    return new DefaultIndexLocatorProvider();
   }
 }

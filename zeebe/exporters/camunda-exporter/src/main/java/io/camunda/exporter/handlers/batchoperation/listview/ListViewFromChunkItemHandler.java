@@ -10,11 +10,13 @@ package io.camunda.exporter.handlers.batchoperation.listview;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.List;
 import java.util.Map;
 
@@ -46,9 +48,8 @@ public class ListViewFromChunkItemHandler
     // Use a composite ID (processInstanceKey:batchOperationKey) so that each (PI, batchOp) pair
     // gets its own cached entity. This prevents a second batch operation targeting the same PI
     // from overwriting the first one's batchOperationId in the shared entity.
-    final var batchOpKey = record.getValue().getBatchOperationKey();
     return record.getValue().getItems().stream()
-        .map(item -> item.getProcessInstanceKey() + ":" + batchOpKey)
+        .map(item -> generateId(record.getValue(), item))
         .toList();
   }
 
@@ -65,7 +66,10 @@ public class ListViewFromChunkItemHandler
   }
 
   @Override
-  public void flush(final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     // Extract just the processInstanceKey from the composite cache ID
     // (processInstanceKey:batchOperationKey).
@@ -77,7 +81,7 @@ public class ListViewFromChunkItemHandler
             + "ctx._source.batchOperationIds.add(params.batchOperationId);"
             + "}";
     batchRequest.updateWithScript(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         processInstanceKey,
         script,
         Map.of("batchOperationId", entity.getBatchOperationIds().getFirst()));
@@ -86,5 +90,10 @@ public class ListViewFromChunkItemHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  public static String generateId(
+      final BatchOperationChunkRecordValue record, final BatchOperationItemValue item) {
+    return item.getProcessInstanceKey() + ":" + record.getBatchOperationKey();
   }
 }

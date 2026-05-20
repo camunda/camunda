@@ -297,16 +297,18 @@ final class CamundaExporterIT {
     camundaExporter.export(record);
 
     // then
+    final var indexLocatorProvider = resourceProvider.getIndexLocatorProvider();
     assertThat(expectedHandlers).isNotEmpty();
     expectedHandlers.forEach(
         exportHandler -> {
           final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
           final ExporterEntity<?> responseEntity;
+          final var indexLocator = indexLocatorProvider.createIndexLocator(record);
           try {
             responseEntity =
                 clientAdapter.get(
                     expectedEntity.getId(),
-                    exportHandler.getIndexName(),
+                    indexLocator.getIndexLocation(expectedEntity, exportHandler.getIndexName()),
                     exportHandler.getEntityType());
           } catch (final IOException e) {
             fail("Failed to find expected entity " + expectedEntity, e);

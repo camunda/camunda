@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
@@ -279,7 +280,7 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setEndDate(DateUtil.toOffsetDateTime(Instant.now().toEpochMilli()));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(DefaultIndexLocator.INSTANCE, entity, batchRequest);
 
     // then
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
@@ -313,7 +314,7 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setErrors(List.of(errorEntity));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(DefaultIndexLocator.INSTANCE, entity, batchRequest);
 
     // then - errors should be included in script params when present
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);

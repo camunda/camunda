@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -136,7 +137,7 @@ public class IncidentHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(incidentEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, incidentEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

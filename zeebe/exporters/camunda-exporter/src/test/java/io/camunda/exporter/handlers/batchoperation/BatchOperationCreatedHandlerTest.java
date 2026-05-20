@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -217,7 +218,7 @@ class BatchOperationCreatedHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

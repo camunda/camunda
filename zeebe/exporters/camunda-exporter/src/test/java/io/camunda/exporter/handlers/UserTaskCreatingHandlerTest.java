@@ -17,6 +17,7 @@ import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -165,7 +166,7 @@ public class UserTaskCreatingHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
@@ -192,7 +193,7 @@ public class UserTaskCreatingHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();

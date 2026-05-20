@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -111,7 +112,7 @@ public class MigratedVariableHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
     updateFields.put(

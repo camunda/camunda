@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
@@ -135,7 +136,7 @@ class HistoryDeletionDeletedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(historyDeletionEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, historyDeletionEntity, mockRequest);
 
     // then
     verify(mockRequest).add(indexName, historyDeletionEntity);

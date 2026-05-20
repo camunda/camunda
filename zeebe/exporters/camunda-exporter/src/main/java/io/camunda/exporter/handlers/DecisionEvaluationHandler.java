@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
@@ -127,8 +128,11 @@ public class DecisionEvaluationHandler
   }
 
   @Override
-  public void flush(final DecisionInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final IndexLocator indexLocator,
+      final DecisionInstanceEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override
