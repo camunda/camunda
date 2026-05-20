@@ -225,6 +225,53 @@ Verification points:
 
 ---
 
+## Local testing setup
+
+Two Keycloak instances stood up via `dasniko/testcontainers-keycloak` — the same Testcontainers library the existing OIDC tests in this repo use (`OidcAuthOverRestIT`, `SecurityHeadersOidcIT`, `PrivateKeyJwtTest`, `DefaultTestContainers.createDefaultKeycloak()`). Reusing the established pattern means no new dependency, no Docker-vs-in-process trade-off discussion, and IT and local-dev share the same IdP shape.
+
+Two complementary entry points:
+
+### 1. Standalone local runner (developer iteration loop)
+
+`dist/src/test/java/io/camunda/application/pt/PtPocLocalIdpRunner.java` — a `main()` that:
+
+- Boots two `KeycloakContainer` instances on fixed host ports (`8081`, `8082`) so the OC config can use stable issuer URIs.
+- Imports realm JSON from `dist/src/test/resources/pt-poc/keycloak-default-realm.json` and `keycloak-tenanta-realm.json`.
+- Prints both issuer URIs and the test user credentials to stdout.
+- Blocks on stdin so the dev can leave it running across many OC restarts.
+
+Realm contents:
+
+| Realm | Client id | Test users |
+|---|---|---|
+| `default` (`localhost:8081/realms/default`) | `camunda-pt-default-client` | `alice@default / alice` |
+| `tenanta` (`localhost:8082/realms/tenanta`) | `camunda-pt-tenanta-client` | `bob@tenanta / bob` |
+
+Both clients pre-configured with redirect URIs `http://localhost:8080/physical-tenant/<id>/login/oauth2/code/*` plus the unprefixed `http://localhost:8080/login/oauth2/code/*` for the default tenant's secondary access path. Standard auth-code flow, `client_secret_basic`, no PKCE requirement (PoC scope; PKCE is a follow-up).
+
+### 2. Bundled config for the OC process
+
+`dist/src/main/resources/application-pt-poc.yaml` — activates with `--spring.profiles.active=pt-poc,pt-security` and references the local Keycloak issuer URIs by default (overridable via standard Spring property indirection). Contains the two-tenant config from the [Configuration consumed](#configuration-consumed) section pre-filled for the local runner's realms.
+
+### 3. Integration test (CI verification)
+
+`dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java` — a single IT that:
+
+- Boots two `KeycloakContainer`s (random ports, isolated per-test).
+- Boots OC in-JVM with the `pt-security` profile and tenant config wired to those issuer URIs.
+- Drives the OIDC flow via a programmatic `RestClient` that handles the `302` → IdP login form → `302` callback chain (the pattern used in `OidcAuthOverRestIT`).
+- Asserts each [verification point](#end-to-end-demo-path) above.
+
+Both tenants live in a single IT so cross-tenant-leakage assertions (cookie path scoping, state-parameter cross-replay rejection, bearer-token cross-issuance rejection) can run against a single hot OC.
+
+### Why Keycloak rather than an in-process mock
+
+OC's OIDC stack includes Camunda-specific machinery — `IssuerAwareJWSKeySelector`, `OidcAccessTokenDecoderFactory`, `private_key_jwt` support, `CachingOidcClaimsProvider`. We want the PoC exercised against a real OIDC implementation so we don't bury bugs behind a mock that almost-implements the spec. The startup cost (~5–10s once per dev session) is paid against a long-lived IdP container.
+
+If iteration speed becomes the bottleneck, swapping to `no.nav.security:mock-oauth2-server` is a contained change — it speaks the same OIDC protocol and the PoC's chain factory has no Keycloak-specific dependency.
+
+---
+
 ## Out of scope (PoC follow-ups)
 
 - Basic-auth method per PT.
