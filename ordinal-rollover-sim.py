@@ -231,6 +231,21 @@ def main(args):
     verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
 
   output_data = [
+    ("Mode", args.mode),
+    ("Retention Period", sim.retention_period),
+    ("Duration Min", args.duration_min),
+    ("Duration Max", args.duration_max),
+    ("Rate", args.rate),
+    ("Ticks", args.ticks),
+    # specific to ordinals
+    ("Rollover Interval", args.rollover_interval if args.mode == "ordinal" else "N/A"),
+    ("Rollover Size", args.rollover_size if args.mode == "ordinal" else "N/A"),
+    ("Max Ordinals", args.max_ordinals if args.mode == "ordinal" else "N/A"),
+    ("Run Deleter", args.run_deleter if args.mode == "ordinal" else "N/A"),
+    ("Deleter Only If No ILM Deadline", args.deleter_only_if_no_ilm if args.mode == "ordinal" else "N/A"),
+    ("Circular Ordinals", args.circular_ordinals if args.mode == "ordinal" else "N/A"),
+    ("Circular Reverse", args.circular_reverse if args.mode == "ordinal" else "N/A"),
+    ####
     ("Total indexes", len(sim.indexes)),
     ("Max process instances", max_num_processes),
     ("Indexes with ILM deadline", sim.get_count_indexes_with_ilm_deadline()),
