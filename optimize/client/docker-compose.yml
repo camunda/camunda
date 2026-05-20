@@ -171,7 +171,7 @@ services:
       - elasticsearch
     restart: always
     volumes:
-      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
+      - ../zeebe-application-e2e.yml:/usr/local/camunda/config/application.yaml
   camunda-opensearch:
     profiles: ['self-managed:opensearch']
     image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
@@ -209,4 +209,4 @@ services:
       - opensearch
     restart: always
     volumes:
-      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
+      - ../zeebe-application-e2e.yml:/usr/local/camunda/config/application.yaml
