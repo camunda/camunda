@@ -136,8 +136,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 2  | Keycloak realm exports                                       | ✅ done      |
 | 3  | `PtPocLocalIdpRunner` standalone `main()`                    | ✅ done      |
 | 4  | Walking skeleton — one tenant, end-to-end login              | ✅ done      |
-| 5  | **Add default tenant prefixed chain + per-chain cookie isolation** | 🔄 in progress |
-| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory` | ⏳ pending   |
+| 5  | Add default tenant prefixed chain + per-chain cookie isolation | ✅ done      |
+| 6  | **Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`** | 🔄 in progress |
 | 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test      | ⏳ pending   |
 | 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned` | ⏳ pending   |
 | 9  | Wire per-tenant `WebSessionRepository` against per-tenant storage | ⏳ pending   |
@@ -153,14 +153,18 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 - Two Keycloak realms boot on `:8081` (default) and `:8082` (tenanta).
 - OC boots under `pt-poc` against in-memory H2 (no Elasticsearch dependency).
-- Single `SecurityFilterChain` for tenant A wired at `/physical-tenant/tenanta/**`.
-- Browser flow reaches Keycloak, returns to the callback, and reaches the token+userinfo exchange.
+- Two `SecurityFilterChain`s — one per tenant, at `/physical-tenant/tenanta/**` and `/physical-tenant/default/**`.
+- Browser flow reaches Keycloak, returns to the callback, and reaches the token+userinfo exchange for both tenants.
+- Per-chain session cookies: `camunda-session-tenanta` (Path `/physical-tenant/tenanta`) and `camunda-session-default` (Path `/physical-tenant/default`). Two simultaneous tab logins coexist; neither chain sees the other's session cookie.
 
-**What is not yet wired** (Tasks 5–16):
+**What is not yet wired** (Tasks 6–16):
 
-- Default-tenant chain.
-- Per-chain session cookie isolation (`name=camunda-session-<tenant>; Path=/physical-tenant/<tenant>`).
-- Per-tenant `WebSessionRepository` against tenant-dedicated secondary storage.
+- Slice + chain-factory extraction (`TenantSecuritySlice`, `PerTenantSecurityChainFactory`) — Task 6.
+- Per-tenant `WebSessionRepository` against tenant-dedicated secondary storage (currently an in-memory `MapSessionRepository` stub) — Task 9.
 - API chain (`/v2/physical-tenants/<tenant>/**`) with cross-tenant issuer allowlist.
 - Default tenant's unprefixed access-path chains.
 - End-to-end `PhysicalTenantSecurityIT`.
+
+**Known issues:**
+
+- A bare `camunda-session` cookie at `Path=/` is emitted alongside the per-chain cookies (`camunda-session-tenanta` / `camunda-session-default`). It's shared across both tabs and does **not** contribute to tenant isolation — Path-scoped per-chain cookies do that. Need to investigate.
