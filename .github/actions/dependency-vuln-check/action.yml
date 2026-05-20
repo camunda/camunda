@@ -1,0 +1,35 @@
+---
+name: Dependency Vulnerability Check
+
+# owner: @camunda/monorepo-devops-team
+
+description: |
+  Checks PR dependency changes for known vulnerabilities using the GitHub Dependency Review API.
+  Blocks on fixable vulnerabilities at any severity, and on high/critical regardless of fix availability.
+  Development-scoped (test-only) dependencies are excluded.
+  Vetted exceptions are configured via allow-ghsas in the config file.
+
+inputs:
+  base-sha:
+    description: Base commit SHA of the pull request
+    required: true
+  head-sha:
+    description: Head commit SHA of the pull request
+    required: true
+  config-file:
+    description: Path to the vulnerability gate config file containing the allow-ghsas list
+    required: false
+    default: .github/dependency-review-config.yml
+
+runs:
+  using: composite
+  steps:
+    - name: Check for vulnerable dependencies
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        CONFIG_FILE: ${{ inputs.config-file }}
+        GITHUB_EVENT_PATH: ${{ github.event_path }}
+      run: python3 "${{ github.action_path }}/check.py"
