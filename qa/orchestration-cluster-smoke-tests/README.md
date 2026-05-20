@@ -22,8 +22,7 @@ in the package.
 
 1. Run `npm run cluster:up` to start an Orchestration Cluster with
    ElasticSearch.
-2. Wait until Camunda is available under
-   [http://localhost:8080](http://localhost:8080).
+2. Run `npm run cluster:wait` to wait until Operate and Tasklist are ready.
 3. Run `npm run test` to execute the smoke test suite.
 4. Run `npm run cluster:down` to remove the Orchestration Cluster.
 

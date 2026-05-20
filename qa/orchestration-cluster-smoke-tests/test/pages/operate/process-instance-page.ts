@@ -67,11 +67,11 @@ class VariablesPanel extends View {
 
     return {
       container,
-      viewButton: container.getByRole('button', {name: 'View full value'}),
-      editButton: container.getByRole('button', {name: 'Edit variable'}),
-      editField: container.getByRole('textbox', {name: 'Value'}),
-      exitButton: container.getByRole('button', {name: 'Exit edit mode'}),
-      saveButton: container.getByRole('button', {name: 'Save variable'}),
+      openButton: container.getByRole('button', {name: 'Open'}),
+      editButton: container.getByRole('button', {name: 'Edit'}),
+      editField: container.getByRole('textbox', {name: 'Editor content'}),
+      exitButton: container.getByRole('button', {name: 'Exit'}),
+      saveButton: container.getByRole('button', {name: 'Save'}),
     };
   }
 }

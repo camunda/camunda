@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "cluster:up": "cd ./config && DATABASE=elasticsearch docker compose up -d camunda",
+    "cluster:wait": "bash ./scripts/wait-for-cluster.sh",
     "cluster:down": "cd ./config && DATABASE=elasticsearch docker compose down",
     "format": "prettier --write .",
     "lint": "tsc --noEmit && eslint . && prettier -c .",
