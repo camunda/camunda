@@ -70,6 +70,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Build
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
@@ -122,6 +123,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -200,6 +202,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -236,6 +239,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -271,6 +275,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -305,6 +310,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -354,6 +360,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Check out repository code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
@@ -406,6 +413,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Check out repository code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
@@ -453,6 +461,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Check out repository code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
@@ -520,6 +529,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
