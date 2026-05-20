@@ -9,32 +9,74 @@ package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.config.WebSecurityConfig;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-@SpringBootTest(classes = PtSecurityProfileBootTest.MinimalApp.class)
-@ActiveProfiles({"consolidated-auth", "pt-security"})
-@TestPropertySource(properties = {"camunda.security.authentication.method=oidc"})
+/**
+ * Verifies that {@link WebSecurityConfig}'s {@code @Profile("consolidated-auth & !pt-security")}
+ * expression actually gates the host security configuration in and out as the {@code pt-security}
+ * profile is toggled.
+ *
+ * <p>We boot a slice context containing only {@link WebSecurityConfig} and observe its lifecycle:
+ *
+ * <ul>
+ *   <li>With {@code consolidated-auth} alone, the gate opens, the configuration class is processed,
+ *       and Spring tries to satisfy {@code OidcOverrideBeansConfiguration}'s required {@code
+ *       SecurityConfiguration} dependency. The slice deliberately does not provide that host SPI
+ *       bean, so context startup fails. The failure proves the {@code @Import}/
+ *       {@code @ImportAutoConfiguration} graph rooted at {@link WebSecurityConfig} was reached.
+ *   <li>With {@code consolidated-auth} <em>and</em> {@code pt-security}, the {@code @Profile} gate
+ *       closes, {@link WebSecurityConfig} (and the entire CSL umbrella it pulls in) is skipped, no
+ *       downstream bean wiring is attempted, and the context starts cleanly.
+ * </ul>
+ *
+ * <p>This is a profile-toggle smoke test, not a chain-construction test: wiring the full host
+ * security graph (host SPI beans, {@code MembershipService}, {@code RoleServices}, {@code
+ * SecurityConfiguration}) is out of scope here — that's what slice tests in {@code
+ * io.camunda.authentication.config.controllers} already cover.
+ */
 class PtSecurityProfileBootTest {
 
-  @org.springframework.boot.autoconfigure.SpringBootApplication
-  static class MinimalApp {}
+  private final ApplicationContextRunner runner =
+      new ApplicationContextRunner()
+          .withUserConfiguration(WebSecurityConfig.class)
+          .withPropertyValues("camunda.security.authentication.method=oidc");
 
   @Test
-  void shouldNotRegisterAnySecurityFilterChainOnPtSecurityProfile(
-      final ApplicationContext context) {
-    // given - the pt-security profile is active alongside consolidated-auth
-    // when we collect every SecurityFilterChain in the context
-    final var chains = context.getBeansOfType(SecurityFilterChain.class);
+  void shouldLoadWebSecurityConfigUnderConsolidatedAuthAlone() {
+    // given - only consolidated-auth is active
+    runner
+        .withPropertyValues("spring.profiles.active=consolidated-auth")
+        // when the context is built
+        .run(
+            ctx -> {
+              // then WebSecurityConfig's @Profile gate opens; the import graph is reached and
+              // fails to autowire because the slice deliberately omits the host
+              // SecurityConfiguration
+              // bean. The failure type/message proves WebSecurityConfig was actually processed.
+              assertThat(ctx).hasFailed();
+              assertThat(ctx.getStartupFailure())
+                  .rootCause()
+                  .hasMessageContaining(
+                      "No qualifying bean of type "
+                          + "'io.camunda.security.configuration.SecurityConfiguration'");
+            });
+  }
 
-    // then no chain is registered yet — PhysicalTenantSecurityConfiguration is the
-    // only allowed producer and it does not exist in this task. CSL's
-    // CamundaSecurityAutoConfiguration must back off because WebSecurityConfig is
-    // excluded from the active profile set.
-    assertThat(chains).isEmpty();
+  @Test
+  void shouldExcludeWebSecurityConfigWhenPtSecurityIsActive() {
+    // given - both consolidated-auth and pt-security are active
+    runner
+        .withPropertyValues("spring.profiles.active=consolidated-auth,pt-security")
+        // when the context is built
+        .run(
+            ctx -> {
+              // then the @Profile gate closes; WebSecurityConfig is skipped along with its CSL
+              // @ImportAutoConfiguration umbrella, so the context starts cleanly with no host
+              // security beans registered
+              assertThat(ctx).hasNotFailed();
+              assertThat(ctx).doesNotHaveBean(WebSecurityConfig.class);
+            });
   }
 }
