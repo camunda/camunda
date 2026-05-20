@@ -6,6 +6,11 @@ name: Post CI Failure Reasons
 
 description: Collects job annotations from unsuccessful GitHub Actions jobs in the current Unified CI workflow run and posts them as a self-updating PR comment (on pull requests)
 
+outputs:
+  priority_cancelled:
+    description: "Whether this run was cancelled due to higher-priority workflow cancellation"
+    value: ${{ steps.collect-annotations.outputs.priority-cancelled || 'false' }}
+
 inputs:
   github_token:
     description: 'GitHub token for API access (needs actions:read, checks:read, and pull-requests:write)'
@@ -50,6 +55,7 @@ runs:
 
         # Create output file for PR comment
         COMMENT_FILE="annotations-comment.md"
+        echo "priority-cancelled=false" >> "$GITHUB_OUTPUT"
 
         echo "<!-- ci-failure-analysis -->" > "$COMMENT_FILE"
         echo -e "## 🔍 CI Failure Analysis\n\n" | tee -a "$COMMENT_FILE"
@@ -139,6 +145,7 @@ runs:
         if [ "$PRIORITY_CANCELLED" = true ]; then
           echo "ℹ️ Skipping comment creation due to higher priority workflow cancellations."
           echo "comment-file=" >> "$GITHUB_OUTPUT"
+          echo "priority-cancelled=true" >> "$GITHUB_OUTPUT"
         fi
 
         exit 0  # Don't fail the step
