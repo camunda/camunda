@@ -11,10 +11,10 @@ repo. This directory consumes both and reports any drift.
 
 ## Used by
 
-| Workflow | npm script |
-|---|---|
+|                                                            Workflow                                                             |       npm script        |
+|---------------------------------------------------------------------------------------------------------------------------------|-------------------------|
 | [`verify-x-added-in-version-annotations.yml`](../../workflows/verify-x-added-in-version-annotations.yml) (scheduled / dispatch) | `verify:specs:workflow` |
-| `openapi-x-added-in-version-check` job in [`ci.yml`](../../workflows/ci.yml) (PR / push, non-blocking) | `verify:specs:ci` |
+| `openapi-x-added-in-version-check` job in [`ci.yml`](../../workflows/ci.yml) (PR / push, non-blocking)                          | `verify:specs:ci`       |
 
 ## Layout
 
@@ -23,19 +23,19 @@ build-artefacts.mjs       # clones return-of-api-added-in-analysis and copies it
                           # output to artefacts/{endpoint-map,version-map}.json
 verify-specs.mjs          # shared verification core (used by both CI variants)
 verify-specs-workflow.mjs # entry point: scheduled workflow (fails on drift)
-verify-specs-ci.mjs       # entry point: PR check (annotation-only, never fails)
+verify-specs-ci.mjs       # entry point: PR check (emits inline annotations; exits non-zero on findings — kept non-blocking via continue-on-error in ci.yml)
 artefacts/                # generated; gitignored (endpoint-map.json, version-map.json, bundler-specs/)
 ```
 
 ## Env
 
-| Var | Default | Purpose |
-|---|---|---|
-| `OCA_SPEC_PATH` | _required_ | Directory of multi-file specs to verify (CI sets it to `zeebe/gateway-protocol/src/main/proto/v2`) |
-| `RETURN_OF_API_REF` | `main` | Git ref of `return-of-api-added-in-analysis` to fetch the endpoint and version maps from |
-| `ENDPOINT_MAP_PATH` | `./artefacts/endpoint-map.json` | Where the endpoint map is written/read |
-| `VERSION_MAP_PATH` | `./artefacts/version-map.json` | Where the version map is written/read |
-| `BUNDLER_SPECS_DIR` | `./artefacts/bundler-specs` | Persistent cache; `build:bundler:latest` refetches every version listed in `MAIN_BRANCH_VERSIONS` (the entries tracking `main`) |
+|         Var         |             Default             |                                                             Purpose                                                             |
+|---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `OCA_SPEC_PATH`     | _required_                      | Directory of multi-file specs to verify (CI sets it to `zeebe/gateway-protocol/src/main/proto/v2`)                              |
+| `RETURN_OF_API_REF` | `main`                          | Git ref of `return-of-api-added-in-analysis` to fetch the endpoint and version maps from                                        |
+| `ENDPOINT_MAP_PATH` | `./artefacts/endpoint-map.json` | Where the endpoint map is written/read                                                                                          |
+| `VERSION_MAP_PATH`  | `./artefacts/version-map.json`  | Where the version map is written/read                                                                                           |
+| `BUNDLER_SPECS_DIR` | `./artefacts/bundler-specs`     | Persistent cache; `build:bundler:latest` refetches every version listed in `MAIN_BRANCH_VERSIONS` (the entries tracking `main`) |
 
 ## Annotation rules
 
@@ -90,15 +90,15 @@ When a schema (or property) is referenced from multiple endpoints (via `$ref` or
 
 Example — `element-instances.yaml#/components/schemas/AdvancedElementInstanceStateFilter` is referenced from seven endpoints. The `$exists` operator inside it was first seen in 8.8 by every consumer (the filter itself was introduced in 8.8), but the consuming endpoints span three different intro versions:
 
-| Endpoint | Endpoint version | First saw `$exists` |
-|---|---|---|
-| `POST /process-instances/search` | 8.6 | 8.8 |
-| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8 | 8.8 |
-| `POST /process-instances/cancellation` | 8.8 | 8.8 |
-| `POST /process-instances/incident-resolution` | 8.8 | 8.8 |
-| `POST /process-instances/migration` | 8.8 | 8.8 |
-| `POST /process-instances/modification` | 8.8 | 8.8 |
-| `POST /process-instances/deletion` | 8.9 | 8.8 |
+|                                    Endpoint                                     | Endpoint version | First saw `$exists` |
+|---------------------------------------------------------------------------------|------------------|---------------------|
+| `POST /process-instances/search`                                                | 8.6              | 8.8                 |
+| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8              | 8.8                 |
+| `POST /process-instances/cancellation`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/incident-resolution`                                   | 8.8              | 8.8                 |
+| `POST /process-instances/migration`                                             | 8.8              | 8.8                 |
+| `POST /process-instances/modification`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/deletion`                                              | 8.9              | 8.8                 |
 
 Earliest property version across consumers = 8.8. Not every consumer endpoint was introduced in 8.8 (`/process-instances/search` is 8.6 and `/process-instances/deletion` is 8.9), so a property-level annotation is required to cover those mismatched cases:
 
@@ -119,10 +119,10 @@ Because Rule 3 aggregates each location independently, the same upstream child p
 
 Real example — `OffsetPagination.from` (in `search-models.yaml`) is referenced by ~47 endpoints across versions 8.6–8.10, so its aggregated intro is 8.6. Two of its ancestor properties are:
 
-| Ancestor property location | Consumers | Aggregated intro |
-|---|---|---|
-| `ProcessInstanceSearchQueryRequest.page` (8.6 endpoint) | many | 8.6 |
-| `UserTaskEffectiveVariableSearchQueryRequest.page` (8.8 only) | 1 | 8.8 |
+|                  Ancestor property location                   | Consumers | Aggregated intro |
+|---------------------------------------------------------------|-----------|------------------|
+| `ProcessInstanceSearchQueryRequest.page` (8.6 endpoint)       | many      | 8.6              |
+| `UserTaskEffectiveVariableSearchQueryRequest.page` (8.8 only) | 1         | 8.8              |
 
 The 8.6 ancestor property matches the child property, but the 8.8 ancestor property doesn't. Rule 2 therefore does not suppress, and `from` keeps its own annotation:
 
@@ -145,3 +145,4 @@ npm ci
 OCA_SPEC_PATH="$(git rev-parse --show-toplevel)/zeebe/gateway-protocol/src/main/proto/v2" \
   npm run verify:specs
 ```
+

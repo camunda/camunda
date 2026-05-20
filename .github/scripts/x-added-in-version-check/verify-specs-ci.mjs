@@ -11,7 +11,7 @@
  *
  * Optional env:
  *   ANNOTATION_PATH_PREFIX  prefix prepended to each YAML filename when
- *                           emitting `::warning file=...`. Defaults to
+ *                           emitting `::error file=...`. Defaults to
  *                           "zeebe/gateway-protocol/src/main/proto/v2"
  *                           (the canonical location inside camunda/camunda).
  *                           Set to empty string to emit bare filenames.
@@ -34,7 +34,7 @@ const result = verifySpecs(inputs);
 
 const { opErrors, extraOps, propErrors } = result;
 
-// ── GitHub Actions warning annotations ──────────────────────────────────────
+// ── GitHub Actions error annotations ────────────────────────────────────────
 
 function annotationPath(file) {
   if (!file) return "";

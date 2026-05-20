@@ -794,7 +794,7 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 
 ### 2.17 Operation and property versioning annotations (`x-added-in-version`, `x-properties-added-in-version`)
 
-Every operation and it's properties **must** declare the Camunda version in which it was introduced via the `x-added-in-version`/`x-properties-added-in-version` field extensions. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` field extension on the operation, and each of its versioned properties **must** be recorded via an entry in the parent schema's `x-properties-added-in-version` list. This enables generated docs and SDKs to surface endpoint and property version availability to consumers.
 
 ```yaml
 /process-instances/{processInstanceKey}/sequence-flows:
@@ -827,7 +827,6 @@ Operation "createMyResource" (POST /my-resources) is missing x-added-in-version.
 The Property-level rules are enforced in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../.github/scripts/x-added-in-version-check/README.md), which compares the spec against a generated version map.
 
 For these property versioning annotations, we use `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }` and records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
-
 
 ##### Rule 1 — Property version differs from its endpoint version
 
@@ -875,15 +874,15 @@ When a schema (or property) is referenced from multiple endpoints (via `$ref` or
 
 Example — `element-instances.yaml#/components/schemas/AdvancedElementInstanceStateFilter` is referenced from seven endpoints. The `$exists` operator inside it was first seen in 8.8 by every consumer (the filter itself was introduced in 8.8), but the consuming endpoints span three different intro versions:
 
-| Endpoint | Endpoint version | First saw `$exists` |
-|---|---|---|
-| `POST /process-instances/search` | 8.6 | 8.8 |
-| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8 | 8.8 |
-| `POST /process-instances/cancellation` | 8.8 | 8.8 |
-| `POST /process-instances/incident-resolution` | 8.8 | 8.8 |
-| `POST /process-instances/migration` | 8.8 | 8.8 |
-| `POST /process-instances/modification` | 8.8 | 8.8 |
-| `POST /process-instances/deletion` | 8.9 | 8.8 |
+|                                    Endpoint                                     | Endpoint version | First saw `$exists` |
+|---------------------------------------------------------------------------------|------------------|---------------------|
+| `POST /process-instances/search`                                                | 8.6              | 8.8                 |
+| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8              | 8.8                 |
+| `POST /process-instances/cancellation`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/incident-resolution`                                   | 8.8              | 8.8                 |
+| `POST /process-instances/migration`                                             | 8.8              | 8.8                 |
+| `POST /process-instances/modification`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/deletion`                                              | 8.9              | 8.8                 |
 
 Earliest property version across consumers = 8.8. Not every consumer endpoint was introduced in 8.8 (`/process-instances/search` is 8.6 and `/process-instances/deletion` is 8.9), so a property-level annotation is required to cover those mismatched cases:
 

@@ -5,7 +5,7 @@ on:
     - cron: '0 5 * * *'  # daily at 05:00 UTC
   workflow_dispatch:
     inputs:
-      latest_branch:
+      camunda_branch:
         description: 'Branch (or tag/SHA) of camunda/camunda to verify'
         required: false
         default: 'main'
@@ -30,7 +30,7 @@ jobs:
           REF="${{ inputs.camunda_branch }}"
           if [[ -z "$REF" ]]; then REF="main"; fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          SAFE_REF=$(echo "$REF" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          SAFE_REF="${REF//[^a-zA-Z0-9._-]/_}"
           echo "safe=$SAFE_REF" >> "$GITHUB_OUTPUT"
 
       - name: Checkout camunda/camunda at requested ref

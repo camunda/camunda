@@ -439,8 +439,9 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
         propOk++;
       }
     } else {
-      // Suppressed: an annotation is allowed only if it agrees with the intro.
-      if (actual !== undefined && String(actual) !== String(loc.intro)) {
+      // Suppressed: per Rule 1/2/3, no annotation should be present. Flag any
+      // annotation here regardless of whether the version happens to match.
+      if (actual !== undefined) {
         propErrors.push({
           issue: "UNEXPECTED_ANNOTATION_ON_SUPPRESSED",
           file: loc.file,
