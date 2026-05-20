@@ -15,6 +15,13 @@
 
   <dependencies>
 
+    <!-- TEST ONLY — DO NOT MERGE: triggers vulnerability gate (GHSA-5mg8-w23w-74h3, LOW severity, fix exists) -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>29.0-jre</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
