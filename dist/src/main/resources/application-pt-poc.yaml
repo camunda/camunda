@@ -1,0 +1,20 @@
+camunda:
+  security:
+    authentication:
+      method: oidc
+      # Tenant A binds to a NAMED OIDC provider keyed by its tenant id.
+      # The cluster-default authentication.oidc.* slot is left empty here —
+      # it gets populated in Task 5 with the default tenant's IdP.
+      providers:
+        oidc:
+          tenanta:
+            client-id: camunda-pt-tenanta-client
+            client-secret: tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
+
+server:
+  port: 8080
+
+# NOTE: the consolidated-auth and pt-security profiles are pulled in by the
+# spring.profiles.group.pt-poc declaration in application.properties — Spring
+# Boot 2.4+ forbids spring.profiles.include inside profile-specific resources.
