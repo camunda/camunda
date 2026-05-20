@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -14,12 +15,14 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -27,10 +30,13 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class MetricsExporterTest {
@@ -209,7 +215,8 @@ class MetricsExporterTest {
       return Stream.of(
           new TypeCombination(RecordType.EVENT, ValueType.JOB),
           new TypeCombination(RecordType.EVENT, ValueType.JOB_BATCH),
-          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE));
+          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE),
+          new TypeCombination(RecordType.EVENT, ValueType.VARIABLE));
     }
 
     /** Returns the inverse of {@link #acceptedCombinations()}. */
@@ -269,5 +276,72 @@ class MetricsExporterTest {
 
     /** Defines a combination of a RecordType and a ValueType. */
     record TypeCombination(RecordType recordType, ValueType valueType) {}
+  }
+
+  @Nested
+  @DisplayName("MetricsExporter records variable metrics")
+  class VariableMetricsTest {
+
+    private static final String BPMN_PROCESS_ID = "process";
+    private static final String VARIABLE_NAME = "myVar";
+    private static final int PARTITION_ID = 1;
+
+    private MetricsExporter exporter;
+
+    @BeforeEach
+    void setUp() throws Exception {
+      exporter = new MetricsExporter();
+      exporter.configure(context);
+      exporter.open(new ExporterTestController());
+    }
+
+    @ParameterizedTest
+    @EnumSource(VariableIntent.class)
+    void shouldRecordMetricsOnlyForCreatedVariableEvents(final VariableIntent intent) {
+      // given
+      final var valueBytes = new byte[128];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(intent)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      final var summary =
+          context
+              .getMeterRegistry()
+              .find("zeebe.variable.created.size")
+              .tag("bpmnProcessId", BPMN_PROCESS_ID)
+              .summary();
+
+      if (intent == VariableIntent.CREATED) {
+        assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
+        assertThat(summary)
+            .describedAs("Expected zeebe.variable.created.size summary to be registered on CREATED")
+            .isNotNull();
+        assertThat(summary.count()).isOne();
+        assertThat(summary.totalAmount())
+            .describedAs("Expected summary total to match raw msgpack byte length")
+            .isEqualTo((double) variableRecord.getValueLength());
+      } else {
+        assertThat(summary)
+            .describedAs("Expected no zeebe.variable.created.size summary on %s", intent)
+            .isNull();
+      }
+    }
+
+    private VariableRecord newVariableRecord(final byte[] valueBytes) {
+      final var record = new VariableRecord();
+      record.setValue(new UnsafeBuffer(valueBytes));
+      record.setName(wrapString(VARIABLE_NAME));
+      record.setBpmnProcessId(wrapString(BPMN_PROCESS_ID));
+      return record;
+    }
   }
 }
