@@ -18,6 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -128,7 +129,8 @@ public class ProcessesToolRepository implements ToolRepository {
                       messageServices.correlateMessage(
                           new CorrelateMessageRequest(
                               entity.messageName(), "", arguments, entity.tenantId()),
-                          authenticationProvider.getCamundaAuthentication()),
+                          authenticationProvider.getCamundaAuthentication(),
+                          Map.<String, Object>of(Authorization.REQUEST_SOURCE, "MCP")),
                       record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
                 })
             .build());
