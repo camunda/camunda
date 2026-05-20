@@ -68,7 +68,6 @@ dependencies {
     testImplementation(libs.io.netty.netty.transport)
     testImplementation(libs.org.skyscreamer.jsonassert)
     testImplementation(libs.com.jayway.jsonpath.json.path)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-atomix-cluster"))
     testImplementation(project(":zeebe-msgpack-core"))
     testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))

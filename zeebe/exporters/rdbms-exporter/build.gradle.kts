@@ -25,7 +25,6 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-auth"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)

@@ -44,7 +44,6 @@ dependencies {
     testImplementation(libs.jakarta.validation.jakarta.validation.api)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.spring.beans)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test.autoconfigure)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)

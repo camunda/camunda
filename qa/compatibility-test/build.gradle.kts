@@ -21,7 +21,6 @@ dependencies {
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.io.micrometer.micrometer.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda QA Compatibility Tests"

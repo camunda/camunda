@@ -29,7 +29,6 @@ dependencies {
     api(libs.org.springframework.spring.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.jakarta.validation.jakarta.validation.api)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-msgpack-core"))
     compileOnly(libs.jakarta.servlet.jakarta.servlet.api)
 }

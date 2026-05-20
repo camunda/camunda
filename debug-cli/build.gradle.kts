@@ -21,7 +21,6 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
 }

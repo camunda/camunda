@@ -423,7 +423,6 @@ dependencies {
     runtimeOnly(libs.org.bouncycastle.bcpkix.jdk18on)
     runtimeOnly(libs.org.bouncycastle.bcprov.jdk18on)
     testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.com.tngtech.archunit.archunit)

@@ -23,7 +23,6 @@ dependencies {
     testImplementation(libs.org.springframework.spring.web)
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.wiremock.wiremock.standalone)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)

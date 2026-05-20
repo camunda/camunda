@@ -23,7 +23,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     testImplementation(project(":camunda-search-client-plugin"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)

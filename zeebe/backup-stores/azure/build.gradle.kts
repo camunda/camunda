@@ -23,7 +23,6 @@ dependencies {
     testImplementation(project(":zeebe-backup-testkit"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
     testImplementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers)

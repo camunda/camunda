@@ -25,7 +25,6 @@ dependencies {
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.net.jqwik.jqwik.api)

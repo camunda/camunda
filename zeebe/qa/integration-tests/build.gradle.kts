@@ -54,7 +54,6 @@ dependencies {
     testImplementation(project(":zeebe-broker"))
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.toxiproxy)
     testImplementation(libs.com.github.dasniko.testcontainers.keycloak)

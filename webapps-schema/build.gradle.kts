@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-protocol"))
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.reflections.reflections)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
 }

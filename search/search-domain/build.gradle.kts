@@ -14,7 +14,6 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":zeebe-protocol"))
     implementation(project(":camunda-spring-utils"))
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda Search Domain"

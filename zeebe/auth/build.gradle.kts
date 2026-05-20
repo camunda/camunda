@@ -10,7 +10,6 @@ dependencies {
     api(libs.com.auth0.java.jwt)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Zeebe Auth"

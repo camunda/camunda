@@ -73,7 +73,6 @@ dependencies {
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(project(":zeebe-broker-client"))

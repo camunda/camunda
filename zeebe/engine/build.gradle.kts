@@ -47,7 +47,6 @@ dependencies {
     testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(libs.org.msgpack.msgpack.core)
     testImplementation(project(":zeebe-test-util"))

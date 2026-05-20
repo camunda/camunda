@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.opensearch.client.opensearch.java)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)

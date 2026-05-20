@@ -10,7 +10,6 @@ dependencies {
     implementation(project(":zeebe-backup"))
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.net.jqwik.jqwik)
 }
 

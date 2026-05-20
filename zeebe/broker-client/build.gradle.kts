@@ -21,7 +21,6 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.hamcrest.hamcrest)

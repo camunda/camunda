@@ -39,7 +39,6 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-protocol-impl"))

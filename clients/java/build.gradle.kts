@@ -44,7 +44,6 @@ dependencies {
     testImplementation(libs.org.apache.logging.log4j.log4j.api)
     testImplementation(libs.org.apache.logging.log4j.log4j.core)
     testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.jmock.jmock)

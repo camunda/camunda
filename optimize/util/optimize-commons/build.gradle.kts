@@ -47,7 +47,6 @@ dependencies {
     testImplementation(project(":camunda-search-client-plugin"))
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mock.server.mockserver.netty)
     testImplementation(libs.org.mock.server.mockserver.core)
     testImplementation(libs.org.mock.server.mockserver.client.java)

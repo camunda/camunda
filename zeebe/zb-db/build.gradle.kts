@@ -18,7 +18,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.net.jqwik.jqwik.api)
 }

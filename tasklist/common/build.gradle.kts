@@ -57,7 +57,6 @@ dependencies {
     testImplementation(project(":camunda-search-client-plugin"))
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
 }

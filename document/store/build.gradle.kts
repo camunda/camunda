@@ -23,7 +23,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     implementation(libs.commons.codec.commons.codec)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
 }

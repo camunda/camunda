@@ -20,7 +20,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
 
     testImplementation(platform("dev.langchain4j:langchain4j-bom:1.12.2"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
 }
 

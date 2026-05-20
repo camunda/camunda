@@ -26,7 +26,6 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":camunda-search-test-utils"))
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.opensearch.opensearch.testcontainers)

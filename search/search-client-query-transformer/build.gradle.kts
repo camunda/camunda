@@ -21,7 +21,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.github.ben.manes.caffeine.caffeine)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
 }

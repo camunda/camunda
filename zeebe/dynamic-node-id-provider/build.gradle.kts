@@ -20,7 +20,6 @@ dependencies {
     api(libs.software.amazon.awssdk.apache.client)
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-atomix-cluster"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers.localstack)

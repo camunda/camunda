@@ -46,7 +46,6 @@ dependencies {
     testImplementation(project(":zeebe-protocol"))
     testImplementation(libs.org.springframework.boot.spring.boot)
     testImplementation(libs.org.springframework.spring.beans)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.apache.commons.commons.text)
     testImplementation(project(":camunda-client-java"))

@@ -9,7 +9,6 @@ plugins {
 dependencies {
     api(libs.org.camunda.feel.feel.engine)
     api(libs.org.scala.lang.scala.library)
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Zeebe FEEL Tagged Parameters"

@@ -29,7 +29,6 @@ dependencies {
     api(libs.org.apache.commons.commons.collections4)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite.engine)
 }

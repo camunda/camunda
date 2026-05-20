@@ -12,7 +12,6 @@ dependencies {
     implementation(project(":camunda-search-domain"))
     api(libs.org.opensearch.client.opensearch.java)
     implementation(libs.org.slf4j.slf4j.api)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.annotations)

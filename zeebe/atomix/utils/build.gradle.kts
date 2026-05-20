@@ -17,7 +17,6 @@ dependencies {
     api(libs.io.netty.netty.common)
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.awaitility.awaitility)
 }
 

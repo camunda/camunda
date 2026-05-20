@@ -7,7 +7,6 @@ plugins {
 }
 
 dependencies {
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-backup"))
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(project(":zeebe-protocol"))

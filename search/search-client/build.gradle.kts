@@ -12,7 +12,6 @@ dependencies {
     implementation(project(":camunda-security-core"))
     implementation(libs.io.camunda.security.library.api)
     implementation(libs.org.slf4j.slf4j.api)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
 }

@@ -21,7 +21,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-backup-testkit"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.apache.commons.commons.lang3)

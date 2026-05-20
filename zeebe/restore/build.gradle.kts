@@ -23,7 +23,6 @@ dependencies {
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-logstreams"))
     testImplementation(project(":zeebe-logstreams", configuration = "tests"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
 }
 

@@ -20,7 +20,6 @@ dependencies {
     testImplementation(project(":zeebe-protocol-impl"))
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
 }
 

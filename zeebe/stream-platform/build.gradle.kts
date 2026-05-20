@@ -23,7 +23,6 @@ dependencies {
     testImplementation(project(":zeebe-msgpack-core"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)

@@ -16,7 +16,6 @@ dependencies {
     api(libs.org.camunda.feel.feel.engine)
     implementation(project(":zeebe-msgpack-core"))
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Zeebe DMN Engine"

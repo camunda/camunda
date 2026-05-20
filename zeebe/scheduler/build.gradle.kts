@@ -15,7 +15,6 @@ dependencies {
     implementation(libs.org.jetbrains.annotations)
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.com.google.guava.guava)

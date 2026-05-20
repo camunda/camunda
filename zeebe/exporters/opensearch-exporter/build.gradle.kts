@@ -29,7 +29,6 @@ dependencies {
     api(libs.io.github.acm19.aws.request.signing.apache.interceptor)
     api(libs.io.micrometer.micrometer.core)
     testImplementation(project(":camunda-search-client-plugin"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)

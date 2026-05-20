@@ -11,7 +11,6 @@ dependencies {
     testImplementation(project(":tasklist-qa-util"))
     testImplementation(libs.org.springframework.retry.spring.retry)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":camunda-client-java"))
     testImplementation(libs.org.springframework.spring.context)
     testImplementation(project(":zeebe-bpmn-model"))

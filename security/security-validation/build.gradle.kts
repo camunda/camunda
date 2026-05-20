@@ -10,7 +10,6 @@ dependencies {
     implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-protocol"))
     implementation(libs.commons.validator.commons.validator)
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda Security Validation"

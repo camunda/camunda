@@ -15,7 +15,6 @@ dependencies {
     testImplementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.assertj.assertj.core)
     compileOnly(project(":camunda-spring-boot-starter"))
     compileOnly(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
 }

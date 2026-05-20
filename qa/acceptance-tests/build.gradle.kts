@@ -30,7 +30,6 @@ dependencies {
     testImplementation(project(":zeebe-scheduler"))
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":camunda-schema-manager"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.com.ibm.icu.icu4j)
     testImplementation(libs.software.amazon.awssdk.s3)

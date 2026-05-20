@@ -35,6 +35,7 @@ dependencies {
     add("testImplementation", "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     add("testRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
+    add("testImplementation", versionCatalog.findLibrary("org-assertj-assertj-core").get())
 }
 
 extensions.configure<SpotlessExtension> {

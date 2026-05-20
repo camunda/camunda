@@ -12,7 +12,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.javax.annotation.javax.annotation.api)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.com.networknt.json.schema.validator)
     compileOnly(libs.org.immutables.value)
     annotationProcessor(libs.org.immutables.value)

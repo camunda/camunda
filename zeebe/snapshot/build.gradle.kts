@@ -18,7 +18,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(project(":zeebe-test-util"))

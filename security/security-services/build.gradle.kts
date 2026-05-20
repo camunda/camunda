@@ -15,7 +15,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda Security Services"

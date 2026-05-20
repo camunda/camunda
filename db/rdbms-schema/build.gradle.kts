@@ -10,7 +10,6 @@ dependencies {
     api(libs.org.liquibase.liquibase.core)
     api(libs.org.springframework.spring.core)
     api(libs.com.github.vertical.blank.sql.formatter)
-    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda Secondary DB - RDBMS - Schema"

@@ -28,7 +28,6 @@ dependencies {
     implementation(project(":zeebe-atomix-cluster"))
     implementation(project(":zeebe-transport"))
     implementation(project(":zeebe-broker-client"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))

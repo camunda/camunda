@@ -31,7 +31,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.agrona.agrona)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.net.bytebuddy.byte.buddy)
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.opensearch.opensearch.testcontainers)

@@ -28,7 +28,6 @@ dependencies {
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.spring.test)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.testcontainers.testcontainers)

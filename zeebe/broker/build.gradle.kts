@@ -77,7 +77,6 @@ dependencies {
     testImplementation(project(":zeebe-workflow-engine", configuration = "tests"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.net.bytebuddy.byte.buddy)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
     testImplementation(libs.org.mockito.mockito.core)

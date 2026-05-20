@@ -22,7 +22,6 @@ dependencies {
     testImplementation(libs.io.zeebe.zeebe.test.container)
     testImplementation(project(":camunda-client-java"))
     testImplementation(project(":zeebe-bpmn-model"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(project(":zeebe-util"))
     testImplementation(libs.org.awaitility.awaitility)

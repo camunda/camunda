@@ -19,7 +19,6 @@ dependencies {
     implementation("dev.failsafe:failsafe:3.3.2")
     implementation(libs.org.slf4j.slf4j.api)
 
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-protocol-test-util"))

@@ -26,7 +26,6 @@ dependencies {
     implementation(project(":zeebe-protocol"))
     implementation(libs.io.micrometer.micrometer.core)
     implementation(libs.io.micrometer.micrometer.commons)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.awaitility.awaitility)

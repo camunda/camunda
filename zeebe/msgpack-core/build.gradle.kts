@@ -13,7 +13,6 @@ dependencies {
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-util"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.apache.commons.commons.lang3)
 }
 

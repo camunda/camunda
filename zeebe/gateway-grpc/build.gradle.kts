@@ -60,7 +60,6 @@ dependencies {
     testImplementation(project(":camunda-client-java"))
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.com.auth0.java.jwt)
     testImplementation(libs.org.awaitility.awaitility)

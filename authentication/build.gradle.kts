@@ -50,7 +50,6 @@ dependencies {
     testImplementation(libs.junit.junit)
     testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.springframework.boot.spring.boot.test)

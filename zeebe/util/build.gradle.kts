@@ -51,7 +51,6 @@ dependencies {
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.net.bytebuddy.byte.buddy)
     testImplementation(libs.io.micrometer.micrometer.registry.prometheus)
     testImplementation(libs.io.prometheus.prometheus.metrics.model)

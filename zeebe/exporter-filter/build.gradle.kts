@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.com.fasterxml.jackson.core.jackson.core)
     implementation(libs.org.slf4j.slf4j.api)
     implementation(project(":zeebe-exporter-api"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
 }
 

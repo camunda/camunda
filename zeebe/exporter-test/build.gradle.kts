@@ -10,7 +10,6 @@ dependencies {
     implementation(project(":zeebe-exporter-api"))
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.io.micrometer.micrometer.core)
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.agrona.agrona)
     compileOnly(libs.net.jcip.jcip.annotations)
 }

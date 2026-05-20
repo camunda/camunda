@@ -24,7 +24,6 @@ dependencies {
     api(libs.org.springframework.spring.webmvc)
     api(libs.org.springframework.security.spring.security.core)
 
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)

@@ -55,7 +55,6 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.jmock.jmock)
     testImplementation(libs.net.jqwik.jqwik)

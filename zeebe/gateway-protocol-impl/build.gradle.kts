@@ -23,7 +23,6 @@ dependencies {
     api(libs.com.google.protobuf.protobuf.java)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.annotations)
-    testImplementation(libs.org.assertj.assertj.core)
     compileOnly(project(":zeebe-gateway-protocol"))
 }
 
