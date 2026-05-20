@@ -172,27 +172,39 @@ camunda:
   security:
     authentication:
       method: oidc            # not overridable per PT (validated at startup)
-      oidc: { ... }           # default-tenant config under camunda.security.* per existing rules
+      oidc: { ... }           # cluster-wide default OIDC provider (implicit registration id "oidc")
   physical-tenants:
     tenanta:
       security:
         authentication:
+          # Option A: override the default "oidc" provider for this tenant
+          oidc:
+            client-id: ...
+            client-secret: ...
+            issuer-uri: ...
+          # Option B: define one or more named providers
           providers:
-            assigned: [idpOne]
+            assigned: ["oidc", "idpOne"]   # references both the default slot and a named provider
             oidc:
               idpOne:
                 client-id: ...
                 client-secret: ...
                 issuer-uri: ...
-                redirect-uri: "{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}"
     default:
       security:
         authentication:
+          oidc:
+            client-id: ...
+            issuer-uri: ...
           providers:
-            assigned: [oidc]
+            assigned: ["oidc"]
 ```
 
-`providers.assigned` is the **new property** this PoC consumes. Resolution rule: for tenant `t`, the active provider set is `assigned ∩ keys(authentication.oidc.providers)`; missing providers fail startup with an explicit error.
+`providers.assigned` is the **new property** this PoC consumes. Resolution rule for each entry `id` in `assigned`:
+- If `id == "oidc"`: resolves to `authentication.oidc.*` (the default provider slot). Must be configured.
+- Otherwise: resolves to `authentication.providers.oidc.<id>.*` (a named provider slot). Must exist under that key.
+
+A missing or unconfigured provider fails startup with an explicit error.
 
 The `cluster-admin` block, CSRF, multi-tenancy, and `http-headers` are out of scope for the PoC and remain global (validated as non-overridable per the existing rules in #52680).
 
@@ -213,8 +225,8 @@ Demo:
 
 1. Start OC with the `pt-security` profile and the config above (two tenants, two IdPs — Keycloak realms `default` and `tenanta`).
 2. Browser → `https://localhost:8080/physical-tenant/tenanta/whoami`.
-3. PT webapp chain matches; user is unauthenticated; redirect to `/physical-tenant/tenanta/oauth2/authorization/idpOne` → tenant A's Keycloak.
-4. Login → callback at `/physical-tenant/tenanta/login/oauth2/code/idpOne` → session created with cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`. `whoami` returns `{tenantId:"tenanta", principal:"alice@tenanta", providers:["idpOne"], accessPath:"prefixed"}`.
+3. PT webapp chain matches; user is unauthenticated; redirect to `/physical-tenant/tenanta/oauth2/authorization/oidc` → tenant A's Keycloak (registration id `oidc` from the tenant's default-slot config).
+4. Login → callback at `/physical-tenant/tenanta/login/oauth2/code/oidc` → session created with cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`. `whoami` returns `{tenantId:"tenanta", principal:"bob@tenanta", providers:["oidc"], accessPath:"prefixed"}`.
 5. New tab → `https://localhost:8080/physical-tenant/default/whoami` — different cookie scope, unauthenticated, redirected to default's IdP.
 6. Both tabs hold valid, independent sessions simultaneously.
 7. Tab 1 logs out (`POST /physical-tenant/tenanta/logout`) — only tenant A's session is invalidated; tab 2 stays logged in.

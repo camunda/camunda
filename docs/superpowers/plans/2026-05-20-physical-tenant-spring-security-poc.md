@@ -495,24 +495,23 @@ import org.springframework.security.web.SecurityFilterChain;
 @Profile("pt-security")
 public class PhysicalTenantSecurityConfiguration {
 
-  // Hard-coded for the walking skeleton. T9 generalises this to read from
-  // camunda.physical-tenants.<id>.security.authentication.providers.assigned.
-  private static final String TENANTA_REGISTRATION_ID = "oidc";
+  // Hard-coded for the walking skeleton. Reads the *default* OIDC provider from
+  // camunda.security.authentication.oidc.* — that provider's implicit registration id is "oidc".
+  // T8 generalises this to read tenants from PhysicalTenantResolver and resolve their
+  // providers.assigned list (which may reference "oidc" — the default — or any named provider
+  // under authentication.providers.oidc.<name>).
+  private static final String DEFAULT_PROVIDER_REGISTRATION_ID = "oidc";
 
   @Bean
   public SecurityFilterChain ptTenantaWebappChain(
       final HttpSecurity http, final SecurityConfiguration security) throws Exception {
 
-    final var providerConfig =
-        security
-            .getAuthentication()
-            .getProviders()
-            .getOidc()
-            .get(TENANTA_REGISTRATION_ID);
+    // The walking skeleton uses the cluster-default OIDC provider as tenant A's IdP.
+    final var providerConfig = security.getAuthentication().getOidc();
 
     final ClientRegistration registration =
         ClientRegistrations.fromIssuerLocation(providerConfig.getIssuerUri())
-            .registrationId(TENANTA_REGISTRATION_ID)
+            .registrationId(DEFAULT_PROVIDER_REGISTRATION_ID)
             .clientId(providerConfig.getClientId())
             .clientSecret(providerConfig.getClientSecret())
             .redirectUri(
@@ -580,12 +579,12 @@ camunda:
   security:
     authentication:
       method: oidc
-      providers:
-        oidc:
-          oidc:
-            client-id: camunda-pt-tenanta-client
-            client-secret: tenanta-secret
-            issuer-uri: http://localhost:8082/realms/tenanta
+      # Walking-skeleton tenant A uses the cluster-default OIDC provider.
+      # Implicit registration id is "oidc".
+      oidc:
+        client-id: camunda-pt-tenanta-client
+        client-secret: tenanta-secret
+        issuer-uri: http://localhost:8082/realms/tenanta
 
 server:
   port: 8080
@@ -663,26 +662,31 @@ EOF
 - Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
 - Modify: `dist/src/main/resources/application-pt-poc.yaml`
 
-### Step 1 — Extend the YAML with the default-tenant provider entry
+### Step 1 — Extend the YAML with a named OIDC provider for the default tenant
+
+`assigned` references either the default provider (`authentication.oidc.*`, implicit registration id `oidc`) or a named provider (`authentication.providers.oidc.<name>.*`). Task 4 used the default slot for tenant A. To add a second IdP for the default tenant in the *same* configuration object (we haven't moved to per-`physical-tenants.<id>` config yet — that's Task 8), introduce a named provider.
 
 Add under `camunda.security.authentication.providers.oidc`:
 
 ```yaml
-        default-provider:
+        defaultIdp:
           client-id: camunda-pt-default-client
           client-secret: default-secret
           issuer-uri: http://localhost:8081/realms/default
 ```
 
-The existing `oidc:` entry remains for tenant A. (We're not yet using `physical-tenants.<id>.security.authentication.providers.assigned` — that arrives in Task 8.)
+The existing `authentication.oidc.*` default block remains for tenant A. (Per-tenant config under `physical-tenants.<id>.security.*` with `assigned` lists arrives in Task 8.)
 
 ### Step 2 — Add a default-tenant chain bean
 
 Inside `PhysicalTenantSecurityConfiguration`, copy the tenant-A bean to a sibling `ptDefaultWebappChain` that:
 
-- Reads provider config from the `default-provider` key.
+- Reads provider config from `security.getAuthentication().getProviders().getOidc().get("defaultIdp")`.
+- Builds the `ClientRegistration` with `registrationId("defaultIdp")`.
 - Matches `securityMatcher("/physical-tenant/default/**")`.
-- Builds a `ClientRegistration` with `redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")`.
+- Sets `redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")`.
+
+Two near-duplicate `@Bean` methods are fine here; the duplication is what motivates the extraction in Task 6.
 
 Resist the urge to extract a helper — that's Task 6. Two near-duplicate `@Bean` methods are fine here; the duplication is what motivates the extraction.
 
@@ -995,7 +999,7 @@ This is the first task that requires the `Providers.assigned` field on the secur
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java`
 - Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantOidcRegistryTest.java`
 - Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` (use the registry)
-- Modify: `dist/src/main/resources/application-pt-poc.yaml` (move tenant A's provider config under `camunda.physical-tenants.tenanta.security.authentication.providers.*` and set `assigned: [idpOne]`)
+- Modify: `dist/src/main/resources/application-pt-poc.yaml` (move each tenant's provider config under its own `camunda.physical-tenants.<id>.security.authentication.oidc.*` slot and set `providers.assigned: [oidc]`)
 
 ### Step 0 — Add `Providers.assigned` if missing
 
@@ -1029,16 +1033,35 @@ import org.junit.jupiter.api.Test;
 class PerTenantOidcRegistryTest {
 
   @Test
-  void shouldRegisterOnlyAssignedProviders() {
-    final var security = sec(Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")), List.of("idpOne"));
+  void shouldResolveAssignedOidcToTheDefaultProviderSlot() {
+    // given - authentication.oidc.* is the default provider (registration id "oidc")
+    final var security = sec(oidc("oidc"), Map.of(), List.of("oidc"));
+    // when
     final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
+    // then
+    assertThat(registry.clientRegistrationRepository().findByRegistrationId("oidc")).isNotNull();
+  }
+
+  @Test
+  void shouldResolveAssignedNamedProviderUnderProvidersOidcMap() {
+    final var security = sec(null, Map.of("idpOne", oidc("idpOne")), List.of("idpOne"));
+    final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
+    assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpOne")).isNotNull();
+  }
+
+  @Test
+  void shouldRegisterMultipleAssignedProvidersAcrossDefaultAndNamedSlots() {
+    final var security =
+        sec(oidc("oidc"), Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")), List.of("oidc", "idpOne"));
+    final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
+    assertThat(registry.clientRegistrationRepository().findByRegistrationId("oidc")).isNotNull();
     assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpOne")).isNotNull();
     assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpTwo")).isNull();
   }
 
   @Test
   void shouldRewriteRedirectUriToTenantPath() {
-    final var security = sec(Map.of("idpOne", oidc("idpOne")), List.of("idpOne"));
+    final var security = sec(null, Map.of("idpOne", oidc("idpOne")), List.of("idpOne"));
     final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
     assertThat(
             registry
@@ -1049,11 +1072,19 @@ class PerTenantOidcRegistryTest {
   }
 
   @Test
-  void shouldFailWhenAssignedProviderIsMissingFromProvidersMap() {
-    final var security = sec(Map.of("idpOne", oidc("idpOne")), List.of("ghost"));
+  void shouldFailWhenAssignedProviderIsMissingFromBothSlots() {
+    final var security = sec(null, Map.of("idpOne", oidc("idpOne")), List.of("ghost"));
     assertThatThrownBy(() -> PerTenantOidcRegistry.forTenant("tenanta", security))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("ghost");
+  }
+
+  @Test
+  void shouldFailWhenOidcIsAssignedButDefaultSlotIsNotConfigured() {
+    final var security = sec(null, Map.of(), List.of("oidc"));
+    assertThatThrownBy(() -> PerTenantOidcRegistry.forTenant("tenanta", security))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("authentication.oidc.*");
   }
 
   private static OidcConfiguration oidc(final String id) {
@@ -1066,9 +1097,14 @@ class PerTenantOidcRegistryTest {
   }
 
   private static SecurityConfiguration sec(
-      final Map<String, OidcConfiguration> providers, final List<String> assigned) {
+      final OidcConfiguration defaultProvider,
+      final Map<String, OidcConfiguration> namedProviders,
+      final List<String> assigned) {
     final var s = new SecurityConfiguration();
-    s.getAuthentication().getProviders().setOidc(providers);
+    if (defaultProvider != null) {
+      s.getAuthentication().setOidc(defaultProvider);
+    }
+    s.getAuthentication().getProviders().setOidc(namedProviders);
     s.getAuthentication().getProviders().setAssigned(assigned);
     return s;
   }
@@ -1106,28 +1142,50 @@ public final class PerTenantOidcRegistry {
     this.clientRegistrationRepository = repo;
   }
 
+  /** Registration id under which the default {@code authentication.oidc.*} provider lives. */
+  public static final String DEFAULT_PROVIDER_REGISTRATION_ID = "oidc";
+
   public static PerTenantOidcRegistry forTenant(
       final String tenantId, final SecurityConfiguration tenantSecurity) {
-    final var allProviders = tenantSecurity.getAuthentication().getProviders().getOidc();
-    final var assigned = tenantSecurity.getAuthentication().getProviders().getAssigned();
+    final var auth = tenantSecurity.getAuthentication();
+    final var namedProviders = auth.getProviders().getOidc();
+    final var assigned = auth.getProviders().getAssigned();
     if (assigned == null || assigned.isEmpty()) {
       throw new IllegalStateException(
           "Tenant '" + tenantId + "' has no providers.assigned");
     }
     final List<ClientRegistration> registrations = new ArrayList<>();
     for (final String registrationId : assigned) {
-      final OidcConfiguration provider = allProviders.get(registrationId);
+      final OidcConfiguration provider = resolveProvider(registrationId, auth, namedProviders);
       if (provider == null) {
         throw new IllegalStateException(
             "Tenant '"
                 + tenantId
                 + "' assigns provider '"
                 + registrationId
-                + "' but it is missing from authentication.providers.oidc.*");
+                + "'. For 'oidc' this expects authentication.oidc.* to be configured; "
+                + "for any other name this expects authentication.providers.oidc.<name>.* to exist.");
       }
       registrations.add(buildRegistration(tenantId, registrationId, provider));
     }
     return new PerTenantOidcRegistry(new InMemoryClientRegistrationRepository(registrations));
+  }
+
+  private static OidcConfiguration resolveProvider(
+      final String registrationId,
+      final io.camunda.security.configuration.AuthenticationConfiguration auth,
+      final Map<String, OidcConfiguration> namedProviders) {
+    if (DEFAULT_PROVIDER_REGISTRATION_ID.equals(registrationId)) {
+      final var defaultProvider = auth.getOidc();
+      // Treat unconfigured default (no client-id / issuer) as absent so the caller
+      // raises the precise error message.
+      if (defaultProvider == null
+          || (defaultProvider.getClientId() == null && defaultProvider.getIssuerUri() == null)) {
+        return null;
+      }
+      return defaultProvider;
+    }
+    return namedProviders == null ? null : namedProviders.get(registrationId);
   }
 
   public ClientRegistrationRepository clientRegistrationRepository() {
@@ -1160,37 +1218,39 @@ public final class PerTenantOidcRegistry {
 
 ### Step 4 — Move tenant config to `physical-tenants.<id>.*` shape
 
+`assigned` references either the default provider (`authentication.oidc.*`, implicit registration id `oidc`) or a named provider (`authentication.providers.oidc.<name>.*`). For the PoC each tenant has exactly one IdP, so each uses its **own** default slot — both tenants reuse registration id `oidc` inside their own per-tenant config block. The `defaultIdp` name introduced in Task 5 goes away (it was a stop-gap for living in a single shared `authentication.*` block before per-tenant overrides existed).
+
 `application-pt-poc.yaml` becomes:
 
 ```yaml
 camunda:
   security:
     authentication:
-      method: oidc
+      method: oidc            # cluster-wide; not overridable per PT
   physical-tenants:
     tenanta:
       security:
         authentication:
+          oidc:                # overrides the default provider for tenant A; registration id "oidc"
+            client-id: camunda-pt-tenanta-client
+            client-secret: tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
           providers:
-            assigned: [idpOne]
-            oidc:
-              idpOne:
-                client-id: camunda-pt-tenanta-client
-                client-secret: tenanta-secret
-                issuer-uri: http://localhost:8082/realms/tenanta
+            assigned: [oidc]   # references the default provider in this tenant's config
     default:
       security:
         authentication:
+          oidc:
+            client-id: camunda-pt-default-client
+            client-secret: default-secret
+            issuer-uri: http://localhost:8081/realms/default
           providers:
-            assigned: [defaultIdp]
-            oidc:
-              defaultIdp:
-                client-id: camunda-pt-default-client
-                client-secret: default-secret
-                issuer-uri: http://localhost:8081/realms/default
+            assigned: [oidc]
 ```
 
-The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via `PhysicalTenantResolver`. The full generalisation (iterating the resolver to register N tenants) lands in Task 12; for now keep the two explicit `@Bean` methods and just have each call `tenantResolver.forPhysicalTenant("tenanta").getSecurity()` (or however the resolver exposes it).
+The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via `PhysicalTenantResolver.forPhysicalTenant(tenantId).getSecurity()`. `PerTenantOidcRegistry.forTenant(tenantId, security)` reads `assigned`, resolves each entry to either `security.getAuthentication().getOidc()` (registration id `oidc`) or `security.getAuthentication().getProviders().getOidc().get(name)` (named providers), and builds the registry.
+
+The full generalisation (iterating the resolver to register N tenants) lands in Task 13; for now keep two explicit `@Bean` methods.
 
 ### Step 5 — Run tests, manual smoke
 
@@ -1198,7 +1258,7 @@ The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via 
 ./mvnw verify -pl authentication -Dtest=PerTenantOidcRegistryTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Then the manual two-tab login flow from Task 5. The `assigned` provider id is `idpOne` for tenant A and `defaultIdp` for default, so the URLs become `/physical-tenant/tenanta/oauth2/authorization/idpOne` and `/physical-tenant/default/oauth2/authorization/defaultIdp`.
+Then the manual two-tab login flow from Task 5. Both tenants now use the registration id `oidc` (their own default-slot provider), so the URLs become `/physical-tenant/tenanta/oauth2/authorization/oidc` and `/physical-tenant/default/oauth2/authorization/oidc`. The Task 5 stop-gap named provider `defaultIdp` is no longer referenced.
 
 ### Step 6 — Format and commit
 
@@ -1551,11 +1611,18 @@ In `PhysicalTenantSecurityConfiguration`:
 public JwtDecoder ptIssuerAwareJwtDecoder(final PhysicalTenantResolver tenants) {
   final Set<String> allIssuers = new LinkedHashSet<>();
   tenants.getAll().values().forEach(camunda -> {
-    final var providers = camunda.getSecurity().getAuthentication().getProviders();
-    final var assigned = providers.getAssigned();
+    final var auth = camunda.getSecurity().getAuthentication();
+    final var assigned = auth.getProviders().getAssigned();
     if (assigned == null) return;
     for (final String id : assigned) {
-      final var p = providers.getOidc().get(id);
+      // "oidc" resolves to the default authentication.oidc.* slot;
+      // anything else resolves under authentication.providers.oidc.<name>.
+      final var p =
+          PerTenantOidcRegistry.DEFAULT_PROVIDER_REGISTRATION_ID.equals(id)
+              ? auth.getOidc()
+              : (auth.getProviders().getOidc() == null
+                  ? null
+                  : auth.getProviders().getOidc().get(id));
       if (p != null && p.getIssuerUri() != null) {
         allIssuers.add(p.getIssuerUri());
       }
@@ -1753,7 +1820,7 @@ git commit -m "refactor: register PT chains programmatically from PhysicalTenant
 **Files:**
 - Create: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`
 
-Use the code skeleton from the original plan (Task 15 in the bottom-up version, included here verbatim). Boot two Keycloaks with random ports, point OC at them via `--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.issuer-uri=` etc., run a redirect assertion.
+Use the code skeleton from the original plan (Task 15 in the bottom-up version, included here verbatim). Boot two Keycloaks with random ports, point OC at them via `--camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri=...` (the tenant's default-slot OIDC config) and `--camunda.physical-tenants.tenanta.security.authentication.providers.assigned=oidc`, then run a redirect assertion.
 
 The skeleton lives in the spec's End-to-end demo path section. Adapt the `--` flag values to the property structure introduced in Task 8 (`camunda.physical-tenants.<id>.security.authentication.providers.assigned`).
 
