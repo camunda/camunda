@@ -7,8 +7,8 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":zeebe-backup"))
-    implementation(project(":zeebe-backup-store-common"))
+    api(project(":zeebe-backup"))
+    api(project(":zeebe-backup-store-common"))
     implementation(project(":zeebe-protocol"))
     api(libs.com.google.cloud.google.cloud.core)
     api(libs.com.google.cloud.google.cloud.storage)
