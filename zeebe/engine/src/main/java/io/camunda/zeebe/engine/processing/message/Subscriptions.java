@@ -11,53 +11,48 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.util.collection.Reusable;
-import io.camunda.zeebe.util.collection.ReusableObjectList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Subscriptions {
 
-  private final ReusableObjectList<Subscription> subscriptions =
-      new ReusableObjectList<>(Subscription::new);
-
-  public void clear() {
-    subscriptions.clear();
-  }
+  // DirectBuffer have stable equals/hashcode given it's not mutated: it must be cloned first
+  private final Map<DirectBuffer, Subscription> subscriptions = new LinkedHashMap<>();
 
   public boolean contains(final DirectBuffer bpmnProcessId) {
-    for (final Subscription subscription : subscriptions) {
-      if (subscription.getBpmnProcessId().equals(bpmnProcessId)) {
-        return true;
-      }
-    }
-    return false;
+    return subscriptions.containsKey(bpmnProcessId);
   }
 
   public void add(final MessageSubscriptionRecord subscription) {
-    final var newSubscription = subscriptions.add();
-    newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
-    newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
-    newSubscription.elementInstanceKey = subscription.getElementInstanceKey();
-    newSubscription.processDefinitionKey = subscription.getProcessDefinitionKey();
+    final var newSubscription =
+        Subscription.cloned(
+            subscription.getBpmnProcessIdBuffer(),
+            subscription.getProcessInstanceKey(),
+            subscription.getElementInstanceKey(),
+            subscription.getProcessDefinitionKey(),
+            false);
+    addSubscriptionInternal(newSubscription);
   }
 
   public void add(final MessageStartEventSubscriptionRecord subscription) {
-    final var newSubscription = subscriptions.add();
-    newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
-    newSubscription.isStartEventSubscription = true;
-    newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
+    final var newSubscription =
+        Subscription.cloned(
+            subscription.getBpmnProcessIdBuffer(),
+            subscription.getProcessInstanceKey(),
+            0L,
+            subscription.getProcessDefinitionKey(),
+            true);
+    addSubscriptionInternal(newSubscription);
   }
 
   private void add(final Subscription subscription) {
-    final var newSubscription = subscriptions.add();
-    newSubscription.setBpmnProcessId(subscription.getBpmnProcessId());
-    newSubscription.processInstanceKey = subscription.processInstanceKey;
-    newSubscription.elementInstanceKey = subscription.elementInstanceKey;
-    newSubscription.isStartEventSubscription = subscription.isStartEventSubscription;
+    addSubscriptionInternal(Subscription.copy(subscription));
+  }
+
+  private void addSubscriptionInternal(final Subscription subscription) {
+    subscriptions.put(subscription.bpmnProcessId(), subscription);
   }
 
   public void addAll(final Subscriptions subscriptions) {
@@ -70,11 +65,11 @@ public final class Subscriptions {
   }
 
   public boolean isEmpty() {
-    return subscriptions.size() <= 0;
+    return subscriptions.isEmpty();
   }
 
   public Optional<Subscription> getFirstMessageStartEventSubscription() {
-    for (final Subscription subscription : subscriptions) {
+    for (final Subscription subscription : subscriptions.values()) {
       if (subscription.isStartEventSubscription) {
         return Optional.of(subscription);
       }
@@ -88,7 +83,7 @@ public final class Subscriptions {
 
   public boolean visitSubscriptions(
       final SubscriptionVisitor subscriptionConsumer, final boolean visitStartEvents) {
-    for (final Subscription subscription : subscriptions) {
+    for (final Subscription subscription : subscriptions.values()) {
       if (visitStartEvents || !subscription.isStartEventSubscription) {
 
         final var applied = subscriptionConsumer.apply(subscription);
@@ -100,57 +95,41 @@ public final class Subscriptions {
     return true;
   }
 
+  public record Subscription(
+      // buffer must be immutable
+      DirectBuffer bpmnProcessId,
+      long processInstanceKey,
+      long elementInstanceKey,
+      long processDefinitionKey,
+      boolean isStartEventSubscription) {
+    /* clone the bpmnProcessId buffer */
+    public static Subscription cloned(
+        final DirectBuffer bpmnProcessId,
+        final long processInstanceKey,
+        final long elementInstanceKey,
+        final long processDefinitionKey,
+        final boolean isStartEventSubscription) {
+      return new Subscription(
+          cloneBuffer(bpmnProcessId),
+          processInstanceKey,
+          elementInstanceKey,
+          processDefinitionKey,
+          isStartEventSubscription);
+    }
+
+    /* Copy without cloning, buffer is already immutable */
+    public static Subscription copy(final Subscription subscription) {
+      return new Subscription(
+          subscription.bpmnProcessId(),
+          subscription.processInstanceKey(),
+          subscription.elementInstanceKey(),
+          subscription.processDefinitionKey(),
+          subscription.isStartEventSubscription);
+    }
+  }
+
   @FunctionalInterface
   public interface SubscriptionVisitor {
     boolean apply(Subscription subscription);
-  }
-
-  public static final class Subscription implements Reusable {
-
-    private final MutableDirectBuffer bpmnProcessId = new ExpandableArrayBuffer();
-    private final DirectBuffer bufferView = new UnsafeBuffer(bpmnProcessId);
-    private int bufferLength = 0;
-
-    private long processInstanceKey;
-    private long elementInstanceKey;
-    private long processDefinitionKey;
-    private boolean isStartEventSubscription;
-
-    @Override
-    public void reset() {
-      bufferLength = 0;
-      bufferView.wrap(0, 0);
-
-      processInstanceKey = -1L;
-      elementInstanceKey = -1L;
-      processDefinitionKey = -1L;
-      isStartEventSubscription = false;
-    }
-
-    public DirectBuffer getBpmnProcessId() {
-      return bufferView;
-    }
-
-    private void setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-      bufferLength = bpmnProcessId.capacity();
-      bpmnProcessId.getBytes(0, this.bpmnProcessId, 0, bufferLength);
-      bufferView.wrap(this.bpmnProcessId, 0, bufferLength);
-    }
-
-    public long getProcessInstanceKey() {
-      return processInstanceKey;
-    }
-
-    public long getElementInstanceKey() {
-      return elementInstanceKey;
-    }
-
-    public long getProcessDefinitionKey() {
-      return processDefinitionKey;
-    }
-
-    public boolean isStartEventSubscription() {
-      return isStartEventSubscription;
-    }
   }
 }

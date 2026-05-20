@@ -184,9 +184,8 @@ public final class MessageCorrelationCorrelateProcessor
         .getFirstMessageStartEventSubscription()
         .ifPresent(
             subscription -> {
-              messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
-              messageCorrelationRecord.setProcessDefinitionKey(
-                  subscription.getProcessDefinitionKey());
+              messageCorrelationRecord.setProcessInstanceKey(subscription.processInstanceKey());
+              messageCorrelationRecord.setProcessDefinitionKey(subscription.processDefinitionKey());
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
@@ -238,7 +237,7 @@ public final class MessageCorrelationCorrelateProcessor
                       .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                       .permissionType(permissionType)
                       .tenantId(tenantId)
-                      .addResourceId(bufferAsString(subscription.getBpmnProcessId()))
+                      .addResourceId(bufferAsString(subscription.bpmnProcessId()))
                       .build());
 
               final var rejectionOrAuthorized =
