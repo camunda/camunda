@@ -30,7 +30,7 @@ function getWaitStateLabel(
 
 function getWaitStateStatusItems(
   waitStates: ElementInstanceInspection[],
-): Array<{text: string}> {
+): Array<{key: string; text: string}> {
   const earliestTimerDueDate = getEarliestTimerDueDate(waitStates);
   let hasRenderedTimerStatus = false;
 
@@ -40,6 +40,7 @@ function getWaitStateStatusItems(
         const messageName =
           (waitState.details['messageName'] as string) ?? 'unknown';
         return {
+          key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
           text: `Waiting for message: ${messageName}`,
         };
       }
@@ -51,11 +52,13 @@ function getWaitStateStatusItems(
 
         if (earliestTimerDueDate) {
           return {
+            key: `TIMER-${earliestTimerDueDate}`,
             text: `Timer due: ${formatDate(earliestTimerDueDate)}`,
           };
         }
 
         return {
+          key: 'TIMER-waiting',
           text: 'Waiting for timer',
         };
       }
@@ -63,11 +66,13 @@ function getWaitStateStatusItems(
         const signalName =
           (waitState.details['signalName'] as string) ?? 'unknown';
         return {
+          key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
           text: `Waiting for signal: ${signalName}`,
         };
       }
       case 'CONDITION': {
         return {
+          key: `${waitState.elementInstanceKey}-CONDITION`,
           text: 'Waiting for condition',
         };
       }
@@ -76,20 +81,24 @@ function getWaitStateStatusItems(
         const jobKind = waitState.details['jobKind'] as string | undefined;
         if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
           return {
+            key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
             text: `Waiting for ${jobKind === 'EXECUTION_LISTENER' ? 'execution listener' : 'task listener'}: ${jobType}`,
           };
         }
         return {
+          key: `${waitState.elementInstanceKey}-JOB-${jobType}`,
           text: `Waiting for job: ${jobType}`,
         };
       }
       case 'CHILD_INSTANCE': {
         return {
+          key: `${waitState.elementInstanceKey}-CHILD_INSTANCE`,
           text: 'Waiting for child instance to complete',
         };
       }
       default:
         return {
+          key: `${waitState.elementInstanceKey}-WAITING`,
           text: 'Waiting',
         };
     }
