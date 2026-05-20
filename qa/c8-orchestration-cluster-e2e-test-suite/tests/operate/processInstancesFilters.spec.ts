@@ -581,7 +581,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
     });
 
-    await test.step('Filter by variable and operation id and assert results', async () => {
+    await test.step('Filter by variable and batch operation key and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
           (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
@@ -638,8 +638,8 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      const operationId =
-        await operateOperationsDetailsPage.getBatchOperationId();
+      const batchOperationKey =
+        await operateOperationsDetailsPage.getBatchOperationKey();
 
       await page.goto(`operate/processes`);
 
@@ -656,8 +656,12 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Operation ID');
-      await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Batch Operation Key',
+      );
+      await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+        batchOperationKey,
+      );
 
       await waitForAssertion({
         assertion: async () => {
@@ -665,8 +669,12 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Operation ID');
-          await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Batch Operation Key',
+          );
+          await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+            batchOperationKey,
+          );
         },
       });
 

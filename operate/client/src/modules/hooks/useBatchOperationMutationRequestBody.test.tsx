@@ -322,17 +322,17 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should handle operationId filter', () => {
+  it('should handle batchOperationKey filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        batchOperationId: 'op-123',
+        batchOperationKey: 'op-123',
         active: 'true',
       }),
     });
 
     expect(result.current).toEqual({
       filter: {
-        batchOperationId: {$eq: 'op-123'},
+        batchOperationKey: {$eq: 'op-123'},
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
       },

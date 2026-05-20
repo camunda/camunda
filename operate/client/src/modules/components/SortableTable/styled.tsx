@@ -48,12 +48,12 @@ const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
   }
 
   &:not(.errorRow):not(.successRow):not(.expandableRow) {
-    // hide expand button when batchOperationId filter is NOT set
+    // hide expand button when batchOperationKey filter is NOT set
     .cds--table-expand {
       display: none;
     }
 
-    // fix spacing after checkbox when batchOperationId filter is NOT set
+    // fix spacing after checkbox when batchOperationKey filter is NOT set
     .cds--table-column-checkbox {
       padding-inline-start: 1rem;
       + td {
@@ -123,7 +123,7 @@ const TableContainer = styled(BaseTableContainer)<TableContainerProps>`
     }
   }
 
-  // fix spacing before checkbox when batchOperationId filter is set
+  // fix spacing before checkbox when batchOperationKey filter is set
   tr.errorRow,
   tr.successRow {
     .cds--table-column-checkbox {

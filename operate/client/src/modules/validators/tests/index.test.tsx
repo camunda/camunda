@@ -9,8 +9,8 @@
 import {
   validateIdsCharacters,
   validatesIdsComplete,
-  validateOperationIdCharacters,
-  validateOperationIdComplete,
+  validateBatchOperationKeyCharacters,
+  validateBatchOperationKeyComplete,
   validateVariableNameComplete,
   validateVariableValuesComplete,
   validateVariableValueValid,
@@ -186,49 +186,62 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should validate operationId without delay', () => {
+  it('should validate batchOperationKey without delay', () => {
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
-    expect(validateOperationIdCharacters('', {})).toBeUndefined();
-    expect(validateOperationIdCharacters('f', {})).toBeUndefined();
-    expect(validateOperationIdCharacters('1', {})).toBeUndefined();
+    expect(validateBatchOperationKeyCharacters('', {})).toBeUndefined();
+    expect(validateBatchOperationKeyCharacters('f', {})).toBeUndefined();
+    expect(validateBatchOperationKeyCharacters('1', {})).toBeUndefined();
     expect(
-      validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {}),
+      validateBatchOperationKeyCharacters(
+        '1f4d40c3-7cce-4e51-8abe-0cda8d42f04f',
+        {},
+      ),
     ).toBeUndefined();
     expect(
-      validateOperationIdCharacters('2251799813685871', {}),
+      validateBatchOperationKeyCharacters('2251799813685871', {}),
     ).toBeUndefined();
 
-    expect(validateOperationIdCharacters('&', {})).toBe(ERRORS.operationId);
+    expect(validateBatchOperationKeyCharacters('&', {})).toBe(
+      ERRORS.batchOperationKey,
+    );
 
-    expect(validateOperationIdCharacters('g', {})).toBe(ERRORS.operationId);
+    expect(validateBatchOperationKeyCharacters('g', {})).toBe(
+      ERRORS.batchOperationKey,
+    );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('should validate operationId with delay', async () => {
+  it('should validate batchOperationKey with delay', async () => {
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     vi.runAllTimersAsync();
     await expect(
-      validateOperationIdComplete('1f4d40c3-7cce-4e51-', {}),
-    ).resolves.toBe(ERRORS.operationId);
+      validateBatchOperationKeyComplete('1f4d40c3-7cce-4e51-', {}),
+    ).resolves.toBe(ERRORS.batchOperationKey);
     await expect(
-      validateOperationIdComplete('0e8481e6-b652-41c9-a72a-f531c783122', {}),
-    ).resolves.toBe(ERRORS.operationId);
+      validateBatchOperationKeyComplete(
+        '0e8481e6-b652-41c9-a72a-f531c783122',
+        {},
+      ),
+    ).resolves.toBe(ERRORS.batchOperationKey);
     await expect(
-      validateOperationIdComplete('0e8-481e6-b652-41c9-a72a-f531c7831220', {}),
-    ).resolves.toBe(ERRORS.operationId);
-    await expect(validateOperationIdComplete('a', {})).resolves.toBe(
-      ERRORS.operationId,
+      validateBatchOperationKeyComplete(
+        '0e8-481e6-b652-41c9-a72a-f531c7831220',
+        {},
+      ),
+    ).resolves.toBe(ERRORS.batchOperationKey);
+    await expect(validateBatchOperationKeyComplete('a', {})).resolves.toBe(
+      ERRORS.batchOperationKey,
     );
-    await expect(validateOperationIdComplete('0', {})).resolves.toBe(
-      ERRORS.operationId,
-    );
-    await expect(validateOperationIdComplete('12345689', {})).resolves.toBe(
-      ERRORS.operationId,
+    await expect(validateBatchOperationKeyComplete('0', {})).resolves.toBe(
+      ERRORS.batchOperationKey,
     );
     await expect(
-      validateOperationIdComplete('01234567890123456789', {}),
-    ).resolves.toBe(ERRORS.operationId);
+      validateBatchOperationKeyComplete('12345689', {}),
+    ).resolves.toBe(ERRORS.batchOperationKey);
+    await expect(
+      validateBatchOperationKeyComplete('01234567890123456789', {}),
+    ).resolves.toBe(ERRORS.batchOperationKey);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(7);
   });

@@ -29,7 +29,7 @@ type RequestFilters = {
   canceled?: boolean;
   completed?: boolean;
   activityId?: string;
-  batchOperationId?: string;
+  batchOperationKey?: string;
   endDateAfter?: string;
   endDateBefore?: string;
   errorMessage?: string;

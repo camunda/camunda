@@ -74,15 +74,16 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       clientConfig.multiTenancyEnabled &&
       (tenantId === undefined || tenantId === 'all');
 
-    const batchOperationId = searchParams.get('batchOperationId') ?? undefined;
-    const isOperationStateColumnVisible = !!batchOperationId;
+    const batchOperationKey =
+      searchParams.get('batchOperationKey') ?? undefined;
+    const isOperationStateColumnVisible = !!batchOperationKey;
 
     const processInstanceKeys = processInstances.map(
       (instance) => instance.processInstanceKey,
     );
 
     const {data: operationItemsData, isLoading: isLoadingOperationItems} =
-      useOperationItemsForInstances(batchOperationId, processInstanceKeys);
+      useOperationItemsForInstances(batchOperationKey, processInstanceKeys);
 
     const operationItemsMap = new Map<string, BatchOperationItem>();
     operationItemsData?.items.forEach((item) => {
@@ -309,7 +310,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               isDisabled: true,
             },
           ]}
-          batchOperationId={batchOperationId}
+          batchOperationKey={batchOperationKey}
         />
         {batchModificationStore.state.isEnabled && <BatchModificationFooter />}
       </Container>

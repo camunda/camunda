@@ -64,13 +64,13 @@ export class OperateOperationsDetailsPage {
     return await this.state.innerText();
   }
 
-  async getBatchOperationId(): Promise<string> {
+  async getBatchOperationKey(): Promise<string> {
     const url = this.page.url();
 
     const match = url.match(/\/batch-operations\/([^/?]+)/);
     if (match && match[1]) {
-      const batchOperationId = match[1];
-      return batchOperationId;
+      const batchOperationKey = match[1];
+      return batchOperationKey;
     }
 
     throw new Error(`Could not extract batch operation ID from URL: ${url}`);

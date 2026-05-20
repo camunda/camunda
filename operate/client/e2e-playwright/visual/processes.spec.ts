@@ -266,10 +266,10 @@ test.describe('processes page', () => {
 
     await filtersPanel.displayOptionalFilter('Variable');
     await filtersPanel.displayOptionalFilter('Error Message');
-    await filtersPanel.displayOptionalFilter('Operation ID');
-    await filtersPanel.batchOperationIdFilter.type('aaa');
+    await filtersPanel.displayOptionalFilter('Batch Operation Key');
+    await filtersPanel.batchOperationKeyFilter.type('aaa');
     await expect(
-      page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
+      page.getByText('Key has to be a 16 to 19 digit number or a UUID'),
     ).toBeVisible();
     await expect(page).toHaveScreenshot();
   });
@@ -408,7 +408,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('filled with data and active batchOperationId filter', async ({
+  test('filled with data and active batchOperationKey filter', async ({
     page,
     processesPage,
   }) => {
@@ -428,7 +428,7 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        batchOperationKey: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
 
@@ -437,7 +437,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('filled with data, active batchOperationId filter and error message expanded', async ({
+  test('filled with data, active batchOperationKey filter and error message expanded', async ({
     page,
     processesPage,
   }) => {
@@ -457,7 +457,7 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        batchOperationKey: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
 

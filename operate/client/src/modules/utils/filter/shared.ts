@@ -16,7 +16,7 @@ type ProcessInstanceFilterField =
   | 'elementId'
   | 'variableName'
   | 'variableValues'
-  | 'batchOperationId'
+  | 'batchOperationKey'
   | 'active'
   | 'incidents'
   | 'completed'
@@ -39,7 +39,7 @@ type ProcessInstanceFilters = {
   elementId?: string;
   variableName?: string;
   variableValues?: string;
-  batchOperationId?: string;
+  batchOperationKey?: string;
   active?: boolean;
   incidents?: boolean;
   completed?: boolean;
@@ -63,7 +63,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'elementId',
   'variableName',
   'variableValues',
-  'batchOperationId',
+  'batchOperationKey',
   'active',
   'incidents',
   'completed',

@@ -81,7 +81,7 @@ describe('Filters', () => {
       parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationKey: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -126,7 +126,7 @@ describe('Filters', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.batchOperationId),
+      screen.getByDisplayValue(MOCK_PARAMS.batchOperationKey),
     ).toBeInTheDocument();
     expect(screen.getByRole('checkbox', {name: 'Active'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
@@ -200,7 +200,7 @@ describe('Filters', () => {
       parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'an error',
       elementId: 'ServiceTask_0kt6c5i',
-      batchOperationId: '90fdfe82-090b-4d84-af31-5db612514191',
+      batchOperationKey: '90fdfe82-090b-4d84-af31-5db612514191',
       businessId: 'order-12345',
       active: 'true',
       incidents: 'true',
@@ -274,11 +274,11 @@ describe('Filters', () => {
     await user.click(screen.getByText('Variable'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation ID'));
+    await user.click(screen.getByText('Batch Operation Key'));
     await user.type(
-      screen.getByLabelText(/^operation id$/i),
+      screen.getByLabelText(/^batch operation key$/i),
 
-      MOCK_VALUES.batchOperationId,
+      MOCK_VALUES.batchOperationKey,
     );
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -459,8 +459,8 @@ describe('Filters', () => {
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation ID'));
-    await removeOptionalFilter({user, screen, label: 'Operation ID'});
+    await user.click(screen.getByText('Batch Operation Key'));
+    await removeOptionalFilter({user, screen, label: 'Batch Operation Key'});
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
@@ -518,7 +518,7 @@ describe('Filters', () => {
       },
       {name: 'Variable', fields: ['Name', 'Value']},
       {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
-      {name: 'Operation ID', fields: ['Operation ID']},
+      {name: 'Batch Operation Key', fields: ['Batch Operation Key']},
       {name: 'Business ID', fields: ['Business ID']},
     ];
 

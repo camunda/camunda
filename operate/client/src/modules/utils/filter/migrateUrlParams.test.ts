@@ -36,7 +36,7 @@ describe('migrateUrlParams', () => {
     expect(result!.get('processInstanceKey')).toBe('123 456');
     expect(result!.get('parentProcessInstanceKey')).toBe('789');
     expect(result!.get('elementId')).toBe('task1');
-    expect(result!.get('batchOperationId')).toBe('op-1');
+    expect(result!.get('batchOperationKey')).toBe('op-1');
     expect(result!.get('hasRetriesLeft')).toBe('true');
     expect(result!.get('startDateFrom')).toBe('2023-01-01');
     expect(result!.get('startDateTo')).toBe('2023-12-31');
@@ -82,6 +82,17 @@ describe('migrateUrlParams', () => {
     const result = migrateUrlParams(search, PROCESS_INSTANCE_PARAM_MIGRATION);
 
     expect(result).toBeNull();
+  });
+
+  it('should migrate batchOperationId to batchOperationKey', () => {
+    const search = new URLSearchParams();
+    search.set('batchOperationId', 'op-1');
+
+    const result = migrateUrlParams(search, PROCESS_INSTANCE_PARAM_MIGRATION);
+
+    expect(result).not.toBeNull();
+    expect(result!.get('batchOperationKey')).toBe('op-1');
+    expect(result!.has('batchOperationId')).toBe(false);
   });
 
   it('should return null for empty search params', () => {

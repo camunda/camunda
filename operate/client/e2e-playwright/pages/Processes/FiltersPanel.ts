@@ -13,7 +13,7 @@ type OptionalFilter =
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
   | 'Business ID'
-  | 'Operation ID'
+  | 'Batch Operation Key'
   | 'Error Message'
   | 'Start Date Range'
   | 'End Date Range'
@@ -33,7 +33,7 @@ export class FiltersPanel {
   readonly processInstanceKeysFilter: Locator;
   readonly parentProcessInstanceKey: Locator;
   readonly elementFilter: Locator;
-  readonly batchOperationIdFilter: Locator;
+  readonly batchOperationKeyFilter: Locator;
   readonly businessIdFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
@@ -82,8 +82,8 @@ export class FiltersPanel {
       name: /element/i,
     });
 
-    this.batchOperationIdFilter = this.panel.getByRole('textbox', {
-      name: /operation id/i,
+    this.batchOperationKeyFilter = this.panel.getByRole('textbox', {
+      name: /batch operation key/i,
     });
 
     this.businessIdFilter = this.panel.getByRole('textbox', {
