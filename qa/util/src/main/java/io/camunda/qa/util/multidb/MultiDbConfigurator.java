@@ -258,8 +258,7 @@ public class MultiDbConfigurator {
     testApplication.withSecondaryStorageType(SecondaryStorageType.rdbms);
 
     final String tablePrefix = generateTablePrefix();
-    testApplication.withProperty(
-        "camunda.data.secondary-storage.rdbms.prefix", tablePrefix);
+    testApplication.withProperty("camunda.data.secondary-storage.rdbms.prefix", tablePrefix);
     // --
 
     if ("true".equalsIgnoreCase(System.getProperty(TEST_INTEGRATION_RDBMS_FAST_INIT))) {
