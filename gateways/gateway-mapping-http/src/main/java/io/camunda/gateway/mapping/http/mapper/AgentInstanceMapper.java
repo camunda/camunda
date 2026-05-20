@@ -89,7 +89,7 @@ public class AgentInstanceMapper {
             record.addChangedAttribute("metrics");
           }
 
-          if (request.getTools() != null && !request.getTools().isEmpty()) {
+          if (request.getTools() != null) {
             final List<AgentInstanceTool> tools =
                 request.getTools().stream().map(this::mapTool).collect(Collectors.toList());
             record.setTools(tools);

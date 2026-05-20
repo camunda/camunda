@@ -85,7 +85,7 @@ public class AgentInstanceRequestValidator {
 
           if (request.getStatus() == null
               && !hasMetricsDelta(request)
-              && (request.getTools() == null || request.getTools().isEmpty())) {
+              && request.getTools() == null) {
             violations.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("status, metrics, tools"));
           }
 

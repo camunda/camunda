@@ -440,6 +440,42 @@ class AgentInstanceControllerTest extends RestControllerTest {
             any());
   }
 
+  @Test
+  void shouldUpdateAgentInstanceWithEmptyToolsList() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "tools": []
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(agentInstanceServices)
+        .updateAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getTools()).isEmpty();
+                  assertThat(record.getChangedAttributes()).containsExactly("tools");
+                }),
+            any());
+  }
+
   @ParameterizedTest(name = "[{index}] {0}")
   @MethodSource("invalidUpdateRequests")
   void shouldRejectInvalidUpdateRequest(final String requestBody, final String expectedDetail) {

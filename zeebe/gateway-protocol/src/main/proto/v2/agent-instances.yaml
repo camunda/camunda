@@ -531,6 +531,7 @@ components:
             The complete list of tools available to the agent, replacing any previously
             stored tools. When provided, the engine replaces the existing tool list with
             this value.
+          nullable: true
           type: array
           items:
             $ref: '#/components/schemas/AgentTool'
