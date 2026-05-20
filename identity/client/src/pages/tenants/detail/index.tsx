@@ -20,6 +20,7 @@ import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
+import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
@@ -33,9 +34,14 @@ const Details: FC = () => {
   const { t } = useTranslate("tenants");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
-  const { data: tenantSearchResults, loading } = useApi(getTenantDetails, {
+  const {
+    data: tenantSearchResults,
+    loading,
+    reload,
+  } = useApi(getTenantDetails, {
     tenantId: id,
   });
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -59,6 +65,10 @@ const Details: FC = () => {
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{tenant.name}</PageHeadline>
                     <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
+                      <OverflowMenuItem
+                        itemText={t("edit")}
+                        onClick={() => editTenant(tenant)}
+                      />
                       <OverflowMenuItem
                         itemText={t("delete")}
                         onClick={() => {
@@ -120,6 +130,7 @@ const Details: FC = () => {
           </Section>
         )}
       </>
+      {editTenantModal}
       {deleteTenantModal}
     </StackPage>
   );

@@ -88,6 +88,14 @@ export const createUniqueTenant = (customId?: string) => {
   };
 };
 
+export const createEditedTenant = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Tenant ${id}`,
+    description: `Edited tenant description ${id}`,
+  };
+};
+
 // Create unique mapping rule with optional custom ID
 export const createUniqueMappingRule = (customId?: string) => {
   const id = customId || generateUniqueId();
@@ -139,6 +147,7 @@ export const createTestData = (options: {
   group?: boolean;
   editedGroup?: boolean;
   tenant?: boolean;
+  editedTenant?: boolean;
   mappingRule?: boolean;
   editedMappingRule?: boolean;
 }) => {
@@ -150,6 +159,7 @@ export const createTestData = (options: {
     group = false,
     editedGroup = false,
     tenant = false,
+    editedTenant = false,
     mappingRule = false,
     editedMappingRule = false,
   } = options;
@@ -163,6 +173,7 @@ export const createTestData = (options: {
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
+    editedTenant?: ReturnType<typeof createEditedTenant>;
     mappingRule?: ReturnType<typeof createUniqueMappingRule>;
     editedMappingRule?: ReturnType<typeof createEditedMappingRule>;
     id: string;
@@ -186,6 +197,10 @@ export const createTestData = (options: {
 
   if (tenant) {
     result.tenant = createUniqueTenant(sharedId);
+  }
+
+  if (editedTenant) {
+    result.editedTenant = createEditedTenant(sharedId);
   }
 
   if (mappingRule) {
