@@ -107,10 +107,9 @@ vi.mock('modules/components/InlineJsonEditor', async () => {
   return {InlineJsonEditor: InlineJsonEditorBase};
 });
 
-vi.mock('modules/components/JSONEditor', () => {
+vi.mock('modules/components/RichTextEditor', () => {
   return {
-    useMonaco: () => {},
-    JSONEditor: ({
+    RichTextEditor: ({
       value,
       onChange,
     }: {
