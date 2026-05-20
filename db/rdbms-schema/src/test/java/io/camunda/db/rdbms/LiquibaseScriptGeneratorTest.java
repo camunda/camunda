@@ -9,6 +9,7 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,8 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "", 4000, 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript(
+            new DatabaseVersion("h2"), "test.xml", "", 4000, 4000, 4000);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test.h2.sql"));
@@ -34,7 +36,8 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("mariadb", "test.xml", "", 4000, 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript(
+            new DatabaseVersion("mariadb"), "test.xml", "", 4000, 4000, 4000);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test.mariadb.sql"));
@@ -47,7 +50,8 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("mssql", "test.xml", "", 4000, 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript(
+            new DatabaseVersion("mssql"), "test.xml", "", 4000, 4000, 4000);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test.mssql.sql"));
@@ -60,7 +64,8 @@ class LiquibaseScriptGeneratorTest {
 
     // when
     final String sqlScript =
-        LiquibaseScriptGenerator.generateSqlScript("h2", "test.xml", "C8_", 4000, 4000, 4000);
+        LiquibaseScriptGenerator.generateSqlScript(
+            new DatabaseVersion("h2"), "test.xml", "C8_", 4000, 4000, 4000);
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test_prefix.h2.sql"));

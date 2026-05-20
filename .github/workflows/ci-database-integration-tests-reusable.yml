@@ -119,6 +119,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
+          -D test.integration.camunda.database.fast-init=true
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
