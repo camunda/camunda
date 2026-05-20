@@ -32,7 +32,6 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsC
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +47,6 @@ public class SystemController {
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final SecurityConfiguration securityConfiguration;
-  private final ServletContext servletContext;
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
 
@@ -57,14 +55,12 @@ public class SystemController {
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
       @Autowired(required = false) final SecurityConfiguration securityConfiguration,
-      @Autowired(required = false) final ServletContext servletContext,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
     this.usageMetricsServices = usageMetricsServices;
     this.authenticationProvider = authenticationProvider;
     this.gatewayRestConfiguration = gatewayRestConfiguration;
     this.securityConfiguration = securityConfiguration;
-    this.servletContext = servletContext;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
@@ -119,12 +115,9 @@ public class SystemController {
         securityConfiguration != null
             && securityConfiguration.getMultiTenancy() != null
             && securityConfiguration.getMultiTenancy().isChecksEnabled();
-    final String contextPath = servletContext != null ? servletContext.getContextPath() : "";
 
     return DeploymentConfigurationResponse.Builder.create()
-        .isEnterprise(webappConfiguration.isEnterprise())
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
-        .contextPath(contextPath != null ? contextPath : "")
         .maxRequestSize(maxRequestSizeBytes)
         .build();
   }
@@ -139,18 +132,11 @@ public class SystemController {
   }
 
   private CloudConfigurationResponse buildCloudConfiguration() {
-    final String organizationId = SaasConfigurationHelper.organizationId(securityConfiguration);
-    final String clusterId = SaasConfigurationHelper.clusterId(securityConfiguration);
-
     return CloudConfigurationResponse.Builder.create()
-        .organizationId(organizationId)
-        .clusterId(clusterId)
         .stage(
             webappConfiguration.getCloud().getStage() != null
                 ? CloudStage.fromValue(webappConfiguration.getCloud().getStage())
                 : null)
-        .mixpanelToken(webappConfiguration.getCloud().getMixpanelToken())
-        .mixpanelAPIHost(webappConfiguration.getCloud().getMixpanelApiHost())
         .build();
   }
 

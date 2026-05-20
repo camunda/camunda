@@ -89,9 +89,7 @@ public class SystemConfigurationIT {
 
     final JsonNode deployment = root.get("deployment");
     assertThat(deployment).isNotNull();
-    assertThat(deployment.get("isEnterprise").booleanValue()).isFalse();
     assertThat(deployment.get("isMultiTenancyEnabled").booleanValue()).isFalse();
-    assertThat(deployment.get("contextPath").textValue()).isEqualTo("");
     assertThat(deployment.get("maxRequestSize").longValue()).isPositive();
 
     final JsonNode authentication = root.get("authentication");
@@ -101,11 +99,7 @@ public class SystemConfigurationIT {
 
     final JsonNode cloud = root.get("cloud");
     assertThat(cloud).isNotNull();
-    assertThat(cloud.get("organizationId").isNull()).isTrue();
-    assertThat(cloud.get("clusterId").isNull()).isTrue();
     assertThat(cloud.get("stage").isNull()).isTrue();
-    assertThat(cloud.get("mixpanelToken").isNull()).isTrue();
-    assertThat(cloud.get("mixpanelAPIHost").isNull()).isTrue();
   }
 
   private URI configUri() {

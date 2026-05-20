@@ -19,18 +19,12 @@ const mockSystemConfiguration = {
 	},
 	components: {active: []},
 	deployment: {
-		isEnterprise: false,
 		isMultiTenancyEnabled: false,
-		contextPath: '/',
 		maxRequestSize: 0,
 	},
 	authentication: {canLogout: true, isLoginDelegated: false},
 	cloud: {
-		organizationId: null,
-		clusterId: null,
 		stage: null,
-		mixpanelToken: null,
-		mixpanelAPIHost: null,
 	},
 } satisfies GetSystemConfigurationResponseBody;
 

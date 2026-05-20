@@ -16,7 +16,6 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
-import jakarta.servlet.ServletContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,10 +27,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 /**
- * Tests that the controller correctly reads enterprise and cloud config from the injected
- * WebappConfiguration bean. Legacy property fallback (camunda.operate.* / camunda.tasklist.*) is
- * now handled by WebappPropertiesOverride in the configuration module; the controller itself simply
- * reads the already-resolved WebappConfiguration.
+ * Tests that the controller correctly reads cloud config from the injected WebappConfiguration
+ * bean. Legacy property fallback (camunda.operate.* / camunda.tasklist.*) is now handled by
+ * WebappPropertiesOverride in the configuration module; the controller itself simply reads the
+ * already-resolved WebappConfiguration.
  */
 @WebMvcTest(SystemController.class)
 @Import(SystemControllerLegacyPropertyTest.WebappConfigTestConfig.class)
@@ -43,14 +42,12 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean SecurityConfiguration securityConfiguration;
-  @MockitoBean ServletContext servletContext;
 
   @Test
-  void shouldUseEnterpriseAndCloudValuesFromWebappConfiguration() {
+  void shouldUseCloudStageFromWebappConfiguration() {
     // given: WebappConfiguration already resolved (translation from legacy keys done by
     // WebappPropertiesOverride at runtime; here we supply the resolved values directly)
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(new JobMetricsConfiguration());
-    when(servletContext.getContextPath()).thenReturn("");
 
     // when/then
     webClient
@@ -64,13 +61,8 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
         .json(
             """
             {
-              "deployment": {
-                "isEnterprise": true
-              },
               "cloud": {
-                "stage": "dev",
-                "mixpanelToken": "test-token",
-                "mixpanelAPIHost": "test-host"
+                "stage": "dev"
               }
             }
             """,
@@ -84,11 +76,8 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
     @Primary
     public WebappConfiguration testWebappConfiguration() {
       final WebappConfiguration config = new WebappConfiguration();
-      config.setEnterprise(true);
       final WebappConfiguration.Cloud cloud = config.getCloud();
       cloud.setStage("dev");
-      cloud.setMixpanelToken("test-token");
-      cloud.setMixpanelApiHost("test-host");
       return config;
     }
   }

@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
-import jakarta.servlet.ServletContext;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -86,7 +85,6 @@ public class SystemControllerTest extends RestControllerTest {
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean SecurityConfiguration securityConfiguration;
-  @MockitoBean ServletContext servletContext;
 
   // WebappConfiguration is provided by SystemControllerTestConfiguration
   @Autowired WebappConfiguration webappConfiguration;
@@ -465,8 +463,6 @@ public class SystemControllerTest extends RestControllerTest {
     when(securityConfiguration.getMultiTenancy()).thenReturn(securityCfg.getMultiTenancy());
     when(securityConfiguration.getSaas()).thenReturn(securityCfg.getSaas());
 
-    when(servletContext.getContextPath()).thenReturn("/camunda");
-
     // Properties are already set to true by default in SystemControllerTestConfiguration
 
     // when/then
@@ -487,9 +483,7 @@ public class SystemControllerTest extends RestControllerTest {
                 "active": ["admin", "operate", "tasklist"]
               },
               "deployment": {
-                "isEnterprise": false,
                 "isMultiTenancyEnabled": false,
-                "contextPath": "/camunda",
                 "maxRequestSize": 4194304
               },
               "authentication": {
@@ -497,11 +491,7 @@ public class SystemControllerTest extends RestControllerTest {
                 "isLoginDelegated": false
               },
               "cloud": {
-                "organizationId": null,
-                "clusterId": null,
-                "stage": null,
-                "mixpanelToken": null,
-                "mixpanelAPIHost": null
+                "stage": null
               }
             }
             """,
@@ -513,8 +503,6 @@ public class SystemControllerTest extends RestControllerTest {
     // given
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
-    when(servletContext.getContextPath()).thenReturn("");
 
     webappConfiguration.setActiveComponents(List.of("operate"));
 
@@ -532,9 +520,6 @@ public class SystemControllerTest extends RestControllerTest {
             {
               "components": {
                 "active": ["operate"]
-              },
-              "deployment": {
-                "contextPath": ""
               }
             }
             """,
@@ -579,11 +564,9 @@ public class SystemControllerTest extends RestControllerTest {
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
 
-    final var securityCfg = new SecurityConfiguration();
     final var saasCfg = new SaasConfiguration();
     saasCfg.setOrganizationId("org-123");
     saasCfg.setClusterId("cluster-456");
-    securityCfg.setSaas(saasCfg);
     when(securityConfiguration.getSaas()).thenReturn(saasCfg);
 
     // when/then
@@ -600,10 +583,6 @@ public class SystemControllerTest extends RestControllerTest {
             {
               "authentication": {
                 "canLogout": false
-              },
-              "cloud": {
-                "organizationId": "org-123",
-                "clusterId": "cluster-456"
               }
             }
             """,
@@ -616,7 +595,7 @@ public class SystemControllerTest extends RestControllerTest {
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
 
-    // Mock beans (securityConfiguration, servletContext) are not explicitly stubbed,
+    // Mock beans (securityConfiguration) are not explicitly stubbed,
     // so they return null for method calls. Environment is provided by test config,
     // so components are detected with default values.
 
@@ -636,9 +615,7 @@ public class SystemControllerTest extends RestControllerTest {
                 "active": ["admin", "operate", "tasklist"]
               },
               "deployment": {
-                "isEnterprise": false,
                 "isMultiTenancyEnabled": false,
-                "contextPath": "",
                 "maxRequestSize": 4194304
               },
               "authentication": {
@@ -646,11 +623,7 @@ public class SystemControllerTest extends RestControllerTest {
                 "isLoginDelegated": false
               },
               "cloud": {
-                "organizationId": null,
-                "clusterId": null,
-                "stage": null,
-                "mixpanelToken": null,
-                "mixpanelAPIHost": null
+                "stage": null
               }
             }
             """,
