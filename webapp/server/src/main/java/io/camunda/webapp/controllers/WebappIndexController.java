@@ -42,10 +42,11 @@ public class WebappIndexController {
 
   public WebappIndexController(
       final ServletContext context,
-      final WebappConfiguration webappConfiguration,
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Autowired(required = false) final SecurityConfiguration securityConfiguration) {
     this.context = context;
-    this.webappConfiguration = webappConfiguration;
+    this.webappConfiguration =
+        webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.securityConfiguration = securityConfiguration;
   }
 

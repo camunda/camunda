@@ -169,6 +169,25 @@ class WebappIndexControllerTest {
   }
 
   @Test
+  void shouldUseDefaultConfigWhenWebappConfigurationIsNull() {
+    // given
+    when(servletContext.getContextPath()).thenReturn("");
+    final WebappIndexController controller = new WebappIndexController(servletContext, null, null);
+    final ExtendedModelMap model = new ExtendedModelMap();
+
+    // when
+    final String viewName = controller.webapp(model);
+
+    // then — falls back to default WebappConfiguration values
+    assertThat(viewName).isEqualTo("webapp/index");
+    assertThat(model.getAttribute("isEnterprise")).isEqualTo(false);
+    assertThat(model.getAttribute("mixpanelToken")).isEqualTo("");
+    assertThat(model.getAttribute("mixpanelApiHost")).isEqualTo("");
+    assertThat(model.getAttribute("baseName")).isEqualTo("/webapp/");
+    assertThat(model.getAttribute("contextPath")).isEqualTo("");
+  }
+
+  @Test
   void shouldExposeCloudIdentifiers() {
     // given
     when(servletContext.getContextPath()).thenReturn("");
