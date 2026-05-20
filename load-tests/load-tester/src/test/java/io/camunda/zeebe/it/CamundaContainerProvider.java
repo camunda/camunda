@@ -8,24 +8,37 @@
 package io.camunda.zeebe.it;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
-import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.time.Duration;
+import java.util.Optional;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * Shared utilities for creating and configuring a {@link CamundaContainer} in integration tests.
+ *
+ * <p>Image tag resolution: {@code -Dcamunda.docker.test.image} → {@code CAMUNDA_TEST_DOCKER_IMAGE}
+ * env var → {@code camunda/camunda:current-test}. Mirrors {@code dist/AbstractCamundaDockerIT} and
+ * {@code ZeebeTestContainerDefaults} so existing CI plumbing applies.
  */
 final class CamundaContainerProvider {
+
+  static final String IMAGE_SYSPROP = "camunda.docker.test.image";
+  static final String IMAGE_ENV_VAR = "CAMUNDA_TEST_DOCKER_IMAGE";
+  static final String DEFAULT_IMAGE = "camunda/camunda:current-test";
 
   private CamundaContainerProvider() {}
 
   static CamundaContainer createCamundaContainer() {
-    return new CamundaContainer(
-            DockerImageName.parse(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME)
-                .withTag(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION))
+    return new CamundaContainer(DockerImageName.parse(resolveImage()))
         .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
+  }
+
+  static String resolveImage() {
+    return Optional.ofNullable(System.getProperty(IMAGE_SYSPROP))
+        .filter(s -> !s.isEmpty())
+        .or(() -> Optional.ofNullable(System.getenv(IMAGE_ENV_VAR)).filter(s -> !s.isEmpty()))
+        .orElse(DEFAULT_IMAGE);
   }
 
   static void registerClientProperties(
