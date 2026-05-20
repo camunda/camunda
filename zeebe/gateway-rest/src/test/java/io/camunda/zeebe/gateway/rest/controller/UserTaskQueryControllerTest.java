@@ -231,6 +231,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "resourceKey": null,
             "result": "SUCCESS",
             "rootProcessInstanceKey": null,
+            "requestSource": "TEST",
             "tenantId": null,
             "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
@@ -264,6 +265,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "resourceKey": null,
             "result": "SUCCESS",
             "rootProcessInstanceKey": null,
+            "requestSource": "TEST",
             "tenantId": null,
             "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
@@ -394,6 +396,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
                       .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
                       .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .requestSource("TEST")
                       .build(),
                   new AuditLogEntity.Builder()
                       .auditLogKey("2")
@@ -404,6 +407,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
                       .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
                       .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .requestSource("TEST")
                       .build()))
           .startCursor("0")
           .endCursor("1")

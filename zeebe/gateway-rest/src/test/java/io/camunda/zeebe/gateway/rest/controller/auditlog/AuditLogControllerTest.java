@@ -83,7 +83,8 @@ public class AuditLogControllerTest extends RestControllerTest {
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "rootProcessInstanceKey": null
+            "rootProcessInstanceKey": null,
+            "requestSource": "TEST"
           }
         ],
         "page": {
@@ -128,7 +129,8 @@ public class AuditLogControllerTest extends RestControllerTest {
         "relatedEntityKey": null,
         "relatedEntityType": null,
         "resourceKey": null,
-        "rootProcessInstanceKey": null
+        "rootProcessInstanceKey": null,
+        "requestSource": "TEST"
       }
       """;
 
@@ -157,6 +159,7 @@ public class AuditLogControllerTest extends RestControllerTest {
           .decisionDefinitionId("decisionDefId")
           .decisionDefinitionKey(333L)
           .decisionEvaluationKey(444L)
+          .requestSource("TEST")
           .build();
 
   @MockitoBean AuditLogServices auditLogServices;

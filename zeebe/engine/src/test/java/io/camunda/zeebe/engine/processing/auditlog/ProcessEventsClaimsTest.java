@@ -13,6 +13,7 @@ import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -103,6 +104,40 @@ public class ProcessEventsClaimsTest {
             .findFirst();
     assertAuthorizationClaims(record);
     assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldPropagateRequestSourceClaimToProcessCreatedEventViaMessageCorrelation() {
+    // given
+    deployMessageStartProcess();
+    final var authInfo = new AuthInfo();
+    authInfo.setClaims(
+        Map.of(
+            Authorization.AUTHORIZED_USERNAME,
+            DEFAULT_USER.getUsername(),
+            Authorization.REQUEST_SOURCE,
+            "MCP"));
+
+    // when
+    final var processInstanceKey =
+        engine
+            .messageCorrelation()
+            .withName("startMessage")
+            .withCorrelationKey("key-mcp-channel")
+            .correlate(authInfo)
+            .getValue()
+            .getProcessInstanceKey();
+
+    // then
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertThat(record).isPresent();
+    assertThat(record.get().getAuthorizations())
+        .containsEntry(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername())
+        .containsEntry(Authorization.REQUEST_SOURCE, "MCP");
   }
 
   @Test

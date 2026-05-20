@@ -25,6 +25,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -303,7 +304,7 @@ class ProcessesToolRepositoryTest {
       when(messageSubscriptionServices.getByKey(eq(77L), any())).thenReturn(entity);
 
       final var correlationRecord = new MessageCorrelationRecord();
-      when(messageServices.correlateMessage(any(), any()))
+      when(messageServices.correlateMessage(any(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(correlationRecord));
 
       final Either<String, SyncToolSpecification> result =
@@ -319,7 +320,9 @@ class ProcessesToolRepositoryTest {
 
       final ArgumentCaptor<CorrelateMessageRequest> reqCaptor =
           ArgumentCaptor.forClass(CorrelateMessageRequest.class);
-      verify(messageServices).correlateMessage(reqCaptor.capture(), any());
+      verify(messageServices)
+          .correlateMessage(
+              reqCaptor.capture(), any(), eq(Map.of(Authorization.REQUEST_SOURCE, "MCP")));
 
       assertThat(reqCaptor.getValue().name()).isEqualTo("deploy.start");
       assertThat(reqCaptor.getValue().tenantId()).isEqualTo("tenant-a");
@@ -415,7 +418,7 @@ class ProcessesToolRepositoryTest {
               "<default>",
               MessageSubscriptionState.CREATED);
       when(messageSubscriptionServices.getByKey(eq(88L), any())).thenReturn(entity);
-      when(messageServices.correlateMessage(any(), any()))
+      when(messageServices.correlateMessage(any(), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new MessageCorrelationRecord().setProcessInstanceKey(12345678910L)));
@@ -442,7 +445,9 @@ class ProcessesToolRepositoryTest {
 
       verify(messageServices)
           .correlateMessage(
-              eq(new CorrelateMessageRequest("message", "", Map.of(), "<default>")), any());
+              eq(new CorrelateMessageRequest("message", "", Map.of(), "<default>")),
+              any(),
+              eq(Map.of(Authorization.REQUEST_SOURCE, "MCP")));
     }
   }
 
