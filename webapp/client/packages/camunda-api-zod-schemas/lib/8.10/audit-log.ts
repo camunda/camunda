@@ -108,6 +108,7 @@ const auditLogSchema = z.object({
 	relatedEntityType: auditLogEntityTypeSchema.nullable(),
 	entityDescription: z.string().nullable(),
 	agentElementId: z.string().nullable(),
+	requestSource: z.string().nullable(),
 });
 type AuditLog = z.infer<typeof auditLogSchema>;
 
@@ -132,6 +133,7 @@ const auditLogFilterSchema = z
 		relatedEntityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
 		relatedEntityKey: advancedStringFilterSchema.optional(),
 		entityDescription: advancedStringFilterSchema.optional(),
+		requestSource: advancedStringFilterSchema.optional(),
 	})
 	.partial();
 
@@ -155,6 +157,7 @@ const auditLogSortFieldEnum = z.enum([
 	'processDefinitionId',
 	'processDefinitionKey',
 	'processInstanceKey',
+	'requestSource',
 	'result',
 	'tenantId',
 	'timestamp',

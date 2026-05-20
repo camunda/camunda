@@ -156,6 +156,9 @@ describe('OperationsLog InstancesTable', () => {
       screen.getByRole('columnheader', {name: /actor/i}),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole('columnheader', {name: /request source/i}),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('columnheader', {name: /date/i}),
     ).toBeInTheDocument();
   });
@@ -195,6 +198,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
         },
         {
           auditLogKey: '456',
@@ -228,6 +232,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
         },
       ]),
     );
@@ -282,6 +287,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
           entityDescription: null,
         },
       ]),
@@ -335,6 +341,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
           entityDescription: null,
         },
       ]),
@@ -403,6 +410,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
           entityDescription: null,
         },
       ]),
@@ -449,6 +457,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
           entityDescription: null,
         },
       ]),
@@ -501,6 +510,7 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityKey: null,
           relatedEntityType: null,
           agentElementId: null,
+          requestSource: null,
           entityDescription: null,
         },
       ]),

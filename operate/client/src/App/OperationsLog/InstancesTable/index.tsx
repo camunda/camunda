@@ -88,6 +88,11 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
+    header: 'Request source',
+    key: 'requestSource',
+    sortKey: 'requestSource',
+  },
+  {
     header: 'Date',
     key: 'timestamp',
     sortKey: 'timestamp',
@@ -156,6 +161,7 @@ const InstancesTable: React.FC = observer(() => {
               }
             : undefined,
         actorId: filterValues.actorId,
+        requestSource: filterValues.requestSource,
       },
     };
   }, [
@@ -248,6 +254,7 @@ const InstancesTable: React.FC = observer(() => {
           ),
           details: <CellDetails item={item} />,
           user: <CellActor item={item} />,
+          requestSource: item.requestSource ?? '-',
           timestamp: formatDate(item.timestamp),
           comment: (
             <CellComment item={item} setDetailsModal={setDetailsModal} />
