@@ -23,6 +23,7 @@ import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
+import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.PayloadReader;
@@ -105,6 +106,15 @@ public class Starter implements CommandLineRunner {
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
+
+    processInstancesStartedCounter =
+        Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
+            .description(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
+            .register(registry);
+
+    Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
+        .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
+        .register(registry);
 
     if (properties.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter();

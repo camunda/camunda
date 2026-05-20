@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Render the PR-vs-daily load-test comparison Markdown table.
 
-Reads queries (JSON form of queries.yaml), optimal targets, and per-namespace
-metric results from env vars, then writes the same Markdown body to both
-$GITHUB_STEP_SUMMARY and the `comparison-md` step output via $GITHUB_OUTPUT.
-
-Invoked by the `Build comparison markdown` step of the
-`render-comparison` job in `.github/workflows/camunda-pr-load-test.yaml`.
+Invoked by the `Build comparison markdown` step of the `render-comparison`
+job in `.github/workflows/camunda-pr-load-test.yaml`.
 """
 
 from __future__ import annotations
@@ -18,9 +14,9 @@ import sys
 from typing import Any
 
 
+# ---------- parsing ----------
+
 def warn(msg: str) -> None:
-    # GitHub Actions `::warning::` annotation; mirrors core.warning() from
-    # actions/github-script.
     print(f"::warning::{msg}", file=sys.stderr)
 
 
@@ -33,8 +29,6 @@ def numeric_or_none(v: Any) -> float | None:
 
 
 def safe_json_parse(raw: str | None, label: str) -> dict:
-    # Upstream job outputs are empty strings when the job failed or was
-    # skipped (e.g. no daily namespace found). Parse defensively.
     if not raw or not raw.strip():
         warn(f"{label} JSON is empty — column will render as n/a / '-'")
         return {}
@@ -45,11 +39,13 @@ def safe_json_parse(raw: str | None, label: str) -> dict:
         return {}
 
 
+# ---------- formatting ----------
+
 def format_value(n: float | None, q: dict) -> str:
-    if n is None or not math.isfinite(n):
+    if n is None:
         return "n/a"
     decimals = q.get("decimals", 2)
-    unit = q.get("unit", "") or ""
+    unit = q.get("unit", "")
     fmt = q.get("format")
     if fmt == "integer":
         return f"{round(n):,}"
@@ -60,20 +56,16 @@ def format_value(n: float | None, q: dict) -> str:
     return str(n)
 
 
-def format_or_dash(n: float | None, q: dict) -> str:
-    # Daily column uses '-' (not 'n/a') so a missing baseline reads visually
-    # distinct from "the query ran and got null".
-    if n is None or not math.isfinite(n):
-        return "-"
-    return format_value(n, q)
+# ---------- comparison ----------
 
-
-def optimal_for(spec: dict) -> float | None:
-    if spec.get("expected") is not None:
-        return spec["expected"]
-    if spec.get("per-second") is not None:
-        return spec["per-second"]
-    return None
+def delta(current: float | None, baseline: float | None) -> str:
+    if current is None or baseline is None:
+        return "n/a"
+    if baseline == 0:
+        return "0" if current == 0 else "+∞"
+    diff = ((current - baseline) / baseline) * 100
+    sign = "+" if diff >= 0 else ""
+    return f"{sign}{diff:.1f}%"
 
 
 def verdict(
@@ -82,13 +74,11 @@ def verdict(
     tolerance: float | None,
     higher_is_better: bool,
 ) -> str:
-    if current is None or not math.isfinite(current) or baseline is None:
+    if current is None or baseline is None:
         return "❔"
     if baseline == 0:
-        if not higher_is_better and current == 0:
-            return "✅"
-        if not higher_is_better and current > 0:
-            return "⚠️"
+        if not higher_is_better:
+            return "✅" if current == 0 else "⚠️"
         return "✅" if current > 0 else "❔"
     diff = ((current - baseline) / baseline) * 100
     tol = tolerance if tolerance is not None else 10
@@ -98,30 +88,20 @@ def verdict(
     return "✅" if improved else "⚠️"
 
 
-def delta(current: float | None, baseline: float | None) -> str:
-    if current is None or not math.isfinite(current) or baseline is None:
-        return "n/a"
-    if baseline == 0:
-        return "0" if current == 0 else "+∞"
-    diff = ((current - baseline) / baseline) * 100
-    sign = "+" if diff >= 0 else ""
-    return f"{sign}{diff:.1f}%"
-
+# ---------- rendering ----------
 
 def load_inputs() -> dict:
-    queries_path = os.environ["QUERIES_JSON_PATH"]
-    optimal_path = os.environ["OPTIMAL_JSON_PATH"]
-    with open(queries_path, encoding="utf-8") as f:
+    with open(os.environ["QUERIES_JSON_PATH"], encoding="utf-8") as f:
         queries_doc = json.load(f)
-    with open(optimal_path, encoding="utf-8") as f:
+    with open(os.environ["OPTIMAL_JSON_PATH"], encoding="utf-8") as f:
         optimal = json.load(f)
     return {
         "namespace": os.environ.get("NAMESPACE", ""),
-        "daily_namespace": os.environ.get("DAILY_NAMESPACE", "") or "",
+        "daily_namespace": os.environ.get("DAILY_NAMESPACE", ""),
         "duration_seconds": int(os.environ.get("DURATION_SECONDS", "0")),
-        "storage_type": os.environ.get("STORAGE_TYPE", "") or "",
+        "storage_type": os.environ.get("STORAGE_TYPE", ""),
         "queries": queries_doc["queries"],
-        "optimal_metrics": optimal.get("metrics", {}) or {},
+        "optimal_metrics": optimal.get("metrics", {}),
         "results": safe_json_parse(os.environ.get("PR_RESULTS_JSON"), "Current"),
         "daily_results": safe_json_parse(os.environ.get("DAILY_RESULTS_JSON"), "Daily"),
     }
@@ -131,11 +111,12 @@ def render_row(q: dict, ctx: dict) -> str:
     current = numeric_or_none(ctx["results"].get(q["name"]))
     daily = numeric_or_none(ctx["daily_results"].get(q["name"]))
     spec = ctx["optimal_metrics"].get(q["name"], {}) or {}
-    optimal_val = optimal_for(spec)
+    optimal_val = spec.get("expected")
+    daily_cell = "-" if daily is None else format_value(daily, q)
     return (
         f"| {q['description']} "
         f"| {format_value(current, q)} "
-        f"| {format_or_dash(daily, q)} "
+        f"| {daily_cell} "
         f"| {format_value(optimal_val, q)} "
         f"| {delta(current, daily)} "
         f"| {verdict(current, daily, spec.get('tolerance-percent'), q.get('higher_is_better', False))} |"
@@ -144,11 +125,7 @@ def render_row(q: dict, ctx: dict) -> str:
 
 def render_body(ctx: dict) -> str:
     storage = ctx["storage_type"]
-    heading = (
-        f"## 📈 Load Test Metrics - {storage}"
-        if storage
-        else "## 📈 Load Test Metrics"
-    )
+    heading = f"## 📈 Load Test Metrics - {storage}" if storage else "## 📈 Load Test Metrics"
     daily_line = (
         f"Daily reference: `{ctx['daily_namespace']}`"
         if ctx["daily_namespace"]
@@ -158,9 +135,10 @@ def render_body(ctx: dict) -> str:
         "https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe"
         f"?var-namespace={ctx['namespace']}"
     )
-    repo = os.environ.get("GITHUB_REPOSITORY", "")
-    run_id = os.environ.get("GITHUB_RUN_ID", "")
-    run_link = f"https://github.com/{repo}/actions/runs/{run_id}"
+    run_link = (
+        f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}"
+        f"/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"
+    )
 
     lines = [
         heading,
@@ -174,16 +152,12 @@ def render_body(ctx: dict) -> str:
         "",
         f"📊 [Grafana dashboard]({dashboard}) · 🔁 [Workflow run]({run_link})",
         "",
-        (
-            "_Metrics defined in `load-tests/docs/scripts/queries.yaml`. "
-            "Daily reference is the most recent active `c8-medic-daily-*-test` namespace on main. "
-            "Optimal target at `load-tests/docs/scripts/optimal.json`. "
-            "Verdict compares Current to Daily; tolerance from Optimal. "
-            "⚠️ only fires on the regression side — improvements outside tolerance still show ✅._"
-        ),
+        "_Verdict compares Current to Daily; ⚠️ flags regressions only._",
     ]
     return "\n".join(lines)
 
+
+# ---------- I/O ----------
 
 def emit(body: str) -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -199,9 +173,7 @@ def emit(body: str) -> None:
 
 
 def main() -> int:
-    ctx = load_inputs()
-    body = render_body(ctx)
-    emit(body)
+    emit(render_body(load_inputs()))
     return 0
 
 
