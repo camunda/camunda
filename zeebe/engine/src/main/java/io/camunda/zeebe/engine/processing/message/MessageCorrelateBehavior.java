@@ -84,7 +84,7 @@ public final class MessageCorrelateBehavior {
           if ((messageData.correlationKey().capacity() == 0
                   || !messageState.existActiveProcessInstance(
                       messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
-              && !isBlockedByBusinessIdUniqueness(messageData, subscriptionRecord)) {
+              && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
@@ -125,7 +125,7 @@ public final class MessageCorrelateBehavior {
           if ((messageData.correlationKey().capacity() == 0
                   || !messageState.existActiveProcessInstance(
                       messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
-              && !isBlockedByBusinessIdUniqueness(messageData, subscriptionRecord)) {
+              && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
@@ -242,7 +242,7 @@ public final class MessageCorrelateBehavior {
    * a later increment via a cross-partition ask. This method only resolves what {@code P_K} can
    * answer locally.
    */
-  private boolean isBlockedByBusinessIdUniqueness(
+  private boolean isBusinessIdAlreadyHeld(
       final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
     if (!businessIdUniquenessEnabled) {
       return false;

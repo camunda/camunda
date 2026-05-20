@@ -132,7 +132,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
-                    && !isBufferedMessageBlockedByBusinessIdUniqueness(storedMessage, process)) {
+                    && !isBusinessIdAlreadyHeld(storedMessage, process)) {
 
                   // correlate the first published message across all message start events
                   // - using the message key to decide which message was published before
@@ -166,7 +166,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
    * can be left untouched until TTL. The release-driven retry path added in a later increment
    * closes that gap.
    */
-  private boolean isBufferedMessageBlockedByBusinessIdUniqueness(
+  private boolean isBusinessIdAlreadyHeld(
       final StoredMessage storedMessage, final DeployedProcess process) {
     if (!businessIdUniquenessEnabled) {
       return false;
