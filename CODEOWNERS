@@ -53,6 +53,9 @@
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
 /.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
+/.github/actions/dependency-vuln-check/*                 @camunda/monorepo-devops-team
+# allow-ghsas entries require approval — update owner to security team handle once confirmed
+/.github/dependency-review-config.yml                    @camunda/monorepo-devops-team
 
 ###################
 ## Core Features ##
