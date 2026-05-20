@@ -73,6 +73,11 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
+    header: 'Request Source',
+    key: 'requestSource',
+    sortKey: 'requestSource',
+  },
+  {
     header: 'Date',
     key: 'timestamp',
     sortKey: 'timestamp',
@@ -196,6 +201,7 @@ const OperationsLogTab: React.FC = observer(() => {
         entityType: spaceAndCapitalize(item.entityType.toString()),
         entityKey: <CellEntityKey item={item} />,
         user: <CellActor item={item} />,
+        requestSource: item.requestSource ?? '–',
         timestamp: formatDate(item.timestamp),
         comment: (
           <Button

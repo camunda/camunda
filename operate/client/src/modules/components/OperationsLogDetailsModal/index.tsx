@@ -15,6 +15,7 @@ import {
 import {Link} from 'modules/components/Link';
 import {formatDate} from 'modules/utils/date';
 import {
+  Application,
   ArrowRight,
   BatchJob,
   CheckmarkOutline,
@@ -192,6 +193,21 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
             </FirstColumn>
             <SecondColumn>{formatDate(auditLog.timestamp)}</SecondColumn>
           </VerticallyAlignedRow>
+          {auditLog.requestSource && (
+            <VerticallyAlignedRow>
+              <FirstColumn noWrap>
+                <IconText>
+                  <Application />
+                  Request source
+                </IconText>
+              </FirstColumn>
+              <SecondColumn>
+                <CodeSnippet type="inline" wrapText>
+                  {auditLog.requestSource}
+                </CodeSnippet>
+              </SecondColumn>
+            </VerticallyAlignedRow>
+          )}
           {auditLog.entityType === 'BATCH' && (
             <>
               <VerticallyAlignedRow>

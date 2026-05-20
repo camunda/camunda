@@ -21,7 +21,8 @@ type OperationsLogFilterField =
   | 'result'
   | 'timestampBefore'
   | 'timestampAfter'
-  | 'tenantId';
+  | 'tenantId'
+  | 'requestSource';
 
 type OperationsLogFilters = {
   processDefinitionId?: string;
@@ -34,6 +35,7 @@ type OperationsLogFilters = {
   timestampBefore?: string;
   timestampAfter?: string;
   tenantId?: string;
+  requestSource?: string;
 };
 
 const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
@@ -47,6 +49,7 @@ const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
   'timestampBefore',
   'timestampAfter',
   'tenantId',
+  'requestSource',
 ];
 
 const AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES: AuditLogEntityType[] = [

@@ -188,6 +188,18 @@ const Filters: React.FC = observer(() => {
                           />
                         )}
                       </Field>
+                      <Field name="requestSource">
+                        {({input}) => (
+                          <TextInputField
+                            {...input}
+                            id="requestSource"
+                            size="sm"
+                            labelText="Request source"
+                            type="text"
+                            placeholder="e.g. MCP"
+                          />
+                        )}
+                      </Field>
                       <DateRangeField
                         isModalOpen={isDateRangeModalOpen}
                         onModalClose={() => setIsDateRangeModalOpen(false)}
