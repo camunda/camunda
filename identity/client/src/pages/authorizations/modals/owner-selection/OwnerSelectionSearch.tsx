@@ -12,7 +12,12 @@ import { useApi } from "src/utility/api";
 import { searchUser } from "src/utility/api/users";
 import useTranslate from "src/utility/localization";
 import DropdownSearch from "src/components/form/DropdownSearch";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
+
+// handcrafted interface for backport as in 8.8 the zod-types are not available.
+interface User {
+  name: string;
+  username: string;
+}
 
 type OwnerSelectionSearchProps = {
   onChange: (ownerId: string) => void;
