@@ -39,7 +39,7 @@ public final class TestSearchContainers {
       DockerImageName.parse("mariadb").withTag("11.4");
   private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("8.4");
   private static final DockerImageName MSSQLSERVER_IMAGE =
-      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2019-latest");
+      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");
   private static final DockerImageName ORACLE_IMAGE =
       DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
 
