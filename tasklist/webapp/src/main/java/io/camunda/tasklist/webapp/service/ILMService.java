@@ -28,14 +28,17 @@ public class ILMService {
 
   @PostConstruct
   public void init() throws IOException {
-    if (tasklistProperties.isArchiverEnabled()) {
-      if (tasklistProperties.getArchiver().isIlmEnabled()) {
-        applyIlmPolicyToAllIndices();
-      } else {
-        removeIlmPolicyFromAllIndices();
-      }
-    } else {
+    if (!tasklistProperties.isArchiverEnabled()) {
       LOGGER.info("Archiver is not enabled, skipping ILM policy update");
+      return;
+    }
+    if (tasklistProperties.getArchiver().isIlmEnabled()) {
+      applyIlmPolicyToAllIndices();
+    } else if (tasklistProperties.getArchiver().isIlmManagePolicy()) {
+      removeIlmPolicyFromAllIndices();
+    } else {
+      LOGGER.info(
+          "ILM is disabled and ilmManagePolicy=false; leaving existing ILM/ISM policy assignments untouched");
     }
   }
 
