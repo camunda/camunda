@@ -43,6 +43,29 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Configure git auth for transitive clones
+        # The build:version-map script spawns its own `git clone` of
+        # camunda/return-of-api-added-in-analysis from inside Node, which
+        # doesn't inherit the auth header that actions/checkout sets on the
+        # host repo. Rewrite all github.com URLs globally so any anonymous
+        # clone in this job is transparently authenticated.
+        #
+        # Prefer CROSS_REPO_TOKEN (a PAT/App token with access to
+        # camunda/return-of-api-added-in-analysis) when available; fall back
+        # to the default GITHUB_TOKEN, which works locally with
+        # `act -s GITHUB_TOKEN="$(gh auth token)"` provided your account has
+        # access to that repo.
+        env:
+          CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
+          git config --global \
+            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+          # Fail fast instead of hanging on an interactive auth prompt.
+          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
+
       - name: Install verifier dependencies
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         run: npm ci
@@ -60,6 +83,9 @@ jobs:
           # Spec lives in the host checkout (camunda/camunda at the requested ref).
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
           CAMUNDA_REF: ${{ steps.ref.outputs.ref }}
+          # Artefacts produced by the previous step (relative to working-directory).
+          ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json
+          VERSION_MAP_PATH: ./artefacts/version-map.json
           # Have the verifier write its Markdown report directly into the
           # workflow's reports/ directory; it always produces this file
           # (success or failure).

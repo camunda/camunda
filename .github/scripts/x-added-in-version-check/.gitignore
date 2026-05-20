@@ -1,3 +1,4 @@
 node_modules/
 artefacts/*.json
 .env
+output

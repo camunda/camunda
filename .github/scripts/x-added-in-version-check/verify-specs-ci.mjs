@@ -4,10 +4,10 @@
  *
  * Prints the shared structured report (without the detail trailer) so the
  * console surface matches the standalone and workflow entry points, then
- * surfaces each finding as a GitHub Actions `::warning::` workflow command
+ * surfaces each finding as a GitHub Actions `::error::` workflow command
  * anchored to the relevant file and line for inline PR annotations.
  *
- * Always exits 0 — this script backs a non-blocking PR check.
+ * Exits non-zero when any finding is reported.
  *
  * Optional env:
  *   ANNOTATION_PATH_PREFIX  prefix prepended to each YAML filename when
@@ -54,12 +54,12 @@ function escapeMsg(s) {
   return String(s).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
 }
 
-function emitWarning({ file, line, title, message }) {
+function emitError({ file, line, title, message }) {
   const parts = [];
   if (file) parts.push(`file=${escapeProp(annotationPath(file))}`);
   if (typeof line === "number" && line > 0) parts.push(`line=${line}`);
   if (title) parts.push(`title=${escapeProp(title)}`);
-  const head = parts.length ? `::warning ${parts.join(",")}::` : "::warning::";
+  const head = parts.length ? `::error ${parts.join(",")}::` : "::error::";
   console.log(head + escapeMsg(message));
 }
 
@@ -118,7 +118,7 @@ if (totalErrors > 0) {
   console.log("");
 
   for (const e of opErrors) {
-    emitWarning({
+    emitError({
       file: e.file,
       line: e.line,
       title: `OpenAPI: ${e.issue}`,
@@ -126,7 +126,7 @@ if (totalErrors > 0) {
     });
   }
   for (const e of extraOps) {
-    emitWarning({
+    emitError({
       file: e.file,
       line: e.line,
       title: "OpenAPI: UNKNOWN_OPERATION_IN_YAML",
@@ -134,7 +134,7 @@ if (totalErrors > 0) {
     });
   }
   for (const e of propErrors) {
-    emitWarning({
+    emitError({
       file: e.file,
       line: e.line,
       title: `OpenAPI: ${e.issue}`,
@@ -152,19 +152,19 @@ if (totalErrors > 0) {
 
 if (process.env.GITHUB_STEP_SUMMARY) {
   const lines = [];
-  lines.push("# OpenAPI annotation verification (non-blocking)");
+  lines.push("# OpenAPI annotation verification");
   lines.push("");
   if (totalErrors === 0) {
     lines.push("**Status:** ✅ No errors.");
   } else {
     lines.push(
-      `**Status:** ⚠️ ${totalErrors} ${totalErrors === 1 ? "warning" : "warnings"} across ${affectedFiles.size} ${affectedFiles.size === 1 ? "file" : "files"}.`
+      `**Status:** ❌ ${totalErrors} ${totalErrors === 1 ? "error" : "errors"} across ${affectedFiles.size} ${affectedFiles.size === 1 ? "file" : "files"}.`
     );
     lines.push("");
     lines.push("See the **Files changed** tab for inline annotations.");
     lines.push("");
     if (opErrors.length || extraOps.length) {
-      lines.push("## Operation warnings");
+      lines.push("## Operation errors");
       lines.push("");
       for (const e of opErrors) {
         lines.push(`- \`${e.issue}\` — \`${e.op}\`${e.file ? ` (\`${e.file}\`${e.line ? `:${e.line}` : ""})` : ""}`);
@@ -175,7 +175,7 @@ if (process.env.GITHUB_STEP_SUMMARY) {
       lines.push("");
     }
     if (propErrors.length) {
-      lines.push("## Property warnings");
+      lines.push("## Property errors");
       lines.push("");
       for (const e of propErrors) {
         lines.push(`- \`${e.issue}\` — \`${e.path}\` (\`${e.file}\`${e.line ? `:${e.line}` : ""})`);
@@ -190,5 +190,5 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   }
 }
 
-// Always exit 0 — this script is meant to be a non-blocking PR check.
-process.exit(0);
+// Exit non-zero when any finding is reported so the PR check fails.
+process.exit(totalErrors > 0 ? 1 : 0);
