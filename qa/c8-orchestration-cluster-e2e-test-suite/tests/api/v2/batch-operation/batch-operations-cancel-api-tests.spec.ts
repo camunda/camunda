@@ -18,6 +18,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
+  batchOperationLifecycleOptions,
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
@@ -49,11 +50,13 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
 
     await test.step('Cancel batch operation', async () => {
       // The batch operation may not be visible to the cancel endpoint
-      // immediately after creation; retry on 404 until it is.
+      // immediately after creation; retry on 404 until it is. The default
+      // 30s budget is too tight on a loaded shared cluster, so reuse the
+      // shared lifecycle options that suspend/resume already use.
       await expect(async () => {
         const res = await cancelBatchOperation(request, key);
         await assertStatusCode(res, 204);
-      }).toPass(defaultAssertionOptions);
+      }).toPass(batchOperationLifecycleOptions);
     });
 
     await test.step('Poll batch status', async () => {
