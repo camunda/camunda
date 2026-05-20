@@ -76,7 +76,7 @@ class PartitionManagerStepTest {
       startupFuture = CONCURRENCY_CONTROL.createFuture();
 
       testBrokerStartupContext = new MockBrokerStartupContext();
-      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerInfo(new BrokerInfo());
       testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
       testBrokerStartupContext.setActorSchedulingService(actorScheduler);
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
