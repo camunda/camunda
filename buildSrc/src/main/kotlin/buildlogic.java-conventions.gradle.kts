@@ -14,14 +14,6 @@ version = "8.10.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val junitJupiterVersion =
-    versionCatalog.findVersion("org-junit-jupiter-junit-jupiter-api-x1").get().requiredVersion
-val junitPlatformVersion =
-    versionCatalog.findVersion("org-junit-platform-junit-platform-commons-x1").get().requiredVersion
-val errorProneVersion =
-    versionCatalog.findVersion("com-google-errorprone-error-prone-core").get().requiredVersion
-val nullAwayVersion =
-    versionCatalog.findVersion("com-uber-nullaway-nullaway").get().requiredVersion
 val googleJavaFormatVersion =
     versionCatalog.findVersion("com-google-googlejavaformat-google-java-format").get().requiredVersion
 val isCi = providers.environmentVariable("CI")
@@ -29,12 +21,13 @@ val isCi = providers.environmentVariable("CI")
     .getOrElse(false)
 
 dependencies {
-    add("errorprone", "com.google.errorprone:error_prone_core:$errorProneVersion")
-    add("errorprone", "com.uber.nullaway:nullaway:$nullAwayVersion")
-    add("testImplementation", "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
-    add("testImplementation", "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
-    add("testRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
-    add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
+    add("implementation", platform(versionCatalog.findLibrary("org-junit-junit-bom").get()))
+    add("errorprone", versionCatalog.findLibrary("com-google-errorprone-error-prone-core").get())
+    add("errorprone", versionCatalog.findLibrary("com-uber-nullaway-nullaway").get())
+    add("testImplementation", versionCatalog.findLibrary("org-junit-jupiter-junit-jupiter-api").get())
+    add("testImplementation", versionCatalog.findLibrary("org-junit-jupiter-junit-jupiter-params").get())
+    add("testRuntimeOnly", versionCatalog.findLibrary("org-junit-jupiter-junit-jupiter-engine").get())
+    add("testRuntimeOnly", versionCatalog.findLibrary("org-junit-platform-junit-platform-launcher").get())
     add("testImplementation", versionCatalog.findLibrary("org-assertj-assertj-core").get())
 }
 
