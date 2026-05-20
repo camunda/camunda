@@ -63,6 +63,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
   private static final int MAX_BUSINESS_ID_LENGTH = 256;
+  private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
@@ -386,18 +387,35 @@ public class ProcessInstanceCreationHelper {
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
 
-    return runtimeInstructions.stream()
-        .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
-        .filter(elementId -> !isElementOfProcess(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with runtime instructions but no element found with id '%s' in process definition '%s'."
-                            .formatted(elementId, bufferAsString(process.getId())))))
-        .orElse(VALID);
+    final var unknownIds =
+        runtimeInstructions.stream()
+            .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
+            .filter(elementId -> !isElementOfProcess(process, elementId))
+            .distinct()
+            .toList();
+
+    if (unknownIds.isEmpty()) {
+      return VALID;
+    }
+
+    final var processId = bufferAsString(process.getId());
+    if (unknownIds.size() <= MAX_REPORTED_INVALID_ELEMENT_IDS) {
+      final var joined = unknownIds.stream().collect(Collectors.joining("', '", "'", "'"));
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to create instance of process with runtime instructions but no element found with id %s in process definition '%s'."
+                  .formatted(joined, processId)));
+    }
+
+    final var head = unknownIds.subList(0, MAX_REPORTED_INVALID_ELEMENT_IDS);
+    final var remaining = unknownIds.size() - MAX_REPORTED_INVALID_ELEMENT_IDS;
+    final var joined = head.stream().collect(Collectors.joining("', '", "'", "'"));
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            "Expected to create instance of process with runtime instructions but no element found with id %s and %d more in process definition '%s'."
+                .formatted(joined, remaining, processId)));
   }
 
   private Either<Rejection, ?> validateTags(final Set<String> tags) {
