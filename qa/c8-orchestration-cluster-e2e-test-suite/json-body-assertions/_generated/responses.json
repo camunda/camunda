@@ -1,10 +1,17 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
+<<<<<<< HEAD
     "commit": "304a6b608bad29c893c4597fc951ac967e9f4124",
     "generatedAt": "2026-05-06T09:43:55.169Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
     "specSha256": "7b59672a1557b1183147696e37f62e5e7d56a17fceb2a30cc4ec078086b41261"
+=======
+    "commit": "10b0db39f1a0f7c7e0f8859285e5f7764281a903",
+    "generatedAt": "2026-05-20T09:03:01.007Z",
+    "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
+    "specSha256": "9119b94564a3f9939c10765718ef4b0c41d6544a21047a7841870b018d40182d"
+>>>>>>> 0e39607f (test: disable truncation of errors in fw-compat tests)
   },
   "responses": [
     {
