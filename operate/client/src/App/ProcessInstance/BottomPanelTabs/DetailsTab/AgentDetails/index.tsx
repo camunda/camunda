@@ -121,8 +121,12 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <TokensUsedMetric
               inputTokens={metrics.inputTokens}
               outputTokens={metrics.outputTokens}
+              maxTokens={limits.maxTokens}
             />
-            <ToolsCalledMetric toolCalls={metrics.toolCalls} />
+            <ToolsCalledMetric
+              toolCalls={metrics.toolCalls}
+              maxToolCalls={limits.maxToolCalls}
+            />
           </MetricsRow>
         </AccordionItem>
       </Accordion>

@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetricCard} from './MetricCard';
-import {MetricHelperText, ProgressBar} from './styled';
+import {LimitIndicator, MetricCard} from './MetricCard';
 
 type ModelCallsMetricProps = {
   modelCalls: number;
@@ -18,12 +17,9 @@ const ModelCallsMetric: React.FC<ModelCallsMetricProps> = ({
   modelCalls,
   maxModelCalls,
 }) => {
-  const callUsage = maxModelCalls > 0 ? (modelCalls / maxModelCalls) * 100 : 0;
-
   return (
     <MetricCard title="Model Calls" value={modelCalls}>
-      <ProgressBar $percent={callUsage}></ProgressBar>
-      <MetricHelperText>of {maxModelCalls} limit</MetricHelperText>
+      <LimitIndicator current={modelCalls} limit={maxModelCalls} />
     </MetricCard>
   );
 };

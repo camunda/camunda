@@ -139,7 +139,7 @@ describe('<AgentDetails />', () => {
     expect(screen.getByText('Unable to load agent status')).toBeInTheDocument();
   });
 
-  it('should render usage metrics section with model calls', () => {
+  it('should render usage metrics', () => {
     render(
       <AgentDetails
         agentInstance={mockAgentInstance}
@@ -148,47 +148,26 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    const container = screen.getByRole('article', {name: 'Model Calls'});
+    const modelCalls = screen.getByRole('article', {name: 'Model Calls'});
+    expect(modelCalls).toBeInTheDocument();
+    expect(within(modelCalls).getByText('3')).toBeInTheDocument();
+    expect(within(modelCalls).getByText('of 10 limit')).toBeInTheDocument();
 
-    expect(container).toBeInTheDocument();
-    expect(within(container).getByText('3')).toBeInTheDocument();
-    expect(within(container).getByText('of 10 limit')).toBeInTheDocument();
-  });
+    const tokensUsed = screen.getByRole('article', {name: 'Tokens Used'});
+    expect(tokensUsed).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('150')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('of 1000 limit')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('Input')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('100')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('Output')).toBeInTheDocument();
+    expect(within(tokensUsed).getByText('50')).toBeInTheDocument();
 
-  it('should render usage metrics section with tokens used', () => {
-    render(
-      <AgentDetails
-        agentInstance={mockAgentInstance}
-        isLoading={false}
-        isError={false}
-      />,
-    );
-
-    const container = screen.getByRole('article', {name: 'Tokens Used'});
-
-    expect(container).toBeInTheDocument();
-    expect(within(container).getByText('150')).toBeInTheDocument();
-    expect(within(container).getByText('Input')).toBeInTheDocument();
-    expect(within(container).getByText('100')).toBeInTheDocument();
-    expect(within(container).getByText('Output')).toBeInTheDocument();
-    expect(within(container).getByText('50')).toBeInTheDocument();
-  });
-
-  it('should render usage metrics section with tools called', () => {
-    render(
-      <AgentDetails
-        agentInstance={mockAgentInstance}
-        isLoading={false}
-        isError={false}
-      />,
-    );
-
-    const container = screen.getByRole('article', {name: 'Tools Called'});
-
-    expect(container).toBeInTheDocument();
-    expect(within(container).getByText('2')).toBeInTheDocument();
+    const toolsCalled = screen.getByRole('article', {name: 'Tools Called'});
+    expect(toolsCalled).toBeInTheDocument();
+    expect(within(toolsCalled).getByText('2')).toBeInTheDocument();
+    expect(within(toolsCalled).getByText('of 5 limit')).toBeInTheDocument();
     expect(
-      within(container).getByText('Across all model calls in this instance.'),
+      within(toolsCalled).getByText('Across all model calls in this instance.'),
     ).toBeInTheDocument();
   });
 });

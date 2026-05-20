@@ -6,22 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetricCard} from './MetricCard';
+import {LimitIndicator, MetricCard} from './MetricCard';
 import {TokenBreakdownContainer, TokenBreakdown} from './styled';
 
 type TokensUsedMetricProps = {
   inputTokens: number;
   outputTokens: number;
+  maxTokens: number;
 };
 
 const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   inputTokens,
   outputTokens,
+  maxTokens,
 }) => {
   const totalTokens = inputTokens + outputTokens;
 
   return (
     <MetricCard title="Tokens Used" value={totalTokens}>
+      <LimitIndicator current={totalTokens} limit={maxTokens} />
       <TokenBreakdownContainer>
         <TokenBreakdown $dotColor="var(--cds-interactive)">
           <span>Input</span>

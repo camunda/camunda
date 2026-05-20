@@ -42,7 +42,13 @@ const MetricHelperText = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-const ProgressBar = styled.div<{$percent: number}>`
+const LimitMeterContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-02);
+`;
+
+const LimitMeter = styled.div<{$percent: number}>`
   background-color: var(--cds-border-subtle-01);
   width: 100%;
   height: 4px;
@@ -90,7 +96,8 @@ export {
   MetricCardTitle,
   MetricCardValue,
   MetricHelperText,
-  ProgressBar,
+  LimitMeterContainer,
+  LimitMeter,
   TokenBreakdownContainer,
   TokenBreakdown,
 };

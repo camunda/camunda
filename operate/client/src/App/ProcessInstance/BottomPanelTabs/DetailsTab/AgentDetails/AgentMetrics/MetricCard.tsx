@@ -7,7 +7,14 @@
  */
 
 import {useId} from 'react';
-import {MetricCardContainer, MetricCardTitle, MetricCardValue} from './styled';
+import {
+  MetricCardContainer,
+  MetricCardTitle,
+  MetricCardValue,
+  MetricHelperText,
+  LimitMeter,
+  LimitMeterContainer,
+} from './styled';
 
 type MetricCardProps = {
   title: string;
@@ -26,4 +33,32 @@ const MetricCard: React.FC<MetricCardProps> = ({title, value, children}) => {
   );
 };
 
-export {MetricCard};
+type LimitIndicatorProps = {
+  current: number;
+  limit: number;
+};
+
+const LimitIndicator: React.FC<LimitIndicatorProps> = ({current, limit}) => {
+  if (limit < 0) {
+    return null;
+  }
+
+  const usage = limit === 0 ? 100 : (current / limit) * 100;
+  const clampedUsage = Math.max(0, Math.min(usage, 100));
+  return (
+    <LimitMeterContainer>
+      <LimitMeter
+        $percent={clampedUsage}
+        aria-label="Usage limit"
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={clampedUsage}
+        aria-valuetext={`${current} of ${limit} limit (${usage.toFixed(0)}%)`}
+      ></LimitMeter>
+      <MetricHelperText aria-hidden="true">of {limit} limit</MetricHelperText>
+    </LimitMeterContainer>
+  );
+};
+
+export {MetricCard, LimitIndicator};
