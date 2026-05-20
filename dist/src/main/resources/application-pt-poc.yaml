@@ -2,9 +2,16 @@ camunda:
   security:
     authentication:
       method: oidc
-      # Tenant A binds to a NAMED OIDC provider keyed by its tenant id.
-      # The cluster-default authentication.oidc.* slot is left empty here —
-      # it gets populated in Task 5 with the default tenant's IdP.
+      # The default tenant binds to the cluster-default authentication.oidc.*
+      # slot (registration id "oidc"). Tenant A binds to a NAMED OIDC provider
+      # under authentication.providers.oidc.tenanta.* (registration id
+      # "tenanta"). Exercising both resolution paths from the start prevents
+      # one of them from rotting before Task 8 generalises via
+      # providers.assigned.
+      oidc:
+        client-id: camunda-pt-default-client
+        client-secret: default-secret
+        issuer-uri: http://localhost:8081/realms/default
       providers:
         oidc:
           tenanta:
