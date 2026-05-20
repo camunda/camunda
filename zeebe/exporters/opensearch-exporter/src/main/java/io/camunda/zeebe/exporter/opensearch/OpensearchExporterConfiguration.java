@@ -960,9 +960,9 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + enabled
           + ", minimumAge='"
           + minimumAge
-          + ", policyName='"
+          + "', policyName='"
           + policyName
-          + ", policyDescription='"
+          + "', policyDescription='"
           + policyDescription
           + '\''
           + ", managePolicy="
