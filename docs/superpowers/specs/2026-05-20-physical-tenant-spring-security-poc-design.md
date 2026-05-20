@@ -63,7 +63,9 @@ OC already owns the OIDC primitives needed (`OidcAuthenticationConfigurationRepo
 
 ### D5. Tenant resolution at the chain-matcher level
 
-Each chain matches a fixed-prefix `securityMatcher` containing the tenant id literal. No per-request "which tenant am I" lookup inside a filter is required for the security stack itself — the matcher resolves it. Application code keeps reading `PhysicalTenantContext.current()` (already populated by the existing `PhysicalTenantInterceptor` for REST). For webapp paths we add a parallel `PhysicalTenantWebInterceptor` that does the same thing for `/physical-tenant/<id>/<webcomponent>/…`.
+Each chain matches a fixed-prefix `securityMatcher` containing the tenant id literal. No per-request "which tenant am I" lookup inside a filter is required for the security stack itself — the matcher resolves it.
+
+The PoC controller takes the tenant id from `@PathVariable` directly and does not depend on the ambient `PhysicalTenantContext.current()` accessor. The existing `PhysicalTenantInterceptor` continues to populate the request attribute for `/v2/…` REST routes via `PhysicalTenantRequestMappingHandlerMapping`. Webapp paths (`/physical-tenant/<id>/<webcomponent>/…`) do not flow through that interceptor today, and no PoC consumer needs them to — `PhysicalTenantContext.current()` has no production callers in the repo at this scope. If a downstream service called from a webapp-route controller starts depending on ambient tenant context, a small filter can be added then (~10 lines, deferred to YAGNI).
 
 ### D6. Design as portable to approach C
 
@@ -127,7 +129,6 @@ New classes / configurations introduced by the PoC:
 | `PhysicalTenantRedirectUriRewriter`                                  | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time.                                                                                                                                                                                                                                      |
 | `PerTenantSessionRepository`                                         | Decorator over the existing `WebSessionRepository`; prefixes session ids with `t:` to keep keyspaces disjoint in shared secondary storage.                                                                                                                                                                                                        |
 | `PhysicalTenantCookieSerializer` (helper)                            | Produces a Spring Session `CookieSerializer` configured with the tenant's cookie name + Path for use by `CookieHttpSessionIdResolver`.                                                                                                                                                                                                            |
-| `PhysicalTenantWebInterceptor`                                       | Webapp counterpart to `PhysicalTenantInterceptor` — resolves the tenant id from `/physical-tenant/<id>/…` and pushes it onto `PhysicalTenantContext`.                                                                                                                                                                                             |
 
 Reused as-is:
 

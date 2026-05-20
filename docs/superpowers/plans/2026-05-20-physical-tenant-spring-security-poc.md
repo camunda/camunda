@@ -37,7 +37,6 @@ New files (all paths from repo root):
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java`   | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template                                                                      |
 | `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSessionRepository.java`          | Decorator over `WebSessionRepository` that prefixes session ids with `t:<tenant>:` for keyspace isolation                                             |
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java`      | Static factory that produces a `DefaultCookieSerializer` configured per tenant (cookie name + Path)                                                   |
-| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWebFilter.java`             | `OncePerRequestFilter` registered first in each tenant chain; stamps tenant id on the request attribute consumed by `PhysicalTenantContext.current()` |
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`      | Demo controller exposing `/physical-tenant/{t}/whoami` and `/v2/physical-tenants/{t}/whoami`                                                          |
 | `dist/src/main/resources/application-pt-poc.yaml`                                                    | Bundled config that activates the PoC against the local Keycloak runner's default ports                                                               |
 | `dist/src/test/java/io/camunda/application/pt/PtPocLocalIdpRunner.java`                              | Standalone `main()` for the developer iteration loop; boots two Keycloak containers on fixed ports                                                    |
@@ -1148,122 +1147,6 @@ git commit -m "feat: add PhysicalTenantCookieSerializer for per-tenant cookie na
 
 ---
 
-## Task 8: PhysicalTenantWebFilter
-
-**Goal:** A `OncePerRequestFilter` registered at the front of each tenant chain. Stamps the chain's tenant id onto the request attribute consumed by `PhysicalTenantContext.current()`. Because the tenant id is known at chain construction (literal in the matcher), the filter takes the tenant id as a constructor argument; there's no path parsing.
-
-**Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWebFilter.java`
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantWebFilterTest.java`
-
-- [ ] **Step 1: Write the failing test**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
-import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockFilterChain;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-
-class PhysicalTenantWebFilterTest {
-
-  @Test
-  void shouldStampTenantIdOnRequestAttribute() throws Exception {
-    // given
-    final var filter = new PhysicalTenantWebFilter("tenanta");
-    final var request = new MockHttpServletRequest("GET", "/physical-tenant/tenanta/whoami");
-    final var response = new MockHttpServletResponse();
-    final var chain = new MockFilterChain();
-    // when
-    filter.doFilter(request, response, chain);
-    // then
-    assertThat(request.getAttribute(PhysicalTenantContext.REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID))
-        .isEqualTo("tenanta");
-    assertThat(chain.getRequest()).isSameAs(request);
-  }
-}
-```
-
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantWebFilterTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-@NullMarked
-public final class PhysicalTenantWebFilter extends OncePerRequestFilter {
-
-  private final String tenantId;
-
-  public PhysicalTenantWebFilter(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  @Override
-  protected void doFilterInternal(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final FilterChain filterChain)
-      throws ServletException, IOException {
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    filterChain.doFilter(request, response);
-  }
-}
-```
-
-- [ ] **Step 4: Run, confirm pass**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantWebFilterTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Format, commit**
-
-```bash
-./mvnw license:format spotless:apply -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWebFilter.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantWebFilterTest.java
-git commit -m "feat: add PhysicalTenantWebFilter that stamps tenant id per chain"
-```
-
----
-
 ## Task 9: TenantSecuritySlice
 
 **Goal:** Record bundling everything a chain needs. Pure data carrier, no logic. Built once per tenant at startup.
@@ -1497,7 +1380,7 @@ git commit -m "feat: add PhysicalTenantWhoamiController demo endpoint"
 
 ## Task 11: PerTenantSecurityChainFactory — webapp chain
 
-**Goal:** Build the webapp `SecurityFilterChain` for one tenant: matches the tenant's URL prefix, runs `PhysicalTenantWebFilter` first, sets up `oauth2Login` with per-tenant `ClientRegistrationRepository`, per-tenant `LogoutSuccessHandler`, per-tenant `SessionRepositoryFilter` with the tenant's `CookieHttpSessionIdResolver` and `PerTenantSessionRepository`, CSRF cookie scoped to the tenant Path.
+**Goal:** Build the webapp `SecurityFilterChain` for one tenant: matches the tenant's URL prefix, sets up `oauth2Login` with per-tenant `ClientRegistrationRepository`, per-tenant `LogoutSuccessHandler`, per-tenant `SessionRepositoryFilter` with the tenant's `CookieHttpSessionIdResolver` and `PerTenantSessionRepository`, CSRF cookie scoped to the tenant Path.
 
 **Files:**
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java`
@@ -1536,7 +1419,7 @@ import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 class PerTenantWebappChainTest {
 
   @Test
-  void shouldMatchTenantPrefixAndIncludePhysicalTenantWebFilter() throws Exception {
+  void shouldMatchTenantPrefix() throws Exception {
     // given
     final var slice =
         new TenantSecuritySlice(
@@ -1556,10 +1439,6 @@ class PerTenantWebappChainTest {
     // then
     assertThat(chain.matches(mockRequest("/physical-tenant/tenanta/whoami"))).isTrue();
     assertThat(chain.matches(mockRequest("/physical-tenant/default/whoami"))).isFalse();
-    assertThat(
-            chain.getFilters().stream()
-                .anyMatch(f -> f instanceof PhysicalTenantWebFilter))
-        .isTrue();
   }
 
   private static HttpSecurity newHttpSecurity() {
@@ -1617,7 +1496,6 @@ public final class PerTenantSecurityChainFactory {
 
     http
         .securityMatcher(prefix + "/**")
-        .addFilterBefore(new PhysicalTenantWebFilter(slice.tenantId()), SessionRepositoryFilter.class)
         .addFilterBefore(sessionFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
         .csrf(c -> c.csrfTokenRepository(csrfTokenRepository(prefix)))
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -1766,9 +1644,6 @@ public SecurityFilterChain buildApiChain(
   final String prefix = apiPrefix(slice);
   http
       .securityMatcher(prefix + "/**")
-      .addFilterBefore(
-          new PhysicalTenantWebFilter(slice.tenantId()),
-          org.springframework.security.web.context.SecurityContextHolderFilter.class)
       .csrf(c -> c.disable())
       .sessionManagement(
           sm ->
@@ -2493,7 +2368,7 @@ Add a short note to the PR (`#53587`) describing the manual run: which steps pas
   - D2 (cookie Path isolation) → Tasks 7, 11, 15, 16
   - D3 (profile gate, CSL opt-out) → Task 1
   - D4 (reuse OC OIDC machinery) → Task 5 (`PerTenantOidcRegistry` reuses `ClientRegistrationFactory`, `OidcAuthenticationConfigurationRepository`)
-  - D5 (chain-matcher tenant resolution) → Tasks 8, 11, 12
+  - D5 (chain-matcher tenant resolution) → Tasks 11, 12 (the `securityMatcher` literal carries the tenant id; no per-request resolver filter is needed in the PoC)
   - D6 (portability to C) → Task 9 (`TenantSecuritySlice` record, all dependencies constructor-injected)
   - Bean catalogue → Tasks 4–13 cover every class listed in the spec
   - Configuration consumed (`providers.assigned`) → Task 5 step 0 + Task 14
