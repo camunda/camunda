@@ -1987,17 +1987,23 @@ jobs:
     # Non-blocking PR check that runs the in-repo verifier under
     # .github/scripts/x-added-in-version-check against the spec files in this
     # PR and surfaces each finding as a GitHub Actions `::error::`
-    # annotation. The verifier exits non-zero on findings, but this job is
-    # intentionally NOT included in the check-results `needs:` list and uses
-    # continue-on-error so it cannot block merges; PR authors get early
-    # feedback without gating the queue.
+    # annotation. The verifier exits non-zero on findings, and any of the
+    # preparatory steps (checkout, dependency install, artefact build) can
+    # also fail (e.g., missing CROSS_REPO_TOKEN on fork PRs). The job is
+    # marked `continue-on-error: true` at the job level so no failure mode
+    # can block merges — even though it is listed in `check-results.needs`
+    # (as required by Unified CI policy), its result is always reported as
+    # `success` to downstream jobs. PR authors still get early feedback via
+    # inline annotations.
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
     permissions:
       contents: read
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout PR
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Node.js
@@ -2029,9 +2035,8 @@ jobs:
           RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
       - name: Run PR verifier
-        # Verifier exits non-zero on findings; continue-on-error keeps the
-        # job non-blocking so PRs are not gated on it.
-        continue-on-error: true
+        # Verifier exits non-zero on findings; the job-level
+        # `continue-on-error: true` keeps the overall check non-blocking.
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
@@ -2132,6 +2137,7 @@ jobs:
       - junit-vintage-check
       - maven-spotless-linter
       - openapi-lint
+      - openapi-x-added-in-version-check
       - operate-ci
       - operate-fe-test-report
       - operate-vr-report-preview

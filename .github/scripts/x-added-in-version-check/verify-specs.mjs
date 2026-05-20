@@ -10,7 +10,8 @@
  *   - verify-specs-workflow.mjs — daily/dispatch run that writes a Markdown
  *     report.
  *   - verify-specs-ci.mjs       — PR check that emits one
- *     `::warning::` per finding for inline annotations.
+ *     `::error::` workflow command per finding for inline annotations
+ *     (kept non-blocking by `continue-on-error` at the job level in ci.yml).
  *
  * Both consumers re-emit `printCliReport()` so the standalone CLI log
  * surface is identical regardless of entry point (CI logs, workflow logs,
@@ -361,7 +362,9 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
     if (node == null || typeof node !== "object") return;
     if (Array.isArray(node)) {
       for (let i = 0; i < node.length; i++) {
-        walkForPropertyAnnotations(node[i], [...path, String(i)], file);
+        // Use numeric indices so the resulting path stays compatible with
+        // `yaml`'s `doc.getIn()` (sequence lookups) when fed to `lineOfPath`.
+        walkForPropertyAnnotations(node[i], [...path, i], file);
       }
       return;
     }
@@ -396,15 +399,27 @@ export function verifySpecs({ specDir, versionMap, endpointMap }) {
   for (const loc of expected.values()) {
     const entry = loadYaml(loc.file);
     const doc = jsValue(entry);
-    if (!doc) { propMissingTarget++; continue; }
-    const node = getAt(doc, loc.inFilePath);
-    if (node == null) { propMissingTarget++; continue; }
-    const actual = lookupParentLevelAnnotation(doc, loc.inFilePath);
     const inFilePath = loc.inFilePath;
     const isPropertyChild =
       inFilePath.length >= 2 && inFilePath[inFilePath.length - 2] === "properties";
     const propName = isPropertyChild ? inFilePath[inFilePath.length - 1] : null;
     const parentPath = isPropertyChild ? inFilePath.slice(0, -2) : inFilePath;
+    // When a version-map location no longer resolves in the current YAML
+    // (file gone, schema renamed/removed, or property moved into a sub-schema
+    // of a `oneOf`/`allOf` after a refactor), this reflects drift between the
+    // snapshot version-map.json and the evolving source. PR authors cannot
+    // act on it — the version-map needs to be regenerated out of band. Count
+    // it for summary visibility but do not surface as a PR error annotation.
+    if (!doc) {
+      propMissingTarget++;
+      continue;
+    }
+    const node = getAt(doc, loc.inFilePath);
+    if (node == null) {
+      propMissingTarget++;
+      continue;
+    }
+    const actual = lookupParentLevelAnnotation(doc, loc.inFilePath);
     let parentHasList = false;
     if (isPropertyChild) {
       const parent = getAt(doc, parentPath);

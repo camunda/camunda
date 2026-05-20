@@ -824,7 +824,7 @@ Operation "createMyResource" (POST /my-resources) is missing x-added-in-version.
 
 #### Property-level annotation rules
 
-The Property-level rules are enforced in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../.github/scripts/x-added-in-version-check/README.md), which compares the spec against a generated version map.
+The property-level rules are enforced in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../.github/scripts/x-added-in-version-check/README.md), which compares the spec against a generated version map.
 
 For these property versioning annotations, we use `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }` and records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
 

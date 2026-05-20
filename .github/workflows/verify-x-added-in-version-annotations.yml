@@ -92,8 +92,13 @@ jobs:
           REPORT_PATH: ${{ github.workspace }}/reports/verify_${{ steps.ref.outputs.safe }}.md
         run: |
           mkdir -p "$GITHUB_WORKSPACE/reports"
-          npm run --silent verify:specs:workflow
+          # Publish the report path *before* invoking the verifier: the
+          # verifier exits non-zero when it finds annotation issues, and
+          # under bash `set -e` that would skip a trailing `echo >>
+          # $GITHUB_OUTPUT`. The verifier always writes REPORT_PATH (on
+          # both success and failure), so the next step can render it.
           echo "report=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+          npm run --silent verify:specs:workflow
 
       - name: Display report in summary
         if: always()
