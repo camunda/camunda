@@ -12,7 +12,6 @@ import sys
 import urllib.error
 import urllib.request
 
-import yaml
 
 _GITHUB_API = "https://api.github.com"
 _COMMENT_MARKER = "<!-- dependency-vuln-check -->"
@@ -27,7 +26,7 @@ def _api_get(url: str, token: str) -> list:
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
+                "X-GitHub-Api-Version": "2026-03-10",
             },
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -65,7 +64,7 @@ def _graphql(query: str, variables: dict, token: str) -> dict:
 _PATCH_QUERY = """
 query($ghsa: String!) {
   securityAdvisory(ghsaId: $ghsa) {
-    vulnerabilities(first: 20) {
+    vulnerabilities(first: 50) {
       nodes {
         package { ecosystem name }
         firstPatchedVersion { identifier }
@@ -94,8 +93,8 @@ def _lookup_patch(ghsa: str, ecosystem: str, package: str, token: str) -> str | 
                 v = (node.get("firstPatchedVersion") or {}).get("identifier")
                 _patch_cache[key] = v
                 return v
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"::warning::GraphQL patch lookup failed for {ghsa} ({ecosystem}/{package}): {e}")
     _patch_cache[key] = None
     return None
 
@@ -117,16 +116,18 @@ def find_blocking(diff: list, allowed_ghsas: set, token: str) -> tuple[list, lis
             ghsa = sorted(ids)[0] if ids else "unknown"
             fix = vuln.get("first_patched_version")
             if fix is None and ghsa != "unknown":
-                fix = _lookup_patch(ghsa, dep.get("ecosystem", ""), dep["name"], token)
+                fix = _lookup_patch(ghsa, dep.get("ecosystem", ""), dep.get("name", ""), token)
             fixable = fix is not None
             would_block = fixable or vuln.get("severity") in ("high", "critical")
             if not would_block:
                 continue
             entry = {
-                "package": f"{dep['name']}@{dep['version']}",
+                "package": f"{dep.get('name', 'unknown')}@{dep.get('version', 'unknown')}",
+                "manifest": dep.get("manifest", ""),
                 "ecosystem": dep.get("ecosystem", ""),
                 "severity": vuln.get("severity", ""),
                 "ghsa": ghsa,
+                "cve": vuln.get("advisory_cve_id", ""),
                 "url": vuln.get("advisory_url", ""),
                 "fix": fix,
                 "rule": "fixable" if fixable else "no-fix/high-severity",
@@ -140,13 +141,18 @@ def find_blocking(diff: list, allowed_ghsas: set, token: str) -> tuple[list, lis
     return blocking, allowed, dev_excluded
 
 
+def _advisory_cell(b: dict) -> str:
+    label = b["cve"] if b.get("cve") else b["ghsa"]
+    return f"[{label}]({b['url']})"
+
+
 def _table(entries: list) -> str:
     rows = "\n".join(
-        f"| {b['package']} | {b['ecosystem']} | {b['severity']} | {b['rule']}"
-        f" | {('`' + b['fix'] + '`') if b['fix'] else 'none'} | [{b['ghsa']}]({b['url']}) |"
+        f"| {b['package']} | `{b['manifest']}` | {b['ecosystem']} | {b['severity']} | {b['rule']}"
+        f" | {('`' + b['fix'] + '`') if b['fix'] else 'none'} | {_advisory_cell(b)} |"
         for b in entries
     )
-    return "| Package | Ecosystem | Severity | Rule | Fix | Advisory |\n|---------|-----------|----------|------|-----|----------|\n" + rows
+    return "| Package | File | Ecosystem | Severity | Rule | Fix | Advisory |\n|---------|------|-----------|----------|------|-----|----------|\n" + rows
 
 
 def _api_write(url: str, token: str, method: str, body: dict) -> None:
@@ -157,7 +163,7 @@ def _api_write(url: str, token: str, method: str, body: dict) -> None:
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "X-GitHub-Api-Version": "2026-03-10",
             "Content-Type": "application/json",
         },
     )
@@ -172,14 +178,13 @@ def post_pr_comment(
 
     if blocking:
         sections += [
-            f"## Vulnerability Gate: {len(blocking)} blocking issue(s) found",
+            f"## 🚨 Vulnerability Gate: {len(blocking)} blocking issue(s) found 🚨",
             "",
             _table(blocking),
             "",
             "### What to do",
             "- **Fixable**: upgrade the dependency to the fix version shown above.",
-            "- **No fix available**: add the GHSA ID to `.github/dependency-review-config.yml`",
-            "  with a reason and review-by date, then request `@camunda/monorepo-devops-team` approval.",
+            "- **No fix available**: contact `@camunda/monorepo-devops-team` for guidance.",
         ]
     else:
         sections += ["## Vulnerability Gate: no blocking issues found"]
@@ -187,7 +192,7 @@ def post_pr_comment(
     if allowed:
         sections += [
             "",
-            f"### {len(allowed)} exception(s) active — covered by allow-ghsas (not blocking)",
+            f"### ⚠️ {len(allowed)} exception(s) active — covered by allow-ghsas (not blocking) ⚠️",
             "",
             "> These vulnerabilities would have blocked this PR but are listed in `allow-ghsas`. "
             "Consider upgrading if a fix is available.",
@@ -198,7 +203,7 @@ def post_pr_comment(
     if dev_excluded:
         sections += [
             "",
-            f"### {len(dev_excluded)} vulnerability(ies) in development/test-scoped deps (not blocking)",
+            f"### ⚠️ {len(dev_excluded)} vulnerability(ies) in development/test-scoped deps (not blocking) ⚠️",
             "",
             "> These are in test-only dependencies and are excluded from blocking. "
             "Consider upgrading if a fix is available.",
@@ -219,7 +224,7 @@ def post_pr_comment(
 
 
 def main() -> None:
-    config_file = os.environ.get("CONFIG_FILE", ".github/dependency-review-config.yml")
+    config_file = os.environ.get("CONFIG_FILE", ".github/dependency-review-config.json")
     token = os.environ["GH_TOKEN"]
     repository = os.environ["GITHUB_REPOSITORY"]
     base_sha = os.environ["BASE_SHA"]
@@ -227,7 +232,7 @@ def main() -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
 
     with open(config_file) as f:
-        allowed_ghsas = set(g.upper() for g in ((yaml.safe_load(f) or {}).get("allow-ghsas") or []))
+        allowed_ghsas = set(g.upper() for g in ((json.load(f) or {}).get("allow-ghsas") or []))
 
     try:
         diff = _api_get(
