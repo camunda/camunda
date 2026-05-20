@@ -82,16 +82,6 @@ Cost of this constraint inside A: essentially zero. It is good Spring hygiene an
 ## Component design
 
 ```
-                        ┌─────────────────────────────────────────────────────────┐
-                        │              PhysicalTenantSecurityConfiguration        │
-                        │  iterates PhysicalTenantResolver.getAll(), registers:   │
-                        └────────────────────────────┬────────────────────────────┘
-                                                     │
-              ┌──────────────────────────────────────┼──────────────────────────────────────┐
-              │                                      │                                      │
-      per-tenant beans                       per-tenant chains                      shared beans
-              │                                      │                                      │
-              ▼                                      ▼                                      ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                  PhysicalTenantSecurityConfiguration                 │
 │  iterates PhysicalTenantResolver.getAll(), builds slices, wires:     │
