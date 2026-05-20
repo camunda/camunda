@@ -16,6 +16,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Verifies that the engine-internal {@code NO_CATCH_EVENT_FOUND} sentinel (set by {@link
@@ -28,6 +29,8 @@ import org.junit.jupiter.api.Test;
  * storage, corrupting the {@code elementId} field returned by the jobs search API.
  */
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class UnhandledBpmnErrorJobElementIdIT {
 
   private static CamundaClient camundaClient;
