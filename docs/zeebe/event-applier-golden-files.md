@@ -21,6 +21,21 @@ applier, register a new version. It's usually the safer choice and does not cost
 applier version in a minor version, add it to all newer minor versions as well. This allows users
 to safely update to the next minor version without any breaking changes in replay.
 
+> [!WARNING]
+> **Beware of minor release code freezes.** During the release of a new minor version, its source
+> code may already be frozen while patches of older minor versions continue to ship. If your new
+> event applier version makes it into a patch of an older minor but does not make it into the new
+> minor's initial release, the upgrade path from that patch to the new minor is broken. The new
+> minor is missing the corresponding event applier version registration and therefore cannot replay
+> events written with that version, which is unrecoverable without an ad-hoc patch.
+>
+> Either hold off on porting new event applier versions to stable branches during a minor release
+> code freeze, or ensure your port is included in the minor release.
+>
+> 💡 **Example:** This happened during the 8.9.0 release. `ProcessEvent.TRIGGERING` v2 was
+> backported to `stable/8.8` (released in 8.8.22) and to `stable/8.9`, but was not included in
+> 8.9.0. Clusters updating from 8.8.22 to 8.9.0 hit dead partitions, unrecoverable until 8.9.1.
+
 ## Common cases
 
 The following scenarios where the test fails are common and should be straightforward to resolve.

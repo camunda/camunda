@@ -143,7 +143,7 @@ public class SearchEngineConnectPropertiesOverride {
     final List<InterceptorPlugin> interceptorPlugins = resolveInterceptorPlugin(override);
 
     // Log common interceptor plugins warning instead of using UnifiedConfigurationHelper logging.
-    if (override.getInterceptorPlugins() != null) {
+    if (override.getInterceptorPlugins() != null && !override.getInterceptorPlugins().isEmpty()) {
       final String warningMessage =
           String.format(
               "The following legacy property is no longer supported and should be removed in favor of '%s': %s",

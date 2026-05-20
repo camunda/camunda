@@ -1,0 +1,68 @@
+# Domain file for added-in-version rule test fixture.
+openapi: "3.0.3"
+info:
+  title: Things domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: operation has x-added-in-version ──────────────────
+  /valid/thing:
+    post:
+      operationId: createThing
+      summary: Create a thing
+      description: Creates a new thing.
+      x-added-in-version: "8.6"
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  /valid/thing/{thingKey}:
+    get:
+      operationId: getThing
+      summary: Get a thing
+      description: Gets a thing by key.
+      x-added-in-version: "8.7"
+      tags:
+        - Test
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The thing.
+
+  # ── Invalid: operation missing x-added-in-version ────────────
+  /invalid/thing:
+    post:
+      operationId: createInvalidThing
+      summary: Create an invalid thing
+      description: Missing x-added-in-version.
+      tags:
+        - Test
+      responses:
+        '200':
+          description: The thing was created.
+
+  /invalid/thing/{thingKey}:
+    get:
+      operationId: getInvalidThing
+      summary: Get an invalid thing
+      description: Missing x-added-in-version.
+      tags:
+        - Test
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The thing.

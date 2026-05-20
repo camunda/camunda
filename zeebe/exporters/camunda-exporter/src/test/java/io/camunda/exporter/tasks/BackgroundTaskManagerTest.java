@@ -10,6 +10,9 @@ package io.camunda.exporter.tasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
+import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
+import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository.NoopAuditLogArchiverRepository;
 import io.camunda.exporter.tasks.archiver.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository.NoopHistoryDeletionRepository;
@@ -37,6 +40,7 @@ final class BackgroundTaskManagerTest {
         new BackgroundTaskManager(
             1,
             new NoopArchiverRepository(),
+            new NoopAuditLogArchiverRepository(),
             new NoopIncidentUpdateRepository(),
             new NoopBatchOperationUpdateRepository(),
             new NoopHistoryDeletionRepository(),
@@ -95,6 +99,8 @@ final class BackgroundTaskManagerTest {
   final class CloseTest {
     private final CloseableArchiverRepository archiverRepository =
         new CloseableArchiverRepository();
+    private final CloseableAuditLogArchiverRepository auditLogArchiverRepository =
+        new CloseableAuditLogArchiverRepository();
     private final CloseableIncidentRepository incidentRepository =
         new CloseableIncidentRepository();
     private final CloseableBatchOperationUpdateRepository batchOperationUpdateRepository =
@@ -126,6 +132,7 @@ final class BackgroundTaskManagerTest {
         new BackgroundTaskManager(
             1,
             archiverRepository,
+            auditLogArchiverRepository,
             incidentRepository,
             batchOperationUpdateRepository,
             historyDeletionRepository,
@@ -173,6 +180,7 @@ final class BackgroundTaskManagerTest {
 
       // then
       assertThat(archiverRepository.isClosed).isTrue();
+      assertThat(auditLogArchiverRepository.isClosed).isTrue();
       assertThat(incidentRepository.isClosed).isTrue();
       assertThat(batchOperationUpdateRepository.isClosed).isTrue();
       assertThat(historyDeletionRepository.isClosed).isTrue();
@@ -182,6 +190,15 @@ final class BackgroundTaskManagerTest {
     void shouldNotThrowOnArchiverRepositoryCloseError() {
       // given
       archiverRepository.exception = new RuntimeException("foo");
+
+      // when
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotThrowOnAuditLogArchiverRepositoryCloseError() {
+      // given
+      auditLogArchiverRepository.exception = new RuntimeException("foo");
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();
@@ -212,6 +229,33 @@ final class BackgroundTaskManagerTest {
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    private static final class CloseableAuditLogArchiverRepository
+        implements AuditLogArchiverRepository {
+      private boolean isClosed;
+      private Exception exception;
+
+      @Override
+      public CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
+        return CompletableFuture.completedFuture(
+            new AuditLogCleanupBatch(null, java.util.List.of(), java.util.List.of()));
+      }
+
+      @Override
+      public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
+          final AuditLogCleanupBatch batch) {
+        return CompletableFuture.completedFuture(0);
+      }
+
+      @Override
+      public void close() throws Exception {
+        if (exception != null) {
+          throw exception;
+        }
+
+        isClosed = true;
+      }
     }
 
     private static final class CloseableArchiverRepository extends NoopArchiverRepository {

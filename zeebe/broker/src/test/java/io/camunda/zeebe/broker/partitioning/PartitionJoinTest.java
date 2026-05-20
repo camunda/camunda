@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 
 import io.atomix.cluster.MemberId;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -30,8 +31,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(120)
 final class PartitionJoinTest {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
@@ -119,6 +122,7 @@ final class PartitionJoinTest {
             null,
             null,
             null,
+            new NoopOidcClaimsProvider(),
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));

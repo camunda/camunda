@@ -101,11 +101,6 @@ public final class RdbmsExporter {
       throw new ExporterException("Schema is not ready for use");
     }
 
-    if (!flushAfterEachRecord()) {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
@@ -121,10 +116,21 @@ public final class RdbmsExporter {
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter P{}] Position in Broker {} is more advanced than in rdbms {}",
+            "[RDBMS Exporter P{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             partitionId,
+            lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
-            lastPosition);
+            exporterRdbmsPosition.lastExportedPosition());
+        lastPosition = exporterRdbmsPosition.lastExportedPosition();
+        final boolean replayInitiated =
+            controller.requestReplay(exporterRdbmsPosition.lastExportedPosition());
+        if (!replayInitiated) {
+          throw new ExporterException(
+              String.format(
+                  "[RDBMS Exporter P%d] Cannot replay records from position %d: log segments are no longer available. "
+                      + "The RDBMS secondary storage cannot be recovered automatically.",
+                  partitionId, exporterRdbmsPosition.lastExportedPosition() + 1));
+        }
       }
     }
     lastFlushedPosition = lastPosition;
@@ -133,6 +139,10 @@ public final class RdbmsExporter {
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
+    if (!flushAfterEachRecord()) {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
     currentCleanupTask =
@@ -200,6 +210,7 @@ public final class RdbmsExporter {
         record.getIntent());
 
     boolean exported = false;
+    boolean shouldFlushAfterRecordProcessed = false;
     if (registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
@@ -210,6 +221,7 @@ public final class RdbmsExporter {
               handler.getClass());
           handler.export(record);
           exported = true;
+          shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
           LOG.trace(
               "[RDBMS Exporter P{}] Handler {} can not export record {}",
@@ -238,7 +250,8 @@ public final class RdbmsExporter {
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       try {
-        final boolean flushed = rdbmsWriters.flush(flushAfterEachRecord());
+        final boolean shouldFlush = flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
+        final boolean flushed = rdbmsWriters.flush(shouldFlush);
         if (flushed) {
           resetIntervalFlush();
         }

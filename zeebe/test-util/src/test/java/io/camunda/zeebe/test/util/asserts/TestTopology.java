@@ -50,6 +50,11 @@ record TestTopology(
     return HARDCODED_VERSION;
   }
 
+  @Override
+  public String getLastCompletedChangeId() {
+    return "-1";
+  }
+
   record TestPartition(int partitionId, PartitionBrokerRole role, PartitionBrokerHealth health)
       implements PartitionInfo {
 

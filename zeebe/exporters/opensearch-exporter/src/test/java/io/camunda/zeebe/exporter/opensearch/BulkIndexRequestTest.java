@@ -60,6 +60,12 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
 
+  /**
+   * Set previous version to <8.9.0 to assert if old pre-8.9 index templates ignore new >=8.9
+   * properties.
+   */
+  private static final String PRE_8_9_VERSION = "8.8.0";
+
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
@@ -350,7 +356,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
@@ -405,7 +411,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new MessageSubscriptionRecord()
                               .setProcessInstanceKey(1L)
@@ -460,7 +466,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessMessageSubscriptionRecord()
                               .setProcessInstanceKey(1L)
@@ -515,7 +521,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceModificationRecord()
                               .setProcessInstanceKey(1L)
@@ -545,7 +551,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceModificationRecord()
                               .setProcessInstanceKey(1L)
@@ -662,8 +668,7 @@ final class BulkIndexRequestTest {
         throws Exception {
       // given
       final var record =
-          recordFactory.generateRecord(
-              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+          recordFactory.generateRecord(valueType, r -> r.withBrokerVersion(PRE_8_9_VERSION));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -726,7 +731,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new JobRecord().setType("test-job").setIsJobToUserTaskMigration(true)));
 
@@ -786,8 +791,7 @@ final class BulkIndexRequestTest {
     void shouldIndexWithoutBusinessIdOnPreviousVersion(final ValueType valueType) throws Exception {
       // given
       final var record =
-          recordFactory.generateRecord(
-              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+          recordFactory.generateRecord(valueType, r -> r.withBrokerVersion(PRE_8_9_VERSION));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -862,7 +866,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceMigrationRecord()
                               .setProcessInstanceKey(1L)
@@ -923,7 +927,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceModificationRecord()
                               .setProcessInstanceKey(1L)
@@ -986,8 +990,7 @@ final class BulkIndexRequestTest {
         throws Exception {
       // given
       final var record =
-          recordFactory.generateRecord(
-              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+          recordFactory.generateRecord(valueType, r -> r.withBrokerVersion(PRE_8_9_VERSION));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -1041,7 +1044,7 @@ final class BulkIndexRequestTest {
           recordFactory.generateRecord(
               ValueType.VARIABLE,
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new VariableRecord()
                               .setName(BufferUtil.wrapString("varName"))
@@ -1104,7 +1107,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new JobBatchRecord()
                               .setType("test-type")
@@ -1165,7 +1168,7 @@ final class BulkIndexRequestTest {
           .setIsJobToUserTaskMigration(true);
       final var record =
           recordFactory.generateRecord(
-              r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()).withValue(jobBatchRecord));
+              r -> r.withBrokerVersion(PRE_8_9_VERSION).withValue(jobBatchRecord));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -1221,7 +1224,7 @@ final class BulkIndexRequestTest {
           recordFactory.generateRecord(
               ValueType.USER_TASK,
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(new UserTaskRecord().setUserTaskKey(1L).setTags(Set.of("tag1"))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
@@ -1269,7 +1272,7 @@ final class BulkIndexRequestTest {
           recordFactory.generateRecord(
               ValueType.DECISION_REQUIREMENTS,
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new DecisionRequirementsRecord()
                               .setDecisionRequirementsId("drg-1")
@@ -1324,7 +1327,7 @@ final class BulkIndexRequestTest {
           recordFactory.generateRecord(
               ValueType.DEPLOYMENT,
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(new DeploymentRecord().setDeploymentKey(42L)));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
@@ -1371,7 +1374,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ResourceDeletionRecord()
                               .setResourceKey(1L)
@@ -1436,7 +1439,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new MessageCorrelationRecord()
                               .setName("msg")
@@ -1494,7 +1497,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceBatchRecord()
                               .setProcessInstanceKey(1L)
@@ -1550,7 +1553,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new RuntimeInstructionRecord()
                               .setProcessInstanceKey(1L)
@@ -1607,7 +1610,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceMigrationRecord()
                               .setProcessInstanceKey(1L)
@@ -1670,7 +1673,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new ProcessInstanceModificationRecord()
                               .setProcessInstanceKey(1L)
@@ -1806,7 +1809,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(PRE_8_9_VERSION)
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
@@ -1891,9 +1894,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               ValueType.DEPLOYMENT,
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(deploymentRecord));
+              r -> r.withBrokerVersion(PRE_8_9_VERSION).withValue(deploymentRecord));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 

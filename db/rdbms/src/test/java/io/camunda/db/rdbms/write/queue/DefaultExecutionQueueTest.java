@@ -42,10 +42,11 @@ class DefaultExecutionQueueTest {
     sqlSessionFactory = mock(SqlSessionFactory.class);
     metrics = mock(RdbmsWriterMetrics.class);
     when(sqlSessionFactory.openSession(
-            ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
+            ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED))
         .thenReturn(session);
 
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 10, 0, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 10, 0, metrics, TransactionRunner.noop());
   }
 
   @Test
@@ -57,7 +58,8 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenElementIsAddedNoFlushHappens() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics, TransactionRunner.noop());
 
     executionQueue.executeInQueue(mock(QueueItem.class));
 
@@ -66,7 +68,8 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushLimitIsZeroFlushShouldNotHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics, TransactionRunner.noop());
     final var item1 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -86,7 +89,8 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushLimitIsNotActivatedFlushShouldNotHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics, TransactionRunner.noop());
     final var item1 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -106,7 +110,8 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushLimitIsActivatedFlushShouldHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics, TransactionRunner.noop());
     final var item1 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -138,7 +143,7 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     verify(session).update("statement1", "parameter1");
     verify(session).update("statement2", "parameter2");
     verify(session).flushStatements();
@@ -160,7 +165,7 @@ class DefaultExecutionQueueTest {
     executionQueue.flush();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     verify(session).update("statement1", "parameter1");
     verify(session).flushStatements();
     verify(session).commit();
@@ -473,7 +478,8 @@ class DefaultExecutionQueueTest {
   @Test
   public void whenMemoryLimitIsReachedFlushShouldHappen() {
     // Set a small memory limit (1 MB)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics, TransactionRunner.noop());
 
     // Create items with large parameters to exceed 1 MB memory limit
     // Each large param is ~600KB, so 2 items should exceed 1 MB
@@ -496,7 +502,7 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     verify(session).update("statement1", largeParam);
     verify(session).update("statement2", largeParam);
     verify(session).flushStatements();
@@ -506,7 +512,9 @@ class DefaultExecutionQueueTest {
   @Test
   public void whenMemoryLimitIsNotReachedNoFlushShouldHappen() {
     // Set a large memory limit (10 MB)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 10, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(
+            sqlSessionFactory, 1, 1000, 10, metrics, TransactionRunner.noop());
 
     final var item1 =
         new QueueItem(
@@ -528,7 +536,8 @@ class DefaultExecutionQueueTest {
   @Test
   public void whenEitherCountOrMemoryLimitIsReachedFlushShouldHappen() {
     // Set both count and memory limits (2 items count, 10 MB memory)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 2, 10, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 2, 10, metrics, TransactionRunner.noop());
 
     final var item1 =
         new QueueItem(
@@ -564,13 +573,14 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
   }
 
   @Test
   public void whenOnlyMemoryLimitIsConfiguredItShouldWork() {
     // Set only memory limit (1 MB), no count limit
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 1, metrics);
+    executionQueue =
+        new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 1, metrics, TransactionRunner.noop());
 
     // Create items with large parameters to exceed 1 MB memory limit
     final var largeParam = "x".repeat(600_000); // ~600 KB each
@@ -588,6 +598,6 @@ class DefaultExecutionQueueTest {
     assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
   }
 }

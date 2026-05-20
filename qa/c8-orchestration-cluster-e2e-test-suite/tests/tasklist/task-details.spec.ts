@@ -130,10 +130,20 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
-
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
-      timeout: 60000,
+    // The task list refreshes while other specs run in parallel, so the
+    // first .nth(0) click can land on a stale card whose details panel
+    // never updates. Retry the open + assert until the right panel shows
+    // the unassigned task ready for action.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('usertask_to_be_completed');
+        await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+          timeout: 20000,
+        });
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
     });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
@@ -284,6 +294,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with form from assigned to me filter', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -306,11 +317,25 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('User registration');
 
-    await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
-    await taskDetailsPage.assertFieldValue('Address*', 'Rome');
-    await taskDetailsPage.assertFieldValue('Age', '55');
+    // Multiple "User registration" tasks may be completed across tests in
+    // this file. openTask clicks .nth(0), which can land on an earlier
+    // completion (e.g. Jon/Earth from "task completion with form") before
+    // the indexer surfaces the just-completed task at the top. Re-open and
+    // re-assert on reload so we eventually inspect the right task.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('User registration');
+        await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
+        await taskDetailsPage.assertFieldValue('Address*', 'Rome');
+        await taskDetailsPage.assertFieldValue('Age', '55');
+      },
+      onFailure: async () => {
+        await page.reload();
+        await taskPanelPage.filterBy('Completed');
+        await taskPanelPage.assertCompletedHeadingVisible();
+      },
+    });
   });
 
   test('task completion with prefilled form', async ({

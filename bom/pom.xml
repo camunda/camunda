@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>camunda-bom</artifactId>
-  <version>8.9.1-SNAPSHOT</version>
+  <version>8.9.6-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Camunda BOM</name>
@@ -165,7 +165,7 @@
       </snapshots>
       <id>central</id>
       <name>Maven Central</name>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <url>https://maven-central.storage-download.googleapis.com/maven2</url>
       <layout>default</layout>
     </repository>
 

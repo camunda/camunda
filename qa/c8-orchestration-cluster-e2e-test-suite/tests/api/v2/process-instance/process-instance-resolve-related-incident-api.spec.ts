@@ -27,7 +27,7 @@ import {validateResponse} from '../../../../json-body-assertions';
 import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe.parallel('Resolve related incidents API Tests', () => {
+test.describe.serial('Resolve related incidents API Tests', () => {
   let processInstanceKeyWithIncidentToResolve: string = '';
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
@@ -88,6 +88,10 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
 
     await test.step('Search for incidents related to created process instance', async () => {
       await expect(async () => {
+        // Reset accumulators on every retry so leftover state from a prior
+        // (failed) iteration does not pollute the assertion.
+        elementInstanceKey = '';
+        incidentKeys = [];
         const incidents = await request.post(
           buildUrl(
             `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
@@ -273,6 +277,10 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
   test('Resolve related incidents of a process instance without permissions - Forbidden', async ({
     request,
   }) => {
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth check order changed on main (404 before 403)',
+    );
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );

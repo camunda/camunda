@@ -13,14 +13,17 @@ jobs:
   backport:
     name: Create backport PRs
     runs-on: ubuntu-latest
-    # Only run when pull request is merged
+    # Only run when pull request is merged and carries at least one `backport ` label
     # or when a comment starting with `/backport` is created by someone other than a bot:
     # - https://github.com/backport-action bot user (user id: 97796249)
     # - Monorepo DevOps Automation GitHub App bot user (user id: 248077375)
+    # The label check uses toJSON + contains to match any label whose name starts with
+    # `backport ` (the leading `"` anchors the match to the start of a label name).
     if: >
       (
         github.event_name == 'pull_request' &&
-        github.event.pull_request.merged
+        github.event.pull_request.merged &&
+        contains(toJSON(github.event.pull_request.labels.*.name), '"backport ')
       ) || (
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
@@ -34,7 +37,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@732a017b858dbc516d87dbe0780fafb770532ed7 # main
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -49,7 +52,7 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ steps.github-token.outputs.token }}
       - name: Create backport PRs
-        uses: korthout/backport-action@3c06f323a58619da1e8522229ebc8d5de2633e46 # v4.3.0
+        uses: korthout/backport-action@66065406958f46e82238fd59546f5a99e69e22aa # v4.5.2
         with:
           # Token to authenticate requests to GitHub
           github_token: ${{ steps.github-token.outputs.token }}
@@ -72,6 +75,7 @@ jobs:
 
           add_author_as_assignee: true
           add_author_as_reviewer: true
+          comment_style: summary
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"

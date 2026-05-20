@@ -42,7 +42,11 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 
 ## Git Workflow
 
-- ALWAYS lint and format before committing
+- ALWAYS lint and format before every commit — never skip this, even for "obvious" or single-line
+  changes. Skipping formatting reliably breaks the `Java checks` CI job.
+- Run `./mvnw license:format spotless:apply -T1C` as the **mandatory** last step before every
+  commit that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent
+  edit.
 - Auto fix formatting errors before committing
 - NEVER use `git push --force` on the main branch
 - Use `git push --force-with-lease` for feature branches if needed

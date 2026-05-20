@@ -1,5 +1,12 @@
 fullnameOverride: "prom-els-exporter"
 
+es:
+  uri: http://elastic:9200
+
+commonLabels:
+  camunda.io/created-by: __AUTHOR__
+  camunda.io/purpose: load-test
+
 image:
   # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
   # Original: quay.io/prometheuscommunity/elasticsearch-exporter

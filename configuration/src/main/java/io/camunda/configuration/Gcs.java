@@ -64,8 +64,11 @@ public class Gcs {
   /** Maximum number of concurrent file transfers (uploads and downloads) using virtual threads. */
   private int maxConcurrentTransfers = 8;
 
+  /** Size of the buffer (in bytes) used when uploading files to GCS. */
+  private int bufferSize = 2 * 1024 * 1024;
+
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".bucket-name",
         bucketName,
         String.class,
@@ -78,7 +81,7 @@ public class Gcs {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -91,7 +94,7 @@ public class Gcs {
   }
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".host",
         host,
         String.class,
@@ -104,7 +107,7 @@ public class Gcs {
   }
 
   public GcsBackupStoreAuth getAuth() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".auth",
         auth,
         GcsBackupStoreAuth.class,
@@ -122,6 +125,14 @@ public class Gcs {
 
   public void setMaxConcurrentTransfers(final int maxConcurrentTransfers) {
     this.maxConcurrentTransfers = maxConcurrentTransfers;
+  }
+
+  public int getBufferSize() {
+    return bufferSize;
+  }
+
+  public void setBufferSize(final int bufferSize) {
+    this.bufferSize = bufferSize;
   }
 
   public enum GcsBackupStoreAuth {

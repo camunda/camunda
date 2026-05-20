@@ -29,15 +29,26 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -50,6 +61,8 @@ import org.slf4j.LoggerFactory;
 public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
   protected static final int PARTITION_ID = 1;
+  protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+  protected static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -62,12 +75,15 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected Context context;
 
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
+  private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
 
   @BeforeEach
   void setup() {
-    context = new ExporterTestContext().setPartitionId(PARTITION_ID);
+    context =
+        new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
+    lifecyclePolicyNameVerifier = new LifecyclePolicyNameVerifier();
   }
 
   @AfterEach
@@ -106,6 +122,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
   void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
       throws Exception {
+    config.getHistory().getRetention().setEnabled(true);
     createSchemas(config);
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
@@ -114,6 +131,113 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
       jobConsumer.accept(job, exporterResourceProvider);
     }
+  }
+
+  protected <E extends ExporterEntity<E>> E create(final Supplier<E> constructor) {
+    final long id = ID_GENERATOR.incrementAndGet();
+    final var entity = constructor.get();
+    entity.setId(String.valueOf(id));
+    return entity;
+  }
+
+  protected void store(
+      final IndexDescriptor indexDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    client.index(entity.getId(), indexDescriptor.getFullQualifiedName(), entity);
+  }
+
+  protected void store(
+      final IndexDescriptor indexDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> child)
+      throws IOException {
+    client.index(child.getId(), parent.getId(), indexDescriptor.getFullQualifiedName(), child);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String datedIndexSuffix)
+      throws IOException {
+    verifyMoved(templateDescriptor, client, entity, (String) null, datedIndexSuffix);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> entity,
+      final String datedIndexSuffix)
+      throws IOException {
+    verifyMoved(templateDescriptor, client, entity, parent.getId(), datedIndexSuffix);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String routing,
+      final String datedIndexSuffix)
+      throws IOException {
+    // should no longer be in the original index
+    final var originalIndexEntity =
+        client.get(
+            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
+    assertThat(originalIndexEntity)
+        .describedAs(
+            "Expected %s to have been deleted from %s",
+            entity, templateDescriptor.getFullQualifiedName())
+        .isNull();
+
+    // should now be in the dated index
+    final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
+    final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
+    assertThat(newIndexEntity)
+        .describedAs("Expected %s to have been moved to %s", entity, dateIndex)
+        .isEqualTo(entity);
+
+    lifecyclePolicyNameVerifier.verifyIndexHasLifecyclePolicy(
+        client, dateIndex, getExpectedLifecyclePolicyName());
+  }
+
+  protected void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    verifyNotMoved(templateDescriptor, client, entity, (String) null);
+  }
+
+  protected void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    verifyNotMoved(templateDescriptor, client, entity, parent.getId());
+  }
+
+  private void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String routing)
+      throws IOException {
+    final var originalIndexEntity =
+        client.get(
+            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
+    assertThat(originalIndexEntity)
+        .describedAs(
+            "Expected %s to still be in %s", entity, templateDescriptor.getFullQualifiedName())
+        .isEqualTo(entity);
+  }
+
+  protected String getExpectedLifecyclePolicyName() {
+    return "camunda-retention-policy";
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
@@ -182,6 +306,26 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository);
+
+  static class LifecyclePolicyNameVerifier {
+    private final Set<String> alreadyVerifiedIndexes = new HashSet<>();
+
+    void verifyIndexHasLifecyclePolicy(
+        final SearchClientAdapter client, final String indexName, final String expectedPolicy) {
+      // no need to check the same index over and over (as we're checking per-doc)
+      if (alreadyVerifiedIndexes.contains(indexName)) {
+        return;
+      }
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(10L))
+          .untilAsserted(
+              () -> {
+                final var policy = client.getLifecyclePolicyNameForIndex(indexName);
+                assertThat(policy).isEqualTo(expectedPolicy);
+              });
+      alreadyVerifiedIndexes.add(indexName);
+    }
+  }
 
   interface ArchiveJobConsumer<T> {
     void accept(T job, ExporterResourceProvider resourceProvider) throws Exception;

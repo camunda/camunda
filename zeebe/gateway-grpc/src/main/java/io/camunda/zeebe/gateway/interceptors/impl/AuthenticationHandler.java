@@ -14,6 +14,7 @@ import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -50,15 +53,19 @@ public sealed interface AuthenticationHandler {
         Context.key("io.camunda.zeebe:user_claim");
 
     public static final String BEARER_PREFIX = "Bearer ";
+    private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
     private final JwtDecoder jwtDecoder;
+    private final OidcClaimsProvider claimsProvider;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
     private final OidcGroupsLoader oidcGroupsLoader;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
+        final OidcClaimsProvider claimsProvider,
         final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
+      this.claimsProvider = Objects.requireNonNull(claimsProvider);
       this.oidcAuthenticationConfiguration =
           Objects.requireNonNull(oidcAuthenticationConfiguration);
       oidcPrincipalLoader =
@@ -76,14 +83,24 @@ public sealed interface AuthenticationHandler {
                 "Expected authentication information to start with '%s'".formatted(BEARER_PREFIX)));
       }
 
+      final String tokenValue = authorizationHeader.substring(BEARER_PREFIX.length());
       final Jwt token;
       try {
-        token = jwtDecoder.decode(authorizationHeader.substring(BEARER_PREFIX.length()));
+        token = jwtDecoder.decode(tokenValue);
       } catch (final JwtException e) {
+        // Exception details may include the IdP URL or issuer mismatch strings; log them
+        // server-side and return a generic status so API callers don't see them.
+        LOG.debug("Rejecting bearer token: JWT decode failed", e);
+        return Either.left(Status.UNAUTHENTICATED.augmentDescription("Invalid bearer token"));
+      }
+
+      final Map<String, Object> claims;
+      try {
+        claims = claimsProvider.claimsFor(token.getClaims(), tokenValue);
+      } catch (final Exception e) {
+        LOG.warn("Rejecting bearer token: OIDC claims resolution failed", e);
         return Either.left(
-            Status.UNAUTHENTICATED
-                .augmentDescription("Expected a valid token, see cause for details")
-                .withCause(e));
+            Status.UNAUTHENTICATED.augmentDescription("Failed to resolve OIDC claims"));
       }
 
       var context = Context.current();
@@ -94,23 +111,21 @@ public sealed interface AuthenticationHandler {
               !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
       if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
         try {
-          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
+          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
         } catch (final Exception e) {
+          LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);
           return Either.left(
-              Status.UNAUTHENTICATED
-                  .augmentDescription("Failed to load OIDC groups, see cause for details")
-                  .withCause(e));
+              Status.UNAUTHENTICATED.augmentDescription("Failed to load OIDC groups"));
         }
       }
 
       final OidcPrincipals principals;
       try {
-        principals = oidcPrincipalLoader.load(token.getClaims());
+        principals = oidcPrincipalLoader.load(claims);
       } catch (final Exception e) {
+        LOG.warn("Rejecting bearer token: OIDC principal loader failed", e);
         return Either.left(
-            Status.UNAUTHENTICATED
-                .augmentDescription("Failed to load OIDC principals, see cause for details")
-                .withCause(e));
+            Status.UNAUTHENTICATED.augmentDescription("Failed to load OIDC principals"));
       }
 
       if (principals.username() == null && principals.clientId() == null) {
@@ -125,14 +140,10 @@ public sealed interface AuthenticationHandler {
       final var preferUsernameClaim = oidcAuthenticationConfiguration.isPreferUsernameClaim();
       if ((preferUsernameClaim && principals.username() != null) || principals.clientId() == null) {
         return Either.right(
-            context
-                .withValue(USERNAME, principals.username())
-                .withValue(USER_CLAIMS, token.getClaims()));
+            context.withValue(USERNAME, principals.username()).withValue(USER_CLAIMS, claims));
       } else {
         return Either.right(
-            context
-                .withValue(CLIENT_ID, principals.clientId())
-                .withValue(USER_CLAIMS, token.getClaims()));
+            context.withValue(CLIENT_ID, principals.clientId()).withValue(USER_CLAIMS, claims));
       }
     }
   }

@@ -26,7 +26,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -59,7 +59,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
-  @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
   @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
@@ -91,7 +91,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
         new CamundaProcessTestContextImpl(
             camundaProcessTestRuntime,
             clientCreationCallback,
-            camundaManagementClient,
+            clockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
             zeebeJsonMapper,

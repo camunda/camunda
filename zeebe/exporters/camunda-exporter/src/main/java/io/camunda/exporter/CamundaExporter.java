@@ -61,6 +61,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -92,6 +93,7 @@ public class CamundaExporter implements Exporter {
   private long lastFlushTimestamp = 0L;
 
   private long flushDelayMs;
+  private ScheduledTask scheduledFlushTask;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -153,6 +155,10 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
 
     if (writer != null) {
       try {
@@ -331,7 +337,9 @@ public class CamundaExporter implements Exporter {
       nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
 
-    controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {

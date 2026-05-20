@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.9.1-SNAPSHOT</version>
+  <version>8.9.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -44,7 +44,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>8.8.0</project.previousVersion>
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
@@ -60,7 +59,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <version.elasticsearch-java-client>8.19.14</version.elasticsearch-java-client>
-    <version.elasticsearch>8.19.14</version.elasticsearch>
+    <version.elasticsearch>8.19.15</version.elasticsearch>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
@@ -98,7 +97,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.9.1-SNAPSHOT</version>
+      <version>8.9.6-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>

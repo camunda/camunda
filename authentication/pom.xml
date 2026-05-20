@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <artifactId>camunda-authentication</artifactId>
@@ -51,6 +51,10 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>

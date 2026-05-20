@@ -12,7 +12,7 @@ import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
 import {defaultAssertionOptions} from '../constants';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
@@ -121,19 +121,19 @@ export function getLast24HoursRange() {
   };
 }
 
-export interface StatisticsJobItem {      
-    jobType: string,
-    created: {
-        count: number,
-        lastUpdatedAt: string
-    },
-    completed: {
-        count: number,
-        lastUpdatedAt: string
-    },
-    failed: {
-        count: number,
-        lastUpdatedAt: string
-    },
-    workers: number,
-};
+export interface StatisticsJobItem {
+  jobType: string;
+  created: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  completed: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  failed: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  workers: number;
+}

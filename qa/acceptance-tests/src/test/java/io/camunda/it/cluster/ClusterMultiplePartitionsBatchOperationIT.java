@@ -53,9 +53,10 @@ public class ClusterMultiplePartitionsBatchOperationIT {
           .withUnauthenticatedAccess()
           .withUnifiedConfig(
               b -> {
-                final var cluster = b.getCluster();
-                cluster.setPartitionCount(3);
-                b.setCluster(cluster);
+                // We want to test multiple partitions and concurrency. To make the test potentially
+                // flaky we increase the partitions and exporter threads
+                b.getCluster().setPartitionCount(9);
+                b.getSystem().setIoThreadCount(9);
               });
 
   private static CamundaClient camundaClient;

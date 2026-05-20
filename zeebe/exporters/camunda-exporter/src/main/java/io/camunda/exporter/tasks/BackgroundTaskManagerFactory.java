@@ -147,6 +147,7 @@ public final class BackgroundTaskManagerFactory {
     return new BackgroundTaskManager(
         partitionId,
         archiverRepository,
+        auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
         historyDeletionRepository,

@@ -496,6 +496,12 @@
         {
           "ignore": true,
           "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::jobWorkerPostProcessor(io.camunda.client.jobhandling.JobWorkerManager, java.util.List<io.camunda.client.annotation.customizer.JobWorkerValueCustomizer>, java.util.List<io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer>)",
+          "justification": "Internal Spring @Bean factory method refactor; invoked by the Spring container during auto-configuration, not by user code, so the signature change has no compatibility impact for users."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
           "old": "method io.camunda.client.jobhandling.CommandExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::commandExceptionHandlingStrategy(io.camunda.client.jobhandling.CamundaClientExecutorService)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
         },
@@ -510,6 +516,12 @@
           "code": "java.method.removed",
           "old": "method io.camunda.client.jobhandling.JobWorkerManager io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobWorkerManager(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.jobhandling.result.ResultProcessorStrategy, io.camunda.client.api.worker.BackoffSupplier, io.camunda.client.jobhandling.JobExceptionHandlingStrategy)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.JobWorkerManager io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobWorkerManager(java.util.List<io.camunda.client.annotation.customizer.JobWorkerValueCustomizer>, io.camunda.client.jobhandling.JobWorkerFactory)",
+          "justification": "Spring auto-configuration @Bean factory method; signature extended to inject legacy ZeebeWorkerValueCustomizer list to fix AOT NullPointerException (#49131). Not intended to be invoked directly."
         },
         {
           "ignore": true,

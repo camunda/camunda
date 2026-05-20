@@ -16,7 +16,7 @@ public interface HistoryDeletionMapper {
   List<HistoryDeletionDbModel> getHistoryDeletionBatch(
       @Param("partitionId") int partitionId, @Param("limit") int limit);
 
-  void insert(HistoryDeletionDbModel historyDeletion);
+  void createIfNotExists(HistoryDeletionDbModel historyDeletion);
 
   int delete(
       @Param("resourceKey") long resourceKey, @Param("batchOperationKey") long batchOperationKey);

@@ -12,8 +12,10 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,12 +24,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SpringBrokerBridge {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SpringBrokerBridge.class);
+
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
   private Supplier<JobStreamService> jobStreamServiceSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
-  private Consumer<Integer> shutdownHelper;
+  private BiConsumer<Integer, String> shutdownHelper;
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {
@@ -69,15 +74,16 @@ public class SpringBrokerBridge {
    * Registers a shutdown helper that can initiate a graceful shutdown of the broker. This will be
    * used when any exceptional cases may need to be handled by shutting down the broker.
    *
-   * @param shutdownHelper the shutdown helper
+   * @param shutdownHelper the shutdown helper accepting an error code and a reason string
    */
-  public void registerShutdownHelper(final Consumer<Integer> shutdownHelper) {
+  public void registerShutdownHelper(final BiConsumer<Integer, String> shutdownHelper) {
     this.shutdownHelper = shutdownHelper;
   }
 
-  public void initiateShutdown(final int errorCode) {
+  public void initiateShutdown(final int errorCode, final String reason) {
+    LOG.warn("Initiating broker shutdown with error code {}: {}", errorCode, reason);
     if (shutdownHelper != null) {
-      shutdownHelper.accept(errorCode);
+      shutdownHelper.accept(errorCode, reason);
     } else {
       System.exit(errorCode);
     }

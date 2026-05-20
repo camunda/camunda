@@ -29,6 +29,7 @@ test.describe.parallel('Get Process instance Tests', () => {
 
   test('Search Process Instances - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create a process instance to search for', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -49,6 +50,7 @@ test.describe.parallel('Get Process instance Tests', () => {
       const json = await res.json();
       localState.processInstanceKey = json.processInstanceKey;
     });
+
     await test.step('Search Process Instances', async () => {
       await expect(async () => {
         const res = await request.post(buildUrl('/process-instances/search'), {
@@ -68,11 +70,13 @@ test.describe.parallel('Get Process instance Tests', () => {
         expect(json.page.totalItems).toBeGreaterThan(1);
       }).toPass(defaultAssertionOptions);
     });
+
     await cancelProcessInstance(localState.processInstanceKey as string);
   });
 
   test('Search Process Instance With Filter - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create a process instance to filter for', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -124,6 +128,7 @@ test.describe.parallel('Get Process instance Tests', () => {
         );
       }).toPass(defaultAssertionOptions);
     });
+
     await cancelProcessInstance(localState.processInstanceKey as string);
   });
 
@@ -131,6 +136,7 @@ test.describe.parallel('Get Process instance Tests', () => {
     request,
   }) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create two process instances to filter for', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -199,13 +205,13 @@ test.describe.parallel('Get Process instance Tests', () => {
         });
         await assertStatusCode(res, 200);
         await validateResponse(
-        {
-          path: '/process-instances/search',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
+          {
+            path: '/process-instances/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.page.totalItems).toBe(2);
         expect(json.items.length).toBe(2);

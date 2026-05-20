@@ -76,10 +76,12 @@ jobs:
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
         with:
+          repository: camunda/camunda
           version: current-test
           distball: ${{ steps.build-zeebe.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
           push: false
+          dockerfile: 'camunda.Dockerfile'
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Run smoke test on ${{ matrix.arch }}
@@ -87,6 +89,9 @@ jobs:
         env:
           # For non Linux runners there is no container available for testing, see build-zeebe-docker job
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
+          CAMUNDA_TEST_DOCKER_IMAGE: camunda/camunda:current-test
+          CAMUNDA_DOCKER_IMAGE_NAME: camunda/camunda
+          DOCKER_IMAGE_TAG: current-test
         run: >
           ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
@@ -343,7 +348,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -553,7 +558,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@732a017b858dbc516d87dbe0780fafb770532ed7 # main
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda

@@ -14,6 +14,7 @@ import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -778,5 +779,68 @@ class SearchQueryResponseMapperTest {
     assertThat(result.getC8Links())
         .containsEntry("operate", "https://operate.example.com")
         .containsEntry("tasklist", "https://tasklist.example.com");
+  }
+
+  @Test
+  void shouldMapCallHierarchyEntryUsingProcessDefinitionNameWhenPresent() {
+    // given
+    final var entity = callHierarchyEntity("demoProcess", "Demo Process");
+
+    // when
+    final ProcessInstanceCallHierarchyEntry entry =
+        SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
+
+    // then
+    assertThat(entry.getProcessInstanceKey()).isEqualTo("123");
+    assertThat(entry.getProcessDefinitionKey()).isEqualTo("456");
+    assertThat(entry.getProcessDefinitionName()).isEqualTo("Demo Process");
+  }
+
+  @Test
+  void shouldMapCallHierarchyEntryFallingBackToProcessDefinitionIdWhenNameIsNull() {
+    // given - regression coverage for #50011: BPMN deployed without a name
+    // attribute leaves processDefinitionName null and previously NPE'd here
+    final var entity = callHierarchyEntity("demoProcess", null);
+
+    // when
+    final ProcessInstanceCallHierarchyEntry entry =
+        SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
+
+    // then
+    assertThat(entry.getProcessDefinitionName()).isEqualTo("demoProcess");
+  }
+
+  @Test
+  void shouldMapCallHierarchyEntryFallingBackToProcessDefinitionIdWhenNameIsBlank() {
+    // given
+    final var entity = callHierarchyEntity("demoProcess", "   ");
+
+    // when
+    final ProcessInstanceCallHierarchyEntry entry =
+        SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
+
+    // then
+    assertThat(entry.getProcessDefinitionName()).isEqualTo("demoProcess");
+  }
+
+  private static ProcessInstanceEntity callHierarchyEntity(
+      final String processDefinitionId, final String processDefinitionName) {
+    return new ProcessInstanceEntity(
+        123L, // processInstanceKey
+        null, // rootProcessInstanceKey
+        processDefinitionId,
+        processDefinitionName,
+        1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
+        456L, // processDefinitionKey
+        null, // parentProcessInstanceKey
+        null, // parentFlowNodeInstanceKey
+        OffsetDateTime.now(),
+        null, // endDate
+        ProcessInstanceState.ACTIVE,
+        false, // hasIncident
+        "tenant",
+        null, // treePath
+        null); // businessId
   }
 }

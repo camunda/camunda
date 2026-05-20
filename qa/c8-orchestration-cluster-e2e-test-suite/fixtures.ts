@@ -40,6 +40,7 @@ import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
+import {SwaggerPage} from '@pages/SwaggerPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -78,22 +79,26 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  swaggerPage: SwaggerPage;
   suppressHelperModals: void;
 };
 
 const test = base.extend<PlaywrightFixtures>({
-  suppressHelperModals: [async ({page}, use) => {
-    await page.addInitScript(() => {
-      const current = JSON.parse(
-        window.localStorage.getItem('sharedState') || '{}',
-      );
-      window.localStorage.setItem(
-        'sharedState',
-        JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
-      );
-    });
-    await use();
-  }, {auto: true}],
+  suppressHelperModals: [
+    async ({page}, use) => {
+      await page.addInitScript(() => {
+        const current = JSON.parse(
+          window.localStorage.getItem('sharedState') || '{}',
+        );
+        window.localStorage.setItem(
+          'sharedState',
+          JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+        );
+      });
+      await use();
+    },
+    {auto: true},
+  ],
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
       new AxeBuilder({page}).withTags([
@@ -123,6 +128,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
+  },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
   },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));

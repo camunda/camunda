@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -28,14 +29,12 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -136,6 +135,7 @@ public final class SystemContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final NodeIdProvider nodeIdProvider;
@@ -153,6 +153,7 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider) {
@@ -167,6 +168,8 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider =
+        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.nodeIdProvider = nodeIdProvider;
@@ -184,6 +187,7 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider) {
@@ -199,6 +203,7 @@ public final class SystemContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
+        oidcClaimsProvider,
         searchClientsProxy,
         brokerRequestAuthorizationConverter,
         nodeIdProvider);
@@ -304,10 +309,6 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
         .ifPresent(this::validateListenersConfig);
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -684,10 +685,6 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
   }
 
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
-  }
-
   private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
     if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
       return;
@@ -748,6 +745,10 @@ public final class SystemContext {
 
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
+  }
+
+  public OidcClaimsProvider getOidcClaimsProvider() {
+    return oidcClaimsProvider;
   }
 
   public JwtDecoder getJwtDecoder() {

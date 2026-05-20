@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -265,6 +265,18 @@
     <dependency>
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
 

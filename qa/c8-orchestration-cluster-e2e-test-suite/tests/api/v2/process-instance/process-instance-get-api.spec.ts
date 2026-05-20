@@ -27,6 +27,7 @@ test.describe.parallel('Get Process instance Tests', () => {
 
   test('Get Process Instance - Success', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('First, create a process instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
@@ -110,6 +111,7 @@ test.describe.parallel('Get Process instance Tests', () => {
 
   test('Get Process Instance - Unauthorized', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Create Process Instance', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),

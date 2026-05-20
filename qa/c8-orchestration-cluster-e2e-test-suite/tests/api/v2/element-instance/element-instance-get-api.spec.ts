@@ -23,6 +23,7 @@ import {EXPECTED_ELEMENT_INSTANCE_GET_SUCCESS} from '../../../../utils/beans/ele
 
 test.describe.parallel('Get Element Instance API', () => {
   const state: Record<string, string> = {};
+
   test.beforeAll(async () => {
     await deploy(['./resources/element_instance_get_update_tests.bpmn']);
     await createInstances('element_instance_get_update_tests', 1, 1).then(

@@ -577,16 +577,42 @@ public final class ProcessInstanceMigrationPreconditions {
 
   /**
    * Checks whether the given user task implementations are supported for migration. Throws an
-   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type, or when
+   * it is an implementation migration with an incident on the job worker.
    *
    * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
-   * @return whether the migration is to a different user task implementation
+   * @param incidentState incident state to check for active incidents on the job
    */
-  public static boolean requireSupportedUserTaskImplementation(
+  public static void requireSupportedUserTaskMigration(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance,
+      final long processInstanceKey,
+      final IncidentState incidentState) {
+    requireSupportedUserTaskImplementation(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey);
+
+    if (ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+        sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance)) {
+      requireNoIncidentForJobWorkerUserTaskConversion(
+          incidentState, elementInstance, processInstanceKey);
+    }
+  }
+
+  /**
+   * Checks whether the given user task implementations are supported for migration. Throws an
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   */
+  public static void requireSupportedUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -594,7 +620,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return false;
+      return;
     }
 
     final AbstractFlowElement targetElement =
@@ -604,42 +630,33 @@ public final class ProcessInstanceMigrationPreconditions {
     if (targetElementType != BpmnElementType.USER_TASK
         && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
             && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
-      return false;
+      return;
     }
 
     final ExecutableUserTask targetUserTask =
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableUserTask.class);
-    final String targetUserTaskType =
-        targetUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
-
     final ExecutableUserTask sourceUserTask =
         sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
-    final String sourceUserTaskType =
-        sourceUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
 
-    if (!sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)) {
+    final boolean sourceIsZeebeUserTask = sourceUserTask.getUserTaskProperties() != null;
+    final boolean targetIsJobWorker = targetUserTask.getUserTaskProperties() == null;
+
+    if (sourceIsZeebeUserTask && targetIsJobWorker) {
       final String reason =
           String.format(
               ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
-              sourceUserTaskType,
+              ZEEBE_USER_TASK_IMPLEMENTATION,
               targetElementId,
-              targetUserTaskType);
+              JOB_WORKER_IMPLEMENTATION);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
-    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**

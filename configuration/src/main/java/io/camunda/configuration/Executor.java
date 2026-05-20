@@ -69,7 +69,7 @@ public class Executor {
   private int queueCapacity = 64;
 
   public int getCorePoolSizeMultiplier() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".core-pool-size-multiplier",
         corePoolSizeMultiplier,
         Integer.class,
@@ -82,7 +82,7 @@ public class Executor {
   }
 
   public int getMaxPoolSizeMultiplier() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-pool-size-multiplier",
         maxPoolSizeMultiplier,
         Integer.class,
@@ -96,7 +96,7 @@ public class Executor {
 
   public Duration getKeepAlive() {
     final Long currentKeepAliveSeconds =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             PREFIX + ".keep-alive",
             keepAlive.getSeconds(),
             Long.class,
@@ -110,7 +110,7 @@ public class Executor {
   }
 
   public int getQueueCapacity() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".queue-capacity",
         queueCapacity,
         Integer.class,

@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface AuditLogArchiverRepository extends AutoCloseable {
@@ -25,4 +26,22 @@ public interface AuditLogArchiverRepository extends AutoCloseable {
    * @return a {@link CompletableFuture} containing the number of documents deleted
    */
   CompletableFuture<Integer> deleteAuditLogCleanupMetadata(final AuditLogCleanupBatch batch);
+
+  class NoopAuditLogArchiverRepository implements AuditLogArchiverRepository {
+
+    @Override
+    public CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
+      return CompletableFuture.completedFuture(
+          new AuditLogCleanupBatch(null, List.of(), List.of()));
+    }
+
+    @Override
+    public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
+        final AuditLogCleanupBatch batch) {
+      return CompletableFuture.completedFuture(0);
+    }
+
+    @Override
+    public void close() throws Exception {}
+  }
 }

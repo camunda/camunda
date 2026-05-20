@@ -26,7 +26,6 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
@@ -133,7 +132,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeConfiguration);
+    camundaManagementClient = createManagementClient();
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -193,6 +192,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources
     testDeploymentService.deployTestResources(
@@ -292,18 +294,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     assertionConfiguration.getInterval().ifPresent(CamundaAssert::setAssertionInterval);
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+  private CamundaManagementClient createManagementClient() {
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void printTestResults() {

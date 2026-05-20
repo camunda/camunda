@@ -9,6 +9,7 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda.client" level="debug"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

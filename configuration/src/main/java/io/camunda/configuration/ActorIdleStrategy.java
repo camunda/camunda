@@ -32,7 +32,7 @@ public class ActorIdleStrategy {
       Duration.ofNanos(ActorSchedulerBuilder.DEFAULT_MAX_PARK_PERIOD_NS);
 
   public long getMaxSpins() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-spins",
         maxSpins,
         Long.class,
@@ -45,7 +45,7 @@ public class ActorIdleStrategy {
   }
 
   public long getMaxYields() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-yields",
         maxYields,
         Long.class,
@@ -58,7 +58,7 @@ public class ActorIdleStrategy {
   }
 
   public Duration getMinParkPeriod() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".min-park-period",
         minParkPeriod,
         Duration.class,
@@ -71,7 +71,7 @@ public class ActorIdleStrategy {
   }
 
   public Duration getMaxParkPeriod() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-park-period",
         maxParkPeriod,
         Duration.class,

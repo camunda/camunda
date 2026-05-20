@@ -16,13 +16,17 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {validateResponseShape, validateResponse} from '../../../../json-body-assertions';
+import {
+  validateResponseShape,
+  validateResponse,
+} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {readFileSync} from 'node:fs';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Get Start Form API', () => {
   const state: Record<string, unknown> = {};
+
   test.beforeAll(async () => {
     const formPath = './resources/sign_up_form.form';
     const deployment = await deploy([

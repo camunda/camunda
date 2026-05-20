@@ -828,14 +828,18 @@ public class SecondaryStorageElasticsearchTest {
     @Test
     void shouldUseOperatePropertiesDefaults() {
       assertThat(operateProperties.getElasticsearch())
-          .returns(null, OperateElasticsearchProperties::getSocketTimeout)
+          .returns(
+              OperateElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              OperateElasticsearchProperties::getSocketTimeout)
           .returns(null, OperateElasticsearchProperties::getConnectTimeout);
     }
 
     @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getElasticsearch())
-          .returns(null, TasklistElasticsearchProperties::getSocketTimeout)
+          .returns(
+              TasklistElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              TasklistElasticsearchProperties::getSocketTimeout)
           .returns(null, TasklistElasticsearchProperties::getConnectTimeout);
     }
 
@@ -1013,6 +1017,35 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(proxy.isSslEnabled()).isTrue();
       assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
       assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
+  class WithDefaultValues {
+
+    final Camunda camunda;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
+
+    WithDefaultValues(
+        @Autowired final Camunda camunda,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+      this.camunda = camunda;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
+    }
+
+    @Test
+    void shouldNumberOfReplicasDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getElasticsearch().getNumberOfReplicas())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldNumberOfShardsDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getElasticsearch().getNumberOfShards())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfShards()).isEqualTo(1);
     }
   }
 }

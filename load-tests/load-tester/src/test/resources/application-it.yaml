@@ -1,0 +1,11 @@
+# Integration test configuration — overrides application.yaml to enable the Camunda client
+camunda:
+  client:
+    enabled: true
+    mode: self-managed
+    auth:
+      method: none
+    prefer-rest-over-grpc: true
+    worker:
+      defaults:
+        type: benchmark-task

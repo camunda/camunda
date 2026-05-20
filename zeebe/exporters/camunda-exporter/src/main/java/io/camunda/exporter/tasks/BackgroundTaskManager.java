@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.archiver.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 public final class BackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository archiverRepository;
+  private final AuditLogArchiverRepository auditLogArchiverRepository;
   private final IncidentUpdateRepository incidentRepository;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final HistoryDeletionRepository historyDeletionRepository;
@@ -39,6 +41,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   BackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,
+      final @WillCloseWhenClosed AuditLogArchiverRepository auditLogArchiverRepository,
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
       final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
       final @WillCloseWhenClosed HistoryDeletionRepository historyDeletionRepository,
@@ -49,6 +52,9 @@ public final class BackgroundTaskManager implements CloseableSilently {
     this.partitionId = partitionId;
     this.archiverRepository =
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
+    this.auditLogArchiverRepository =
+        Objects.requireNonNull(
+            auditLogArchiverRepository, "must specify an audit log archiver repository");
     this.incidentRepository =
         Objects.requireNonNull(incidentRepository, "must specify an incident repository");
     this.batchOperationUpdateRepository =
@@ -81,6 +87,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
     CloseHelper.closeAll(
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
+        auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
         historyDeletionRepository);

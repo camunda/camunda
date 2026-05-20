@@ -142,7 +142,7 @@ public class RocksDb {
   }
 
   public boolean isStatisticsEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".statistics-enabled",
         statisticsEnabled,
         Boolean.class,
@@ -155,7 +155,7 @@ public class RocksDb {
   }
 
   public AccessMetricsKind getAccessMetrics() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".access-metrics",
         accessMetrics,
         AccessMetricsKind.class,
@@ -168,7 +168,7 @@ public class RocksDb {
   }
 
   public DataSize getMemoryLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".memory-limit",
         memoryLimit,
         DataSize.class,
@@ -197,7 +197,7 @@ public class RocksDb {
   }
 
   public int getMaxOpenFiles() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-open-files",
         maxOpenFiles,
         Integer.class,
@@ -210,7 +210,7 @@ public class RocksDb {
   }
 
   public int getMaxWriteBufferNumber() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-write-buffer-number",
         maxWriteBufferNumber,
         Integer.class,
@@ -223,7 +223,7 @@ public class RocksDb {
   }
 
   public int getMinWriteBufferNumberToMerge() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".min-write-buffer-number-to-merge",
         minWriteBufferNumberToMerge,
         Integer.class,
@@ -236,7 +236,7 @@ public class RocksDb {
   }
 
   public int getIoRateBytesPerSecond() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".io-rate-bytes-per-second",
         ioRateBytesPerSecond,
         Integer.class,
@@ -249,7 +249,7 @@ public class RocksDb {
   }
 
   public boolean isWalDisabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".wal-disabled",
         walDisabled,
         Boolean.class,
@@ -262,7 +262,7 @@ public class RocksDb {
   }
 
   public boolean isSstPartitioningEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".sst-partitioning-enabled",
         sstPartitioningEnabled,
         Boolean.class,

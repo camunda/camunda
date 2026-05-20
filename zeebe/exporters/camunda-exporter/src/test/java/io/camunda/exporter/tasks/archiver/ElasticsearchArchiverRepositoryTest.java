@@ -12,11 +12,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
@@ -32,6 +41,8 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.net.ConnectException;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -181,6 +192,141 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.rootProcessInstanceKeys()).containsExactly(100L);
+  }
+
+  @Test
+  public void shouldNotDeleteWhenMovingIfReindexingFails() {
+    // given
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Error reindexing")));
+
+    // when
+    final var future =
+        repository.moveDocuments(
+            "from-index", "to-index", Map.of("key", List.of("1", "2", "3")), Runnable::run);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withMessageContaining("Error reindexing");
+
+    verify(client).reindex(any(ReindexRequest.class));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  public void shouldReindexThenDeleteWhenMovingDocuments() {
+    // given
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(ReindexResponse.of(b -> b.total(10L))));
+    when(client.deleteByQuery(any(DeleteByQueryRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(DeleteByQueryResponse.of(b -> b.total(10L))));
+
+    // when
+    final var future =
+        repository.moveDocuments(
+            "from-index", "to-index", Map.of("key", List.of("1", "2", "3")), Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).deleteByQuery(any(DeleteByQueryRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenNotBulkDeleteWhenMovingDocumentsByIdIfReindexingFails() {
+    // given
+    when(client.search(any(SearchRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse("4", "5", "6")));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Error reindexing")));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withMessageContaining("Error reindexing");
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteWhenMovingDocumentsById() {
+    // given
+    when(client.search(any(SearchRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse("4", "5", "6")),
+            CompletableFuture.completedFuture(searchResponse()));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(ReindexResponse.of(b -> b.total(3L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  private SearchResponse<Void> searchResponse(final String... ids) {
+    final var hits =
+        Arrays.stream(ids).map(id -> Hit.<Void>of(h -> h.id(id).index("from-index"))).toList();
+    return SearchResponse.of(
+        r ->
+            r.took(123L)
+                .timedOut(false)
+                .shards(s -> s.total(1).successful(1).failed(0))
+                .hits(
+                    h ->
+                        h.total(t -> t.value(hits.size()).relation(TotalHitsRelation.Eq))
+                            .hits(hits)));
+  }
+
+  private BulkResponse bulkResponse(final String... ids) {
+    final var items =
+        Arrays.stream(ids)
+            .map(
+                id ->
+                    BulkResponseItem.of(
+                        h ->
+                            h.id(id)
+                                .operationType(OperationType.Delete)
+                                .index("from-index")
+                                .status(200)))
+            .toList();
+    return BulkResponse.of(b -> b.took(123L).errors(false).items(items));
   }
 
   private ElasticsearchArchiverRepository createRepository(

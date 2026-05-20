@@ -22,11 +22,12 @@ import {
   jsonHeaders,
   paginatedResponseFields,
 } from '../../../../utils/http';
-import {validateResponse, validateResponseShape} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
-  jobResponseFields,
-} from '../../../../utils/beans/requestBeans';
+  validateResponse,
+  validateResponseShape,
+} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {jobResponseFields} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Job API Tests', () => {
   const state: Record<string, unknown> = {};

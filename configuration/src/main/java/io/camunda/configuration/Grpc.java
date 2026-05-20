@@ -58,7 +58,7 @@ public class Grpc implements Cloneable {
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
 
   public String getAddress() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".address",
         address,
         String.class,
@@ -71,7 +71,7 @@ public class Grpc implements Cloneable {
   }
 
   public int getPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".port",
         port,
         Integer.class,
@@ -84,7 +84,7 @@ public class Grpc implements Cloneable {
   }
 
   public Duration getMinKeepAliveInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".min-keep-alive-interval",
         minKeepAliveInterval,
         Duration.class,
@@ -105,7 +105,7 @@ public class Grpc implements Cloneable {
   }
 
   public int getManagementThreads() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".management-threads",
         managementThreads,
         Integer.class,

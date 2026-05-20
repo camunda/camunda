@@ -158,8 +158,19 @@ class TaskDetailsPage {
   }
 
   async clickUnassignButton() {
-    await expect(this.unassignButton).toBeVisible({timeout: 30000});
-    await this.unassignButton.click();
+    // The right-panel re-renders when transitioning from a just-completed
+    // task to the next one. `toBeVisible` can match the Unassign button from
+    // the stale (previous) state just before it detaches, leaving `click` to
+    // wait for an actionable element that never resettles in time. Re-query
+    // on each retry so a stale-then-detached match doesn't sink the click.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.unassignButton).toBeVisible({timeout: 10000});
+        await this.unassignButton.click({timeout: 5000});
+      },
+      onFailure: async () => {},
+      maxRetries: 4,
+    });
   }
 
   async clickCompleteTaskButton() {
@@ -377,11 +388,13 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        await expect(input).toHaveValue(expectedValue);
       },
       onFailure: async () => {
-        console.log(`Retrying assertion for field "${label}"...`);
+        // The completed-task view sometimes renders form fields lazily after
+        // first paint; reload to force a fresh load on retry.
+        await this.page.reload();
+        await sleep(2000);
       },
     });
   }
@@ -420,10 +433,12 @@ class TaskDetailsPage {
     // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
 
-    // Complete the task, wait for the banner to appear, then disappear
+    // Complete the task, wait for the banner to appear, then disappear.
+    // The completion round-trip can take longer than the default 10s on
+    // loaded shared clusters; allow 30s for the banner to surface.
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
     await this.clickCompleteTaskButton();
-    await expect(this.taskCompletedBanner).toBeVisible();
+    await expect(this.taskCompletedBanner).toBeVisible({timeout: 30000});
     await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
   }
 }

@@ -79,9 +79,11 @@ const createSingleInstance = async (
 
 const cancelProcessInstance = async (processInstanceKey: string) => {
   return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
-    if (e.status === 404) {
-      // an active process with this key was not found. It probably completed already.
-      // we swallow the error, because this is a common cleanup scenario.
+    // The SDK wraps HTTPError and exposes the response status as `statusCode`;
+    // older code paths used `status`. Accept either so 404s from already-
+    // completed instances are silently swallowed (common cleanup scenario).
+    const status = e?.statusCode ?? e?.status;
+    if (status === 404) {
       return;
     }
     // Something else happened. Throw the error to surface the problem.

@@ -90,6 +90,7 @@ jobs:
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
+      deploymentId: ${{ steps.extract-deployment-id.outputs.deploymentId }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ !inputs.dryRun }}
@@ -160,80 +161,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # NOTE:
-      # - This step validates that Optimize's project.previousVersion in optimize/pom.xml
-      #   has been set correctly based on the current release version.
-      # - For GA minor releases (e.g., 8.9.0), previousVersion should be set to the
-      #   previous minor version (e.g., 8.8.0).
-      # - For new alpha releases (e.g., 8.9.0-alpha1), previousVersion should also be validated
-      #   to ensure main branch was properly updated after stable branch creation.
-      # - Long-term, this manual step should disappear once
-      #   https://github.com/camunda/camunda/issues/40258 is implemented and
-      #   the backend no longer depends on project.previousVersion.
-      - name: Validate Optimize Previous Version
-        if: ${{ inputs.includeOptimize && !inputs.dryRun && ((!contains(inputs.releaseVersion, '-') && endsWith(inputs.releaseVersion, '.0')) || contains(inputs.releaseVersion, '.0-alpha1')) }}
-        run: |
-          set -euo pipefail
-          
-          echo "=== Validating Optimize project.previousVersion ==="
-          
-          RELEASE_VERSION="${{ inputs.releaseVersion }}"
-          
-          # Determine if this is an alpha release or GA release
-          if [[ "${RELEASE_VERSION}" == *"-alpha"* ]]; then
-            # Alpha release - extract base version (e.g., 8.9.0-alpha1 -> 8.9.0)
-            BASE_VERSION="${RELEASE_VERSION%%-alpha*}"
-            echo "Validating alpha release: ${RELEASE_VERSION} (base version: ${BASE_VERSION})"
-            
-            # Validate base version format
-            if ! [[ "${BASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
-              echo "❌ FAILED: Alpha release base version '${BASE_VERSION}' does not match expected pattern X.Y.0"
-              exit 1
-            fi
-            
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-          else
-            # GA release - use release version directly
-            BASE_VERSION="${RELEASE_VERSION}"
-            echo "Validating GA release: ${RELEASE_VERSION}"
-            
-            # Validate GA version format
-            if ! [[ "${BASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.0$ ]]; then
-              echo "❌ FAILED: GA release version '${BASE_VERSION}' does not match expected pattern X.Y.0"
-              exit 1
-            fi
-            
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-          fi
-          
-          # Handle edge case for X.0.0 releases
-          if [[ "${MINOR}" -eq 0 ]]; then
-            echo "❌ FAILED: Cannot validate previousVersion for X.0.0 releases"
-            echo "Release version '${BASE_VERSION}' is a major release (X.0.0)"
-            echo "There is no previous minor version to validate against."
-            echo "This validation only applies to minor releases (X.Y.0 where Y > 0)."
-            exit 1
-          fi
-          
-          # Calculate expected previous version (e.g., 8.9.0 -> expected previous is 8.8.0)
-          EXPECTED_PREVIOUS_MINOR=$((MINOR - 1))
-          EXPECTED_PREVIOUS_VERSION="${MAJOR}.${EXPECTED_PREVIOUS_MINOR}.0"
-          
-          # Extract actual previous version from optimize/pom.xml
-          ACTUAL_PREVIOUS_VERSION=$(./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.previousVersion -q -DforceStdout 2>/dev/null || echo "")
-          
-          # Validation check
-          if [[ "${ACTUAL_PREVIOUS_VERSION}" != "${EXPECTED_PREVIOUS_VERSION}" ]]; then
-            echo "❌ FAILED: project.previousVersion not set correctly"
-            echo "Expected: ${EXPECTED_PREVIOUS_VERSION}"
-            echo "Actual:   ${ACTUAL_PREVIOUS_VERSION}"
-            echo "Update it before release. See: https://github.com/camunda/camunda/issues/40258"
-            exit 1
-          fi
-          
-          echo "✅ PASSED: project.previousVersion correctly set to ${ACTUAL_PREVIOUS_VERSION}"
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
@@ -255,7 +182,7 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
-          
+
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             PROFILE_FLAGS=""
@@ -264,7 +191,7 @@ jobs:
             PROFILE_FLAGS="-P\!include-optimize"
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
-          
+
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -299,7 +226,7 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          
+
 
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
@@ -310,7 +237,6 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
-          # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
@@ -327,6 +253,47 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        if: always() && steps.maven-perform-release.conclusion != 'skipped'
+        # Never block the release on extraction failure — the deployment ID is
+        # for downstream automation only; manual recovery is always possible.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: |
+          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
+          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
+          # It is not persisted to disk by the plugin. So we fetch this job's log from the GHA API after the maven step has run and grep it.
+          # Using curl directly because gh CLI is not installed on the release runner image.
+          api="https://api.github.com/repos/${{ github.repository }}"
+
+          job_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
+            | jq -r ".jobs[] | select(.runner_name == \"$RUNNER_NAME\") | .id")
+
+          deployment_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/jobs/${job_id}/logs" \
+            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+            | tail -1 \
+            | awk '{print $2}' || true)
+
+          if [[ -n "${deployment_id}" ]]; then
+            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Maven Central deployment ID: ${deployment_id}"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Dry run — emitting placeholder deployment ID"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
+          fi
 
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
@@ -357,15 +324,15 @@ jobs:
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
-          
+
           # Include Optimize artifacts if Optimize is included in the release
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             cp target/checkout/optimize-distro/target/camunda-optimize-"${RELEASE_VERSION}"-production.tar.gz "${ARTIFACT_DIR}/"
           fi
-          
+
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -1035,7 +1002,7 @@ jobs:
       releaseBodyUpdateOutcome: ${{ steps.update-github-release-body.outcome }}
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
@@ -1190,7 +1157,7 @@ jobs:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
@@ -1297,11 +1264,13 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "true",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }      
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1321,7 +1290,7 @@ jobs:
 
       - name: Send success Slack notification with manual follow-up
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1390,11 +1359,13 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "false",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }            
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

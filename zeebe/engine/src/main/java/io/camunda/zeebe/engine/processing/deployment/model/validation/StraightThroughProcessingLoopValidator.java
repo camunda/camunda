@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
@@ -29,9 +30,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class StraightThroughProcessingLoopValidator {
@@ -50,7 +53,8 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.TASK,
           BpmnElementType.CALL_ACTIVITY,
           BpmnElementType.INTERMEDIATE_THROW_EVENT,
-          BpmnElementType.SCRIPT_TASK);
+          BpmnElementType.SCRIPT_TASK,
+          BpmnElementType.BUSINESS_RULE_TASK);
 
   static {
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.MANUAL_TASK, NOOP_VALIDATOR);
@@ -74,6 +78,9 @@ public final class StraightThroughProcessingLoopValidator {
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
         BpmnElementType.SCRIPT_TASK,
         StraightThroughProcessingLoopValidator::isScriptTaskStraightThrough);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.BUSINESS_RULE_TASK,
+        StraightThroughProcessingLoopValidator::isBusinessRuleTaskStraightThrough);
   }
 
   /**
@@ -124,11 +131,16 @@ public final class StraightThroughProcessingLoopValidator {
       final ExecutableProcess executableProcess,
       final List<ExecutableProcess> executableProcesses) {
     final var straightThroughElements = getStraightThroughElementsInProcess(executableProcess);
+    // A node enters this set once it has been proven loop-free, so subsequent DFS calls can skip
+    // it. Without this, processes with complex topologies cause exponential re-exploration of the
+    // same subgraph — see issue #53120.
+    final Set<ExecutableFlowNode> visited = new HashSet<>();
 
     for (final ExecutableFlowNode element : straightThroughElements) {
       final var potentialLoop = new LinkedList<ExecutableFlowNode>();
       final var result =
-          checkForStraightThroughProcessingLoop(potentialLoop, element, executableProcesses);
+          checkForStraightThroughProcessingLoop(
+              potentialLoop, element, executableProcesses, visited);
       if (result.isLeft()) {
         final String failureMessage =
             createFailureMessage(resource, executableProcess, result.getLeft());
@@ -189,7 +201,8 @@ public final class StraightThroughProcessingLoopValidator {
   private static Either<List<ExecutableFlowNode>, ?> checkForStraightThroughProcessingLoop(
       final LinkedList<ExecutableFlowNode> potentialLoop,
       final ExecutableFlowNode element,
-      final List<ExecutableProcess> executableProcesses) {
+      final List<ExecutableProcess> executableProcesses,
+      final Set<ExecutableFlowNode> visited) {
 
     if (foundLoop(potentialLoop, element)) {
       // It could happen that we detect a loop which doesn't involve the first element we checked.
@@ -199,10 +212,14 @@ public final class StraightThroughProcessingLoopValidator {
       // describing the loop.
       loop.add(element);
       return Either.left(loop);
+    } else if (visited.contains(element)) {
+      // This node has already been fully explored, skipping it
+      return Either.right(null);
     } else if (STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.containsKey(element.getElementType())) {
       final var isElementStraightThrough =
           STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.get(element.getElementType()).apply(element);
       if (!isElementStraightThrough) {
+        visited.add(element);
         return Either.right(null);
       }
 
@@ -216,7 +233,8 @@ public final class StraightThroughProcessingLoopValidator {
       Either<List<ExecutableFlowNode>, ?> isPartOfLoop = Either.right(null);
       for (final ExecutableFlowNode nextElement : getNextElements(element, executableProcesses)) {
         isPartOfLoop =
-            checkForStraightThroughProcessingLoop(potentialLoop, nextElement, executableProcesses);
+            checkForStraightThroughProcessingLoop(
+                potentialLoop, nextElement, executableProcesses, visited);
         if (isPartOfLoop.isLeft()) {
           break;
         }
@@ -224,11 +242,13 @@ public final class StraightThroughProcessingLoopValidator {
 
       if (isPartOfLoop.isRight()) {
         potentialLoop.remove(element);
+        visited.add(element);
       }
       return isPartOfLoop;
 
     } else {
       // No loops have been found. We can return an Either.Right to indicate success.
+      visited.add(element);
       return Either.right(null);
     }
   }
@@ -370,6 +390,12 @@ public final class StraightThroughProcessingLoopValidator {
     // If a script task is handled by a job worker is it not straight-through.
     final var scriptTask = (ExecutableScriptTask) element;
     return scriptTask.getJobWorkerProperties() == null;
+  }
+
+  private static boolean isBusinessRuleTaskStraightThrough(final ExecutableFlowNode element) {
+    // If a business rule task is handled by a job worker it is not straight-through.
+    final var businessRuleTask = (ExecutableBusinessRuleTask) element;
+    return businessRuleTask.getJobWorkerProperties() == null;
   }
 
   private static boolean isLinkCatchEvent(final ExecutableFlowNode element) {

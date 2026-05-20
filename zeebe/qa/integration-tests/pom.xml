@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -157,6 +157,11 @@
       <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -167,18 +172,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -639,6 +632,12 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

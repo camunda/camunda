@@ -102,8 +102,38 @@ export const BatchItemsTable: React.FC<Props> = ({
               <ItemKeyCell
                 itemKey={itemKey}
                 fallbackText="No decision instance"
-                to={Paths.decisionInstance(itemKey)}
-                label={`View decision instance ${itemKey}`}
+                to={
+                  state === 'COMPLETED'
+                    ? undefined
+                    : Paths.decisionInstance(itemKey)
+                }
+                label={
+                  state === 'COMPLETED'
+                    ? undefined
+                    : `View decision instance ${itemKey}`
+                }
+              />
+            ),
+          };
+        }
+
+        if (batchOperationType === 'DELETE_PROCESS_INSTANCE') {
+          return {
+            ...commonCells,
+            processInstanceKey: (
+              <ItemKeyCell
+                itemKey={processInstanceKey}
+                fallbackText="No process instance"
+                to={
+                  state === 'COMPLETED'
+                    ? undefined
+                    : Paths.processInstance(processInstanceKey)
+                }
+                label={
+                  state === 'COMPLETED'
+                    ? undefined
+                    : `View process instance ${processInstanceKey}`
+                }
               />
             ),
           };

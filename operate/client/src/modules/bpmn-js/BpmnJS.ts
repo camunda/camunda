@@ -363,8 +363,9 @@ class BpmnJS {
     const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
     const graphicsFactory = this.#navigatedViewer?.get('graphicsFactory');
     const element = elementRegistry?.get(id);
+
     if (element?.di !== undefined) {
-      element.di.set('stroke', color);
+      element.di.set('border-color', color);
 
       const gfx = elementRegistry?.getGraphics(element);
       if (gfx !== undefined) {

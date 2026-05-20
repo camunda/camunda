@@ -12,7 +12,7 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -173,7 +173,11 @@ export async function verifyIncidentsForProcessInstance(
       buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
       {
         headers: jsonHeaders(),
-        data: {},
+        data: {
+          filter: {
+            state: 'ACTIVE',
+          },
+        },
       },
     );
     await assertStatusCode(res, 200);

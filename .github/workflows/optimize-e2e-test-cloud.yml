@@ -59,7 +59,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+        uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
         with:
           work-dir: ./optimize
       - name: Start Elastic search
@@ -98,7 +98,7 @@ jobs:
           AUTH0_USERPASSWORD: "${{ steps.secrets.outputs.AUTH0_USERPASSWORD }}"
         run: yarn run e2e:ci:cloud:headless
       - name: Upload logs
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: logs

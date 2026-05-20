@@ -139,6 +139,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
       groupId: groupIdFromState('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
     };
+
     await test.step('Unassign Group From Tenant', async () => {
       await expect(async () => {
         const res = await request.delete(
@@ -302,7 +303,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
       buildUrl('/tenants/{tenantId}/groups/search', p),
       {headers: jsonHeaders(), data: {}},
     );
-    
+
     await assertStatusCode(res, 200);
     await validateResponse(
       {

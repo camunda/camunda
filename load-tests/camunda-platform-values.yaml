@@ -14,11 +14,20 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   # Our default is ELASTICSEARCH
   # We need to explicitly enable ELS as per default this is disabled now
   # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
   elasticsearch:
     enabled: true
+    url:
+      # The Elasticsearch host value used to connect to Elasticsearch depends
+      # on the "elasticsearch.fullnameOverride" value.
+      # If you change the "elasticsearch.fullnameOverride" value, make sure to
+      # update this host value accordingly.
+      host: elastic
   # Disable global ingress
   ingress:
     enabled: false
@@ -76,7 +85,7 @@ optimize:
     - file: application.yml
       content: |
         historyCleanup:
-          cronTrigger: '0 1 * * *'
+          cronTrigger: '*/30 * * * *'
           ttl: 'P1D'
           processDataCleanup:
             enabled: true
@@ -200,10 +209,10 @@ orchestration:
   resources:
     requests:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
     limits:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
 
   tolerations:
     - key: nodepool
@@ -269,9 +278,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # RocksDB memory limit setting, limits the overall RocksDB memory usage
-        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
@@ -332,7 +338,12 @@ prometheusServiceMonitor:
 ########################################################################################
 elasticsearch:
   enabled: true
-  clusterName: "elasticsearch"
+  # Override the default name for ConfigMap, Service, etc.
+  # Changing this value also changes the name of the Kubernetes Service used by
+  # the other components to connect to Elasticsearch, make sure to update
+  # the "global.elasticsearch.url.host" value accordingly.
+  fullnameOverride: elastic
+  clusterName: elasticsearch
   master:
     fullnameOverride: elastic
     nameOverride: elastic

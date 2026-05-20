@@ -134,12 +134,21 @@
     </if>
   </sql>
   <!--
-    Oracle sorts NULLs differently from other databases by default:
-    Oracle: NULLs LAST for ASC, NULLs FIRST for DESC
-    PostgreSQL/H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
+    Oracle and PostgreSQL sort NULLs differently from other databases by default:
+    Oracle/PostgreSQL: NULLs LAST for ASC, NULLs FIRST for DESC
+    H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
     This override ensures consistent NULL ordering across all databases.
   -->
   <sql id="orderBy" databaseId="oracle">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        ${item.column} ${item.order}
+        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
+        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
+      </foreach>
+    </if>
+  </sql>
+  <sql id="orderBy" databaseId="postgresql">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
         ${item.column} ${item.order}

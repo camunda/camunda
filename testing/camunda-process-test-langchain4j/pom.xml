@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -15,7 +15,7 @@
 
   <properties>
     <version.java>17</version.java>
-    <version.langchain4j>1.11.6</version.langchain4j>
+    <version.langchain4j>1.11.7</version.langchain4j>
   </properties>
 
   <dependencyManagement>

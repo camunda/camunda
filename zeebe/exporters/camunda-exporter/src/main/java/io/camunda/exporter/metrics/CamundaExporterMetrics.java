@@ -91,6 +91,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of document updated when incident updates were processed. */
   private final Counter incidentUpdatesDocumentsUpdated;
 
+  /** Count of archiver batch retries due to retryable errors. */
+  private final Counter archiverBatchRetries;
+
   /** Count of audit logs that are in progress of archiving. */
   private final Counter auditLogsArchiving;
 
@@ -164,6 +167,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "archiving")
             .description(
                 "Count of completed batch operations that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    archiverBatchRetries =
+        Counter.builder(meterName("archiver.batch.retries"))
+            .description(
+                "Count of archiver batch retries due to retryable errors (e.g. socket timeouts, search engine exceptions).")
+            .tags("type", "docid-batch")
             .register(meterRegistry);
     usageMetricsArchived =
         Counter.builder(meterName("archiver.usage.metrics"))
@@ -447,6 +456,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     auditLogsArchiving.increment(count);
   }
 
+  public void recordArchiverBatchRetry() {
+    archiverBatchRetries.increment();
+  }
+
   public void recordJobBatchMetricsArchived(final int count) {
     jobBatchMetricsArchived.increment(count);
   }
@@ -592,6 +605,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(standaloneDecisionsArchived);
     meterRegistry.remove(auditLogsArchiving);
     meterRegistry.remove(auditLogsArchived);
+    meterRegistry.remove(archiverBatchRetries);
 
     meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
 

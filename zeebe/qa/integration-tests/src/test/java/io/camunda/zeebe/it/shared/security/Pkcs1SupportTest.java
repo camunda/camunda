@@ -9,12 +9,12 @@ package io.camunda.zeebe.it.shared.security;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.cluster.CamundaPort;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebePort;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -42,29 +42,32 @@ final class Pkcs1SupportTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var pkcs1Key = convertToPkcs1(certificate.key(), tmpDir.resolve("private.key").toFile());
-    final var containerCertPath = "/usr/local/zeebe/cert.crt";
-    final var containerKeyPath = "/usr/local/zeebe/pkcs1.key";
+    final var containerCertPath = "/usr/local/camunda/cert.crt";
+    final var containerKeyPath = "/usr/local/camunda/pkcs1.key";
     final var zeebe =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withCopyFileToContainer(
                 MountableFile.forHostPath(certificate.certificate().toPath(), 511),
                 containerCertPath)
             .withCopyFileToContainer(
                 MountableFile.forHostPath(pkcs1Key.toPath(), 511), containerKeyPath)
             .withAdditionalExposedPort(8080)
+            .withUnifiedConfig(
+                cfg -> {
+                  final var transportCluster =
+                      cfg.getSecurity().getTransportLayerSecurity().getCluster();
+                  transportCluster.setEnabled(true);
+                  transportCluster.setCertificateChainPath(new File(containerCertPath));
+                  transportCluster.setCertificatePrivateKeyPath(new File(containerKeyPath));
+
+                  final var grpc = cfg.getApi().getGrpc().getSsl();
+                  grpc.setEnabled(true);
+                  grpc.setCertificate(new File(containerCertPath));
+                  grpc.setCertificatePrivateKey(new File(containerKeyPath));
+                })
             .withEnv("SERVER_SSL_ENABLED", "true")
             .withEnv("SERVER_SSL_CERTIFICATE", containerCertPath)
             .withEnv("SERVER_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
-            .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
-            .withEnv(
-                "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
-                containerCertPath)
-            .withEnv(
-                "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
-                containerKeyPath)
-            .withEnv("CAMUNDA_API_GRPC_SSL_ENABLED", "true")
-            .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATE", containerCertPath)
-            .withEnv("CAMUNDA_API_GRPC_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withoutTopologyCheck(); // avoid the missing TLS config by the client
 
@@ -78,15 +81,15 @@ final class Pkcs1SupportTest {
           .isSecuredBy(certificate);
       SslAssert.assertThat(
               new InetSocketAddress(
-                  zeebe.getExternalHost(), zeebe.getMappedPort(ZeebePort.INTERNAL.getPort())))
+                  zeebe.getExternalHost(), zeebe.getMappedPort(CamundaPort.INTERNAL.getPort())))
           .isSecuredBy(certificate);
       SslAssert.assertThat(
               new InetSocketAddress(
-                  zeebe.getExternalHost(), zeebe.getMappedPort(ZeebePort.COMMAND.getPort())))
+                  zeebe.getExternalHost(), zeebe.getMappedPort(CamundaPort.COMMAND.getPort())))
           .isSecuredBy(certificate);
       SslAssert.assertThat(
               new InetSocketAddress(
-                  zeebe.getExternalHost(), zeebe.getMappedPort(ZeebePort.GATEWAY.getPort())))
+                  zeebe.getExternalHost(), zeebe.getMappedPort(CamundaPort.GATEWAY_GRPC.getPort())))
           .isSecuredBy(certificate);
     }
   }

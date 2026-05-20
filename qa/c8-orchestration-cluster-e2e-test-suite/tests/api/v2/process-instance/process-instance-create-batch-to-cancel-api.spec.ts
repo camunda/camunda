@@ -15,7 +15,10 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
-import {validateResponse, validateResponseShape} from '../../../../json-body-assertions';
+import {
+  validateResponse,
+  validateResponseShape,
+} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
@@ -42,6 +45,7 @@ test.describe.parallel('Create Process Instance Batch to Cancel Tests', () => {
     request,
   }) => {
     const localState: Record<string, string[]> = {processInstanceKeys: []};
+
     await test.step('Create multiple process instances to cancel', async () => {
       const processInstances = await createInstances(
         'process_with_task_listener',

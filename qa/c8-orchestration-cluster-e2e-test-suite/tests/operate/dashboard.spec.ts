@@ -253,12 +253,14 @@ test.describe('Dashboard', () => {
       await operateDashboardPage.expandItem(firstInstanceByError);
       await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
+      // Incident counts can shift between the badge snapshot and navigation
+      // load; allow the heading more time to settle to the expected count.
       await expect(
         operateDashboardPage.processInstancesHeading(
           incidentCount,
           Number(incidentCount) > 1,
         ),
-      ).toBeVisible();
+      ).toBeVisible({timeout: 30000});
     });
   });
 });

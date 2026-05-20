@@ -19,11 +19,7 @@ import {expect} from '@playwright/test';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {validateResponse} from 'json-body-assertions';
-import{
-  createMappingRule,
-  createRole,
-  createUser,
-} from '@requestHelpers';
+import {createMappingRule, createRole, createUser} from '@requestHelpers';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
@@ -141,8 +137,8 @@ export async function createGroupAndStoreResponseFields(
         path: '/groups',
         method: 'POST',
         status: '201',
-       },
-       res,
+      },
+      res,
     );
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);

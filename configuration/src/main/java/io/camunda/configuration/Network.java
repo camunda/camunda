@@ -92,7 +92,7 @@ public class Network implements Cloneable {
   @NestedConfigurationProperty private CommandApi commandApi = new CommandApi();
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".host",
         host,
         String.class,
@@ -105,7 +105,7 @@ public class Network implements Cloneable {
   }
 
   public String getAdvertisedHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".advertised-host",
         advertisedHost,
         String.class,
@@ -118,7 +118,7 @@ public class Network implements Cloneable {
   }
 
   public int getPortOffset() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".port-offset",
         portOffset,
         Integer.class,
@@ -131,7 +131,7 @@ public class Network implements Cloneable {
   }
 
   public DataSize getMaxMessageSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-message-size",
         maxMessageSize,
         DataSize.class,
@@ -144,7 +144,7 @@ public class Network implements Cloneable {
   }
 
   public DataSize getSocketSendBuffer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".socket-send-buffer",
         socketSendBuffer,
         DataSize.class,
@@ -157,7 +157,7 @@ public class Network implements Cloneable {
   }
 
   public DataSize getSocketReceiveBuffer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".socket-receive-buffer",
         socketReceiveBuffer,
         DataSize.class,
@@ -170,7 +170,7 @@ public class Network implements Cloneable {
   }
 
   public Duration getHeartbeatTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".heartbeat-timeout",
         heartbeatTimeout,
         Duration.class,
@@ -183,7 +183,7 @@ public class Network implements Cloneable {
   }
 
   public Duration getHeartbeatInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".heartbeat-interval",
         heartbeatInterval,
         Duration.class,

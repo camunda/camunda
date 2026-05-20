@@ -27,8 +27,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestController
+/**
+ * Batch operations are unavailable when secondary storage is disabled.
+ *
+ * <p>This is an intentional product decision for no-db mode, so the whole controller is guarded
+ * with {@link RequiresSecondaryStorage}.
+ *
+ * <p>Although lifecycle endpoints such as cancel, suspend, and resume do not directly query
+ * secondary storage in their own request path, the batch operation feature depends on secondary
+ * storage overall. Without secondary storage, batch operations cannot be meaningfully created or
+ * used, so all endpoints in this controller are disabled.
+ */
 @RequiresSecondaryStorage
+@CamundaRestController
 @RequestMapping("/v2/batch-operations")
 public class BatchOperationController {
 

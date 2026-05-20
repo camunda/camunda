@@ -1,7 +1,19 @@
+# Workaround to prevent the Kubernetes client SDK from failing while
+# https://github.com/gravitational/teleport/issues/64188 is opened.
+# See https://app.incident.io/camunda/incidents/5624 for more details.
+# Consider removing this once
+# https://github.com/gravitational/teleport/issues/64188 has been fixed and
+# deployed.
+export KUBE_FEATURE_WatchListClient = false
+
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.9
 enable_optimize ?= __ENABLE_OPTIMIZE__
+# Deadline date baked into resources/namespace.yaml by newLoadTest.sh. The
+# `check-deadline` target compares against today's date and fails fast so we
+# don't deploy into a namespace the TTL cleanup workflow is about to delete.
+deadline_date ?= __DEADLINE_DATE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -46,6 +58,10 @@ endif
 # Construct platform values files based on configuration
 platform_values := -f camunda-platform-values.yaml
 
+# Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_secondary_storage_load_test_flags :=
+
 # Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml
@@ -53,6 +69,7 @@ else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
 platform_values += -f camunda-platform-no-secondary-storage.yaml
+_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 
 # Disable Optimize if not enabled
@@ -70,10 +87,42 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
 .PHONY: install-stable
-install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
+
+# Fail fast if the namespace TTL deadline is today or in the past — the TTL
+# cleanup workflow will delete the namespace and undo the install. To extend,
+# either rerun newLoadTest.sh into a new folder or edit `deadline-date` in
+# resources/namespace.yaml and reapply.
+.PHONY: check-deadline
+check-deadline:
+	@today=$$(date +%Y-%m-%d); \
+	if [ "$$today" \> "$(deadline_date)" ] || [ "$$today" = "$(deadline_date)" ]; then \
+		echo "ERROR: namespace deadline-date ($(deadline_date)) is today or earlier (today: $$today)."; \
+		echo "       The TTL cleanup workflow will delete this namespace."; \
+		echo "       To proceed, bump the deadline:"; \
+		echo "         kubectl label namespace $(namespace) deadline-date=YYYY-MM-DD --overwrite"; \
+		echo "       and update resources/namespace.yaml to match, or rerun newLoadTest.sh into a fresh folder."; \
+		exit 1; \
+	fi
+
+# Apply the rendered namespace manifest. Idempotent: the same manifest applies
+# cleanly whether the namespace exists or not, so reruns of `make install`
+# after a TTL deletion recreate the namespace with the same labels and AZ.
+.PHONY: create-namespace
+create-namespace:
+	@echo "Applying namespace manifest for $(namespace)..."
+	kubectl apply -f resources/namespace.yaml
+
+# Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
+# deletion reapplies the SAME credentials, so the orchestration secret in
+# load-test-values.yaml stays in sync with the live secret.
+.PHONY: create-credentials
+create-credentials:
+	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
+	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
@@ -94,12 +143,6 @@ else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Create camunda-credentials secret
-.PHONY: create-credentials
-create-credentials:
-	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
-	./createCredsLoadTest.sh $(namespace)
-
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
 install-elasticsearch-exporter:
@@ -109,11 +152,15 @@ ifeq ($(secondary_storage),elasticsearch)
     --namespace $(namespace) \
     --version $(prometheus_elasticsearch_exporter_chart_version) \
     --wait --timeout 5m0s \
-    -f prometheus-elasticsearch-exporter-values.yaml \
-    --set es.uri="http://$(namespace)-elasticsearch:9200"
+    -f prometheus-elasticsearch-exporter-values.yaml
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
+
+.PHONY: install-optimize-cleanup
+install-optimize-cleanup:
+	@echo "Deploying Optimize indices cleanup job"
+	kubectl apply --namespace $(namespace) -f resources/optimize-indices-cleanup.yaml
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
@@ -150,6 +197,7 @@ install-load-test:
 		--render-subchart-notes \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
+		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
@@ -190,6 +238,7 @@ template-load-test:
 	helm template $(namespace)-test $(helm_chart_load_tests) \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
+		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration) \
 		--output-dir .
 
@@ -231,3 +280,5 @@ else ifeq ($(secondary_storage),opensearch)
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
+	@echo "Deleting namespace $(namespace) (async, no wait)..."
+	-kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found

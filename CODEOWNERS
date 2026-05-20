@@ -81,6 +81,10 @@
 ################
 
 # CI Files
+/.github/actions/read-db-versions/                                @camunda/data-layer
+/.github/workflows/check-saas-version.yml                         @camunda/data-layer
+/.github/workflows/zeebe-rdbms-integration-tests.yml              @camunda/data-layer
+/.github/workflows/zeebe-search-integration-tests.yml             @camunda/data-layer
 /.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
 /.github/workflows/operate-test-importer.yml                      @camunda/data-layer
 /.github/workflows/ci-operate.yml
@@ -140,6 +144,9 @@
 #################
 ## Agentic AI  ##
 #################
+
+# Engine-expert skill
+/.claude/skills/engine-expert/  @korthout @camunda/core-features
 
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai

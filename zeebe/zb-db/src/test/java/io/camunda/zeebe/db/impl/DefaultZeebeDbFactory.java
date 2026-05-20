@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
@@ -33,8 +34,11 @@ public final class DefaultZeebeDbFactory {
           final Supplier<MeterRegistry> meterRegistry) {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final var rocksDbConfiguration = new RocksDbConfiguration();
+    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
+    rocksDbConfiguration.setMemoryLimit(512 * 1024 * 1024);
     return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(),
+        rocksDbConfiguration,
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
         meterRegistry);

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -34,7 +32,6 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -83,7 +80,6 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
-  private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -121,7 +117,6 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = allocateSharedCache(brokerCfg, meterRegistry);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -142,21 +137,20 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            sharedRocksDbResources,
             clusterConfigurationService);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
     raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    RocksDbSharedCacheMetrics.registerAllocationStrategy(
+        brokerMeterRegistry,
+        brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
   }
 
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
-    final var memberPartitions =
-        clusterConfigurationService.getPartitionDistribution().partitions().stream()
-            .filter(p -> p.members().contains(localMemberId))
-            .toList();
+    final var memberPartitions = clusterConfigurationService.getMemberPartitions(localMemberId);
 
     healthCheckService.registerBootstrapPartitions(memberPartitions);
     for (final var partitionMetadata : memberPartitions) {
@@ -288,7 +282,7 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            sharedRocksDbResources.close();
+            zeebePartitionFactory.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });

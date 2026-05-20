@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import picocli.CommandLine.Command;
@@ -30,7 +31,8 @@ public class StateCommand {
             new RocksDbConfiguration().setWalDisabled(false),
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            new RocksDbResources.Shared(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT, 3));
   }
 
   public ZeebeDbFactory getZeebeDbFactory() {

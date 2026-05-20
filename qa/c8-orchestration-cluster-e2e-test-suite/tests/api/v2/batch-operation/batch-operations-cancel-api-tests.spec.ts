@@ -18,11 +18,12 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
+  batchOperationLifecycleOptions,
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
 } from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
@@ -48,8 +49,14 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       });
 
     await test.step('Cancel batch operation', async () => {
-      const res = await cancelBatchOperation(request, key);
-      await assertStatusCode(res, 204);
+      // The batch operation may not be visible to the cancel endpoint
+      // immediately after creation; retry on 404 until it is. The default
+      // 30s budget is too tight on a loaded shared cluster, so reuse the
+      // shared lifecycle options that suspend/resume already use.
+      await expect(async () => {
+        const res = await cancelBatchOperation(request, key);
+        await assertStatusCode(res, 204);
+      }).toPass(batchOperationLifecycleOptions);
     });
 
     await test.step('Poll batch status', async () => {
@@ -114,6 +121,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     request,
   }) => {
     const unknownKey = '2251799813999999';
+
     await test.step('Cancel unknown batch operation', async () => {
       const res = await cancelBatchOperation(request, unknownKey);
       await assertNotFoundRequest(

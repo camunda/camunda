@@ -202,19 +202,11 @@ describe('<BatchItemsTable />', () => {
     expect(screen.getByText('Error processing item 1')).toBeInTheDocument();
   });
 
-  it('should show a Decision Instance Key column with a link', async () => {
-    const items: BatchOperationItem[] = [
-      {
-        batchOperationKey: BATCH_OPERATION_KEY,
-        itemKey: 'decision-key-1',
-        processInstanceKey: '2251799813685250',
-        rootProcessInstanceKey: null,
-        state: 'COMPLETED',
-        operationType: 'DELETE_DECISION_INSTANCE',
-        processedDate: '2023-11-22T09:03:29.564+0100',
-        errorMessage: null,
-      },
-    ];
+  it('should show a Decision Instance Key column with a link for non-completed items', async () => {
+    const items = createMockBatchOperationItems(1, {
+      state: 'FAILED',
+      operationType: 'DELETE_DECISION_INSTANCE',
+    });
     mockQueryBatchOperationItems().withSuccess({
       items,
       page: {
@@ -245,10 +237,116 @@ describe('<BatchItemsTable />', () => {
       screen.queryByRole('columnheader', {name: /process instance key/i}),
     ).not.toBeInTheDocument();
     expect(
+      screen.getByRole('link', {name: /view decision instance item-1/i}),
+    ).toHaveAttribute('href', '/decisions/item-1');
+  });
+
+  it('should not show a link for completed decision instances deletion operation', async () => {
+    const items = createMockBatchOperationItems(1, {
+      state: 'COMPLETED',
+      operationType: 'DELETE_DECISION_INSTANCE',
+    });
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="DELETE_DECISION_INSTANCE"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getByText('item-1')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: /view decision instance item-1/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show a Process Instance Key column with a link for non-completed process instances deletion operation', async () => {
+    const items = createMockBatchOperationItems(1, {
+      state: 'FAILED',
+      operationType: 'DELETE_PROCESS_INSTANCE',
+    });
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="DELETE_PROCESS_INSTANCE"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /process instance key/i}),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('link', {
-        name: /view decision instance decision-key-1/i,
+        name: /view process instance 2251799813685250/i,
       }),
-    ).toHaveAttribute('href', '/decisions/decision-key-1');
+    ).toHaveAttribute('href', '/processes/2251799813685250');
+  });
+
+  it('should not show a link for completed process instances deletion operation', async () => {
+    const items = createMockBatchOperationItems(1, {
+      state: 'COMPLETED',
+      operationType: 'DELETE_PROCESS_INSTANCE',
+    });
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="DELETE_PROCESS_INSTANCE"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getByText('2251799813685250')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {
+        name: /view process instance 2251799813685250/i,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('should show "No decision instance" when there is no associated decision instance', async () => {

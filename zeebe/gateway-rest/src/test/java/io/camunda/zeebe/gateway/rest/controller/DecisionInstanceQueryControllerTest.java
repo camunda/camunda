@@ -435,6 +435,37 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
   }
 
+  private static Stream<Arguments> provideInvalidDecisionEvaluationInstanceKeys() {
+    return Stream.of(
+        Arguments.of("+++"),
+        Arguments.of("abc"),
+        Arguments.of("123"),
+        Arguments.of("-1-2"),
+        Arguments.of("1-"),
+        Arguments.of("-1"),
+        Arguments.of("1--1"),
+        Arguments.of("1-2-3"),
+        Arguments.of("1-a"),
+        Arguments.of("a-1"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidDecisionEvaluationInstanceKeys")
+  void shouldReturn400ForInvalidDecisionEvaluationInstanceKeyFormat(final String invalidKey) {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/decision-instances/{decisionInstanceId}", invalidKey)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+    // then - the service must not be invoked when validation fails
+    verify(decisionInstanceServices, never()).getById(eq(invalidKey), any());
+  }
+
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 

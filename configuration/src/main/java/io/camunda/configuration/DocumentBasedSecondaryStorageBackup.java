@@ -67,7 +67,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   }
 
   public String getRepositoryName() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         prefix + ".repository-name",
         repositoryName,
         String.class,
@@ -80,7 +80,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
   }
 
   public int getSnapshotTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         prefix + ".snapshot-timeout",
         snapshotTimeout,
         Integer.class,
@@ -98,7 +98,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
     // due to type difference. Test legacy with old unified config key first and then against the
     // updated unified config key.
     final long legacyIncompleteCheckTimeout =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             // Old unified config key kept for backwards compatibility
             "camunda.data.backup.incomplete-check-timeout",
             incompleteCheckTimeout.getSeconds(),
@@ -107,7 +107,7 @@ public class DocumentBasedSecondaryStorageBackup implements Cloneable {
             LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS);
 
     final Duration incompleteCheckTimeoutInDuration =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix + ".incomplete-check-timeout",
             incompleteCheckTimeout,
             Duration.class,

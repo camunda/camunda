@@ -84,6 +84,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.66.0'
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
@@ -107,6 +108,21 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  pin-check:
+    # Only on pull_request events: the reusable workflow uses
+    # github.event.pull_request.{base,head}.sha for its diff scope.
+    # On push/merge_group/schedule the job is skipped, which check-results
+    # treats as success — so the gate doesn't run there but also doesn't
+    # break those builds.
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.actionlint == 'true'
+    name: "Lint / Action Pinning"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/check-action-pins.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
+
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
     name: "Lint / Commitlint"
@@ -115,6 +131,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Determine fetch depth for checkout
         id: depth
         run: |
@@ -148,6 +165,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -174,6 +192,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
@@ -186,7 +205,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          
+
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -195,6 +214,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -228,6 +248,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -254,6 +275,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
@@ -315,6 +337,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Set all test constants
         id: set-constants
         run: |
@@ -385,6 +408,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -479,6 +503,7 @@ jobs:
             suite: CamundaEx
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -549,41 +574,29 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  generate-db-versions:
+    name: "Generate DB versions"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [ detect-changes ]
+    permissions:
+      contents: read
+    outputs:
+      ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: &database-matrix
-        include:
-          - name: "Elasticsearch 8"
-            database-type: "elasticsearch"
-            database-image-version: "8.19.11"
-            database-name: "Elasticsearch 8"
-            it-database-type: "es"
-          - name: "Elasticsearch 9"
-            database-type: "elasticsearch9"
-            database-container: "elasticsearch"
-            database-image-version: "9.2.5"
-            database-name: "Elasticsearch 9"
-            it-database-type: "es"
-          - name: "Opensearch 2"
-            database-type: "opensearch2"
-            database-container: "opensearch"
-            database-image-version: "2.19.4"
-            database-name: "OpenSearch 2"
-            it-database-type: "os"
-          - name: "Opensearch 3"
-            database-type: "opensearch3"
-            database-container: "opensearch"
-            database-image-version: "3.4.0"
-            database-name: "OpenSearch 3"
-            it-database-type: "os"
-          - name: "RDBMS H2"
-            database-type: "h2"
-            database-name: "H2"
-            it-database-type: "rdbms_h2"
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -596,10 +609,10 @@ jobs:
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -616,10 +629,10 @@ jobs:
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -642,6 +655,7 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -711,8 +725,8 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "QA"
             module: "QA"
           - group: zeebe-ds-modules
@@ -721,8 +735,8 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "Distributed Platform"
             module: "Zeebe"
           - group: zeebe-engine-modules
@@ -731,8 +745,8 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "Core Features"
             module: "Zeebe"
           - group: zeebe-exporter-modules
@@ -741,8 +755,8 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "DataLayer"
             module: "Zeebe"
           - group: schema-manager
@@ -770,8 +784,8 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "Distributed Platform"
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
@@ -790,8 +804,8 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "General"
             module: "Zeebe"
             test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
@@ -801,8 +815,8 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
             owner: "Core Features"
             module: "Zeebe"
           - group: qa-camunda-process-test
@@ -829,6 +843,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Generate cache key with current hour
         if: matrix.group == 'qa-update'
@@ -836,7 +851,7 @@ jobs:
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
         if: matrix.group == 'qa-update'
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
@@ -955,6 +970,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -1011,7 +1027,7 @@ jobs:
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1026,9 +1042,10 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
@@ -1041,7 +1058,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1129,10 +1146,20 @@ jobs:
           user_description: "General"
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
 
-  utils-flaky-tests-summary:
-    name: flaky tests summary comment
-    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+  detect-new-flaky-tests:
+    name: detect new flaky tests
+    # Skip backport PRs: code already gated on main, re-checking adds noise.
+    # Two conditions cover both automated (monorepo-devops-automation[bot]) and
+    # manually-named (backport-* / backport/*) backports. Direct fixes on
+    # stable/* branches by humans still run the gate.
+    if: >-
+      always()
+      && github.event_name == 'pull_request'
+      && !github.event.pull_request.head.repo.fork
+      && !startsWith(github.head_ref, 'backport')
+      && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
     needs:
+      - detect-changes
       - archunit-tests
       - database-integration-tests
       - docker-checks
@@ -1143,38 +1170,57 @@ jobs:
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       pull-requests: write
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Check for bypass label
+        id: bypass
+        shell: bash
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
+            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — skipping new flaky test gate."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Read Zeebe unit tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: zeebe-matrix-read
         with:
           matrix-step-name: zeebe-unit-tests
       - name: Read Integration tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
       - name: Read Database integration tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: database-integration-matrix-read
         with:
           matrix-step-name: database-integration-tests
       - name: Read history tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: history-matrix-read
         with:
           matrix-step-name: history-tests
       - name: Read identity tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: identity-matrix-read
         with:
           matrix-step-name: identity-tests
+
       - name: Collect flaky test results
+        if: steps.bypass.outputs.skip != 'true'
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
         with:
@@ -1194,13 +1240,86 @@ jobs:
           zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
           integration-tests-result: ${{ needs.integration-tests.result }}
           integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
-      - name: Update flaky tests comment
-        uses: ./.github/actions/flaky-tests-summary-comment
+
+      - name: Check if there are flaky tests to analyze
+        if: steps.bypass.outputs.skip != 'true'
+        id: check
+        env:
+          FLAKY_DATA: ${{ steps.collect-results.outputs.flaky_tests_data }}
+        shell: bash
+        run: |
+          if [[ -z "$FLAKY_DATA" ]] || [[ "$FLAKY_DATA" == '[]' ]]; then
+            echo "has_flaky_tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_flaky_tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import Secrets
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
-          flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Query known flaky tests from BigQuery
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        id: query-known-flaky
+        shell: bash
+        env:
+          PR_REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        run: |
+          set -euo pipefail
+          # 20 days = the BigQuery clustering window; pull_request runs are included so
+          # tests that flake mostly on PRs are still recognised, but the current PR's own
+          # observations are excluded to prevent a new flake from laundering itself across
+          # re-runs.
+          # Backticks in the SQL below are BigQuery identifier quoting, not shell substitution.
+          # shellcheck disable=SC2016
+          bq query --format=json --use_legacy_sql=false --quiet=true --max_rows=100000 \
+            --parameter="pr_ref:STRING:${PR_REF}" \
+            'SELECT DISTINCT test_class_name, test_name
+             FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
+             LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
+               ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
+             WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+               AND ts.ci_url="https://github.com/camunda/camunda"
+               AND test_status IN ("flaky","failure","error")
+               AND (
+                 (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
+                 OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
+                 OR (build_trigger="schedule" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
+                 OR (build_trigger="pull_request" AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
+               )' > "$RUNNER_TEMP/known-flaky-tests.json"
+          echo "known_flaky_tests_file=$RUNNER_TEMP/known-flaky-tests.json" >> "$GITHUB_OUTPUT"
+
+      - name: Detect new flaky tests
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        uses: ./.github/actions/detect-new-flaky-tests
+        with:
+          pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
-          branch-name: ${{ github.event.pull_request.head.ref }}
+          blocking: 'false'
+
       - name: Delete matrix job generated artifacts
+        if: always()
         uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
           name: |
@@ -1218,6 +1337,7 @@ jobs:
       run:
         working-directory: identity/client
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
@@ -1313,6 +1433,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: pr-body
         name: Fetch latest PR body
@@ -1359,8 +1480,9 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
-      SPECTRAL_VERSION: '6.15.0'
+      SPECTRAL_VERSION: '6.15.1'
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Node.js for Spectral
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -1407,6 +1529,7 @@ jobs:
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
@@ -1430,6 +1553,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Install bats
         run: sudo apt-get install -y bats
@@ -1464,8 +1588,10 @@ jobs:
       - commitlint
       - database-integration-tests
       - detect-changes
+      - detect-new-flaky-tests
       - docker-checks
       - general-unit-tests
+      - generate-db-versions
       - history-tests
       - identity-frontend-tests
       - identity-tests
@@ -1476,6 +1602,7 @@ jobs:
       - openapi-lint
       - operate-ci
       - optimize-ci
+      - pin-check
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
@@ -1530,6 +1657,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -1598,6 +1726,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:

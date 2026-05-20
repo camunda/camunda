@@ -41,9 +41,7 @@ test.describe('Element Instance Incident Search API', () => {
 
   test.beforeAll(async ({request}) => {
     await test.step('Deploy processes and create instance', async () => {
-      const deployment1 = await deploy([
-        './resources/calledErrorProcess.bpmn',
-      ]);
+      const deployment1 = await deploy(['./resources/calledErrorProcess.bpmn']);
       state['processDefinitionKeyCalled'] =
         deployment1.processes[0].processDefinitionKey;
       await deploy(['./resources/callErrorProcess.bpmn']);
@@ -314,7 +312,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertInvalidArgument(res, 400, `The provided processInstanceKey 'notANumber' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`);
+      await assertInvalidArgument(
+        res,
+        400,
+        `The provided processInstanceKey 'notANumber' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`,
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -394,6 +396,7 @@ test.describe('Element Instance Incident Search API', () => {
       email: string;
       password: string;
     };
+
     await test.step('Setup - Create user for authorization tests', async () => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
       await grantUserResourceAuthorization(

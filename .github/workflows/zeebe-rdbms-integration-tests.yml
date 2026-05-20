@@ -22,76 +22,29 @@ defaults:
     shell: bash
 
 jobs:
+  generate-db-versions:
+    name: "Generate DB versions"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      rdbms-matrix: ${{ steps.db-versions.outputs.rdbms-matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   rdbms-integration-tests:
     name: "RDBMS ${{ matrix.database-name }}"
+    needs: [ generate-db-versions ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: &database-matrix
-        include:
-          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
-          - database-name: "Postgres 14"
-            database-type: "postgres"
-            database-image-version: "14-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 15"
-            database-type: "postgres"
-            database-image-version: "15-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 16"
-            database-type: "postgres"
-            database-image-version: "16-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 17"
-            database-type: "postgres"
-            database-image-version: "17-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 18"
-            database-type: "postgres"
-            database-image-version: "18-alpine"
-            it-database-type: "rdbms_postgres"
-          # MySQL - Supported version: 8.4
-          - database-name: "MySQL 8.4"
-            database-type: "mysql"
-            database-image-version: "8.4"
-            it-database-type: "rdbms_mysql"
-          # MariaDB - Supported versions: 10.11, 11.4, 11.8
-          - database-name: "MariaDB 10.11"
-            database-type: "mariadb"
-            database-image-version: "10.11"
-            it-database-type: "rdbms_mariadb"
-          - database-name: "MariaDB 11.4"
-            database-type: "mariadb"
-            database-image-version: "11.4"
-            it-database-type: "rdbms_mariadb"
-          - database-name: "MariaDB 11.8"
-            database-type: "mariadb"
-            database-image-version: "11.8"
-            it-database-type: "rdbms_mariadb"
-          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
-          - database-name: "MSSQL 2019"
-            database-type: "mssql"
-            database-image-version: "2019-latest"
-            it-database-type: "rdbms_mssql"
-          - database-name: "MSSQL 2022"
-            database-type: "mssql"
-            database-image-version: "2022-latest"
-            it-database-type: "rdbms_mssql"
-          - database-name: "MSSQL 2025"
-            database-type: "mssql"
-            database-image-version: "2025-latest"
-            it-database-type: "rdbms_mssql"
-          # Oracle - Supported version: 21c, 23ai (19c not available as Docker image)
-          - database-name: "Oracle 23ai"
-            database-type: "oracle"
-            database-image-version: "23-slim-faststart"
-            it-database-type: "rdbms_oracle"
-          - database-name: "Oracle 21c"
-            database-type: "oracle-21"
-            database-image-version: "21-slim-faststart"
-            it-database-type: "rdbms_oracle"
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.rdbms-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -103,12 +56,13 @@ jobs:
 
   rdbms-history-tests:
     name: "RDBMS History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-db-versions ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.rdbms-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -124,12 +78,13 @@ jobs:
 
   rdbms-identity-tests:
     name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-db-versions ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.rdbms-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:

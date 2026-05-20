@@ -43,7 +43,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     correlationKey: '3838383',
     elementId: 'Event_17u9bac',
     messageName: 'Message_3tvi9o8',
-    partitionId: 1,
     processDefinitionId: 'messageCatchEvent3',
     tenantId: '<default>',
   };
@@ -165,11 +164,11 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           'correlationKey',
           'elementId',
           'messageName',
-          'partitionId',
           'processDefinitionId',
           'tenantId',
         ],
       );
+      expect(subscription.partitionId).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -247,6 +246,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     request,
   }) => {
     const processInstanceKeyToSearch = state.processInstance4;
+
     await test.step('Search by process instance key and tenant id', async () => {
       await expect(async () => {
         const res = await request.post(
@@ -355,8 +355,12 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       },
     );
-    await assertInvalidArgument(res, 400, `The provided processInstanceKey \'${invalidFieldValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`)
-      });
+    await assertInvalidArgument(
+      res,
+      400,
+      `The provided processInstanceKey \'${invalidFieldValue}\' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.`,
+    );
+  });
 
   test('Search Message Subscriptions - 401 Unauthorized', async ({request}) => {
     const res = await request.post(
@@ -387,6 +391,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       email: string;
       password: string;
     };
+
     await test.step('Setup - Create user for authorization tests', async () => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
       await grantUserResourceAuthorization(
@@ -419,13 +424,13 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         );
         await assertStatusCode(res, 200);
         await validateResponse(
-        {
-          path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
+          {
+            path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);

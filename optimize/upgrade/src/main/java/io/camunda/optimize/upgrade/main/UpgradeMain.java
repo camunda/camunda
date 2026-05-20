@@ -16,6 +16,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import io.camunda.optimize.upgrade.plan.ExplicitUpgradePlansSupplier;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
@@ -76,7 +77,7 @@ public class UpgradeMain {
               .orElse(Version.VERSION);
 
       final List<UpgradePlan> upgradePlans =
-          new UpgradePlanRegistry(upgradeDependencies)
+          new UpgradePlanRegistry(new ExplicitUpgradePlansSupplier(upgradeDependencies))
               .getSequentialUpgradePlansToTargetVersion(targetVersion);
 
       if (upgradePlans.isEmpty()) {

@@ -230,35 +230,35 @@ for (const {description, filter} of filterTestCases) {
 
 test.describe.parallel('Search Audit Logs API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    } = {} as {
-      username: string;
-      name: string;
-      email: string;
-      password: string;
-    };
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  } = {} as {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  };
 
-    test.beforeAll(async ({request}) => {
-      await test.step('Setup - Create test user with Resource Authorization', async () => {
-        userWithResourcesAuthorizationToSendRequest = await createUser(request);
-        await grantUserResourceAuthorization(
-          request,
-          userWithResourcesAuthorizationToSendRequest,
-        );
-      });
+  test.beforeAll(async ({request}) => {
+    await test.step('Setup - Create test user with Resource Authorization', async () => {
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
     });
-      
-    test.afterAll(async ({request}) => {
-      await test.step('Cleanup', async () => {
-        await cleanupUsers(request, [
-          userWithResourcesAuthorizationToSendRequest.username,
-        ]);
-      });
+  });
+
+  test.afterAll(async ({request}) => {
+    await test.step('Cleanup', async () => {
+      await cleanupUsers(request, [
+        userWithResourcesAuthorizationToSendRequest.username,
+      ]);
     });
-    
+  });
+
   test('Search Audit Logs Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl(AUDIT_LOG_SEARCH_ENDPOINT), {
@@ -408,7 +408,6 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
       const values = body.items.map(
         (item: Record<string, unknown>) => item.actorId,
       ) as string[];
-      console.log('Extracted actorIds:', values);
       const sorted = [...values].sort();
       expect(values).toEqual(sorted);
     }).toPass(defaultAssertionOptions);

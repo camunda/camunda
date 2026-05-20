@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -32,8 +33,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(120)
 final class PartitionLeaveTest {
   private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
@@ -235,6 +238,7 @@ final class PartitionLeaveTest {
             null,
             null,
             null,
+            new NoopOidcClaimsProvider(),
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));

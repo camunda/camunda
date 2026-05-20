@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-bom</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -50,12 +50,12 @@
     <version.commons-codec>1.21.0</version.commons-codec>
     <version.commons-compress>1.28.0</version.commons-compress>
     <version.commons-validator>1.10.1</version.commons-validator>
-    <version.zstd-jni>1.5.7-7</version.zstd-jni>
+    <version.zstd-jni>1.5.7-8</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
     <version.elasticsearch-java-client>8.19.14</version.elasticsearch-java-client>
-    <version.elasticsearch>8.19.14</version.elasticsearch>
+    <version.elasticsearch>8.19.15</version.elasticsearch>
     <version.error-prone>2.48.0</version.error-prone>
     <version.grpc>1.79.0</version.grpc>
     <version.gson>2.13.2</version.gson>
@@ -66,10 +66,10 @@
     <version.httpclient5>5.5.2</version.httpclient5>
     <version.httpcore5>5.4.2</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.9.0</version.identity>
+    <version.identity>8.9.3</version.identity>
     <version.instancio>5.5.1</version.instancio>
-    <version.jackson>2.21.2</version.jackson>
-    <version.jackson3>3.1.2</version.jackson3>
+    <version.jackson>2.21.3</version.jackson>
+    <version.jackson3>3.1.3</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.1</version.json-flattener>
     <version.jspecify>1.0.0</version.jspecify>
@@ -79,8 +79,8 @@
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>5.21.0</version.mockito>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.9.11</version.msgpack>
-    <version.netty>4.2.12.Final</version.netty>
+    <version.msgpack>0.9.12</version.msgpack>
+    <version.netty>4.2.13.Final</version.netty>
     <version.objenesis>3.5</version.objenesis>
     <version.opensearch>2.17.1</version.opensearch>
     <version.opensearch-java>3.4.0</version.opensearch-java>
@@ -88,17 +88,17 @@
     <version.prometheus>1.3.5</version.prometheus>
     <version.protobuf>4.33.6</version.protobuf>
     <version.protobuf-common>2.65.1</version.protobuf-common>
-    <version.micrometer>1.16.4</version.micrometer>
+    <version.micrometer>1.16.5</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.37.1</version.sbe>
     <version.scala>3.8.3</version.scala>
-    <version.slf4j>2.0.17</version.slf4j>
+    <version.slf4j>2.0.18</version.slf4j>
     <version.snakeyaml>2.5</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.2</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>2.0.4</version.testcontainers>
+    <version.testcontainers>2.0.5</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>2.0.2</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
@@ -107,15 +107,15 @@
     <version.feel-scala>1.21.0</version.feel-scala>
     <version.dmn-scala>1.11.0</version.dmn-scala>
     <version.rest-assured>6.0.0</version.rest-assured>
-    <version.spring>7.0.6</version.spring>
-    <version.spring-security>7.0.4</version.spring-security>
+    <version.spring>7.0.7</version.spring>
+    <version.spring-security>7.0.5</version.spring-security>
     <!--  Adding spring-security.version to ensure Spring Boot's BOM honors the override regardless of import order.  -->
     <spring-security.version>${version.spring-security}</spring-security.version>
-    <version.spring-boot>4.0.5</version.spring-boot>
+    <version.spring-boot>4.0.6</version.spring-boot>
     <version.spring-ai>2.0.0-M4</version.spring-ai>
-    <version.mcp-sdk>1.1.1</version.mcp-sdk>
+    <version.mcp-sdk>1.1.2</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
-    <version.tomcat>11.0.21</version.tomcat>
+    <version.tomcat>11.0.22</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -127,7 +127,7 @@
     <version.byte-buddy>1.18.8-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
-    <version.kotlin-stdlib>2.3.20</version.kotlin-stdlib>
+    <version.kotlin-stdlib>2.3.21</version.kotlin-stdlib>
     <version.immutables>2.12.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.184</version.classgraph>
@@ -135,7 +135,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.9.8</version.spotbugs>
-    <version.archunit>1.4.1</version.archunit>
+    <version.archunit>1.4.2</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-ffi>2.2.19</version.jnr-ffi>
@@ -154,41 +154,41 @@
     <version.jackson-annotations>2.21</version.jackson-annotations>
     <version.json-path>2.10.0</version.json-path>
     <version.swagger-annotations>2.2.47</version.swagger-annotations>
-    <version.swagger-parser>2.1.39</version.swagger-parser>
+    <version.swagger-parser>2.1.42</version.swagger-parser>
     <version.checker-qual>3.53.1</version.checker-qual>
-    <version.java-jwt>4.5.1</version.java-jwt>
+    <version.java-jwt>4.5.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
-    <version.postgresql>42.7.10</version.postgresql>
+    <version.postgresql>42.7.11</version.postgresql>
     <version.h2>2.4.240</version.h2>
     <version.aws-advanced-jdbc-wrapper>3.2.0</version.aws-advanced-jdbc-wrapper>
-    <version.aws-signing>4.0.0</version.aws-signing>
+    <version.aws-signing>4.0.1</version.aws-signing>
     <version.tc-keycloak>4.1.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.4</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.18.1</version.jna-platform>
-    <version.liquibase>5.0.2</version.liquibase>
+    <version.liquibase>5.0.3</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
-    <version.caffeine>3.2.3</version.caffeine>
+    <version.caffeine>3.2.4</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
     <version.reflections>0.10.2</version.reflections>
 
     <version.commons-io>2.21.0</version.commons-io>
-    <version.thymeleaf>3.1.4.RELEASE</version.thymeleaf>
+    <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.4</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
-    <version.springdoc>3.0.2</version.springdoc>
+    <version.springdoc>3.0.3</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v24.13.0</version.node>
     <version.npm>11.9.0</version.npm>
     <version.yarn>v1.22.22</version.yarn>
 
-    <version.elasticsearch-test-container>2.0.4</version.elasticsearch-test-container>
-    <version.postgres-test-container>2.0.4</version.postgres-test-container>
+    <version.elasticsearch-test-container>2.0.5</version.elasticsearch-test-container>
+    <version.postgres-test-container>2.0.5</version.postgres-test-container>
     <version.lz4>1.10.4</version.lz4>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
-    <version.joda-time>2.14.1</version.joda-time>
+    <version.joda-time>2.14.2</version.joda-time>
     <version.commons-collections4>4.5.0</version.commons-collections4>
     <version.xmlunit-core>2.11.0</version.xmlunit-core>
 
@@ -199,12 +199,12 @@
     <version.auth0.commons>1.11.1</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.16.4</version.okio-jvm>
-    <version.jwks-rsa>0.23.0</version.jwks-rsa>
+    <version.jwks-rsa>0.23.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.7</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.33</version.nimbus-sdk>
     <version.keycloak>26.5.7</version.keycloak>
-    <version.keycloak-client>26.0.8</version.keycloak-client>
+    <version.keycloak-client>26.0.9</version.keycloak-client>
     <version.jna>5.18.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>4.0.0</version.mybatis-spring>
@@ -222,9 +222,9 @@
     <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.15.0</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.17.0</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.10.0</plugin.version.dependency>
-    <plugin.version.enforcer>3.6.2</plugin.version.enforcer>
+    <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
     <plugin.version.exec>3.6.3</plugin.version.exec>
     <plugin.version.failsafe>3.5.5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
@@ -250,7 +250,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.8.21</backwards.compat.version>
+    <backwards.compat.version>8.8.24</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -385,6 +385,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-testcontainer</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1535,18 +1541,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-test-container</artifactId>
-        <version>${version.zeebe-test-container}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-test-container-engine</artifactId>
-        <version>${version.zeebe-test-container}</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>${version.error-prone}</version>
@@ -2238,14 +2232,6 @@
         <version>${version.nimbus-jose-jwt}</version>
       </dependency>
 
-      <!-- override transitive dependency in spring-boot-starter-thymeleaf until a
-           new version using thymeleaf-spring6:3.1.4.RELEASE is released -->
-      <dependency>
-        <groupId>org.thymeleaf</groupId>
-        <artifactId>thymeleaf-spring6</artifactId>
-        <version>${version.thymeleaf}</version>
-      </dependency>
-
       <!-- testcontainers and docker: see
         https://github.com/testcontainers/testcontainers-java/issues/3308 -->
 
@@ -2294,6 +2280,7 @@
         <artifactId>json-flattener</artifactId>
         <version>${version.json-flattener}</version>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 

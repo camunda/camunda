@@ -27,7 +27,7 @@ public class Cache {
   }
 
   public int getMaxSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".max-size",
         maxSize,
         Integer.class,

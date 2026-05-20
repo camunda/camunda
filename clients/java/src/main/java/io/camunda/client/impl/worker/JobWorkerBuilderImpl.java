@@ -47,7 +47,7 @@ public final class JobWorkerBuilderImpl
       BackoffSupplier.newBackoffBuilder().build();
   public static final BackoffSupplier DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().maxDelay(Duration.ofMinutes(1).toMillis()).build();
-  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
+  public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -66,7 +66,7 @@ public final class JobWorkerBuilderImpl
   private BackoffSupplier backoffSupplier;
   private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
-  private Duration streamingTimeout;
+  private Duration streamTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
 
@@ -93,7 +93,7 @@ public final class JobWorkerBuilderImpl
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
-    streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
+    streamTimeout = DEFAULT_STREAM_TIMEOUT;
   }
 
   @Override
@@ -175,7 +175,7 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 streamTimeout(final Duration timeout) {
-    streamingTimeout = timeout;
+    streamTimeout = timeout;
     return this;
   }
 
@@ -222,8 +222,8 @@ public final class JobWorkerBuilderImpl
 
     final Executor jobExecutor;
     if (enableStreaming) {
-      if (streamingTimeout != null) {
-        ensurePositive("streamingTimeout", streamingTimeout);
+      if (streamTimeout != null) {
+        ensurePositive("streamTimeout", streamTimeout);
       }
 
       jobStreamer =
@@ -235,7 +235,7 @@ public final class JobWorkerBuilderImpl
               fetchVariables,
               getTenantIds(),
               tenantFilter,
-              streamingTimeout,
+              streamTimeout,
               backoffSupplier,
               scheduledExecutor);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {
   cancelProcessInstance,
   createInstances,
@@ -20,6 +20,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {activateJobToObtainAValidJobKey} from '@requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 // Running the job tests on the same process instance leads to conflicts
 /* eslint-disable playwright/expect-expect */
@@ -95,6 +96,7 @@ test.describe('Job Completion API Tests', () => {
 
   test('Complete Job - conflict 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
+
     await test.step('Activate a job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
@@ -102,21 +104,25 @@ test.describe('Job Completion API Tests', () => {
       );
     });
 
-    await test.step('First completion (should succeed)', async () => {
-      const completeRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
-        {
-          headers: jsonHeaders(),
-          data: {
-            retries: 0,
-            errorMessage: 'Simulated failure',
+    await test.step('Fail the job (drains retries to produce conflict)', async () => {
+      // Job activation is observed before the job is fully visible to the
+      // /jobs/{jobKey}/failure endpoint. Retry on 404 until visibility catches up.
+      await expect(async () => {
+        const completeRes = await request.post(
+          buildUrl(`/jobs/${localState['jobKey']}/failure`),
+          {
+            headers: jsonHeaders(),
+            data: {
+              retries: 0,
+              errorMessage: 'Simulated failure',
+            },
           },
-        },
-      );
-      await assertStatusCode(completeRes, 204);
+        );
+        await assertStatusCode(completeRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
-    await test.step('Second completion (should conflict)', async () => {
+    await test.step('Attempt completion (should conflict 409)', async () => {
       const completeAgainRes = await request.post(
         buildUrl(`/jobs/${localState['jobKey']}/completion`),
         {

@@ -25,7 +25,7 @@ public class ProcessCache {
   private Duration expirationIdle = Duration.ofMillis(0);
 
   public int getMaxSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-size",
         maxSize,
         Integer.class,
@@ -39,7 +39,7 @@ public class ProcessCache {
 
   public Duration getExpirationIdle() {
     final Long currentExpirationIdle =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             PREFIX + ".expiration-idle",
             expirationIdle.toMillis(),
             Long.class,

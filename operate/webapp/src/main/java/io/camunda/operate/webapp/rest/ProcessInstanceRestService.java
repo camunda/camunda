@@ -37,6 +37,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -139,8 +140,11 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @GetMapping("/{id}")
   public ListViewProcessInstanceDto queryProcessInstanceById(
       @PathVariable @ValidLongId final String id) {
-    checkIdentityReadPermission(Long.parseLong(id));
-    return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
+    final Long key = Long.valueOf(id);
+    final ProcessInstanceForListViewEntity instance =
+        processInstanceReader.getProcessInstanceByKey(key);
+    checkIdentityPermission(instance.getBpmnProcessId(), key, PermissionType.READ_PROCESS_INSTANCE);
+    return processInstanceReader.getProcessInstanceWithOperationsByKey(instance);
   }
 
   @Operation(summary = "Get incidents by process instance id")
@@ -220,9 +224,15 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   private void checkIdentityPermission(
       final Long processInstanceKey, final PermissionType permission) {
-    if (!permissionsService.hasPermissionForProcess(
+    checkIdentityPermission(
         processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),
-        permission)) {
+        processInstanceKey,
+        permission);
+  }
+
+  private void checkIdentityPermission(
+      final String bpmnProcessId, final Long processInstanceKey, final PermissionType permission) {
+    if (!permissionsService.hasPermissionForProcess(bpmnProcessId, permission)) {
       throw new NotAuthorizedException(
           String.format(
               "No %s permission for process instance %s", permission, processInstanceKey));

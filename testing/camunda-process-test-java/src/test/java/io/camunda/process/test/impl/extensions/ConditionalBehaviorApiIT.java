@@ -21,9 +21,11 @@ import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestPro
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
@@ -31,32 +33,35 @@ import org.junit.jupiter.api.RepeatedTest;
 @CamundaProcessTest
 public class ConditionalBehaviorApiIT {
 
-  // injected by the extension
+  private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
+  private static final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
+  private static final Map<String, Object> EXPORT_VARS =
+      Collections.singletonMap("exportSuccess", true);
+
+  @SuppressWarnings("unused")
   private CamundaProcessTestContext processTestContext;
+
+  @SuppressWarnings("unused")
   private CamundaClient client;
 
   // ensure repeated tests get fresh behaviors
   @RepeatedTest(value = 2)
   void shouldCompleteProcessWithConditionalBehaviors() {
+    // increase assertion timeout because the immediate loop-back occasionally activates the reset
+    // gate timeout of 5 seconds
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+
     // Deploy the process model
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-    final Map<String, Object> unhappy = Collections.singletonMap("happy", false);
-    final Map<String, Object> happy = Collections.singletonMap("happy", true);
-    final Map<String, Object> exportVars = Collections.singletonMap("exportSuccess", true);
-
     // Setup conditional behaviors before starting the process
-
-    // When user task "State_Happiness" is created, complete it:
-    //   1st time with happy=false (loops back)
-    //   2nd time with happy=true (proceeds to Export_Happiness)
     processTestContext
         .when(
             () ->
                 assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                     .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, unhappy))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, happy));
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, HAPPY));
 
     // When Export_Happiness is active, complete the job
     processTestContext
@@ -64,7 +69,7 @@ public class ConditionalBehaviorApiIT {
             () ->
                 assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                     .hasActiveElements(SERVICE_TASK_ID))
-        .then(() -> processTestContext.completeJob(JOB_TYPE, exportVars));
+        .then(() -> processTestContext.completeJob(JOB_TYPE, EXPORT_VARS));
 
     // Start the process
     final ProcessInstanceEvent processInstanceEvent =

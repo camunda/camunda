@@ -399,22 +399,24 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertIsSearchTermQuery(
         boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
 
-    // Second must clause: should be a has_child query for errorMessage.
     assertThat(boolQuery.must().get(1).queryOption())
         .isInstanceOf(SearchHasChildQuery.class)
         .satisfies(
             queryOption -> {
-              // Cast the queryOption to SearchHasChildQuery
               final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
               assertThat(hasChildQuery.type()).isEqualTo("activity");
-              // Assert that the inner query is a match query on "errorMessage" with our
-              // expected value.
               assertThat(hasChildQuery.query().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchMatchPhraseQuery.class,
-                      (searchMatchQuery) -> {
-                        assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
-                        assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                      SearchBoolQuery.class,
+                      innerBool -> {
+                        assertThat(innerBool.must()).hasSize(1);
+                        assertThat(innerBool.must().get(0).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchMatchPhraseQuery.class,
+                                searchMatchQuery -> {
+                                  assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
+                                  assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                                });
                       });
             });
   }

@@ -32,7 +32,7 @@ We will use standard URL encoding (`%2F`) on the client side and configure the e
 server to pass encoded slashes through to Spring MVC. Entity IDs will not be normalized or
 transformed — they must match exactly what the identity provider returns.
 
-The solution has three layers:
+The solution has four layers:
 
 ### 1. Frontend: Encode IDs with `encodeURIComponent`
 
@@ -47,25 +47,49 @@ apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 apiPut(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`);
 ```
 
-### 2. Tomcat: PASSTHROUGH mode for encoded slashes
+### 2. Tomcat: DECODE mode for encoded slashes
 
 Tomcat 11 rejects `%2F` in URL paths by default (`EncodedSolidusHandling.REJECT`). A
-`WebServerFactoryCustomizer` bean sets the handling mode to `PASSTHROUGH`, which forwards `%2F`
-as-is to the application without decoding or rejecting it.
+`TomcatConnectorCustomizer` bean sets the handling mode to `DECODE`, which converts `%2F` to a
+literal `/` at the connector level before Tomcat's path normalization runs.
 
 ```java
-connector.setEncodedSolidusHandling("passthrough");
+connector.setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue());
 ```
 
-The `DECODE` mode was not chosen because it decodes `%2F` to `/` before Spring MVC sees the
-request, which would break route matching in the same way as the original unencoded slash.
+`PASS_THROUGH` was tried first but does not work on Tomcat 10.1+: the path is still rejected during
+path normalization even though the connector itself permits `%2F`. `DECODE` is the only mode that
+survives the connector. Route matching continues to work because Spring's `PathPatternParser`
+matches the decoded URI without collapsing the resulting `//` boundary, and `@PathVariable` binding
+receives the leading-slash value as expected. This is covered by `EncodedSlashIntegrationIT`.
 
 ### 3. Spring MVC: PathPatternParser (no changes needed)
 
-Spring Boot's default `PathPatternParser` splits paths on literal `/` characters only. An encoded
-`%2F` is not a path separator, so `/v2/roles/admin/groups/%2FmyGroup` correctly matches
-`/v2/roles/{roleId}/groups/{groupId}`. Spring then decodes `%2F` to `/` when binding to the
-`@PathVariable` parameter. This is the default behavior — no configuration changes are required.
+After the Tomcat connector decodes `%2F`, Spring sees a path with literal `/` characters (e.g.
+`/v2/roles/admin/groups//myGroup`). The default `PathPatternParser` matches the variable segments
+greedily and does not collapse the `//` boundary, so `/v2/roles/{roleId}/groups/{groupId}` still
+binds correctly with `groupId = "/myGroup"`. No configuration changes are required.
+
+### 4. Spring Security: relax `StrictHttpFirewall`
+
+Spring Security's default `StrictHttpFirewall` rejects any request whose URI contains `%2F` (or its
+decoded variants in some forms) with a 400 before the request reaches the controller. A
+`WebSecurityCustomizer` bean (`WebSecurityConfig.encodedSlashFirewallCustomizer`) installs a
+`StrictHttpFirewall` with `setAllowUrlEncodedSlash(true)`.
+
+```java
+@Bean
+public WebSecurityCustomizer encodedSlashFirewallCustomizer() {
+  final var firewall = new StrictHttpFirewall();
+  firewall.setAllowUrlEncodedSlash(true);
+  return web -> web.httpFirewall(firewall);
+}
+```
+
+Spring Security 6.5 removed the autowired `WebSecurityConfigurerAdapter#setHttpFirewall()` setter,
+so a plain `@Bean HttpFirewall` is no longer wired automatically — `WebSecurityCustomizer` is the
+supported replacement. A single customizer covers all `SecurityFilterChain` beans because the
+firewall runs in front of `FilterChainProxy`, ahead of any per-chain matcher.
 
 ## Alternatives Considered
 
@@ -91,8 +115,8 @@ without any routing changes.
 
 - Entity IDs from OIDC providers are supported as-is, regardless of special characters.
 - The solution follows HTTP standards (RFC 3986) — no custom encoding schemes.
-- Fully backward compatible: `encodeURIComponent` is a no-op on alphanumeric strings, and
-  `PASSTHROUGH` only affects requests that contain `%2F`.
+- Fully backward compatible: `encodeURIComponent` is a no-op on alphanumeric strings, and the
+  `DECODE` mode only affects requests that contain `%2F`.
 - No changes to controllers, service layer, or data model.
 
 ### Negative
@@ -103,8 +127,8 @@ without any routing changes.
 - **External API clients must encode IDs.** Any client calling the REST API directly must
   URL-encode entity IDs containing special characters. This is standard HTTP behavior but must be
   documented in the API reference.
-- **`PASSTHROUGH` applies to all connectors.** The Tomcat configuration affects all incoming
-  requests, not just identity endpoints. This is safe because `%2F` in a path segment is only
-  meaningful if the application interprets it — existing endpoints with alphanumeric IDs are
-  unaffected.
+- **`DECODE` applies to all connectors.** The Tomcat configuration affects all incoming requests,
+  not just identity endpoints. Likewise, the relaxed Spring Security firewall is global. This is
+  safe because `%2F` in a path segment is only meaningful if the application interprets it —
+  existing endpoints with alphanumeric IDs are unaffected.
 

@@ -369,6 +369,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
         new ArchiveByIdTaskSupplier<>(
+            config,
             sourceIndexName,
             destinationIndexName,
             searchAfter ->
@@ -377,15 +378,25 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
+            metrics,
             logger);
 
     final var timer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
-        .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
+        .thenComposeAsync(
+            ignored -> {
+              // don't set the lifecycle if nothing was moved
+              // as it also might mean the index does not exist anyway
+              if (taskSupplier.getTotalArchived() > 0L) {
+                return setIndexLifeCycle(destinationIndexName);
+              }
+              return CompletableFuture.completedFuture(null);
+            },
+            executor)
         .thenApply(
             ignored -> {
-              logger.debug(
+              logger.trace(
                   "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
                   sourceIndexName,
                   destinationIndexName,
@@ -399,7 +410,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .whenComplete(
             (val, err) -> {
               if (err != null) {
-                logger.error(
+                logger.warn(
                     "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
                     sourceIndexName,
                     destinationIndexName,

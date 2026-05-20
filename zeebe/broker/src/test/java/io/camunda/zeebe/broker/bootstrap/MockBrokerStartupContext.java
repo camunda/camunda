@@ -15,6 +15,8 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -80,6 +82,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private UserServices userServices = mock(UserServices.class);
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
+  private OidcClaimsProvider oidcClaimsProvider = new NoopOidcClaimsProvider();
   private SnapshotApiRequestHandler snapshotApiRequestHandler =
       mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
@@ -380,6 +383,15 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setJwtDecoder(final JwtDecoder jwtDecoder) {
     this.jwtDecoder = jwtDecoder;
+  }
+
+  @Override
+  public OidcClaimsProvider getOidcClaimsProvider() {
+    return oidcClaimsProvider;
+  }
+
+  public void setOidcClaimsProvider(final OidcClaimsProvider oidcClaimsProvider) {
+    this.oidcClaimsProvider = oidcClaimsProvider;
   }
 
   @Override

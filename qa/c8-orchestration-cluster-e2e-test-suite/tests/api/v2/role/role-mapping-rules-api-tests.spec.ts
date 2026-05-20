@@ -151,6 +151,7 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       roleId: state['roleId3'] as string,
       mappingRuleId: mappingRuleIdFromState('roleId3', state) as string,
     };
+
     await test.step('Unassign Role From Mapping Rule', async () => {
       await expect(async () => {
         const res = await request.delete(
@@ -256,7 +257,7 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         totalItemsEqualTo: 2,
       });
       const json = await res.json();
-      
+
       const matchingItem1 = json.items.find(
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule1,
       );

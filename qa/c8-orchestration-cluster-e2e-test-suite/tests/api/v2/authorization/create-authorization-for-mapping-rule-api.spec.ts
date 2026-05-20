@@ -43,6 +43,7 @@ test.describe
     claimValue: string;
     name: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
       successMappingRule = await createMappingRule(request);
@@ -161,6 +162,7 @@ test.describe
     claimValue: string;
     name: string;
   };
+
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
       unhappyPathMappingRule = await createMappingRule(request);
@@ -346,6 +348,7 @@ test.describe('Create Authorization for Mapping Rule - Forbidden', () => {
       ]);
     },
   );
+
   test('Create Authorization for Mapping Rule - 403 Forbidden', async ({
     request,
   }) => {

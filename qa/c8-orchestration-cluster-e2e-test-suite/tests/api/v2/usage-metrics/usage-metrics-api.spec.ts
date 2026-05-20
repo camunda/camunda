@@ -221,7 +221,7 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
     });
   });
 
-  test('Get Usage Metrics - User with no granted authorization', async ({
+  test('Get Usage Metrics - User with no granted authorization - 200, empty', async ({
     request,
   }) => {
     // eslint-disable-next-line playwright/no-conditional-in-test
@@ -231,6 +231,10 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         '//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428',
       );
     }
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth enforcement changed on main',
+    );
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();
@@ -252,7 +256,17 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
           headers: jsonHeaders(token), // overrides default demo:demo
         },
       );
-      await assertUnauthorizedRequest(res);
+      await assertStatusCode(res, 200);
+      await validateResponse({
+        path: USAGE_METRICS_GET_ENDPOINT,
+        method: 'GET',
+        status: '200',
+      }, res);
+      const body = await res.json();
+      expect(body.activeTenants).toBe(0);
+      expect(body.processInstances).toBe(0);
+      expect(body.decisionInstances).toBe(0);
+      expect(body.assignees).toBe(0);
     }).toPass(defaultAssertionOptions);
   });
 });

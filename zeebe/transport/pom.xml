@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.1-SNAPSHOT</version>
+    <version>8.9.6-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -108,6 +108,13 @@
       <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.build.directory}/generated-sources</directory>
+        <includes>
+          <include>**/*.sbeir</include>
+          <include>**/*.xml</include>
+        </includes>
       </resource>
     </resources>
 

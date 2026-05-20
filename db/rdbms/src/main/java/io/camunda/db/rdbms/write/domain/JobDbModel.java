@@ -30,7 +30,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private JobKind kind;
   private ListenerEventType listenerEventType;
   private Integer retries;
-  private Boolean isDenied = false;
+  private Boolean isDenied;
   private String deniedReason;
   private Boolean hasFailedWithRetriesLeft = false;
   private String errorCode;
@@ -62,7 +62,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final JobKind kind,
       final ListenerEventType listenerEventType,
       final Integer retries,
-      final boolean isDenied,
+      final Boolean isDenied,
       final String deniedReason,
       final boolean hasFailedWithRetriesLeft,
       final String errorCode,
@@ -404,7 +404,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
-    private Boolean isDenied = false;
+    private Boolean isDenied;
     private String deniedReason;
     private Boolean hasFailedWithRetriesLeft = false;
     private String errorCode;
