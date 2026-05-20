@@ -115,6 +115,8 @@ dependencyResolutionManagement {
             // where it's coming from in the maven build.
             version("agrona", pomVersion("version.agrona"))
             version("archunit", pomVersion("version.archunit"))
+            // used in camunda-spring-boot-starter and camunda-spring-boot-3-starter test dependencies
+            version("aspectjweaver", "1.9.25.1")
             version("assertj", pomVersion("version.assertj"))
             version("auth0", pomVersion("version.auth0"))
             version("java-jwt", pomVersion("version.java-jwt"))
@@ -481,7 +483,7 @@ dependencyResolutionManagement {
             library("org-apache-maven-surefire-maven-surefire-common", "org.apache.maven.surefire", "maven-surefire-common").versionRef("org-apache-maven-surefire-maven-surefire-common")
             library("org-apache-maven-surefire-surefire-myextensions-api", "org.apache.maven.surefire", "surefire-extensions-api").versionRef("org-apache-maven-surefire-surefire-myextensions-api")
             library("org-apache-tomcat-embed-tomcat-embed-core", "org.apache.tomcat.embed", "tomcat-embed-core").versionRef("tomcat")
-            library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver").versionRef("org-aspectj-aspectjweaver")
+            library("org-aspectj-aspectjweaver", "org.aspectj", "aspectjweaver").versionRef("aspectjweaver")
             library("org-assertj-assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
             library("org-awaitility-awaitility", "org.awaitility", "awaitility").versionRef("awaitility")
             library("org-bouncycastle-bcpkix-jdk18on", "org.bouncycastle", "bcpkix-jdk18on").versionRef("bouncycastle")
