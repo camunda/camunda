@@ -10,13 +10,14 @@ package io.camunda.zeebe.metrics;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Meter.Type;
 
-public enum StarterCounterMetricsDoc implements ExtendedMeterDocumentation {
+public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
 
   /**
-   * Total number of process instance start requests submitted by the starter. Incremented after the
-   * request to create an instance has been dispatched, regardless of the eventual response — so
-   * this is a measure of "instances we asked the engine to start", not "instances the engine
-   * created". Used by the quicker load test to compute throughput at the end of a finite run.
+   * Total number of process instance start requests submitted by the starter. Incremented before
+   * the create-instance call is issued, so this counts attempted submissions (including ones that
+   * may fail before reaching the gateway) — a measure of "instances we asked the engine to start",
+   * not "instances the engine created". Used by the quicker load test to compute throughput at the
+   * end of a finite run.
    */
   PROCESS_INSTANCES_STARTED {
     @Override

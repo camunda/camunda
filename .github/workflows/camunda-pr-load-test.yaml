@@ -159,10 +159,13 @@ jobs:
           # Pick the most recently created namespace matching the daily-on-main
           # naming pattern. Empty string when no daily run is currently live;
           # the get-daily-metrics job is gated on this output so we skip the
-          # comparison cleanly rather than failing.
+          # comparison cleanly rather than failing. Skip namespaces that are
+          # mid-deletion — otherwise metrics collection races teardown.
           ns=$(kubectl get ns -o json \
             | jq -r '.items[]
                 | select(.metadata.name | test("^c8-medic-daily-.*-test$"))
+                | select(.status.phase == "Active")
+                | select(.metadata.deletionTimestamp == null)
                 | "\(.metadata.creationTimestamp) \(.metadata.name)"' \
             | sort -r | head -n1 | awk '{print $2}')
           if [[ -z "$ns" ]]; then
@@ -286,9 +289,14 @@ jobs:
 
   auto-delete-benchmark:
     name: Auto cleanup after metrics
-    needs: [sanitize-branch-name, comment-comparison-pr]
-    # Mirror the cancellation guard so a cancelled run never tears down a
-    # namespace another run will need. Only fires once metrics actually posted.
+    needs: [sanitize-branch-name, comment-comparison-pr, run-profiling]
+    # Wait for both the metrics post and profiling to terminate before tearing
+    # the namespace down — otherwise `run-profiling` loses its target pods
+    # mid-`kubectl cp` and no flamegraphs are produced. `!cancelled()` lets this
+    # job proceed when `run-profiling` failed or was skipped (we'd rather
+    # recycle the namespace than leak it), but still skips on workflow-level
+    # cancel. The metrics-success gate stays so cleanup never fires before the
+    # PR comparison comment has actually been posted.
     if: ${{ !cancelled() && needs.comment-comparison-pr.result == 'success' }}
     permissions:
       contents: read
