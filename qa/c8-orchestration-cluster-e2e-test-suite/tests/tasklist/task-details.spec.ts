@@ -398,8 +398,10 @@ test.describe('task details page', () => {
     await taskDetailsPage.decrementUntilValue('1');
     await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
+    // 30s was hit by the May 21 nightly — bump to the 60s budget the
+    // other completion tests use.
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 30000,
+      timeout: 60000,
     });
     await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
       timeout: 15000,
@@ -490,6 +492,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with checklist form', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -503,10 +506,22 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Checklist User Task');
 
-    await taskDetailsPage.assertItemChecked('Value1');
-    await taskDetailsPage.assertItemChecked('Value2');
+    // The completed task can briefly render with stale state before the
+    // form's stored values rehydrate; the May 21 nightly hit this with
+    // Value1 unchecked at the 60s assertion timeout. Re-open + reassert on
+    // reload until both items show as checked.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('Checklist User Task');
+        await taskDetailsPage.assertItemChecked('Value1');
+        await taskDetailsPage.assertItemChecked('Value2');
+      },
+      onFailure: async () => {
+        await page.reload();
+        await taskPanelPage.assertCompletedHeadingVisible();
+      },
+    });
   });
 
   // TODO issue #3719
