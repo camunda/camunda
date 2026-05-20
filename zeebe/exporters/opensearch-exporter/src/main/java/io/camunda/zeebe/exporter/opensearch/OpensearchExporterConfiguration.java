@@ -911,6 +911,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private String minimumAge = "30d";
     private String policyName = "zeebe-record-retention-policy";
     private String policyDescription = "Zeebe record retention policy";
+    private boolean managePolicy = true;
 
     public boolean isEnabled() {
       return enabled;
@@ -944,6 +945,14 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       this.policyDescription = policyDescription;
     }
 
+    public boolean isManagePolicy() {
+      return managePolicy;
+    }
+
+    public void setManagePolicy(final boolean managePolicy) {
+      this.managePolicy = managePolicy;
+    }
+
     @Override
     public String toString() {
       return "RetentionConfiguration{"
@@ -956,6 +965,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + ", policyDescription='"
           + policyDescription
           + '\''
+          + ", managePolicy="
+          + managePolicy
           + '}';
     }
   }

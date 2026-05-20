@@ -40,10 +40,12 @@ public class OpensearchExporterSchemaManager {
   }
 
   private void createIndexTemplates(final String version) {
-    if (configuration.retention.isEnabled()) {
-      createIndexStateManagementPolicy();
-    } else {
-      deleteIndexStateManagementPolicy();
+    if (configuration.retention.isManagePolicy()) {
+      if (configuration.retention.isEnabled()) {
+        createIndexStateManagementPolicy();
+      } else {
+        deleteIndexStateManagementPolicy();
+      }
     }
 
     final IndexConfiguration index = configuration.index;
@@ -234,8 +236,10 @@ public class OpensearchExporterSchemaManager {
     final boolean successful;
     if (configuration.retention.isEnabled()) {
       successful = client.bulkAddISMPolicyToAllZeebeIndices();
-    } else {
+    } else if (configuration.retention.isManagePolicy()) {
       successful = client.bulkRemoveISMPolicyFromAllZeebeIndices();
+    } else {
+      return;
     }
 
     if (!successful) {

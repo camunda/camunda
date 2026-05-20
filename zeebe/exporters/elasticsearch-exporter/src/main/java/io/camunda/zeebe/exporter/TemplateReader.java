@@ -91,8 +91,12 @@ final class TemplateReader {
       settings.put("number_of_replicas", numberOfReplicas);
     }
 
-    // update index.lifecycle in template in case a retention policy is configured
-    if (config.retention.isEnabled()) {
+    // update index.lifecycle in template in case a retention policy is configured.
+    // When managePolicy is false the exporter must leave existing lifecycle settings
+    // intact, so we keep writing the configured policy name into the template even when
+    // retention is disabled - otherwise the template would be overwritten without the
+    // policy and future rolled indices would be created without it.
+    if (config.retention.isEnabled() || !config.retention.isManagePolicy()) {
       settings.put("index.lifecycle.name", config.retention.getPolicyName());
     }
   }
