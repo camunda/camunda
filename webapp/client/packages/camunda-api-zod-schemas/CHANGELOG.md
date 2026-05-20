@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.67
+
+### 🚀 Enhancements
+
+- Remove redundant fields from system configuration schemas
+  - `deploymentConfigurationSchema`: removed `isEnterprise` and `contextPath`
+  - `cloudConfigurationSchema`: removed `organizationId`, `clusterId`, `mixpanelToken`, and `mixpanelAPIHost`
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.66
 
 ### 🚀 Enhancements
