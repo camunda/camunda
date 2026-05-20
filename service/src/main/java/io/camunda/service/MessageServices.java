@@ -53,12 +53,23 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
       final CorrelateMessageRequest correlationRequest,
       final CamundaAuthentication authentication) {
-    final var brokerRequest =
-        new BrokerCorrelateMessageRequest(
-                correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
-            .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-            .setTenantId(correlationRequest.tenantId);
-    return sendBrokerRequest(brokerRequest, authentication);
+    return correlateMessage(correlationRequest, authentication, Map.of());
+  }
+
+  public CompletableFuture<MessageCorrelationRecord> correlateMessage(
+      final CorrelateMessageRequest correlationRequest,
+      final CamundaAuthentication authentication,
+      final Map<String, Object> additionalClaims) {
+    final var brokerRequest = buildCorrelateMessageBrokerRequest(correlationRequest);
+    return sendBrokerRequest(brokerRequest, authentication, additionalClaims);
+  }
+
+  private BrokerCorrelateMessageRequest buildCorrelateMessageBrokerRequest(
+      final CorrelateMessageRequest correlationRequest) {
+    return new BrokerCorrelateMessageRequest(
+            correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
+        .setVariables(getDocumentOrEmpty(correlationRequest.variables))
+        .setTenantId(correlationRequest.tenantId);
   }
 
   public CompletableFuture<BrokerResponse<MessageRecord>> publishMessage(

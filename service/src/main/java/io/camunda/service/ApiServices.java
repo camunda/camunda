@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -59,8 +60,16 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication, Map.of());
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final Map<String, Object> additionalClaims) {
     final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
+        new HashMap<>(brokerRequestAuthorizationConverter.convert(authentication));
+    additionalClaims.forEach(brokerRequestAuthorization::putIfAbsent);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
   }
@@ -75,6 +84,14 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     return brokerClient
         .sendRequest(brokerRequest, requestTimeout)
         .handleAsync(handleBrokerResponse(), executor);
+  }
+
+  protected <R> CompletableFuture<R> sendBrokerRequest(
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final Map<String, Object> additionalClaims) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication, additionalClaims)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   private <R>

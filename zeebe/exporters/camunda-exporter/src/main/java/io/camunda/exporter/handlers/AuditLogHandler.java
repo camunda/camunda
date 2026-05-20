@@ -152,6 +152,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setActorType(mapActorType(log))
         .setActorId(log.getActor().actorId())
         .setAgentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
+        .setRequestSource(log.getRequestSource())
         .setTenantScope(mapTenantScope(log))
         .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
         .setBatchOperationKey(log.getBatchOperationKey())
