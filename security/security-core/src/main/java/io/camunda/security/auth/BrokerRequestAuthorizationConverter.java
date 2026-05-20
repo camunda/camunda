@@ -33,10 +33,13 @@ import java.util.Map;
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
+  private final boolean groupsClaimConfigured;
   private final boolean shouldIncludeAuthorizationClaims;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
+    final var oidc = securityConfiguration.getAuthentication().getOidc();
+    groupsClaimConfigured = oidc != null && oidc.isGroupsClaimConfigured();
     shouldIncludeAuthorizationClaims =
         securityConfiguration.getAuthorizations().isEnabled()
             || securityConfiguration.getMultiTenancy().isChecksEnabled();
@@ -93,11 +96,13 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     if (shouldIncludeAuthorizationClaims) {
-      // authenticatedGroupIds() is lazy on the CamundaAuthentication record; resolve it only on
-      // the OIDC token-claim path where the engine actually consumes group membership. On the
-      // camundaGroupsEnabled path the engine resolves groups itself, so reading the field here
-      // would trigger an avoidable DB lookup on every broker request.
-      if (!camundaGroupsEnabled) {
+      // authenticatedGroupIds() is lazy on the CamundaAuthentication record. Read it only when
+      // groups will come from the OIDC token claim (eager, in-memory parse): camundaGroupsEnabled
+      // resolves groups in the engine from its own membershipState, and when no groupsClaim is
+      // configured the provider would fall through to a DB lookup we don't want on the broker
+      // request path either — the engine's ClaimsExtractor.getGroups() falls back to
+      // membershipState when USER_GROUPS_CLAIMS is absent.
+      if (!camundaGroupsEnabled && groupsClaimConfigured) {
         final var groups = authentication.authenticatedGroupIds();
         if (!groups.isEmpty()) {
           claims.put(USER_GROUPS_CLAIMS, groups);

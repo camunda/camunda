@@ -222,6 +222,37 @@ public class BrokerRequestAuthorizationConverterTest {
   }
 
   @Test
+  void shouldNotInvokeGroupsSupplierWhenNoGroupsClaimConfigured() {
+    // given — OIDC with camundaGroupsEnabled=false and authorizations enabled, but no groupsClaim
+    // configured. Groups would come from a DB lookup, which we don't want on the broker request
+    // path; the engine resolves groups from its own membershipState in that case.
+    final var invoked = new AtomicBoolean();
+    final var oidcConfiguration = new OidcConfiguration();
+    // no groupsClaim set
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+  }
+
+  @Test
   void shouldInvokeGroupsSupplierOnlyWhenAuthorizationClaimsEnabledAndCamundaGroupsDisabled() {
     // given — OIDC with groupsClaim (camundaGroupsEnabled=false) and authorizations enabled;
     // the engine consumes the groups, so the supplier must run exactly once.
