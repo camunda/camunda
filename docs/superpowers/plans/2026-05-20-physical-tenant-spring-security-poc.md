@@ -1218,7 +1218,7 @@ public final class PerTenantOidcRegistry {
 
 ### Step 4 — Move tenant config to `physical-tenants.<id>.*` shape
 
-`assigned` references either the default provider (`authentication.oidc.*`, implicit registration id `oidc`) or a named provider (`authentication.providers.oidc.<name>.*`). For the PoC each tenant has exactly one IdP, so each uses its **own** default slot — both tenants reuse registration id `oidc` inside their own per-tenant config block. The `defaultIdp` name introduced in Task 5 goes away (it was a stop-gap for living in a single shared `authentication.*` block before per-tenant overrides existed).
+`assigned` references either the default provider (`authentication.oidc.*`, implicit registration id `oidc`) or a named provider (`authentication.providers.oidc.<name>.*`). The PoC deliberately exercises **both** resolution paths in production-shaped config: tenant A uses the default slot, default tenant uses a named slot. That keeps each Keycloak realm bound to a distinct OIDC provider config and surfaces any bug in the named-vs-default resolution code in the PoC's own smoke tests rather than later.
 
 `application-pt-poc.yaml` becomes:
 
@@ -1231,24 +1231,25 @@ camunda:
     tenanta:
       security:
         authentication:
-          oidc:                # overrides the default provider for tenant A; registration id "oidc"
+          oidc:                # default slot — registration id "oidc"
             client-id: camunda-pt-tenanta-client
             client-secret: tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
           providers:
-            assigned: [oidc]   # references the default provider in this tenant's config
+            assigned: [oidc]
     default:
       security:
         authentication:
-          oidc:
-            client-id: camunda-pt-default-client
-            client-secret: default-secret
-            issuer-uri: http://localhost:8081/realms/default
           providers:
-            assigned: [oidc]
+            assigned: [defaultIdp]
+            oidc:
+              defaultIdp:      # named slot — registration id "defaultIdp"
+                client-id: camunda-pt-default-client
+                client-secret: default-secret
+                issuer-uri: http://localhost:8081/realms/default
 ```
 
-The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via `PhysicalTenantResolver.forPhysicalTenant(tenantId).getSecurity()`. `PerTenantOidcRegistry.forTenant(tenantId, security)` reads `assigned`, resolves each entry to either `security.getAuthentication().getOidc()` (registration id `oidc`) or `security.getAuthentication().getProviders().getOidc().get(name)` (named providers), and builds the registry.
+The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via `PhysicalTenantResolver.forPhysicalTenant(tenantId).getSecurity()`. `PerTenantOidcRegistry.forTenant(tenantId, security)` reads `assigned`, resolves each entry to either `security.getAuthentication().getOidc()` (when the entry is the literal string `oidc`) or `security.getAuthentication().getProviders().getOidc().get(name)` (otherwise), and builds the registry.
 
 The full generalisation (iterating the resolver to register N tenants) lands in Task 13; for now keep two explicit `@Bean` methods.
 
@@ -1258,7 +1259,12 @@ The full generalisation (iterating the resolver to register N tenants) lands in 
 ./mvnw verify -pl authentication -Dtest=PerTenantOidcRegistryTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Then the manual two-tab login flow from Task 5. Both tenants now use the registration id `oidc` (their own default-slot provider), so the URLs become `/physical-tenant/tenanta/oauth2/authorization/oidc` and `/physical-tenant/default/oauth2/authorization/oidc`. The Task 5 stop-gap named provider `defaultIdp` is no longer referenced.
+Then the manual two-tab login flow from Task 5. Each tenant now uses a distinct provider slot — registration id `oidc` for tenant A and `defaultIdp` for the default tenant — so the OIDC URLs become:
+
+- Tenant A: `/physical-tenant/tenanta/oauth2/authorization/oidc` → callback `/physical-tenant/tenanta/login/oauth2/code/oidc`
+- Default tenant: `/physical-tenant/default/oauth2/authorization/defaultIdp` → callback `/physical-tenant/default/login/oauth2/code/defaultIdp`
+
+The Keycloak realm exports' `redirectUris` patterns already cover both (they use the `/login/oauth2/code/*` wildcard).
 
 ### Step 6 — Format and commit
 
@@ -1820,7 +1826,21 @@ git commit -m "refactor: register PT chains programmatically from PhysicalTenant
 **Files:**
 - Create: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`
 
-Use the code skeleton from the original plan (Task 15 in the bottom-up version, included here verbatim). Boot two Keycloaks with random ports, point OC at them via `--camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri=...` (the tenant's default-slot OIDC config) and `--camunda.physical-tenants.tenanta.security.authentication.providers.assigned=oidc`, then run a redirect assertion.
+Use the code skeleton from the original plan (Task 15 in the bottom-up version, included here verbatim). Boot two Keycloaks with random ports. Wire OC against them in the same mixed shape used in Task 8:
+
+- Tenant A on the default slot:
+  - `--camunda.physical-tenants.tenanta.security.authentication.oidc.client-id=camunda-pt-tenanta-client`
+  - `--camunda.physical-tenants.tenanta.security.authentication.oidc.client-secret=tenanta-secret`
+  - `--camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri=<tenanta-keycloak>/realms/tenanta`
+  - `--camunda.physical-tenants.tenanta.security.authentication.providers.assigned=oidc`
+
+- Default tenant on a named slot:
+  - `--camunda.physical-tenants.default.security.authentication.providers.oidc.defaultIdp.client-id=camunda-pt-default-client`
+  - `--camunda.physical-tenants.default.security.authentication.providers.oidc.defaultIdp.client-secret=default-secret`
+  - `--camunda.physical-tenants.default.security.authentication.providers.oidc.defaultIdp.issuer-uri=<default-keycloak>/realms/default`
+  - `--camunda.physical-tenants.default.security.authentication.providers.assigned=defaultIdp`
+
+Then assert each tenant's `/physical-tenant/<id>/whoami` redirects to its own IdP at the registration id used in its `assigned` list.
 
 The skeleton lives in the spec's End-to-end demo path section. Adapt the `--` flag values to the property structure introduced in Task 8 (`camunda.physical-tenants.<id>.security.authentication.providers.assigned`).
 
