@@ -50,7 +50,6 @@ mariadb:
   - "11.8"
 
 mssql:
-  - "2019-latest"
   - "2022-latest"
   - "2025-latest"
 

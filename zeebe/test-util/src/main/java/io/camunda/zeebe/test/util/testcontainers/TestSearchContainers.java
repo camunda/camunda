@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
 public final class TestSearchContainers {
   public static final String CAMUNDA_DATABASE = "camunda";
   public static final String CAMUNDA_USER = "camunda";
-  public static final String CAMUNDA_PASSWORD = "Camunda_Pass123!";
+  public static final String CAMUNDA_PASSWORD = "Strong_Pass123!";
 
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
@@ -39,7 +39,7 @@ public final class TestSearchContainers {
       DockerImageName.parse("mariadb").withTag("11.4");
   private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("8.4");
   private static final DockerImageName MSSQLSERVER_IMAGE =
-      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2019-latest");
+      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");
   private static final DockerImageName ORACLE_IMAGE =
       DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
 
