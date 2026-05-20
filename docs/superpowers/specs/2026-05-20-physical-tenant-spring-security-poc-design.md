@@ -225,9 +225,9 @@ Demo:
 
 1. Start OC with the `pt-security` profile and the config above (two tenants, two IdPs — Keycloak realms `default` and `tenanta`).
 2. Browser → `https://localhost:8080/physical-tenant/tenanta/whoami`.
-3. PT webapp chain matches; user is unauthenticated; redirect to `/physical-tenant/tenanta/oauth2/authorization/oidc` → tenant A's Keycloak (registration id `oidc` from the tenant's default-slot config).
-4. Login → callback at `/physical-tenant/tenanta/login/oauth2/code/oidc` → session created with cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`. `whoami` returns `{tenantId:"tenanta", principal:"bob@tenanta", providers:["oidc"], accessPath:"prefixed"}`.
-5. New tab → `https://localhost:8080/physical-tenant/default/whoami` — different cookie scope, unauthenticated, redirected to `/physical-tenant/default/oauth2/authorization/defaultIdp` (the default tenant binds its Keycloak realm to a *named* OIDC provider `defaultIdp`, in contrast to tenant A's use of the default `oidc` slot — the PoC exercises both resolution paths).
+3. PT webapp chain matches; user is unauthenticated; redirect to `/physical-tenant/tenanta/oauth2/authorization/tenanta` → tenant A's Keycloak (tenant A binds its Keycloak realm to a *named* OIDC provider `tenanta` under `authentication.providers.oidc.tenanta.*`).
+4. Login → callback at `/physical-tenant/tenanta/login/oauth2/code/tenanta` → session created with cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`. `whoami` returns `{tenantId:"tenanta", principal:"bob@tenanta", providers:["tenanta"], accessPath:"prefixed"}`.
+5. New tab → `https://localhost:8080/physical-tenant/default/whoami` — different cookie scope, unauthenticated, redirected to `/physical-tenant/default/oauth2/authorization/oidc` (the default tenant binds to the cluster-default `authentication.oidc.*` slot, registration id `oidc`). The PoC exercises both resolution paths — default-slot for the default tenant, named-slot for tenant A.
 6. Both tabs hold valid, independent sessions simultaneously.
 7. Tab 1 logs out (`POST /physical-tenant/tenanta/logout`) — only tenant A's session is invalidated; tab 2 stays logged in.
 8. (Default-tenant access-path check) Open `https://localhost:8080/whoami` — different cookie Path, unauthenticated, fresh login flow against the default IdP. Confirms the agreed "relogin acceptable across access paths" behaviour.
@@ -235,8 +235,8 @@ Demo:
 Verification points:
 - Browser cookie inspector shows two cookies with disjoint `Path` attributes.
 - Each tenant's session rows live in that tenant's dedicated storage backend (separate RDBMS schema, or separate ES/OS index, per the existing per-tenant storage routing). No row-level partitioning.
-- Replaying tenant A's OIDC `state` parameter against `/physical-tenant/default/login/oauth2/code/defaultIdp` is rejected (per-chain `OAuth2AuthorizationRequestRepository` keys state in tenant A's session only).
-- The `/v2/physical-tenants/tenanta/whoami` endpoint requires a Bearer token whose `iss` is in tenant A's allowed-issuer set (the issuer of tenant A's `oidc` default-slot provider). A token issued by the default tenant's `defaultIdp` IdP returns **403** (signature is valid against the shared decoder, but the issuer allowlist on tenant A's chain rejects it).
+- Replaying tenant A's OIDC `state` parameter against `/physical-tenant/default/login/oauth2/code/oidc` is rejected (per-chain `OAuth2AuthorizationRequestRepository` keys state in tenant A's session only).
+- The `/v2/physical-tenants/tenanta/whoami` endpoint requires a Bearer token whose `iss` is in tenant A's allowed-issuer set (the issuer of tenant A's named `tenanta` provider). A token issued by the default tenant's `oidc` IdP returns **403** (signature is valid against the shared decoder, but the issuer allowlist on tenant A's chain rejects it).
 
 ---
 
