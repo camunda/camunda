@@ -103,10 +103,10 @@ per-tenant beans            per-tenant chains                  cluster-shared be
 │   + CookieHttpSession- │  │   {t}/**                   │  │    session; OQ-3)               │
 │     IdResolver         │  │   resource-server JWT      │  │                                 │
 │     (name+Path per {t})│  │   iss allowlist:           │  │ HttpSessionOAuth2Authorized-    │
-│   + PerTenantSession-  │  │     {t}'s assigned issuers │  │ ClientRepository                │
-│     Repository         │  │   no session               │  │   (Spring default; session-     │
-│     (id-prefixed in    │  └────────────────────────────┘  │    derived)                     │
-│      shared storage)   │                                  │                                 │
+│   + WebSessionRepo({t})│  │     {t}'s assigned issuers │  │ ClientRepository                │
+│     bound to {t}'s     │  │   no session               │  │   (Spring default; session-     │
+│     dedicated          │  └────────────────────────────┘  │    derived)                     │
+│     secondary storage  │                                  │                                 │
 └────────────────────────┘                                  │ SecurityContextRepository       │
                                                             │   (Spring default; reads from   │
                                                             │    the per-chain session)       │
@@ -129,7 +129,7 @@ New classes / configurations introduced by the PoC:
 | `TenantSecuritySlice` (record)                                       | Per-tenant collaborator bundle: tenant id, access path, `ClientRegistrationRepository`, `SessionRepositoryFilter`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. `JwtDecoder`, `LogoutSuccessHandler`, `AuthorizedClientRepository`, `SecurityContextRepository` are intentionally NOT in the slice — they are cluster-shared (issuer-aware decoder validates any known issuer; the chains' per-tenant authorization rule enforces `iss` ∈ tenant's assigned issuers; logout/authorized-client/security-context are session-derived).                                       |
 | `PerTenantOidcRegistry`                                              | Builds the per-tenant `OidcAuthenticationConfigurationRepository` by applying `providers.assigned` to the tenant's OIDC providers map.                                                                                                                                                                                                            |
 | `PhysicalTenantRedirectUriRewriter`                                  | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time.                                                                                                                                                                                                                                      |
-| `PerTenantSessionRepository`                                         | Decorator over the existing `WebSessionRepository`; prefixes session ids with `t:` to keep keyspaces disjoint in shared secondary storage.                                                                                                                                                                                                        |
+| `PerTenantWebSessionRepositories`                                    | Registry/factory exposing `WebSessionRepository forTenant(String)` — one repository instance per tenant, each bound to that tenant's dedicated `PersistentWebSessionClient` (constructed from the existing per-tenant RDBMS/search infrastructure).                                                                                              |
 | `PhysicalTenantCookieSerializer` (helper)                            | Produces a Spring Session `CookieSerializer` configured with the tenant's cookie name + Path for use by `CookieHttpSessionIdResolver`.                                                                                                                                                                                                            |
 
 Reused as-is:
@@ -163,7 +163,7 @@ Default tenant gets a duplicate of each chain with the unprefixed `securityMatch
 
 ### Storage isolation
 
-`PerTenantSessionRepository` prefixes session ids with the tenant id when calling `PersistentWebSessionClient`. For the PoC the underlying storage stays shared; the prefix avoids collisions. A follow-up will move per-tenant sessions to per-tenant secondary storage once `PhysicalTenantSearchClientReadersConfiguration` / `RdbmsDataSources` per-tenant clients are exposed end-to-end (already partially landed).
+Each tenant has a dedicated `PersistentWebSessionClient` instance, constructed from that tenant's dedicated secondary storage backend (the per-tenant RDBMS data source / MyBatis bundle from `RdbmsDataSources` + `MyBatisConfiguration`, or the per-tenant `SearchClients` from `PhysicalTenantSearchClientReadersConfiguration`). `PerTenantWebSessionRepositories` wraps each client into a `WebSessionRepository`. Tenant A's sessions live in tenant A's storage; tenant B's never touch it. No key-prefixing or row-level partitioning — isolation is structural, at the storage layer.
 
 ### Configuration consumed
 
@@ -222,7 +222,7 @@ Demo:
 
 Verification points:
 - Browser cookie inspector shows two cookies with disjoint `Path` attributes.
-- `PersistentWebSessionClient` rows are prefixed with the tenant id (`t:tenanta:…`, `t:default:…`).
+- Each tenant's session rows live in that tenant's dedicated storage backend (separate RDBMS schema, or separate ES/OS index, per the existing per-tenant storage routing). No row-level partitioning.
 - Replaying tenant A's OIDC `state` parameter against `/physical-tenant/default/login/oauth2/code/...` is rejected (per-chain `OAuth2AuthorizationRequestRepository` keys state in tenant A's session only).
 - The `/v2/physical-tenants/tenanta/whoami` endpoint requires a Bearer token issued by an IdP listed in tenant A's `providers.assigned`; a tenant-B-issued token returns 401.
 
