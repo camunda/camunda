@@ -74,8 +74,14 @@ try {
 		cwd: repoRoot,
 	});
 
-	console.log('🔧 Running lint, typecheck, and build in parallel...');
-	await runInParallel(['lint', 'typecheck', 'build'], repoRoot);
+	console.log('🔧 Running build...');
+	execSync('npm run build -w @camunda/camunda-api-zod-schemas', {
+		stdio: 'inherit',
+		cwd: repoRoot,
+	});
+
+	console.log('🔧 Running lint and typecheck in parallel...');
+	await runInParallel(['lint', 'typecheck'], repoRoot);
 
 	console.log('🎉 All done!');
 } catch (error) {
