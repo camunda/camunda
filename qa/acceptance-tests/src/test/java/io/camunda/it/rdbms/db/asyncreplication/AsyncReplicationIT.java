@@ -7,33 +7,76 @@
  */
 package io.camunda.it.rdbms.db.asyncreplication;
 
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
-import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@Tag("rdbms")
-public class AsyncReplicationIT {
+// Tests in this class form a lifecycle sequence and must run in order:
+// (1) replica removed → exporter pauses; (2) replica restored → exporter resumes.
+@TestMethodOrder(OrderAnnotation.class)
+public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
-  @RegisterExtension
-  static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATION =
-      new CamundaRdbmsInvocationContextProviderExtension(
-          "camundaWithPostgresSQL" // currently we only support PostgreSQL
-          );
+  @Test
+  void shouldAcknowledgeExportedRecordsWhenReplicated() {
+    final var exporterPosition = getCurrentExporterPosition();
 
-  @TestTemplate
-  public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
+    // when - start some process instances to generate traffic
+    final int numProcessInstances = 10;
+    startProcessInstances(numProcessInstances);
+    waitForProcessInstancesToStart(camundaClient, numProcessInstances);
 
-    final var currentLsn = replicationStatusProvider.getCurrent();
-    final var replicationStatuses = replicationStatusProvider.getReplicationStatuses();
+    // then - exporter advances and fully catches up
+    awaitExporterPositionAdvances(exporterPosition);
+    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(10));
+    exporterAcknowledgedAll();
+  }
 
-    assertThat(currentLsn).isGreaterThan(0);
-    assertThat(replicationStatuses).isNotNull();
+  @Test
+  @Order(1)
+  void shouldNeverAcknowledgeAndStopExportingWhenReplicaIsRemoved() {
+    // given - a stable, fully acknowledged state
+    final long acknowledgedPositionBeforeRemoval = getCurrentAcknowledgedExporterPosition();
+
+    // when - the required read replica is removed
+    postgresCluster.stopReplica();
+    startProcessInstances(10);
+
+    // then - the exporter still exports records but never acknowledges them
+    // TODO optimize this to not wait X seconds but on a RdbmsExporter metric when implemented
+    wait(MAX_LAG.plus(3, ChronoUnit.SECONDS)); // wait for the max-lag interval + X
+    awaitExporterPositionAdvances(acknowledgedPositionBeforeRemoval);
+    assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+
+    // when - more traffic is generated
+    final long exportedPositionAfterMaxLag = getCurrentExporterPosition();
+    startProcessInstances(10);
+
+    // then - the exporter should not export anything
+    awaitExporterPositionStable(Duration.ofSeconds(5), Duration.ofMinutes(1));
+
+    assertThat(getCurrentExporterPosition()).isEqualTo(exportedPositionAfterMaxLag);
+    assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
+  }
+
+  @Test
+  @Order(2)
+  void shouldResumeExportingAndAcknowledgeWhenReplicaRecovers() {
+    // given - exporter is paused after replica was removed (state left by test @Order(1))
+    final long exportedPositionBeforeRecovery = getCurrentExporterPosition();
+    final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
+
+    // when - the replica is brought back, re-establishing the replication quorum
+    postgresCluster.startReplica();
+
+    // then - the exporter resumes and fully catches up
+    awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
+    awaitAcknowledgedPositionAdvances(acknowledgedPositionBeforeRecovery);
+    exporterAcknowledgedAll();
   }
 }

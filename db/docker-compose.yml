@@ -147,6 +147,9 @@ services:
   postgres-primary:
     image: bitnamilegacy/postgresql:17
     container_name: pg-primary
+    depends_on:
+      - postgres-replica-1
+      - postgres-replica-2
     ports:
       - "5432:5432"
     volumes:
@@ -161,12 +164,16 @@ services:
       - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
     networks:
       - pgnet
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U camunda -d camunda" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   postgres-replica-1:
     image: bitnamilegacy/postgresql:17
     container_name: pg-replica1
-    depends_on:
-      - postgres-primary
     ports:
       - "5433:5432"
     environment:
@@ -178,12 +185,16 @@ services:
       - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
     networks:
       - pgnet
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U camunda -d camunda" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   postgres-replica-2:
     image: bitnamilegacy/postgresql:17
     container_name: pg-replica2
-    depends_on:
-      - postgres-primary
     ports:
       - "5434:5432"
     environment:
@@ -195,3 +206,9 @@ services:
       - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
     networks:
       - pgnet
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U camunda -d camunda" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

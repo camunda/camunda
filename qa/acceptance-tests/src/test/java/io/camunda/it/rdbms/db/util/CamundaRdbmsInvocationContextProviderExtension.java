@@ -41,6 +41,17 @@ public class CamundaRdbmsInvocationContextProviderExtension
             .withRdbms()
             .withDatabaseContainer(createDefaultPostgresContainer()));
     applications.put(
+        "camundaWithPostgresReplicationCluster",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(
+                c -> {
+                  final var rdbms = c.getData().getSecondaryStorage().getRdbms();
+                  rdbms.getAsyncReplication().setEnabled(true);
+                  rdbms.getAsyncReplication().setMinSyncReplicas(1);
+                })
+            .withDatabaseContainer(new PostgresReplicationClusterContainer()));
+    applications.put(
         "camundaWithManualPostgresSQL",
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
             .withRdbms()
