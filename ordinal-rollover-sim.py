@@ -191,6 +191,50 @@ class OrdinalRollover:
         return highest_ordinal + 1
 
 
+def main(args):
+  rollover = OrdinalRollover(
+    rollover_interval=args.rollover_interval,
+    rollover_size=args.rollover_size,
+    max_ordinals=args.max_ordinals,
+    circular_ordinals=args.circular_ordinals,
+    circular_reverse=args.circular_reverse
+  )
+  sim = Simulation(rollover)
+  if args.mode == "main":
+    start_process_instance = sim.new_main_process_instance
+  else:
+    start_process_instance = sim.new_ordinal_process_instance
+
+  # Simulate some process instances and time passing
+  max_num_processes = 0
+  biggest_index_size = 0
+  for _ in range(args.ticks):
+    for _ in range(args.rate):
+      if args.duration_random == "uniform":
+        duration = random.randint(args.duration_min, args.duration_max)
+      else:
+        duration = max(1, int(random.gauss((args.duration_min + args.duration_max) / 2, (args.duration_max - args.duration_min) / 6)))
+      start_process_instance(duration=duration)
+    sim.tick()
+    if args.run_deleter:
+      sim.run_deleter(only_if_no_ilm_deadline=args.deleter_only_if_no_ilm)
+    max_num_processes = max(max_num_processes, sim.get_num_process_instances())
+    biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
+
+
+  num_processes = 0
+  for index_name in sorted(sim.indexes.keys()):
+    index = sim.indexes[index_name]
+    verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
+
+  print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
+  print(f"Indexes with ILM deadline: {sim.get_count_indexes_with_ilm_deadline()}")
+  print(f"Indexes dropped by ILM: {sim.indexes_dropped_by_ilm}, Docs dropped by ILM: {sim.docs_dropped_by_ilm}")
+  print(f"Biggest index size: {biggest_index_size}")
+  print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
+  print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ticks", type=int, default=100, help="Number of ticks to simulate")
@@ -216,47 +260,8 @@ if __name__ == "__main__":
       def verbose(*args, **kw):
         pass
 
-    rollover = OrdinalRollover(
-      rollover_interval=args.rollover_interval,
-      rollover_size=args.rollover_size,
-      max_ordinals=args.max_ordinals,
-      circular_ordinals=args.circular_ordinals,
-      circular_reverse=args.circular_reverse
-    )
-    sim = Simulation(rollover)
-    if args.mode == "main":
-      start_process_instance = sim.new_main_process_instance
-    else:
-      start_process_instance = sim.new_ordinal_process_instance
+    main(args)
 
-    # Simulate some process instances and time passing
-    max_num_processes = 0
-    biggest_index_size = 0
-    for _ in range(args.ticks):
-      for _ in range(args.rate):
-        if args.duration_random == "uniform":
-          duration = random.randint(args.duration_min, args.duration_max)
-        else:
-          duration = max(1, int(random.gauss((args.duration_min + args.duration_max) / 2, (args.duration_max - args.duration_min) / 6)))
-        start_process_instance(duration=duration)
-      sim.tick()
-      if args.run_deleter:
-        sim.run_deleter(only_if_no_ilm_deadline=args.deleter_only_if_no_ilm)
-      max_num_processes = max(max_num_processes, sim.get_num_process_instances())
-      biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
-
-
-    num_processes = 0
-    for index_name in sorted(sim.indexes.keys()):
-      index = sim.indexes[index_name]
-      verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
-
-    print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
-    print(f"Indexes with ILM deadline: {sim.get_count_indexes_with_ilm_deadline()}")
-    print(f"Indexes dropped by ILM: {sim.indexes_dropped_by_ilm}, Docs dropped by ILM: {sim.docs_dropped_by_ilm}")
-    print(f"Biggest index size: {biggest_index_size}")
-    print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
-    print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
 
 
 
