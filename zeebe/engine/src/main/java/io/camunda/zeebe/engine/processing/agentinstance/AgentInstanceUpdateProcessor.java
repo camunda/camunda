@@ -253,11 +253,8 @@ public final class AgentInstanceUpdateProcessor
 
   private boolean isAllowedTransition(
       final AgentInstanceStatus from, final AgentInstanceStatus to) {
-    // UPDATE never moves to COMPLETED — that's owned by the COMPLETE command.
-    if (to == AgentInstanceStatus.COMPLETED) {
-      return false;
-    }
-    // Target must be one of the active states.
+    // Target must be one of the active states. In particular, UPDATE never moves to COMPLETED —
+    // that's owned by the COMPLETE command.
     if (!ACTIVE_STATUSES.contains(to)) {
       return false;
     }
