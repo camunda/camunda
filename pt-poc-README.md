@@ -135,8 +135,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 1  | Profile scaffold + verify CSL opts out                       | ✅ done      |
 | 2  | Keycloak realm exports                                       | ✅ done      |
 | 3  | `PtPocLocalIdpRunner` standalone `main()`                    | ✅ done      |
-| 4  | **Walking skeleton — one tenant, end-to-end login**          | 🔄 in progress |
-| 5  | Add default tenant prefixed chain + per-chain cookie isolation | ⏳ pending   |
+| 4  | Walking skeleton — one tenant, end-to-end login              | ✅ done      |
+| 5  | **Add default tenant prefixed chain + per-chain cookie isolation** | 🔄 in progress |
 | 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory` | ⏳ pending   |
 | 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test      | ⏳ pending   |
 | 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned` | ⏳ pending   |

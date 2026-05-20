@@ -49,6 +49,7 @@ import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -299,7 +300,14 @@ public class OidcOverrideBeansConfiguration {
         securityConfiguration, oidcAuthenticationConfigurationRepository);
   }
 
+  // Gated off under pt-security: the JWS-algorithm lookup map keys by the
+  // ClientRegistration object references produced by ClientRegistrationFactory from
+  // authentication.providers.oidc.*. The walking-skeleton PT chains construct their
+  // own ClientRegistrations inline, so they don't appear in this map and the factory's
+  // resolver returns null → missing_signature_verifier on ID-token verification.
+  // Under pt-security, Spring Security's default OidcIdTokenDecoderFactory is used.
   @Bean
+  @Profile("!pt-security")
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,

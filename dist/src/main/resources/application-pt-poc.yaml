@@ -15,6 +15,16 @@ camunda:
 server:
   port: 8080
 
+# Walking-skeleton diagnostics: trace which SecurityFilterChain matches each
+# request and which filter handles it. Remove once Task 4 is verified.
+# Also writes the log to /tmp/oc.log for easier consumption than terminal output.
+logging:
+  file:
+    name: /tmp/oc.log
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.web.FilterChainProxy: TRACE
+
 # NOTE: the consolidated-auth and pt-security profiles are pulled in by the
 # spring.profiles.group.pt-poc declaration in application.properties — Spring
 # Boot 2.4+ forbids spring.profiles.include inside profile-specific resources.
