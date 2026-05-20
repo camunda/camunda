@@ -37,11 +37,7 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
   @SuppressWarnings("DataFlowIssue")
   void requestMappingHandlerMappingMustUsePathPatternParser() {
     assertThat(requestMappingHandlerMapping.getPatternParser())
-        .as(
-            "Spring MVC must be configured with PathPatternParser. "
-                + "AntPathMatcher leaves RequestMappingInfo#getPathPatternsCondition() null, "
-                + "so PhysicalTenantRequestMappingHandlerMapping would silently skip registering "
-                + "the /v2/physical-tenants/{id}/... sibling routes.")
+        .as("Spring MVC must be configured with PathPatternParser (Spring Boot 3 default).")
         .isInstanceOf(PathPatternParser.class);
   }
 
@@ -57,7 +53,7 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
         .expectBody(String.class)
         .isEqualTo("ok");
 
-    // tenant-prefixed sibling resolves to the same controller method
+    // PhysicalTenantRoutingFilter rewrites /v2/physical-tenants/default/widgets → /v2/widgets
     webClient
         .get()
         .uri("/v2/physical-tenants/default/widgets")

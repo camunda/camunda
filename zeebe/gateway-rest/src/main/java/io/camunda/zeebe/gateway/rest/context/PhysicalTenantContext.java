@@ -24,6 +24,21 @@ public final class PhysicalTenantContext {
   public static final String REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID =
       PhysicalTenantContext.class.getName() + ".PHYSICAL_TENANT_ID";
 
+  /**
+   * Request attribute key set to {@code true} by {@code PhysicalTenantRoutingFilter} when the
+   * incoming request carried a {@code /v2/physical-tenants/{tenantId}/...} prefix.
+   */
+  public static final String REQUEST_ATTRIBUTE_IS_PHYSICAL_TENANT_PREFIXED =
+      PhysicalTenantContext.class.getName() + ".IS_PHYSICAL_TENANT_PREFIXED";
+
+  /**
+   * Request attribute key storing the original {@code getRequestURI()} value before path rewriting.
+   * Used to populate the {@code instance} field in error responses so clients see the URI they
+   * actually sent, not the internally rewritten one.
+   */
+  public static final String REQUEST_ATTRIBUTE_ORIGINAL_REQUEST_URI =
+      PhysicalTenantContext.class.getName() + ".ORIGINAL_REQUEST_URI";
+
   private PhysicalTenantContext() {}
 
   public static void setPhysicalTenantId(

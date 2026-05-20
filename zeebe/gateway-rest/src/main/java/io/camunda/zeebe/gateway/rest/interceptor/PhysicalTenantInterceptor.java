@@ -7,54 +7,81 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
+import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
+import io.camunda.zeebe.gateway.rest.filter.PhysicalTenantRoutingFilter;
 import io.camunda.zeebe.gateway.rest.util.PhysicalTenantRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
+import java.net.URI;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.HandlerMapping;
 
 /**
- * Validates the {@code physicalTenantId} captured from the request URI and exposes the resolved id
- * as a request attribute via {@link PhysicalTenantContext}.
+ * Validates the physical tenant id extracted by {@link PhysicalTenantRoutingFilter} and exposes the
+ * resolved id as a request attribute via {@link PhysicalTenantContext}.
  *
  * <ul>
- *   <li>If the request matches a tenant-prefixed route ({@code
- *       /v2/physical-tenants/{physicalTenantId}/...}) and the id is unknown to the configured
- *       {@link PhysicalTenantRegistry}, the request is rejected with HTTP 404 before reaching the
- *       controller.
- *   <li>If no prefix is present, the resolved id defaults to {@link
+ *   <li>If the request arrived via the {@code /v2/physical-tenants/{physicalTenantId}/...} prefix
+ *       but targets a {@link ClusterScoped} controller, a {@link ResponseStatusException} with HTTP
+ *       404 is thrown so that {@code GlobalControllerExceptionHandler} can wrap it in a {@code
+ *       CamundaProblemDetail}, matching the error format produced by the rest of the API.
+ *   <li>If the id extracted by the filter is unknown to the configured {@link
+ *       PhysicalTenantRegistry}, the same exception mechanism is used.
+ *   <li>If no prefix was present, the id defaults to {@link
  *       PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  * </ul>
  */
 public class PhysicalTenantInterceptor implements HandlerInterceptor {
 
-  private final PhysicalTenantRegistry resolver;
+  private final PhysicalTenantRegistry registry;
 
   public PhysicalTenantInterceptor(final PhysicalTenantRegistry registry) {
-    this.resolver = registry;
+    this.registry = registry;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public boolean preHandle(
-      final HttpServletRequest request, final HttpServletResponse response, final Object handler)
-      throws Exception {
-    final Map<String, String> uriVars =
-        (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-    final String tenantId =
-        (uriVars == null ? Map.<String, String>of() : uriVars)
-            .getOrDefault(
-                PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID,
-                PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+      final HttpServletRequest request, final HttpServletResponse response, final Object handler) {
 
-    if (!resolver.exists(tenantId)) {
-      response.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown physical tenant: " + tenantId);
-      return false;
+    final boolean isPrefixed =
+        Boolean.TRUE.equals(
+            request.getAttribute(
+                PhysicalTenantContext.REQUEST_ATTRIBUTE_IS_PHYSICAL_TENANT_PREFIXED));
+
+    if (!isPrefixed) {
+      PhysicalTenantContext.setPhysicalTenantId(
+          request, PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+      return true;
     }
 
-    PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
+    if (handler instanceof final HandlerMethod hm
+        && AnnotatedElementUtils.hasAnnotation(hm.getBeanType(), ClusterScoped.class)) {
+      throw notFound(request, null);
+    }
+
+    final String tenantId = PhysicalTenantContext.getPhysicalTenantId(request);
+    if (!registry.exists(tenantId)) {
+      throw notFound(request, "Unknown physical tenant: " + tenantId);
+    }
+
     return true;
+  }
+
+  private static ResponseStatusException notFound(
+      final HttpServletRequest request, final String detail) {
+    final var ex =
+        detail != null
+            ? new ResponseStatusException(HttpStatus.NOT_FOUND, detail)
+            : new ResponseStatusException(HttpStatus.NOT_FOUND);
+    final var originalUri =
+        (String) request.getAttribute(PhysicalTenantContext.REQUEST_ATTRIBUTE_ORIGINAL_REQUEST_URI);
+    if (originalUri != null) {
+      ex.getBody().setInstance(URI.create(originalUri));
+    }
+    return ex;
   }
 }

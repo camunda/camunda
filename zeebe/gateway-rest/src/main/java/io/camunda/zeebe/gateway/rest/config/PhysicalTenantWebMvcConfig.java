@@ -8,27 +8,27 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
+import io.camunda.zeebe.gateway.rest.filter.PhysicalTenantRoutingFilter;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
-import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
 import io.camunda.zeebe.gateway.rest.util.PhysicalTenantRegistry;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 /**
- * Wires the physical-tenant aware request mapping into Spring MVC.
+ * Wires the physical-tenant aware routing into Spring MVC.
  *
- * <p>{@link WebMvcRegistrations#getRequestMappingHandlerMapping()} is the supported extension point
- * for replacing the auto-configured {@link RequestMappingHandlerMapping}, so every future
- * {@code @CamundaRestController} automatically gets the {@code
- * /v2/physical-tenants/{physicalTenantId}/...} sibling registration.
+ * <p>{@link PhysicalTenantRoutingFilter} rewrites {@code /v2/physical-tenants/{tenantId}/...}
+ * requests to {@code /v2/...} before handler resolution, keeping Spring's handler mapping table
+ * lean and preventing the duplicate "Mapped to ..." DEBUG log that a dual-registration approach
+ * would cause.
  */
 @Configuration
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
@@ -43,13 +43,13 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
   }
 
   @Bean
-  public WebMvcRegistrations physicalTenantWebMvcRegistrations() {
-    return new WebMvcRegistrations() {
-      @Override
-      public RequestMappingHandlerMapping getRequestMappingHandlerMapping() {
-        return new PhysicalTenantRequestMappingHandlerMapping();
-      }
-    };
+  public FilterRegistrationBean<PhysicalTenantRoutingFilter> physicalTenantRoutingFilter() {
+    final FilterRegistrationBean<PhysicalTenantRoutingFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(new PhysicalTenantRoutingFilter());
+    registration.addUrlPatterns("/v2/*");
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    return registration;
   }
 
   @Override
