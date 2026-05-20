@@ -28,21 +28,21 @@
 
 New files (all paths from repo root):
 
-|                                                 File                                                 |                                                                    Responsibility                                                                     |
-|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` | Top-level `@Configuration`, profile-gated, registers per-tenant chains via `BeanDefinitionRegistryPostProcessor`                                      |
-| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java`       | Builds the pair of `SecurityFilterChain` (webapp + api) for one tenant from a `TenantSecuritySlice`                                                   |
-| `authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java`                 | Record bundling per-tenant collaborators (clients, decoder, session repo, cookie serializer, etc.)                                                    |
-| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java`               | Builds the per-tenant `OidcAuthenticationConfigurationRepository` (filters by `providers.assigned`) and the `ClientRegistrationRepository`            |
-| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java`   | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template                                                                      |
-| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantWebSessionRepositories.java`     | Factory/registry that produces one `WebSessionRepository` per tenant, each bound to that tenant's dedicated `PersistentWebSessionClient`              |
-| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java`      | Static factory that produces a `DefaultCookieSerializer` configured per tenant (cookie name + Path)                                                   |
-| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`      | Demo controller exposing `/physical-tenant/{t}/whoami` and `/v2/physical-tenants/{t}/whoami`                                                          |
-| `dist/src/main/resources/application-pt-poc.yaml`                                                    | Bundled config that activates the PoC against the local Keycloak runner's default ports                                                               |
-| `dist/src/test/java/io/camunda/application/pt/PtPocLocalIdpRunner.java`                              | Standalone `main()` for the developer iteration loop; boots two Keycloak containers on fixed ports                                                    |
-| `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`                         | End-to-end Testcontainers IT; boots two Keycloaks + OC in-JVM, drives OIDC flow, asserts isolation                                                    |
-| `dist/src/test/resources/pt-poc/keycloak-default-realm.json`                                         | Realm export: one client + one user for the default tenant                                                                                            |
-| `dist/src/test/resources/pt-poc/keycloak-tenanta-realm.json`                                         | Realm export: one client + one user for tenant A                                                                                                      |
+|                                                 File                                                 |                                                               Responsibility                                                               |
+|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` | Top-level `@Configuration`, profile-gated, registers per-tenant chains via `BeanDefinitionRegistryPostProcessor`                           |
+| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java`       | Builds the pair of `SecurityFilterChain` (webapp + api) for one tenant from a `TenantSecuritySlice`                                        |
+| `authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java`                 | Record bundling per-tenant collaborators (clients, decoder, session repo, cookie serializer, etc.)                                         |
+| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java`               | Builds the per-tenant `OidcAuthenticationConfigurationRepository` (filters by `providers.assigned`) and the `ClientRegistrationRepository` |
+| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java`   | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template                                                           |
+| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantWebSessionRepositories.java`     | Factory/registry that produces one `WebSessionRepository` per tenant, each bound to that tenant's dedicated `PersistentWebSessionClient`   |
+| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java`      | Static factory that produces a `DefaultCookieSerializer` configured per tenant (cookie name + Path)                                        |
+| `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`      | Demo controller exposing `/physical-tenant/{t}/whoami` and `/v2/physical-tenants/{t}/whoami`                                               |
+| `dist/src/main/resources/application-pt-poc.yaml`                                                    | Bundled config that activates the PoC against the local Keycloak runner's default ports                                                    |
+| `dist/src/test/java/io/camunda/application/pt/PtPocLocalIdpRunner.java`                              | Standalone `main()` for the developer iteration loop; boots two Keycloak containers on fixed ports                                         |
+| `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`                         | End-to-end Testcontainers IT; boots two Keycloaks + OC in-JVM, drives OIDC flow, asserts isolation                                         |
+| `dist/src/test/resources/pt-poc/default-realm.json`                                                  | Realm export: one client + one user for the default tenant                                                                                 |
+| `dist/src/test/resources/pt-poc/tenanta-realm.json`                                                  | Realm export: one client + one user for tenant A                                                                                           |
 
 Modified files:
 
@@ -225,12 +225,12 @@ git commit -m "feat: add pt-security profile that opts out of CSL chains and glo
 **Goal:** Two minimal realm JSON files that the Keycloak Testcontainer will import. One realm per tenant, one client per realm, one user per realm.
 
 **Files:**
-- Create: `dist/src/test/resources/pt-poc/keycloak-default-realm.json`
-- Create: `dist/src/test/resources/pt-poc/keycloak-tenanta-realm.json`
+- Create: `dist/src/test/resources/pt-poc/default-realm.json`
+- Create: `dist/src/test/resources/pt-poc/tenanta-realm.json`
 
 - [ ] **Step 1: Write the default realm export**
 
-`dist/src/test/resources/pt-poc/keycloak-default-realm.json`:
+`dist/src/test/resources/pt-poc/default-realm.json`:
 
 ```json
 {
@@ -269,7 +269,7 @@ git commit -m "feat: add pt-security profile that opts out of CSL chains and glo
 
 - [ ] **Step 2: Write the tenant-A realm export**
 
-`dist/src/test/resources/pt-poc/keycloak-tenanta-realm.json`: identical shape with `realm`, `clientId`, `secret`, user changed:
+`dist/src/test/resources/pt-poc/tenanta-realm.json`: identical shape with `realm`, `clientId`, `secret`, user changed:
 
 ```json
 {
@@ -308,8 +308,8 @@ git commit -m "feat: add pt-security profile that opts out of CSL chains and glo
 - [ ] **Step 3: Verify both files are valid JSON**
 
 ```bash
-python3 -m json.tool dist/src/test/resources/pt-poc/keycloak-default-realm.json > /dev/null
-python3 -m json.tool dist/src/test/resources/pt-poc/keycloak-tenanta-realm.json > /dev/null
+python3 -m json.tool dist/src/test/resources/pt-poc/default-realm.json > /dev/null
+python3 -m json.tool dist/src/test/resources/pt-poc/tenanta-realm.json > /dev/null
 ```
 
 Both should exit 0.
@@ -317,8 +317,8 @@ Both should exit 0.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add dist/src/test/resources/pt-poc/keycloak-default-realm.json \
-        dist/src/test/resources/pt-poc/keycloak-tenanta-realm.json
+git add dist/src/test/resources/pt-poc/default-realm.json \
+        dist/src/test/resources/pt-poc/tenanta-realm.json
 git commit -m "test: add Keycloak realm exports for PT security PoC"
 ```
 
@@ -371,7 +371,7 @@ public final class PtPocLocalIdpRunner {
     final KeycloakContainer defaultRealm =
         DefaultTestContainers.createDefaultKeycloak()
             .withClasspathResourceMapping(
-                "pt-poc/keycloak-default-realm.json",
+                "pt-poc/default-realm.json",
                 "/opt/keycloak/data/import/default-realm.json",
                 BindMode.READ_ONLY)
             .withCommand("start-dev", "--import-realm")
@@ -382,7 +382,7 @@ public final class PtPocLocalIdpRunner {
     final KeycloakContainer tenantaRealm =
         DefaultTestContainers.createDefaultKeycloak()
             .withClasspathResourceMapping(
-                "pt-poc/keycloak-tenanta-realm.json",
+                "pt-poc/tenanta-realm.json",
                 "/opt/keycloak/data/import/tenanta-realm.json",
                 BindMode.READ_ONLY)
             .withCommand("start-dev", "--import-realm")
@@ -458,6 +458,7 @@ git commit -m "test: add PtPocLocalIdpRunner for local PT-security iteration"
 ```
 
 ---
+
 ## Task 4: Walking skeleton — one tenant, end-to-end login
 
 **Goal:** First runnable login. Under the `pt-security` profile, register a single hard-coded `SecurityFilterChain` for tenant A that drives the OIDC flow against the local Keycloak runner. Verify in a browser. This task deliberately inlines everything — no abstractions, no extractions — to validate the model with the smallest possible code change. The next ten tasks refactor this blob into the unit-testable collaborators from the spec.
@@ -1849,7 +1850,6 @@ Use the code skeleton from the original plan (Task 15 in the bottom-up version, 
   - `--camunda.physical-tenants.default.security.authentication.oidc.client-secret=default-secret`
   - `--camunda.physical-tenants.default.security.authentication.oidc.issuer-uri=<default-keycloak>/realms/default`
   - `--camunda.physical-tenants.default.security.authentication.providers.assigned=oidc`
-
 - Tenant A on a named slot:
   - `--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id=camunda-pt-tenanta-client`
   - `--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-secret=tenanta-secret`
@@ -1934,9 +1934,7 @@ Follow the steps in the spec's "End-to-end demo path" section. Record results on
   - Configuration consumed (`providers.assigned`) → Task 8
   - End-to-end demo path → Tasks 14, 15, 16
   - Local testing setup → Tasks 2, 3, 16
-
 - [x] **Placeholder scan** — no "TBD", "TODO", "fill in", "appropriate error handling" in any task body. Honest scope notes are present where the engineer must adapt (Task 4 step 4 acknowledges OC's SPI ports may need stubbing; Task 13 acknowledges either of two registration approaches is acceptable).
-
 - [x] **Type consistency** — `TenantSecuritySlice` shape introduced in Task 6 carries five fields (tenantId, accessPath, ClientRegistrationRepository, SessionRepositoryFilter, CookieHttpSessionIdResolver). JwtDecoder, LogoutSuccessHandler, AuthorizedClientRepository, SecurityContextRepository are intentionally NOT on the slice — they are cluster-shared. Task 11 introduces a shared `ptIssuerAwareJwtDecoder` `@Bean` and a per-chain `allowedIssuers` set used for the API authorization rule. Slice shape stable across Tasks 6, 7, 8, 9, 10, 12.
 
 ## Known unknowns the engineer will surface during execution

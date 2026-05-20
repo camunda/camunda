@@ -25,12 +25,12 @@ public final class PtPocLocalIdpRunner {
   public static void main(final String[] args) throws Exception {
     final KeycloakContainer defaultRealm =
         DefaultTestContainers.createDefaultKeycloak()
-            .withRealmImportFile("pt-poc/keycloak-default-realm.json");
+            .withRealmImportFile("pt-poc/default-realm.json");
     defaultRealm.setPortBindings(List.of(DEFAULT_REALM_HOST_PORT + ":" + KEYCLOAK_INTERNAL_PORT));
 
     final KeycloakContainer tenantaRealm =
         DefaultTestContainers.createDefaultKeycloak()
-            .withRealmImportFile("pt-poc/keycloak-tenanta-realm.json");
+            .withRealmImportFile("pt-poc/tenanta-realm.json");
     tenantaRealm.setPortBindings(List.of(TENANTA_REALM_HOST_PORT + ":" + KEYCLOAK_INTERNAL_PORT));
 
     Runtime.getRuntime()
