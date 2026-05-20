@@ -74,17 +74,7 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          // additionally, when the published message carries a businessId, also enforce that no
-          // active PI exists locally with the same businessId for this process definition (the
-          // local arm of the design's uniqueness check; cross-partition handling lands later).
-          // A message suppressed here is left in the buffer subject to its TTL only; there is no
-          // businessId-keyed retry trigger yet — release-driven retries land in a later increment.
-          if ((messageData.correlationKey().capacity() == 0
-                  || !messageState.existActiveProcessInstance(
-                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
-              && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
+          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
@@ -122,10 +112,7 @@ public final class MessageCorrelateBehavior {
 
           // Mirror the same uniqueness gates as the real correlation path so authorization is only
           // checked for subscriptions that would actually correlate.
-          if ((messageData.correlationKey().capacity() == 0
-                  || !messageState.existActiveProcessInstance(
-                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))
-              && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord)) {
+          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
             // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
@@ -222,6 +209,24 @@ public final class MessageCorrelateBehavior {
       return true;
     }
     return BufferUtil.equals(messageBusinessId, subscriptionBusinessId);
+  }
+
+  /**
+   * Returns {@code true} when this start-event subscription should correlate for the given message:
+   * only one instance per (process definition, correlation key) is created — an empty correlation
+   * key allows multiple instances — and, when the businessId uniqueness feature is enabled and the
+   * message carries a businessId, no active root PI on this partition may already hold that
+   * businessId for this process definition.
+   */
+  private boolean shouldCorrelateStartEvent(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    final var correlationKeyFree =
+        messageData.correlationKey().capacity() == 0
+            || !messageState.existActiveProcessInstance(
+                messageData.tenantId(),
+                subscriptionRecord.getBpmnProcessIdBuffer(),
+                messageData.correlationKey());
+    return correlationKeyFree && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
   }
 
   /**
