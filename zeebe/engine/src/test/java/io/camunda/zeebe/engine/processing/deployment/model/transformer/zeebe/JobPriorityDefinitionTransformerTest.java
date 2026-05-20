@@ -62,6 +62,7 @@ class JobPriorityDefinitionTransformerTest {
     final Expression jobPriority = element.getJobWorkerProperties().getJobPriority();
     assertThat(jobPriority).isNotNull();
     assertThat(jobPriority.getExpression()).isEqualTo("42");
+    assertThat(jobPriority.isStatic()).isTrue();
   }
 
   @Test
@@ -75,7 +76,9 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, null);
 
     // then
-    assertThat(element.getJobWorkerProperties().getJobPriority()).isSameAs(processDefault);
+    final Expression jobPriority = element.getJobWorkerProperties().getJobPriority();
+    assertThat(jobPriority).isSameAs(processDefault);
+    assertThat(jobPriority.isStatic()).isFalse();
   }
 
   @Test
@@ -90,7 +93,9 @@ class JobPriorityDefinitionTransformerTest {
     transformer.transform(element, context, priorityDef);
 
     // then
-    assertThat(element.getJobWorkerProperties().getJobPriority().getExpression()).isEqualTo("99");
+    final Expression jobPriority = element.getJobWorkerProperties().getJobPriority();
+    assertThat(jobPriority.getExpression()).isEqualTo("99");
+    assertThat(jobPriority.isStatic()).isTrue();
   }
 
   @Test

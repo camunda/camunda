@@ -11,18 +11,16 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
+import org.jspecify.annotations.Nullable;
 
 public final class JobPriorityDefinitionTransformer {
 
   public void transform(
       final ExecutableJobWorkerElement element,
       final TransformContext context,
-      final ZeebeJobPriorityDefinition priorityDefinition) {
+      @Nullable final ZeebeJobPriorityDefinition priorityDefinition) {
 
-    // Non-job-producing tasks (direct-execution Script/BusinessRule) must not get
-    // JobWorkerProperties here; StraightThroughProcessingLoopValidator keys off its presence.
-    final var jobWorkerProperties = element.getJobWorkerProperties();
-    if (jobWorkerProperties == null) {
+    if (isNotBackedByJob(element)) {
       return;
     }
 
@@ -38,7 +36,11 @@ public final class JobPriorityDefinitionTransformer {
       resolved = context.getCurrentProcess().getDefaultJobPriority();
     }
     if (resolved != null) {
-      jobWorkerProperties.setJobPriority(resolved);
+      element.getJobWorkerProperties().setJobPriority(resolved);
     }
+  }
+
+  private static boolean isNotBackedByJob(final ExecutableJobWorkerElement element) {
+    return element.getJobWorkerProperties() == null;
   }
 }

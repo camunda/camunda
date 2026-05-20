@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -14,8 +16,10 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -267,7 +271,9 @@ public final class JobPriorityTest {
 
     Assertions.assertThat(incident.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
         .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage()).contains("missingVar");
   }
 
   @Test
@@ -293,7 +299,10 @@ public final class JobPriorityTest {
 
     Assertions.assertThat(incident.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
         .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("for the job priority to be 'NUMBER'");
   }
 
   @Test
@@ -319,11 +328,14 @@ public final class JobPriorityTest {
 
     Assertions.assertThat(incident.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
         .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("for the job priority to be an integer within the 32-bit signed range");
   }
 
   @Test
-  public void shouldRaiseIncidentWhenFeelExpressionEvaluatesOutOfIntRange() {
+  public void shouldRaiseIncidentWhenFeelExpressionExceedsIntegerMax() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -349,6 +361,275 @@ public final class JobPriorityTest {
 
     Assertions.assertThat(incident.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
+        .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("for the job priority to be an integer within the 32-bit signed range");
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenFeelExpressionBelowIntegerMin() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("p"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("p", Integer.MIN_VALUE - 1L)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
+        .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("for the job priority to be an integer within the 32-bit signed range");
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenProcessLevelFeelReferencesMissingVariable() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriorityExpression("missingVar")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
+        .hasJobKey(-1L);
+    assertThat(incident.getValue().getErrorMessage()).contains("missingVar");
+  }
+
+  @Test
+  public void shouldFallBackToProcessLevelPriorityOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("44")
+            .startEvent()
+            .scriptTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    Assertions.assertThat(awaitJobCreated(processInstanceKey).getValue()).hasPriority(44);
+  }
+
+  @Test
+  public void shouldFallBackToProcessLevelPriorityOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("66")
+            .startEvent()
+            .businessRuleTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    Assertions.assertThat(awaitJobCreated(processInstanceKey).getValue()).hasPriority(66);
+  }
+
+  @Test
+  public void shouldRaiseIncidentForInvalidFeelOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .scriptTask(
+                "task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("missingVar"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
+        .hasJobKey(-1L);
+  }
+
+  @Test
+  public void shouldNotCreateJobForDirectExecutionScriptTaskWithProcessLevelPriority() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("99")
+            .startEvent()
+            .scriptTask("task", t -> t.zeebeExpression("= 1").zeebeResultVariable("result"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(PROCESS_ID)
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .await();
+    final var jobs =
+        RecordingExporter.expectNoMatchingRecords(
+            records ->
+                records
+                    .jobRecords()
+                    .withIntent(JobIntent.CREATED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .toList());
+    assertThat(jobs).isEmpty();
+  }
+
+  @Test
+  public void shouldHandleMixedDirectExecutionAndJobWorkerTasks() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("77")
+            .startEvent()
+            .scriptTask("scriptDirect", t -> t.zeebeExpression("= 1").zeebeResultVariable("result"))
+            .serviceTask("svc", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> serviceJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("svc")
+            .getFirst();
+    Assertions.assertThat(serviceJob.getValue()).hasPriority(77);
+  }
+
+  @Test
+  public void shouldUseDefaultPriorityForTaskListenerJob() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("77")
+            .startEvent()
+            .userTask(
+                "task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeTaskListener(l -> l.creating().type("creating-listener")))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .getFirst();
+    Assertions.assertThat(listenerJob.getValue()).hasPriority(0);
+  }
+
+  @Test
+  public void shouldUseDefaultPriorityForExecutionListenerJob() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("77")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(JOB_TYPE)
+                        .zeebeExecutionListener(el -> el.start().type("start-listener")))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .getFirst();
+    Assertions.assertThat(listenerJob.getValue()).hasPriority(0);
+  }
+
+  @Test
+  public void shouldRaiseIncidentForInvalidFeelOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .businessRuleTask(
+                "task", t -> t.zeebeJobType(JOB_TYPE).zeebeJobPriorityExpression("missingVar"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasElementId("task")
         .hasJobKey(-1L);
   }
 }
