@@ -21,8 +21,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 public class ProcessExportHandler implements RdbmsExportHandler<Process> {
@@ -56,36 +54,13 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     final var dbModel = map(value, processModelReader);
     processDefinitionWriter.create(dbModel);
 
-    final CachedProcessEntity cachedProcessEntity;
-    if (processModelReader != null) {
-      final var callActivities =
-          ProcessCacheUtil.sortedCallActivityIds(processModelReader.extractCallActivities());
-      final var flowNodes = processModelReader.extractFlowNodes();
-      final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(flowNodes);
-      final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      final var extensionProperties =
-          ProcessModelReader.extractExtensionProperties(
-              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
-      cachedProcessEntity =
-          new CachedProcessEntity(
-              dbModel.name(),
-              dbModel.version(),
-              dbModel.versionTag(),
-              callActivities,
-              flowNodesMap,
-              hasUserTasks,
-              extensionProperties);
-    } else {
-      cachedProcessEntity =
-          new CachedProcessEntity(
-              dbModel.name(),
-              dbModel.version(),
-              dbModel.versionTag(),
-              List.of(),
-              Map.of(),
-              true,
-              Map.of());
-    }
+    final var cachedProcessEntity =
+        ProcessCacheUtil.createCachedProcessEntity(
+            dbModel.name(),
+            dbModel.version(),
+            dbModel.versionTag(),
+            processModelReader,
+            extensionPropertiesConfiguration);
     processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
