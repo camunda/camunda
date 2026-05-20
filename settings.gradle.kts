@@ -109,9 +109,10 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         // Temporary: catalog built in code so POM versions override TOML at
-        // settings-eval time without Gradle 8.x "cannot overwrite alias" error.
         // Revert to `from(files("gradle/libs.versions.toml"))` when Maven is removed.
         create("libs") {
+            // Versions when not coming from pomVersion have a comment explaining
+            // where it's coming from in the maven build.
             version("agrona", pomVersion("version.agrona"))
             version("archunit", pomVersion("version.archunit"))
             version("assertj", pomVersion("version.assertj"))
