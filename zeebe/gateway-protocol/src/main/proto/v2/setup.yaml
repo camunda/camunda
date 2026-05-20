@@ -28,6 +28,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "409":
           description: A user with this username already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
