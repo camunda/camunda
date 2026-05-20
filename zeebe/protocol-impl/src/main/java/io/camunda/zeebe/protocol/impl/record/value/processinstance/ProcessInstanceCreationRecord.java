@@ -237,6 +237,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return startInstructionsProperty;
   }
 
+  public ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions() {
+    return runtimeInstructionsProperty;
+  }
+
   public ProcessInstanceCreationRecord addStartInstructions(
       final List<ProcessInstanceCreationStartInstruction> startInstructions) {
     startInstructions.forEach(this::addStartInstruction);
