@@ -15,6 +15,14 @@
 
   <dependencies>
 
+    <!-- TEST ONLY — DO NOT MERGE: test-scoped dep, should be excluded by gate (development scope) -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.9</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
