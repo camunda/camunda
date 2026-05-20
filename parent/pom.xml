@@ -163,7 +163,7 @@
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.11</version.postgresql>
     <version.h2>2.4.240</version.h2>
-    <version.aws-advanced-jdbc-wrapper>3.3.0</version.aws-advanced-jdbc-wrapper>
+    <version.aws-advanced-jdbc-wrapper>4.0.1</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
     <version.tc-keycloak>4.2.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.4</version.jakarta-activation>
