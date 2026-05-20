@@ -6,33 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
 const Container = styled(Stack)<{$theme: 'dark' | 'light'}>`
-  ${({$theme}) => {
-    const backgroundColor =
-      $theme === 'light'
-        ? 'var(--cds-background-inverse)'
-        : 'var(--cds-layer-02)';
-    const textColor =
-      $theme === 'light'
-        ? 'var(--cds-text-inverse)'
-        : 'var(--cds-text-primary)';
-
-    return css`
-      align-items: center;
-      font-weight: 400;
-      font-size: 12px;
-      height: 22px;
-      border-radius: 11px;
-      background-color: ${backgroundColor};
-      color: ${textColor};
-      padding: var(--cds-spacing-02) var(--cds-spacing-04);
-      white-space: nowrap;
-      transform: translateX(-50%);
-    `;
-  }}
+  align-items: center;
+  font-weight: 400;
+  font-size: 12px;
+  border-radius: 11px;
+  border: 1px solid #dbb340;
+  background-color: color-mix(in srgb, #fcf5d7 20%, transparent);
+  color: #dbb340;
+  padding: var(--cds-spacing-02) var(--cds-spacing-04);
+  white-space: nowrap;
 `;
 
 export {Container};

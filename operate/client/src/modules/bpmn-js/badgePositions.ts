@@ -41,7 +41,7 @@ const SUBPROCESS_WITH_INCIDENTS = {
 
 const WAITING_BADGE = {
   top: -36,
-  left: 48,
+  left: 6,
 };
 
 export {
