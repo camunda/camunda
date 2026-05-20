@@ -19,7 +19,7 @@ inputs:
   config-file:
     description: Path to the vulnerability gate config file containing the allow-ghsas list
     required: false
-    default: .github/dependency-review-config.yml
+    default: .github/dependency-review-config.json
 
 runs:
   using: composite
