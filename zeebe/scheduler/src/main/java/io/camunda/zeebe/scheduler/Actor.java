@@ -100,7 +100,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   }
 
   @Override
-  public ActorFuture<@Nullable Void> closeAsync() {
+  public ActorFuture<Void> closeAsync() {
     return actor.close();
   }
 

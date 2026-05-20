@@ -8,7 +8,6 @@
 package io.camunda.zeebe.transport;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import org.jspecify.annotations.Nullable;
 
 public interface ServerTransport extends ServerOutput, AutoCloseable {
 
@@ -20,7 +19,7 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param requestType the type of request that should be handled
    * @param requestHandler the handler which should be called.
    */
-  ActorFuture<@Nullable Void> subscribe(
+  ActorFuture<Void> subscribe(
       int partitionId, RequestType requestType, RequestHandler requestHandler);
 
   /**
@@ -30,5 +29,5 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param partitionId the partition, from which we should unsubscribe
    * @param requestType
    */
-  ActorFuture<@Nullable Void> unsubscribe(int partitionId, RequestType requestType);
+  ActorFuture<Void> unsubscribe(int partitionId, RequestType requestType);
 }

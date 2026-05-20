@@ -22,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 /** interface for actor futures */
 public interface ActorFuture<V extends @Nullable Object>
     extends Future<V>, BiConsumer<V, @Nullable Throwable> {
+
   void complete(V value);
 
   void completeExceptionally(@Nullable String failure, Throwable throwable);
@@ -232,6 +233,45 @@ public interface ActorFuture<V extends @Nullable Object>
   <U extends @Nullable Object> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
 
   /**
+   * Similar to {@link CompletableFuture#thenAccept(Consumer)} in that it consumes the result of
+   * this future without producing another value.
+   *
+   * <p>This is the preferred alternative to {@code thenApply(value -> { ...; return null; })} for
+   * side-effecting continuations.
+   *
+   * @param next consumer to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new void future that completes after consuming the result of this future or
+   *     exceptionally if this future completes exceptionally. This future can be used for further
+   *     chaining.
+   */
+  @SuppressWarnings("NullAway")
+  default ActorFuture<Void> thenAccept(final Consumer<V> next, final Executor executor) {
+    return thenApply(
+        value -> {
+          next.accept(value);
+          return null;
+        },
+        executor);
+  }
+
+  /**
+   * Similar to {@link CompletableFuture#thenRun(Runnable)} in that it runs a callback when this
+   * future completes successfully without using its result.
+   *
+   * <p>This is the preferred alternative to {@code thenApply(value -> { ...; return null; })} when
+   * the continuation does not need this future's result.
+   *
+   * @param next runnable to run after this future completes successfully.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new void future that completes after running the callback or exceptionally if this
+   *     future completes exceptionally. This future can be used for further chaining.
+   */
+  default ActorFuture<Void> thenRun(final Runnable next, final Executor executor) {
+    return thenAccept(ignored -> next.run(), executor);
+  }
+
+  /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
    * result of this future, allowing you to change types on the fly.
    *
@@ -250,4 +290,40 @@ public interface ActorFuture<V extends @Nullable Object>
    * @param <U> the type of the new future
    */
   <U extends @Nullable Object> ActorFuture<U> thenApply(final Function<V, U> next);
+
+  /**
+   * Similar to {@link CompletableFuture#thenAccept(Consumer)} in that it consumes the result of
+   * this future without producing another value.
+   *
+   * <p>If the caller is not an actor, {@link ActorFuture#thenAccept(Consumer, Executor)} must be
+   * used to avoid blocking the actor execution context.
+   *
+   * @param next consumer to apply to the result of this future.
+   * @return a new void future that completes after consuming the result of this future or
+   *     exceptionally if this future completes exceptionally. This future can be used for further
+   *     chaining.
+   */
+  @SuppressWarnings("NullAway")
+  default ActorFuture<Void> thenAccept(final Consumer<V> next) {
+    return thenApply(
+        value -> {
+          next.accept(value);
+          return null;
+        });
+  }
+
+  /**
+   * Similar to {@link CompletableFuture#thenRun(Runnable)} in that it runs a callback when this
+   * future completes successfully without using its result.
+   *
+   * <p>If the caller is not an actor, {@link ActorFuture#thenRun(Runnable, Executor)} must be used
+   * to avoid blocking the actor execution context.
+   *
+   * @param next runnable to run after this future completes successfully.
+   * @return a new void future that completes after running the callback or exceptionally if this
+   *     future completes exceptionally. This future can be used for further chaining.
+   */
+  default ActorFuture<Void> thenRun(final Runnable next) {
+    return thenAccept(ignored -> next.run());
+  }
 }

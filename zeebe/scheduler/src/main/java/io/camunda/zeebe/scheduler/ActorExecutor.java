@@ -11,7 +11,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to the scheduler's internal
@@ -31,20 +30,19 @@ public final class ActorExecutor {
    *
    * @param task the task to submit
    */
-  public ActorFuture<@Nullable Void> submitCpuBound(final ActorTask task) {
+  public ActorFuture<Void> submitCpuBound(final ActorTask task) {
     return submitTask(task, cpuBoundThreads);
   }
 
-  public ActorFuture<@Nullable Void> submitIoBoundTask(final ActorTask task) {
+  public ActorFuture<Void> submitIoBoundTask(final ActorTask task) {
     return submitTask(task, ioBoundThreads);
   }
 
-  private ActorFuture<@Nullable Void> submitTask(
-      final ActorTask task, final ActorThreadGroup threadGroup) {
+  private ActorFuture<Void> submitTask(final ActorTask task, final ActorThreadGroup threadGroup) {
     if (task.getLifecyclePhase() != ActorLifecyclePhase.CLOSED) {
       throw new IllegalStateException("ActorTask was already submitted!");
     }
-    final ActorFuture<@Nullable Void> startingFuture = task.onTaskScheduled(threadGroup);
+    final ActorFuture<Void> startingFuture = task.onTaskScheduled(threadGroup);
 
     threadGroup.submit(task);
     return startingFuture;
@@ -55,7 +53,7 @@ public final class ActorExecutor {
     ioBoundThreads.start();
   }
 
-  public CompletableFuture<@Nullable Void> closeAsync() {
+  public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
   }
 

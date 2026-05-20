@@ -15,7 +15,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Manages an instance of {@link ClientStreamer}. Intended to be the main entry point when setting
@@ -31,7 +30,7 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
    * Starts the service, optionally with the given actor scheduling service. Assumes the scheduling
    * service is already running.
    */
-  ActorFuture<@Nullable Void> start(final ActorSchedulingService schedulingService);
+  ActorFuture<Void> start(final ActorSchedulingService schedulingService);
 
   /**
    * A callback to be invoked when a new streaming server is added. Implementations should be

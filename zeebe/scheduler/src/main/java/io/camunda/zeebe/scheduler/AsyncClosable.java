@@ -19,9 +19,9 @@ public interface AsyncClosable {
    *
    * @return the future, which is completed when resources are closed
    */
-  ActorFuture<@Nullable Void> closeAsync();
+  ActorFuture<Void> closeAsync();
 
-  static ActorFuture<@Nullable Void> closeHelper(final @Nullable AsyncClosable closeable) {
+  static ActorFuture<Void> closeHelper(final @Nullable AsyncClosable closeable) {
     if (closeable != null) {
       return closeable.closeAsync();
     } else {

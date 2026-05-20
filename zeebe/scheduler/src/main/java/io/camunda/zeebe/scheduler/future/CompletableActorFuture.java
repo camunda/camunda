@@ -90,7 +90,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     isDoneCondition = completionLock.newCondition();
   }
 
-  public static CompletableActorFuture<@Nullable Void> completed() {
+  @SuppressWarnings("NullAway")
+  public static CompletableActorFuture<Void> completed() {
     return CompletableActorFuture.completed(null);
   }
 
@@ -113,11 +114,11 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
    *     successfully. if one future returns an error, the computation is stopped (the rest of the
    *     Future will not be started) and the error is returned
    */
-  public static <A> ActorFuture<@Nullable Void> traverseIgnoring(
+  public static <A> ActorFuture<Void> traverseIgnoring(
       final Collection<A> collection,
-      final Function<A, ActorFuture<@Nullable Void>> function,
+      final Function<A, ActorFuture<Void>> function,
       final Executor executor) {
-    ActorFuture<@Nullable Void> future = completed();
+    ActorFuture<Void> future = completed();
     for (final A a : collection) {
       future = future.andThen(unused -> function.apply(a), executor);
     }

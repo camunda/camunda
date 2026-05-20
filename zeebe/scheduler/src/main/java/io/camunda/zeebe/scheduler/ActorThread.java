@@ -19,7 +19,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -43,7 +42,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   protected ActorTaskRunnerIdleStrategy idleStrategy;
   ActorTask currentTask;
   private final ActorMetrics actorMetrics;
-  private final CompletableFuture<@Nullable Void> terminationFuture = new CompletableFuture<>();
+  private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
   private final int threadId;
   private final TaskScheduler taskScheduler;
@@ -233,7 +232,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     terminationFuture.complete(null);
   }
 
-  public CompletableFuture<@Nullable Void> close() {
+  public CompletableFuture<Void> close() {
     if (STATE_HANDLE.compareAndSet(this, ActorThreadState.RUNNING, ActorThreadState.TERMINATING)) {
       return terminationFuture;
     } else {

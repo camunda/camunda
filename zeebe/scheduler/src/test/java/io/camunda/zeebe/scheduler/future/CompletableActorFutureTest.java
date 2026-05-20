@@ -15,6 +15,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +25,56 @@ import org.junit.jupiter.api.Test;
 public class CompletableActorFutureTest {
 
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
+
+  @Nested
+  class VoidContinuations {
+    @Test
+    public void shouldConsumeFutureResult() {
+      // given
+      final var consumed = new AtomicReference<String>();
+
+      // when
+      final var future =
+          CompletableActorFuture.completed("value").thenAccept(consumed::set, EXECUTOR);
+
+      // then
+      assertThat(future.join()).isNull();
+      assertThat(consumed).hasValue("value");
+    }
+
+    @Test
+    public void shouldRunAfterFutureCompletes() {
+      // given
+      final var ran = new AtomicBoolean();
+
+      // when
+      final var future =
+          CompletableActorFuture.completed("value").thenRun(() -> ran.set(true), EXECUTOR);
+
+      // then
+      assertThat(future.join()).isNull();
+      assertThat(ran).isTrue();
+    }
+
+    @Test
+    public void shouldPropagateFailureWithoutRunningContinuation() {
+      // given
+      final var ran = new AtomicBoolean();
+      final var exception = new RuntimeException("Expected");
+
+      // when
+      final var future =
+          CompletableActorFuture.completedExceptionally(exception)
+              .thenRun(() -> ran.set(true), EXECUTOR);
+
+      // then
+      assertThat(future)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .withMessageContaining("Expected");
+      assertThat(ran).isFalse();
+    }
+  }
 
   @Nested
   class TraverseIgnoring {

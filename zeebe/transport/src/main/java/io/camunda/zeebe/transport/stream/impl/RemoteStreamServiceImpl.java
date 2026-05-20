@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -21,7 +23,6 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.stream.Stream;
-import org.jspecify.annotations.Nullable;
 
 public class RemoteStreamServiceImpl<M, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
@@ -59,8 +60,8 @@ public class RemoteStreamServiceImpl<M, P extends BufferWriter>
   }
 
   @Override
-  public ActorFuture<@Nullable Void> closeAsync(final ConcurrencyControl executor) {
-    final CompletableActorFuture<@Nullable Void> closed = new CompletableActorFuture<>();
+  public ActorFuture<Void> closeAsync(final ConcurrencyControl executor) {
+    final CompletableActorFuture<Void> closed = new CompletableActorFuture<>();
     final var streamerClosed = streamer.closeAsync();
     final var serverClosed = apiServer.closeAsync();
     final var combined =
@@ -71,7 +72,7 @@ public class RemoteStreamServiceImpl<M, P extends BufferWriter>
           if (error != null) {
             closed.completeExceptionally(error);
           } else {
-            closed.complete(null);
+            closed.complete(unit());
           }
         });
     return closed;
