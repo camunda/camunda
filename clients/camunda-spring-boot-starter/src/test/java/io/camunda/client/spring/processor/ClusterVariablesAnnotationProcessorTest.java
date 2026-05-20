@@ -318,6 +318,28 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
+  void shouldPropagateNonConflictExceptionOnCreate() throws IOException {
+    // given
+    final Resource resource = mockJsonResource("{\"myVar\": \"value\"}");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+    when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
+    when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+    doThrow(new ProblemException(500, "Internal Server Error", null))
+        .when(globalCreateStep)
+        .execute();
+
+    // when / then
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            });
+    verifyNoInteractions(globalUpdateStep);
+  }
+
+  @Test
   void shouldUpdateTenantScopedVariableWhenAlreadyExists() throws IOException {
     // given
     final Resource resource = mockJsonResource("{\"tenantVar\": \"newValue\"}");
