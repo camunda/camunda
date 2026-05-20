@@ -31,23 +31,13 @@ public final class AuthenticationProperties {
   }
 
   /**
-   * Mirrors a {@code camunda.security.*} property into the host-registered {@link
-   * SecurityConfiguration} bean. The test framework pre-registers {@code SecurityConfiguration} as
-   * a Spring singleton (see {@code TestStandaloneBroker}), which bypasses Spring's
-   * {@code @ConfigurationProperties} binding for that instance; {@code withProperty(...)} updates
-   * Spring's property sources, so a separate manual mirror is needed to keep the typed bean in
-   * sync.
-   *
-   * <p>Adding a new key here is the right move when an integration test sets it via {@code
-   * withProperty(...)} and the host-side OIDC code path reads from {@link SecurityConfiguration}.
-   * CSL beans bind directly from the property sources and do not need mirroring.
+   * Mirrors a {@code camunda.security.*} property change into an existing {@link
+   * SecurityConfiguration} bean when {@code @ConfigurationProperties} binding is not active for
+   * that instance. Does nothing if {@code securityConfig} or {@code value} is {@code null}.
    */
   public static void applyToSecurityConfig(
       final SecurityConfiguration securityConfig, final String key, final Object value) {
-    if (securityConfig == null) {
-      // TestStandaloneBroker's super-class construction triggers withProperty(...) before the
-      // securityConfig field is initialised; tolerate that early window — the constructor will
-      // populate the typed bean before any meaningful test-time mutation runs.
+    if (securityConfig == null || value == null) {
       return;
     }
     final var oidc = securityConfig.getAuthentication().getOidc();
