@@ -44,6 +44,12 @@ public final class AuthenticationProperties {
    */
   public static void applyToSecurityConfig(
       final SecurityConfiguration securityConfig, final String key, final Object value) {
+    if (securityConfig == null) {
+      // TestStandaloneBroker's super-class construction triggers withProperty(...) before the
+      // securityConfig field is initialised; tolerate that early window — the constructor will
+      // populate the typed bean before any meaningful test-time mutation runs.
+      return;
+    }
     final var oidc = securityConfig.getAuthentication().getOidc();
     switch (key) {
       case METHOD ->
