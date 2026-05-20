@@ -100,7 +100,7 @@ public final class MessageStartEventBusinessIdUniquenessTest {
     // The limit predicate keys on the suppressed message's record key (not just intent) so that
     // an unrelated EXPIRED — e.g. introduced by future test-setup changes — cannot short-circuit
     // the bound and silently mask a regression.
-    final long secondPiCount =
+    final long processInstancesStarted =
         RecordingExporter.records()
             .limit(
                 r ->
@@ -110,7 +110,7 @@ public final class MessageStartEventBusinessIdUniquenessTest {
             .withElementType(BpmnElementType.PROCESS)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .count();
-    assertThat(secondPiCount)
+    assertThat(processInstancesStarted)
         .as("only the original PI should exist; the duplicate-businessId publish is suppressed")
         .isEqualTo(1L);
     assertThat(firstJob.getValue().getProcessInstanceKey()).isPositive();
