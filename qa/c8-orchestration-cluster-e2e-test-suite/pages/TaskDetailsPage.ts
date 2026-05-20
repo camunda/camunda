@@ -261,16 +261,24 @@ class TaskDetailsPage {
   async fillDatetimeField(label: string, value: string) {
     const input = this.page.getByRole('textbox', {name: label});
     await expect(input).toBeVisible();
+    await input.click();
     // Form-js datetime sub-fields (e.g. the Time sub-field of a combined
     // datetime component) render the underlying <input> as readonly and
     // route keystrokes through flatpickr — so .fill() throws "element is
-    // not editable". Try fill() first; if the field is readonly, fall
-    // back to keyboard typing which flatpickr accepts.
-    await input.click();
+    // not editable". The readonly attribute also flips on/off during the
+    // component's re-renders, so a one-shot isEditable() check is racy.
+    // Try fill() first and only fall back to keyboard typing when the
+    // failure is the specific not-editable error; rethrow anything else
+    // so we don't mask detached-element / locator-mismatch bugs.
     try {
-      await input.fill(value, {timeout: 5000});
-    } catch {
-      await this.page.keyboard.press('Control+A');
+      await input.fill(value);
+    } catch (error) {
+      const message = (error as Error)?.message ?? '';
+      if (!message.includes('not editable')) {
+        throw error;
+      }
+      // ControlOrMeta+A is cross-platform (Cmd on macOS, Ctrl elsewhere).
+      await this.page.keyboard.press('ControlOrMeta+A');
       await this.page.keyboard.press('Backspace');
       await this.page.keyboard.type(value, {delay: 30});
     }

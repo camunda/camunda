@@ -165,7 +165,10 @@ test.describe('Identity User Flows', () => {
 
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: testUser.name,
+        // The owner search dropdown (#51442) filters by `username` and
+        // displays the username as the option title; passing `testUser.name`
+        // returned no matches.
+        ownerId: testUser.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
