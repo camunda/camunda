@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -491,6 +490,8 @@ public final class JobPriorityTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasElementId("task")
         .hasJobKey(-1L);
+
+    assertThat(incident.getValue().getErrorMessage()).contains("missingVar");
   }
 
   @Test
@@ -509,20 +510,14 @@ public final class JobPriorityTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId(PROCESS_ID)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .await();
-    final var jobs =
-        RecordingExporter.expectNoMatchingRecords(
-            records ->
-                records
-                    .jobRecords()
-                    .withIntent(JobIntent.CREATED)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .toList());
-    assertThat(jobs).isEmpty();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(JobIntent.CREATED)
+                .toList())
+        .isEmpty();
   }
 
   @Test
@@ -631,5 +626,7 @@ public final class JobPriorityTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasElementId("task")
         .hasJobKey(-1L);
+
+    assertThat(incident.getValue().getErrorMessage()).contains("missingVar");
   }
 }
