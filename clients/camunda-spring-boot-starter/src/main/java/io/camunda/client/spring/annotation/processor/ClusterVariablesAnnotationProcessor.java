@@ -96,7 +96,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     // Process variables from properties
     final Map<String, Object> propertyVariables = properties.getVariables();
     if (propertyVariables != null && !propertyVariables.isEmpty()) {
-      LOGGER.debug("Creating {} cluster variable(s) from properties", propertyVariables.size());
+      LOGGER.debug("Upserting {} cluster variable(s) from properties", propertyVariables.size());
       upsertClusterVariables(client, propertyVariables, null);
     }
 
