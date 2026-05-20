@@ -16,37 +16,11 @@ import io.micrometer.core.instrument.Meter.Type;
 @SuppressWarnings("NullableProblems")
 public enum VariableMetricsDoc implements ExtendedMeterDocumentation {
 
-  /** Total bytes of variable values written on VARIABLE:CREATED events. */
-  VARIABLE_CREATED_BYTES {
-    private static final KeyName[] KEY_NAMES = new KeyName[] {VariableKeyNames.BPMN_PROCESS_ID};
-
-    @Override
-    public String getDescription() {
-      return "Total bytes of variable values written on VARIABLE:CREATED events.";
-    }
-
-    @Override
-    public String getName() {
-      return "zeebe.variable.created.bytes";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.COUNTER;
-    }
-
-    @Override
-    public KeyName[] getKeyNames() {
-      return KEY_NAMES;
-    }
-
-    @Override
-    public KeyName[] getAdditionalKeyNames() {
-      return KeyName.merge(PartitionKeyNames.values(), ExporterContainerKeyNames.values());
-    }
-  },
-
-  /** Size distribution of variable values written on VARIABLE:CREATED events. */
+  /**
+   * Size distribution of variable values written on VARIABLE:CREATED events. The Prometheus export
+   * also includes a {@code _count} (number of variables) and {@code _sum} (total bytes) series,
+   * which together cover total-throughput needs without a separate counter.
+   */
   VARIABLE_CREATED_SIZE {
     private static final double[] BUCKETS = {
       64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 2097152
