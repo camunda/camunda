@@ -264,7 +264,8 @@ public final class EventHandle {
 
     // Set the businessId from the message-start path on the new PI's creation record so that
     // subsequent uniqueness checks (and exporters) see the PI as carrying the businessId, mirroring
-    // how a PI created via PROCESS_INSTANCE_CREATION already does.
+    // how a PI created via PROCESS_INSTANCE_CREATION already does. Reset to "" when absent so a
+    // stale value from a previous invocation of this reused record cannot leak through.
     if (businessId != null && businessId.capacity() > 0) {
       recordForPICreation.setBusinessId(businessId);
     } else {
