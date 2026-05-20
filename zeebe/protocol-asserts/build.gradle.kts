@@ -15,15 +15,111 @@ import com.google.common.reflect.TypeToken
 import org.assertj.assertions.generator.AssertionsEntryPointType
 import org.assertj.assertions.generator.BaseAssertionGenerator
 import org.assertj.assertions.generator.description.converter.ClassToClassDescriptionConverter
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
 import java.lang.reflect.Modifier
 import java.net.URLClassLoader
+import javax.inject.Inject
 
 plugins {
     id("buildlogic.server-conventions")
+}
+
+abstract class GenerateAssertjAssertionsTask : DefaultTask() {
+    @get:InputFiles
+    abstract val classDirs: ConfigurableFileCollection
+
+    @get:InputFiles
+    abstract val classpath: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val fs: FileSystemOperations
+
+    @TaskAction
+    fun generate() {
+        val outDir = outputDir.get().asFile
+        fs.delete { delete(outDir) }
+        outDir.mkdirs()
+
+        val classDirFiles = classDirs.files
+        val cp = classpath.files + classDirFiles
+        val loader = URLClassLoader(
+            cp.map { it.toURI().toURL() }.toTypedArray(),
+            javaClass.classLoader,
+        )
+
+        try {
+            val classNames = classDirFiles.flatMap { dir ->
+                dir.walkTopDown()
+                    .filter { it.isFile && it.extension == "class" }
+                    .map { file ->
+                        file.relativeTo(dir).invariantSeparatorsPath
+                            .removeSuffix(".class")
+                            .replace('/', '.')
+                    }
+                    .toList()
+            }.toSet()
+                .filter { it.startsWith("io.camunda.zeebe.protocol.record") }
+                .filterNot { it.contains(".Immutable") || it.endsWith("Assert") || it.endsWith("Assertions") }
+
+            val types = classNames
+                .map { loader.loadClass(it) }
+                .filterNot { Modifier.isPrivate(it.modifiers) }
+                .map { TypeToken.of(it) }
+                .toSet()
+            val converter = ClassToClassDescriptionConverter()
+            val generator = BaseAssertionGenerator()
+            generator.setDirectoryWhereAssertionFilesAreGenerated(outDir)
+
+            val descriptions = types.map { type ->
+                val description = converter.convertToClassDescription(type)
+                generator.generateCustomAssertionFor(description)
+                description
+            }.toSet()
+
+            generator.generateAssertionsEntryPointClassFor(
+                descriptions,
+                AssertionsEntryPointType.STANDARD,
+                null,
+            )
+        } finally {
+            loader.close()
+        }
+    }
+}
+
+abstract class PatchRecordAssertTask : DefaultTask() {
+    @get:InputFiles
+    abstract val sourceDir: DirectoryProperty
+
+    @get:OutputFile
+    abstract val recordAssertFile: RegularFileProperty
+
+    @TaskAction
+    fun patch() {
+        val file = recordAssertFile.get().asFile
+        if (!file.exists()) {
+            return
+        }
+        val updated = file.readText()
+            .replace("T value", "RecordValue value")
+            .replace("T actualValue", "RecordValue actualValue")
+        file.writeText(updated)
+    }
 }
 
 val assertjGeneratedDir = layout.buildDirectory.dir("generated-sources/assertj-assertions")
@@ -46,90 +142,31 @@ val securityProtocolOutput = securityProtocolSourceSet.output
 val securityProtocolCompileClasspath =
     project(":camunda-security-protocol").configurations.getByName("compileClasspath")
 
-val generateAssertjAssertions by tasks.registering {
+val generateAssertjAssertions by tasks.registering(GenerateAssertjAssertionsTask::class) {
     group = "code generation"
     description = "Generate AssertJ assertions for Zeebe protocol record types"
-    notCompatibleWithConfigurationCache("Custom AssertJ generation task is not configuration cache compatible")
 
     dependsOn(
         project(":zeebe-protocol").tasks.named("classes"),
         project(":camunda-security-protocol").tasks.named("classes"),
     )
 
-    inputs.files(protocolOutput.classesDirs, securityProtocolOutput.classesDirs)
-    inputs.files(protocolCompileClasspath, securityProtocolCompileClasspath)
-    outputs.dir(assertjGeneratedDir)
-
-    notCompatibleWithConfigurationCache("Custom AssertJ generation task is not configuration cache compatible")
-
-    doLast {
-        project.delete(assertjGeneratedDir)
-
-        val classDirs = protocolOutput.classesDirs.files + securityProtocolOutput.classesDirs.files
-        val classpath = protocolCompileClasspath.files + securityProtocolCompileClasspath.files + classDirs
-        val loader = URLClassLoader(classpath.map { it.toURI().toURL() }.toTypedArray(), javaClass.classLoader)
-
-        try {
-            val classNames = classDirs.flatMap { dir ->
-                project.fileTree(dir).matching { include("**/*.class") }.files.map { file ->
-                    file.relativeTo(dir).invariantSeparatorsPath
-                        .removeSuffix(".class")
-                        .replace('/', '.')
-                }
-            }.toSet()
-                .filter { it.startsWith("io.camunda.zeebe.protocol.record") }
-                .filterNot { it.contains(".Immutable") || it.endsWith("Assert") || it.endsWith("Assertions") }
-
-            val types = classNames
-                .map { loader.loadClass(it) }
-                .filterNot { Modifier.isPrivate(it.modifiers) }
-                .map { TypeToken.of(it) }
-                .toSet()
-            val converter = ClassToClassDescriptionConverter()
-            val generator = BaseAssertionGenerator()
-            val outputDir = assertjGeneratedDir.get().asFile
-            generator.setDirectoryWhereAssertionFilesAreGenerated(outputDir)
-
-            val descriptions = types.map { type ->
-                val description = converter.convertToClassDescription(type)
-                generator.generateCustomAssertionFor(description)
-                description
-            }.toSet()
-
-            generator.generateAssertionsEntryPointClassFor(
-                descriptions,
-                AssertionsEntryPointType.STANDARD,
-                null,
-            )
-        } finally {
-            loader.close()
-        }
-    }
+    classDirs.from(protocolOutput.classesDirs, securityProtocolOutput.classesDirs)
+    classpath.from(protocolCompileClasspath, securityProtocolCompileClasspath)
+    outputDir.set(assertjGeneratedDir)
 }
 
-val patchRecordAssert by tasks.registering {
+val patchRecordAssert by tasks.registering(PatchRecordAssertTask::class) {
     group = "code generation"
     description = "Patch generated RecordAssert generic types"
-    notCompatibleWithConfigurationCache("Custom AssertJ patch task is not configuration cache compatible")
     dependsOn(generateAssertjAssertions)
 
-    val recordAssert = layout.buildDirectory.file(
-        "generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/RecordAssert.java",
+    sourceDir.set(assertjGeneratedDir)
+    recordAssertFile.set(
+        layout.buildDirectory.file(
+            "generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/RecordAssert.java",
+        ),
     )
-
-    inputs.file(recordAssert)
-    outputs.file(recordAssert)
-
-    doLast {
-        val file = recordAssert.get().asFile
-        if (!file.exists()) {
-            return@doLast
-        }
-        val updated = file.readText()
-            .replace("T value", "RecordValue value")
-            .replace("T actualValue", "RecordValue actualValue")
-        file.writeText(updated)
-    }
 }
 
 dependencies {
