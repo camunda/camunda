@@ -15,14 +15,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Subscriptions {
 
   // DirectBuffer have stable equals/hashcode given it's not mutated: it must be cloned first
-  private final Map<DirectBuffer, Subscription> subscriptions = new LinkedHashMap<>();
+  private final Map<UnsafeBuffer, Subscription> subscriptions = new LinkedHashMap<>();
 
   public boolean contains(final DirectBuffer bpmnProcessId) {
-    return subscriptions.containsKey(bpmnProcessId);
+    return subscriptions.containsKey(wrapInBufferIfNeeded(bpmnProcessId));
   }
 
   public void add(final MessageSubscriptionRecord subscription) {
@@ -95,9 +96,17 @@ public final class Subscriptions {
     return true;
   }
 
+  private static UnsafeBuffer wrapInBufferIfNeeded(final DirectBuffer buffer) {
+    if (buffer instanceof final UnsafeBuffer unsafeBuffer) {
+      return unsafeBuffer;
+    } else {
+      return new UnsafeBuffer(buffer);
+    }
+  }
+
   public record Subscription(
       // buffer must be immutable
-      DirectBuffer bpmnProcessId,
+      UnsafeBuffer bpmnProcessId,
       long processInstanceKey,
       long elementInstanceKey,
       long processDefinitionKey,
@@ -110,14 +119,14 @@ public final class Subscriptions {
         final long processDefinitionKey,
         final boolean isStartEventSubscription) {
       return new Subscription(
-          cloneBuffer(bpmnProcessId),
+          wrapInBufferIfNeeded(cloneBuffer(bpmnProcessId)),
           processInstanceKey,
           elementInstanceKey,
           processDefinitionKey,
           isStartEventSubscription);
     }
 
-    /* Copy without cloning, buffer is already immutable */
+    /* Copy without cloning, buffer is already cloned */
     public static Subscription copy(final Subscription subscription) {
       return new Subscription(
           subscription.bpmnProcessId(),
