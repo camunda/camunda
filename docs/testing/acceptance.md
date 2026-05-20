@@ -288,8 +288,11 @@ in the `qa/update-tests` module. These tests run in three different modes, depen
 2. **CI**: Checks compatibility between the current version and all patches of the current and previous minor.
 3. **Full**: Checks all supported upgrade paths, i.e. upgrading from any patch to any other patch of the current or next minor.
 
-Secondary storage (RDBMS/Postgres) schema migration compatibility across version upgrades is covered
-by [SecondaryStorageRollingUpdateTest](/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/SecondaryStorageRollingUpdateTest.java).
+Secondary storage rolling-update compatibility across version upgrades is covered by
+[SecondaryStorageRollingUpdateTest](/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/SecondaryStorageRollingUpdateTest.java)
+for all supported backends: RDBMS/Postgres, Elasticsearch, and OpenSearch. For RDBMS, this
+includes schema migration compatibility; for Elasticsearch and OpenSearch, it verifies that the
+secondary-storage structures and indexed data remain compatible and readable across the update.
 This test verifies that process instances created before, during, and after a version upgrade
 (including a downgrade back to the previous minor) remain visible in secondary storage.
 
