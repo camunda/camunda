@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -139,6 +140,26 @@ public final class MessageCorrelationClient {
     final var position =
         writer.writeCommandOnPartition(
             partitionId, MessageCorrelationIntent.CORRELATE, messageCorrelationRecord, username);
+    return expectation.apply(
+        new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
+  }
+
+  public Record<MessageCorrelationRecordValue> correlate(final AuthInfo authInfo) {
+
+    if (partitionId == NOT_SET) {
+      partitionId =
+          SubscriptionUtil.getSubscriptionPartitionId(
+              messageCorrelationRecord.getCorrelationKeyBuffer(), partitionCount);
+    }
+
+    final int pid = partitionId;
+    final var position =
+        writer.writeCommandOnPartition(
+            pid,
+            b ->
+                b.intent(MessageCorrelationIntent.CORRELATE)
+                    .authorizations(authInfo)
+                    .event(messageCorrelationRecord));
     return expectation.apply(
         new Message(messageCorrelationRecord.getCorrelationKey(), position, partitionId));
   }

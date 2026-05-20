@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
@@ -39,6 +40,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -1646,6 +1648,17 @@ public final class TestHelper {
                   .extracting(u -> u.getUsername())
                   .containsExactlyInAnyOrder(usernames);
             });
+  }
+
+  public static List<AuditLogResult> waitForAuditLogEntries(
+      final CamundaClient camundaClient,
+      final Consumer<AuditLogFilter> filterConsumer,
+      final int expectedCount) {
+    return waitForItemsPaginated(
+        "should wait until audit log entries are available",
+        expectedCount,
+        page ->
+            camundaClient.newAuditLogSearchRequest().filter(filterConsumer).page(page).execute());
   }
 
   public static void waitForMessageSubscriptions(

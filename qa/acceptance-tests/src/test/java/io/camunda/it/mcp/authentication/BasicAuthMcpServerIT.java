@@ -13,8 +13,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 @MultiDbTest
 public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
@@ -51,11 +49,6 @@ public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
   }
 
   private McpSyncHttpClientRequestCustomizer createBasicAuthAuthenticator(final TestUser user) {
-    final var credentialsString = "%s:%s".formatted(user.username(), user.password());
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString(credentialsString.getBytes(StandardCharsets.UTF_8));
-
-    return (builder, method, endpoint, body, context) ->
-        builder.header("Authorization", "Basic " + encodedCredentials);
+    return createBasicAuthCustomizer(user.username(), user.password());
   }
 }
