@@ -16,7 +16,6 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
