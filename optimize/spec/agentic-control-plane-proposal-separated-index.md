@@ -1,4 +1,5 @@
 # Agentic Control Plane — Solution Proposal
+
 ## Dedicated AgentInstanceIndex Architecture
 
 **Audience**: Product Owners, Architects
@@ -96,19 +97,20 @@ process-level correlation widgets within 12–18 months.
 
 ## Key Architectural Risks
 
-| Risk | Severity | Likelihood | Notes |
-|---|---|---|---|
-| Wrong import service base class | Medium | Low | Using the process-instance sub-entity base class silently writes to the wrong index — no error, just missing data. Caught immediately by import integration tests. |
-| Cross-index merge edge cases | Low | Medium | Asymmetric data (agent activations with no matching incidents, or vice versa) must be handled gracefully. Covered by integration tests with intentionally asymmetric fixtures. |
-| Future analytics constraint (65k join limit) | High | Medium | No impact on phase 1. Must be evaluated before committing to this architecture if process-agent correlation widgets enter the roadmap. |
+|                     Risk                     | Severity | Likelihood |                                                                                     Notes                                                                                      |
+|----------------------------------------------|----------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Wrong import service base class              | Medium   | Low        | Using the process-instance sub-entity base class silently writes to the wrong index — no error, just missing data. Caught immediately by import integration tests.             |
+| Cross-index merge edge cases                 | Low      | Medium     | Asymmetric data (agent activations with no matching incidents, or vice versa) must be handled gracefully. Covered by integration tests with intentionally asymmetric fixtures. |
+| Future analytics constraint (65k join limit) | High     | Medium     | No impact on phase 1. Must be evaluated before committing to this architecture if process-agent correlation widgets enter the roadmap.                                         |
 
 ---
 
 ## Related Documents
 
-| Document | Purpose |
-|---|---|
-| `agentic-control-plane-technical-separated-index-spec.md` | Full technical specification |
-| `agentic-control-plane-impl-plan-separated-index.md` | Implementation task breakdown with effort estimates |
-| `agentic-control-plane-impl-plan-comparison.md` | Architectural tradeoff analysis vs nested variant |
-| `agentic-control-plane-proposal-nested.md` | Alternative architecture proposal |
+|                         Document                          |                       Purpose                       |
+|-----------------------------------------------------------|-----------------------------------------------------|
+| `agentic-control-plane-technical-separated-index-spec.md` | Full technical specification                        |
+| `agentic-control-plane-impl-plan-separated-index.md`      | Implementation task breakdown with effort estimates |
+| `agentic-control-plane-impl-plan-comparison.md`           | Architectural tradeoff analysis vs nested variant   |
+| `agentic-control-plane-proposal-nested.md`                | Alternative architecture proposal                   |
+

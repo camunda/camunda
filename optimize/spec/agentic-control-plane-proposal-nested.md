@@ -1,4 +1,5 @@
 # Agentic Control Plane — Solution Proposal
+
 ## Nested-in-ProcessInstance Architecture
 
 **Audience**: Product Owners, Architects
@@ -93,20 +94,21 @@ dimension work for agent widgets without additional implementation. The filter f
 
 ## Key Architectural Risks
 
-| Risk | Severity | Likelihood | Notes |
-|---|---|---|---|
-| Painless script correctness | Medium | Medium | Subtle scripting errors (type coercion, null handling, array mutation) produce wrong data silently. Requires unit tests + real ES/OS validation before go-live. |
-| ProcessInstanceIndex mapping mutation | Medium | Low | Wrong mapping type on first write requires full reindex. Validate mapping in integration test before enabling the pipeline. |
-| Nested object limit breach | Medium | Low | Configure and monitor `index.mapping.nested_objects.limit` per expected agent invocation volume. Silent drop on breach. |
-| Query performance at scale | Low | Low | Benchmark nested aggregation overhead under realistic agent invocation volume before GA. |
+|                 Risk                  | Severity | Likelihood |                                                                              Notes                                                                              |
+|---------------------------------------|----------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Painless script correctness           | Medium   | Medium     | Subtle scripting errors (type coercion, null handling, array mutation) produce wrong data silently. Requires unit tests + real ES/OS validation before go-live. |
+| ProcessInstanceIndex mapping mutation | Medium   | Low        | Wrong mapping type on first write requires full reindex. Validate mapping in integration test before enabling the pipeline.                                     |
+| Nested object limit breach            | Medium   | Low        | Configure and monitor `index.mapping.nested_objects.limit` per expected agent invocation volume. Silent drop on breach.                                         |
+| Query performance at scale            | Low      | Low        | Benchmark nested aggregation overhead under realistic agent invocation volume before GA.                                                                        |
 
 ---
 
 ## Related Documents
 
-| Document | Purpose |
-|---|---|
-| `agentic-control-plane-technical-spec.md` | Full technical specification |
-| `agentic-control-plane-impl-plan-nested.md` | Implementation task breakdown with effort estimates |
-| `agentic-control-plane-impl-plan-comparison.md` | Architectural tradeoff analysis vs separate index variant |
-| `agentic-control-plane-proposal-separated-index.md` | Alternative architecture proposal |
+|                      Document                       |                          Purpose                          |
+|-----------------------------------------------------|-----------------------------------------------------------|
+| `agentic-control-plane-technical-spec.md`           | Full technical specification                              |
+| `agentic-control-plane-impl-plan-nested.md`         | Implementation task breakdown with effort estimates       |
+| `agentic-control-plane-impl-plan-comparison.md`     | Architectural tradeoff analysis vs separate index variant |
+| `agentic-control-plane-proposal-separated-index.md` | Alternative architecture proposal                         |
+

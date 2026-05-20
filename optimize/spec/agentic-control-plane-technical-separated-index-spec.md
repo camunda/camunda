@@ -87,18 +87,18 @@ the nested variant.
 
 **Key decisions from Q&A** (source of truth):
 
-| Decision | Details |
-|---|---|
-| Run definition | Process instance run = one process start to end. Agent instance run = one agent invocation, creation to completion. Rate denominators follow metric scope. |
-| Completed runs only | All metrics computed over `state = "COMPLETED"` process instances. In-progress = partial values; failures covered by incident rate. |
-| Reasoning tokens | Phase 1: input + output only. Phase 2 via Zeebe schema change. No UI caveat needed. |
-| Duration scope | No agent filter → process duration (ProcessInstanceIndex). Agent selected → that agent's execution time only (AgentInstanceIndex). Label/tooltip changes with filter. |
-| Total Runs with agent filter | Always counts process instance runs where that agent was activated at least once. |
-| Token trend multi-line | Multi-line (top-5 agents + "Other") when no agent is filtered (L0/L1). Single line when specific agent is selected (L2). |
-| Incident rate scope | Process scope = any incident in the process (ProcessInstanceIndex). Agent scope = agent-element incidents only, denominator = agent runs (AgentInstanceIndex). |
-| Tool calls | Single `totalToolCalls` KPI in phase 1. Replace with distribution view when Zeebe provides per-tool data. |
-| Status badges | Dropped for phase 1. Settings page dropped entirely. |
-| Agent details page | Not in scope for phase 1. |
+|           Decision           |                                                                                Details                                                                                |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Run definition               | Process instance run = one process start to end. Agent instance run = one agent invocation, creation to completion. Rate denominators follow metric scope.            |
+| Completed runs only          | All metrics computed over `state = "COMPLETED"` process instances. In-progress = partial values; failures covered by incident rate.                                   |
+| Reasoning tokens             | Phase 1: input + output only. Phase 2 via Zeebe schema change. No UI caveat needed.                                                                                   |
+| Duration scope               | No agent filter → process duration (ProcessInstanceIndex). Agent selected → that agent's execution time only (AgentInstanceIndex). Label/tooltip changes with filter. |
+| Total Runs with agent filter | Always counts process instance runs where that agent was activated at least once.                                                                                     |
+| Token trend multi-line       | Multi-line (top-5 agents + "Other") when no agent is filtered (L0/L1). Single line when specific agent is selected (L2).                                              |
+| Incident rate scope          | Process scope = any incident in the process (ProcessInstanceIndex). Agent scope = agent-element incidents only, denominator = agent runs (AgentInstanceIndex).        |
+| Tool calls                   | Single `totalToolCalls` KPI in phase 1. Replace with distribution view when Zeebe provides per-tool data.                                                             |
+| Status badges                | Dropped for phase 1. Settings page dropped entirely.                                                                                                                  |
+| Agent details page           | Not in scope for phase 1.                                                                                                                                             |
 
 ---
 
@@ -288,13 +288,13 @@ client.update(UpdateRequest.of(r -> r
 
 ### 3.3 Import Pipeline Classes
 
-| Class | Extends / Implements | Notes |
-|---|---|---|
-| `ZeebeAgentInstanceImportHandler` | `AbstractZeebeImportHandler` | Routes to import service |
-| `ZeebeAgentInstanceFetcher` | `AbstractZeebeRecordFetcher` | Fetches from Zeebe export stream |
-| `ZeebeAgentInstanceImportService` | `AbstractImportService<AgentInstanceRecord>` | Writes directly to `AgentInstanceIndex`; **not** a `ZeebeProcessInstanceSubEntityImportService` |
-| `ZeebeAgentInstanceImportMediator` | `AbstractZeebeImportMediator` | Orchestrates fetch → import |
-| `ZeebeAgentInstanceImportMediatorFactory` | `AbstractImportMediatorFactory` | Spring factory |
+|                   Class                   |             Extends / Implements             |                                              Notes                                              |
+|-------------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `ZeebeAgentInstanceImportHandler`         | `AbstractZeebeImportHandler`                 | Routes to import service                                                                        |
+| `ZeebeAgentInstanceFetcher`               | `AbstractZeebeRecordFetcher`                 | Fetches from Zeebe export stream                                                                |
+| `ZeebeAgentInstanceImportService`         | `AbstractImportService<AgentInstanceRecord>` | Writes directly to `AgentInstanceIndex`; **not** a `ZeebeProcessInstanceSubEntityImportService` |
+| `ZeebeAgentInstanceImportMediator`        | `AbstractZeebeImportMediator`                | Orchestrates fetch → import                                                                     |
+| `ZeebeAgentInstanceImportMediatorFactory` | `AbstractImportMediatorFactory`              | Spring factory                                                                                  |
 
 ```java
 private static final Set<AgentInstanceIntent> INTENTS_TO_IMPORT =
@@ -355,18 +355,18 @@ Query examples in sections 4.2–4.11 omit the `tenantId` clause for brevity —
 
 ### 4.1 Endpoint Overview
 
-| ID | Path | Filter Level | Description | Index |
-|---|---|---|---|---|
-| A1 | `GET /process-breakdown` | L0 | Top token consumers by process | Both (two requests) |
-| A2 | `GET /agent-elements` | L1 | Agent element dropdown | AgentInstanceIndex |
-| A3 | `GET /summary` | L0/L1/L2 | Summary KPI stats with WoW deltas | Both (two requests) |
-| A4 | `GET /token-trend` | L0/L1/L2 | Token trend | AgentInstanceIndex |
-| A5 | `GET /duration-stats` | L0/L1/L2 | Duration P50/P95 + stability trend | ProcessInstanceIndex (L0/L1) / AgentInstanceIndex (L2) |
-| A6 | `GET /incident-rate` | L0/L1/L2 | Incident rate | ProcessInstanceIndex (L0/L1) / Both (L2) |
-| A7 | `GET /agents` | L2 | Paginated agent instance list | AgentInstanceIndex + ProcessInstanceIndex (incidents) |
-| A8 | `GET /token-outlier-bands` | L0/L1/L2 | Token p5/p50/p95 bands over time | AgentInstanceIndex |
-| A9 | `GET /tokens-per-agent-call` | L1/L2 | Avg tokens per model call, per agent element | AgentInstanceIndex |
-| A10 | `GET /failure-rate-by-version` | L1/L2 | Incident rate by process version | ProcessInstanceIndex (L1) / Both (L2) |
+| ID  |              Path              | Filter Level |                 Description                  |                         Index                          |
+|-----|--------------------------------|--------------|----------------------------------------------|--------------------------------------------------------|
+| A1  | `GET /process-breakdown`       | L0           | Top token consumers by process               | Both (two requests)                                    |
+| A2  | `GET /agent-elements`          | L1           | Agent element dropdown                       | AgentInstanceIndex                                     |
+| A3  | `GET /summary`                 | L0/L1/L2     | Summary KPI stats with WoW deltas            | Both (two requests)                                    |
+| A4  | `GET /token-trend`             | L0/L1/L2     | Token trend                                  | AgentInstanceIndex                                     |
+| A5  | `GET /duration-stats`          | L0/L1/L2     | Duration P50/P95 + stability trend           | ProcessInstanceIndex (L0/L1) / AgentInstanceIndex (L2) |
+| A6  | `GET /incident-rate`           | L0/L1/L2     | Incident rate                                | ProcessInstanceIndex (L0/L1) / Both (L2)               |
+| A7  | `GET /agents`                  | L2           | Paginated agent instance list                | AgentInstanceIndex + ProcessInstanceIndex (incidents)  |
+| A8  | `GET /token-outlier-bands`     | L0/L1/L2     | Token p5/p50/p95 bands over time             | AgentInstanceIndex                                     |
+| A9  | `GET /tokens-per-agent-call`   | L1/L2        | Avg tokens per model call, per agent element | AgentInstanceIndex                                     |
+| A10 | `GET /failure-rate-by-version` | L1/L2        | Incident rate by process version             | ProcessInstanceIndex (L1) / Both (L2)                  |
 
 ---
 
@@ -1054,15 +1054,16 @@ Register `ZeebeAgentInstanceImportMediatorFactory` in the Spring context (same l
 
 ## 8. Architectural Tradeoffs vs Nested Variant
 
-| Aspect | Nested variant | Separate index variant |
-|---|---|---|
-| ProcessInstanceIndex changes | VERSION 8 → 9, new nested field, new parent-level fields | **None** |
-| Painless script | Required (merge + token re-aggregation on every agent import) | **Not needed** |
-| Pre-aggregated token fields | Required for A8 percentiles | **Not needed** |
-| Query complexity | Nested aggs throughout; most queries single request | Most queries single request; L2 incident/version metrics = two requests |
-| A7 Agents List pagination | Composite agg scroller (aggregation-based) | Standard `search_after` pagination (simpler) |
-| A8 Token Outlier Bands | Needs parent-level fields or scripted_metric | Direct percentile on flat doc (simpler) |
-| Incident join (L2) | Single query with two nested aggs | Two requests (AgentInstanceIndex + ProcessInstanceIndex) |
-| Risk to existing features | Index change touches ProcessInstanceIndex | **Zero — ProcessInstanceIndex unchanged** |
-| Storage overhead | Nested docs inside PI doc | One top-level doc per agent instance |
-| Index count | Existing PI indices + 1 per-process | New set of per-process AgentInstanceIndex indices |
+|            Aspect            |                        Nested variant                         |                         Separate index variant                          |
+|------------------------------|---------------------------------------------------------------|-------------------------------------------------------------------------|
+| ProcessInstanceIndex changes | VERSION 8 → 9, new nested field, new parent-level fields      | **None**                                                                |
+| Painless script              | Required (merge + token re-aggregation on every agent import) | **Not needed**                                                          |
+| Pre-aggregated token fields  | Required for A8 percentiles                                   | **Not needed**                                                          |
+| Query complexity             | Nested aggs throughout; most queries single request           | Most queries single request; L2 incident/version metrics = two requests |
+| A7 Agents List pagination    | Composite agg scroller (aggregation-based)                    | Standard `search_after` pagination (simpler)                            |
+| A8 Token Outlier Bands       | Needs parent-level fields or scripted_metric                  | Direct percentile on flat doc (simpler)                                 |
+| Incident join (L2)           | Single query with two nested aggs                             | Two requests (AgentInstanceIndex + ProcessInstanceIndex)                |
+| Risk to existing features    | Index change touches ProcessInstanceIndex                     | **Zero — ProcessInstanceIndex unchanged**                               |
+| Storage overhead             | Nested docs inside PI doc                                     | One top-level doc per agent instance                                    |
+| Index count                  | Existing PI indices + 1 per-process                           | New set of per-process AgentInstanceIndex indices                       |
+

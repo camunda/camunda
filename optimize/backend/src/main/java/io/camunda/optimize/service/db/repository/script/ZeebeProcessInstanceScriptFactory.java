@@ -17,7 +17,8 @@ public interface ZeebeProcessInstanceScriptFactory {
   static String createProcessInstanceUpdateScript() {
     return createUpdateProcessInstancePropertiesScript()
         + createUpdateFlowNodeInstancesScript()
-        + createUpdateIncidentsScript();
+        + createUpdateIncidentsScript()
+        + createUpdateAgentInstancesScript();
   }
 
   private static String createUpdateProcessInstancePropertiesScript() {
@@ -154,6 +155,64 @@ public interface ZeebeProcessInstanceScriptFactory {
                 })
                 .collect(Collectors.toList());
           """;
+  }
+
+  private static String createUpdateAgentInstancesScript() {
+    return """
+      if (existingInstance.agentInstances == null) {
+        existingInstance.agentInstances = new ArrayList();
+      }
+      def agentInstancesById = existingInstance.agentInstances.stream()
+        .collect(Collectors.toMap(a -> a.agentInstanceId, a -> a, (a1, a2) -> a1));
+      for (def newAgent : params.instance.agentInstances) {
+        def existing = agentInstancesById.get(newAgent.agentInstanceId);
+        if (existing != null) {
+          if (newAgent.endDate != null && existing.endDate == null) {
+            existing.endDate = newAgent.endDate;
+            if (newAgent.metrics != null) {
+              existing.metrics = newAgent.metrics;
+            }
+            if (newAgent.tools != null && !newAgent.tools.isEmpty()) {
+              existing.tools = newAgent.tools;
+            }
+            if (existing.startDateEpochMs != null) {
+              def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
+              existing.totalDurationInMs = dateFormatter.parse(existing.endDate).getTime()
+                                           - existing.startDateEpochMs;
+            }
+          }
+          if (newAgent.startDate != null && existing.startDate == null) {
+            existing.startDate = newAgent.startDate;
+            existing.startDateEpochMs = newAgent.startDateEpochMs;
+            if (existing.endDate != null && existing.startDateEpochMs != null) {
+              def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
+              existing.totalDurationInMs = dateFormatter.parse(existing.endDate).getTime()
+                                           - existing.startDateEpochMs;
+            }
+          }
+        } else {
+          if (newAgent.startDateEpochMs != null && newAgent.endDate != null) {
+            def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
+            newAgent.totalDurationInMs = dateFormatter.parse(newAgent.endDate).getTime()
+                                         - newAgent.startDateEpochMs;
+          }
+          agentInstancesById.put(newAgent.agentInstanceId, newAgent);
+        }
+      }
+      existingInstance.agentInstances = agentInstancesById.values();
+      existingInstance.agentTotalInputTokens = 0;
+      existingInstance.agentTotalOutputTokens = 0;
+      existingInstance.agentTotalModelCalls = 0;
+      existingInstance.agentTotalToolCalls = 0;
+      for (def a : existingInstance.agentInstances) {
+        if (a.metrics != null) {
+          if (a.metrics.inputTokens != null)  existingInstance.agentTotalInputTokens  += a.metrics.inputTokens;
+          if (a.metrics.outputTokens != null) existingInstance.agentTotalOutputTokens += a.metrics.outputTokens;
+          if (a.metrics.modelCalls != null)   existingInstance.agentTotalModelCalls   += a.metrics.modelCalls;
+          if (a.metrics.toolCalls != null)    existingInstance.agentTotalToolCalls    += a.metrics.toolCalls;
+        }
+      }
+      """;
   }
 
   private static String createUpdatePropertyIfNotNullScript(

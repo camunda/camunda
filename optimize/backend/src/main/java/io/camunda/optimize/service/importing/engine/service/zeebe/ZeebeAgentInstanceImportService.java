@@ -150,26 +150,23 @@ public class ZeebeAgentInstanceImportService
       final ProcessInstanceDto instance, final List<AgentInstanceDto> agentInstances) {
     final long totalInputTokens =
         agentInstances.stream()
-            .mapToLong(
-                a -> a.getMetrics().getInputTokens() != null ? a.getMetrics().getInputTokens() : 0L)
+            .filter(a -> a.getMetrics() != null && a.getMetrics().getInputTokens() != null)
+            .mapToLong(a -> a.getMetrics().getInputTokens())
             .sum();
     final long totalOutputTokens =
         agentInstances.stream()
-            .mapToLong(
-                a ->
-                    a.getMetrics().getOutputTokens() != null
-                        ? a.getMetrics().getOutputTokens()
-                        : 0L)
+            .filter(a -> a.getMetrics() != null && a.getMetrics().getOutputTokens() != null)
+            .mapToLong(a -> a.getMetrics().getOutputTokens())
             .sum();
     final long totalModelCalls =
         agentInstances.stream()
-            .mapToLong(
-                a -> a.getMetrics().getModelCalls() != null ? a.getMetrics().getModelCalls() : 0L)
+            .filter(a -> a.getMetrics() != null && a.getMetrics().getModelCalls() != null)
+            .mapToLong(a -> a.getMetrics().getModelCalls())
             .sum();
     final long totalToolCalls =
         agentInstances.stream()
-            .mapToLong(
-                a -> a.getMetrics().getToolCalls() != null ? a.getMetrics().getToolCalls() : 0L)
+            .filter(a -> a.getMetrics() != null && a.getMetrics().getToolCalls() != null)
+            .mapToLong(a -> a.getMetrics().getToolCalls())
             .sum();
     instance.setAgentTotalInputTokens(totalInputTokens);
     instance.setAgentTotalOutputTokens(totalOutputTokens);

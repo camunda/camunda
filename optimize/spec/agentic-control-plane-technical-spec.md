@@ -79,18 +79,18 @@ the separate index variant.
 
 **Key decisions from Q&A** (source of truth):
 
-| Decision | Details |
-|---|---|
-| Run definition | Process instance run = one process start to end. Agent instance run = one agent invocation, creation to completion. Rate denominators follow metric scope. |
-| Completed runs only | All metrics computed over `state = "COMPLETED"` process instances. In-progress = partial values; failures covered by incident rate. |
-| Reasoning tokens | Phase 1: input + output only. Phase 2 via Zeebe schema change. No UI caveat needed. |
-| Duration scope | No agent filter → process duration. Agent selected → that agent's execution time only. Label/tooltip changes with filter. |
-| Total Runs with agent filter | Always counts process instance runs where that agent was activated at least once. |
-| Token trend multi-line | Multi-line (top-5 agents + "Other") when no agent is filtered (L0/L1). Single line when specific agent is selected (L2). |
-| Incident rate scope | Process scope = any incident in the process (existing join). Agent scope = agent-element incidents only, denominator = agent runs. |
-| Tool calls | Single `totalToolCalls` KPI in phase 1. Replace with distribution view when Zeebe provides per-tool data. |
-| Status badges | Dropped for phase 1. Settings page dropped entirely. |
-| Agent details page | Not in scope for phase 1. |
+|           Decision           |                                                                          Details                                                                           |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Run definition               | Process instance run = one process start to end. Agent instance run = one agent invocation, creation to completion. Rate denominators follow metric scope. |
+| Completed runs only          | All metrics computed over `state = "COMPLETED"` process instances. In-progress = partial values; failures covered by incident rate.                        |
+| Reasoning tokens             | Phase 1: input + output only. Phase 2 via Zeebe schema change. No UI caveat needed.                                                                        |
+| Duration scope               | No agent filter → process duration. Agent selected → that agent's execution time only. Label/tooltip changes with filter.                                  |
+| Total Runs with agent filter | Always counts process instance runs where that agent was activated at least once.                                                                          |
+| Token trend multi-line       | Multi-line (top-5 agents + "Other") when no agent is filtered (L0/L1). Single line when specific agent is selected (L2).                                   |
+| Incident rate scope          | Process scope = any incident in the process (existing join). Agent scope = agent-element incidents only, denominator = agent runs.                         |
+| Tool calls                   | Single `totalToolCalls` KPI in phase 1. Replace with distribution view when Zeebe provides per-tool data.                                                  |
+| Status badges                | Dropped for phase 1. Settings page dropped entirely.                                                                                                       |
+| Agent details page           | Not in scope for phase 1.                                                                                                                                  |
 
 ---
 
@@ -100,20 +100,20 @@ the separate index variant.
 
 #### New ValueType
 
-| ValueType | Record class | Public interface | Description |
-|---|---|---|---|
+|    ValueType     |     Record class      |      Public interface      |                                Description                                |
+|------------------|-----------------------|----------------------------|---------------------------------------------------------------------------|
 | `AGENT_INSTANCE` | `AgentInstanceRecord` | `AgentInstanceRecordValue` | Lifecycle, definition, metrics, and status of a single AI agent execution |
 
 #### AgentInstanceIntent
 
-| Intent | Type | Triggered by | Description |
-|---|---|---|---|
-| `CREATE` | Command | Connector | Requests creation of a new agent instance |
-| `CREATED` | Event | Engine | Assigns `agentInstanceKey`, writes initial record |
-| `UPDATE` | Command | Connector | Reports status transitions, metric deltas, tool list replacement |
-| `UPDATED` | Event | Engine | Accumulates metric deltas into running totals, emits updated totals |
-| `COMPLETE` | Command | Engine (internal) | Engine-initiated terminal command on process instance completion or cancellation |
-| `COMPLETED` | Event | Engine | Terminal event. Record removed from primary storage (RocksDB) |
+|   Intent    |  Type   |   Triggered by    |                                   Description                                    |
+|-------------|---------|-------------------|----------------------------------------------------------------------------------|
+| `CREATE`    | Command | Connector         | Requests creation of a new agent instance                                        |
+| `CREATED`   | Event   | Engine            | Assigns `agentInstanceKey`, writes initial record                                |
+| `UPDATE`    | Command | Connector         | Reports status transitions, metric deltas, tool list replacement                 |
+| `UPDATED`   | Event   | Engine            | Accumulates metric deltas into running totals, emits updated totals              |
+| `COMPLETE`  | Command | Engine (internal) | Engine-initiated terminal command on process instance completion or cancellation |
+| `COMPLETED` | Event   | Engine            | Terminal event. Record removed from primary storage (RocksDB)                    |
 
 The import pipeline consumes **events** only: `CREATED`, `UPDATED`, `COMPLETED`.
 
@@ -121,25 +121,25 @@ The import pipeline consumes **events** only: `CREATED`, `UPDATED`, `COMPLETED`.
 
 Set once at CREATED. All fields except `elementInstanceKey` are inferred by the engine.
 
-| Field | Type | Description |
-|---|---|---|
-| `agentInstanceKey` | `long` | Engine-assigned key. Merge key for Optimize upserts |
-| `elementInstanceKey` | `long` | Key of the BPMN element instance that spawned this agent instance |
-| `elementId` | `String` | BPMN element ID. Used for agent dropdown and groupBy aggregations |
-| `processInstanceKey` | `long` | Owning process instance |
-| `processDefinitionKey` | `long` | Process definition key |
-| `processDefinitionVersion` | `int` | Process definition version number |
-| `versionTag` | `String` | User-defined version tag of the process definition |
-| `tenantId` | `String` | Tenant ID |
+|           Field            |   Type   |                            Description                            |
+|----------------------------|----------|-------------------------------------------------------------------|
+| `agentInstanceKey`         | `long`   | Engine-assigned key. Merge key for Optimize upserts               |
+| `elementInstanceKey`       | `long`   | Key of the BPMN element instance that spawned this agent instance |
+| `elementId`                | `String` | BPMN element ID. Used for agent dropdown and groupBy aggregations |
+| `processInstanceKey`       | `long`   | Owning process instance                                           |
+| `processDefinitionKey`     | `long`   | Process definition key                                            |
+| `processDefinitionVersion` | `int`    | Process definition version number                                 |
+| `versionTag`               | `String` | User-defined version tag of the process definition                |
+| `tenantId`                 | `String` | Tenant ID                                                         |
 
 #### AgentInstanceRecord — Definition fields
 
 Immutable after CREATED. Provided by the connector.
 
-| Field | Type | Description |
-|---|---|---|
-| `definition.model` | `String` | LLM model identifier (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
-| `definition.provider` | `String` | LLM provider (e.g. `openai`, `anthropic`) |
+|         Field         |   Type   |                           Description                            |
+|-----------------------|----------|------------------------------------------------------------------|
+| `definition.model`    | `String` | LLM model identifier (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
+| `definition.provider` | `String` | LLM provider (e.g. `openai`, `anthropic`)                        |
 
 > `definition.systemPrompt` excluded from secondary storage — derivable from process definition XML. Storing it duplicates potentially large strings across every record.
 
@@ -147,23 +147,23 @@ Immutable after CREATED. Provided by the connector.
 
 `UPDATE` commands carry **deltas**. `UPDATED`/`COMPLETED` events carry engine-aggregated **running totals**.
 
-| Field | Type | Description |
-|---|---|---|
-| `metrics.inputTokens` | `long` | Total input tokens across all model calls |
+|         Field          |  Type  |                Description                 |
+|------------------------|--------|--------------------------------------------|
+| `metrics.inputTokens`  | `long` | Total input tokens across all model calls  |
 | `metrics.outputTokens` | `long` | Total output tokens across all model calls |
-| `metrics.modelCalls` | `int` | Total number of LLM calls |
-| `metrics.toolCalls` | `int` | Total number of tool calls |
+| `metrics.modelCalls`   | `int`  | Total number of LLM calls                  |
+| `metrics.toolCalls`    | `int`  | Total number of tool calls                 |
 
 #### AgentInstanceRecord — Status
 
-| Value | Terminal | Description |
-|---|---|---|
-| `INITIALIZING` | No | Reading BPMN tool schemas |
-| `TOOL_DISCOVERY` | No | Performing MCP/A2A tool discovery |
-| `THINKING` | No | Calling the LLM |
-| `TOOL_CALLING` | No | LLM requested tool calls; tools dispatched |
-| `IDLE` | No | Initialized and ready but not actively processing |
-| `COMPLETED` | Yes | Owning process instance completed or cancelled |
+|      Value       | Terminal |                    Description                    |
+|------------------|----------|---------------------------------------------------|
+| `INITIALIZING`   | No       | Reading BPMN tool schemas                         |
+| `TOOL_DISCOVERY` | No       | Performing MCP/A2A tool discovery                 |
+| `THINKING`       | No       | Calling the LLM                                   |
+| `TOOL_CALLING`   | No       | LLM requested tool calls; tools dispatched        |
+| `IDLE`           | No       | Initialized and ready but not actively processing |
+| `COMPLETED`      | Yes      | Owning process instance completed or cancelled    |
 
 > **FAILED status**: Not included in phase 1. Failures surface as incidents on the owning element instance.
 
@@ -171,12 +171,12 @@ Immutable after CREATED. Provided by the connector.
 
 The importer derives timestamp fields from record event timestamps:
 
-| Optimize field | Derived from |
-|---|---|
-| `creationDate` | Timestamp of the `CREATED` event |
-| `lastUpdatedDate` | Timestamp of the latest `UPDATED` or `COMPLETED` event |
-| `completionDate` | Timestamp of the `COMPLETED` event (null while running) |
-| `durationInMs` | `completionDate - creationDate` in ms (null while running) |
+|  Optimize field   |                        Derived from                        |
+|-------------------|------------------------------------------------------------|
+| `creationDate`    | Timestamp of the `CREATED` event                           |
+| `lastUpdatedDate` | Timestamp of the latest `UPDATED` or `COMPLETED` event     |
+| `completionDate`  | Timestamp of the `COMPLETED` event (null while running)    |
+| `durationInMs`    | `completionDate - creationDate` in ms (null while running) |
 
 #### Event examples
 
@@ -445,13 +445,13 @@ static String createProcessInstanceUpdateScript() {
 
 ### 3.3 Import Pipeline Classes
 
-| Class | Extends / Implements |
-|---|---|
-| `ZeebeAgentInstanceImportHandler` | `AbstractZeebeImportHandler` |
-| `ZeebeAgentInstanceFetcher` | `AbstractZeebeRecordFetcher` |
-| `ZeebeAgentInstanceImportService` | `ZeebeProcessInstanceSubEntityImportService<AgentInstanceRecord>` |
-| `ZeebeAgentInstanceImportMediator` | `AbstractZeebeImportMediator` |
-| `ZeebeAgentInstanceImportMediatorFactory` | `AbstractImportMediatorFactory` |
+|                   Class                   |                       Extends / Implements                        |
+|-------------------------------------------|-------------------------------------------------------------------|
+| `ZeebeAgentInstanceImportHandler`         | `AbstractZeebeImportHandler`                                      |
+| `ZeebeAgentInstanceFetcher`               | `AbstractZeebeRecordFetcher`                                      |
+| `ZeebeAgentInstanceImportService`         | `ZeebeProcessInstanceSubEntityImportService<AgentInstanceRecord>` |
+| `ZeebeAgentInstanceImportMediator`        | `AbstractZeebeImportMediator`                                     |
+| `ZeebeAgentInstanceImportMediatorFactory` | `AbstractImportMediatorFactory`                                   |
 
 ```java
 // Import events only (not commands)
@@ -494,18 +494,18 @@ protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
 
 All endpoints under `/api/agentic-control-plane/`.
 
-| ID | Path | Filter Level | Description |
-|---|---|---|---|
-| A1 | `GET /process-breakdown` | L0 | Top token consumers by process |
-| A2 | `GET /agent-elements` | L1 | Agent element dropdown |
-| A3 | `GET /summary` | L0/L1/L2 | Summary KPI stats with WoW deltas |
-| A4 | `GET /token-trend` | L0/L1/L2 | Token trend (multi-line at L0/L1, single at L2) |
-| A5 | `GET /duration-stats` | L0/L1/L2 | Duration P50/P95 KPIs + stability trend |
-| A6 | `GET /incident-rate` | L0/L1/L2 | Incident rate |
-| A7 | `GET /agents` | L2 | Paginated agent instance list |
-| A8 | `GET /token-outlier-bands` | L0/L1/L2 | Token p5/p50/p95 bands over time |
-| A9 | `GET /tokens-per-agent-call` | L1/L2 | Avg tokens per model call, per agent element |
-| A10 | `GET /failure-rate-by-version` | L1/L2 | Incident rate broken down by process version |
+| ID  |              Path              | Filter Level |                   Description                   |
+|-----|--------------------------------|--------------|-------------------------------------------------|
+| A1  | `GET /process-breakdown`       | L0           | Top token consumers by process                  |
+| A2  | `GET /agent-elements`          | L1           | Agent element dropdown                          |
+| A3  | `GET /summary`                 | L0/L1/L2     | Summary KPI stats with WoW deltas               |
+| A4  | `GET /token-trend`             | L0/L1/L2     | Token trend (multi-line at L0/L1, single at L2) |
+| A5  | `GET /duration-stats`          | L0/L1/L2     | Duration P50/P95 KPIs + stability trend         |
+| A6  | `GET /incident-rate`           | L0/L1/L2     | Incident rate                                   |
+| A7  | `GET /agents`                  | L2           | Paginated agent instance list                   |
+| A8  | `GET /token-outlier-bands`     | L0/L1/L2     | Token p5/p50/p95 bands over time                |
+| A9  | `GET /tokens-per-agent-call`   | L1/L2        | Avg tokens per model call, per agent element    |
+| A10 | `GET /failure-rate-by-version` | L1/L2        | Incident rate broken down by process version    |
 
 **Common filter params**:
 
@@ -1558,19 +1558,19 @@ At L1: any incident in the process per version. At L2: agent-element incidents p
 
 ### Views and chart visibility per filter level
 
-| Chart / Component | L0 | L1 | L2 |
-|---|---|---|---|
-| Summary KPIs (A3) | ✅ | ✅ | ✅ |
-| Top token consumers by process (A1) | ✅ | — | — |
-| Token trend — multi-line top-5 (A4) | ✅ | ✅ | — |
-| Token trend — single line (A4) | — | — | ✅ |
-| Token outlier bands (A8) | ✅ | ✅ | ✅ |
-| Avg tokens per agent call (A9) | — | ✅ | ✅ |
-| Tool call frequency KPI | ✅ | ✅ | ✅ |
-| Failure rate by process version (A10) | — | ✅ | ✅ |
-| Duration P50/P95 KPIs (A5) | ✅ | ✅ | ✅ |
-| Duration stability trend (A5) | ✅ | ✅ | ✅ |
-| Incident rate (A6) | ✅ | ✅ | ✅ |
+|           Chart / Component           | L0 | L1 | L2 |
+|---------------------------------------|----|----|----|
+| Summary KPIs (A3)                     | ✅  | ✅  | ✅  |
+| Top token consumers by process (A1)   | ✅  | —  | —  |
+| Token trend — multi-line top-5 (A4)   | ✅  | ✅  | —  |
+| Token trend — single line (A4)        | —  | —  | ✅  |
+| Token outlier bands (A8)              | ✅  | ✅  | ✅  |
+| Avg tokens per agent call (A9)        | —  | ✅  | ✅  |
+| Tool call frequency KPI               | ✅  | ✅  | ✅  |
+| Failure rate by process version (A10) | —  | ✅  | ✅  |
+| Duration P50/P95 KPIs (A5)            | ✅  | ✅  | ✅  |
+| Duration stability trend (A5)         | ✅  | ✅  | ✅  |
+| Incident rate (A6)                    | ✅  | ✅  | ✅  |
 
 ### Component structure
 
