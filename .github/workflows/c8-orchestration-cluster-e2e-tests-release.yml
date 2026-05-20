@@ -415,10 +415,10 @@ jobs:
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
-          # Oracle - Supported versions: 21c, 23ai
-          - database-name: "Oracle 23ai"
+          # Oracle - Supported versions: 21c, 26ai
+          - database-name: "Oracle 26ai"
             database-type: "oracle"
-            database-image-version: "23-slim-faststart"
+            database-image-version: "23.26.1-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"

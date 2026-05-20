@@ -56,4 +56,4 @@ mssql:
 
 oracle:
   - "21-slim-faststart"
-  - "23-slim-faststart"
+  - "23.26.1-slim-faststart"

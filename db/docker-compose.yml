@@ -57,7 +57,7 @@ services:
       # Name of the Docker Compose service
   oracle:
     # Docker Hub image (feel free to change the tag "latest" to any other available one)
-    image: gvenzl/oracle-free:${IMAGE_VERSION:-23-slim-faststart}
+    image: gvenzl/oracle-free:${IMAGE_VERSION:-23.26.1-slim-faststart}
     # Forward Oracle port to localhost
     ports:
       - "1521:1521"
