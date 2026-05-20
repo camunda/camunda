@@ -52,6 +52,8 @@ buf.yaml                    @camunda/orchestration-cluster
 ## @camunda/monorepo-devops-team
 ################################
 
+/.claude/skills/ci-scheduled-workflow-health/ @camunda/monorepo-devops-team
+
 /.ci/                       @camunda/monorepo-devops-team
 /.github/                   @camunda/monorepo-devops-team
 /.mvn/                      @camunda/monorepo-devops-team
