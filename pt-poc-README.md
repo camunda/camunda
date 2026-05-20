@@ -119,4 +119,39 @@ Docker `ps` should show no `quay.io/keycloak/keycloak` containers after both ter
 
 ## Status
 
-This is the **walking-skeleton** stage of the PoC. Only tenant A's webapp chain is wired. The default tenant chain, per-chain cookie isolation, API chain, and per-tenant session storage land in subsequent tasks per `docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md`.
+Tracking implementation tasks defined in `docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md`. The current task is **bolded**.
+
+| #  | Task                                                         | State       |
+|----|--------------------------------------------------------------|-------------|
+| 1  | Profile scaffold + verify CSL opts out                       | ✅ done      |
+| 2  | Keycloak realm exports                                       | ✅ done      |
+| 3  | `PtPocLocalIdpRunner` standalone `main()`                    | ✅ done      |
+| 4  | **Walking skeleton — one tenant, end-to-end login**          | 🔄 in progress |
+| 5  | Add default tenant prefixed chain + per-chain cookie isolation | ⏳ pending   |
+| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory` | ⏳ pending   |
+| 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test      | ⏳ pending   |
+| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned` | ⏳ pending   |
+| 9  | Wire per-tenant `WebSessionRepository` against per-tenant storage | ⏳ pending   |
+| 10 | Extract `PhysicalTenantCookieSerializer` + unit test         | ⏳ pending   |
+| 11 | API chain — shared decoder + per-chain issuer allowlist      | ⏳ pending   |
+| 12 | Default tenant unprefixed access-path chains                 | ⏳ pending   |
+| 13 | Generalise registration via `PhysicalTenantResolver.getAll()` | ⏳ pending   |
+| 14 | `PhysicalTenantSecurityIT` happy path                        | ⏳ pending   |
+| 15 | `PhysicalTenantSecurityIT` full flow + isolation             | ⏳ pending   |
+| 16 | Manual browser smoke test                                    | ⏳ pending   |
+
+**What currently works:**
+
+- Two Keycloak realms boot on `:8081` (default) and `:8082` (tenanta).
+- OC boots under `pt-poc` against in-memory H2 (no Elasticsearch dependency).
+- Single `SecurityFilterChain` for tenant A wired at `/physical-tenant/tenanta/**`.
+- Browser flow reaches Keycloak, returns to the callback, and reaches the token+userinfo exchange.
+
+**What is not yet wired** (Tasks 5–16):
+
+- Default-tenant chain.
+- Per-chain session cookie isolation (`name=camunda-session-<tenant>; Path=/physical-tenant/<tenant>`).
+- Per-tenant `WebSessionRepository` against tenant-dedicated secondary storage.
+- API chain (`/v2/physical-tenants/<tenant>/**`) with cross-tenant issuer allowlist.
+- Default tenant's unprefixed access-path chains.
+- End-to-end `PhysicalTenantSecurityIT`.
