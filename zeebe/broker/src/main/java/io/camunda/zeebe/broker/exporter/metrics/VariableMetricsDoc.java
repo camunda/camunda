@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
+import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc.ExporterContainerKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -36,6 +38,11 @@ public enum VariableMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(PartitionKeyNames.values(), ExporterContainerKeyNames.values());
     }
   },
 
@@ -70,6 +77,11 @@ public enum VariableMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public KeyName[] getKeyNames() {
       return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(PartitionKeyNames.values(), ExporterContainerKeyNames.values());
     }
   };
 
