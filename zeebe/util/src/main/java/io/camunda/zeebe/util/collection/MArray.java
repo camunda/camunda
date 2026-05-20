@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class MArray<T> {
   private final int[] offsets;
+  // items inside the array are not initialized by default
   private final @Nullable T[] items;
 
   private MArray(final int[] offsets, final T[] items) {
