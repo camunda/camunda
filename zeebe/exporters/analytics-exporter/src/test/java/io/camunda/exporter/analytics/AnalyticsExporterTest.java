@@ -23,7 +23,6 @@ import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
-import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -239,7 +238,7 @@ class AnalyticsExporterTest {
           protected SdkLoggerProvider createLoggerProvider(
               final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return SdkLoggerProvider.builder()
-                .setResource(Resource.getDefault())
+                .setResource(OtelSdkManager.buildResource(context))
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
                 .build();
           }

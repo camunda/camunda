@@ -80,8 +80,8 @@ class OtelSdkManagerTest {
         new OtelSdkManager()
             .initialize(
                 new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
-                new AnalyticsExporterContext("test-fingerprint", "test-cluster", 1),
-                new AnalyticsExporterMetadata());
+AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+        new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
     for (int i = 0; i < 10; i++) {
@@ -283,7 +283,7 @@ class OtelSdkManagerTest {
             .setMaxQueueSize(maxQueueSize)
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
-        new AnalyticsExporterContext("test-fingerprint", "test-cluster", 1),
+AnalyticsExporterContext.create("test-license", "test-cluster", 1),
         new AnalyticsExporterMetadata());
   }
 
