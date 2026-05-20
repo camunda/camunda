@@ -23,6 +23,7 @@ import liquibase.change.Change;
 import liquibase.changelog.ChangeSet;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
+import liquibase.database.OfflineConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.sqlgenerator.SqlGeneratorFactory;
@@ -38,9 +39,18 @@ public class LiquibaseScriptGenerator {
   public static final String POSTGRESQL = "postgresql";
   public static final String ORACLE = "oracle";
 
-  public static final String[] DATABASES = {H2, MARIADB, MYSQL, MSSQL, POSTGRESQL, ORACLE};
   public static final String CHANGELOG_PATH = "db/changelog/rdbms-exporter/";
   public static final String CHANGESET_PATH = CHANGELOG_PATH + "changesets/";
+
+  public static final DatabaseVersion[] DATABASE_VERSIONS = {
+    new DatabaseVersion(H2),
+    new DatabaseVersion(MARIADB),
+    new DatabaseVersion(MYSQL),
+    new DatabaseVersion(MSSQL),
+    new DatabaseVersion(POSTGRESQL),
+    // Oracle 19 target: generates NUMBER(1,0) for boolean columns (compatible with 19, 21, 23+)
+    new DatabaseVersion(ORACLE, 19L),
+  };
 
   /**
    * Generates Liquibase SQL scripts for a given database type.
@@ -65,14 +75,14 @@ public class LiquibaseScriptGenerator {
     // Validate rolling-upgrade compatibility once, before generating any scripts.
     validateRollingUpgradeCompatibility(upgradeChangesets.stream().toList());
 
-    for (final var database : DATABASES) {
+    for (final var databaseVersion : DATABASE_VERSIONS) {
       // We generate create scripts for the latest version from the changelog-master.xml
       generateLiquibaseScript(
-          database,
+          databaseVersion,
           CHANGELOG_PATH + "changelog-master.xml",
           prefix,
           targetDir + "/create",
-          database + "_master.sql");
+          databaseVersion.vendor() + "_master.sql");
 
       // We generate upgrade scripts for each version (except 8.9.0) from the changesets, so that
       // customers, who created their schema with an older version can upgrade to the latest
@@ -85,13 +95,13 @@ public class LiquibaseScriptGenerator {
         final String fileName = Paths.get(changesetFile).getFileName().toString();
         final String sqlOutputDir = targetDir + "/upgrade";
         generateLiquibaseScript(
-            database,
+            databaseVersion,
             changesetFile,
             prefix,
             sqlOutputDir,
             String.format(
                 "%s_upgrade_%s_to_%s.sql",
-                database, previousVersion, fileName.replace(".xml", "")));
+                databaseVersion.vendor(), previousVersion, fileName.replace(".xml", "")));
 
         previousVersion = fileName.replace(".xml", "");
       }
@@ -99,24 +109,24 @@ public class LiquibaseScriptGenerator {
   }
 
   public static void generateLiquibaseScript(
-      final String databaseType,
+      final DatabaseVersion databaseVersion,
       final String changesetFile,
       final String prefix,
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
-    final var properties = VendorDatabasePropertiesLoader.load(databaseType);
+    final var properties = VendorDatabasePropertiesLoader.load(databaseVersion.vendor());
 
     final var sqlScript =
         generateSqlScript(
-            databaseType,
+            databaseVersion,
             changesetFile,
             prefix,
             properties.userCharColumnSize(),
             properties.errorMessageSize(),
             properties.treePathSize());
 
-    final String basedir = targetBaseDir + "/" + databaseType;
+    final String basedir = targetBaseDir + "/" + databaseVersion.vendor();
     Files.createDirectories(Paths.get(basedir));
     Files.write(
         Paths.get(basedir + "/" + outputFileName),
@@ -126,7 +136,7 @@ public class LiquibaseScriptGenerator {
   }
 
   public static String generateSqlScript(
-      final String databaseType,
+      final DatabaseVersion databaseVersion,
       final String changesetFile,
       final String prefix,
       final int userCharColumnSize,
@@ -134,7 +144,17 @@ public class LiquibaseScriptGenerator {
       final int treePathSize)
       throws LiquibaseException {
 
-    final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
+    final Database database;
+    if (databaseVersion.targetVersion() != null) {
+      final var resourceAccessor = new ClassLoaderResourceAccessor();
+      final var conn =
+          new OfflineConnection(
+              "offline:" + databaseVersion.vendor() + "?version=" + databaseVersion.targetVersion(),
+              resourceAccessor);
+      database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(conn);
+    } else {
+      database = DatabaseFactory.getInstance().getDatabase(databaseVersion.vendor());
+    }
 
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
@@ -233,6 +253,26 @@ public class LiquibaseScriptGenerator {
           "Rolling-upgrade compatibility violations found in RDBMS schema changesets:\n"
               + String.join("\n", allViolations);
       throw new IllegalStateException(message);
+    }
+  }
+
+  public static DatabaseVersion getDatabaseVersion(final String databaseId) {
+    return Arrays.stream(LiquibaseScriptGenerator.DATABASE_VERSIONS)
+        .filter(dv -> dv.vendor().equals(databaseId))
+        .findFirst()
+        .orElse(new DatabaseVersion(databaseId));
+  }
+
+  /**
+   * Pairs a database vendor name with an optional target version for SQL generation.
+   *
+   * <p>When {@code targetVersion} is non-null, an {@link OfflineConnection} is used so that
+   * Liquibase applies type mappings for that specific version rather than defaulting to the latest
+   * (e.g. Oracle 19 emits {@code NUMBER(1,0)} for boolean columns instead of {@code BOOLEAN}).
+   */
+  public record DatabaseVersion(String vendor, Long targetVersion) {
+    public DatabaseVersion(final String vendor) {
+      this(vendor, null);
     }
   }
 }

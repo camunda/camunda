@@ -8,6 +8,7 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.db.rdbms.LiquibaseScriptGenerator;
+import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,9 +52,11 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManager, Initializin
         SCRIPT_CACHE.computeIfAbsent(
             databaseId,
             id -> {
+              final DatabaseVersion dbVersion =
+                  LiquibaseScriptGenerator.getDatabaseVersion(databaseId);
               try {
                 return LiquibaseScriptGenerator.generateSqlScript(
-                    id,
+                    dbVersion,
                     CHANGELOG,
                     PREFIX_PLACEHOLDER,
                     vendorDatabaseProperties.userCharColumnSize(),
