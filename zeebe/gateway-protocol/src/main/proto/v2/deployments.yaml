@@ -273,6 +273,8 @@ components:
         - deploymentKey
         - tenantId
         - deployments
+      x-semantic-provider:
+        - deploymentKey
       properties:
         deploymentKey:
           allOf:
