@@ -24,6 +24,7 @@ import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.MethodClusterVariablesValue;
 import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
 import java.io.IOException;
@@ -96,7 +97,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     final Map<String, Object> propertyVariables = properties.getVariables();
     if (propertyVariables != null && !propertyVariables.isEmpty()) {
       LOGGER.debug("Creating {} cluster variable(s) from properties", propertyVariables.size());
-      createClusterVariables(client, propertyVariables, null);
+      upsertClusterVariables(client, propertyVariables, null);
     }
 
     // Process variables from annotations
@@ -109,7 +110,7 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
       } else {
         continue;
       }
-      createClusterVariables(client, variables, value.getTenantId());
+      upsertClusterVariables(client, variables, value.getTenantId());
     }
   }
 
@@ -152,18 +153,55 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     return jsonMapper.fromJsonAsMap(jsonMapper.toJson(result));
   }
 
-  private void createClusterVariables(
+  private void upsertClusterVariables(
       final CamundaClient client, final Map<String, Object> variables, final String tenantId) {
     for (final Map.Entry<String, Object> entry : variables.entrySet()) {
       final String name = entry.getKey();
       final Object value = entry.getValue();
-      if (tenantId != null) {
-        client.newTenantScopedClusterVariableCreateRequest(tenantId).create(name, value).execute();
-        LOGGER.debug("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
+      if (clusterVariableExists(client, name, tenantId)) {
+        updateClusterVariable(client, name, value, tenantId);
       } else {
-        client.newGloballyScopedClusterVariableCreateRequest().create(name, value).execute();
-        LOGGER.debug("Created globally-scoped cluster variable '{}'", name);
+        createClusterVariable(client, name, value, tenantId);
       }
+    }
+  }
+
+  private boolean clusterVariableExists(
+      final CamundaClient client, final String name, final String tenantId) {
+    try {
+      if (tenantId != null) {
+        client.newTenantScopedClusterVariableGetRequest(tenantId).withName(name).execute();
+      } else {
+        client.newGloballyScopedClusterVariableGetRequest().withName(name).execute();
+      }
+      return true;
+    } catch (final ProblemException e) {
+      if (e.code() == 404) {
+        return false;
+      }
+      throw e;
+    }
+  }
+
+  private void createClusterVariable(
+      final CamundaClient client, final String name, final Object value, final String tenantId) {
+    if (tenantId != null) {
+      client.newTenantScopedClusterVariableCreateRequest(tenantId).create(name, value).execute();
+      LOGGER.debug("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
+    } else {
+      client.newGloballyScopedClusterVariableCreateRequest().create(name, value).execute();
+      LOGGER.debug("Created globally-scoped cluster variable '{}'", name);
+    }
+  }
+
+  private void updateClusterVariable(
+      final CamundaClient client, final String name, final Object value, final String tenantId) {
+    if (tenantId != null) {
+      client.newTenantScopedClusterVariableUpdateRequest(tenantId).update(name, value).execute();
+      LOGGER.debug("Updated tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
+    } else {
+      client.newGloballyScopedClusterVariableUpdateRequest().update(name, value).execute();
+      LOGGER.debug("Updated globally-scoped cluster variable '{}'", name);
     }
   }
 
