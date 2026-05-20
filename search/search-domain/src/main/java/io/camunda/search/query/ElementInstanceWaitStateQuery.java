@@ -7,7 +7,7 @@
  */
 package io.camunda.search.query;
 
-import io.camunda.search.filter.ElementInstanceInspectionFilter;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.NoSort;
@@ -15,12 +15,12 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record ElementInstanceInspectionQuery(
-    ElementInstanceInspectionFilter filter, SearchQueryPage page)
-    implements TypedSearchQuery<ElementInstanceInspectionFilter, NoSort> {
+public record ElementInstanceWaitStateQuery(
+    ElementInstanceWaitStateFilter filter, SearchQueryPage page)
+    implements TypedSearchQuery<ElementInstanceWaitStateFilter, NoSort> {
 
-  public static ElementInstanceInspectionQuery of(
-      final Function<Builder, ObjectBuilder<ElementInstanceInspectionQuery>> fn) {
+  public static ElementInstanceWaitStateQuery of(
+      final Function<Builder, ObjectBuilder<ElementInstanceWaitStateQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
@@ -31,15 +31,12 @@ public record ElementInstanceInspectionQuery(
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
-          ElementInstanceInspectionQuery,
-          Builder,
-          ElementInstanceInspectionFilter,
-          NoSort> {
+          ElementInstanceWaitStateQuery, Builder, ElementInstanceWaitStateFilter, NoSort> {
 
-    private static final ElementInstanceInspectionFilter EMPTY_FILTER =
-        FilterBuilders.elementInstanceInspection().build();
+    private static final ElementInstanceWaitStateFilter EMPTY_FILTER =
+        FilterBuilders.elementInstanceWaitState().build();
 
-    private ElementInstanceInspectionFilter filter;
+    private ElementInstanceWaitStateFilter filter;
 
     @Override
     protected Builder self() {
@@ -47,7 +44,7 @@ public record ElementInstanceInspectionQuery(
     }
 
     @Override
-    public Builder filter(final ElementInstanceInspectionFilter value) {
+    public Builder filter(final ElementInstanceWaitStateFilter value) {
       filter = value;
       return this;
     }
@@ -59,15 +56,15 @@ public record ElementInstanceInspectionQuery(
 
     public Builder filter(
         final Function<
-                ElementInstanceInspectionFilter.Builder,
-                ObjectBuilder<ElementInstanceInspectionFilter>>
+                ElementInstanceWaitStateFilter.Builder,
+                ObjectBuilder<ElementInstanceWaitStateFilter>>
             fn) {
-      return filter(FilterBuilders.elementInstanceInspection(fn));
+      return filter(FilterBuilders.elementInstanceWaitState(fn));
     }
 
     @Override
-    public ElementInstanceInspectionQuery build() {
-      return new ElementInstanceInspectionQuery(
+    public ElementInstanceWaitStateQuery build() {
+      return new ElementInstanceWaitStateQuery(
           Objects.requireNonNullElse(filter, EMPTY_FILTER), page());
     }
   }

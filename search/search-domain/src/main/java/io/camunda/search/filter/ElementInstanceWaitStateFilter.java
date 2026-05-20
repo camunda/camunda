@@ -14,16 +14,18 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 
-public record ElementInstanceInspectionFilter(
+public record ElementInstanceWaitStateFilter(
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
-    List<Operation<Long>> rootProcessInstanceKeyOperations)
+    List<Operation<Long>> rootProcessInstanceKeyOperations,
+    List<Operation<String>> elementIdOperations)
     implements FilterBase {
 
-  public static final class Builder implements ObjectBuilder<ElementInstanceInspectionFilter> {
+  public static final class Builder implements ObjectBuilder<ElementInstanceWaitStateFilter> {
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> rootProcessInstanceKeyOperations;
+    private List<Operation<String>> elementIdOperations;
 
     public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
       elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
@@ -54,12 +56,22 @@ public record ElementInstanceInspectionFilter(
           List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder elementIdOperations(final List<Operation<String>> operations) {
+      elementIdOperations = addValuesToList(elementIdOperations, operations);
+      return this;
+    }
+
+    public Builder elementIds(final String value, final String... values) {
+      return elementIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
     @Override
-    public ElementInstanceInspectionFilter build() {
-      return new ElementInstanceInspectionFilter(
+    public ElementInstanceWaitStateFilter build() {
+      return new ElementInstanceWaitStateFilter(
           Objects.requireNonNullElse(elementInstanceKeyOperations, List.of()),
           Objects.requireNonNullElse(processInstanceKeyOperations, List.of()),
-          Objects.requireNonNullElse(rootProcessInstanceKeyOperations, List.of()));
+          Objects.requireNonNullElse(rootProcessInstanceKeyOperations, List.of()),
+          Objects.requireNonNullElse(elementIdOperations, List.of()));
     }
   }
 }

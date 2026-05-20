@@ -415,15 +415,14 @@ public final class FilterBuilders {
     return fn.apply(deployedResource()).build();
   }
 
-  public static ElementInstanceInspectionFilter.Builder elementInstanceInspection() {
-    return new ElementInstanceInspectionFilter.Builder();
+  public static ElementInstanceWaitStateFilter.Builder elementInstanceWaitState() {
+    return new ElementInstanceWaitStateFilter.Builder();
   }
 
-  public static ElementInstanceInspectionFilter elementInstanceInspection(
+  public static ElementInstanceWaitStateFilter elementInstanceWaitState(
       final Function<
-              ElementInstanceInspectionFilter.Builder,
-              ObjectBuilder<ElementInstanceInspectionFilter>>
+              ElementInstanceWaitStateFilter.Builder, ObjectBuilder<ElementInstanceWaitStateFilter>>
           fn) {
-    return fn.apply(elementInstanceInspection()).build();
+    return fn.apply(elementInstanceWaitState()).build();
   }
 }

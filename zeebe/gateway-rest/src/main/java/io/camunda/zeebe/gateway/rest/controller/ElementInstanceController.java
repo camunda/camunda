@@ -12,15 +12,15 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.query.ElementInstanceInspectionQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -72,23 +72,24 @@ public class ElementInstanceController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/inspection")
-  public ResponseEntity<ElementInstanceInspectionQueryResult> inspectElementInstances(
+  @CamundaPostMapping(path = "/wait-states/search")
+  public ResponseEntity<ElementInstanceWaitStateQueryResult> searchElementInstanceWaitStates(
       @RequestBody(required = false)
-          final io.camunda.gateway.protocol.model.ElementInstanceInspectionQuery query) {
-    return SearchQueryRequestMapper.toElementInstanceInspectionQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::inspect);
+          final io.camunda.gateway.protocol.model.ElementInstanceWaitStateQuery query) {
+    return SearchQueryRequestMapper.toElementInstanceWaitStateQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchWaitStates);
   }
 
-  private ResponseEntity<ElementInstanceInspectionQueryResult> inspect(
-      final ElementInstanceInspectionQuery query) {
+  private ResponseEntity<ElementInstanceWaitStateQueryResult> searchWaitStates(
+      final ElementInstanceWaitStateQuery query) {
 
     try {
       final var result =
-          elementInstanceServices.inspect(query, authenticationProvider.getCamundaAuthentication());
+          elementInstanceServices.searchWaitStates(
+              query, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toElementInstanceInspectionQueryResult(result));
+          SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -35,7 +35,7 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BaseElementInstanceInspectionResult;
+import io.camunda.gateway.protocol.model.BaseElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
@@ -60,13 +60,13 @@ import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionJobResult;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionMessageResult;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionQueryResult;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateJobResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateMessageResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
@@ -649,28 +649,30 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  public static ElementInstanceInspectionQueryResult toElementInstanceInspectionQueryResult(
-      final List<WaitStateEntity> items) {
-    return ElementInstanceInspectionQueryResult.Builder.create()
-        .page(
-            SearchQueryPageResponse.Builder.create()
-                .totalItems((long) items.size())
-                .hasMoreTotalItems(false)
-                .startCursor(null)
-                .endCursor(null)
-                .build())
+  public static ElementInstanceWaitStateQueryResult toElementInstanceWaitStateQueryResult(
+      final SearchQueryResult<WaitStateEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return ElementInstanceWaitStateQueryResult.Builder.create()
+        .page(page)
         .items(
-            items.stream()
-                .map(SearchQueryResponseMapper::toElementInstanceInspectionResult)
-                .toList())
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toElementInstanceWaitStateResult)
+                .orElseGet(Collections::emptyList))
         .build();
   }
 
-  private static ElementInstanceInspectionResult toElementInstanceInspectionResult(
+  private static List<ElementInstanceWaitStateResult> toElementInstanceWaitStateResult(
+      final List<WaitStateEntity> instances) {
+    return instances.stream()
+        .map(SearchQueryResponseMapper::toElementInstanceWaitStateResult)
+        .toList();
+  }
+
+  private static ElementInstanceWaitStateResult toElementInstanceWaitStateResult(
       final WaitStateEntity item) {
     final var rootKey = keyToStringOrNull(item.rootProcessInstanceKey());
     final var elementType =
-        BaseElementInstanceInspectionResult.ElementTypeEnum.fromValue(item.elementType().name());
+        BaseElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
     return switch (item.details()) {
       case WaitStateJobDetails(final var jobKey, final var jobType, final var jobKind) -> {
         final var dtoDetails =
@@ -679,7 +681,7 @@ public final class SearchQueryResponseMapper {
                 .jobType(jobType)
                 .jobKind(JobKindEnum.fromValue(jobKind.name()))
                 .build();
-        yield ElementInstanceInspectionJobResult.Builder.create()
+        yield ElementInstanceWaitStateJobResult.Builder.create()
             .waitStateType(WaitStateTypeEnum.JOB.getValue())
             .processInstanceKey(keyToString(item.processInstanceKey()))
             .elementInstanceKey(keyToString(item.elementInstanceKey()))
@@ -695,7 +697,7 @@ public final class SearchQueryResponseMapper {
                 .messageName(messageName)
                 .correlationKey(correlationKey)
                 .build();
-        yield ElementInstanceInspectionMessageResult.Builder.create()
+        yield ElementInstanceWaitStateMessageResult.Builder.create()
             .waitStateType(WaitStateTypeEnum.MESSAGE.getValue())
             .processInstanceKey(keyToString(item.processInstanceKey()))
             .elementInstanceKey(keyToString(item.elementInstanceKey()))

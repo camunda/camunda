@@ -191,8 +191,8 @@ paths:
   # Element instance endpoints
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1ad-hoc-activities~1{adHocSubProcessInstanceKey}~1activation'
-  /element-instances/inspection:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1inspection'
+  /element-instances/wait-states/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1wait-states~1search'
   /element-instances/search:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1search'
   /element-instances/{elementInstanceKey}:

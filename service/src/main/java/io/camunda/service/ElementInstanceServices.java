@@ -15,7 +15,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.query.ElementInstanceInspectionQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -29,7 +29,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -167,10 +166,10 @@ public final class ElementInstanceServices
         authentication);
   }
 
-  public List<WaitStateEntity> inspect(
-      final ElementInstanceInspectionQuery query, final CamundaAuthentication authentication) {
+  public SearchQueryResult<WaitStateEntity> searchWaitStates(
+      final ElementInstanceWaitStateQuery query, final CamundaAuthentication authentication) {
     // TODO: not implemented yet
-    return List.of();
+    return SearchQueryResult.empty();
   }
 
   public record SetVariablesRequest(

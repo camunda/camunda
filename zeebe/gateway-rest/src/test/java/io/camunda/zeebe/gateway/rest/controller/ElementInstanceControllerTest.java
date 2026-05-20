@@ -16,13 +16,13 @@ import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -44,9 +44,9 @@ import org.springframework.test.json.JsonCompareMode;
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
-  static final String INSPECTION_URL = ELEMENTS_BASE_URL + "/inspection";
+  static final String WAIT_STATES_URL = ELEMENTS_BASE_URL + "/wait-states/search";
 
-  private static final String EXPECTED_INSPECTION_RESPONSE =
+  private static final String EXPECTED_WAIT_STATE_RESPONSE =
       """
       {
         "items": [
@@ -92,8 +92,8 @@ public class ElementInstanceControllerTest extends RestControllerTest {
       }
       """;
 
-  private static final List<WaitStateEntity> DUMMY_INSPECTION_ITEMS =
-      List.of(
+  private static final SearchQueryResult<WaitStateEntity> DUMMY_WAIT_STATE_ITEMS =
+      SearchQueryResult.of(
           new WaitStateEntity.Builder()
               .processInstanceKey(2251799813685249L)
               .elementInstanceKey(2251799813685251L)
@@ -324,26 +324,26 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldInspectWithEmptyBody() {
+  void shouldSearchWaitStatesWithEmptyBody() {
     // given
-    when(elementInstanceServices.inspect(any(), any())).thenReturn(DUMMY_INSPECTION_ITEMS);
+    when(elementInstanceServices.searchWaitStates(any(), any())).thenReturn(DUMMY_WAIT_STATE_ITEMS);
 
     // when / then
     webClient
         .post()
-        .uri(INSPECTION_URL)
+        .uri(WAIT_STATES_URL)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_INSPECTION_RESPONSE, JsonCompareMode.LENIENT);
+        .json(EXPECTED_WAIT_STATE_RESPONSE, JsonCompareMode.LENIENT);
   }
 
   @Test
-  void shouldInspectWithFilterByProcessInstanceKey() {
+  void shouldSearchWaitStatesWithFilterByProcessInstanceKey() {
     // given
-    when(elementInstanceServices.inspect(any(), any())).thenReturn(DUMMY_INSPECTION_ITEMS);
+    when(elementInstanceServices.searchWaitStates(any(), any())).thenReturn(DUMMY_WAIT_STATE_ITEMS);
 
     final var request =
         """
@@ -357,13 +357,13 @@ public class ElementInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(INSPECTION_URL)
+        .uri(WAIT_STATES_URL)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_INSPECTION_RESPONSE, JsonCompareMode.LENIENT);
+        .json(EXPECTED_WAIT_STATE_RESPONSE, JsonCompareMode.LENIENT);
   }
 }

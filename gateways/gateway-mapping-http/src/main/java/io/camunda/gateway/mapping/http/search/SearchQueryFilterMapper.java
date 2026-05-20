@@ -55,7 +55,7 @@ import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.DeployedResourceFilter;
-import io.camunda.search.filter.ElementInstanceInspectionFilter;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -910,9 +910,9 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static Either<List<String>, ElementInstanceInspectionFilter> toElementInstanceInspectionFilter(
-      final io.camunda.gateway.protocol.model.@Nullable ElementInstanceInspectionFilter filter) {
-    final var builder = new ElementInstanceInspectionFilter.Builder();
+  static Either<List<String>, ElementInstanceWaitStateFilter> toElementInstanceWaitStateFilter(
+      final io.camunda.gateway.protocol.model.@Nullable ElementInstanceWaitStateFilter filter) {
+    final var builder = new ElementInstanceWaitStateFilter.Builder();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.getElementInstanceKey())
@@ -924,6 +924,9 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getRootProcessInstanceKey())
           .map(mapToKeyOperations("rootProcessInstanceKey", validationErrors))
           .ifPresent(builder::rootProcessInstanceKeyOperations);
+      Optional.ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

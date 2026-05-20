@@ -32,28 +32,28 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
 
-  /element-instances/inspection:
+  /element-instances/wait-states/search:
     post:
-      # x-eventually-consistent: true
+      x-eventually-consistent: true
       tags:
         - Element instance
-      operationId: inspectElementInstances
-      summary: Inspect element instance waiting states
+      operationId: searchElementInstanceWaitStates
+      summary: Search element instance wait states
       description: >
-        Returns the waiting states for element instances matching the given filter.
+        Returns the wait states for element instances matching the given filter.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ElementInstanceInspectionQuery'
+              $ref: '#/components/schemas/ElementInstanceWaitStateQuery'
       responses:
         "200":
-          description: The element instance inspection result.
+          description: The element instance wait state search result.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ElementInstanceInspectionQueryResult'
+                $ref: '#/components/schemas/ElementInstanceWaitStateQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -599,7 +599,7 @@ components:
       required:
         - elements
 
-    ElementInstanceInspectionQuery:
+    ElementInstanceWaitStateQuery:
       description: Element instance inspection request.
       type: object
       additionalProperties: false
@@ -609,9 +609,9 @@ components:
         filter:
           description: Filter criteria for the inspection.
           allOf:
-            - $ref: '#/components/schemas/ElementInstanceInspectionFilter'
+            - $ref: '#/components/schemas/ElementInstanceWaitStateFilter'
 
-    ElementInstanceInspectionFilter:
+    ElementInstanceWaitStateFilter:
       description: Filters for the element instance inspection.
       type: object
       properties:
@@ -631,10 +631,8 @@ components:
           description: Filter by element ID.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
-        waitStateType:
-          $ref: '#/components/schemas/WaitStateTypeEnum'
 
-    ElementInstanceInspectionQueryResult:
+    ElementInstanceWaitStateQueryResult:
       type: object
       required:
         - items
@@ -645,22 +643,22 @@ components:
           description: The matching waiting states.
           type: array
           items:
-            $ref: '#/components/schemas/ElementInstanceInspectionResult'
+            $ref: '#/components/schemas/ElementInstanceWaitStateResult'
 
-    ElementInstanceInspectionResult:
+    ElementInstanceWaitStateResult:
       x-polymorphic-schema: true
       description: >
         An element instance waiting state. Discriminated by `waitStateType`:
-        `JOB` resolves to `ElementInstanceInspectionJobResult`,
-        `MESSAGE` resolves to `ElementInstanceInspectionMessageResult`.
+        `JOB` resolves to `ElementInstanceWaitStateJobResult`,
+        `MESSAGE` resolves to `ElementInstanceWaitStateMessageResult`.
       oneOf:
-        - $ref: '#/components/schemas/ElementInstanceInspectionJobResult'
-        - $ref: '#/components/schemas/ElementInstanceInspectionMessageResult'
+        - $ref: '#/components/schemas/ElementInstanceWaitStateJobResult'
+        - $ref: '#/components/schemas/ElementInstanceWaitStateMessageResult'
       discriminator:
         propertyName: waitStateType
         mapping:
-          JOB: '#/components/schemas/ElementInstanceInspectionJobResult'
-          MESSAGE: '#/components/schemas/ElementInstanceInspectionMessageResult'
+          JOB: '#/components/schemas/ElementInstanceWaitStateJobResult'
+          MESSAGE: '#/components/schemas/ElementInstanceWaitStateMessageResult'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -669,7 +667,7 @@ components:
         - JOB
         - MESSAGE
 
-    BaseElementInstanceInspectionResult:
+    BaseElementInstanceWaitStateResult:
       type: object
       required:
         - waitStateType
@@ -681,9 +679,8 @@ components:
         waitStateType:
           description: The type of waiting state an element instance is in.
           type: string
-          #$ref: '#/components/schemas/WaitStateTypeEnum'
         rootProcessInstanceKey:
-          description: Key of the root process instance (null for pre-8.9 data).
+          description: Key of the root process instance.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
@@ -708,6 +705,7 @@ components:
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
             - AD_HOC_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -730,10 +728,10 @@ components:
             - SEND_TASK
             - UNKNOWN
 
-    ElementInstanceInspectionJobResult:
+    ElementInstanceWaitStateJobResult:
       description: Inspection result for an element instance waiting on a job.
       allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceInspectionResult'
+        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
         - type: object
           required:
             - details
@@ -741,10 +739,10 @@ components:
             details:
               $ref: '#/components/schemas/JobWaitStateDetails'
 
-    ElementInstanceInspectionMessageResult:
+    ElementInstanceWaitStateMessageResult:
       description: Inspection result for an element instance waiting on a message.
       allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceInspectionResult'
+        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
         - type: object
           required:
             - details

@@ -338,14 +338,14 @@ public final class SearchQueryBuilders {
     return fn.apply(deployedResourceSearchQuery()).build();
   }
 
-  public static ElementInstanceInspectionQuery.Builder elementInstanceInspectionSearchQuery() {
-    return new ElementInstanceInspectionQuery.Builder();
+  public static ElementInstanceWaitStateQuery.Builder elementInstanceWaitStateSearchQuery() {
+    return new ElementInstanceWaitStateQuery.Builder();
   }
 
-  public static ElementInstanceInspectionQuery elementInstanceInspectionSearchQuery(
+  public static ElementInstanceWaitStateQuery elementInstanceWaitStateSearchQuery(
       final Function<
-              ElementInstanceInspectionQuery.Builder, ObjectBuilder<ElementInstanceInspectionQuery>>
+              ElementInstanceWaitStateQuery.Builder, ObjectBuilder<ElementInstanceWaitStateQuery>>
           fn) {
-    return fn.apply(elementInstanceInspectionSearchQuery()).build();
+    return fn.apply(elementInstanceWaitStateSearchQuery()).build();
   }
 }
