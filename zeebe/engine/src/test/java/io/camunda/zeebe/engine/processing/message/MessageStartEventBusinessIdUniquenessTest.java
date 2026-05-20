@@ -211,6 +211,76 @@ public final class MessageStartEventBusinessIdUniquenessTest {
   }
 
   @Test
+  public void shouldCorrelateNextBufferedMessageWhenPreviousIsSkippedByBusinessIdUniqueness() {
+    // Pins the buffered scan's "skip the blocked entry, continue iterating" invariant: if the
+    // visitor flipped from `return true` to `return false` after a businessId-uniqueness skip,
+    // the queue for the correlation key would silently stall and the next buffered entry would
+    // not be correlated even after the correlation-key holder completes.
+
+    // given a long-lived holder PI on correlation key "k-holder" carrying "biz-held"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-holder")
+        .withBusinessId("biz-held")
+        .withVariables(Map.of("seq", 0))
+        .publish();
+    final var holderJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // and a second PI on correlation key "k-1" that owns the correlation-key lock for "k-1"
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-1")
+        .withBusinessId("biz-k1")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var k1Job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .filter(
+                j ->
+                    j.getValue().getProcessInstanceKey()
+                        != holderJob.getValue().getProcessInstanceKey())
+            .getFirst();
+
+    // and two buffered messages on "k-1": the first carries "biz-held" (will be skipped by the
+    // uniqueness filter as long as the holder PI is alive), the second carries "biz-free"
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-1")
+        .withBusinessId("biz-held")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 2))
+        .publish();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-1")
+        .withBusinessId("biz-free")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 3))
+        .publish();
+
+    // when the correlation-key holder for "k-1" completes (the buffered scan runs on "k-1")
+    engine.job().withKey(k1Job.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(k1Job.getValue().getProcessInstanceKey())
+        .filterRootScope()
+        .await();
+
+    // then the scan skips the blocked "biz-held" entry but still correlates the "biz-free" one,
+    // proving the queue is not stalled by a single skipped entry
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(3))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-held", "biz-k1", "biz-free");
+  }
+
+  @Test
   public void shouldCorrelateBufferedMessageAfterHoldingInstanceCompletes() {
     // given a first PI holds the correlation-key lock and businessId "biz-42"
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
