@@ -12,10 +12,10 @@ Camunda 8.10 introduces the **Physical Tenant (PT)** concept: a single OC proces
 
 URL scheme (final):
 
-| Surface | Prefixed | Default-only fallback |
-|---|---|---|
-| REST API | `/v2/physical-tenants/<id>/...` | `/v2/...` |
-| Webapps | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...` |
+| Surface  |                  Prefixed                  | Default-only fallback |
+|----------|--------------------------------------------|-----------------------|
+| REST API | `/v2/physical-tenants/<id>/...`            | `/v2/...`             |
+| Webapps  | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...` |
 
 Requirements:
 
@@ -80,54 +80,54 @@ Cost of this constraint inside A: essentially zero. It is good Spring hygiene an
 ## Component design
 
 ```
-                          ┌─────────────────────────────────────────────────────────┐
-                          │              PhysicalTenantSecurityConfiguration        │
-                          │  iterates PhysicalTenantResolver.getAll(), registers:   │
-                          └────────────────────────────┬────────────────────────────┘
-                                                       │
-                ┌──────────────────────────────────────┼──────────────────────────────────────┐
-                │                                      │                                      │
-        per-tenant beans                       per-tenant chains                      shared beans
-                │                                      │                                      │
-                ▼                                      ▼                                      ▼
-  ┌──────────────────────────────┐    ┌────────────────────────────────┐    ┌─────────────────────────────┐
-  │ PerTenantOidc                │    │ webapp chain                   │    │ JwsKeySelectorFactory       │
-  │   • ClientRegistrationRepo   │    │   securityMatcher: prefix      │    │ (already shared today)      │
-  │   • AuthorizedClientRepo     │    │   loginPage:                   │    │                             │
-  │   • TokenClaimsConverter     │    │     /physical-tenant/{t}/login │    │ AssertionJwkProvider        │
-  │   • LogoutSuccessHandler     │    │   redirect-uri template:       │    │   (cached, multi-tenant)    │
-  │   • JwtDecoder               │    │     /physical-tenant/{t}/      │    │                             │
-  │   • SecurityContextRepo      │    │     login/oauth2/code/{regId}  │    │ OidcUserInfoClient          │
-  │                              │    ├────────────────────────────────┤    │                             │
-  │                              │    │ api chain                      │    └─────────────────────────────┘
-  │                              │    │   securityMatcher:             │
-  │                              │    │     /v2/physical-tenants/{t}/* │
-  │                              │    │   resource-server JwtDecoder   │
-  │                              │    │   no session                   │
-  │                              │    └────────────────────────────────┘
-  │ PerTenantSession             │
-  │   • WebSessionRepository(t)  │
-  │     keyspace-prefixed        │
-  │   • CookieHttpSessionIdRes.  │
-  │     name=camunda-session-{t} │
-  │     path=/physical-tenant/{t}│
-  └──────────────────────────────┘
+                        ┌─────────────────────────────────────────────────────────┐
+                        │              PhysicalTenantSecurityConfiguration        │
+                        │  iterates PhysicalTenantResolver.getAll(), registers:   │
+                        └────────────────────────────┬────────────────────────────┘
+                                                     │
+              ┌──────────────────────────────────────┼──────────────────────────────────────┐
+              │                                      │                                      │
+      per-tenant beans                       per-tenant chains                      shared beans
+              │                                      │                                      │
+              ▼                                      ▼                                      ▼
+┌──────────────────────────────┐    ┌────────────────────────────────┐    ┌─────────────────────────────┐
+│ PerTenantOidc                │    │ webapp chain                   │    │ JwsKeySelectorFactory       │
+│   • ClientRegistrationRepo   │    │   securityMatcher: prefix      │    │ (already shared today)      │
+│   • AuthorizedClientRepo     │    │   loginPage:                   │    │                             │
+│   • TokenClaimsConverter     │    │     /physical-tenant/{t}/login │    │ AssertionJwkProvider        │
+│   • LogoutSuccessHandler     │    │   redirect-uri template:       │    │   (cached, multi-tenant)    │
+│   • JwtDecoder               │    │     /physical-tenant/{t}/      │    │                             │
+│   • SecurityContextRepo      │    │     login/oauth2/code/{regId}  │    │ OidcUserInfoClient          │
+│                              │    ├────────────────────────────────┤    │                             │
+│                              │    │ api chain                      │    └─────────────────────────────┘
+│                              │    │   securityMatcher:             │
+│                              │    │     /v2/physical-tenants/{t}/* │
+│                              │    │   resource-server JwtDecoder   │
+│                              │    │   no session                   │
+│                              │    └────────────────────────────────┘
+│ PerTenantSession             │
+│   • WebSessionRepository(t)  │
+│     keyspace-prefixed        │
+│   • CookieHttpSessionIdRes.  │
+│     name=camunda-session-{t} │
+│     path=/physical-tenant/{t}│
+└──────────────────────────────┘
 ```
 
 ### Bean catalogue
 
 New classes / configurations introduced by the PoC:
 
-| Class | Responsibility |
-|---|---|
-| `PhysicalTenantSecurityConfiguration` (`authentication/.../config/`) | Top-level `@Configuration`, profile-gated. Pulls `PhysicalTenantResolver`, iterates tenants, exposes `SecurityFilterChain` beans via `BeanDefinitionRegistryPostProcessor`. |
-| `PerTenantSecurityChainFactory` | Builds the pair of `SecurityFilterChain` (webapp + api) for one tenant. Takes a `TenantSecuritySlice` and produces the chains. |
-| `TenantSecuritySlice` (record) | Per-tenant collaborator bundle: tenant id, `SecurityConfiguration` slice, `ClientRegistrationRepository`, `OAuth2AuthorizedClientRepository`, `JwtDecoder`, `OidcClaimsProvider`, `OAuth2AuthorizationRequestResolver`, `LogoutSuccessHandler`, `SessionRepository<WebSession>`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. |
-| `PerTenantOidcRegistry` | Builds the per-tenant `OidcAuthenticationConfigurationRepository` by applying `providers.assigned` to the tenant's OIDC providers map. |
-| `PhysicalTenantRedirectUriRewriter` | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time. |
-| `PerTenantSessionRepository` | Decorator over the existing `WebSessionRepository`; prefixes session ids with `t:` to keep keyspaces disjoint in shared secondary storage. |
-| `PhysicalTenantCookieSerializer` (helper) | Produces a Spring Session `CookieSerializer` configured with the tenant's cookie name + Path for use by `CookieHttpSessionIdResolver`. |
-| `PhysicalTenantWebInterceptor` | Webapp counterpart to `PhysicalTenantInterceptor` — resolves the tenant id from `/physical-tenant/<id>/…` and pushes it onto `PhysicalTenantContext`. |
+|                                Class                                 |                                                                                                                                                                  Responsibility                                                                                                                                                                   |
+|----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PhysicalTenantSecurityConfiguration` (`authentication/.../config/`) | Top-level `@Configuration`, profile-gated. Pulls `PhysicalTenantResolver`, iterates tenants, exposes `SecurityFilterChain` beans via `BeanDefinitionRegistryPostProcessor`.                                                                                                                                                                       |
+| `PerTenantSecurityChainFactory`                                      | Builds the pair of `SecurityFilterChain` (webapp + api) for one tenant. Takes a `TenantSecuritySlice` and produces the chains.                                                                                                                                                                                                                    |
+| `TenantSecuritySlice` (record)                                       | Per-tenant collaborator bundle: tenant id, `SecurityConfiguration` slice, `ClientRegistrationRepository`, `OAuth2AuthorizedClientRepository`, `JwtDecoder`, `OidcClaimsProvider`, `OAuth2AuthorizationRequestResolver`, `LogoutSuccessHandler`, `SessionRepository<WebSession>`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. |
+| `PerTenantOidcRegistry`                                              | Builds the per-tenant `OidcAuthenticationConfigurationRepository` by applying `providers.assigned` to the tenant's OIDC providers map.                                                                                                                                                                                                            |
+| `PhysicalTenantRedirectUriRewriter`                                  | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time.                                                                                                                                                                                                                                      |
+| `PerTenantSessionRepository`                                         | Decorator over the existing `WebSessionRepository`; prefixes session ids with `t:` to keep keyspaces disjoint in shared secondary storage.                                                                                                                                                                                                        |
+| `PhysicalTenantCookieSerializer` (helper)                            | Produces a Spring Session `CookieSerializer` configured with the tenant's cookie name + Path for use by `CookieHttpSessionIdResolver`.                                                                                                                                                                                                            |
+| `PhysicalTenantWebInterceptor`                                       | Webapp counterpart to `PhysicalTenantInterceptor` — resolves the tenant id from `/physical-tenant/<id>/…` and pushes it onto `PhysicalTenantContext`.                                                                                                                                                                                             |
 
 Reused as-is:
 
@@ -142,9 +142,9 @@ Reused as-is:
 
 Webapp chain (`/physical-tenant/{t}/**`):
 - `oauth2Login()`:
-  - `authorizationEndpoint().baseUri("/physical-tenant/{t}/oauth2/authorization")`
-  - `redirectionEndpoint().baseUri("/physical-tenant/{t}/login/oauth2/code/*")`
-  - `loginPage("/physical-tenant/{t}/login")` (multi-provider picker; for single-provider tenant, redirect straight to `oauth2/authorization/{regId}`)
+- `authorizationEndpoint().baseUri("/physical-tenant/{t}/oauth2/authorization")`
+- `redirectionEndpoint().baseUri("/physical-tenant/{t}/login/oauth2/code/*")`
+- `loginPage("/physical-tenant/{t}/login")` (multi-provider picker; for single-provider tenant, redirect straight to `oauth2/authorization/{regId}`)
 - `csrf()` with `CookieCsrfTokenRepository` (Path=tenant path)
 - `securityContext().securityContextRepository(perTenantContextRepo)`
 - `sessionManagement().sessionFixation().newSession()` and `maximumSessions(...)` left at defaults for the PoC
@@ -242,10 +242,10 @@ Two complementary entry points:
 
 Realm contents:
 
-| Realm | Client id | Test users |
-|---|---|---|
+|                    Realm                    |          Client id          |       Test users        |
+|---------------------------------------------|-----------------------------|-------------------------|
 | `default` (`localhost:8081/realms/default`) | `camunda-pt-default-client` | `alice@default / alice` |
-| `tenanta` (`localhost:8082/realms/tenanta`) | `camunda-pt-tenanta-client` | `bob@tenanta / bob` |
+| `tenanta` (`localhost:8082/realms/tenanta`) | `camunda-pt-tenanta-client` | `bob@tenanta / bob`     |
 
 Both clients pre-configured with redirect URIs `http://localhost:8080/physical-tenant/<id>/login/oauth2/code/*` plus the unprefixed `http://localhost:8080/login/oauth2/code/*` for the default tenant's secondary access path. Standard auth-code flow, `client_secret_basic`, no PKCE requirement (PoC scope; PKCE is a follow-up).
 
