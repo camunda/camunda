@@ -22,6 +22,7 @@ import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -281,7 +283,7 @@ final class SecondaryStorageRollingUpdateTest {
     final var volume =
         CamundaVolume.newVolume(
             cfg -> {
-              final var labels = new HashMap<>(cfg.getLabels());
+              final var labels = new HashMap<>(Objects.requireNonNull(cfg.getLabels()));
               labels.put(
                   DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
                   DockerClientFactory.SESSION_ID);
@@ -357,12 +359,7 @@ final class SecondaryStorageRollingUpdateTest {
           SecondaryStorageType.rdbms,
           "postgres",
           5432,
-          () ->
-              new GenericContainer<>(DockerImageName.parse("postgres").withTag("15.3-alpine"))
-                  .withEnv("POSTGRES_DB", CAMUNDA_DATABASE)
-                  .withEnv("POSTGRES_USER", CAMUNDA_USER)
-                  .withEnv("POSTGRES_PASSWORD", CAMUNDA_PASSWORD)
-                  .withExposedPorts(5432),
+          TestSearchContainers::createDefaultPostgresContainer,
           CAMUNDA_USER,
           CAMUNDA_PASSWORD);
     }
@@ -373,18 +370,7 @@ final class SecondaryStorageRollingUpdateTest {
           SecondaryStorageType.elasticsearch,
           "elasticsearch",
           9200,
-          () ->
-              new GenericContainer<>(
-                      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                          .withTag("8.19.11"))
-                  .withEnv("discovery.type", "single-node")
-                  .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
-                  .withEnv("xpack.security.enabled", "false")
-                  .withEnv("xpack.watcher.enabled", "false")
-                  .withEnv("xpack.ml.enabled", "false")
-                  .withEnv("action.auto_create_index", "true")
-                  .withEnv("action.destructive_requires_name", "false")
-                  .withExposedPorts(9200),
+          TestSearchContainers::createDefeaultElasticsearchContainer,
           null,
           null);
     }
@@ -395,16 +381,7 @@ final class SecondaryStorageRollingUpdateTest {
           SecondaryStorageType.opensearch,
           "opensearch",
           9200,
-          () ->
-              new GenericContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.19.4"))
-                  .withEnv("discovery.type", "single-node")
-                  .withEnv("DISABLE_SECURITY_PLUGIN", "true")
-                  .withEnv(
-                      "OPENSEARCH_JAVA_OPTS",
-                      "-Xms1024m -Xmx1024m -XX:MaxDirectMemorySize=536870912")
-                  .withEnv("action.destructive_requires_name", "false")
-                  .withEnv("action.auto_create_index", "true")
-                  .withExposedPorts(9200),
+          TestSearchContainers::createDefaultOpensearchContainer,
           null,
           null);
     }
@@ -466,7 +443,7 @@ final class SecondaryStorageRollingUpdateTest {
     }
 
     @Override
-    public String toString() {
+    public @NonNull String toString() {
       return name;
     }
   }
