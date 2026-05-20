@@ -34,10 +34,12 @@ export async function cancelBatchOperation(
 // A freshly created batch operation can take longer than the default 30s
 // to be visible to the suspend/resume commands on a loaded shared cluster
 // (404 → 204). Use a more generous budget here for batch operation lifecycle
-// actions while the engine catches up.
+// actions while the engine catches up. The 180s budget proved tight when
+// multiple cancellation batches (30 instances each) accumulate within a
+// single spec file, so allow up to 240s with a longer tail interval.
 const batchOperationLifecycleOptions = {
-  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
-  timeout: 180_000,
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000, 45_000],
+  timeout: 240_000,
 };
 
 export async function suspendBatchOperation(
@@ -135,9 +137,13 @@ export async function expectBatchState(
   });
 }
 
+// Post-migration user-task search has to wait for the secondary-storage
+// indexer to reflect the migrated elementId. On a loaded shared cluster the
+// 180s budget proved tight (seen as flake on nightly runs), so allow up to
+// 240s with a longer tail interval.
 export const postMigrationAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000],
-  timeout: 180_000,
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000, 60_000],
+  timeout: 240_000,
 };
 
 export const notFoundDetail = (key: string) =>

@@ -23,7 +23,7 @@ import {
   defaultAssertionOptions,
   extendedAssertionOptions,
 } from '../../../../utils/constants';
-import {findUserTask} from '@requestHelpers';
+import {expectBatchState, findUserTask} from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
@@ -129,6 +129,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
     const localState: Record<string, string> = {
       processInstanceKey1: '',
       processInstanceKey2: '',
+      batchOperationKey: '',
     };
 
     await test.step('Create two process instances', async () => {
@@ -201,8 +202,18 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           res,
         );
         const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MODIFY_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
+      expect(localState.batchOperationKey).toBeTruthy();
+    });
+
+    await test.step('Wait for modification to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
     });
 
     await test.step('Verify only second instance modified', async () => {
@@ -255,6 +266,7 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
     const localState: Record<string, string> = {
       processInstanceKey1: '',
       processInstanceKey2: '',
+      batchOperationKey: '',
     };
 
     await test.step('Create two process instances with a different set of variables', async () => {
@@ -328,8 +340,18 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
           res,
         );
         const json = await res.json();
+        localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MODIFY_PROCESS_INSTANCE');
       }).toPass(defaultAssertionOptions);
+      expect(localState.batchOperationKey).toBeTruthy();
+    });
+
+    await test.step('Wait for modification to complete', async () => {
+      await expectBatchState(
+        request,
+        localState.batchOperationKey,
+        'COMPLETED',
+      );
     });
 
     await test.step('Verify both instances modified', async () => {
