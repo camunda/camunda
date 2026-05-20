@@ -2225,7 +2225,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2337,7 +2338,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"evaluation-failure-message",
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "tenant-test",
-                  "rootProcessInstanceKey": 6
+                  "rootProcessInstanceKey": 6,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2369,7 +2371,8 @@ final class JsonSerializableToJsonTest {
                   "evaluationFailureMessage":"",
                   "failedDecisionId":"",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },

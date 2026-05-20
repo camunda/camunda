@@ -18,6 +18,7 @@ import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
@@ -44,15 +45,18 @@ public class DecisionBehavior {
   private static final String SYNTHESIZED_RULE_ID_TEMPLATE = "%s_%s_v%s_r%s";
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
+  private final OrdinalKeyProvider ordinalKeyProvider;
   private final ProcessEngineMetrics metrics;
 
   public DecisionBehavior(
       final DecisionEngine decisionEngine,
       final ProcessingState processingState,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final ProcessEngineMetrics metrics) {
 
     decisionState = processingState.getDecisionState();
     this.decisionEngine = decisionEngine;
+    this.ordinalKeyProvider = ordinalKeyProvider;
     this.metrics = metrics;
   }
 
@@ -147,7 +151,8 @@ public class DecisionBehavior {
             .setDecisionVersion(decision.getVersion())
             .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
             .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-            .setTenantId(decision.getTenantId());
+            .setTenantId(decision.getTenantId())
+            .setOrdinalKey(ordinalKeyProvider.getOrdinal(decisionEvaluationKey));
 
     final var decisionKeysByDecisionId =
         decisionState

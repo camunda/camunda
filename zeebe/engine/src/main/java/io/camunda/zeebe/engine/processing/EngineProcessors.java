@@ -150,7 +150,10 @@ public final class EngineProcessors {
 
     final var decisionBehavior =
         new DecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+            DecisionEngineFactory.createDecisionEngine(),
+            processingState,
+            ordinalKeyProvider,
+            processEngineMetrics);
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, config);
     final var asyncRequestBehavior =

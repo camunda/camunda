@@ -44,7 +44,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
   @Override
   public IndexLocator createIndexLocator(final Record<?> record) {
     if (record.getValue() instanceof final OrdinalKeyBased ordinalKeyBased) {
-      final var suffix = getOrCreateOrdinalSuffix(ordinalKeyBased.getOrdinalKey());
+      final var suffix = getOrCreateOrdinalSuffix("ord", ordinalKeyBased.getOrdinalKey());
       return new SingleSuffixOrdinalIndexLocator(suffix);
     } else {
       LOGGER.warn(
@@ -61,7 +61,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       final long rootProcessInstanceKey = processInstanceRelated.getRootProcessInstanceKey();
       if (rootProcessInstanceKey > 0) {
         final int ordinal = getOrdinal(rootProcessInstanceKey);
-        final var suffix = getOrCreateOrdinalSuffix(ordinal);
+        final var suffix = getOrCreateOrdinalSuffix("exp", ordinal);
         return new SingleSuffixOrdinalIndexLocator(suffix);
       }
     } else {
@@ -71,7 +71,8 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
             rootProcessInstanceIdsByKey.entrySet().stream()
                 .collect(
                     Collectors.toMap(
-                        Entry::getKey, entry -> getOrdinalSuffixForRootPI(entry.getValue())));
+                        Entry::getKey,
+                        entry -> getOrdinalSuffixForRootPI("exp", entry.getValue())));
         return new MultiSuffixOrdinalIndexLocator(suffixesByKey);
       }
     }
@@ -95,9 +96,9 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     return Map.of();
   }
 
-  private String getOrdinalSuffixForRootPI(final long rootProcessInstanceKey) {
+  private String getOrdinalSuffixForRootPI(final String prefix, final long rootProcessInstanceKey) {
     final int ordinal = getOrdinal(rootProcessInstanceKey);
-    return getOrCreateOrdinalSuffix(ordinal);
+    return getOrCreateOrdinalSuffix(prefix, ordinal);
   }
 
   private static int getOrdinal(final long rootProcessInstanceKey) {
@@ -105,10 +106,10 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     return (int) (key / IDS_PER_ORDINAL);
   }
 
-  private String getOrCreateOrdinalSuffix(final int ordinal) {
+  private String getOrCreateOrdinalSuffix(final String prefix, final int ordinal) {
     var suffix = ordinalSuffixes.get(ordinal);
     if (suffix == null) {
-      final var newSuffix = createOrdinalSuffix(ordinal);
+      final var newSuffix = createOrdinalSuffix(prefix, ordinal);
       suffix = ordinalSuffixes.putIfAbsent(ordinal, newSuffix);
       if (suffix == null) {
         LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinalSuffixes.size());
@@ -118,8 +119,8 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     return suffix;
   }
 
-  private String createOrdinalSuffix(final int ordinal) {
-    return "ord" + Strings.padStart(String.valueOf(ordinal), 5, '0');
+  private String createOrdinalSuffix(final String prefix, final int ordinal) {
+    return prefix + Strings.padStart(String.valueOf(ordinal), 5, '0');
   }
 
   static class NoopIndexLocator implements IndexLocator {
