@@ -15,6 +15,14 @@ on:
 env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  # Workaround to prevent the Kubernetes client SDK from failing while
+  # https://github.com/gravitational/teleport/issues/64188 is opened.
+  # See https://app.incident.io/camunda/incidents/5624 for more details.
+  # This needs to be applied to all the subcommands run in this workflow.
+  # Consider removing this once
+  # https://github.com/gravitational/teleport/issues/64188 has been fixed and
+  # deployed.
+  KUBE_FEATURE_WatchListClient: "false"
 
 jobs:
   verify:
