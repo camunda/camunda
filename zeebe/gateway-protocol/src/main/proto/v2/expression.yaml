@@ -68,6 +68,9 @@ components:
             y: 20
           additionalProperties: true
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: scopeKey
+          addedInVersion: "8.10"
     ExpressionEvaluationResult:
       type: object
       required:
