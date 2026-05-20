@@ -42,6 +42,9 @@
       "agentElementId": {
         "type": "keyword"
       },
+      "requestSource": {
+        "type": "keyword"
+      },
       "tenantId": {
         "type": "keyword"
       },

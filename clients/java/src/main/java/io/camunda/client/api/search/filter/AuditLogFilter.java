@@ -245,6 +245,22 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter agentElementId(final Consumer<StringProperty> fn);
 
   /**
+   * Filter audit logs by the request source
+   *
+   * @param requestSource the request source (e.g. "MCP")
+   * @return the updated filter
+   */
+  AuditLogFilter requestSource(final String requestSource);
+
+  /**
+   * Filter audit logs by the request source using {@link StringProperty} consumer
+   *
+   * @param fn the request source filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter requestSource(final Consumer<StringProperty> fn);
+
+  /**
    * Filter audit logs by the entity type
    *
    * @param entityType the entity type

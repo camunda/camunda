@@ -58,6 +58,10 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String agentElementId;
 
+  // the source from which the request originated (e.g. "MCP")
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String requestSource;
+
   // marks if the operations was successful or failed
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationResult result;
@@ -228,6 +232,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setAgentElementId(final String agentElementId) {
     this.agentElementId = agentElementId;
+    return this;
+  }
+
+  public String getRequestSource() {
+    return requestSource;
+  }
+
+  public AuditLogEntity setRequestSource(final String requestSource) {
+    this.requestSource = requestSource;
     return this;
   }
 

@@ -11,6 +11,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.protocol.record.Agent;
@@ -103,6 +104,17 @@ public class AuditLogEntry {
   private AuditLogEntityType relatedEntityType;
 
   private Agent agent;
+
+  private String requestSource;
+
+  public String getRequestSource() {
+    return requestSource;
+  }
+
+  public AuditLogEntry setRequestSource(final String requestSource) {
+    this.requestSource = requestSource;
+    return this;
+  }
 
   public String getEntityKey() {
     return entityKey;
@@ -408,6 +420,10 @@ public class AuditLogEntry {
             .setOperationType(info.operationType())
             .setActor(info.actor())
             .setAgent(record.getAgent())
+            .setRequestSource(
+                Optional.ofNullable(record.getAuthorizations().get(Authorization.REQUEST_SOURCE))
+                    .map(String::valueOf)
+                    .orElse(null))
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))

@@ -28,6 +28,7 @@ public record AuditLogDbModel(
     AuditLogEntity.AuditLogActorType actorType,
     String actorId,
     String agentElementId,
+    String requestSource,
     String tenantId,
     AuditLogEntity.AuditLogTenantScope tenantScope,
     AuditLogEntity.AuditLogOperationResult result,
@@ -75,6 +76,7 @@ public record AuditLogDbModel(
         .actorType(actorType)
         .actorId(actorId)
         .agentElementId(agentElementId)
+        .requestSource(requestSource)
         .tenantId(tenantId)
         .tenantScope(tenantScope)
         .result(result)
@@ -128,6 +130,7 @@ public record AuditLogDbModel(
     private AuditLogEntity.AuditLogActorType actorType;
     private String actorId;
     private String agentElementId;
+    private String requestSource;
     private String tenantId;
     private AuditLogEntity.AuditLogTenantScope tenantScope;
     private AuditLogEntity.AuditLogOperationResult result;
@@ -217,6 +220,11 @@ public record AuditLogDbModel(
 
     public Builder agentElementId(final String agentElementId) {
       this.agentElementId = agentElementId;
+      return this;
+    }
+
+    public Builder requestSource(final String requestSource) {
+      this.requestSource = requestSource;
       return this;
     }
 
@@ -356,6 +364,7 @@ public record AuditLogDbModel(
           actorType,
           actorId,
           agentElementId,
+          requestSource,
           tenantId,
           tenantScope,
           result,

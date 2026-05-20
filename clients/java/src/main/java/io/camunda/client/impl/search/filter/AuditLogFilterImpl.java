@@ -225,6 +225,19 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter requestSource(final String requestSource) {
+    return requestSource(b -> b.eq(requestSource));
+  }
+
+  @Override
+  public AuditLogFilter requestSource(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setRequestSource(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AuditLogFilter entityType(final AuditLogEntityTypeEnum entityType) {
     return entityType(b -> b.eq(entityType));
   }
