@@ -1,0 +1,32 @@
+{
+  "realm": "default",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "camunda-pt-default-client",
+      "enabled": true,
+      "secret": "default-secret",
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/physical-tenant/default/login/oauth2/code/*",
+        "http://localhost:8080/login/oauth2/code/*"
+      ],
+      "webOrigins": ["http://localhost:8080"]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@default",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Default",
+      "credentials": [{"type": "password", "value": "alice", "temporary": false}]
+    }
+  ]
+}
