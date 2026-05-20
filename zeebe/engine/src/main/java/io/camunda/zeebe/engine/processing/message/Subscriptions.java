@@ -105,7 +105,7 @@ public final class Subscriptions {
     boolean apply(Subscription subscription);
   }
 
-  public final class Subscription implements Reusable {
+  public static final class Subscription implements Reusable {
 
     private final MutableDirectBuffer bpmnProcessId = new ExpandableArrayBuffer();
     private final DirectBuffer bufferView = new UnsafeBuffer(bpmnProcessId);
