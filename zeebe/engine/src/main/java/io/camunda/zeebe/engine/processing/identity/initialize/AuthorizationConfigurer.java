@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationScope;
-import io.camunda.security.configuration.ConfiguredAuthorization;
+import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;

@@ -13,7 +13,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.security.api.model.authz.AuthorizationOwnerType;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.configuration.ConfiguredAuthorization;
+import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

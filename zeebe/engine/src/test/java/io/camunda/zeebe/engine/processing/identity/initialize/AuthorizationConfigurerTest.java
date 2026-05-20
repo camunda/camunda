@@ -16,7 +16,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.configuration.ConfiguredAuthorization;
+import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;

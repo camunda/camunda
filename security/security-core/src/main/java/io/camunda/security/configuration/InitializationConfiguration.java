@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
 import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredRole;
