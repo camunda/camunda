@@ -41,16 +41,6 @@ public interface VariableRecordValue
   String getValue();
 
   /**
-   * Returns the size of the variable value, used for size-based metrics. The unit (bytes vs.
-   * characters) is implementation-defined: msgpack-backed implementations return the raw msgpack
-   * byte count, while JSON-backed implementations return the character count of {@link
-   * #getValue()}.
-   *
-   * @return the size of the variable value
-   */
-  int getValueLength();
-
-  /**
    * @return the key of the scope the variable belongs to.
    */
   long getScopeKey();

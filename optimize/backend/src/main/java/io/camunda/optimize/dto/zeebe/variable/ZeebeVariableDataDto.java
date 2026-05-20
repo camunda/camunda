@@ -51,11 +51,6 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   }
 
   @Override
-  public int getValueLength() {
-    return value == null ? 0 : value.length();
-  }
-
-  @Override
   public long getScopeKey() {
     return scopeKey;
   }
