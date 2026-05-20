@@ -64,7 +64,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
@@ -235,20 +234,6 @@ public class OidcOverrideBeansConfiguration {
   public OidcAuthenticationConfigurationRepository oidcProviderRepository(
       final SecurityConfiguration securityConfiguration) {
     return new OidcAuthenticationConfigurationRepository(securityConfiguration);
-  }
-
-  /**
-   * OC's per-client {@link OAuth2AuthorizationRequestResolver}. Plugs into the CSL OIDC webapp
-   * chain via the SPI hook so multi-IdP redirects, RFC 8707 {@code resource} parameters, and
-   * per-provider {@code authorize_request.additional_parameters} are honoured. The CSL chain
-   * detects the bean by type and replaces Spring Security's default resolver.
-   */
-  @Bean
-  public OAuth2AuthorizationRequestResolver oauth2AuthorizationRequestResolver(
-      final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-    return new ClientAwareOAuth2AuthorizationRequestResolver(
-        clientRegistrationRepository, oidcProviderRepository);
   }
 
   private List<ClientRegistration> extractClientRegistrations(
