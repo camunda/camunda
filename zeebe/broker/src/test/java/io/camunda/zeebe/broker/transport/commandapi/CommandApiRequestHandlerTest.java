@@ -89,6 +89,28 @@ public class CommandApiRequestHandlerTest {
         .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
 
+  // Regression https://github.com/camunda/camunda/issues/44897
+  @Test
+  public void shouldRespondWithPartitionLeaderMismatchWhenSteppingDown() {
+    // given
+    handler.removePartition(0);
+    scheduler.workUntilDone();
+
+    // when
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
   @Test
   public void shouldRejectCommandWithoutEvent() {
     // given
