@@ -144,7 +144,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <ConversationMessage
             actor="system"
-            content={definition.systemPrompt}
+            messages={[definition.systemPrompt]}
           />
         </AccordionItem>
         <AccordionItem
