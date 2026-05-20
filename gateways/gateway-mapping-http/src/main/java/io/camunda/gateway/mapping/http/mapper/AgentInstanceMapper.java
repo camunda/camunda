@@ -69,6 +69,7 @@ public class AgentInstanceMapper {
 
           if (request.getStatus() != null) {
             record.setStatus(mapStatus(request.getStatus()));
+            record.addChangedAttribute("status");
           }
 
           if (request.getMetrics() != null) {
@@ -85,12 +86,14 @@ public class AgentInstanceMapper {
             if (delta.getToolCalls() != null) {
               record.getMetrics().setToolCalls(delta.getToolCalls());
             }
+            record.addChangedAttribute("metrics");
           }
 
           if (request.getTools() != null && !request.getTools().isEmpty()) {
             final List<AgentInstanceTool> tools =
                 request.getTools().stream().map(this::mapTool).collect(Collectors.toList());
             record.setTools(tools);
+            record.addChangedAttribute("tools");
           }
 
           return record;

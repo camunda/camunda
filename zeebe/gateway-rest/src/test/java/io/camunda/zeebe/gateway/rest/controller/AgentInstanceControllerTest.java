@@ -345,6 +345,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
                   assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
                   assertThat(record.getStatus().name()).isEqualTo("COMPLETED");
+                  assertThat(record.getChangedAttributes()).containsExactly("status");
                 }),
             any());
   }
@@ -388,6 +389,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
                   assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
                   assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
+                  assertThat(record.getChangedAttributes()).containsExactly("metrics");
                 }),
             any());
   }
@@ -433,6 +435,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getTools().get(0).getDescription())
                       .isEqualTo("Searches the database");
                   assertThat(record.getTools().get(0).getElementId()).isEqualTo("searchTask");
+                  assertThat(record.getChangedAttributes()).containsExactly("tools");
                 }),
             any());
   }
