@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity.initialize;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredRole;
+import io.camunda.security.api.model.config.initialization.ConfiguredRole;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.RoleValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;

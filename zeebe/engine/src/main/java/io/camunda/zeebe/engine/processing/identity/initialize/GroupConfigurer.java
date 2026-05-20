@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.security.configuration.ConfiguredGroup;
+import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
