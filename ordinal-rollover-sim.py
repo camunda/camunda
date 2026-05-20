@@ -41,6 +41,8 @@ class Simulation:
         self._main_index = self._ensure_index_exists("main")
         self.indexing_operations = 0
         self.delete_operations = 0
+        self.indexes_dropped_by_ilm = 0
+        self.docs_dropped_by_ilm = 0
         self.operations_cost_estimate = 0
 
     def new_ordinal_process_instance(self, duration):
@@ -137,6 +139,8 @@ class Simulation:
     def _apply_ilm_policies(self):
       for index in list(self.indexes.values()):
         if index.ilm_deadline is not None and index.ilm_deadline <= self.current_time:
+          self.indexes_dropped_by_ilm += 1
+          self.docs_dropped_by_ilm += len(index.process_instances)
           del self.indexes[index.name]
 
 
@@ -249,6 +253,7 @@ if __name__ == "__main__":
 
     print(f"Total indexes: {len(sim.indexes)}, Max process instances: {max_num_processes}")
     print(f"Indexes with ILM deadline: {sim.get_count_indexes_with_ilm_deadline()}")
+    print(f"Indexes dropped by ILM: {sim.indexes_dropped_by_ilm}, Docs dropped by ILM: {sim.docs_dropped_by_ilm}")
     print(f"Biggest index size: {biggest_index_size}")
     print(f"Total indexing operations: {sim.indexing_operations}, Total delete operations: {sim.delete_operations}")
     print(f"Estimated total operations cost: {sim.operations_cost_estimate}")
