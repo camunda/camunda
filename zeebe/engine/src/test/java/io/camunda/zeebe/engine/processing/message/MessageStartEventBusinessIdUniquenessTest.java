@@ -281,6 +281,47 @@ public final class MessageStartEventBusinessIdUniquenessTest {
   }
 
   @Test
+  public void shouldAllowStartWhenBusinessIdIsHeldOnlyByBannedProcessInstance() {
+    // Pins the deliberate semantics that the uniqueness lookup ignores PIs which have been
+    // banned: a banned PI cannot make progress and must not indefinitely block new starts that
+    // carry the same businessId. The `hasActiveProcessInstanceWithBusinessId` callsites all pass
+    // `bannedInstanceState::isProcessInstanceBanned` for exactly this reason; this test fails if
+    // that predicate is ever dropped from the callsite.
+
+    // given a PI holds businessId "biz-banned"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("")
+        .withBusinessId("biz-banned")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var firstJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // and that PI is banned (e.g. due to an unrecoverable processing error) — it stays "active"
+    // structurally but its banned state must exempt it from blocking new starts
+    engine.banInstanceInNewTransaction(1, firstJob.getValue().getProcessInstanceKey());
+
+    // when a second message with the same businessId is published
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("")
+        .withBusinessId("biz-banned")
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // then a new PI is started — the banned holder does not gate
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-banned", "biz-banned");
+  }
+
+  @Test
   public void shouldCorrelateBufferedMessageAfterHoldingInstanceCompletes() {
     // given a first PI holds the correlation-key lock and businessId "biz-42"
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
