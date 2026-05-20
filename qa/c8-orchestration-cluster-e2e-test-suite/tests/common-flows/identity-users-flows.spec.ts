@@ -402,8 +402,10 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view process instances in Operate', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
       await operateHomePage.clickProcessesTab();
+      // Newly-assigned group permissions take time to propagate to the
+      // user's visible instance list; 30s was tight on the May 20 nightly.
       await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -411,7 +413,7 @@ test.describe('Identity User Flows', () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
   });
