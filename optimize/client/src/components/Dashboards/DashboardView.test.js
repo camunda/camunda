@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 import {useFullScreenHandle} from 'react-full-screen';
 
 import {AlertsDropdown} from 'components';
-import {createEntity, deleteEntity, addSources} from 'services';
+import {createEntity, deleteEntity, addSources, evaluateReport} from 'services';
 import {useUiConfig} from 'hooks';
 
 import {AutoRefreshSelect} from './AutoRefresh';
@@ -24,6 +24,7 @@ jest.mock('services', () => ({
   deleteEntity: jest.fn(),
   addSources: jest.fn(),
   loadEntities: jest.fn().mockReturnValue([]),
+  evaluateReport: jest.fn(),
 }));
 
 jest.mock('hooks', () => ({
@@ -58,6 +59,7 @@ beforeEach(() => {
   useFullScreenHandle().active = false;
   useFullScreenHandle().enter.mockClear();
   useFullScreenHandle().exit.mockClear();
+  evaluateReport.mockClear();
 });
 
 it('should display the key properties of a dashboard', () => {
@@ -399,4 +401,67 @@ it('should default available filters to an empty array', () => {
   const node = shallow(<DashboardView />);
 
   expect(node.find('DashboardRenderer').prop('filter')).toEqual([]);
+});
+
+it('should enable agentic filter modes for the agentic dashboard id', () => {
+  const node = shallow(
+    <DashboardView
+      id="agentic-control-plane-dashboard"
+      availableFilters={[{type: 'instanceStartDate'}]}
+    />
+  );
+
+  expect(node.find('FiltersView')).toHaveProp('datePresetMode', 'agentic');
+  expect(typeof node.find('FiltersView').prop('onProcessScopeChange')).toBe('function');
+});
+
+it('should propagate selected process scope as definitions override when loading agentic tiles', () => {
+  const node = shallow(
+    <DashboardView
+      id="agentic-control-plane-dashboard"
+      availableFilters={[{type: 'instanceStartDate'}]}
+    />
+  );
+
+  node.find('FiltersView').prop('onProcessScopeChange')({
+    key: 'invoice-process',
+    name: 'Invoice process',
+  });
+  node.find('DashboardRenderer').prop('loadTile')('agentic-total-runs', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('agentic-total-runs', [], {}, {
+    definitions: [{key: 'invoice-process', name: 'Invoice process', versions: ['all']}],
+  });
+});
+
+it('should evaluate agentic tiles without definitions override when process scope is all processes', () => {
+  const node = shallow(
+    <DashboardView
+      id="agentic-control-plane-dashboard"
+      availableFilters={[{type: 'instanceStartDate'}]}
+    />
+  );
+
+  node.find('DashboardRenderer').prop('loadTile')('agentic-total-runs', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('agentic-total-runs', [], {}, undefined);
+});
+
+it('should clear definitions override after resetting process scope back to all processes', () => {
+  const node = shallow(
+    <DashboardView
+      id="agentic-control-plane-dashboard"
+      availableFilters={[{type: 'instanceStartDate'}]}
+    />
+  );
+
+  node.find('FiltersView').prop('onProcessScopeChange')({
+    key: 'invoice-process',
+    name: 'Invoice process',
+  });
+  node.find('FiltersView').prop('onProcessScopeChange')(null);
+  evaluateReport.mockClear();
+  node.find('DashboardRenderer').prop('loadTile')('agentic-total-runs', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('agentic-total-runs', [], {}, undefined);
 });

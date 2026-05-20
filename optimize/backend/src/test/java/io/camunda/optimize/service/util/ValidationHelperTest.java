@@ -16,8 +16,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.HasAgentInstancesFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import java.util.Collections;
@@ -109,6 +111,22 @@ public class ValidationHelperTest {
         .isInstanceOf(OptimizeValidationException.class)
         .hasMessageContaining(
             "start date filter  at least one sub field not allowed to be empty or null");
+  }
+
+  @Test
+  void shouldValidateHasAgentInstancesFilter() {
+    // given
+    final HasAgentInstancesFilterDto hasAgentInstancesFilterDto = new HasAgentInstancesFilterDto();
+    hasAgentInstancesFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    hasAgentInstancesFilterDto.setData(new HasAgentInstancesFilterDataDto());
+
+    // when
+    final Throwable thrown =
+        Assertions.catchThrowable(
+            () -> ValidationHelper.validateProcessFilters(List.of(hasAgentInstancesFilterDto)));
+
+    // then
+    Assertions.assertThat(thrown).isNull();
   }
 
   @Test

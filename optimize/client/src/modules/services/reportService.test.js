@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processResult, getReportResult, isCategoricalBar, isCategorical} from './reportService';
+import {
+  evaluateReport,
+  processResult,
+  getReportResult,
+  isCategoricalBar,
+  isCategorical,
+} from './reportService';
 
 import {post} from 'request';
 
@@ -226,5 +232,45 @@ describe('isCategorical', () => {
         },
       })
     ).toBe(true);
+  });
+});
+
+describe('evaluateReport', () => {
+  it('should forward definitions override when evaluating a saved report', async () => {
+    post.mockResolvedValueOnce({
+      json: async () => ({id: 'agentic-total-runs'}),
+    });
+
+    await evaluateReport(
+      'agentic-total-runs',
+      [{type: 'instanceStartDate', data: {type: 'relative', start: {value: 7, unit: 'days'}}}],
+      {},
+      {definitions: [{key: 'invoice-process', versions: ['all']}]}
+    );
+
+    expect(post).toHaveBeenCalledWith(
+      'api/report/agentic-total-runs/evaluate',
+      {
+        filter: [
+          {type: 'instanceStartDate', data: {type: 'relative', start: {value: 7, unit: 'days'}}},
+        ],
+        definitions: [{key: 'invoice-process', versions: ['all']}],
+      },
+      {query: {}}
+    );
+  });
+
+  it('should keep saved report payload unchanged when no additional context is provided', async () => {
+    post.mockResolvedValueOnce({
+      json: async () => ({id: 'agentic-total-runs'}),
+    });
+
+    await evaluateReport('agentic-total-runs', [{type: 'runningInstancesOnly', data: null}], {});
+
+    expect(post).toHaveBeenCalledWith(
+      'api/report/agentic-total-runs/evaluate',
+      {filter: [{type: 'runningInstancesOnly', data: null}]},
+      {query: {}}
+    );
   });
 });

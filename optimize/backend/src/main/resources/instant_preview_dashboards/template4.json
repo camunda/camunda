@@ -1,0 +1,763 @@
+[
+  {
+    "id": "agentic-total-runs",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Total Runs",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "frequency"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  },
+  {
+    "id": "agentic-duration-summary",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Duration Summary",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "duration"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "avg"
+          },
+          {
+            "type": "percentile",
+            "value": 50.0
+          },
+          {
+            "type": "percentile",
+            "value": 95.0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-duration-trend",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Duration Trend",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "duration"
+        ]
+      },
+      "groupBy": {
+        "type": "startDate",
+        "value": {
+          "unit": "day"
+        }
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "line",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "percentile",
+            "value": 50.0
+          },
+          {
+            "type": "percentile",
+            "value": 95.0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-incident-count",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Incident Count",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "includesOpenIncident",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "frequency"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  },
+  {
+    "id": "agentic-incident-rate",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Incident Rate",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "includesOpenIncident",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "percentage"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  },
+  {
+    "id": "agentic-incident-rate-by-version",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Incident Rate by Version",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "includesOpenIncident",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "percentage"
+        ]
+      },
+      "groupBy": {
+        "type": "processDefinitionVersion",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "bar",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  },
+  {
+    "id": "agentic-tokens-summary",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tokens Summary",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "totalTokens"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "avg"
+          },
+          {
+            "type": "percentile",
+            "value": 50.0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-tokens-trend",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tokens Trend",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "totalTokens"
+        ]
+      },
+      "groupBy": {
+        "type": "startDate",
+        "value": {
+          "unit": "day"
+        }
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "line",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "sum"
+          },
+          {
+            "type": "percentile",
+            "value": 5.0
+          },
+          {
+            "type": "percentile",
+            "value": 50.0
+          },
+          {
+            "type": "percentile",
+            "value": 95.0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-tokens-input-trend",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tokens Input Trend",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "inputTokens"
+        ]
+      },
+      "groupBy": {
+        "type": "startDate",
+        "value": {
+          "unit": "day"
+        }
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "line",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "sum"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-tokens-output-trend",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tokens Output Trend",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "outputTokens"
+        ]
+      },
+      "groupBy": {
+        "type": "startDate",
+        "value": {
+          "unit": "day"
+        }
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "line",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "sum"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-tokens-by-process",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tokens By Process",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "totalTokens"
+        ]
+      },
+      "groupBy": {
+        "type": "processDefinitionKey",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "bar",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "sum"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-process-instance-count-by-process",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Process Instance Count by Process",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "processInstance",
+        "properties": [
+          "frequency"
+        ]
+      },
+      "groupBy": {
+        "type": "processDefinitionKey",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "bar",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  },
+  {
+    "id": "agentic-tool-calls-total",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Tool Calls Total",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "toolCalls"
+        ]
+      },
+      "groupBy": {
+        "type": "none",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "number",
+      "managementReport": true,
+      "instantPreviewReport": false,
+      "configuration": {
+        "aggregationTypes": [
+          {
+            "type": "sum"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "agentic-avg-tokens-per-call-by-process",
+    "exportEntityType": "single_process_report",
+    "name": "Agentic Avg Tokens Per Call By Process",
+    "description": null,
+    "sourceIndexVersion": 11,
+    "collectionId": null,
+    "data": {
+      "definitions": [],
+      "filter": [
+        {
+          "type": "completedInstancesOnly",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        },
+        {
+          "type": "hasAgentInstances",
+          "data": null,
+          "filterLevel": "instance",
+          "appliedTo": [
+            "all"
+          ]
+        }
+      ],
+      "view": {
+        "entity": "agentInstance",
+        "properties": [
+          "avgTokensPerCall"
+        ]
+      },
+      "groupBy": {
+        "type": "processDefinitionKey",
+        "value": null
+      },
+      "distributedBy": {
+        "type": "none",
+        "value": null
+      },
+      "visualization": "bar",
+      "managementReport": true,
+      "instantPreviewReport": false
+    }
+  }
+]

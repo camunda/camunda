@@ -379,6 +379,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-core</artifactId>
       <version>${mockserver.version}</version>

@@ -13,15 +13,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.HasAgentInstancesFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -129,6 +136,84 @@ public class ObjectMapperFactoryTest {
                 .getData()
                 .getValues())
         .containsExactly(true);
+  }
+
+  @Test
+  public void testHasAgentInstancesFilterSerialization() throws Exception {
+    final ProcessReportDataDto data =
+        createOptimizeMapper()
+            .readValue(
+                ObjectMapperFactoryTest.class.getResourceAsStream(
+                    "/test/data/filter_request_has_agent_instances.json"),
+                ProcessReportDataDto.class);
+
+    assertThat(data.getFilter()).hasSize(1);
+    assertThat(data.getFilter().get(0)).isInstanceOf(HasAgentInstancesFilterDto.class);
+    assertThat(data.getFilter().get(0).getData())
+        .isInstanceOf(HasAgentInstancesFilterDataDto.class);
+  }
+
+  @Test
+  public void testAgentViewSerialization() throws Exception {
+    final ProcessReportDataDto data =
+        createOptimizeMapper()
+            .readValue(
+                ObjectMapperFactoryTest.class.getResourceAsStream(
+                    "/test/data/report_request_agent_input_tokens.json"),
+                ProcessReportDataDto.class);
+
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
+    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.INPUT_TOKENS);
+    assertThat(
+            Arrays.stream(ProcessExecutionPlan.values()).map(ProcessExecutionPlan::getCommandKey))
+        .contains(data.createCommandKey());
+  }
+
+  @Test
+  public void testAgentAvgTokensPerCallViewSerialization() throws Exception {
+    final ProcessReportDataDto data =
+        createOptimizeMapper()
+            .readValue(
+                ObjectMapperFactoryTest.class.getResourceAsStream(
+                    "/test/data/report_request_agent_avg_tokens_per_call.json"),
+                ProcessReportDataDto.class);
+
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
+    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.AVG_TOKENS_PER_CALL);
+    assertThat(
+            Arrays.stream(ProcessExecutionPlan.values()).map(ProcessExecutionPlan::getCommandKey))
+        .contains(data.createCommandKey());
+  }
+
+  @Test
+  public void testProcessDefinitionKeyGroupBySerialization() throws Exception {
+    final ProcessReportDataDto data =
+        createOptimizeMapper()
+            .readValue(
+                ObjectMapperFactoryTest.class.getResourceAsStream(
+                    "/test/data/report_request_group_by_process_definition_key.json"),
+                ProcessReportDataDto.class);
+
+    assertThat(data.getGroupBy().getType()).isEqualTo(ProcessGroupByType.PROCESS_DEFINITION_KEY);
+    assertThat(
+            Arrays.stream(ProcessExecutionPlan.values()).map(ProcessExecutionPlan::getCommandKey))
+        .contains(data.createCommandKey());
+  }
+
+  @Test
+  public void testProcessDefinitionVersionGroupBySerialization() throws Exception {
+    final ProcessReportDataDto data =
+        createOptimizeMapper()
+            .readValue(
+                ObjectMapperFactoryTest.class.getResourceAsStream(
+                    "/test/data/report_request_group_by_process_definition_version.json"),
+                ProcessReportDataDto.class);
+
+    assertThat(data.getGroupBy().getType())
+        .isEqualTo(ProcessGroupByType.PROCESS_DEFINITION_VERSION);
+    assertThat(
+            Arrays.stream(ProcessExecutionPlan.values()).map(ProcessExecutionPlan::getCommandKey))
+        .contains(data.createCommandKey());
   }
 
   @Test

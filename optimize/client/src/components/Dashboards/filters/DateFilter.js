@@ -9,7 +9,7 @@
 import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
-import {Button, MenuItem, MenuItemSelectable, MenuItemDivider} from '@carbon/react';
+import {Button, ComboBox, MenuItem, MenuItemSelectable, MenuItemDivider} from '@carbon/react';
 import {Filter} from '@carbon/icons-react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
@@ -27,6 +27,7 @@ export default function DateFilter({
   children,
   emptyText = t('common.select'),
   title,
+  presetMode,
 }) {
   const isFixed = filter?.type === 'fixed' || filter?.type === 'rolling';
 
@@ -146,6 +147,115 @@ export default function DateFilter({
       excludeUndefined: false,
       includeUndefined: false,
     });
+  }
+
+  const agenticDatePresets = [
+    {
+      id: 'today',
+      label: 'today',
+      filter: {
+        type: 'relative',
+        start: {value: 0, unit: 'days'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-day',
+      label: 'last day',
+      filter: {
+        type: 'relative',
+        start: {value: 1, unit: 'days'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-7-days',
+      label: 'last 7 days',
+      filter: {
+        type: 'rolling',
+        start: {value: 7, unit: 'days'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-30-days',
+      label: 'last 30 days',
+      filter: {
+        type: 'rolling',
+        start: {value: 30, unit: 'days'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-3-months',
+      label: 'last 3 months',
+      filter: {
+        type: 'rolling',
+        start: {value: 3, unit: 'months'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-6-months',
+      label: 'last 6 months',
+      filter: {
+        type: 'rolling',
+        start: {value: 6, unit: 'months'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+    {
+      id: 'last-12-months',
+      label: 'last 12 months',
+      filter: {
+        type: 'rolling',
+        start: {value: 12, unit: 'months'},
+        end: null,
+        excludeUndefined: false,
+        includeUndefined: false,
+      },
+    },
+  ];
+
+  const selectedAgenticPreset =
+    presetMode === 'agentic'
+      ? agenticDatePresets.find((preset) => isSameDateFilter(preset.filter, filter)) || null
+      : null;
+
+  if (presetMode === 'agentic') {
+    return (
+      <div className={classnames('DateFilter__Dashboard', {fixed: filter?.type === 'fixed'})}>
+        <div className="title">
+          {title}
+          {children}
+        </div>
+        <ComboBox
+          id={`agentic-date-preset-${title || 'filter'}`}
+          size="sm"
+          items={agenticDatePresets}
+          itemToString={(item) => item?.label ?? ''}
+          selectedItem={selectedAgenticPreset}
+          onChange={({selectedItem}) => {
+            if (selectedItem) {
+              setFilter(selectedItem.filter);
+            }
+          }}
+          placeholder={emptyText}
+        />
+      </div>
+    );
   }
 
   return (
@@ -281,3 +391,14 @@ const getFixedType = (start, end) => {
     return 'rolling';
   }
 };
+
+function isSameDateFilter(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+  return (
+    left.type === right.type &&
+    left.start?.value === right.start?.value &&
+    left.start?.unit === right.start?.unit
+  );
+}

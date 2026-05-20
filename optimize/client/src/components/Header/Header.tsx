@@ -139,7 +139,7 @@ function createNavBarProps(
       label: t('navigation.dashboards').toString(),
       routeProps: {to: '/'},
       isCurrentPage: isCurrentPage(
-        ['/', '/processes/', '/processes/*', '/dashboard/instant/*'],
+        ['/', '/processes/', '/processes/*', '/dashboard/instant/*', '/agentic-control-plane*'],
         pathname
       ),
     },

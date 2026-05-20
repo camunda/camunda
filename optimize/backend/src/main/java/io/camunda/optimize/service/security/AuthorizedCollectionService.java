@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
@@ -150,6 +151,17 @@ public class AuthorizedCollectionService {
               .reduce(
                   BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
     }
+
+    if (highestGrantedAuthorization.isEmpty() && collectionDefinition.isAutomaticallyCreated()) {
+      final RoleType defaultRoleForSystemCollection =
+          identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)
+              ? RoleType.EDITOR
+              : RoleType.VIEWER;
+      return Optional.of(
+          new AuthorizedCollectionDefinitionDto(
+              defaultRoleForSystemCollection, collectionDefinition));
+    }
+
     userRole = highestGrantedAuthorization.map(CollectionRoleRequestDto::getRole);
     return userRole.map(
         roleType -> new AuthorizedCollectionDefinitionDto(roleType, collectionDefinition));

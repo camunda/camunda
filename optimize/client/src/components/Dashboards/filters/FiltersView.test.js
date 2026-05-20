@@ -6,14 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {Button} from '@carbon/react';
+import {Button, ComboBox} from '@carbon/react';
 
 import VariableFilter from './VariableFilter';
 import AssigneeFilter from './AssigneeFilter';
 
 import FiltersView from './FiltersView';
+import {loadDefinitions} from 'services';
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  loadDefinitions: jest.fn().mockResolvedValue([]),
+}));
 
 const props = {
   availableFilters: [],
@@ -22,6 +28,7 @@ const props = {
 
 beforeEach(() => {
   props.setFilter.mockClear();
+  loadDefinitions.mockClear();
 });
 
 it('should render a filter input based on the availableFilters', () => {
@@ -121,4 +128,61 @@ it('should remove a variable filter', () => {
   node.find(VariableFilter).prop('setFilter')();
 
   expect(props.setFilter).toHaveBeenCalledWith([{type: 'runningInstancesOnly'}]);
+});
+
+it('should load process definitions with hasAgentRuns and propagate selected process scope', async () => {
+  loadDefinitions.mockResolvedValueOnce([
+    {key: 'invoice-process', name: 'Invoice process'},
+    {key: 'refund-process', name: 'Refund process'},
+  ]);
+
+  const onProcessScopeChange = jest.fn();
+  const node = shallow(
+    <FiltersView
+      {...props}
+      availableFilters={[{type: 'instanceStartDate'}]}
+      datePresetMode="agentic"
+      processScope={null}
+      onProcessScopeChange={onProcessScopeChange}
+    />
+  );
+
+  await runAllEffects();
+  await flushPromises();
+
+  expect(loadDefinitions).toHaveBeenCalledWith('process', null, {hasAgentRuns: true});
+  expect(node.find('.agentic-process-scope-combobox')).toExist();
+
+  node.find('.agentic-process-scope-combobox').simulate('change', {
+    selectedItem: {key: 'invoice-process', name: 'Invoice process'},
+  });
+  expect(onProcessScopeChange).toHaveBeenCalledWith({
+    key: 'invoice-process',
+    name: 'Invoice process',
+  });
+
+  node.find('.agentic-process-scope-combobox').simulate('change', {
+    selectedItem: {key: '', name: 'All'},
+  });
+  expect(onProcessScopeChange).toHaveBeenCalledWith(null);
+
+  expect(node.find(ComboBox)).toExist();
+});
+
+it('should reset process scope to all processes when clicking reset in agentic mode', () => {
+  const onProcessScopeChange = jest.fn();
+  const node = shallow(
+    <FiltersView
+      {...props}
+      availableFilters={[{type: 'instanceStartDate'}]}
+      datePresetMode="agentic"
+      processScope={{key: 'invoice-process', name: 'Invoice process'}}
+      onProcessScopeChange={onProcessScopeChange}
+    />
+  );
+
+  node.find(Button).simulate('click');
+
+  expect(props.setFilter).toHaveBeenCalledWith([]);
+  expect(onProcessScopeChange).toHaveBeenCalledWith(null);
 });

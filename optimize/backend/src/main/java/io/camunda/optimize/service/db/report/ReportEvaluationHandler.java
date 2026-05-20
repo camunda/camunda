@@ -350,50 +350,100 @@ public abstract class ReportEvaluationHandler {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final AdditionalProcessReportEvaluationFilterDto additionalFilters,
       final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
-    if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
-      if (reportDefinitionDto
-          instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
-        final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
-        // We only fetch the variable filter values if a variable filter is present
-        if (additionalFilters.getFilter().stream()
-            .anyMatch(filter -> filter.getData() instanceof VariableFilterDataDto)) {
-          variableFiltersByTypeForReport =
-              varNameSupplier.get().stream()
-                  .collect(
-                      Collectors.groupingBy(
-                          ProcessVariableNameResponseDto::getType,
-                          () -> new EnumMap<>(VariableType.class),
-                          mapping(ProcessVariableNameResponseDto::getName, Collectors.toSet())));
-        } else {
-          variableFiltersByTypeForReport = new EnumMap<>(VariableType.class);
-        }
+    if (additionalFilters == null) {
+      return;
+    }
 
-        final List<ProcessFilterDto<?>> additionalFiltersToApply =
-            additionalFilters.getFilter().stream()
-                .filter(
-                    additionalFilter -> {
-                      if (additionalFilter.getData()
-                          instanceof final VariableFilterDataDto<?> filterData) {
-                        final Set<String> variableNamesForType =
-                            variableFiltersByTypeForReport.getOrDefault(
-                                filterData.getType(), Collections.emptySet());
-                        return variableNamesForType.contains(filterData.getName());
-                      }
-                      return true;
-                    })
-                .collect(Collectors.toList());
+    if (reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
+      applyDefinitionOverridesIfPresent(definitionDto, additionalFilters);
+      applyAdditionalFiltersIfPresent(definitionDto, additionalFilters, varNameSupplier);
+    } else if (CollectionUtils.isNotEmpty(additionalFilters.getFilter())
+        || CollectionUtils.isNotEmpty(additionalFilters.getDefinitions())) {
+      logger.debug(
+          "Cannot add additional filters to report [{}] as it is not a process report",
+          reportDefinitionDto.getId());
+    }
+  }
 
-        final List<ProcessFilterDto<?>> existingFilter = definitionDto.getData().getFilter();
-        if (existingFilter != null) {
-          existingFilter.addAll(additionalFiltersToApply);
-        } else {
-          definitionDto.getData().setFilter(additionalFiltersToApply);
-        }
-      } else {
-        logger.debug(
-            "Cannot add additional filters to report [{}] as it is not a process report",
-            reportDefinitionDto.getId());
-      }
+  private void applyDefinitionOverridesIfPresent(
+      final SingleProcessReportDefinitionRequestDto definitionDto,
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    if (CollectionUtils.isEmpty(additionalFilters.getDefinitions())) {
+      return;
+    }
+
+    final Set<String> scopedDefinitionKeys =
+        additionalFilters.getDefinitions().stream()
+            .map(ReportDataDefinitionDto::getKey)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (CollectionUtils.isEmpty(scopedDefinitionKeys)) {
+      return;
+    }
+
+    final List<ReportDataDefinitionDto> reportDefinitions =
+        definitionDto.getData().getDefinitions();
+    if (CollectionUtils.isEmpty(reportDefinitions)) {
+      definitionDto.getData().setDefinitions(additionalFilters.getDefinitions());
+      return;
+    }
+
+    final List<ReportDataDefinitionDto> scopedDefinitions =
+        reportDefinitions.stream()
+            .filter(definition -> scopedDefinitionKeys.contains(definition.getKey()))
+            .collect(Collectors.toList());
+    if (CollectionUtils.isEmpty(scopedDefinitions)) {
+      throw new OptimizeValidationException(
+          "Provided definition override does not match the report data sources");
+    }
+
+    definitionDto.getData().setDefinitions(scopedDefinitions);
+  }
+
+  private void applyAdditionalFiltersIfPresent(
+      final SingleProcessReportDefinitionRequestDto definitionDto,
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters,
+      final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
+    if (CollectionUtils.isEmpty(additionalFilters.getFilter())) {
+      return;
+    }
+
+    final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
+    // We only fetch the variable filter values if a variable filter is present
+    if (additionalFilters.getFilter().stream()
+        .anyMatch(filter -> filter.getData() instanceof VariableFilterDataDto)) {
+      variableFiltersByTypeForReport =
+          varNameSupplier.get().stream()
+              .collect(
+                  Collectors.groupingBy(
+                      ProcessVariableNameResponseDto::getType,
+                      () -> new EnumMap<>(VariableType.class),
+                      mapping(ProcessVariableNameResponseDto::getName, Collectors.toSet())));
+    } else {
+      variableFiltersByTypeForReport = new EnumMap<>(VariableType.class);
+    }
+
+    final List<ProcessFilterDto<?>> additionalFiltersToApply =
+        additionalFilters.getFilter().stream()
+            .filter(
+                additionalFilter -> {
+                  if (additionalFilter.getData()
+                      instanceof final VariableFilterDataDto<?> filterData) {
+                    final Set<String> variableNamesForType =
+                        variableFiltersByTypeForReport.getOrDefault(
+                            filterData.getType(), Collections.emptySet());
+                    return variableNamesForType.contains(filterData.getName());
+                  }
+                  return true;
+                })
+            .collect(Collectors.toList());
+
+    final List<ProcessFilterDto<?>> existingFilter = definitionDto.getData().getFilter();
+    if (existingFilter != null) {
+      existingFilter.addAll(additionalFiltersToApply);
+    } else {
+      definitionDto.getData().setFilter(additionalFiltersToApply);
     }
   }
 }

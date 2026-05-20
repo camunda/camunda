@@ -162,7 +162,7 @@ import event.
 | Endpoint | Purpose |
 |---|---|
 | `POST /api/report/{id}/evaluate` | Evaluate the pre-seeded agentic saved report identified by `{id}` with optional filter overrides (date range, processDefinitionKey) in the request body |
-| `GET /api/process-definition` (extended with `hasAgentRuns=true`) | Process selector dropdown |
+| `GET /api/definition/process/keys?hasAgentRuns=true` | Process selector dropdown |
 
 **No new endpoints** under `/api/agentic-control-plane/*`.
 
@@ -463,7 +463,7 @@ The **agentic dashboard runtime** uses exactly two endpoint families:
 | Method + Path | Purpose |
 |---|---|
 | `POST /api/report/{id}/evaluate` | Evaluate one pre-seeded agentic saved report with filter overrides. Called once per tile per render. |
-| `GET /api/process-definition?hasAgentRuns=true` | Populate the process selector dropdown with processes that contain at least one agent run. |
+| `GET /api/definition/process/keys?hasAgentRuns=true` | Populate the process selector dropdown with processes that contain at least one agent run. |
 
 ### 5.2 Saved-report ID constants
 
@@ -594,6 +594,47 @@ type HyperMapResultEntry = {
   value: MapResultEntry[];
 };
 ```
+
+### 5.4.1 Task 1 contract — filter semantics (existing Optimize infrastructure)
+
+This section is the source of truth for FE implementation, backend alignment, and tests.
+
+#### Date combobox preset mapping
+
+The dashboard sends exactly one `instanceStartDate` filter to every
+`POST /api/report/{id}/evaluate` call.
+
+| Combobox option | Filter payload |
+|---|---|
+| today | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "relative", "start": { "value": 0, "unit": "days" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last day | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "relative", "start": { "value": 1, "unit": "days" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last 7 days | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "rolling", "start": { "value": 7, "unit": "days" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last 30 days | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "rolling", "start": { "value": 30, "unit": "days" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last 3 months | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "rolling", "start": { "value": 3, "unit": "months" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last 6 months | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "rolling", "start": { "value": 6, "unit": "months" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+| last 12 months | `{ "type": "instanceStartDate", "filterLevel": "instance", "data": { "type": "rolling", "start": { "value": 12, "unit": "months" }, "end": null, "includeUndefined": false, "excludeUndefined": false } }` |
+
+Semantics:
+1. `today` and `last day` use existing relative-date behavior.
+2. `last N days/months` uses rolling windows.
+3. No preset sets `includeUndefined` or `excludeUndefined` to `true`.
+
+#### Process scope mapping
+
+Process selector uses existing definition endpoints:
+1. Load options from `GET /api/definition/process/keys?hasAgentRuns=true`.
+2. For **All processes**, do not send `definitions` override.
+3. For **Specific process**, send a single `ReportDataDefinitionDto` in
+   `definitions`:
+   - `identifier: "process"`
+   - `key: <selected processDefinitionKey>`
+   - `versions: ["all"]`
+   - `tenantIds`: resolved with
+     `POST /api/definition/process/_resolveTenantsForVersions` for that key/version.
+
+Gate until Task 7.5 is merged: if
+`AdditionalProcessReportEvaluationFilterDto` does not yet support
+`definitions`, the UI must keep process scope fixed to **All processes**.
 
 ### 5.5 Per-tile contract — concrete fixtures
 
@@ -945,14 +986,14 @@ async function loadAgenticDashboard(filterState: FilterState, level: 'L0' | 'L1'
 
 ### 5.8 Process definition selector
 
-**Endpoint**: `GET /api/process-definition?hasAgentRuns=true`
+**Endpoint**: `GET /api/definition/process/keys?hasAgentRuns=true`
 
 **Mock response**:
 ```json
 [
-  { "key": "invoice-approval",      "name": "Invoice Approval",      "versions": ["1","2","3"] },
-  { "key": "warranty-registration", "name": "Warranty Registration", "versions": ["1","2"] },
-  { "key": "onboarding-guide",      "name": "Onboarding Guide",      "versions": ["1"] }
+  { "key": "invoice-approval",      "name": "Invoice Approval" },
+  { "key": "warranty-registration", "name": "Warranty Registration" },
+  { "key": "onboarding-guide",      "name": "Onboarding Guide" }
 ]
 ```
 
@@ -1036,8 +1077,8 @@ data model.** Components remain decoupled from the report engine.
 
 ### 6.4 Process selector
 
-Same as V1 §5.5 — uses the extended
-`GET /api/process-definition?hasAgentRuns=true` endpoint.
+Same as V1 §5.5 — uses
+`GET /api/definition/process/keys?hasAgentRuns=true`.
 
 ### 6.5 Display rules
 
@@ -1199,7 +1240,7 @@ this. Each underlying ES query is filter-cache friendly.
 | 7.5.2 Thread `definitions` through `ReportEvaluationService.evaluateSavedReportWithAdditionalFilters(...)` into the execution context | When non-empty, the `definitions` override replaces the saved report's stored definition list before evaluation. |
 | 7.5.3 Unit test | Verify L1 call with `definitions` override scopes query to the correct `processDefinitionKey`. |
 
-#### Task 8 — Extend `GET /api/process-definition` with `hasAgentRuns=true`
+#### Task 8 — Extend `GET /api/definition/process/keys` with `hasAgentRuns=true`
 
 **Story Points:**
 - Alexandre: 3
@@ -1271,12 +1312,12 @@ this. Each underlying ES query is filter-cache friendly.
 | API client wrapping `POST /api/report/{id}/evaluate` with filter override application + typed responses + period-delta orchestration | SR: 5 / Alexandre: 5 | Implements §5.3 / §5.4 / §5.7. Builds `EvaluateReportRequest` from filter state + delta period offset. Parses `Measure[]` into typed component contracts. |
 | Mock fixtures (`optimize/client/mocks/agentic/*.json`) + mock server interception of `POST /api/report/{id}/evaluate` | SR: 2 / Alexandre: 3 | One `.json` per saved report from §5.2 + `.prior.json` twins for delta-bearing reports. Mock-server file layout per §5.9. Enables full frontend development against mocks before backend is ready. |
 | Composite functions (summary multi-report assembly, period delta computation, derived metric calculation) | SR: 3 / Alexandre: 3 | `loadAgenticDashboard()` orchestrator per §5.7. Computes `delta = current - prior` for delta-bearing KPIs. |
-| Filter context, date range picker, process selector dropdown | SR: 5 / Alexandre: 5 | Shared state driving all components. Requires `GET /api/process-definition?hasAgentRuns=true` extension (Task 8). |
+| Filter context, date range picker, process selector dropdown | SR: 5 / Alexandre: 5 | Shared state driving all components. Requires `GET /api/definition/process/keys?hasAgentRuns=true` extension (Task 8). |
 | KPI cards: Total Runs, Avg Duration, Incident Rate (with period delta badges) | SR: 3 / Alexandre: 3 | Composes from §5.5.1, §5.5.2, §5.5.3. |
 | Token stats: Avg Tokens Per Run, Median Tokens Per Run | SR: 1 / Alexandre: 2 | Composes from §5.5.4. Single report (`agentic-tokens-summary`) — two measures. |
 | Duration stats: P50/P95 KPI cards + duration stability trend chart | SR: 5 / Alexandre: 3 | Scalars from §5.5.2; trend chart from §5.5.5. |
 | Token trend chart (input + output lines) + token outlier bands | SR: 3 / Alexandre: 3 | Two reports overlaid (§5.5.6) for trend lines; one report (§5.5.7) for outlier bands. Three components total. |
-| Top token consumers by process bar chart | SR: 3 / Alexandre: 3 | Composes from §5.5.8. L0 only. Includes secondary name resolution from `GET /api/process-definition` joined by `processDefinitionKey` client-side. |
+| Top token consumers by process bar chart | SR: 3 / Alexandre: 3 | Composes from §5.5.8. L0 only. Includes secondary name resolution from `GET /api/definition/process/keys` joined by `processDefinitionKey` client-side. |
 | Total tool calls line (no tool breakdown) | SR: 1 / Alexandre: 3 | Composes from §5.5.11. L0 + L1. Phase 1 shows a single total value only. |
 | Avg tokens per call by process bar chart | SR: 2 / Alexandre: 2 | Composes from §5.5.9. Render null cells as `"—"`. |
 | Incident rate by version bar chart | SR: 2 / Alexandre: 2 | Composes from §5.5.10. L1 only. |

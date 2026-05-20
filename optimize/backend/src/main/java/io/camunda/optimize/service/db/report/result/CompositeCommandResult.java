@@ -187,7 +187,8 @@ public class CompositeCommandResult {
 
     // if this is a frequency or percentage view only null key is expected
     if (ViewProperty.FREQUENCY.equals(viewProperty)
-        || ViewProperty.PERCENTAGE.equals(viewProperty)) {
+        || ViewProperty.PERCENTAGE.equals(viewProperty)
+        || ViewProperty.AVG_TOKENS_PER_CALL.equals(viewProperty)) {
       measureMap.put(new ViewMeasureIdentifier(), defaultValueSupplier.get());
     }
 

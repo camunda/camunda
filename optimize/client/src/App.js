@@ -34,7 +34,25 @@ import {Provider as Theme} from 'theme';
 import {UserProvider, DocsProvider} from 'HOC';
 import {TranslationProvider} from 'translation';
 
+const AGENTIC_CONTROL_PLANE_DASHBOARD_ID = 'agentic-control-plane-dashboard';
+
 export default function App({error}) {
+  function renderAgenticControlPlaneDashboard(props) {
+    return (
+      <Dashboard
+        {...props}
+        entity="dashboard"
+        match={{
+          ...props.match,
+          params: {
+            ...(props.match?.params ?? {}),
+            id: AGENTIC_CONTROL_PLANE_DASHBOARD_ID,
+          },
+        }}
+      />
+    );
+  }
+
   function renderEntity(props) {
     const components = {
       report: Report,
@@ -85,6 +103,11 @@ export default function App({error}) {
                   <DocsProvider>
                     <Switch>
                       <PrivateRoute exact path="/" component={Processes} />
+                      <PrivateRoute
+                        exact
+                        path="/agentic-control-plane"
+                        render={renderAgenticControlPlaneDashboard}
+                      />
                       <PrivateRoute path="/analysis" component={Analysis} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute

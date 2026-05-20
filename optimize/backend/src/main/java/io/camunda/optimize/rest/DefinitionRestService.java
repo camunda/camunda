@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -82,9 +83,19 @@ public class DefinitionRestService {
   public List<DefinitionOptimizeResponseDto> getDefinitions(
       @PathVariable("type") final DefinitionType type,
       @RequestParam(name = "includeXml", required = false) final boolean includeXml,
+      @RequestParam(name = "hasAgentRuns", required = false) final Boolean hasAgentRuns,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
-    return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
+    final List<DefinitionOptimizeResponseDto> definitions =
+        definitionService.getFullyImportedDefinitions(type, userId, includeXml);
+    if (!shouldFilterByAgentRuns(type, hasAgentRuns)) {
+      return definitions;
+    }
+    final Set<String> processDefinitionsWithAgentRuns =
+        definitionService.getProcessDefinitionsWithAgentRuns(userId);
+    return definitions.stream()
+        .filter(definition -> processDefinitionsWithAgentRuns.contains(definition.getKey()))
+        .toList();
   }
 
   @PostMapping("/{type}/_resolveTenantsForVersions")
@@ -176,10 +187,12 @@ public class DefinitionRestService {
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @PathVariable(name = "type") final DefinitionType type,
       @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
+      @RequestParam(name = "hasAgentRuns", required = false) final Boolean hasAgentRuns,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
-    final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
+    final List<DefinitionResponseDto> definitions =
+        getDefinitions(type, collectionId, userId, hasAgentRuns);
     return definitions.stream()
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
         .collect(Collectors.toList());
@@ -261,12 +274,30 @@ public class DefinitionRestService {
   }
 
   private List<DefinitionResponseDto> getDefinitions(
-      final DefinitionType type, final String collectionId, final String userId) {
+      final DefinitionType type,
+      final String collectionId,
+      final String userId,
+      final Boolean hasAgentRuns) {
+    final List<DefinitionResponseDto> definitions;
     if (collectionId != null) {
-      return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
+      definitions = collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
     } else {
-      return definitionService.getFullyImportedDefinitions(type, userId);
+      definitions = definitionService.getFullyImportedDefinitions(type, userId);
     }
+
+    if (!shouldFilterByAgentRuns(type, hasAgentRuns)) {
+      return definitions;
+    }
+
+    final Set<String> processDefinitionsWithAgentRuns =
+        definitionService.getProcessDefinitionsWithAgentRuns(userId);
+    return definitions.stream()
+        .filter(definition -> processDefinitionsWithAgentRuns.contains(definition.getKey()))
+        .toList();
+  }
+
+  private boolean shouldFilterByAgentRuns(final DefinitionType type, final Boolean hasAgentRuns) {
+    return DefinitionType.PROCESS.equals(type) && Boolean.TRUE.equals(hasAgentRuns);
   }
 
   private void addNoStoreCacheHeader(final BodyBuilder bodyBuilder) {

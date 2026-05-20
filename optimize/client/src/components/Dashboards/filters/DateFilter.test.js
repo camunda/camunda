@@ -8,7 +8,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {MenuItem, MenuItemSelectable} from '@carbon/react';
+import {ComboBox, MenuItem, MenuItemSelectable} from '@carbon/react';
 
 import {DatePicker, MenuDropdown} from 'components';
 
@@ -119,4 +119,32 @@ it('should render children', () => {
   );
 
   expect(node.find('.childContent')).toExist();
+});
+
+it('should render agentic presets in a combobox and set the selected preset filter', () => {
+  const node = shallow(<DateFilter {...props} presetMode="agentic" />);
+
+  expect(node.find(ComboBox)).toExist();
+
+  node.find(ComboBox).simulate('change', {
+    selectedItem: {
+      id: 'last-7-days',
+      label: 'last 7 days',
+      filter: {
+        type: 'rolling',
+        start: {value: 7, unit: 'days'},
+        end: null,
+        includeUndefined: false,
+        excludeUndefined: false,
+      },
+    },
+  });
+
+  expect(props.setFilter).toHaveBeenCalledWith({
+    type: 'rolling',
+    start: {value: 7, unit: 'days'},
+    end: null,
+    includeUndefined: false,
+    excludeUndefined: false,
+  });
 });

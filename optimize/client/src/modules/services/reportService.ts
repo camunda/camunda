@@ -43,17 +43,32 @@ type DeepPartial<T> = T extends object
   : T;
 
 export type ReportEvaluationPayload = DeepPartial<Report>;
+export type AdditionalReportEvaluationContext = {
+  definitions?: {
+    key: string;
+    name?: string | null;
+    displayName?: string | null;
+    versions?: string[];
+    tenantIds?: string[];
+    identifier?: string;
+  }[];
+};
 
 export async function evaluateReport(
   payload: ReportEvaluationPayload,
   filter = [],
-  query = {}
+  query = {},
+  additionalContext?: AdditionalReportEvaluationContext
 ): Promise<Report> {
   let response;
 
   if (typeof payload !== 'object') {
     // evaluate saved report
-    response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
+    response = await post(
+      `api/report/${payload}/evaluate`,
+      {filter, ...(additionalContext ?? {})},
+      {query}
+    );
   } else {
     // evaluate unsaved report
     // we dont want to send report result in payload to prevent exceedeing request size limit

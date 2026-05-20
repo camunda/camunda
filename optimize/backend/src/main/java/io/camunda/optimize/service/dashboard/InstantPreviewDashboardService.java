@@ -9,28 +9,45 @@ package io.camunda.optimize.service.dashboard;
 
 import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static io.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
+import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
+import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.collection.CollectionService;
 import io.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
+import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
+import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.report.ReportService;
+import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.FilenameValidatorUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
@@ -40,10 +57,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.Checksum;
@@ -64,32 +83,65 @@ public class InstantPreviewDashboardService {
   public static final String ALTTEXT_FIELD = "altText";
   public static final String TYPE_FIELD = "type";
   public static final String TYPE_IMAGE_VALUE = "image";
+  private static final String AGENTIC_CONTROL_PLANE_TEMPLATE = "template4.json";
+  private static final String AGENTIC_CONTROL_PLANE_DASHBOARD_ID =
+      "agentic-control-plane-dashboard";
+  private static final String AGENTIC_CONTROL_PLANE_DASHBOARD_NAME = "Agentic Control Plane";
+  private static final String AGENTIC_CONTROL_PLANE_DASHBOARD_DESCRIPTION =
+      "System-managed dashboard for Agentic Control Plane KPIs.";
+  private static final String AGENTIC_CONTROL_PLANE_COLLECTION_ID = "agentic-control-plane";
+  private static final String AGENTIC_CONTROL_PLANE_COLLECTION_NAME = "Agentic Control Plane";
+  private static final Set<String> AGENTIC_CONTROL_PLANE_REPORT_IDS =
+      Set.of(
+          "agentic-total-runs",
+          "agentic-duration-summary",
+          "agentic-duration-trend",
+          "agentic-incident-count",
+          "agentic-incident-rate",
+          "agentic-incident-rate-by-version",
+          "agentic-tokens-summary",
+          "agentic-tokens-trend",
+          "agentic-tokens-input-trend",
+          "agentic-tokens-output-trend",
+          "agentic-tokens-by-process",
+          "agentic-process-instance-count-by-process",
+          "agentic-tool-calls-total",
+          "agentic-avg-tokens-per-call-by-process");
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(InstantPreviewDashboardService.class);
   protected final ConfigurationService configurationService;
   private final DashboardService dashboardService;
+  private final DashboardWriter dashboardWriter;
   private final ReportService reportService;
+  private final ReportWriter reportWriter;
   private final InstantDashboardMetadataReader instantDashboardMetadataReader;
   private final InstantDashboardMetadataWriter instantDashboardMetadataWriter;
   private final EntityImportService entityImportService;
   private final DefinitionService definitionService;
+  private final CollectionService collectionService;
   private final HashMap<String, Long> templateChecksums;
 
   public InstantPreviewDashboardService(
       final DashboardService dashboardService,
+      final DashboardWriter dashboardWriter,
       final ReportService reportService,
+      final ReportWriter reportWriter,
       final InstantDashboardMetadataReader instantDashboardMetadataReader,
       final InstantDashboardMetadataWriter instantDashboardMetadataWriter,
       final EntityImportService entityImportService,
       final DefinitionService definitionService,
+      final CollectionService collectionService,
       final ConfigurationService configurationService,
       final HashMap<String, Long> templateChecksums) {
     this.dashboardService = dashboardService;
+    this.dashboardWriter = dashboardWriter;
     this.reportService = reportService;
+    this.reportWriter = reportWriter;
     this.instantDashboardMetadataReader = instantDashboardMetadataReader;
     this.instantDashboardMetadataWriter = instantDashboardMetadataWriter;
     this.entityImportService = entityImportService;
     this.definitionService = definitionService;
+    this.collectionService = collectionService;
     this.configurationService = configurationService;
     this.templateChecksums = templateChecksums;
   }
@@ -348,6 +400,194 @@ public class InstantPreviewDashboardService {
       // since any error is not critical and would not hinder optimize in functioning properly
       LOG.error("There was an error deleting data from an outdated Instant preview dashboard", e);
     }
+  }
+
+  @EventListener(ApplicationReadyEvent.class)
+  public void reconcileAgenticControlPlaneReportsFromTemplate() {
+    try {
+      readAndProcessDashboardTemplate(AGENTIC_CONTROL_PLANE_TEMPLATE)
+          .ifPresent(this::reconcileAgenticControlPlaneReportsFromTemplate);
+    } catch (final Exception e) {
+      LOG.error("There was an error reconciling Agentic Control Plane template reports", e);
+    }
+  }
+
+  private void reconcileAgenticControlPlaneReportsFromTemplate(
+      final Set<OptimizeEntityExportDto> exportDtos) {
+    final String collectionId = ensureAgenticControlPlaneCollection();
+    final List<SingleProcessReportDefinitionExportDto> agenticTemplateReports =
+        exportDtos.stream()
+            .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
+            .map(SingleProcessReportDefinitionExportDto.class::cast)
+            .toList();
+    validateAgenticTemplateReportIds(agenticTemplateReports);
+    agenticTemplateReports.forEach(report -> upsertAgenticTemplateReport(report, collectionId));
+    upsertAgenticControlPlaneDashboard(collectionId);
+  }
+
+  private String ensureAgenticControlPlaneCollection() {
+    final PartialCollectionDefinitionRequestDto collectionDefinition =
+        new PartialCollectionDefinitionRequestDto();
+    collectionDefinition.setName(AGENTIC_CONTROL_PLANE_COLLECTION_NAME);
+    collectionService.createNewCollectionWithPresetId(
+        API_IMPORT_OWNER_NAME, collectionDefinition, AGENTIC_CONTROL_PLANE_COLLECTION_ID, true);
+    return AGENTIC_CONTROL_PLANE_COLLECTION_ID;
+  }
+
+  private void validateAgenticTemplateReportIds(
+      final List<SingleProcessReportDefinitionExportDto> templateReports) {
+    final Set<String> templateReportIds =
+        templateReports.stream()
+            .map(SingleProcessReportDefinitionExportDto::getId)
+            .collect(Collectors.toSet());
+    if (!AGENTIC_CONTROL_PLANE_REPORT_IDS.equals(templateReportIds)) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "Template [%s] report IDs do not match expected Agentic Control Plane IDs."
+                  + " expected=%s actual=%s",
+              AGENTIC_CONTROL_PLANE_TEMPLATE, AGENTIC_CONTROL_PLANE_REPORT_IDS, templateReportIds));
+    }
+  }
+
+  private void upsertAgenticTemplateReport(
+      final SingleProcessReportDefinitionExportDto templateReport, final String collectionId) {
+    final String reportId = templateReport.getId();
+    templateReport.getData().setManagementReport(true);
+    templateReport.getData().setInstantPreviewReport(false);
+
+    try {
+      final ReportDefinitionDto<?> existingReport = reportService.getReportDefinition(reportId);
+      if (!(existingReport instanceof SingleProcessReportDefinitionRequestDto)) {
+        throw new OptimizeRuntimeException(
+            String.format(
+                "Cannot reconcile template report [%s]: existing entity is not a single process report.",
+                reportId));
+      }
+      reportWriter.updateSingleProcessReport(
+          toSingleProcessReportUpdate(templateReport, collectionId));
+    } catch (final NotFoundException exception) {
+      reportWriter.createNewSingleProcessReport(
+          API_IMPORT_OWNER_NAME,
+          templateReport.getData(),
+          templateReport.getName(),
+          templateReport.getDescription(),
+          collectionId,
+          reportId);
+    }
+  }
+
+  private SingleProcessReportDefinitionUpdateDto toSingleProcessReportUpdate(
+      final SingleProcessReportDefinitionExportDto reportToImport, final String collectionId) {
+    final SingleProcessReportDefinitionUpdateDto reportUpdate =
+        new SingleProcessReportDefinitionUpdateDto();
+    reportUpdate.setId(reportToImport.getId());
+    reportUpdate.setName(reportToImport.getName());
+    reportUpdate.setDescription(reportToImport.getDescription());
+    reportUpdate.setCollectionId(collectionId);
+    reportUpdate.setData(reportToImport.getData());
+    reportUpdate.setLastModifier(API_IMPORT_OWNER_NAME);
+    reportUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    return reportUpdate;
+  }
+
+  private void upsertAgenticControlPlaneDashboard(final String collectionId) {
+    final DashboardDefinitionRestDto dashboardDefinition =
+        toAgenticControlPlaneDashboard(collectionId);
+    try {
+      final DashboardDefinitionRestDto existingDashboard =
+          dashboardService.getDashboardDefinitionAsService(AGENTIC_CONTROL_PLANE_DASHBOARD_ID);
+      if (!existingDashboard.isManagementDashboard()) {
+        LOG.warn(
+            String.format(
+                "Recreating Agentic Control Plane dashboard [%s] because existing dashboard is not management dashboard.",
+                AGENTIC_CONTROL_PLANE_DASHBOARD_ID));
+        dashboardWriter.deleteDashboard(AGENTIC_CONTROL_PLANE_DASHBOARD_ID);
+        dashboardWriter.saveDashboard(dashboardDefinition);
+        return;
+      }
+      if (!Objects.equals(existingDashboard.getCollectionId(), collectionId)) {
+        LOG.warn(
+            String.format(
+                "Recreating Agentic Control Plane dashboard [%s] because existing dashboard is not in collection [%s].",
+                AGENTIC_CONTROL_PLANE_DASHBOARD_ID, collectionId));
+        dashboardWriter.deleteDashboard(AGENTIC_CONTROL_PLANE_DASHBOARD_ID);
+        dashboardWriter.saveDashboard(dashboardDefinition);
+        return;
+      }
+      dashboardWriter.updateDashboard(
+          toDashboardUpdateDto(dashboardDefinition), AGENTIC_CONTROL_PLANE_DASHBOARD_ID);
+    } catch (final NotFoundException exception) {
+      dashboardWriter.saveDashboard(dashboardDefinition);
+    }
+  }
+
+  private DashboardDefinitionRestDto toAgenticControlPlaneDashboard(final String collectionId) {
+    final DashboardDefinitionRestDto dashboardDefinition = new DashboardDefinitionRestDto();
+    dashboardDefinition.setId(AGENTIC_CONTROL_PLANE_DASHBOARD_ID);
+    dashboardDefinition.setName(AGENTIC_CONTROL_PLANE_DASHBOARD_NAME);
+    dashboardDefinition.setDescription(AGENTIC_CONTROL_PLANE_DASHBOARD_DESCRIPTION);
+    dashboardDefinition.setCollectionId(collectionId);
+    dashboardDefinition.setOwner(API_IMPORT_OWNER_NAME);
+    dashboardDefinition.setLastModifier(API_IMPORT_OWNER_NAME);
+    dashboardDefinition.setTiles(buildAgenticControlPlaneTiles());
+    dashboardDefinition.setAvailableFilters(List.of(buildDateFilterWithLast30DaysDefault()));
+    dashboardDefinition.setManagementDashboard(true);
+    dashboardDefinition.setInstantPreviewDashboard(false);
+    return dashboardDefinition;
+  }
+
+  private DashboardDefinitionUpdateDto toDashboardUpdateDto(
+      final DashboardDefinitionRestDto dashboardDefinition) {
+    final DashboardDefinitionUpdateDto dashboardUpdate = new DashboardDefinitionUpdateDto();
+    dashboardUpdate.setName(dashboardDefinition.getName());
+    dashboardUpdate.setDescription(dashboardDefinition.getDescription());
+    dashboardUpdate.setTiles(dashboardDefinition.getTiles());
+    dashboardUpdate.setAvailableFilters(dashboardDefinition.getAvailableFilters());
+    dashboardUpdate.setLastModifier(API_IMPORT_OWNER_NAME);
+    dashboardUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    return dashboardUpdate;
+  }
+
+  private DashboardInstanceStartDateFilterDto buildDateFilterWithLast30DaysDefault() {
+    final DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
+    filterDto.setData(
+        new DashboardDateFilterDataDto(
+            new RollingDateFilterDataDto(new RollingDateFilterStartDto(30L, DateUnit.DAYS))));
+    return filterDto;
+  }
+
+  private List<DashboardReportTileDto> buildAgenticControlPlaneTiles() {
+    return List.of(
+        buildDashboardReportTile("agentic-total-runs", 0, 0, 3, 2),
+        buildDashboardReportTile("agentic-duration-summary", 3, 0, 3, 2),
+        buildDashboardReportTile("agentic-incident-count", 6, 0, 3, 2),
+        buildDashboardReportTile("agentic-incident-rate", 9, 0, 3, 2),
+        buildDashboardReportTile("agentic-tokens-summary", 12, 0, 3, 2),
+        buildDashboardReportTile("agentic-tool-calls-total", 15, 0, 3, 2),
+        buildDashboardReportTile("agentic-duration-trend", 0, 2, 9, 4),
+        buildDashboardReportTile("agentic-tokens-trend", 9, 2, 9, 4),
+        buildDashboardReportTile("agentic-tokens-input-trend", 0, 6, 9, 4),
+        buildDashboardReportTile("agentic-tokens-output-trend", 9, 6, 9, 4),
+        buildDashboardReportTile("agentic-tokens-by-process", 0, 10, 9, 4),
+        buildDashboardReportTile("agentic-process-instance-count-by-process", 9, 10, 9, 4),
+        buildDashboardReportTile("agentic-avg-tokens-per-call-by-process", 0, 14, 9, 4),
+        buildDashboardReportTile("agentic-incident-rate-by-version", 9, 14, 9, 4));
+  }
+
+  private DashboardReportTileDto buildDashboardReportTile(
+      final String reportId, final int x, final int y, final int width, final int height) {
+    if (!AGENTIC_CONTROL_PLANE_REPORT_IDS.contains(reportId)) {
+      throw new OptimizeRuntimeException(
+          String.format(
+              "Cannot build Agentic Control Plane dashboard tile. Unknown report id [%s].",
+              reportId));
+    }
+    return DashboardReportTileDto.builder()
+        .id(reportId)
+        .type(DashboardTileType.OPTIMIZE_REPORT)
+        .position(new PositionDto(x, y))
+        .dimensions(new DimensionDto(width, height))
+        .build();
   }
 
   public List<Long> getCurrentFileChecksums() {

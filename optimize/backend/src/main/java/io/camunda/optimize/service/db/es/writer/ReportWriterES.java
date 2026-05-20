@@ -144,6 +144,18 @@ public class ReportWriterES implements ReportWriter {
       final String reportName,
       final String description,
       final String collectionId) {
+    return createNewSingleProcessReport(
+        userId, reportData, reportName, description, collectionId, IdGenerator.getNextId());
+  }
+
+  @Override
+  public IdResponseDto createNewSingleProcessReport(
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId,
+      final String id) {
     LOG.debug("Writing new single report to Elasticsearch");
 
     if (reportData == null) {
@@ -152,8 +164,9 @@ public class ReportWriterES implements ReportWriter {
     if (reportName == null) {
       throw new OptimizeRuntimeException("reportName is null");
     }
-
-    final String id = IdGenerator.getNextId();
+    if (id == null) {
+      throw new OptimizeRuntimeException("id is null");
+    }
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
     reportDefinitionDto.setId(id);

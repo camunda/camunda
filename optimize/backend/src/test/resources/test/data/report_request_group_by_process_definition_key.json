@@ -1,0 +1,11 @@
+{
+  "processDefinitionId": "invoice:1:2d8e28b3-f084-11e7-b1af-024236362ddb",
+  "view": {
+    "entity": "agentInstance",
+    "properties": ["totalTokens"]
+  },
+  "groupBy": {
+    "type": "processDefinitionKey"
+  },
+  "visualization": "bar"
+}

@@ -61,3 +61,18 @@ it('should render dashboar for dashboard/instant route', () => {
   expect(renderedEntity.dive().name()).toBe('Dashboard');
   expect(renderedEntity.props().match.params.id).toBe('defKey');
 });
+
+it('should render dashboard shell for agentic control plane route', () => {
+  const node = shallow(<App />);
+
+  runAllEffects();
+
+  const component = node.find({path: '/agentic-control-plane'}).prop('render')({
+    location: {pathname: '/agentic-control-plane'},
+    match: {params: {}},
+  });
+  const renderedEntity = shallow(component);
+
+  expect(renderedEntity.dive().name()).toBe('Dashboard');
+  expect(renderedEntity.props().match.params.id).toBe('agentic-control-plane-dashboard');
+});
