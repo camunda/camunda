@@ -11,14 +11,13 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
-import org.jspecify.annotations.Nullable;
 
 public final class JobPriorityDefinitionTransformer {
 
   public void transform(
       final ExecutableJobWorkerElement element,
       final TransformContext context,
-      @Nullable final ZeebeJobPriorityDefinition priorityDefinition) {
+      final ZeebeJobPriorityDefinition priorityDefinition) {
 
     if (isNotBackedByJob(element)) {
       return;
