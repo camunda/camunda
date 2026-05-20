@@ -127,6 +127,7 @@ export function validateResponseShape<
   // Call without throwing so we can filter tolerable errors first.
   const result = _generatedValidateResponseShape(spec, body, {
     ...options,
+    truncateValidationErrors: false,
     throw: false,
   }) as ValidationResult;
 
@@ -166,6 +167,7 @@ export async function validateResponse<
   const result = (await _generatedValidateResponse(spec, response, {
     ...options,
     throw: false,
+    truncateValidationErrors: false,
   })) as ValidationResult;
 
   const filtered = _filterForwardCompatErrors(result);

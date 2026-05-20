@@ -12,10 +12,18 @@
   "devDependencies": {
     "@inquirer/prompts": "^7.3.2",
     "@playwright/test": "^1.51.0",
+<<<<<<< HEAD
     "@types/node": "^22.13.9",
     "@typescript-eslint/eslint-plugin": "8.38.0",
     "@typescript-eslint/parser": "8.38.0",
     "eslint": "9.32.0",
+=======
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "8.56.1",
+    "@typescript-eslint/parser": "8.56.1",
+    "assert-json-body": "^1.8.1",
+    "eslint": "9.39.4",
+>>>>>>> 0e39607f (test: disable truncation of errors in fw-compat tests)
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.8.0",
     "eslint-plugin-playwright": "2.2.2",
