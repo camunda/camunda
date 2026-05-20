@@ -28,14 +28,14 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
 
   private UUID streamId;
   private final DirectBuffer metadataReader = new UnsafeBuffer();
-  private BufferWriter metadataWriter = new DirectBufferWriter().wrap(metadataReader);
+  private BufferWriter metadataWriter = new DirectBufferWriter(metadataReader);
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     messageDecoder.wrapStreamType(streamType);
     messageDecoder.wrapMetadata(metadataReader);
-    metadataWriter = new DirectBufferWriter().wrap(metadataReader);
+    metadataWriter = new DirectBufferWriter(metadataReader);
     streamId = new UUID(messageDecoder.id().high(), messageDecoder.id().low());
   }
 
@@ -85,7 +85,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
 
   public AddStreamRequest metadata(final DirectBuffer metadata) {
     metadataReader.wrap(metadata);
-    metadataWriter = new DirectBufferWriter().wrap(metadata);
+    metadataWriter = new DirectBufferWriter(metadata);
     return this;
   }
 

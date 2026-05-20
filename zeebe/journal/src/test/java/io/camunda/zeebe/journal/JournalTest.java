@@ -43,17 +43,17 @@ final class JournalTest {
   final JournalMetaStore metaStore = new MockJournalMetastore();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private byte[] entry;
-  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
-  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
+  private DirectBufferWriter recordDataWriter;
+  private DirectBufferWriter otherRecordDataWriter;
   private Journal journal;
 
   @BeforeEach
   void setup() {
     entry = "TestData".getBytes();
-    recordDataWriter.wrap(new UnsafeBuffer(entry));
+    recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
-    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
+    otherRecordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entryOther));
 
     journal = openJournal();
   }
@@ -148,7 +148,7 @@ final class JournalTest {
     for (int i = 0; i < 10; i++) {
       // given
       entry = ("TestData" + i).getBytes();
-      recordDataWriter.wrap(new UnsafeBuffer(entry));
+      recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
       // when
       final var recordAppended = journal.append(i + 10, recordDataWriter);
@@ -481,7 +481,8 @@ final class JournalTest {
   @Test
   void shouldInvalidateAllEntries() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.append(recordDataWriter);
@@ -489,7 +490,8 @@ final class JournalTest {
 
     // when
     journal.deleteAfter(firstRecord.index());
-    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.close();
@@ -505,7 +507,8 @@ final class JournalTest {
   @Test
   void shouldDetectCorruptedEntry() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
@@ -524,7 +527,8 @@ final class JournalTest {
   @Test
   void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
-    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
@@ -535,7 +539,8 @@ final class JournalTest {
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
     metaStore.storeLastFlushedIndex(firstRecord.index());
     journal = openJournal();
-    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
+    recordDataWriter =
+        new DirectBufferWriter(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var lastRecord = journal.append(recordDataWriter);
     final var reader = journal.openReader();
 

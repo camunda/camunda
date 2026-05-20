@@ -26,6 +26,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
@@ -489,9 +490,10 @@ public class AtomixTransportTest {
         final DirectBuffer buffer,
         final int offset,
         final int length) {
+      final var writer = new DirectBufferWriter(buffer, offset, length);
       serverResponse =
           new ServerResponseImpl()
-              .buffer(buffer, 0, length)
+              .writer(writer)
               .setRequestId(requestId)
               .setPartitionId(partitionId);
       requestConsumer.accept(buffer.byteArray());

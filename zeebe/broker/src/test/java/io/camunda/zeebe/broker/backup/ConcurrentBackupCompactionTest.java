@@ -201,7 +201,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    journal.append(asqn, new DirectBufferWriter(new UnsafeBuffer(data.getBytes())));
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {

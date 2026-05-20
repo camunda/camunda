@@ -71,7 +71,7 @@ final class TestJournalFactory {
 
   TestJournalFactory(final String data, final int maxEntryCount, final SegmentAllocator allocator) {
     entryData = BufferUtil.wrapString(data);
-    entry = new DirectBufferWriter().wrap(entryData);
+    entry = new DirectBufferWriter(entryData);
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 

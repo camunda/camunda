@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
 import org.junit.Test;
 
 public final class CommandResponseWriterImplTest {
@@ -29,20 +28,12 @@ public final class CommandResponseWriterImplTest {
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
-  private CommandResponseWriterImpl responseWriter;
-  private DirectBufferWriter eventWriter;
-
-  @Before
-  public void setup() {
-    eventWriter = new DirectBufferWriter();
-  }
-
   @Test
   public void shouldWriteResponse() {
     // given
-    responseWriter = new CommandResponseWriterImpl(null);
+    final var responseWriter = new CommandResponseWriterImpl(null);
 
-    eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
+    final var eventWriter = new DirectBufferWriter(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
     responseWriter
         .partitionId(PARTITION_ID)
