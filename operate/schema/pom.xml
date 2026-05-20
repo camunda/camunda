@@ -15,6 +15,13 @@
 
   <dependencies>
 
+    <!-- TEST ONLY — DO NOT MERGE: triggers vulnerability gate (GHSA-355h-qmc2-wpwf, Jetty HTTP request smuggling, no fix available) -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>9.4.53.v20231009</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
