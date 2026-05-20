@@ -90,16 +90,6 @@ public final class CamundaRdbmsTestApplication
                 "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
                 "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       }
-      /*
-      // In order to ensure that a test runs against the intended database, we also need to set
-      // Spring's datasource properties. Otherwise, Spring might default to an embedded database
-      // (H2). See also property substitution in dist/application.properties for further details.
-      final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
-      withAdditionalProperties(
-          Map.of(
-              "spring.datasource.url", rdbms.getUrl(),
-              "spring.datasource.username", rdbms.getUsername(),
-              "spring.datasource.password", rdbms.getPassword()));*/
     }
 
     LOGGER.info("Start spring application ...");

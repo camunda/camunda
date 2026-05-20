@@ -56,7 +56,7 @@ public final class PostgresReplicationClusterContainer
         .withEnv("POSTGRESQL_PASSWORD", PASSWORD)
         .withEnv("POSTGRESQL_DATABASE", DATABASE_NAME)
         .withExposedPorts(5432)
-        .withStartupTimeout(Duration.ofMinutes(1));
+        .withStartupTimeout(Duration.ofMinutes(5));
 
     replica =
         new GenericContainer<>(POSTGRES_IMAGE)
@@ -66,7 +66,7 @@ public final class PostgresReplicationClusterContainer
             .withEnv("POSTGRESQL_REPLICATION_USER", REPLICATION_USER)
             .withEnv("POSTGRESQL_REPLICATION_PASSWORD", REPLICATION_PASSWORD)
             .withEnv("POSTGRESQL_PASSWORD", PASSWORD)
-            .withStartupTimeout(Duration.ofMinutes(1));
+            .withStartupTimeout(Duration.ofMinutes(5));
   }
 
   @Override

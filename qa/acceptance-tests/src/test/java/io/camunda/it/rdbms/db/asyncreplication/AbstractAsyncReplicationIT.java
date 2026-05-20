@@ -166,6 +166,7 @@ abstract class AbstractAsyncReplicationIT {
     try {
       Thread.sleep(duration);
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
   }
