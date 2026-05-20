@@ -10,6 +10,7 @@ class Index:
         self.process_instances = {}
         self.ilm_deadline = None
         self.ordinal = None
+        self.latest_process_instance_end_date = None
 
     @property
     def is_main(self):
@@ -22,6 +23,11 @@ class Index:
     @property
     def is_ordinal(self):
       return "ordinal" in self.name
+
+    def add(self, process_instance):
+        self.process_instances[process_instance.id] = process_instance
+        if self.latest_process_instance_end_date is None or process_instance.end_date > self.latest_process_instance_end_date:
+            self.latest_process_instance_end_date = process_instance.end_date
 
 
 class ProcessInstance:
@@ -56,7 +62,7 @@ class Simulation:
         index = self._ensure_index_exists(index_name)
 
         process_instance = ProcessInstance(self.next_id, self.current_time + duration)
-        index.process_instances[self.next_id] = process_instance
+        index.add(process_instance)
         self.next_id += 1
         self.indexing_operations += 1
         self.operations_cost_estimate += len(index.process_instances)
@@ -126,15 +132,14 @@ class Simulation:
 
     def _check_for_finished_ordinals(self):
       for index in self.indexes.values():
-        if index.is_ordinal and index.ilm_deadline is None:
+        if index.ilm_deadline is None and index.is_ordinal:
           if self._check_if_index_finished(index):
             index.ilm_deadline = self.current_time + self.retention_period
 
     def _check_if_index_finished(self, index):
-      for process_instance in index.process_instances.values():
-        if process_instance.end_date > self.current_time:
-          return False
-      return True
+      if index.latest_process_instance_end_date is None:
+        return False
+      return index.latest_process_instance_end_date <= self.current_time
 
     def _apply_ilm_policies(self):
       for index in list(self.indexes.values()):
