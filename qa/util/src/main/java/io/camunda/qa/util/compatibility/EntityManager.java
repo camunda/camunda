@@ -34,7 +34,7 @@ import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

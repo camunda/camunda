@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
@@ -46,7 +47,9 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, R
     final RoleRecordValue value = record.getValue();
     return List.of(
         RoleIndex.JOIN_RELATION_FACTORY.createChildId(
-            value.getRoleId(), value.getEntityId(), value.getEntityType()));
+            value.getRoleId(),
+            value.getEntityId(),
+            AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Override
@@ -59,7 +62,7 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, R
     final RoleRecordValue value = record.getValue();
     entity
         .setMemberId(value.getEntityId())
-        .setMemberType(value.getEntityType())
+        .setMemberType(AuthzModelMapper.fromProtocol(value.getEntityType()))
         .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(value.getRoleId()));
   }
 

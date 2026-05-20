@@ -17,6 +17,7 @@ import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -26,7 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteReque
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,7 +116,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType),
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType)),
         authentication);
   }
 
@@ -124,7 +125,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType),
+            .setMemberType(AuthzModelMapper.toProtocol(groupMemberDTO.memberType)),
         authentication);
   }
 

@@ -9,12 +9,12 @@ package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;

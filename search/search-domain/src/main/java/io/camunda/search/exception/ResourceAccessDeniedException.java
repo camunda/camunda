@@ -7,9 +7,9 @@
  */
 package io.camunda.search.exception;
 
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.Authorization;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.stream.Collectors;
 

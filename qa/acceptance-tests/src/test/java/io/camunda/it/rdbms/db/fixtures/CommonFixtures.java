@@ -7,11 +7,11 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;

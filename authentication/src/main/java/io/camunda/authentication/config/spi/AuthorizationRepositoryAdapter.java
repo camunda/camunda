@@ -12,12 +12,12 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.Authorization;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -140,10 +140,7 @@ public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPo
     return ResourceType.valueOf(ocType.name());
   }
 
-  // The zeebe-protocol PermissionType simple-name collides with the library's PermissionType
-  // imported above, so the parameter type stays fully qualified here.
-  static PermissionType toLibrary(
-      final io.camunda.zeebe.protocol.record.value.PermissionType ocPermission) {
-    return PermissionType.valueOf(ocPermission.name());
+  static PermissionType toLibrary(final PermissionType permission) {
+    return permission;
   }
 }

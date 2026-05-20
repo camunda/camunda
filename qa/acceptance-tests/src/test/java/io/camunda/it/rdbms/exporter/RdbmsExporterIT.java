@@ -44,6 +44,9 @@ import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -73,9 +76,8 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
@@ -93,7 +95,6 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -1150,10 +1151,10 @@ class RdbmsExporterIT {
             AuthorizationIntent.DELETED,
             recordValue.getAuthorizationKey(),
             recordValue.getOwnerId(),
-            recordValue.getOwnerType(),
-            recordValue.getResourceType(),
+            AuthzModelMapper.fromProtocol(recordValue.getOwnerType()),
+            AuthzModelMapper.fromProtocol(recordValue.getResourceType()),
             recordValue.getResourceId(),
-            recordValue.getPermissionTypes());
+            AuthzModelMapper.fromProtocolPermissionTypes(recordValue.getPermissionTypes()));
 
     // when
     exporter.export(authorizationDeletedRecord);

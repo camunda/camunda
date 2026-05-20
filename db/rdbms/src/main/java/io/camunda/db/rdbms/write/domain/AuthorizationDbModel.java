@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import java.util.function.Function;
 

@@ -13,8 +13,8 @@ import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import java.util.HashSet;
 import java.util.List;
 
 public class AuthorizationDeletedHandler
@@ -63,7 +63,8 @@ public class AuthorizationDeletedHandler
         .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceId(value.getResourceId())
         .setResourcePropertyName(value.getResourcePropertyName())
-        .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
+        .setPermissionTypes(
+            AuthzModelMapper.fromProtocolPermissionTypes(value.getPermissionTypes()));
   }
 
   @Override

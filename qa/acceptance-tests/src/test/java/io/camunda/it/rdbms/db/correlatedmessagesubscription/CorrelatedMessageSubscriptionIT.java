@@ -21,7 +21,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.sort.CorrelatedMessageSubscriptionSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

@@ -15,8 +15,8 @@ import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefin
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

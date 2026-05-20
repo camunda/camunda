@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.Strings;
@@ -64,7 +65,9 @@ public class GroupEntityAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             GroupIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getGroupId(), value.getEntityId(), value.getEntityType()));
+                value.getGroupId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test

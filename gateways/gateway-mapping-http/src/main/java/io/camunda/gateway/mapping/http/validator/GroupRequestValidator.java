@@ -11,8 +11,8 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.validation.GroupValidator;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 

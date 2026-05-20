@@ -33,7 +33,7 @@ import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;

@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -170,8 +171,8 @@ public final class BatchOperationCreationCreateProcessor
       final AuthorizationRequest authorizationRequest =
           AuthorizationRequest.builder()
               .command(command)
-              .resourceType(authorization.resourceType())
-              .permissionType(authorization.permissionType())
+              .resourceType(AuthzModelMapper.toProtocol(authorization.resourceType()))
+              .permissionType(AuthzModelMapper.toProtocol(authorization.permissionType()))
               .addAllResourceIds(authorization.resourceIds())
               .build();
       return authCheckBehavior.isAuthorized(authorizationRequest);

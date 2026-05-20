@@ -19,6 +19,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.Authorization;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -45,8 +46,7 @@ class AuthorizationRepositoryAdapterTest {
             null,
             "operate",
             null,
-            new java.util.HashSet<>(
-                Set.of(io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS)));
+            new java.util.HashSet<>(Set.of(PermissionType.ACCESS)));
     when(authorizationReader.search(any(AuthorizationQuery.class), any(ResourceAccessChecks.class)))
         .thenReturn(SearchQueryResult.<AuthorizationEntity>of(b -> b.items(List.of(entity))));
 
@@ -73,10 +73,7 @@ class AuthorizationRepositoryAdapterTest {
             null,
             "*",
             null,
-            new java.util.HashSet<>(
-                Set.of(
-                    io.camunda.zeebe.protocol.record.value.PermissionType
-                        .READ_PROCESS_DEFINITION)));
+            new java.util.HashSet<>(Set.of(PermissionType.READ_PROCESS_DEFINITION)));
     final var entity2 =
         new AuthorizationEntity(
             2L,
@@ -86,9 +83,7 @@ class AuthorizationRepositoryAdapterTest {
             null,
             "*",
             null,
-            new java.util.HashSet<>(
-                Set.of(
-                    io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE)));
+            new java.util.HashSet<>(Set.of(PermissionType.READ_PROCESS_INSTANCE)));
     when(authorizationReader.search(any(AuthorizationQuery.class), any(ResourceAccessChecks.class)))
         .thenReturn(
             SearchQueryResult.<AuthorizationEntity>of(b -> b.items(List.of(entity1, entity2))));
@@ -145,8 +140,7 @@ class AuthorizationRepositoryAdapterTest {
             null,
             null,
             null,
-            new java.util.HashSet<>(
-                Set.of(io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS)));
+            new java.util.HashSet<>(Set.of(PermissionType.ACCESS)));
     final var validEntity =
         new AuthorizationEntity(
             2L,
@@ -156,8 +150,7 @@ class AuthorizationRepositoryAdapterTest {
             null,
             "operate",
             null,
-            new java.util.HashSet<>(
-                Set.of(io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS)));
+            new java.util.HashSet<>(Set.of(PermissionType.ACCESS)));
     when(authorizationReader.search(any(AuthorizationQuery.class), any(ResourceAccessChecks.class)))
         .thenReturn(
             SearchQueryResult.<AuthorizationEntity>of(
@@ -176,8 +169,7 @@ class AuthorizationRepositoryAdapterTest {
   @Test
   void shouldMapEveryProtocolResourceTypeToLibraryResourceType() {
     // Asserts the lifted enums (per ADR-0007) stay in lockstep — fail fast if a value drifts.
-    for (final var ocType :
-        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.values()) {
+    for (final var ocType : AuthorizationResourceType.values()) {
       assertThat(AuthorizationRepositoryAdapter.toLibrary(ocType))
           .describedAs("AuthorizationResourceType.%s", ocType.name())
           .isEqualTo(ResourceType.valueOf(ocType.name()));
@@ -186,7 +178,7 @@ class AuthorizationRepositoryAdapterTest {
 
   @Test
   void shouldMapEveryProtocolPermissionTypeToLibraryPermissionType() {
-    for (final var ocPermission : io.camunda.zeebe.protocol.record.value.PermissionType.values()) {
+    for (final var ocPermission : PermissionType.values()) {
       assertThat(AuthorizationRepositoryAdapter.toLibrary(ocPermission))
           .describedAs("PermissionType.%s", ocPermission.name())
           .isEqualTo(PermissionType.valueOf(ocPermission.name()));

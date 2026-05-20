@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,9 @@ public class TenantEntityRemovedHandlerTest {
     assertThat(idList)
         .containsExactly(
             TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getTenantId(), value.getEntityId(), value.getEntityType()));
+                value.getTenantId(),
+                value.getEntityId(),
+                AuthzModelMapper.fromProtocol(value.getEntityType())));
   }
 
   @Test
