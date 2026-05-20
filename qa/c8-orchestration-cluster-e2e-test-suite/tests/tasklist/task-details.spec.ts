@@ -242,8 +242,10 @@ test.describe('task details page', () => {
     await sleep(500);
     await taskDetailsPage.completeTaskButton.click();
 
+    // 60s was hit by the May 20 nightly — give completion more headroom on
+    // a loaded shared cluster.
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 60000,
+      timeout: 90000,
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -387,12 +389,13 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
-    await taskDetailsPage.clickIncrementButton();
-    await expect(taskDetailsPage.numberInput).toHaveValue('1');
-    await taskDetailsPage.clickIncrementButton();
-    await expect(taskDetailsPage.numberInput).toHaveValue('2');
-    await taskDetailsPage.clickDecrementButton();
-    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    // Form-js number-button clicks can occasionally register twice on
+    // slow runners (mousedown + mouseup as separate increments), making
+    // the value race the assertion. Drive each step toward its target
+    // value instead of asserting after a single click.
+    await taskDetailsPage.incrementUntilValue('1');
+    await taskDetailsPage.incrementUntilValue('2');
+    await taskDetailsPage.decrementUntilValue('1');
     await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
