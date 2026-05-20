@@ -22,8 +22,6 @@ import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
@@ -32,239 +30,160 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Rolling update test for secondary storage (RDBMS/Postgres) across a mixed-version cluster.
+ * Rolling update test for secondary storage across mixed-version upgrades.
  *
- * <p>This test validates that process instance data remains visible in secondary storage when:
- *
- * <ul>
- *   <li>The cluster starts on {@code current - 1}
- *   <li>One node is upgraded to {@code current}
- *   <li>Older nodes still write against the migrated schema
- *   <li>Process instances created before, during, and after the upgrade are all present
- * </ul>
- *
- * <p>The cluster uses 2 broker nodes with 2 partitions, each broker owning one partition
- * (replication factor = 1). This lets each phase run with a single active broker while keeping the
- * configuration of a 2-node cluster.
- *
- * <p>Test phases:
- *
- * <ol>
- *   <li><strong>Phase 1 (old only)</strong>: Both brokers on {@code current - 1}. Deploy a process,
- *       start instances, verify they appear in secondary storage.
- *   <li><strong>Phase 2 (partial upgrade)</strong>: Stop both brokers. Restart broker 0 with {@code
- *       current}. The new-version broker migrates the RDBMS schema and creates more instances.
- *       Verify that instances from phase 1 and phase 2 are both visible.
- *   <li><strong>Phase 3 (old on new schema)</strong>: Stop broker 0. Restart broker 1 with {@code
- *       current - 1}. The old-version broker must start without errors against the migrated schema
- *       and create more instances. Verify all instances from all phases are visible.
- * </ol>
+ * <p>The same scenario is parameterized across all supported secondary storage implementations
+ * (RDBMS, Elasticsearch, and OpenSearch) to avoid duplicated test logic.
  */
 final class SecondaryStorageRollingUpdateTest {
+  private static final Duration SECOND_OLD_BROKER_START_DELAY = Duration.ofSeconds(3);
 
-  private static final Network NETWORK = Network.newNetwork();
-
-  /**
-   * Network alias used to refer to the PostgreSQL container from within the Docker network shared
-   * by the cluster brokers.
-   */
-  private static final String POSTGRES_NETWORK_ALIAS = "postgres";
-
-  private static final String POSTGRES_JDBC_URL =
-      "jdbc:postgresql://"
-          + POSTGRES_NETWORK_ALIAS
-          + ":5432/"
-          + TestSearchContainers.CAMUNDA_DATABASE;
+  private static List<Arguments> cachedVersionMatrix;
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  private static List<Arguments> cachedVersionMatrix;
+  private static final String CAMUNDA_DATABASE = "camunda";
+  private static final String CAMUNDA_USER = "camunda";
+  private static final String CAMUNDA_PASSWORD = "Camunda_Pass123!";
 
-  @SuppressWarnings("resource")
-  private final JdbcDatabaseContainer<?> postgres =
-      TestSearchContainers.createDefaultPostgresContainer()
-          .withNetwork(NETWORK)
-          .withNetworkAliases(POSTGRES_NETWORK_ALIAS);
+  private static final List<StorageTestCase> STORAGE_TEST_CASES =
+      List.of(
+          StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
-  /**
-   * Two-broker cluster: 2 partitions, RF=1 so each broker independently owns one partition.
-   *
-   * <p>This topology allows phases 2 and 3 to run with a single active broker while still having
-   * two distinct broker nodes participate in phase 1.
-   */
-  private final CamundaCluster cluster =
-      CamundaCluster.builder()
-          .withNetwork(NETWORK)
-          .withEmbeddedGateway(true)
-          .withBrokersCount(1)
-          .withPartitionsCount(1)
-          .withReplicationFactor(1)
-          .withNodeConfig(
-              node ->
-                  node.withUnifiedConfig(
-                          cfg -> {
-                            cfg.getSystem().getUpgrade().setEnableVersionCheck(false);
-                            cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
-                            cfg.getData()
-                                .getSecondaryStorage()
-                                .getRdbms()
-                                .setUrl(POSTGRES_JDBC_URL);
-                            cfg.getData()
-                                .getSecondaryStorage()
-                                .getRdbms()
-                                .setUsername(TestSearchContainers.CAMUNDA_USER);
-                            cfg.getData()
-                                .getSecondaryStorage()
-                                .getRdbms()
-                                .setPassword(TestSearchContainers.CAMUNDA_PASSWORD);
-                          })
-                      .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
-          .build();
-
-  @SuppressWarnings("unused")
-  @RegisterExtension
-  private final ContainerLogsDumper logsPrinter = new ContainerLogsDumper(cluster::getNodes);
-
-  private final Collection<CamundaVolume> volumes = new LinkedList<>();
-
-  static Stream<Arguments> versionMatrix() {
+  static Stream<Arguments> versionAndStorageMatrix() {
     if (cachedVersionMatrix == null) {
       cachedVersionMatrix = VersionCompatibilityMatrix.auto().toList();
     }
-    return cachedVersionMatrix.stream();
+
+    return cachedVersionMatrix.stream()
+        .flatMap(
+            versionArgs -> {
+              final var arguments = versionArgs.get();
+              final var from = arguments[0].toString();
+              final var to = arguments[1].toString();
+              return STORAGE_TEST_CASES.stream().map(storage -> Arguments.of(from, to, storage));
+            });
   }
 
-  @BeforeEach
-  void setup() {
-    // PostgreSQL must be running before any broker starts so that the RDBMS exporter can connect.
-    postgres.start();
-
-    final var initialContactPoints =
-        cluster.getBrokers().values().stream().map(BrokerNode::getInternalClusterAddress).toList();
-    cluster.getBrokers().values().forEach(broker -> configureBroker(broker, initialContactPoints));
-  }
-
-  @AfterEach
-  void tearDown() {
-    cluster.stop();
-    postgres.stop();
-    CloseHelper.closeAll(volumes);
-    volumes.clear();
-  }
-
-  /**
-   * Verifies that all process instances created in all phases are present in secondary storage.
-   *
-   * <p>The test follows a three-phase scenario:
-   *
-   * <ol>
-   *   <li>Phase 1: both cluster nodes run on the old version and export to RDBMS.
-   *   <li>Phase 2: only broker 0 runs on the new version; the RDBMS schema is migrated and data
-   *       from phase 1 remains accessible.
-   *   <li>Phase 3: only broker 1 runs on the old version against the migrated schema; no errors are
-   *       expected and all historical data remains visible.
-   * </ol>
-   */
-  @ParameterizedTest(name = "from {0} to {1}", allowZeroInvocations = true)
-  @MethodSource("versionMatrix")
+  @ParameterizedTest(name = "storage={2}, from {0} to {1}", allowZeroInvocations = true)
+  @MethodSource("versionAndStorageMatrix")
   void shouldPreserveProcessInstancesInSecondaryStorageDuringRollingUpdate(
-      final String from, final String to) {
+      final String from, final String to, final StorageTestCase storage) {
 
-    final BrokerNode<?> broker = cluster.getBrokers().get(0);
-    final GatewayNode<?> gateway = cluster.getGateways().get("0");
+    final Network network = Network.newNetwork();
+    final GenericContainer<?> storageContainer = storage.newContainer(network);
+    final CamundaCluster cluster = storage.newCluster(network);
+    final Collection<CamundaVolume> volumes = new LinkedList<>();
 
-    // given: cluster starts on old version
-    updateBroker(broker, 1, from);
-    cluster.start();
+    try {
+      storageContainer.start();
 
-    // --- Phase 1: old version only ---
-    // Deploy a process and start process instance.
-    final long phase1Key;
-    try (final var client = newClient(gateway)) {
-      deployProcess(client);
+      final var initialContactPoints =
+          cluster.getBrokers().values().stream()
+              .map(BrokerNode::getInternalClusterAddress)
+              .toList();
+      cluster
+          .getBrokers()
+          .values()
+          .forEach(broker -> configureBroker(broker, initialContactPoints, volumes, storage));
 
-      // Create two instances to exercise both partitions (round-robin routing).
-      phase1Key =
-          Awaitility.await("phase 1 first process instance creation")
-              .atMost(Duration.ofSeconds(30))
-              .pollInterval(Duration.ofMillis(100))
-              .ignoreExceptions()
-              .until(() -> createProcessInstance(client), Objects::nonNull)
-              .getProcessInstanceKey();
+      final int oldNodeId = 0;
+      final int newNodeId = 1;
+      final BrokerNode<?> oldVersionBroker = cluster.getBrokers().get(oldNodeId);
+      final BrokerNode<?> newVersionBroker = cluster.getBrokers().get(newNodeId);
+      final GatewayNode<?> oldVersionGateway = cluster.getGateways().get(String.valueOf(oldNodeId));
+      final GatewayNode<?> newVersionGateway = cluster.getGateways().get(String.valueOf(newNodeId));
 
-      // Verify phase 1 instances are visible in secondary storage before moving on.
-      awaitProcessInstanceInSecondaryStorage(client, phase1Key);
-    }
+      // given: cluster has two nodes with fixed versions
+      updateBroker(oldVersionBroker, oldNodeId, from, storage);
+      updateBroker(newVersionBroker, newNodeId, from, storage);
 
-    // --- Phase 2: upgrade ---
-    // Stop node, then restart with the new version.
-    // After restart broker migrates the RDBMS schema.
-    broker.stop();
-    updateBroker(broker, 0, to);
-    broker.start();
+      // --- Phase 1: start both nodes on old version with staggered startup ---
+      final CompletableFuture<Void> oldVersionStartFuture =
+          CompletableFuture.runAsync(oldVersionBroker::start);
+      awaitSecondOldBrokerStartDelay();
+      newVersionBroker.start();
+      oldVersionStartFuture.join();
+      final long phase1Key;
+      try (final var client = newClient(oldVersionGateway)) {
+        deployProcess(client);
+        phase1Key =
+            Awaitility.await("phase 1 process instance creation")
+                .atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofMillis(100))
+                .ignoreExceptions()
+                .until(() -> createProcessInstance(client), Objects::nonNull)
+                .getProcessInstanceKey();
 
-    final long phase2Key;
-    try (final var phase2Client = newClient(gateway)) {
-      phase2Key =
-          Awaitility.await("phase 2 process instance creation")
-              .atMost(Duration.ofSeconds(60))
-              .pollInterval(Duration.ofMillis(100))
-              .ignoreExceptions()
-              .until(() -> createProcessInstance(phase2Client), Objects::nonNull)
-              .getProcessInstanceKey();
+        awaitProcessInstanceInSecondaryStorage(client, phase1Key);
+      }
 
-      // Both phase 1 instance and the new phase 2 instance
-      // must be visible in secondary storage.
-      awaitProcessInstanceInSecondaryStorage(phase2Client, phase1Key);
-      awaitProcessInstanceInSecondaryStorage(phase2Client, phase2Key);
-    }
+      // --- Phase 2: upgrade ---
+      newVersionBroker.stop();
+      updateBroker(newVersionBroker, newNodeId, to, storage);
+      newVersionBroker.start();
+      oldVersionBroker.stop();
 
-    // --- Phase 3: old node on new schema ---
-    // Stop the upgraded broker 0. Restart broker 1 on the old version against the
-    // already-migrated schema. This must succeed without errors.
-    broker.stop();
-    updateBroker(broker, 1, from);
-    broker.start();
+      final long phase2Key;
+      try (final var phase2Client = newClient(newVersionGateway)) {
+        phase2Key =
+            Awaitility.await("phase 2 process instance creation")
+                .atMost(Duration.ofSeconds(60))
+                .pollInterval(Duration.ofMillis(100))
+                .ignoreExceptions()
+                .until(() -> createProcessInstance(phase2Client), Objects::nonNull)
+                .getProcessInstanceKey();
 
-    try (final var phase3Client = newClient(gateway)) {
-      final long phase3Key =
-          Awaitility.await("phase 3 process instance creation")
-              .atMost(Duration.ofSeconds(60))
-              .pollInterval(Duration.ofMillis(100))
-              .ignoreExceptions()
-              .until(() -> createProcessInstance(phase3Client), Objects::nonNull)
-              .getProcessInstanceKey();
+        awaitProcessInstanceInSecondaryStorage(phase2Client, phase1Key);
+        awaitProcessInstanceInSecondaryStorage(phase2Client, phase2Key);
+      }
 
-      // All instances from all phases must be visible in secondary storage.
-      awaitProcessInstanceInSecondaryStorage(phase3Client, phase1Key);
-      awaitProcessInstanceInSecondaryStorage(phase3Client, phase2Key);
-      awaitProcessInstanceInSecondaryStorage(phase3Client, phase3Key);
+      // --- Phase 3: old node on new schema ---
+      oldVersionBroker.start();
+      newVersionBroker.stop();
+
+      try (final var phase3Client = newClient(oldVersionGateway)) {
+        final long phase3Key =
+            Awaitility.await("phase 3 process instance creation")
+                .atMost(Duration.ofSeconds(60))
+                .pollInterval(Duration.ofMillis(100))
+                .ignoreExceptions()
+                .until(() -> createProcessInstance(phase3Client), Objects::nonNull)
+                .getProcessInstanceKey();
+
+        awaitProcessInstanceInSecondaryStorage(phase3Client, phase1Key);
+        awaitProcessInstanceInSecondaryStorage(phase3Client, phase2Key);
+        awaitProcessInstanceInSecondaryStorage(phase3Client, phase3Key);
+      }
+    } finally {
+      cluster.stop();
+      storageContainer.stop();
+      CloseHelper.closeAll(volumes);
+      network.close();
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  private void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
+  private void updateBroker(
+      final BrokerNode<?> broker,
+      final int id,
+      final String version,
+      final StorageTestCase storage) {
     if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
@@ -274,10 +193,10 @@ final class SecondaryStorageRollingUpdateTest {
           DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
     }
 
+    applySecondaryStorageEnv(broker, storage);
+
     final var semVer = SemanticVersion.parse(version);
 
-    // For versions < 8.8 the unified configuration format is not supported.
-    // Pass the required settings via explicit environment variables instead.
     if (semVer.isPresent() && semVer.get().minor() < 8) {
       broker
           .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
@@ -298,7 +217,6 @@ final class SecondaryStorageRollingUpdateTest {
   }
 
   private String currentVersion() {
-    // Strip the SNAPSHOT suffix so that the version check does not reject a pre-release upgrade.
     return VersionUtil.getVersion().replace("-SNAPSHOT", "");
   }
 
@@ -314,12 +232,6 @@ final class SecondaryStorageRollingUpdateTest {
         .join(10, TimeUnit.SECONDS);
   }
 
-  /**
-   * Waits until the given process instance is visible in secondary storage via the REST search API.
-   *
-   * <p>The search endpoint queries secondary storage (RDBMS) rather than primary storage, so
-   * asserting here proves that the RDBMS exporter has written the record.
-   */
   private void awaitProcessInstanceInSecondaryStorage(
       final CamundaClient client, final long processInstanceKey) {
     Awaitility.await(
@@ -342,10 +254,6 @@ final class SecondaryStorageRollingUpdateTest {
             });
   }
 
-  /**
-   * Creates a {@link CamundaClient} configured for both gRPC commands and REST queries against the
-   * given gateway.
-   */
   private CamundaClient newClient(final GatewayNode<?> gateway) {
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
@@ -354,13 +262,25 @@ final class SecondaryStorageRollingUpdateTest {
         .build();
   }
 
+  private void awaitSecondOldBrokerStartDelay() {
+    final long delayStartNanos = System.nanoTime();
+    Awaitility.await("wait before starting second old-version broker")
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () ->
+                Duration.ofNanos(System.nanoTime() - delayStartNanos)
+                        .compareTo(SECOND_OLD_BROKER_START_DELAY)
+                    >= 0);
+  }
+
   private void configureBroker(
-      final BrokerNode<?> broker, final List<String> initialContactPoints) {
+      final BrokerNode<?> broker,
+      final List<String> initialContactPoints,
+      final Collection<CamundaVolume> volumes,
+      final StorageTestCase storage) {
     final var volume =
         CamundaVolume.newVolume(
             cfg -> {
-              // Workaround for
-              // https://github.com/camunda-community-hub/zeebe-test-container/issues/656
               final var labels = new HashMap<>(cfg.getLabels());
               labels.put(
                   DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
@@ -368,10 +288,13 @@ final class SecondaryStorageRollingUpdateTest {
               return cfg.withLabels(labels);
             });
     volumes.add(volume);
+
     broker
         .withCamundaData(volume)
         .withUnifiedConfig(
             cfg -> {
+              cfg.getCluster().setSize(2);
+              cfg.getCluster().setInitialContactPoints(initialContactPoints);
               cfg.getCluster().getMembership().setBroadcastUpdates(true);
               cfg.getCluster().getMembership().setSyncInterval(Duration.ofMillis(250));
               cfg.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
@@ -379,7 +302,6 @@ final class SecondaryStorageRollingUpdateTest {
               cfg.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(2));
               cfg.getCluster().getMembership().setSuspectProbes(2);
             })
-        // Pass membership settings via env vars for backward compatibility with older versions.
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
@@ -391,18 +313,161 @@ final class SecondaryStorageRollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
         .withEnv(
             "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
-        // Pass RDBMS configuration via env vars as a backward-compatibility fallback for
-        // older versions that might not read the same unified-config structure.
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "rdbms")
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", POSTGRES_JDBC_URL)
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", TestSearchContainers.CAMUNDA_USER)
-        .withEnv(
-            "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", TestSearchContainers.CAMUNDA_PASSWORD)
+        .withEnv("CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK", "false")
+        .withEnv("CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED", "false")
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        // user/group workaround to allow smooth update from Zeebe 8.3 to 8.4 (user changed from
-        // 1000 to 1001) and group 0 keeps data-volume ownership compatible.
-        // TODO remove after 8.4 release
         .withCreateContainerCmdModifier(
             createContainerCmd -> createContainerCmd.withUser("1001:0"));
+
+    applySecondaryStorageEnv(broker, storage);
+  }
+
+  private void applySecondaryStorageEnv(final BrokerNode<?> broker, final StorageTestCase storage) {
+    final var type = storage.type().name();
+    broker
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", type)
+        .withEnv(
+            "CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(type.toUpperCase()), storage.url());
+
+    if (storage.username() != null) {
+      broker.withEnv(
+          "CAMUNDA_DATA_SECONDARYSTORAGE_%s_USERNAME".formatted(type.toUpperCase()),
+          storage.username());
+    }
+
+    if (storage.password() != null) {
+      broker.withEnv(
+          "CAMUNDA_DATA_SECONDARYSTORAGE_%s_PASSWORD".formatted(type.toUpperCase()),
+          storage.password());
+    }
+  }
+
+  private record StorageTestCase(
+      String name,
+      SecondaryStorageType type,
+      String networkAlias,
+      int port,
+      Supplier<GenericContainer<?>> containerSupplier,
+      String username,
+      String password) {
+
+    static StorageTestCase rdbms() {
+      return new StorageTestCase(
+          "rdbms",
+          SecondaryStorageType.rdbms,
+          "postgres",
+          5432,
+          () ->
+              new GenericContainer<>(DockerImageName.parse("postgres").withTag("15.3-alpine"))
+                  .withEnv("POSTGRES_DB", CAMUNDA_DATABASE)
+                  .withEnv("POSTGRES_USER", CAMUNDA_USER)
+                  .withEnv("POSTGRES_PASSWORD", CAMUNDA_PASSWORD)
+                  .withExposedPorts(5432),
+          CAMUNDA_USER,
+          CAMUNDA_PASSWORD);
+    }
+
+    static StorageTestCase elasticsearch() {
+      return new StorageTestCase(
+          "elasticsearch",
+          SecondaryStorageType.elasticsearch,
+          "elasticsearch",
+          9200,
+          () ->
+              new GenericContainer<>(
+                      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
+                          .withTag("8.19.11"))
+                  .withEnv("discovery.type", "single-node")
+                  .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+                  .withEnv("xpack.security.enabled", "false")
+                  .withEnv("xpack.watcher.enabled", "false")
+                  .withEnv("xpack.ml.enabled", "false")
+                  .withEnv("action.auto_create_index", "true")
+                  .withEnv("action.destructive_requires_name", "false")
+                  .withExposedPorts(9200),
+          null,
+          null);
+    }
+
+    static StorageTestCase opensearch() {
+      return new StorageTestCase(
+          "opensearch",
+          SecondaryStorageType.opensearch,
+          "opensearch",
+          9200,
+          () ->
+              new GenericContainer<>(DockerImageName.parse("opensearchproject/opensearch:2.19.4"))
+                  .withEnv("discovery.type", "single-node")
+                  .withEnv("DISABLE_SECURITY_PLUGIN", "true")
+                  .withEnv(
+                      "OPENSEARCH_JAVA_OPTS",
+                      "-Xms1024m -Xmx1024m -XX:MaxDirectMemorySize=536870912")
+                  .withEnv("action.destructive_requires_name", "false")
+                  .withEnv("action.auto_create_index", "true")
+                  .withExposedPorts(9200),
+          null,
+          null);
+    }
+
+    GenericContainer<?> newContainer(final Network network) {
+      return containerSupplier.get().withNetwork(network).withNetworkAliases(networkAlias);
+    }
+
+    CamundaCluster newCluster(final Network network) {
+      return CamundaCluster.builder()
+          .withNetwork(network)
+          .withEmbeddedGateway(true)
+          .withBrokersCount(2)
+          .withPartitionsCount(2)
+          .withReplicationFactor(1)
+          .withNodeConfig(
+              node ->
+                  node.withUnifiedConfig(
+                          cfg -> {
+                            cfg.getSystem().getUpgrade().setEnableVersionCheck(false);
+                            cfg.getData().getSecondaryStorage().setType(type);
+
+                            switch (type) {
+                              case rdbms -> {
+                                cfg.getData().getSecondaryStorage().getRdbms().setUrl(url());
+                                cfg.getData()
+                                    .getSecondaryStorage()
+                                    .getRdbms()
+                                    .setUsername(CAMUNDA_USER);
+                                cfg.getData()
+                                    .getSecondaryStorage()
+                                    .getRdbms()
+                                    .setPassword(CAMUNDA_PASSWORD);
+                              }
+                              case elasticsearch ->
+                                  cfg.getData()
+                                      .getSecondaryStorage()
+                                      .getElasticsearch()
+                                      .setUrl(url());
+                              case opensearch ->
+                                  cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url());
+                              case none ->
+                                  throw new IllegalStateException(
+                                      "storage type 'none' is not supported");
+                              default ->
+                                  throw new IllegalStateException(
+                                      "storage type '%s' is not supported".formatted(type));
+                            }
+                          })
+                      .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
+          .build();
+    }
+
+    String url() {
+      return type == SecondaryStorageType.rdbms
+          ? "jdbc:postgresql://%s:%d/%s".formatted(networkAlias, port, CAMUNDA_DATABASE)
+          : "http://%s:%d".formatted(networkAlias, port);
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 }
