@@ -23,14 +23,19 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # spring-boot:run -pl dist resolves authentication/etc. from the local Maven
-# repo — it does NOT recompile upstream modules from source. Chaining
-# `install` and `spring-boot:run` in one Maven invocation: `install -am`
-# rebuilds dist + every upstream module (authentication, security, …) and
-# the same JVM then proceeds to start OC.
+# repo — it does NOT recompile upstream modules from source. Two steps:
+#  1. install -pl dist -am: rebuilds dist + every upstream module
+#     (authentication, security, …) so OC boots against fresh classes.
+#  2. spring-boot:run -pl dist (no -am): starts OC. We cannot chain these
+#     in one Maven invocation because spring-boot:run would be applied to
+#     every module in the -am reactor, and upstream modules don't have the
+#     plugin configured (No plugin found for prefix 'spring-boot').
 #
-# -DskipChecks skips the spotless/license/code-style checks (we ran them on
+# -DskipChecks skips spotless/license/code-style validation (we ran it on
 # commit; rerunning each boot is noise). -PskipFrontendBuild skips the
 # webapp/client npm build which the PoC does not need.
-exec ./mvnw -pl dist install spring-boot:run -am \
-  -Dquickly -DskipChecks -PskipFrontendBuild \
+./mvnw install -pl dist -am -Dquickly -DskipChecks -PskipFrontendBuild -T1C
+
+exec ./mvnw -pl dist spring-boot:run \
+  -DskipChecks -PskipFrontendBuild \
   -Dspring-boot.run.profiles=pt-poc 2>&1 | tee /tmp/oc.log
