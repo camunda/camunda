@@ -60,6 +60,9 @@ public final class MessageEventProcessors {
         processingState.getEventScopeInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
     final var processState = processingState.getProcessState();
+    final var elementInstanceState = processingState.getElementInstanceState();
+    final var bannedInstanceState = processingState.getBannedInstanceState();
+    final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
 
     typedRecordProcessors
         .onCommand(
@@ -78,7 +81,10 @@ public final class MessageEventProcessors {
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
                 authCheckBehavior,
-                routingInfo))
+                routingInfo,
+                elementInstanceState,
+                bannedInstanceState,
+                businessIdUniquenessEnabled))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -145,7 +151,10 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                authCheckBehavior))
+                authCheckBehavior,
+                elementInstanceState,
+                bannedInstanceState,
+                businessIdUniquenessEnabled))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),

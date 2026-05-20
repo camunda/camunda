@@ -10,19 +10,46 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
+/**
+ * Correlates published messages to message start-event subscriptions and to intermediate message
+ * catch-event subscriptions on this partition.
+ *
+ * <h3>Business-id uniqueness — local arm only</h3>
+ *
+ * When the {@code businessIdUniquenessEnabled} feature is on and a published message carries a
+ * businessId, start-event correlation additionally requires that no active root PI on this
+ * partition already holds that businessId for the same process definition. This is the local arm of
+ * the design's uniqueness check; cross-partition uniqueness (when the businessId hashes to a
+ * different partition than the message correlation key) is delegated to {@code P_B} in a later
+ * increment via a cross-partition ask.
+ *
+ * <p>A message suppressed by this check remains in the existing message buffer and is only freed by
+ * its TTL. There is no businessId-keyed retry trigger today: the buffered-message scan in {@link
+ * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior} is driven
+ * by completion of a PI that holds the correlation-key lock, so a suppressed message whose
+ * correlation key does not match an active holder's lock will not be retried even after the
+ * businessId is released. Release-driven retries — both same-partition and across partitions — are
+ * introduced in a later increment by design.
+ */
 public final class MessageCorrelateBehavior {
 
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final MessageSubscriptionState messageSubscriptionState;
   private final MessageState messageState;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
+  private final boolean businessIdUniquenessEnabled;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final SubscriptionCommandSender commandSender;
@@ -33,13 +60,19 @@ public final class MessageCorrelateBehavior {
       final EventHandle eventHandle,
       final StateWriter stateWriter,
       final MessageSubscriptionState messageSubscriptionState,
-      final SubscriptionCommandSender commandSender) {
+      final SubscriptionCommandSender commandSender,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
+      final boolean businessIdUniquenessEnabled) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
     this.eventHandle = eventHandle;
     this.stateWriter = stateWriter;
     this.commandSender = commandSender;
+    this.elementInstanceState = elementInstanceState;
+    this.bannedInstanceState = bannedInstanceState;
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
   public void correlateToMessageStartEvents(
@@ -62,11 +95,7 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          if (messageData.correlationKey().capacity() == 0
-              || !messageState.existActiveProcessInstance(
-                  messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey())) {
+          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
@@ -74,7 +103,8 @@ public final class MessageCorrelateBehavior {
                     messageData.messageKey(),
                     messageData.messageName(),
                     messageData.correlationKey(),
-                    messageData.variables());
+                    messageData.variables(),
+                    messageData.businessId());
 
             subscriptionRecord.setProcessInstanceKey(processInstanceKey);
             correlatingSubscriptions.add(subscriptionRecord);
@@ -101,12 +131,10 @@ public final class MessageCorrelateBehavior {
             return;
           }
 
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          if (messageData.correlationKey().capacity() == 0
-              || !messageState.existActiveProcessInstance(
-                  messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey())) {
-            // Just collect, don't trigger events yet
+          // Mirror the same uniqueness gates as the real correlation path so authorization is only
+          // checked for subscriptions that would actually correlate.
+          if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
+            // Just collect, don't write state yet
             correlatingSubscriptions.add(subscriptionRecord);
           }
         });
@@ -202,6 +230,45 @@ public final class MessageCorrelateBehavior {
       return true;
     }
     return BufferUtil.equals(messageBusinessId, subscriptionBusinessId);
+  }
+
+  /**
+   * Returns {@code true} when this start-event subscription should correlate for the given message:
+   * only one instance per (process definition, correlation key) is created — an empty correlation
+   * key allows multiple instances — and, when the businessId uniqueness feature is enabled and the
+   * message carries a businessId, no active root PI on this partition may already hold that
+   * businessId for this process definition.
+   */
+  private boolean shouldCorrelateStartEvent(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    final var correlationKeyFree =
+        messageData.correlationKey().capacity() == 0
+            || !messageState.existActiveProcessInstance(
+                messageData.tenantId(),
+                subscriptionRecord.getBpmnProcessIdBuffer(),
+                messageData.correlationKey());
+    return correlationKeyFree && !isBusinessIdAlreadyHeld(messageData, subscriptionRecord);
+  }
+
+  /**
+   * Returns {@code true} when the feature is enabled, the message carries a businessId, and an
+   * active root PI on this partition already holds that businessId for this process definition. See
+   * the class JavaDoc for the system-level retry/cross-partition narrative.
+   */
+  private boolean isBusinessIdAlreadyHeld(
+      final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    if (!businessIdUniquenessEnabled) {
+      return false;
+    }
+    final var businessId = messageData.businessId();
+    if (businessId == null || businessId.capacity() == 0) {
+      return false;
+    }
+    return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        BufferUtil.bufferAsString(businessId),
+        subscriptionRecord.getBpmnProcessId(),
+        messageData.tenantId(),
+        bannedInstanceState::isProcessInstanceBanned);
   }
 
   public record MessageData(
