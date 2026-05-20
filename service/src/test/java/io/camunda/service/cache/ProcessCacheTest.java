@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 
 class ProcessCacheTest {
 
+  private static final String TENANT = "default";
+
   private ProcessCache processCache;
   private ProcessCache.Configuration configuration;
   private ProcessDefinitionServices processDefinitionServices;
@@ -74,7 +76,7 @@ class ProcessCacheTest {
   }
 
   private LoadingCache<Long, ProcessCacheItem> getCache() {
-    return processCache.getRawCache();
+    return processCache.getRawCache(TENANT);
   }
 
   private ConcurrentMap<Long, ProcessCacheItem> getCacheMap() {
@@ -84,7 +86,7 @@ class ProcessCacheTest {
   @Test
   void shouldPopulateCache() {
     // when
-    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -99,7 +101,7 @@ class ProcessCacheTest {
         .thenThrow(new NoSuchElementException());
 
     // when
-    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -110,9 +112,9 @@ class ProcessCacheTest {
   @Test
   void shouldNotRepopulateWhenAlreadyCached() {
     // when
-    processCache.getCacheItem(entity.processDefinitionKey());
+    processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
     getCache().cleanUp();
-    processCache.getCacheItem(entity.processDefinitionKey());
+    processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -133,7 +135,7 @@ class ProcessCacheTest {
     // when
     final var cacheResult =
         processCache.getCacheItems(
-            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
+            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()), TENANT);
 
     // then
     verify(processDefinitionServices, times(1)).search(any(), any(), any());
@@ -149,14 +151,14 @@ class ProcessCacheTest {
     processCache =
         new ProcessCache(
             configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
-    processCache.getCacheItem(1L);
-    processCache.getCacheItem(2L);
+    processCache.getCacheItem(1L, TENANT);
+    processCache.getCacheItem(2L, TENANT);
     getCache().cleanUp();
     assertThat(getCacheMap()).hasSize(2);
 
     // when - read 1 and adding 3
-    processCache.getCacheItem(1L);
-    processCache.getCacheItem(3L);
+    processCache.getCacheItem(1L, TENANT);
+    processCache.getCacheItem(3L, TENANT);
     getCache().cleanUp();
 
     // then - 2 should be removed
@@ -177,7 +179,7 @@ class ProcessCacheTest {
     @Test
     void shouldResolveName() {
       // when
-      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
 
       // then - extractElementNames not called again
       assertThat(cacheItem.getElementName("StartEvent_1")).isEqualTo("Start");
@@ -187,7 +189,7 @@ class ProcessCacheTest {
     @Test
     void shouldResolveDefaultName() {
       // given
-      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
 
       // then - extractElementNames not called again
       assertThat(cacheItem.getElementName("non-existing")).isEqualTo("non-existing");
@@ -207,7 +209,7 @@ class ProcessCacheTest {
       // when
       final var cacheResult =
           processCache.getCacheItems(
-              Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
+              Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()), TENANT);
 
       // then
       assertThat(
@@ -221,6 +223,73 @@ class ProcessCacheTest {
                   .getProcessItem(otherEntity.processDefinitionKey())
                   .getElementName("call_activity"))
           .isEqualTo("Call Activity");
+    }
+  }
+
+  @Nested
+  class PerTenantCache {
+
+    @Test
+    void shouldHaveSeparateCachesPerTenant() {
+      // when - load key for tenantA only
+      processCache.getCacheItem(entity.processDefinitionKey(), "tenantA");
+
+      // then - tenantB's cache is untouched
+      assertThat(processCache.getRawCache("tenantB").asMap()).isEmpty();
+    }
+
+    @Test
+    void shouldLoadSeparatelyForEachTenant() {
+      // when - same key loaded for two different tenants
+      processCache.getCacheItem(entity.processDefinitionKey(), "tenantA");
+      processCache.getCacheItem(entity.processDefinitionKey(), "tenantB");
+
+      // then - service called once per tenant, not served from a shared cache
+      verify(processDefinitionServices, times(2))
+          .getByKey(eq(entity.processDefinitionKey()), any(), any());
+    }
+
+    @Test
+    void shouldRespectMaxSizePerTenantIndependently() {
+      // given - small cache (max 2 per tenant)
+      configuration = new Configuration(2, null);
+      processCache =
+          new ProcessCache(
+              configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
+
+      processCache.getCacheItem(1L, "tenantA");
+      processCache.getCacheItem(2L, "tenantA");
+      processCache.getCacheItem(1L, "tenantB");
+      processCache.getCacheItem(2L, "tenantB");
+      processCache.getRawCache("tenantA").cleanUp();
+      processCache.getRawCache("tenantB").cleanUp();
+      assertThat(processCache.getRawCache("tenantA").asMap()).hasSize(2);
+      assertThat(processCache.getRawCache("tenantB").asMap()).hasSize(2);
+
+      // when - add a third entry to tenantA only
+      processCache.getCacheItem(3L, "tenantA");
+      processCache.getRawCache("tenantA").cleanUp();
+      processCache.getRawCache("tenantB").cleanUp();
+
+      // then - tenantA evicted one entry, tenantB is unaffected
+      assertThat(processCache.getRawCache("tenantA").asMap()).hasSize(2);
+      assertThat(processCache.getRawCache("tenantB").asMap()).hasSize(2);
+    }
+
+    @Test
+    void shouldInvalidateAllTenantCaches() {
+      // given - both tenants have cached entries
+      processCache.getCacheItem(entity.processDefinitionKey(), "tenantA");
+      processCache.getCacheItem(entity.processDefinitionKey(), "tenantB");
+      assertThat(processCache.getRawCache("tenantA").asMap()).isNotEmpty();
+      assertThat(processCache.getRawCache("tenantB").asMap()).isNotEmpty();
+
+      // when
+      processCache.invalidate();
+
+      // then - both caches are cleared
+      assertThat(processCache.getRawCache("tenantA").asMap()).isEmpty();
+      assertThat(processCache.getRawCache("tenantB").asMap()).isEmpty();
     }
   }
 }

@@ -65,7 +65,7 @@ public final class ElementInstanceServiceTest {
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(client.withPhysicalTenant(any())).thenReturn(client);
-    when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
+    when(processCache.getCacheItems(any(), any())).thenReturn(ProcessCacheResult.EMPTY);
   }
 
   @Nested
@@ -93,7 +93,7 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
       when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey()), "default"))
           .thenReturn(
               ProcessCacheResult.of(
                   entity.processDefinitionKey(),
@@ -171,7 +171,7 @@ public final class ElementInstanceServiceTest {
               .create();
 
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey()))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.flowNodeId(), "cached name")));
 
@@ -192,7 +192,7 @@ public final class ElementInstanceServiceTest {
               .create();
 
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey()))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
       // when
@@ -216,7 +216,7 @@ public final class ElementInstanceServiceTest {
                 .create();
 
         when(client.getFlowNodeInstance(any(Long.class))).thenReturn(elementInstance);
-        when(processCache.getCacheItem(elementInstance.processDefinitionKey()))
+        when(processCache.getCacheItem(elementInstance.processDefinitionKey(), "default"))
             .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
         final IncidentEntity incident =
             Instancio.of(IncidentEntity.class)

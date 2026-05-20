@@ -31,11 +31,12 @@ public class ProcessDefinitionProvider {
     this.processDefinitionServices = processDefinitionServices;
   }
 
-  public ProcessCacheData extractProcessData(final Long processDefinitionKey) {
+  public ProcessCacheData extractProcessData(
+      final Long processDefinitionKey, final String physicalTenantId) {
     try {
       final var processDefinition =
           processDefinitionServices.getByKey(
-              processDefinitionKey, CamundaAuthentication.anonymous(), "default");
+              processDefinitionKey, CamundaAuthentication.anonymous(), physicalTenantId);
       return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
@@ -46,7 +47,8 @@ public class ProcessDefinitionProvider {
     }
   }
 
-  public Map<Long, ProcessCacheData> extractProcessData(final Set<Long> processDefinitionKeys) {
+  public Map<Long, ProcessCacheData> extractProcessData(
+      final Set<Long> processDefinitionKeys, final String physicalTenantId) {
     if (processDefinitionKeys.isEmpty()) {
       LOG.debug("No process definition keys provided. Returning empty result.");
       return Collections.emptyMap();
@@ -64,7 +66,7 @@ public class ProcessDefinitionProvider {
                           .page(p -> p.size(keysList.size()))
                           .resultConfig(c -> c.includeXml(true))),
               CamundaAuthentication.anonymous(),
-              "default");
+              physicalTenantId);
 
       if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn(

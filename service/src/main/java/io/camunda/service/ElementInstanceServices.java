@@ -87,7 +87,8 @@ public final class ElementInstanceServices
                     .withPhysicalTenant(physicalTenantId)
                     .getFlowNodeInstance(key));
 
-    final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
+    final var cachedItem =
+        processCache.getCacheItem(result.processDefinitionKey(), physicalTenantId);
     return toCacheEnrichedFlowNodeInstanceEntity(result, cachedItem);
   }
 
@@ -104,7 +105,7 @@ public final class ElementInstanceServices
                     .withPhysicalTenant(physicalTenantId)
                     .searchFlowNodeInstances(query));
 
-    return toCacheEnrichedResult(result);
+    return toCacheEnrichedResult(result, physicalTenantId);
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(
@@ -124,7 +125,7 @@ public final class ElementInstanceServices
   }
 
   private SearchQueryResult<FlowNodeInstanceEntity> toCacheEnrichedResult(
-      final SearchQueryResult<FlowNodeInstanceEntity> result) {
+      final SearchQueryResult<FlowNodeInstanceEntity> result, final String physicalTenantId) {
     final var processDefinitionKeys =
         result.items().stream()
             .filter(u -> !u.hasFlowNodeName())
@@ -135,7 +136,7 @@ public final class ElementInstanceServices
       return result;
     }
 
-    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
+    final var cacheResult = processCache.getCacheItems(processDefinitionKeys, physicalTenantId);
 
     return result.withItems(
         result.items().stream()

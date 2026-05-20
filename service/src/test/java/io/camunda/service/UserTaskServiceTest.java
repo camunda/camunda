@@ -84,7 +84,7 @@ public class UserTaskServiceTest {
             mock(ApiServicesExecutorProvider.class),
             null);
 
-    when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
+    when(processCache.getCacheItems(any(), any())).thenReturn(ProcessCacheResult.EMPTY);
   }
 
   @Nested
@@ -555,7 +555,7 @@ public class UserTaskServiceTest {
               .create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey()))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
@@ -570,7 +570,7 @@ public class UserTaskServiceTest {
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::processName), null).create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey()))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
@@ -585,7 +585,7 @@ public class UserTaskServiceTest {
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey()))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey(), authentication, "default");
@@ -633,7 +633,7 @@ public class UserTaskServiceTest {
       final var entity =
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey()), "default"))
           .thenReturn(
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
@@ -649,7 +649,7 @@ public class UserTaskServiceTest {
       final var entity =
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::processName), null).create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey()), "default"))
           .thenReturn(
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));

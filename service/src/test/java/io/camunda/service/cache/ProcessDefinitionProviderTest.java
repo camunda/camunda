@@ -37,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessDefinitionProviderTest {
 
+  public static final String DEFAULT_TENANT_ID = "default";
   public static final String PROC_DEF_ID1 = "testProcess";
   public static final String PROC_DEF_ID2 = "parent_process_v1";
   public static final String PROC_DEF_ID3 = "eventSubprocessProcess";
@@ -109,7 +110,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     assertThat(processCacheData.elementIdNameMap()).isEmpty();
@@ -122,7 +123,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     verifyElementsBpmn1(processCacheData);
@@ -136,7 +137,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     verifyElementsBpmn2(processCacheData);
@@ -150,7 +151,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     verifyElementsBpmn3(processCacheData);
@@ -164,7 +165,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     assertThat(processCacheData.elementIdNameMap())
@@ -181,7 +182,7 @@ class ProcessDefinitionProviderTest {
 
     // when
     final ProcessCacheData processCacheData =
-        processDefinitionProvider.extractProcessData(PROC_DEF_KEY);
+        processDefinitionProvider.extractProcessData(PROC_DEF_KEY, DEFAULT_TENANT_ID);
 
     // then
     assertThat(processCacheData.elementIdNameMap())
@@ -208,7 +209,8 @@ class ProcessDefinitionProviderTest {
 
     // when
     final var processDataMap =
-        processDefinitionProvider.extractProcessData(Set.of(PROC_DEF_KEY, 2L, 3L));
+        processDefinitionProvider.extractProcessData(
+            Set.of(PROC_DEF_KEY, 2L, 3L), DEFAULT_TENANT_ID);
 
     // then
     assertThat(processDataMap).hasSize(3);

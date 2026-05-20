@@ -151,11 +151,11 @@ public final class UserTaskServices
                     .withPhysicalTenant(physicalTenantId)
                     .searchUserTasks(query));
 
-    return toCacheEnrichedResult(result);
+    return toCacheEnrichedResult(result, physicalTenantId);
   }
 
   private SearchQueryResult<UserTaskEntity> toCacheEnrichedResult(
-      final SearchQueryResult<UserTaskEntity> result) {
+      final SearchQueryResult<UserTaskEntity> result, final String physicalTenantId) {
 
     final var processDefinitionKeys =
         result.items().stream()
@@ -167,7 +167,7 @@ public final class UserTaskServices
       return result;
     }
 
-    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
+    final var cacheResult = processCache.getCacheItems(processDefinitionKeys, physicalTenantId);
 
     return result.withItems(
         result.items().stream()
@@ -260,7 +260,8 @@ public final class UserTaskServices
                     .withPhysicalTenant(physicalTenantId)
                     .getUserTask(userTaskKey));
 
-    final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
+    final var cachedItem =
+        processCache.getCacheItem(result.processDefinitionKey(), physicalTenantId);
     return toCacheEnrichedUserTaskEntity(result, cachedItem);
   }
 

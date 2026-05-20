@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -26,49 +27,64 @@ import org.slf4j.LoggerFactory;
  * Process cache uses a Caffeine {@link LoadingCache} to store process definition key and {@link
  * ProcessCacheItem} entries.
  *
- * <p>Use the {@link ProcessCache#getCacheItem(long)} method to load one item or the {@link
- * ProcessCache#getCacheItems(Set)} method to load multiple cache items at once.
+ * <p>Use the {@link ProcessCache#getCacheItem(long, String)} method to load one item or the {@link
+ * ProcessCache#getCacheItems(Set, String)} method to load multiple cache items at once.
  */
 public class ProcessCache {
 
   public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
-  private final LoadingCache<Long, ProcessCacheItem> cache;
+  private final ConcurrentHashMap<String, LoadingCache<Long, ProcessCacheItem>>
+      cachesByPhysicalTenant;
   private final ProcessDefinitionProvider processDefinitionProvider;
+  private final Configuration configuration;
+  private final CaffeineCacheStatsCounter statsCounter;
 
   public ProcessCache(
       final Configuration configuration,
       final ProcessDefinitionServices processDefinitionServices,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
+    this.configuration = configuration;
     processDefinitionProvider = new ProcessDefinitionProvider(processDefinitionServices);
+    cachesByPhysicalTenant = new ConcurrentHashMap<>();
+    statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
 
-    final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
+    brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
+  }
+
+  public ProcessCacheItem getCacheItem(
+      final long processDefinitionKey, final String physicalTenantId) {
+    return getOrCreateTenantCache(physicalTenantId).get(processDefinitionKey);
+  }
+
+  public ProcessCacheResult getCacheItems(
+      final Set<Long> processDefinitionKeys, final String physicalTenantId) {
+    return new ProcessCacheResult(
+        getOrCreateTenantCache(physicalTenantId).getAll(processDefinitionKeys));
+  }
+
+  public void invalidate() {
+    cachesByPhysicalTenant.values().forEach(LoadingCache::invalidateAll);
+  }
+
+  public LoadingCache<Long, ProcessCacheItem> getRawCache(final String physicalTenantId) {
+    return getOrCreateTenantCache(physicalTenantId);
+  }
+
+  private LoadingCache<Long, ProcessCacheItem> getOrCreateTenantCache(
+      final String physicalTenantId) {
+    return cachesByPhysicalTenant.computeIfAbsent(physicalTenantId, this::buildTenantCache);
+  }
+
+  private LoadingCache<Long, ProcessCacheItem> buildTenantCache(final String physicalTenantId) {
     final var cacheBuilder =
         Caffeine.newBuilder().maximumSize(configuration.maxSize()).recordStats(() -> statsCounter);
     final var expirationIdle = configuration.expirationIdleMillis();
     if (expirationIdle != null && expirationIdle > 0) {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
     }
-    cache = cacheBuilder.build(new ProcessCacheLoader());
-
-    brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
-  }
-
-  public ProcessCacheItem getCacheItem(final long processDefinitionKey) {
-    return cache.get(processDefinitionKey);
-  }
-
-  public ProcessCacheResult getCacheItems(final Set<Long> processDefinitionKeys) {
-    return new ProcessCacheResult(cache.getAll(processDefinitionKeys));
-  }
-
-  public void invalidate() {
-    cache.invalidateAll();
-  }
-
-  public LoadingCache<Long, ProcessCacheItem> getRawCache() {
-    return cache;
+    return cacheBuilder.build(new ProcessCacheLoader(physicalTenantId));
   }
 
   public record Configuration(long maxSize, Long expirationIdleMillis) {
@@ -79,16 +95,24 @@ public class ProcessCache {
 
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
 
+    private final String physicalTenantId;
+
+    ProcessCacheLoader(final String physicalTenantId) {
+      this.physicalTenantId = physicalTenantId;
+    }
+
     @Override
     public ProcessCacheItem load(final Long processDefinitionKey) {
-      final var processData = processDefinitionProvider.extractProcessData(processDefinitionKey);
+      final var processData =
+          processDefinitionProvider.extractProcessData(processDefinitionKey, physicalTenantId);
       return ProcessCacheItem.from(processData);
     }
 
     @Override
     public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
       final var processDataMap =
-          processDefinitionProvider.extractProcessData((Set<Long>) processDefinitionKeys);
+          processDefinitionProvider.extractProcessData(
+              (Set<Long>) processDefinitionKeys, physicalTenantId);
       return processDataMap.entrySet().stream()
           .collect(
               Collectors.toMap(
