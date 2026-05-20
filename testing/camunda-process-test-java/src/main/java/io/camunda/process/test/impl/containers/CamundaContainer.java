@@ -18,6 +18,9 @@ package io.camunda.process.test.impl.containers;
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.*;
 import static io.camunda.process.test.impl.containers.CamundaContainer.H2Configuration.DATABASE_TYPE;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_DATABASE_URL;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_PASSWORD;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_TYPE;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATABASE_USERNAME;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME;
@@ -122,8 +125,17 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public CamundaContainer withH2() {
-    withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE, DATABASE_TYPE)
-        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL, databaseUrL(UUID.randomUUID()))
+    // Set legacy env vars (consumed by stable/8.8's broker in the locally-built `current-test`
+    // image) AND the new env vars (consumed by main's `camunda/camunda:SNAPSHOT` image which
+    // ProcessNestedUnitTest pulls from Docker Hub). Both image variants are exercised by the
+    // test suite on stable/8.8; setting only one breaks the other.
+    final String databaseUrl = databaseUrL(UUID.randomUUID());
+    withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
+        .withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, databaseUrl)
+        .withEnv(CAMUNDA_ENV_DATABASE_USERNAME, DATABASE_USERNAME)
+        .withEnv(CAMUNDA_ENV_DATABASE_PASSWORD, DATABASE_PASSWORD)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_TYPE, DATABASE_TYPE)
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_URL, databaseUrl)
         .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_USERNAME, DATABASE_USERNAME)
         .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD, DATABASE_PASSWORD)
         .withEnv(
