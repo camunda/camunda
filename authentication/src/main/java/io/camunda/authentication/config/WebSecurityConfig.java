@@ -58,7 +58,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
  * {@code @ConditionalOnMissingBean}.
  */
 @Configuration
-@Profile("consolidated-auth")
+@Profile("consolidated-auth & !pt-security")
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 @Import({
   OidcOverrideBeansConfiguration.class,

@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 
@@ -38,6 +39,7 @@ import org.springframework.session.config.annotation.web.http.EnableSpringHttpSe
 @EnableSpringHttpSession
 @ConditionalOnPersistentWebSessionEnabled
 @ConditionalOnRestGatewayEnabled
+@Profile("!pt-security")
 public class WebSessionRepositoryConfiguration {
 
   private final GenericConversionService conversionService;
