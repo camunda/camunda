@@ -471,9 +471,9 @@ public class OpensearchExporterConfiguration {
           + enabled
           + ", minimumAge='"
           + minimumAge
-          + ", policyName='"
+          + "', policyName='"
           + policyName
-          + ", policyDescription='"
+          + "', policyDescription='"
           + policyDescription
           + '\''
           + ", managePolicy="
