@@ -108,6 +108,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final DeployedProcess process, final DirectBuffer correlationKey) {
 
     final var messageCorrelation = new Correlation();
+    final var bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
 
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         process.getKey(),
@@ -132,7 +133,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
-                    && !isBusinessIdAlreadyHeld(storedMessage, process)) {
+                    && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)) {
 
                   // correlate the first published message across all message start events
                   // - using the message key to decide which message was published before
@@ -167,7 +168,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
    * closes that gap.
    */
   private boolean isBusinessIdAlreadyHeld(
-      final StoredMessage storedMessage, final DeployedProcess process) {
+      final StoredMessage storedMessage, final String bpmnProcessId) {
     if (!businessIdUniquenessEnabled) {
       return false;
     }
@@ -177,7 +178,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     }
     return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
         BufferUtil.bufferAsString(businessId),
-        BufferUtil.bufferAsString(process.getBpmnProcessId()),
+        bpmnProcessId,
         storedMessage.getMessage().getTenantId(),
         bannedInstanceState::isProcessInstanceBanned);
   }
