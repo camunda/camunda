@@ -89,7 +89,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return cachedJsonValue;
   }
 
+  // Excluded from JSON serialization: used only internally for size-based metrics,
+  // not part of the record's public JSON representation.
+  // See https://github.com/camunda/camunda/pull/52298
   @Override
+  @JsonIgnore
   public int getValueLength() {
     return valueProp.getValue().capacity();
   }
