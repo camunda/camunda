@@ -9,30 +9,23 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+import static io.camunda.zeebe.test.ClusterHelper.createProcessInstance;
+import static io.camunda.zeebe.test.ClusterHelper.deployProcess;
+import static io.camunda.zeebe.test.ClusterHelper.newClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
-import io.camunda.container.cluster.CamundaClusterBuilder;
 import io.camunda.container.cluster.GatewayNode;
 import io.camunda.container.volume.CamundaVolume;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import io.camunda.zeebe.util.SemanticVersion;
-import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
@@ -41,10 +34,8 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Rolling update test for secondary storage across mixed-version upgrades.
@@ -53,12 +44,8 @@ import org.testcontainers.utility.DockerImageName;
  * (RDBMS, Elasticsearch, and OpenSearch) to avoid duplicated test logic.
  */
 final class SecondaryStorageRollingUpdateTest {
-  private static final Duration SECOND_OLD_BROKER_START_DELAY = Duration.ofSeconds(3);
 
   private static List<Arguments> cachedVersionMatrix;
-
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   private static final String CAMUNDA_DATABASE = "camunda";
   private static final String CAMUNDA_USER = "camunda";
@@ -116,7 +103,8 @@ final class SecondaryStorageRollingUpdateTest {
       updateBroker(oldVersionBroker, oldNodeId, from, storage);
       updateBroker(newVersionBroker, newNodeId, from, storage);
 
-      // --- Phase 1: start both nodes on old version with staggered startup ---
+      // --- Phase 1: start both nodes on old version with staggered startup to allow for liquibase
+      // bootstrapping without race conditions ---
       final CompletableFuture<Void> oldVersionStartFuture =
           CompletableFuture.runAsync(oldVersionBroker::start);
       awaitSecondOldBrokerStartDelay();
@@ -125,13 +113,7 @@ final class SecondaryStorageRollingUpdateTest {
       final long phase1Key;
       try (final var client = newClient(oldVersionGateway)) {
         deployProcess(client);
-        phase1Key =
-            Awaitility.await("phase 1 process instance creation")
-                .atMost(Duration.ofSeconds(30))
-                .pollInterval(Duration.ofMillis(100))
-                .ignoreExceptions()
-                .until(() -> createProcessInstance(client), Objects::nonNull)
-                .getProcessInstanceKey();
+        phase1Key = createProcessInstance(client);
 
         awaitProcessInstanceInSecondaryStorage(client, phase1Key);
       }
@@ -144,13 +126,7 @@ final class SecondaryStorageRollingUpdateTest {
 
       final long phase2Key;
       try (final var phase2Client = newClient(newVersionGateway)) {
-        phase2Key =
-            Awaitility.await("phase 2 process instance creation")
-                .atMost(Duration.ofSeconds(60))
-                .pollInterval(Duration.ofMillis(100))
-                .ignoreExceptions()
-                .until(() -> createProcessInstance(phase2Client), Objects::nonNull)
-                .getProcessInstanceKey();
+        phase2Key = createProcessInstance(phase2Client);
 
         awaitProcessInstanceInSecondaryStorage(phase2Client, phase1Key);
         awaitProcessInstanceInSecondaryStorage(phase2Client, phase2Key);
@@ -161,13 +137,7 @@ final class SecondaryStorageRollingUpdateTest {
       newVersionBroker.stop();
 
       try (final var phase3Client = newClient(oldVersionGateway)) {
-        final long phase3Key =
-            Awaitility.await("phase 3 process instance creation")
-                .atMost(Duration.ofSeconds(60))
-                .pollInterval(Duration.ofMillis(100))
-                .ignoreExceptions()
-                .until(() -> createProcessInstance(phase3Client), Objects::nonNull)
-                .getProcessInstanceKey();
+        final long phase3Key = createProcessInstance(phase3Client);
 
         awaitProcessInstanceInSecondaryStorage(phase3Client, phase1Key);
         awaitProcessInstanceInSecondaryStorage(phase3Client, phase2Key);
@@ -186,52 +156,8 @@ final class SecondaryStorageRollingUpdateTest {
       final int id,
       final String version,
       final StorageTestCase storage) {
-    if ("CURRENT".equals(version)) {
-      broker.setDockerImageName(
-          ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
-      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
-    } else {
-      broker.setDockerImageName(
-          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
-    }
-
+    ClusterHelper.updateBroker(broker, id, version);
     applySecondaryStorageEnv(broker, storage);
-
-    final var semVer = SemanticVersion.parse(version);
-
-    if (semVer.isPresent() && semVer.get().minor() < 8) {
-      broker
-          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-          .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT", "2")
-          .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", "1")
-          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE", "2")
-          .withEnv("ZEEBE_BROKER_CLUSTER_NODE_ID", String.valueOf(id))
-          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_NAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
-          .withEnv(
-              "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
-              String.join(",", broker.getConfiguration().getCluster().getInitialContactPoints()))
-          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-          .withEnv("ZEEBE_BROKER_NETWORK_HOST", "0.0.0.0")
-          .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
-          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
-          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
-    }
-  }
-
-  private String currentVersion() {
-    return VersionUtil.getVersion().replace("-SNAPSHOT", "");
-  }
-
-  private ProcessInstanceEvent createProcessInstance(final CamundaClient client) {
-    return client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
-  }
-
-  private void deployProcess(final CamundaClient client) {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(PROCESS, "process.bpmn")
-        .send()
-        .join(10, TimeUnit.SECONDS);
   }
 
   private void awaitProcessInstanceInSecondaryStorage(
@@ -256,22 +182,15 @@ final class SecondaryStorageRollingUpdateTest {
             });
   }
 
-  private CamundaClient newClient(final GatewayNode<?> gateway) {
-    return CamundaClient.newClientBuilder()
-        .preferRestOverGrpc(false)
-        .grpcAddress(gateway.getGrpcAddress())
-        .restAddress(gateway.getRestAddress())
-        .build();
-  }
-
   private void awaitSecondOldBrokerStartDelay() {
     final long delayStartNanos = System.nanoTime();
-    Awaitility.await("wait before starting second old-version broker")
+    Awaitility.await(
+            "wait before starting second old-version broker to allow for bootstrapping liquibase without race condition")
         .atMost(Duration.ofSeconds(10))
         .until(
             () ->
                 Duration.ofNanos(System.nanoTime() - delayStartNanos)
-                        .compareTo(SECOND_OLD_BROKER_START_DELAY)
+                        .compareTo(Duration.ofSeconds(3))
                     >= 0);
   }
 
@@ -280,47 +199,7 @@ final class SecondaryStorageRollingUpdateTest {
       final List<String> initialContactPoints,
       final Collection<CamundaVolume> volumes,
       final StorageTestCase storage) {
-    final var volume =
-        CamundaVolume.newVolume(
-            cfg -> {
-              final var labels = new HashMap<>(Objects.requireNonNull(cfg.getLabels()));
-              labels.put(
-                  DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
-                  DockerClientFactory.SESSION_ID);
-              return cfg.withLabels(labels);
-            });
-    volumes.add(volume);
-
-    broker
-        .withCamundaData(volume)
-        .withUnifiedConfig(
-            cfg -> {
-              cfg.getCluster().setSize(2);
-              cfg.getCluster().setInitialContactPoints(initialContactPoints);
-              cfg.getCluster().getMembership().setBroadcastUpdates(true);
-              cfg.getCluster().getMembership().setSyncInterval(Duration.ofMillis(250));
-              cfg.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-              cfg.getCluster().getMembership().setProbeTimeout(Duration.ofSeconds(1));
-              cfg.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(2));
-              cfg.getCluster().getMembership().setSuspectProbes(2);
-            })
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
-        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
-        .withEnv(
-            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
-        .withEnv("CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK", "false")
-        .withEnv("CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED", "false")
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        .withCreateContainerCmdModifier(
-            createContainerCmd -> createContainerCmd.withUser("1001:0"));
-
+    ClusterHelper.configureBroker(broker, initialContactPoints, volumes);
     applySecondaryStorageEnv(broker, storage);
   }
 
