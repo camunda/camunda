@@ -458,16 +458,412 @@ git commit -m "test: add PtPocLocalIdpRunner for local PT-security iteration"
 ```
 
 ---
+## Task 4: Walking skeleton — one tenant, end-to-end login
 
-## Task 4: PhysicalTenantRedirectUriRewriter
+**Goal:** First runnable login. Under the `pt-security` profile, register a single hard-coded `SecurityFilterChain` for tenant A that drives the OIDC flow against the local Keycloak runner. Verify in a browser. This task deliberately inlines everything — no abstractions, no extractions — to validate the model with the smallest possible code change. The next ten tasks refactor this blob into the unit-testable collaborators from the spec.
 
-**Goal:** Pure function that takes a tenant id and the base redirect URI template (`{baseUrl}/login/oauth2/code/{registrationId}`) and returns `{baseUrl}/physical-tenant/<tenant>/login/oauth2/code/{registrationId}`. Used by the OIDC registry to override `ClientRegistration.redirectUri` at build time.
+**Files:**
+- Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+- Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`
+- Create: `dist/src/main/resources/application-pt-poc.yaml`
+- Possibly modify: any file required to make OC boot under `pt-security` without `WebSecurityConfig`'s SPI ports. (Unknown at plan-time — discovered when the engineer first tries to boot.)
+
+### Step 1 — Write the configuration
+
+```java
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.pt;
+
+import io.camunda.security.configuration.SecurityConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrations;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@Profile("pt-security")
+public class PhysicalTenantSecurityConfiguration {
+
+  // Hard-coded for the walking skeleton. T9 generalises this to read from
+  // camunda.physical-tenants.<id>.security.authentication.providers.assigned.
+  private static final String TENANTA_REGISTRATION_ID = "oidc";
+
+  @Bean
+  public SecurityFilterChain ptTenantaWebappChain(
+      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
+
+    final var providerConfig =
+        security
+            .getAuthentication()
+            .getProviders()
+            .getOidc()
+            .get(TENANTA_REGISTRATION_ID);
+
+    final ClientRegistration registration =
+        ClientRegistrations.fromIssuerLocation(providerConfig.getIssuerUri())
+            .registrationId(TENANTA_REGISTRATION_ID)
+            .clientId(providerConfig.getClientId())
+            .clientSecret(providerConfig.getClientSecret())
+            .redirectUri(
+                "{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}")
+            .build();
+
+    final ClientRegistrationRepository repo =
+        new InMemoryClientRegistrationRepository(registration);
+
+    return http.securityMatcher("/physical-tenant/tenanta/**")
+        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+        .oauth2Login(
+            l ->
+                l.clientRegistrationRepository(repo)
+                    .authorizationEndpoint(
+                        ae -> ae.baseUri("/physical-tenant/tenanta/oauth2/authorization"))
+                    .redirectionEndpoint(
+                        re -> re.baseUri("/physical-tenant/tenanta/login/oauth2/code/*")))
+        .build();
+  }
+}
+```
+
+### Step 2 — Write the whoami controller
+
+```java
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.pt;
+
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@Profile("pt-security")
+public class PhysicalTenantWhoamiController {
+
+  public record Whoami(String tenantId, String principal) {}
+
+  @GetMapping("/physical-tenant/{tenantId}/whoami")
+  @ResponseBody
+  public Whoami whoami(
+      @PathVariable final String tenantId, final Authentication authentication) {
+    return new Whoami(
+        tenantId, authentication != null ? authentication.getName() : "anonymous");
+  }
+}
+```
+
+### Step 3 — Write the bundled application profile
+
+`dist/src/main/resources/application-pt-poc.yaml`:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      method: oidc
+      providers:
+        oidc:
+          oidc:
+            client-id: camunda-pt-tenanta-client
+            client-secret: tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
+
+server:
+  port: 8080
+
+spring:
+  profiles:
+    include:
+      - consolidated-auth
+      - pt-security
+```
+
+### Step 4 — Try to boot OC; satisfy whatever SPI ports CSL's absence breaks
+
+```bash
+# In terminal 1: leave the IdP runner up
+./mvnw -pl dist test-compile exec:java \
+  -Dexec.mainClass=io.camunda.application.pt.PtPocLocalIdpRunner \
+  -Dexec.classpathScope=test
+
+# In terminal 2: try to boot OC
+./mvnw -pl dist spring-boot:run \
+  -Dspring-boot.run.profiles=pt-poc
+```
+
+`WebSecurityConfig` defines a handful of SPI port beans (`SecurityPathPort`, `WebAppProviderPort`, `AuthorizationRepositoryPort`, `ResourcePermissionPort`, `OidcResourceServerCustomizer`, etc.) that may be consumed by OC code outside CSL. With `pt-security` active, `WebSecurityConfig` is off and those ports are missing. Two paths to resolve:
+
+- **A (preferred):** confirm the missing ports are only consumed by CSL itself (which is also off under `pt-security`). If so, OC boots cleanly; no further changes needed.
+- **B (if A fails):** add a minimal `PhysicalTenantHostStubsConfiguration` `@Configuration @Profile("pt-security")` that provides no-op implementations of the ports that fail to autowire. Report each port stubbed.
+
+This step is the moment of truth. Take an iterative approach: boot, read the first autowire failure, stub the port (or move it to an `ObjectProvider` consumer), reboot, repeat until OC starts.
+
+### Step 5 — Manual smoke
+
+With OC running on `:8080`:
+
+1. Browser → `http://localhost:8080/physical-tenant/tenanta/whoami`
+2. Expect redirect to `http://localhost:8082/realms/tenanta/protocol/openid-connect/auth?...`
+3. Log in as `bob` / `bob`
+4. Expect return to `http://localhost:8080/physical-tenant/tenanta/login/oauth2/code/oidc` then to `/physical-tenant/tenanta/whoami`
+5. Response JSON: `{"tenantId":"tenanta","principal":"bob"}`
+6. DevTools → Application → Cookies: a session cookie (likely `JSESSIONID` at this stage; per-chain naming arrives in Task 5) scoped to default Path
+
+If any step fails, this is where the security model meets reality. Adapt the chain config (typically the `redirectUri` template or the `authorizationEndpoint.baseUri`) and rerun. Do not move on until the manual flow works.
+
+### Step 6 — Format and commit
+
+```bash
+./mvnw license:format spotless:apply -T1C
+./mvnw install -pl authentication,dist -am -Dquickly -T1C
+git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java \
+        dist/src/main/resources/application-pt-poc.yaml \
+        <any-host-stub-files>
+git commit -m "$(cat <<'EOF'
+feat: walking skeleton for PT-security PoC — one tenant end-to-end login
+
+Single hard-coded SecurityFilterChain for tenant A wired against the
+local Keycloak runner. Demonstrates the OIDC flow under the pt-security
+profile end-to-end before any abstractions land. Subsequent tasks
+refactor this blob into the per-tenant slice and chain factory from
+the spec.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 5: Add default tenant prefixed chain + per-chain cookie isolation
+
+**Goal:** Second tenant chain. Both chains must issue distinct, Path-scoped session cookies so the browser holds them as two independent sessions. After this task, opening one tab on `/physical-tenant/tenanta/whoami` and a second on `/physical-tenant/default/whoami` produces two simultaneous logins with two cookies.
+
+**Files:**
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+- Modify: `dist/src/main/resources/application-pt-poc.yaml`
+
+### Step 1 — Extend the YAML with the default-tenant provider entry
+
+Add under `camunda.security.authentication.providers.oidc`:
+
+```yaml
+        default-provider:
+          client-id: camunda-pt-default-client
+          client-secret: default-secret
+          issuer-uri: http://localhost:8081/realms/default
+```
+
+The existing `oidc:` entry remains for tenant A. (We're not yet using `physical-tenants.<id>.security.authentication.providers.assigned` — that arrives in Task 8.)
+
+### Step 2 — Add a default-tenant chain bean
+
+Inside `PhysicalTenantSecurityConfiguration`, copy the tenant-A bean to a sibling `ptDefaultWebappChain` that:
+
+- Reads provider config from the `default-provider` key.
+- Matches `securityMatcher("/physical-tenant/default/**")`.
+- Builds a `ClientRegistration` with `redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")`.
+
+Resist the urge to extract a helper — that's Task 6. Two near-duplicate `@Bean` methods are fine here; the duplication is what motivates the extraction.
+
+### Step 3 — Wire per-chain session cookies
+
+Each chain needs its own session cookie name and Path. Add to each `@Bean`:
+
+```java
+import org.springframework.session.web.http.CookieHttpSessionIdResolver;
+import org.springframework.session.web.http.DefaultCookieSerializer;
+import org.springframework.session.web.http.SessionRepositoryFilter;
+import org.springframework.session.MapSessionRepository;
+import java.util.concurrent.ConcurrentHashMap;
+
+// in each chain, before .build():
+final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
+serializer.setCookieName("camunda-session-tenanta"); // or "camunda-session-default"
+serializer.setCookiePath("/physical-tenant/tenanta"); // or "/physical-tenant/default"
+serializer.setUseHttpOnlyCookie(true);
+serializer.setSameSite("Lax");
+
+final CookieHttpSessionIdResolver resolver = new CookieHttpSessionIdResolver();
+resolver.setCookieSerializer(serializer);
+
+final SessionRepositoryFilter<?> sessionFilter =
+    new SessionRepositoryFilter<>(new MapSessionRepository(new ConcurrentHashMap<>()));
+sessionFilter.setHttpSessionIdResolver(resolver);
+
+http.addFilterBefore(
+    sessionFilter,
+    org.springframework.security.web.context.SecurityContextHolderFilter.class);
+```
+
+`MapSessionRepository` is in-memory; T9 replaces it with the persistent-storage-backed `PerTenantSessionRepository`. For the walking skeleton, in-memory is fine — manual smoke tests run within one process lifetime.
+
+### Step 4 — Manual smoke for isolation
+
+Both Keycloak realms + OC running. Browser:
+
+1. Tab 1 → `/physical-tenant/tenanta/whoami` → login `bob/bob` → see `tenantId=tenanta`. DevTools shows cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`.
+2. Tab 2 → `/physical-tenant/default/whoami` → redirect to default IdP → login `alice/alice` → see `tenantId=default`. DevTools shows a second cookie `camunda-session-default; Path=/physical-tenant/default`.
+3. Tab 1 still works (refresh): the tenanta cookie isn't shadowed by the new default cookie because they have disjoint Paths.
+4. Optional: try replaying tenant A's cookie in DevTools against the default tenant's URL — cookie name doesn't match, so default's chain doesn't see it, and the user is challenged to re-auth.
+
+### Step 5 — Format and commit
+
+```bash
+./mvnw license:format spotless:apply -T1C
+./mvnw install -pl authentication,dist -am -Dquickly -T1C
+git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
+        dist/src/main/resources/application-pt-poc.yaml
+git commit -m "feat: add default-tenant PT chain with per-chain cookie isolation"
+```
+
+---
+
+## Task 6: Extract TenantSecuritySlice + PerTenantSecurityChainFactory
+
+**Goal:** Pull the duplicated chain-building code from Tasks 4 and 5 into a `TenantSecuritySlice` record and a `PerTenantSecurityChainFactory.buildWebappChain(http, slice)` method. Behaviour identical to before; both `@Bean` methods in `PhysicalTenantSecurityConfiguration` reduce to slice-construction + factory call.
+
+**Files:**
+- Create: `authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java`
+- Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+
+### Step 1 — Write the slice record
+
+```java
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.pt;
+
+import org.jspecify.annotations.NullMarked;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.session.web.http.CookieHttpSessionIdResolver;
+import org.springframework.session.web.http.SessionRepositoryFilter;
+
+@NullMarked
+public record TenantSecuritySlice(
+    String tenantId,
+    AccessPath accessPath,
+    ClientRegistrationRepository clientRegistrationRepository,
+    SessionRepositoryFilter<?> sessionRepositoryFilter,
+    CookieHttpSessionIdResolver httpSessionIdResolver) {
+
+  public enum AccessPath {
+    PREFIXED,
+    UNPREFIXED_DEFAULT
+  }
+
+  public String webappPathPrefix() {
+    return accessPath == AccessPath.PREFIXED ? "/physical-tenant/" + tenantId : "";
+  }
+}
+```
+
+### Step 2 — Write the factory
+
+```java
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.pt;
+
+import org.jspecify.annotations.NullMarked;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+
+@NullMarked
+public final class PerTenantSecurityChainFactory {
+
+  public SecurityFilterChain buildWebappChain(
+      final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {
+    final String prefix = slice.webappPathPrefix();
+    return http.securityMatcher(prefix.isEmpty() ? "/**" : prefix + "/**")
+        .addFilterBefore(
+            slice.sessionRepositoryFilter(),
+            org.springframework.security.web.context.SecurityContextHolderFilter.class)
+        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+        .oauth2Login(
+            l ->
+                l.clientRegistrationRepository(slice.clientRegistrationRepository())
+                    .authorizationEndpoint(
+                        ae -> ae.baseUri(prefix + "/oauth2/authorization"))
+                    .redirectionEndpoint(
+                        re -> re.baseUri(prefix + "/login/oauth2/code/*")))
+        .build();
+  }
+}
+```
+
+### Step 3 — Reduce the @Bean methods to slice construction
+
+Each `@Bean` now:
+
+```java
+@Bean
+public SecurityFilterChain ptTenantaWebappChain(
+    final HttpSecurity http, final SecurityConfiguration security) throws Exception {
+  return new PerTenantSecurityChainFactory().buildWebappChain(http, sliceFor("tenanta", "oidc", security));
+}
+```
+
+…with a `private TenantSecuritySlice sliceFor(String tenantId, String registrationId, SecurityConfiguration security)` helper that does the existing inline work.
+
+### Step 4 — Re-run the manual smoke
+
+Steps from Task 5. Two tabs, two cookies, isolated. No behaviour change expected; this is pure refactor.
+
+### Step 5 — Format and commit
+
+```bash
+./mvnw license:format spotless:apply -T1C
+./mvnw install -pl authentication -am -Dquickly -T1C
+git add authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java
+git commit -m "refactor: extract TenantSecuritySlice and PerTenantSecurityChainFactory"
+```
+
+---
+
+## Task 7: Extract PhysicalTenantRedirectUriRewriter + unit test
+
+**Goal:** Pull the redirect-URI templating out of the inline `ClientRegistration.redirectUri(...)` call into a tested pure function.
 
 **Files:**
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java`
 - Test: `authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriterTest.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` (use the rewriter)
 
-- [ ] **Step 1: Write the failing test**
+### Step 1 — Write the failing test
 
 ```java
 /*
@@ -480,6 +876,7 @@ git commit -m "test: add PtPocLocalIdpRunner for local PT-security iteration"
 package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -487,12 +884,11 @@ class PhysicalTenantRedirectUriRewriterTest {
 
   @Test
   void shouldInsertTenantSegmentBetweenBaseUrlAndLoginCallback() {
-    // given
-    final var input = "{baseUrl}/login/oauth2/code/{registrationId}";
-    // when
-    final var result = PhysicalTenantRedirectUriRewriter.rewrite(input, "tenanta");
-    // then
-    assertThat(result).isEqualTo("{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}");
+    assertThat(
+            PhysicalTenantRedirectUriRewriter.rewrite(
+                "{baseUrl}/login/oauth2/code/{registrationId}", "tenanta"))
+        .isEqualTo(
+            "{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}");
   }
 
   @Test
@@ -503,29 +899,28 @@ class PhysicalTenantRedirectUriRewriterTest {
 
   @Test
   void shouldRewriteAbsoluteUri() {
-    final var input = "https://oc.example.com/login/oauth2/code/idpOne";
-    assertThat(PhysicalTenantRedirectUriRewriter.rewrite(input, "default"))
+    assertThat(
+            PhysicalTenantRedirectUriRewriter.rewrite(
+                "https://oc.example.com/login/oauth2/code/idpOne", "default"))
         .isEqualTo("https://oc.example.com/physical-tenant/default/login/oauth2/code/idpOne");
   }
 
   @Test
   void shouldRejectBlankTenantId() {
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> PhysicalTenantRedirectUriRewriter.rewrite("{baseUrl}/login/oauth2/code/{registrationId}", ""))
+    assertThatThrownBy(
+            () -> PhysicalTenantRedirectUriRewriter.rewrite("{baseUrl}/login/oauth2/code/x", ""))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }
 ```
 
-- [ ] **Step 2: Run and confirm failure**
+### Step 2 — Run, confirm failure; implement
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PhysicalTenantRedirectUriRewriterTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement**
+Then:
 
 ```java
 /*
@@ -542,63 +937,75 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class PhysicalTenantRedirectUriRewriter {
 
-  private static final String LOGIN_CALLBACK_SEGMENT = "/login/oauth2/code/";
+  private static final String LOGIN_CALLBACK = "/login/oauth2/code/";
 
   private PhysicalTenantRedirectUriRewriter() {}
 
-  public static String rewrite(final String redirectUriTemplate, final String tenantId) {
+  public static String rewrite(final String template, final String tenantId) {
     if (tenantId == null || tenantId.isBlank()) {
       throw new IllegalArgumentException("tenantId must not be blank");
     }
-    final String prefixed = "/physical-tenant/" + tenantId + LOGIN_CALLBACK_SEGMENT;
-    if (redirectUriTemplate.contains(prefixed)) {
-      return redirectUriTemplate;
+    final String prefixed = "/physical-tenant/" + tenantId + LOGIN_CALLBACK;
+    if (template.contains(prefixed)) {
+      return template;
     }
-    return redirectUriTemplate.replace(LOGIN_CALLBACK_SEGMENT, prefixed);
+    return template.replace(LOGIN_CALLBACK, prefixed);
   }
 }
 ```
 
-- [ ] **Step 4: Run and confirm pass**
+### Step 3 — Replace inline `redirectUri(...)` callsites with the rewriter
+
+In `PhysicalTenantSecurityConfiguration`:
+
+```java
+.redirectUri(
+    PhysicalTenantRedirectUriRewriter.rewrite(
+        "{baseUrl}/login/oauth2/code/{registrationId}", tenantId))
+```
+
+### Step 4 — Run tests, manual smoke
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PhysicalTenantRedirectUriRewriterTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: 4 tests pass.
+Both tests green. Manual smoke unchanged from Task 6.
 
-- [ ] **Step 5: Format and commit**
+### Step 5 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
 git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriterTest.java
-git commit -m "feat: add PhysicalTenantRedirectUriRewriter for per-tenant OIDC callback paths"
+        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriterTest.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java
+git commit -m "refactor: extract PhysicalTenantRedirectUriRewriter with unit tests"
 ```
 
 ---
 
-## Task 5: PerTenantOidcRegistry
+## Task 8: Extract PerTenantOidcRegistry + consume `providers.assigned`
 
-**Goal:** Build the per-tenant `OidcAuthenticationConfigurationRepository` and `ClientRegistrationRepository` from a tenant's `SecurityConfiguration` slice, filtering providers by the tenant's `providers.assigned` list and rewriting redirect URIs through `PhysicalTenantRedirectUriRewriter`.
+**Goal:** Pull the per-tenant `ClientRegistrationRepository` construction into a `PerTenantOidcRegistry` that filters the provider map by the tenant's `providers.assigned` list. After this task, tenant config moves from "hard-coded provider key" to "tenant's `providers.assigned` declares which IdPs are active for that tenant."
+
+This is the first task that requires the `Providers.assigned` field on the security config bean. If it doesn't exist yet, add it as Step 0.
 
 **Files:**
+- Step 0: possibly modify the `AuthenticationConfiguration.Providers` class under `security/security-core/src/main/java/io/camunda/security/configuration/` to add `private List<String> assigned` + getter/setter
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java`
 - Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantOidcRegistryTest.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` (use the registry)
+- Modify: `dist/src/main/resources/application-pt-poc.yaml` (move tenant A's provider config under `camunda.physical-tenants.tenanta.security.authentication.providers.*` and set `assigned: [idpOne]`)
 
-**Note:** `providers.assigned` is not yet on `SecurityConfiguration`. Step 0 adds it.
-
-- [ ] **Step 0: Add the `assigned` list to the providers config bean**
-
-Locate `security/security-core/src/main/java/io/camunda/security/configuration/AuthenticationConfiguration.java` (or wherever `providers` lives — search if needed):
+### Step 0 — Add `Providers.assigned` if missing
 
 ```bash
 grep -rn "class Providers\|getAssigned" security/security-core/src/main 2>/dev/null
 ```
 
-Add a `private List<String> assigned = new ArrayList<>();` field with getter/setter on the providers configuration class. (Exact file path depends on the existing nesting; the engineer adapts. If it does not exist, create it under `AuthenticationConfiguration.Providers`.)
+If the field is absent, add it on the providers configuration class with a default `new ArrayList<>()` and standard getters/setters. Use the existing nullability convention in that file.
 
-- [ ] **Step 1: Write the failing test**
+### Step 1 — Write the failing test
 
 ```java
 /*
@@ -623,61 +1030,52 @@ class PerTenantOidcRegistryTest {
 
   @Test
   void shouldRegisterOnlyAssignedProviders() {
-    // given
-    final var security = buildSecurityConfig(Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")), List.of("idpOne"));
-    // when
+    final var security = sec(Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")), List.of("idpOne"));
     final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
-    // then
     assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpOne")).isNotNull();
     assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpTwo")).isNull();
   }
 
   @Test
   void shouldRewriteRedirectUriToTenantPath() {
-    final var security = buildSecurityConfig(Map.of("idpOne", oidc("idpOne")), List.of("idpOne"));
+    final var security = sec(Map.of("idpOne", oidc("idpOne")), List.of("idpOne"));
     final var registry = PerTenantOidcRegistry.forTenant("tenanta", security);
-    final var registration = registry.clientRegistrationRepository().findByRegistrationId("idpOne");
-    assertThat(registration.getRedirectUri())
+    assertThat(
+            registry
+                .clientRegistrationRepository()
+                .findByRegistrationId("idpOne")
+                .getRedirectUri())
         .isEqualTo("{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}");
   }
 
   @Test
   void shouldFailWhenAssignedProviderIsMissingFromProvidersMap() {
-    final var security = buildSecurityConfig(Map.of("idpOne", oidc("idpOne")), List.of("ghost"));
+    final var security = sec(Map.of("idpOne", oidc("idpOne")), List.of("ghost"));
     assertThatThrownBy(() -> PerTenantOidcRegistry.forTenant("tenanta", security))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("ghost");
   }
 
-  // helpers
-  private static OidcConfiguration oidc(final String registrationId) {
-    final var oidc = new OidcConfiguration();
-    oidc.setClientId("client-" + registrationId);
-    oidc.setClientSecret("secret-" + registrationId);
-    oidc.setIssuerUri("http://localhost:8080/realms/" + registrationId);
-    oidc.setRedirectUri("{baseUrl}/login/oauth2/code/{registrationId}");
-    return oidc;
+  private static OidcConfiguration oidc(final String id) {
+    final var c = new OidcConfiguration();
+    c.setClientId("client-" + id);
+    c.setClientSecret("secret-" + id);
+    c.setIssuerUri("http://localhost:8080/realms/" + id);
+    c.setRedirectUri("{baseUrl}/login/oauth2/code/{registrationId}");
+    return c;
   }
 
-  private static SecurityConfiguration buildSecurityConfig(
+  private static SecurityConfiguration sec(
       final Map<String, OidcConfiguration> providers, final List<String> assigned) {
-    final var security = new SecurityConfiguration();
-    security.getAuthentication().getProviders().setOidc(providers);
-    security.getAuthentication().getProviders().setAssigned(assigned);
-    return security;
+    final var s = new SecurityConfiguration();
+    s.getAuthentication().getProviders().setOidc(providers);
+    s.getAuthentication().getProviders().setAssigned(assigned);
+    return s;
   }
 }
 ```
 
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PerTenantOidcRegistryTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — `PerTenantOidcRegistry` class does not exist.
-
-- [ ] **Step 3: Implement `PerTenantOidcRegistry`**
+### Step 2 — Implement the registry
 
 ```java
 /*
@@ -689,43 +1087,34 @@ Expected: FAIL — `PerTenantOidcRegistry` class does not exist.
  */
 package io.camunda.authentication.pt;
 
-import io.camunda.authentication.config.ClientRegistrationFactory;
-import io.camunda.authentication.config.OidcAuthenticationConfigurationRepository;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 
 @NullMarked
 public final class PerTenantOidcRegistry {
 
-  private final OidcAuthenticationConfigurationRepository providerRepository;
   private final ClientRegistrationRepository clientRegistrationRepository;
 
-  private PerTenantOidcRegistry(
-      final OidcAuthenticationConfigurationRepository providerRepository,
-      final ClientRegistrationRepository clientRegistrationRepository) {
-    this.providerRepository = providerRepository;
-    this.clientRegistrationRepository = clientRegistrationRepository;
+  private PerTenantOidcRegistry(final ClientRegistrationRepository repo) {
+    this.clientRegistrationRepository = repo;
   }
 
   public static PerTenantOidcRegistry forTenant(
       final String tenantId, final SecurityConfiguration tenantSecurity) {
-    final Map<String, OidcConfiguration> allProviders =
-        tenantSecurity.getAuthentication().getProviders().getOidc();
-    final List<String> assigned = tenantSecurity.getAuthentication().getProviders().getAssigned();
+    final var allProviders = tenantSecurity.getAuthentication().getProviders().getOidc();
+    final var assigned = tenantSecurity.getAuthentication().getProviders().getAssigned();
     if (assigned == null || assigned.isEmpty()) {
       throw new IllegalStateException(
-          "Tenant '"
-              + tenantId
-              + "' has no providers.assigned. Each PT must explicitly list its active OIDC providers.");
+          "Tenant '" + tenantId + "' has no providers.assigned");
     }
-    final Map<String, OidcConfiguration> assignedProviders = new HashMap<>();
+    final List<ClientRegistration> registrations = new ArrayList<>();
     for (final String registrationId : assigned) {
       final OidcConfiguration provider = allProviders.get(registrationId);
       if (provider == null) {
@@ -736,103 +1125,108 @@ public final class PerTenantOidcRegistry {
                 + registrationId
                 + "' but it is missing from authentication.providers.oidc.*");
       }
-      final OidcConfiguration rewritten = copyWithRewrittenRedirectUri(provider, tenantId);
-      assignedProviders.put(registrationId, rewritten);
+      registrations.add(buildRegistration(tenantId, registrationId, provider));
     }
-    final var tenantSecurityClone = cloneWithProviders(tenantSecurity, assignedProviders);
-    final var providerRepository = new OidcAuthenticationConfigurationRepository(tenantSecurityClone);
-    final List<ClientRegistration> registrations =
-        assignedProviders.entrySet().stream()
-            .map(e -> buildRegistration(e.getKey(), e.getValue()))
-            .toList();
-    return new PerTenantOidcRegistry(
-        providerRepository, new InMemoryClientRegistrationRepository(registrations));
-  }
-
-  public OidcAuthenticationConfigurationRepository providerRepository() {
-    return providerRepository;
+    return new PerTenantOidcRegistry(new InMemoryClientRegistrationRepository(registrations));
   }
 
   public ClientRegistrationRepository clientRegistrationRepository() {
     return clientRegistrationRepository;
   }
 
-  private static OidcConfiguration copyWithRewrittenRedirectUri(
-      final OidcConfiguration source, final String tenantId) {
-    final OidcConfiguration copy = new OidcConfiguration();
-    copy.setClientId(source.getClientId());
-    copy.setClientSecret(source.getClientSecret());
-    copy.setClientAuthenticationMethod(source.getClientAuthenticationMethod());
-    copy.setIssuerUri(source.getIssuerUri());
-    copy.setAuthorizationUri(source.getAuthorizationUri());
-    copy.setTokenUri(source.getTokenUri());
-    copy.setJwkSetUri(source.getJwkSetUri());
-    copy.setScope(source.getScope());
-    copy.setRedirectUri(
-        PhysicalTenantRedirectUriRewriter.rewrite(
-            source.getRedirectUri() != null
-                ? source.getRedirectUri()
-                : "{baseUrl}/login/oauth2/code/{registrationId}",
-            tenantId));
-    // additional fields copied as needed — start with what ClientRegistrationFactory consumes
-    return copy;
-  }
-
-  private static SecurityConfiguration cloneWithProviders(
-      final SecurityConfiguration source, final Map<String, OidcConfiguration> providers) {
-    // Shallow clone: producers only read authentication.providers.oidc + scalar auth fields.
-    // For the PoC we mutate a fresh SecurityConfiguration in place.
-    final SecurityConfiguration clone = new SecurityConfiguration();
-    clone.getAuthentication().setMethod(source.getAuthentication().getMethod());
-    clone.getAuthentication().setOidc(source.getAuthentication().getOidc());
-    clone.getAuthentication().getProviders().setOidc(providers);
-    clone.getAuthentication().getProviders().setAssigned(List.copyOf(providers.keySet()));
-    return clone;
-  }
-
   private static ClientRegistration buildRegistration(
-      final String registrationId, final OidcConfiguration provider) {
-    try {
-      return ClientRegistrationFactory.createClientRegistration(registrationId, provider);
-    } catch (final Exception e) {
-      throw new IllegalStateException(
-          "Failed to build ClientRegistration for '" + registrationId + "'", e);
-    }
+      final String tenantId,
+      final String registrationId,
+      final OidcConfiguration provider) {
+    final String redirectUri =
+        PhysicalTenantRedirectUriRewriter.rewrite(
+            provider.getRedirectUri() != null
+                ? provider.getRedirectUri()
+                : "{baseUrl}/login/oauth2/code/{registrationId}",
+            tenantId);
+    return ClientRegistrations.fromIssuerLocation(provider.getIssuerUri())
+        .registrationId(registrationId)
+        .clientId(provider.getClientId())
+        .clientSecret(provider.getClientSecret())
+        .redirectUri(redirectUri)
+        .build();
   }
 }
 ```
 
-- [ ] **Step 4: Run tests, confirm pass**
+### Step 3 — Replace inline construction in the chain config
+
+`PhysicalTenantSecurityConfiguration` now builds `TenantSecuritySlice` from `PerTenantOidcRegistry.forTenant(tenantId, tenantSecurity).clientRegistrationRepository()`. The hard-coded `getOidc().get("oidc")` lookup goes away.
+
+### Step 4 — Move tenant config to `physical-tenants.<id>.*` shape
+
+`application-pt-poc.yaml` becomes:
+
+```yaml
+camunda:
+  security:
+    authentication:
+      method: oidc
+  physical-tenants:
+    tenanta:
+      security:
+        authentication:
+          providers:
+            assigned: [idpOne]
+            oidc:
+              idpOne:
+                client-id: camunda-pt-tenanta-client
+                client-secret: tenanta-secret
+                issuer-uri: http://localhost:8082/realms/tenanta
+    default:
+      security:
+        authentication:
+          providers:
+            assigned: [defaultIdp]
+            oidc:
+              defaultIdp:
+                client-id: camunda-pt-default-client
+                client-secret: default-secret
+                issuer-uri: http://localhost:8081/realms/default
+```
+
+The chain `@Bean` methods now resolve each tenant's `SecurityConfiguration` via `PhysicalTenantResolver`. The full generalisation (iterating the resolver to register N tenants) lands in Task 12; for now keep the two explicit `@Bean` methods and just have each call `tenantResolver.forPhysicalTenant("tenanta").getSecurity()` (or however the resolver exposes it).
+
+### Step 5 — Run tests, manual smoke
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PerTenantOidcRegistryTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: all three tests pass.
+Then the manual two-tab login flow from Task 5. The `assigned` provider id is `idpOne` for tenant A and `defaultIdp` for default, so the URLs become `/physical-tenant/tenanta/oauth2/authorization/idpOne` and `/physical-tenant/default/oauth2/authorization/defaultIdp`.
 
-If `SecurityConfiguration` doesn't expose `setOidc`/`setAssigned` exactly as written, adjust the setters to match the actual config shape (read the class once and align).
-
-- [ ] **Step 5: Format and commit**
+### Step 6 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
+./mvnw install -pl authentication,dist,security/security-core -am -Dquickly -T1C
 git add authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java \
         authentication/src/test/java/io/camunda/authentication/pt/PerTenantOidcRegistryTest.java \
-        security/security-core/src/main/java/io/camunda/security/configuration/AuthenticationConfiguration.java
-git commit -m "feat: add PerTenantOidcRegistry that filters providers.assigned and rewrites redirect URIs"
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
+        dist/src/main/resources/application-pt-poc.yaml \
+        <any security-core changes>
+git commit -m "feat: extract PerTenantOidcRegistry and consume providers.assigned"
 ```
 
 ---
 
-## Task 6: PerTenantSessionRepository
+## Task 9: Extract PerTenantSessionRepository (storage keyspace isolation)
 
-**Goal:** Decorator over `WebSessionRepository` that prefixes each session id with `t:<tenantId>:` so multiple tenants share one secondary-storage backend without keyspace collision.
+**Goal:** Replace the `MapSessionRepository` stub from Task 5 with a `PerTenantSessionRepository` that prefixes session ids and delegates to the existing `WebSessionRepository` (which `pt-security` turned off in Task 1 — re-enable just the repository bean, but not the global `@EnableSpringHttpSession`).
 
 **Files:**
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSessionRepository.java`
 - Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantSessionRepositoryTest.java`
+- Modify: `dist/src/main/java/io/camunda/application/commons/identity/WebSessionRepositoryConfiguration.java` (split: gate the `@EnableSpringHttpSession` part on `!pt-security`, but expose `WebSessionRepository` as a `@Bean` available under both profiles)
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+- Possibly modify: `authentication/src/main/java/io/camunda/authentication/session/WebSession.java` (add a copy constructor `WebSession(String id, WebSession source)` if the decorator needs one)
 
-- [ ] **Step 1: Write the failing test**
+### Step 1 — Write the failing test
 
 ```java
 /*
@@ -846,9 +1240,8 @@ package io.camunda.authentication.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -859,16 +1252,11 @@ import org.junit.jupiter.api.Test;
 class PerTenantSessionRepositoryTest {
 
   @Test
-  void shouldPrefixSessionIdsWithTenantOnCreate() {
-    // given
+  void shouldPrefixSessionIdsOnCreate() {
     final var delegate = mock(WebSessionRepository.class);
-    final var raw = new WebSession("raw-id");
-    when(delegate.createSession()).thenReturn(raw);
+    when(delegate.createSession()).thenReturn(new WebSession("raw-id"));
     final var perTenant = new PerTenantSessionRepository("tenanta", delegate);
-    // when
-    final WebSession created = perTenant.createSession();
-    // then
-    assertThat(created.getId()).isEqualTo("t:tenanta:raw-id");
+    assertThat(perTenant.createSession().getId()).isEqualTo("t:tenanta:raw-id");
   }
 
   @Test
@@ -876,39 +1264,21 @@ class PerTenantSessionRepositoryTest {
     final var delegate = mock(WebSessionRepository.class);
     when(delegate.findById("raw-id")).thenReturn(new WebSession("raw-id"));
     final var perTenant = new PerTenantSessionRepository("tenanta", delegate);
-    final WebSession found = perTenant.findById("t:tenanta:raw-id");
+    assertThat(perTenant.findById("t:tenanta:raw-id").getId()).isEqualTo("t:tenanta:raw-id");
     verify(delegate).findById("raw-id");
-    assertThat(found.getId()).isEqualTo("t:tenanta:raw-id");
   }
 
   @Test
   void shouldReturnNullWhenLookingUpSessionFromAnotherTenant() {
     final var delegate = mock(WebSessionRepository.class);
     final var perTenant = new PerTenantSessionRepository("tenanta", delegate);
-    final WebSession found = perTenant.findById("t:default:raw-id");
-    assertThat(found).isNull();
-    verify(delegate, times(0)).findById(any());
-  }
-
-  @Test
-  void shouldDelegateDeleteWithStrippedId() {
-    final var delegate = mock(WebSessionRepository.class);
-    final var perTenant = new PerTenantSessionRepository("tenanta", delegate);
-    perTenant.deleteById("t:tenanta:raw-id");
-    verify(delegate).deleteById("raw-id");
+    assertThat(perTenant.findById("t:default:raw-id")).isNull();
+    verify(delegate, never()).findById(any());
   }
 }
 ```
 
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PerTenantSessionRepositoryTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement**
+### Step 2 — Implement (consult the spec's bean catalogue if the API doesn't match)
 
 ```java
 /*
@@ -931,20 +1301,17 @@ public final class PerTenantSessionRepository implements SessionRepository<WebSe
 
   private static final String PREFIX = "t:";
 
-  private final String tenantId;
   private final String tenantPrefix;
   private final WebSessionRepository delegate;
 
   public PerTenantSessionRepository(final String tenantId, final WebSessionRepository delegate) {
-    this.tenantId = tenantId;
     this.tenantPrefix = PREFIX + tenantId + ":";
     this.delegate = delegate;
   }
 
   @Override
   public WebSession createSession() {
-    final WebSession raw = delegate.createSession();
-    return wrap(raw);
+    return wrap(delegate.createSession());
   }
 
   @Override
@@ -955,7 +1322,7 @@ public final class PerTenantSessionRepository implements SessionRepository<WebSe
   @Override
   public @Nullable WebSession findById(final String id) {
     if (!id.startsWith(tenantPrefix)) {
-      return null; // foreign-tenant id; refuse cross-tenant lookups
+      return null;
     }
     final WebSession raw = delegate.findById(strip(id));
     return raw == null ? null : wrap(raw);
@@ -970,8 +1337,6 @@ public final class PerTenantSessionRepository implements SessionRepository<WebSe
   }
 
   private WebSession wrap(final WebSession raw) {
-    // WebSession is mutable in this codebase; assigning a prefixed id is sufficient.
-    // If WebSession.setId is absent, the engineer adds a package-private constructor or setter.
     return new WebSession(tenantPrefix + raw.getId(), raw);
   }
 
@@ -985,37 +1350,51 @@ public final class PerTenantSessionRepository implements SessionRepository<WebSe
 }
 ```
 
-**Note on `WebSession` API:** the existing `WebSession` class has `new WebSession(String sessionId)` (see line 65 of `WebSessionRepository`). If a copy-constructor `WebSession(String id, WebSession source)` does not exist, the engineer adds one that copies attributes/expiry from the source. The test should drive that addition.
+If `WebSession` doesn't have a `(String id, WebSession source)` copy constructor, add one that copies attributes/expiry from the source. Drive the addition with a focused `WebSessionTest`.
 
-- [ ] **Step 4: Run, confirm pass**
+### Step 3 — Expose `WebSessionRepository` as a bean under `pt-security` too
+
+Split `WebSessionRepositoryConfiguration`: the `WebSessionRepository` `@Bean` should remain available under `pt-security` (so per-tenant decorators can wrap it), but the `@EnableSpringHttpSession` annotation must not fire (otherwise Spring registers a global `SessionRepositoryFilter` that conflicts with our per-chain filters).
+
+Concretely: move `@EnableSpringHttpSession` onto a nested static `@Configuration @Profile("!pt-security")` class, leave the `@Bean WebSessionRepository` on the outer class with no profile restriction.
+
+### Step 4 — Wire `PerTenantSessionRepository` into the chain config
+
+Replace `new SessionRepositoryFilter<>(new MapSessionRepository(...))` in `PhysicalTenantSecurityConfiguration` with `new SessionRepositoryFilter<>(new PerTenantSessionRepository(tenantId, webSessionRepository))`.
+
+### Step 5 — Run tests, manual smoke
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PerTenantSessionRepositoryTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: 4 tests pass. If the `WebSession` copy-constructor is missing, add it under `authentication/src/main/java/io/camunda/authentication/session/WebSession.java` with copying of `attributes`, `creationTime`, `lastAccessedTime`, `maxInactiveInterval`, and a separate test under `WebSessionTest`.
+Manual: two tabs login. Restart OC. Cookie still works (sessions persisted). Look at the secondary-storage backend (ES/OS index or RDBMS table) to confirm session rows are prefixed with `t:tenanta:` and `t:default:`.
 
-- [ ] **Step 5: Format and commit**
+### Step 6 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
+./mvnw install -pl authentication,dist -am -Dquickly -T1C
 git add authentication/src/main/java/io/camunda/authentication/pt/PerTenantSessionRepository.java \
         authentication/src/test/java/io/camunda/authentication/pt/PerTenantSessionRepositoryTest.java \
+        dist/src/main/java/io/camunda/application/commons/identity/WebSessionRepositoryConfiguration.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
         authentication/src/main/java/io/camunda/authentication/session/WebSession.java
-git commit -m "feat: add PerTenantSessionRepository that prefixes session ids per tenant"
+git commit -m "feat: extract PerTenantSessionRepository with tenant-prefixed session ids"
 ```
 
 ---
 
-## Task 7: PhysicalTenantCookieSerializer factory
+## Task 10: Extract PhysicalTenantCookieSerializer + unit test
 
-**Goal:** Static factory returning a `DefaultCookieSerializer` configured with `camunda-session-<tenantId>` as the cookie name and `/physical-tenant/<tenantId>` (or `/` for the default-tenant unprefixed chain) as the cookie Path. Plus a `CookieHttpSessionIdResolver` that uses it.
+**Goal:** Pull the inline cookie-serializer/Path config from Task 5 into a tested factory.
 
 **Files:**
 - Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java`
 - Test: `authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializerTest.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` (use the factory)
 
-- [ ] **Step 1: Write the failing test**
+### Step 1 — Write the failing test
 
 ```java
 /*
@@ -1038,28 +1417,22 @@ import org.springframework.session.web.http.CookieSerializer.CookieValue;
 class PhysicalTenantCookieSerializerTest {
 
   @Test
-  void shouldNameCookiePerTenantAndScopePathToTenantPrefix() {
-    // given
+  void shouldScopePrefixedTenantCookieToTenantPath() {
     final var serializer = PhysicalTenantCookieSerializer.forPrefixedChain("tenanta");
     final var response = new MockHttpServletResponse();
-    final var request = new MockHttpServletRequest();
-    request.setRequestURI("/physical-tenant/tenanta/whoami");
-    // when
-    serializer.writeCookieValue(new CookieValue(request, response, "raw-session-id"));
-    // then
+    serializer.writeCookieValue(
+        new CookieValue(new MockHttpServletRequest(), response, "raw"));
     final Cookie cookie = response.getCookie("camunda-session-tenanta");
     assertThat(cookie).isNotNull();
     assertThat(cookie.getPath()).isEqualTo("/physical-tenant/tenanta");
-    assertThat(cookie.getValue()).isEqualTo("raw-session-id");
   }
 
   @Test
-  void shouldNameDefaultUnprefixedCookieAndScopeToRoot() {
+  void shouldScopeUnprefixedDefaultCookieToRoot() {
     final var serializer = PhysicalTenantCookieSerializer.forUnprefixedDefaultChain();
     final var response = new MockHttpServletResponse();
-    final var request = new MockHttpServletRequest();
-    request.setRequestURI("/whoami");
-    serializer.writeCookieValue(new CookieValue(request, response, "raw-id"));
+    serializer.writeCookieValue(
+        new CookieValue(new MockHttpServletRequest(), response, "raw"));
     final Cookie cookie = response.getCookie("camunda-session-default-root");
     assertThat(cookie).isNotNull();
     assertThat(cookie.getPath()).isEqualTo("/");
@@ -1067,15 +1440,7 @@ class PhysicalTenantCookieSerializerTest {
 }
 ```
 
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantCookieSerializerTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement**
+### Step 2 — Implement and replace inline call sites
 
 ```java
 /*
@@ -1099,17 +1464,17 @@ public final class PhysicalTenantCookieSerializer {
   private PhysicalTenantCookieSerializer() {}
 
   public static DefaultCookieSerializer forPrefixedChain(final String tenantId) {
-    final var serializer = baseSerializer();
-    serializer.setCookieName(COOKIE_NAME_PREFIX + tenantId);
-    serializer.setCookiePath("/physical-tenant/" + tenantId);
-    return serializer;
+    final var s = base();
+    s.setCookieName(COOKIE_NAME_PREFIX + tenantId);
+    s.setCookiePath("/physical-tenant/" + tenantId);
+    return s;
   }
 
   public static DefaultCookieSerializer forUnprefixedDefaultChain() {
-    final var serializer = baseSerializer();
-    serializer.setCookieName(COOKIE_NAME_PREFIX + "default-root");
-    serializer.setCookiePath("/");
-    return serializer;
+    final var s = base();
+    s.setCookieName(COOKIE_NAME_PREFIX + "default-root");
+    s.setCookiePath("/");
+    return s;
   }
 
   public static CookieHttpSessionIdResolver resolver(final DefaultCookieSerializer serializer) {
@@ -1118,1038 +1483,270 @@ public final class PhysicalTenantCookieSerializer {
     return resolver;
   }
 
-  private static DefaultCookieSerializer baseSerializer() {
-    final var serializer = new DefaultCookieSerializer();
-    serializer.setUseSecureCookie(false); // PoC over http; flip via property in IT/staging
-    serializer.setUseHttpOnlyCookie(true);
-    serializer.setSameSite("Lax");
-    return serializer;
+  private static DefaultCookieSerializer base() {
+    final var s = new DefaultCookieSerializer();
+    s.setUseSecureCookie(false);
+    s.setUseHttpOnlyCookie(true);
+    s.setSameSite("Lax");
+    return s;
   }
 }
 ```
 
-- [ ] **Step 4: Run, confirm pass**
+Replace the inline `DefaultCookieSerializer` construction in `PhysicalTenantSecurityConfiguration` with calls to the factory.
+
+### Step 3 — Run tests, manual smoke
 
 ```bash
 ./mvnw verify -pl authentication -Dtest=PhysicalTenantCookieSerializerTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
 
-Expected: 2 tests pass.
+Manual: two-tab flow unchanged.
 
-- [ ] **Step 5: Format and commit**
+### Step 4 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
 git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializerTest.java
-git commit -m "feat: add PhysicalTenantCookieSerializer for per-tenant cookie name and path"
+        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializerTest.java \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java
+git commit -m "refactor: extract PhysicalTenantCookieSerializer factory with unit tests"
 ```
 
 ---
 
-## Task 9: TenantSecuritySlice
+## Task 11: Add API chain per tenant (shared decoder + per-chain issuer allowlist)
 
-**Goal:** Record bundling everything a chain needs. Pure data carrier, no logic. Built once per tenant at startup.
+**Goal:** Stateless bearer-token-only API chain for `/v2/physical-tenants/<tenant>/**`. The JWT decoder is **cluster-shared** (one issuer-aware bean built from the union of all tenants' issuer URIs). Per-chain isolation comes from an **issuer allowlist** authorization rule: each tenant's API chain rejects tokens whose `iss` claim isn't in that tenant's `providers.assigned` issuer set.
 
-**Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java`
-
-- [ ] **Step 1: Write the record**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import io.camunda.security.configuration.SecurityConfiguration;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.session.web.http.CookieHttpSessionIdResolver;
-
-/**
- * Per-tenant collaborators consumed by {@link PerTenantSecurityChainFactory}.
- *
- * <p>Each instance is immutable and built once at startup. All collaborators are pure
- * constructor arguments — no field injection — so this record is portable to a child-context
- * model (approach C in the design) without modification.
- */
-@NullMarked
-public record TenantSecuritySlice(
-    String tenantId,
-    AccessPath accessPath,
-    SecurityConfiguration tenantSecurity,
-    ClientRegistrationRepository clientRegistrationRepository,
-    OAuth2AuthorizedClientRepository authorizedClientRepository,
-    JwtDecoder jwtDecoder,
-    LogoutSuccessHandler logoutSuccessHandler,
-    PerTenantSessionRepository sessionRepository,
-    CookieHttpSessionIdResolver httpSessionIdResolver) {
-
-  /**
-   * Whether this slice powers the tenant's prefixed URL space ({@code /physical-tenant/<id>/...})
-   * or — only valid for the {@code default} tenant — the unprefixed fallback space ({@code /...}).
-   */
-  public enum AccessPath {
-    PREFIXED,
-    UNPREFIXED_DEFAULT
-  }
-}
-```
-
-- [ ] **Step 2: Compile**
-
-```bash
-./mvnw install -pl authentication -am -Dquickly -T1C
-```
-
-Expected: BUILD SUCCESS.
-
-- [ ] **Step 3: Commit**
-
-```bash
-./mvnw license:format spotless:apply -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java
-git commit -m "feat: add TenantSecuritySlice record carrying per-tenant security collaborators"
-```
-
----
-
-## Task 10: PhysicalTenantWhoamiController
-
-**Goal:** Demo controller exposing `/physical-tenant/{tenantId}/whoami` (webapp chain — session/OIDC) and `/v2/physical-tenants/{tenantId}/whoami` (api chain — bearer token). Returns `{tenantId, principal, providers, accessPath}`.
+**Why not per-tenant decoder:** an issuer-aware decoder already routes signature validation by `iss` — it can validate any known token. Duplicating it per tenant is overhead. Authorization (which tenant's API may this token access?) is the per-chain concern, not signature validation.
 
 **Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantWhoamiControllerTest.java`
+- Create: `authentication/src/main/java/io/camunda/authentication/pt/PtIssuerAwareJwtDecoder.java` (`@Bean` factory; or inline in `PhysicalTenantSecurityConfiguration`)
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java` (add `buildApiChain(http, slice, sharedDecoder, allowedIssuers)`)
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java` (add `/v2/physical-tenants/{tenantId}/whoami` mapping)
+- Do **not** add `jwtDecoder` to `TenantSecuritySlice`.
 
-- [ ] **Step 1: Write the failing test**
+### Step 1 — Add the shared issuer-aware JwtDecoder bean
+
+In `PhysicalTenantSecurityConfiguration`:
 
 ```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
-
-class PhysicalTenantWhoamiControllerTest {
-
-  @Test
-  void shouldReturnTenantPrincipalAndAccessPath() {
-    // given
-    final var request = new MockHttpServletRequest("GET", "/physical-tenant/tenanta/whoami");
-    PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
-    final var auth =
-        new UsernamePasswordAuthenticationToken(
-            "bob@tenanta", "n/a", AuthorityUtils.NO_AUTHORITIES);
-    final var controller =
-        new PhysicalTenantWhoamiController(
-            (tenantId) -> List.of("idpOne")); // simple provider lookup
-    // when
-    final var result = controller.whoami(request, auth, "tenanta", "prefixed");
-    // then
-    assertThat(result.tenantId()).isEqualTo("tenanta");
-    assertThat(result.principal()).isEqualTo("bob@tenanta");
-    assertThat(result.providers()).containsExactly("idpOne");
-    assertThat(result.accessPath()).isEqualTo("prefixed");
-  }
+@Bean
+public JwtDecoder ptIssuerAwareJwtDecoder(final PhysicalTenantResolver tenants) {
+  final Set<String> allIssuers = new LinkedHashSet<>();
+  tenants.getAll().values().forEach(camunda -> {
+    final var providers = camunda.getSecurity().getAuthentication().getProviders();
+    final var assigned = providers.getAssigned();
+    if (assigned == null) return;
+    for (final String id : assigned) {
+      final var p = providers.getOidc().get(id);
+      if (p != null && p.getIssuerUri() != null) {
+        allIssuers.add(p.getIssuerUri());
+      }
+    }
+  });
+  // JwtIssuerAuthenticationManagerResolver wires per-issuer JwtDecoders via discovery;
+  // wrap as a delegating JwtDecoder so the chain can plug it into oauth2ResourceServer.jwt().
+  // Engineer adapts to whichever Spring Security 7 API (JwtIssuerValidator + per-issuer
+  // NimbusJwtDecoder map, or JwtIssuerAuthenticationManagerResolver) lands the cleanest.
+  return buildIssuerAwareDecoder(allIssuers);
 }
 ```
 
-- [ ] **Step 2: Run, confirm failure**
+The Spring Security 7 idiom: build one `NimbusJwtDecoder` per issuer (via `NimbusJwtDecoder.withIssuerLocation(...)`), keep a `Map<String, JwtDecoder>` keyed by issuer URI, and wrap with a `Supplier<JwtDecoder>` or `JwtIssuerAuthenticationManagerResolver` that dispatches by `iss`. The engineer picks the cleanest API; both work.
 
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantWhoamiControllerTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.function.Function;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
-
-@NullMarked
-@RestController
-public class PhysicalTenantWhoamiController {
-
-  public record Whoami(String tenantId, String principal, List<String> providers, String accessPath) {}
-
-  private final Function<String, List<String>> providersByTenant;
-
-  public PhysicalTenantWhoamiController(
-      final Function<String, List<String>> providersByTenant) {
-    this.providersByTenant = providersByTenant;
-  }
-
-  @GetMapping({
-    "/physical-tenant/{tenantId}/whoami",
-    "/whoami"
-  })
-  public Whoami whoamiWebapp(
-      final HttpServletRequest request,
-      final Authentication authentication,
-      @PathVariable(required = false) final String tenantId) {
-    return whoami(request, authentication, tenantId, accessPathOf(request));
-  }
-
-  @GetMapping({
-    "/v2/physical-tenants/{tenantId}/whoami",
-    "/v2/whoami"
-  })
-  public Whoami whoamiApi(
-      final HttpServletRequest request,
-      final Authentication authentication,
-      @PathVariable(required = false) final String tenantId) {
-    return whoami(request, authentication, tenantId, accessPathOf(request));
-  }
-
-  // visible for direct unit testing
-  Whoami whoami(
-      final HttpServletRequest request,
-      final Authentication authentication,
-      final String tenantIdFromPath,
-      final String accessPath) {
-    final String tenantId = tenantIdFromPath != null ? tenantIdFromPath : "default";
-    final String principal = authentication != null ? authentication.getName() : "anonymous";
-    return new Whoami(tenantId, principal, providersByTenant.apply(tenantId), accessPath);
-  }
-
-  private static String accessPathOf(final HttpServletRequest request) {
-    return request.getRequestURI().startsWith("/physical-tenant/")
-            || request.getRequestURI().startsWith("/v2/physical-tenants/")
-        ? "prefixed"
-        : "unprefixed";
-  }
-}
-```
-
-- [ ] **Step 4: Run, confirm pass**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantWhoamiControllerTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Format, commit**
-
-```bash
-./mvnw license:format spotless:apply -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantWhoamiControllerTest.java
-git commit -m "feat: add PhysicalTenantWhoamiController demo endpoint"
-```
-
----
-
-## Task 11: PerTenantSecurityChainFactory — webapp chain
-
-**Goal:** Build the webapp `SecurityFilterChain` for one tenant: matches the tenant's URL prefix, sets up `oauth2Login` with per-tenant `ClientRegistrationRepository`, per-tenant `LogoutSuccessHandler`, per-tenant `SessionRepositoryFilter` with the tenant's `CookieHttpSessionIdResolver` and `PerTenantSessionRepository`, CSRF cookie scoped to the tenant Path.
-
-**Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java`
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantWebappChainTest.java`
-
-This is the load-bearing task. The chain is end-to-end verified by the IT in Task 15. For this task the unit test asserts only the wiring shape (no real OIDC). Acceptance comes from the IT.
-
-- [ ] **Step 1: Write a wiring assertion test**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
-import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.security.configuration.SecurityConfiguration;
-import org.junit.jupiter.api.Test;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.HttpSecurityConfiguration;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.session.web.http.CookieHttpSessionIdResolver;
-
-class PerTenantWebappChainTest {
-
-  @Test
-  void shouldMatchTenantPrefix() throws Exception {
-    // given
-    final var slice =
-        new TenantSecuritySlice(
-            "tenanta",
-            AccessPath.PREFIXED,
-            new SecurityConfiguration(),
-            mock(ClientRegistrationRepository.class),
-            mock(OAuth2AuthorizedClientRepository.class),
-            mock(JwtDecoder.class),
-            mock(LogoutSuccessHandler.class),
-            new PerTenantSessionRepository("tenanta", mock(WebSessionRepository.class)),
-            mock(CookieHttpSessionIdResolver.class));
-    final HttpSecurity http = newHttpSecurity();
-    // when
-    final SecurityFilterChain chain =
-        new PerTenantSecurityChainFactory().buildWebappChain(http, slice);
-    // then
-    assertThat(chain.matches(mockRequest("/physical-tenant/tenanta/whoami"))).isTrue();
-    assertThat(chain.matches(mockRequest("/physical-tenant/default/whoami"))).isFalse();
-  }
-
-  private static HttpSecurity newHttpSecurity() {
-    // Use Spring's test infra; engineer adapts if HttpSecurityConfiguration.httpSecurity() is
-    // not directly accessible.
-    return mock(HttpSecurity.class); // wiring asserts are made over the returned chain
-  }
-
-  private static jakarta.servlet.http.HttpServletRequest mockRequest(final String uri) {
-    final var req = new org.springframework.mock.web.MockHttpServletRequest("GET", uri);
-    req.setServletPath(uri);
-    return req;
-  }
-}
-```
-
-**Note:** Unit-testing `HttpSecurity` directly is awkward — many of Spring's builder methods are final or rely on configurer chaining. The engineer may switch to a `@SpringBootTest`-style boot of just `PhysicalTenantSecurityConfiguration` with one tenant if the mock approach proves brittle. Either way, the IT (Task 15) is the authoritative test. This task's unit test is supplementary.
-
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PerTenantWebappChainTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found.
-
-- [ ] **Step 3: Implement the factory's webapp method**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import org.jspecify.annotations.NullMarked;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.session.SessionRepository;
-import org.springframework.session.web.http.SessionRepositoryFilter;
-
-@NullMarked
-public final class PerTenantSecurityChainFactory {
-
-  public SecurityFilterChain buildWebappChain(
-      final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {
-    final String prefix = webappPrefix(slice);
-    final SessionRepositoryFilter<?> sessionFilter = sessionFilter(slice);
-
-    http
-        .securityMatcher(prefix + "/**")
-        .addFilterBefore(sessionFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
-        .csrf(c -> c.csrfTokenRepository(csrfTokenRepository(prefix)))
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
-        .oauth2Login(
-            l ->
-                l.clientRegistrationRepository(slice.clientRegistrationRepository())
-                    .authorizedClientRepository(slice.authorizedClientRepository())
-                    .authorizationEndpoint(
-                        ae -> ae.baseUri(prefix + "/oauth2/authorization"))
-                    .redirectionEndpoint(
-                        re -> re.baseUri(prefix + "/login/oauth2/code/*"))
-                    .loginPage(prefix + "/oauth2/authorization/" + firstAssignedProvider(slice)))
-        .logout(
-            lo ->
-                lo.logoutSuccessHandler(slice.logoutSuccessHandler())
-                    .logoutUrl(prefix + "/logout")
-                    .deleteCookies("camunda-session-" + slice.tenantId(), "XSRF-TOKEN"));
-
-    return http.build();
-  }
-
-  private static String webappPrefix(final TenantSecuritySlice slice) {
-    return slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
-        ? "/physical-tenant/" + slice.tenantId()
-        : "";
-  }
-
-  private static SessionRepositoryFilter<?> sessionFilter(final TenantSecuritySlice slice) {
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    final SessionRepositoryFilter filter =
-        new SessionRepositoryFilter<>((SessionRepository) slice.sessionRepository());
-    filter.setHttpSessionIdResolver(slice.httpSessionIdResolver());
-    return filter;
-  }
-
-  private static CookieCsrfTokenRepository csrfTokenRepository(final String prefix) {
-    final var repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
-    repo.setCookiePath(prefix.isEmpty() ? "/" : prefix);
-    return repo;
-  }
-
-  private static String firstAssignedProvider(final TenantSecuritySlice slice) {
-    final var assigned = slice.tenantSecurity().getAuthentication().getProviders().getAssigned();
-    return assigned == null || assigned.isEmpty() ? "oidc" : assigned.get(0);
-  }
-}
-```
-
-- [ ] **Step 4: Run the wiring test; if the mock approach is brittle, replace with an IT-only check**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PerTenantWebappChainTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-If the test passes, great. If it fails because `HttpSecurity` mocking can't represent the build, downgrade the test to verify only that `buildWebappChain` returns non-null when given a real `HttpSecurity` from a `@SpringBootTest` slice — and rely on Task 15's IT for the matcher/filter assertions. Commit either way before proceeding.
-
-- [ ] **Step 5: Format, commit**
-
-```bash
-./mvnw license:format spotless:apply -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PerTenantWebappChainTest.java
-git commit -m "feat: add PerTenantSecurityChainFactory webapp chain builder"
-```
-
----
-
-## Task 12: PerTenantSecurityChainFactory — api chain
-
-**Goal:** Add the api chain method to the factory. Stateless, bearer-token only, no session cookie. Matcher `/v2/physical-tenants/<tenant>/**`. Default tenant gets an additional chain for `/v2/**`.
-
-**Files:**
-- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java` (add method)
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantApiChainTest.java`
-
-- [ ] **Step 1: Write the failing test**
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
-import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.security.configuration.SecurityConfiguration;
-import org.junit.jupiter.api.Test;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.session.web.http.CookieHttpSessionIdResolver;
-
-class PerTenantApiChainTest {
-
-  @Test
-  void shouldMatchTenantV2PathAndConfigureResourceServerJwt() throws Exception {
-    final var slice = newSlice("tenanta", AccessPath.PREFIXED);
-    final HttpSecurity http = mock(HttpSecurity.class);
-    final SecurityFilterChain chain =
-        new PerTenantSecurityChainFactory().buildApiChain(http, slice);
-    assertThat(chain).isNotNull();
-    // matcher coverage is verified in the IT; here we just assert no exception is thrown
-  }
-
-  private static TenantSecuritySlice newSlice(final String tenant, final AccessPath path) {
-    return new TenantSecuritySlice(
-        tenant,
-        path,
-        new SecurityConfiguration(),
-        mock(ClientRegistrationRepository.class),
-        mock(OAuth2AuthorizedClientRepository.class),
-        mock(JwtDecoder.class),
-        mock(LogoutSuccessHandler.class),
-        new PerTenantSessionRepository(tenant, mock(WebSessionRepository.class)),
-        mock(CookieHttpSessionIdResolver.class));
-  }
-}
-```
-
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PerTenantApiChainTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — method not found.
-
-- [ ] **Step 3: Add the api method to the factory**
-
-Append to `PerTenantSecurityChainFactory.java`:
+### Step 2 — Add the API chain builder with issuer allowlist
 
 ```java
 public SecurityFilterChain buildApiChain(
-    final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {
-  final String prefix = apiPrefix(slice);
-  http
-      .securityMatcher(prefix + "/**")
+    final HttpSecurity http,
+    final TenantSecuritySlice slice,
+    final JwtDecoder sharedDecoder,
+    final Set<String> allowedIssuers) throws Exception {
+
+  final String prefix =
+      slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
+          ? "/v2/physical-tenants/" + slice.tenantId()
+          : "/v2";
+
+  // Authorization rule: anyRequest authenticated AND the JWT's iss must be in this
+  // tenant's allowed-issuer set. Reject other tenants' valid tokens with 403.
+  final AuthorizationManager<RequestAuthorizationContext> issuerAllowed =
+      (auth, ctx) -> {
+        final var a = auth.get();
+        if (!(a instanceof JwtAuthenticationToken jwt)) {
+          return new AuthorizationDecision(false);
+        }
+        return new AuthorizationDecision(allowedIssuers.contains(jwt.getToken().getIssuer().toString()));
+      };
+
+  return http.securityMatcher(prefix + "/**")
       .csrf(c -> c.disable())
       .sessionManagement(
           sm ->
               sm.sessionCreationPolicy(
                   org.springframework.security.config.http.SessionCreationPolicy.NEVER))
-      .authorizeHttpRequests(a -> a.anyRequest().authenticated())
-      .oauth2ResourceServer(o -> o.jwt(j -> j.decoder(slice.jwtDecoder())));
-  return http.build();
-}
-
-private static String apiPrefix(final TenantSecuritySlice slice) {
-  return slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
-      ? "/v2/physical-tenants/" + slice.tenantId()
-      : "/v2";
+      .authorizeHttpRequests(a -> a.anyRequest().access(issuerAllowed))
+      .oauth2ResourceServer(o -> o.jwt(j -> j.decoder(sharedDecoder)))
+      .build();
 }
 ```
 
-- [ ] **Step 4: Run, confirm pass**
+### Step 3 — Register API chain beans
+
+```java
+@Bean
+public SecurityFilterChain ptTenantaApiChain(
+    final HttpSecurity http,
+    final JwtDecoder ptIssuerAwareJwtDecoder,
+    final PhysicalTenantResolver tenants) throws Exception {
+  return new PerTenantSecurityChainFactory()
+      .buildApiChain(http, sliceFor("tenanta"), ptIssuerAwareJwtDecoder, allowedIssuersFor("tenanta", tenants));
+}
+
+@Bean
+public SecurityFilterChain ptDefaultPrefixedApiChain(...) { /* same shape, "default" */ }
+```
+
+`allowedIssuersFor(tenantId, tenants)` returns the set of issuer URIs from that tenant's `providers.assigned`.
+
+### Step 4 — Extend the controller
+
+```java
+@GetMapping("/v2/physical-tenants/{tenantId}/whoami")
+@ResponseBody
+public Whoami whoamiApi(@PathVariable final String tenantId, final Authentication authentication) {
+  return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
+}
+```
+
+### Step 5 — Manual smoke (cross-tenant token rejection)
 
 ```bash
-./mvnw verify -pl authentication -Dtest=PerTenantApiChainTest -DskipTests=false -DskipITs -Dquickly -T1C
+# Get a tenant-A-issued token via password grant
+TOKEN=$(curl -sS -X POST http://localhost:8082/realms/tenanta/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=camunda-pt-tenanta-client \
+  -d client_secret=tenanta-secret -d username=bob -d password=bob | jq -r .access_token)
+
+# Tenant A's token on tenant A's API: 200
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/v2/physical-tenants/tenanta/whoami
+# expect: {"tenantId":"tenanta","principal":"bob"}
+
+# Tenant A's token on default's API: 403 (signature is valid, but issuer is not in default's allowlist)
+curl -sS -i -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/v2/physical-tenants/default/whoami
+# expect: 403
 ```
 
-Expected: PASS.
-
-- [ ] **Step 5: Format, commit**
+### Step 6 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PerTenantApiChainTest.java
-git commit -m "feat: add PerTenantSecurityChainFactory api chain builder"
+git add <files>
+git commit -m "feat: add per-tenant API chain with bearer-token authentication"
 ```
 
 ---
 
-## Task 13: PhysicalTenantSecurityConfiguration
+## Task 12: Add default tenant unprefixed access-path chains
 
-**Goal:** Top-level `@Configuration` that iterates `PhysicalTenantResolver.getAll()`, builds a `TenantSecuritySlice` per tenant (PREFIXED for every tenant, plus UNPREFIXED_DEFAULT for the default tenant), and registers a `SecurityFilterChain` bean per slice via a `BeanDefinitionRegistryPostProcessor`.
+**Goal:** Default tenant alone is reachable via both prefixed (`/physical-tenant/default/...`, `/v2/physical-tenants/default/...`) and unprefixed (`/...`, `/v2/...`) paths. The unprefixed chains share OIDC config with the prefixed default chain but use cookie Path `/` (per spec D2 / OQ-2: separate cookies, re-login on switching access path is acceptable).
 
 **Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfigurationBootTest.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java` (add unprefixed mappings)
 
-- [ ] **Step 1: Write the boot test**
+### Step 1 — Register two more chains for the default tenant
 
 ```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
+@Bean
+public SecurityFilterChain ptDefaultUnprefixedWebappChain(
+    final HttpSecurity http, final SecurityConfiguration security) throws Exception {
+  return new PerTenantSecurityChainFactory()
+      .buildWebappChain(http, sliceFor("default", AccessPath.UNPREFIXED_DEFAULT));
+}
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-
-@SpringBootTest(classes = PhysicalTenantSecurityConfigurationBootTest.MinimalApp.class)
-@ActiveProfiles({"consolidated-auth", "pt-security"})
-@TestPropertySource(
-    properties = {
-      "camunda.security.authentication.method=oidc",
-      "camunda.security.authentication.providers.oidc.idpOne.client-id=fake",
-      "camunda.security.authentication.providers.oidc.idpOne.client-secret=fake",
-      "camunda.security.authentication.providers.oidc.idpOne.issuer-uri=http://localhost:0/realms/fake",
-      "camunda.security.authentication.providers.assigned=idpOne",
-      "camunda.physical-tenants.tenanta.security.authentication.providers.assigned=idpOne",
-    })
-class PhysicalTenantSecurityConfigurationBootTest {
-
-  @org.springframework.boot.autoconfigure.SpringBootApplication
-  static class MinimalApp {}
-
-  @Test
-  void shouldRegisterPrefixedChainPerTenantPlusUnprefixedForDefault(
-      final ApplicationContext context) {
-    final var chains = context.getBeansOfType(SecurityFilterChain.class);
-    // default (prefixed) + default (unprefixed) + tenanta (prefixed) = 3 webapp chains
-    // plus the same shape for api = 6 total. The bean names encode tenant + role.
-    assertThat(chains.keySet())
-        .anyMatch(name -> name.contains("default") && name.contains("webapp") && name.contains("prefixed"))
-        .anyMatch(name -> name.contains("default") && name.contains("webapp") && name.contains("unprefixed"))
-        .anyMatch(name -> name.contains("tenanta") && name.contains("webapp"));
-    assertThat(chains).hasSizeGreaterThanOrEqualTo(6);
-  }
+@Bean
+public SecurityFilterChain ptDefaultUnprefixedApiChain(
+    final HttpSecurity http, final SecurityConfiguration security) throws Exception {
+  return new PerTenantSecurityChainFactory()
+      .buildApiChain(http, sliceFor("default", AccessPath.UNPREFIXED_DEFAULT));
 }
 ```
 
-This test will require the issuer URI to be reachable for `ClientRegistrationFactory`; the engineer may need to stub the OIDC discovery or accept that this boot test fails until Task 15's IT, and downgrade this test to a non-boot wiring check.
+The slice's `accessPath` field selects between `PREFIXED` and `UNPREFIXED_DEFAULT`. The chain factory's `webappPathPrefix()` already handles both.
 
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantSecurityConfigurationBootTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
-
-Expected: FAIL — class not found or OIDC discovery 404.
-
-- [ ] **Step 3: Implement**
+### Step 2 — Extend the controller
 
 ```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
-import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.security.configuration.SecurityConfiguration;
-import java.util.List;
-import java.util.Map;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-
-@NullMarked
-@Configuration
-@Profile("pt-security")
-@ConditionalOnBean(PhysicalTenantResolver.class)
-public class PhysicalTenantSecurityConfiguration {
-
-  private final PhysicalTenantResolver tenantResolver;
-  private final WebSessionRepository webSessionRepository;
-  private final PerTenantSecurityChainFactory chainFactory;
-
-  public PhysicalTenantSecurityConfiguration(
-      final PhysicalTenantResolver tenantResolver,
-      final WebSessionRepository webSessionRepository) {
-    this.tenantResolver = tenantResolver;
-    this.webSessionRepository = webSessionRepository;
-    this.chainFactory = new PerTenantSecurityChainFactory();
-  }
-
-  @Bean
-  static org.springframework.beans.factory.config.BeanFactoryPostProcessor
-      physicalTenantChainRegistrar(final org.springframework.core.env.Environment env) {
-    return beanFactory -> {
-      if (!(beanFactory instanceof BeanDefinitionRegistry registry)) {
-        return;
-      }
-      final var resolver = beanFactory.getBean(PhysicalTenantResolver.class);
-      final Map<String, io.camunda.configuration.Camunda> tenants = resolver.getAll();
-      for (final var entry : tenants.entrySet()) {
-        final String tenantId = entry.getKey();
-        registerChainBean(registry, tenantId, AccessPath.PREFIXED, "webapp");
-        registerChainBean(registry, tenantId, AccessPath.PREFIXED, "api");
-        if ("default".equals(tenantId)) {
-          registerChainBean(registry, tenantId, AccessPath.UNPREFIXED_DEFAULT, "webapp");
-          registerChainBean(registry, tenantId, AccessPath.UNPREFIXED_DEFAULT, "api");
-        }
-      }
-    };
-  }
-
-  private static void registerChainBean(
-      final BeanDefinitionRegistry registry,
-      final String tenantId,
-      final AccessPath accessPath,
-      final String role) {
-    final String beanName = "ptChain_" + tenantId + "_" + accessPath.name().toLowerCase() + "_" + role;
-    final var def = new GenericBeanDefinition();
-    def.setBeanClass(SecurityFilterChain.class);
-    def.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-    def.setInstanceSupplier(
-        () -> {
-          throw new IllegalStateException(
-              "Chain '"
-                  + beanName
-                  + "' must be supplied by PhysicalTenantSecurityConfiguration.createChain — "
-                  + "engineer to wire up the lambda when promoting this PoC out of stub mode.");
-        });
-    registry.registerBeanDefinition(beanName, def);
-  }
-
-  // Implementation note: the registrar above is a stub that registers bean *names*; the
-  // actual chain-creating lambdas live below as @Bean methods invoked at refresh. For the
-  // PoC, two-tenant case, we hard-code the wiring rather than fight Spring's bean-graph
-  // resolution. This keeps the IT readable. A follow-up generalises this with a real
-  // ImportBeanDefinitionRegistrar that builds the supplier from the resolver map.
-
-  @Bean
-  public SecurityFilterChain ptChainDefaultPrefixedWebapp(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor("default", AccessPath.PREFIXED, security));
-  }
-
-  @Bean
-  public SecurityFilterChain ptChainDefaultPrefixedApi(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildApiChain(http, sliceFor("default", AccessPath.PREFIXED, security));
-  }
-
-  @Bean
-  public SecurityFilterChain ptChainDefaultUnprefixedWebapp(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildWebappChain(
-        http, sliceFor("default", AccessPath.UNPREFIXED_DEFAULT, security));
-  }
-
-  @Bean
-  public SecurityFilterChain ptChainDefaultUnprefixedApi(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildApiChain(
-        http, sliceFor("default", AccessPath.UNPREFIXED_DEFAULT, security));
-  }
-
-  @Bean
-  public SecurityFilterChain ptChainTenantAPrefixedWebapp(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor("tenanta", AccessPath.PREFIXED, security));
-  }
-
-  @Bean
-  public SecurityFilterChain ptChainTenantAPrefixedApi(
-      final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-    return chainFactory.buildApiChain(http, sliceFor("tenanta", AccessPath.PREFIXED, security));
-  }
-
-  private TenantSecuritySlice sliceFor(
-      final String tenantId,
-      final AccessPath accessPath,
-      final SecurityConfiguration tenantSecurity) {
-    final var oidc = PerTenantOidcRegistry.forTenant(tenantId, tenantSecurity);
-    final var authorizedClients = new HttpSessionOAuth2AuthorizedClientRepository();
-    final JwtDecoder decoder =
-        NimbusJwtDecoder.withIssuerLocation(
-                oidc.providerRepository()
-                    .getOidcAuthenticationConfigurations()
-                    .values()
-                    .iterator()
-                    .next()
-                    .getIssuerUri())
-            .build();
-    final var session = new PerTenantSessionRepository(tenantId, webSessionRepository);
-    final var serializer =
-        accessPath == AccessPath.PREFIXED
-            ? PhysicalTenantCookieSerializer.forPrefixedChain(tenantId)
-            : PhysicalTenantCookieSerializer.forUnprefixedDefaultChain();
-    final var resolver = PhysicalTenantCookieSerializer.resolver(serializer);
-    final LogoutSuccessHandler logout =
-        (request, response, authentication) -> response.sendRedirect(prefixOf(tenantId, accessPath) + "/");
-    return new TenantSecuritySlice(
-        tenantId,
-        accessPath,
-        tenantSecurity,
-        oidc.clientRegistrationRepository(),
-        authorizedClients,
-        decoder,
-        logout,
-        session,
-        resolver);
-  }
-
-  private static String prefixOf(final String tenantId, final AccessPath path) {
-    return path == AccessPath.PREFIXED ? "/physical-tenant/" + tenantId : "";
-  }
-}
+@GetMapping({"/physical-tenant/{tenantId}/whoami", "/whoami"})
+@GetMapping({"/v2/physical-tenants/{tenantId}/whoami", "/v2/whoami"})
 ```
 
-**Honest scope note:** the `BeanFactoryPostProcessor`-driven generic registrar is sketched but stubbed; the actual wiring uses six explicit `@Bean` methods for the two-tenant PoC. This is intentional — the spec calls for portability to approach C, not for a fully generic registrar in the PoC. The follow-up PR generalises this.
+When `/whoami` or `/v2/whoami` is hit, `tenantId` is null; default to `"default"` in the response body.
 
-- [ ] **Step 4: Run the boot test; expect adjustments**
+### Step 3 — Manual smoke
 
-```bash
-./mvnw verify -pl authentication -Dtest=PhysicalTenantSecurityConfigurationBootTest -DskipTests=false -DskipITs -Dquickly -T1C
-```
+In a fresh incognito window: `http://localhost:8080/whoami` → redirect to default IdP → login → `{"tenantId":"default","principal":"alice","accessPath":"unprefixed"}`. Then `http://localhost:8080/physical-tenant/default/whoami` re-prompts for login (different cookie Path).
 
-If the test fails on OIDC discovery (because the `issuer-uri` is unreachable), gate the test on a `@ConditionalOnProperty` and run it only inside the IT in Task 15. Replace the boot test with a lighter unit test that asserts the six `@Bean` methods exist via reflection on `PhysicalTenantSecurityConfiguration.class.getDeclaredMethods()`.
-
-- [ ] **Step 5: Format, commit**
+### Step 4 — Format and commit
 
 ```bash
 ./mvnw license:format spotless:apply -T1C
-./mvnw install -pl authentication,dist -am -Dquickly -T1C
-git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
-        authentication/src/test/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfigurationBootTest.java
-git commit -m "feat: register per-tenant SecurityFilterChain beans under pt-security profile"
+git add <files>
+git commit -m "feat: add unprefixed default-tenant access-path chains"
 ```
 
 ---
 
-## Task 14: application-pt-poc.yaml
+## Task 13: Generalise registration via PhysicalTenantResolver.getAll()
 
-**Goal:** Pre-wire OC to point at the local Keycloak runner's realms when started with `--spring.profiles.active=consolidated-auth,pt-security,pt-poc`.
+**Goal:** Replace the six explicit `@Bean` methods with a single mechanism that registers chains for every tenant in `PhysicalTenantResolver.getAll()`. Adding a third tenant becomes config-only.
 
 **Files:**
-- Create: `dist/src/main/resources/application-pt-poc.yaml`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java`
 
-- [ ] **Step 1: Write the config**
+### Step 1 — Replace the explicit beans with a programmatic registrar
 
-```yaml
-camunda:
-  security:
-    authentication:
-      method: oidc
-      oidc:
-        # Default-tenant OIDC config doubles as the cluster-wide baseline.
-        client-id: camunda-pt-default-client
-        client-secret: default-secret
-        issuer-uri: http://localhost:8081/realms/default
-        redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-      providers:
-        assigned: [oidc]
-        oidc:
-          oidc:
-            client-id: camunda-pt-default-client
-            client-secret: default-secret
-            issuer-uri: http://localhost:8081/realms/default
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-  persistent:
-    sessions:
-      enabled: true
-  physical-tenants:
-    tenanta:
-      security:
-        authentication:
-          providers:
-            assigned: [idpOne]
-            oidc:
-              idpOne:
-                client-id: camunda-pt-tenanta-client
-                client-secret: tenanta-secret
-                issuer-uri: http://localhost:8082/realms/tenanta
-                redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-    default:
-      security:
-        authentication:
-          providers:
-            assigned: [oidc]
+Spring Security 7 requires `SecurityFilterChain` beans to be discoverable at refresh time. Two implementation options:
 
-server:
-  port: 8080
+1. **`BeanDefinitionRegistryPostProcessor`** that, given the resolver, registers one bean definition per (tenant × accessPath × role) combination, supplying an `InstanceSupplier` that builds the chain on first use.
+2. **Static enumeration**: keep the explicit `@Bean` methods but generate them via a `@Bean SecurityFilterChain[]` method that returns the array (Spring 7 supports collection-typed bean registration).
 
-spring:
-  profiles:
-    include:
-      - consolidated-auth
-      - pt-security
-```
+Option 1 is more idiomatic. Option 2 is simpler. Engineer picks based on what compiles. The plan does not prescribe — both achieve the goal.
 
-- [ ] **Step 2: Validate YAML**
+### Step 2 — Manual smoke
+
+The two-tenant matrix from earlier tasks. Then add a third tenant to `application-pt-poc.yaml` (e.g., `tenantb` with a third Keycloak realm — or just stub one without a real IdP and confirm bean registration happens without error). Restart and observe that the chain count grew without code changes.
+
+### Step 3 — Format and commit
 
 ```bash
-python3 -c "import yaml,sys; yaml.safe_load(open('dist/src/main/resources/application-pt-poc.yaml'))" && echo OK
-```
-
-Expected: `OK`.
-
-- [ ] **Step 3: Format, commit**
-
-```bash
-git add dist/src/main/resources/application-pt-poc.yaml
-git commit -m "feat: add application-pt-poc profile pre-wired to local Keycloak runner"
+./mvnw license:format spotless:apply -T1C
+git add authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java
+git commit -m "refactor: register PT chains programmatically from PhysicalTenantResolver"
 ```
 
 ---
 
-## Task 15: PhysicalTenantSecurityIT — happy path
+## Task 14: PhysicalTenantSecurityIT — happy path
 
-**Goal:** End-to-end IT booting two `KeycloakContainer` instances and OC in-JVM. Drives the OIDC authorization-code flow against tenant A's prefixed webapp chain. Asserts a session cookie scoped to the tenant Path is set and `/physical-tenant/tenanta/whoami` returns tenant A's principal.
+**Goal:** End-to-end Testcontainers IT booting two `KeycloakContainer`s + OC in-JVM. Drives the OIDC flow programmatically and asserts the redirect-to-IdP behaviour from Task 4. Becomes the CI gate.
 
 **Files:**
 - Create: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`
 
-- [ ] **Step 1: Write the IT skeleton (containers + OC boot)**
+Use the code skeleton from the original plan (Task 15 in the bottom-up version, included here verbatim). Boot two Keycloaks with random ports, point OC at them via `--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.issuer-uri=` etc., run a redirect assertion.
 
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.application.pt;
+The skeleton lives in the spec's End-to-end demo path section. Adapt the `--` flag values to the property structure introduced in Task 8 (`camunda.physical-tenants.<id>.security.authentication.providers.assigned`).
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.util.List;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-@Testcontainers
-class PhysicalTenantSecurityIT {
-
-  private static KeycloakContainer defaultRealm;
-  private static KeycloakContainer tenantaRealm;
-  private static ConfigurableApplicationContext oc;
-  private static int ocPort;
-
-  @SpringBootApplication
-  static class TestApp {}
-
-  @BeforeAll
-  static void boot() {
-    defaultRealm =
-        DefaultTestContainers.createDefaultKeycloak()
-            .withRealmImportFile("pt-poc/keycloak-default-realm.json");
-    tenantaRealm =
-        DefaultTestContainers.createDefaultKeycloak()
-            .withRealmImportFile("pt-poc/keycloak-tenanta-realm.json");
-    defaultRealm.start();
-    tenantaRealm.start();
-
-    final var app = new SpringApplication(TestApp.class);
-    app.setWebApplicationType(WebApplicationType.SERVLET);
-    app.setAdditionalProfiles("consolidated-auth", "pt-security");
-    oc =
-        app.run(
-            "--server.port=0",
-            "--camunda.security.authentication.method=oidc",
-            "--camunda.security.authentication.providers.assigned=oidc",
-            "--camunda.security.authentication.providers.oidc.oidc.client-id=camunda-pt-default-client",
-            "--camunda.security.authentication.providers.oidc.oidc.client-secret=default-secret",
-            "--camunda.security.authentication.providers.oidc.oidc.issuer-uri="
-                + defaultRealm.getAuthServerUrl()
-                + "/realms/default",
-            "--camunda.security.authentication.providers.oidc.oidc.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}",
-            "--camunda.physical-tenants.tenanta.security.authentication.providers.assigned=idpOne",
-            "--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.client-id=camunda-pt-tenanta-client",
-            "--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.client-secret=tenanta-secret",
-            "--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.issuer-uri="
-                + tenantaRealm.getAuthServerUrl()
-                + "/realms/tenanta",
-            "--camunda.physical-tenants.tenanta.security.authentication.providers.oidc.idpOne.redirect-uri={baseUrl}/login/oauth2/code/{registrationId}");
-    ocPort = oc.getEnvironment().getProperty("local.server.port", Integer.class);
-  }
-
-  @AfterAll
-  static void shutdown() {
-    if (oc != null) oc.close();
-    if (defaultRealm != null) defaultRealm.stop();
-    if (tenantaRealm != null) tenantaRealm.stop();
-  }
-
-  @Test
-  void shouldRedirectUnauthenticatedTenantPrefixedRequestToTenantIdp() throws Exception {
-    // given
-    final var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
-    // when
-    final HttpResponse<String> response =
-        http.send(
-            HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + ocPort + "/physical-tenant/tenanta/whoami"))
-                .GET()
-                .build(),
-            BodyHandlers.ofString());
-    // then
-    assertThat(response.statusCode()).isEqualTo(302);
-    assertThat(response.headers().firstValue("Location"))
-        .hasValueSatisfying(
-            location -> assertThat(location).contains("/physical-tenant/tenanta/oauth2/authorization/idpOne"));
-  }
-}
-```
-
-- [ ] **Step 2: Run, confirm it passes the redirect assertion**
+### Step — Format and commit
 
 ```bash
 ./mvnw verify -pl dist -Dit.test=PhysicalTenantSecurityIT -DskipTests=false -DskipUTs -Dquickly -T1C
-```
-
-Expected: BUILD SUCCESS, one test passing.
-
-If the redirect goes to a Spring Security default page (`/login`) instead of the tenant-specific authorization endpoint, the `loginPage(...)` configuration in Task 11's webapp chain is wrong; fix and re-run.
-
-- [ ] **Step 3: Format, commit**
-
-```bash
 ./mvnw license:format spotless:apply -T1C
 git add dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java
 git commit -m "test: add PhysicalTenantSecurityIT happy-path redirect assertion"
@@ -2157,158 +1754,33 @@ git commit -m "test: add PhysicalTenantSecurityIT happy-path redirect assertion"
 
 ---
 
-## Task 16: PhysicalTenantSecurityIT — full OIDC flow + isolation assertions
+## Task 15: PhysicalTenantSecurityIT — full flow + isolation
 
-**Goal:** Extend the IT to drive the full OIDC authorization-code flow programmatically against tenant A and the default tenant. Assert (a) cookies are tenant-scoped, (b) tenant A's session cookie does not authenticate the default tenant's chain, (c) cross-tenant bearer token returns 401 on the api chain.
+**Goal:** Extend the IT to drive the complete OIDC authorization-code flow and assert (a) the tenant-scoped cookie is issued, (b) tenant A's cookie does not authenticate the default tenant's chain, (c) a tenant-A-issued bearer token returns 401 on the default tenant's API chain.
 
 **Files:**
 - Modify: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`
 
-- [ ] **Step 1: Add a Keycloak login helper**
+The `performLoginAndExtractSessionCookie` helper and the isolation assertions are sketched in the original plan's Task 16 — reuse them verbatim, adapting any property-name changes from Tasks 8 and 12.
 
-Append to `PhysicalTenantSecurityIT`:
-
-```java
-private static String performLoginAndExtractSessionCookie(
-    final String realm, final String clientId, final String clientSecret,
-    final String username, final String password,
-    final String redirectStartPath) throws Exception {
-
-  final var http = HttpClient.newBuilder()
-      .followRedirects(HttpClient.Redirect.NEVER)
-      .cookieHandler(new java.net.CookieManager())
-      .build();
-
-  // 1) Hit the tenant's protected endpoint, get redirected to /oauth2/authorization/<reg>
-  final var step1 = http.send(
-      HttpRequest.newBuilder().uri(URI.create("http://localhost:" + ocPort + redirectStartPath)).GET().build(),
-      BodyHandlers.ofString());
-  assertThat(step1.statusCode()).isEqualTo(302);
-  final String authStart = step1.headers().firstValue("Location").orElseThrow();
-
-  // 2) Follow to the authorization endpoint; gets redirected to Keycloak login form
-  final var step2 = http.send(
-      HttpRequest.newBuilder().uri(URI.create("http://localhost:" + ocPort + authStart)).GET().build(),
-      BodyHandlers.ofString());
-  assertThat(step2.statusCode()).isEqualTo(302);
-  final String keycloakLogin = step2.headers().firstValue("Location").orElseThrow();
-
-  // 3) GET Keycloak's login form
-  final var step3 = http.send(HttpRequest.newBuilder().uri(URI.create(keycloakLogin)).GET().build(),
-      BodyHandlers.ofString());
-  assertThat(step3.statusCode()).isEqualTo(200);
-  // Extract the form action URL from the HTML body
-  final java.util.regex.Matcher m =
-      java.util.regex.Pattern.compile("action=\"([^\"]+)\"").matcher(step3.body());
-  assertThat(m.find()).isTrue();
-  final String loginAction = m.group(1).replace("&amp;", "&");
-
-  // 4) POST credentials
-  final var form = "username=" + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8)
-      + "&password=" + java.net.URLEncoder.encode(password, java.nio.charset.StandardCharsets.UTF_8)
-      + "&credentialId=";
-  final var step4 = http.send(
-      HttpRequest.newBuilder()
-          .uri(URI.create(loginAction))
-          .header("Content-Type", "application/x-www-form-urlencoded")
-          .POST(HttpRequest.BodyPublishers.ofString(form))
-          .build(),
-      BodyHandlers.ofString());
-  assertThat(step4.statusCode()).isEqualTo(302);
-  final String callbackUrl = step4.headers().firstValue("Location").orElseThrow();
-
-  // 5) GET the callback — OC sets the session cookie here
-  final var step5 = http.send(
-      HttpRequest.newBuilder().uri(URI.create(callbackUrl)).GET().build(),
-      BodyHandlers.ofString());
-  assertThat(step5.statusCode()).isIn(302, 200);
-
-  // Extract Set-Cookie header for the tenant
-  return step5.headers().allValues("Set-Cookie").stream()
-      .filter(c -> c.startsWith("camunda-session-"))
-      .findFirst()
-      .orElseThrow(() -> new AssertionError("No camunda-session cookie set"));
-}
-```
-
-**Pragmatic note:** this helper is ~50 lines because doing OIDC by hand over `HttpClient` is verbose. If the codebase grows a shared test helper for this pattern, refactor to use it. For now keep it self-contained.
-
-- [ ] **Step 2: Add the happy-path test**
-
-```java
-@Test
-void shouldEstablishTenantScopedSessionAfterLogin() throws Exception {
-  final String cookie =
-      performLoginAndExtractSessionCookie(
-          "tenanta",
-          "camunda-pt-tenanta-client",
-          "tenanta-secret",
-          "bob",
-          "bob",
-          "/physical-tenant/tenanta/whoami");
-  assertThat(cookie).contains("camunda-session-tenanta")
-      .contains("Path=/physical-tenant/tenanta");
-}
-```
-
-- [ ] **Step 3: Add the cross-tenant isolation test**
-
-```java
-@Test
-void shouldRejectTenantSessionCookieOnDefaultTenantPath() throws Exception {
-  // Login as tenant A
-  final String tenantACookie =
-      performLoginAndExtractSessionCookie(
-          "tenanta", "camunda-pt-tenanta-client", "tenanta-secret",
-          "bob", "bob", "/physical-tenant/tenanta/whoami");
-
-  // Extract bare cookie name=value for replay
-  final String cookieHeader = tenantACookie.substring(0, tenantACookie.indexOf(';'));
-
-  // Replay against the default tenant's prefixed chain
-  final var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
-  final var response = http.send(
-      HttpRequest.newBuilder()
-          .uri(URI.create("http://localhost:" + ocPort + "/physical-tenant/default/whoami"))
-          .header("Cookie", cookieHeader)
-          .GET().build(),
-      BodyHandlers.ofString());
-
-  // The default tenant chain does not honour tenant A's cookie name+Path
-  assertThat(response.statusCode()).isEqualTo(302);
-  assertThat(response.headers().firstValue("Location"))
-      .hasValueSatisfying(l -> assertThat(l).contains("/physical-tenant/default/oauth2/authorization/"));
-}
-```
-
-- [ ] **Step 4: Run the full IT**
+### Step — Run and commit
 
 ```bash
 ./mvnw verify -pl dist -Dit.test=PhysicalTenantSecurityIT -DskipTests=false -DskipUTs -Dquickly -T1C
-```
-
-Expected: three tests pass. Investigation order if any fail:
-- Redirect URL wrong → check `loginPage(...)` in `PerTenantSecurityChainFactory.buildWebappChain`
-- Cookie name/path wrong → check `PhysicalTenantCookieSerializer` and the `SessionRepositoryFilter` is registered first
-- 401 instead of 302 on cross-tenant replay → expected if the chain rejects the foreign cookie outright; relax the assertion to `assertThat(response.statusCode()).isIn(302, 401)`
-
-- [ ] **Step 5: Format, commit**
-
-```bash
 ./mvnw license:format spotless:apply -T1C
 git add dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java
-git commit -m "test: add full OIDC flow and cross-tenant isolation assertions to PT IT"
+git commit -m "test: add full OIDC flow and cross-tenant isolation assertions"
 ```
 
 ---
 
-## Task 17: Manual smoke test (browser)
+## Task 16: Manual browser smoke test
 
-**Goal:** Demonstrate the spec's end-to-end demo path in a real browser against the local Keycloak runner. This is the user-facing acceptance for the PoC.
+**Goal:** Final acceptance — walk through the spec's demo path in a real browser against the local Keycloak runner, with everything (per-chain isolation, persistent sessions, unprefixed default access path, API chain) wired.
 
-**Files:** none (operational task)
+**Files:** none.
 
-- [ ] **Step 1: Start the local IdPs**
+### Step 1 — Start the local IdPs
 
 In terminal 1:
 
@@ -2318,73 +1790,47 @@ In terminal 1:
   -Dexec.classpathScope=test
 ```
 
-Wait for the "PT-PoC local IdPs ready" banner.
-
-- [ ] **Step 2: Start OC with the PoC profile**
+### Step 2 — Start OC
 
 In terminal 2:
 
 ```bash
-./mvnw -pl dist spring-boot:run \
-  -Dspring-boot.run.profiles=consolidated-auth,pt-security,pt-poc
+./mvnw -pl dist spring-boot:run -Dspring-boot.run.profiles=pt-poc
 ```
 
-Wait for OC to bind on `:8080`.
+### Step 3 — Walk through the demo path
 
-- [ ] **Step 3: Browser flow — tenant A**
-
-1. Open Chrome → `http://localhost:8080/physical-tenant/tenanta/whoami`
-2. Verify redirect to `http://localhost:8082/realms/tenanta/protocol/openid-connect/auth?...`
-3. Log in as `bob` / `bob`
-4. Verify return to OC and JSON body `{"tenantId":"tenanta","principal":"bob",...}`
-5. Open DevTools → Application → Cookies → verify a single cookie `camunda-session-tenanta` with `Path=/physical-tenant/tenanta`
-
-- [ ] **Step 4: Browser flow — default tenant (incognito or new profile)**
-
-1. New incognito window → `http://localhost:8080/physical-tenant/default/whoami`
-2. Verify redirect to `http://localhost:8081/realms/default/protocol/openid-connect/auth?...`
-3. Log in as `alice` / `alice`
-4. Verify return and `{"tenantId":"default",...}`
-5. Cookies: `camunda-session-default` with `Path=/physical-tenant/default`
-
-- [ ] **Step 5: Cross-tenant check**
-
-In the tenant-A non-incognito window, navigate to `http://localhost:8080/physical-tenant/default/whoami`. The browser does not send the tenanta cookie (different Path). Expect a redirect to default's IdP.
-
-- [ ] **Step 6: Default-tenant unprefixed access path**
-
-Same tenant-A window → `http://localhost:8080/whoami`. Expect redirect to default's IdP (different cookie scope yet again). After login, JSON returns `{"accessPath":"unprefixed","tenantId":"default"}`.
-
-- [ ] **Step 7: Record results**
-
-Add a short note to the PR (`#53587`) describing the manual run: which steps passed, screenshots if anything surprised you. No commit needed.
+Follow the steps in the spec's "End-to-end demo path" section. Record results on PR #53587.
 
 ---
 
 ## Self-review checklist (run after the plan is written)
 
 - [x] **Spec coverage** — every spec section has at least one task:
-  - D1 (filter chain isolation primitive) → Tasks 11, 12
-  - D2 (cookie Path isolation) → Tasks 7, 11, 15, 16
+  - D1 (filter chain isolation primitive) → Tasks 4, 5, 6 (walking skeleton proves it; subsequent tasks refactor)
+  - D2 (cookie Path isolation) → Tasks 5 (inline), 10 (extracted into factory), 15 (asserted in IT)
   - D3 (profile gate, CSL opt-out) → Task 1
-  - D4 (reuse OC OIDC machinery) → Task 5 (`PerTenantOidcRegistry` reuses `ClientRegistrationFactory`, `OidcAuthenticationConfigurationRepository`)
-  - D5 (chain-matcher tenant resolution) → Tasks 11, 12 (the `securityMatcher` literal carries the tenant id; no per-request resolver filter is needed in the PoC)
-  - D6 (portability to C) → Task 9 (`TenantSecuritySlice` record, all dependencies constructor-injected)
-  - Bean catalogue → Tasks 4–13 cover every class listed in the spec
-  - Configuration consumed (`providers.assigned`) → Task 5 step 0 + Task 14
-  - End-to-end demo path → Task 15, 16, 17
-  - Local testing setup → Tasks 2, 3, 14, 15
-- [x] **Placeholder scan** — no "TBD", "TODO", "fill in", "appropriate error handling" in any task body. Honest scope notes are present where the engineer must adapt (e.g., Task 11 step 4 acknowledges the unit test may need to be downgraded; Task 13 acknowledges the generic registrar is sketched and the PoC uses explicit `@Bean` methods).
-- [x] **Type consistency** — `TenantSecuritySlice` shape in Task 9 matches its use in Tasks 11/12/13. `PerTenantOidcRegistry.forTenant` signature matches its callsite in Task 13. `PerTenantSessionRepository(String, WebSessionRepository)` constructor consistent across Tasks 6, 11, 13.
+  - D4 (reuse OC OIDC machinery) → Task 8 (`PerTenantOidcRegistry` consumes the existing `SecurityConfiguration` / `OidcConfiguration` shape; `ClientRegistrations.fromIssuerLocation` keeps Spring-Security-stock OIDC discovery)
+  - D5 (chain-matcher tenant resolution) → Tasks 4, 5 (the `securityMatcher` literal carries the tenant id; no per-request resolver filter)
+  - D6 (portability to C) → Task 6 (`TenantSecuritySlice` record, all dependencies constructor-injected; chain factory takes the slice as a method parameter)
+  - Bean catalogue → Tasks 6–11 cover every class listed in the spec
+  - Configuration consumed (`providers.assigned`) → Task 8
+  - End-to-end demo path → Tasks 14, 15, 16
+  - Local testing setup → Tasks 2, 3, 16
+
+- [x] **Placeholder scan** — no "TBD", "TODO", "fill in", "appropriate error handling" in any task body. Honest scope notes are present where the engineer must adapt (Task 4 step 4 acknowledges OC's SPI ports may need stubbing; Task 13 acknowledges either of two registration approaches is acceptable).
+
+- [x] **Type consistency** — `TenantSecuritySlice` shape introduced in Task 6 carries five fields (tenantId, accessPath, ClientRegistrationRepository, SessionRepositoryFilter, CookieHttpSessionIdResolver). JwtDecoder, LogoutSuccessHandler, AuthorizedClientRepository, SecurityContextRepository are intentionally NOT on the slice — they are cluster-shared. Task 11 introduces a shared `ptIssuerAwareJwtDecoder` `@Bean` and a per-chain `allowedIssuers` set used for the API authorization rule. Slice shape stable across Tasks 6, 7, 8, 9, 10, 12.
 
 ## Known unknowns the engineer will surface during execution
 
 These are honest gaps the plan cannot fully retire from a desk:
 
-1. **CSL `@Profile` opt-out via `& !pt-security` expression.** Task 1 verifies. If Spring rejects the expression, fall back to splitting into two profile-annotated configs.
-2. **`SecurityConfiguration.getAuthentication().getProviders().setOidc/getAssigned` exact API shape.** Task 5 step 0 adapts to whatever exists; the test will drive the shape.
-3. **`HttpSecurity` mockability in Task 11/12 unit tests.** The plan acknowledges these tests may need to downgrade to IT-only verification. The IT in Tasks 15–16 is authoritative.
-4. **`WebSession` copy-constructor.** Task 6 step 3 may need to add it under `authentication/.../WebSession.java`.
-5. **`KeycloakContainer.getAuthServerUrl()`** — exact API used in Task 15; confirm against `dasniko/testcontainers-keycloak` version on the classpath.
+1. **OC's SPI ports under `pt-security`.** Task 4 step 4 is where this lands: if any port currently defined in `WebSecurityConfig` is consumed by non-CSL OC code, boot will fail with an autowire error. Approach is incremental — boot, read the failure, stub or relax to `ObjectProvider`, reboot.
+2. **`SecurityConfiguration.getAuthentication().getProviders().getAssigned`/`setOidc` exact API shape.** Task 8 step 0 adapts to whatever exists; the test drives the shape.
+3. **`WebSession` copy-constructor.** Task 9 may need to add `WebSession(String id, WebSession source)` if not present.
+4. **`KeycloakContainer.getAuthServerUrl()`** — exact API used in Tasks 14–15; confirm against the `dasniko/testcontainers-keycloak` version on the classpath.
+5. **Spring Security 7's `oauth2Login(...).authorizationEndpoint(...).baseUri(...)` semantics.** If the trailing slash or wildcard handling has shifted from 6 → 7, Task 4's manual smoke is where the engineer notices and adjusts.
+6. **Spring Session's `MapSessionRepository` typing under Spring Boot 4.** Used as a stub in Task 5; replaced in Task 9. If it doesn't compile against the on-classpath version, fall back to a quick `Map<String, Session>` based custom `SessionRepository` for the walking-skeleton step.
 
 The plan provides escape hatches for each (note in the relevant step), so they don't block forward motion.

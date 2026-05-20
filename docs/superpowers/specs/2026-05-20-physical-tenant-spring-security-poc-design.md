@@ -92,28 +92,40 @@ Cost of this constraint inside A: essentially zero. It is good Spring hygiene an
       per-tenant beans                       per-tenant chains                      shared beans
               │                                      │                                      │
               ▼                                      ▼                                      ▼
-┌──────────────────────────────┐    ┌────────────────────────────────┐    ┌─────────────────────────────┐
-│ PerTenantOidc                │    │ webapp chain                   │    │ JwsKeySelectorFactory       │
-│   • ClientRegistrationRepo   │    │   securityMatcher: prefix      │    │ (already shared today)      │
-│   • AuthorizedClientRepo     │    │   loginPage:                   │    │                             │
-│   • TokenClaimsConverter     │    │     /physical-tenant/{t}/login │    │ AssertionJwkProvider        │
-│   • LogoutSuccessHandler     │    │   redirect-uri template:       │    │   (cached, multi-tenant)    │
-│   • JwtDecoder               │    │     /physical-tenant/{t}/      │    │                             │
-│   • SecurityContextRepo      │    │     login/oauth2/code/{regId}  │    │ OidcUserInfoClient          │
-│                              │    ├────────────────────────────────┤    │                             │
-│                              │    │ api chain                      │    └─────────────────────────────┘
-│                              │    │   securityMatcher:             │
-│                              │    │     /v2/physical-tenants/{t}/* │
-│                              │    │   resource-server JwtDecoder   │
-│                              │    │   no session                   │
-│                              │    └────────────────────────────────┘
-│ PerTenantSession             │
-│   • WebSessionRepository(t)  │
-│     keyspace-prefixed        │
-│   • CookieHttpSessionIdRes.  │
-│     name=camunda-session-{t} │
-│     path=/physical-tenant/{t}│
-└──────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                  PhysicalTenantSecurityConfiguration                 │
+│  iterates PhysicalTenantResolver.getAll(), builds slices, wires:     │
+└─────────────────────────────────┬────────────────────────────────────┘
+                                  │
+   ┌──────────────────────────────┼─────────────────────────────────────┐
+   │                              │                                     │
+per-tenant beans            per-tenant chains                  cluster-shared beans
+   │                              │                                     │
+   ▼                              ▼                                     ▼
+┌────────────────────────┐  ┌────────────────────────────┐  ┌─────────────────────────────────┐
+│ ClientRegistration-    │  │ webapp chain               │  │ Issuer-aware JwtDecoder         │
+│ Repository             │  │   /physical-tenant/{t}/**  │  │   (union of all tenants'        │
+│   (only providers      │  │   oauth2Login              │  │    issuer URIs; per-issuer      │
+│    'assigned' to {t})  │  │   cookie name+Path per {t} │  │    validators)                  │
+└────────────────────────┘  ├────────────────────────────┤  │                                 │
+┌────────────────────────┐  │ api chain                  │  │ CamundaOidcLogoutSuccessHandler │
+│ SessionRepositoryFilter│  │   /v2/physical-tenants/    │  │   (reads tenant IdP from active │
+│   + CookieHttpSession- │  │   {t}/**                   │  │    session; OQ-3)               │
+│     IdResolver         │  │   resource-server JWT      │  │                                 │
+│     (name+Path per {t})│  │   iss allowlist:           │  │ HttpSessionOAuth2Authorized-    │
+│   + PerTenantSession-  │  │     {t}'s assigned issuers │  │ ClientRepository                │
+│     Repository         │  │   no session               │  │   (Spring default; session-     │
+│     (id-prefixed in    │  └────────────────────────────┘  │    derived)                     │
+│      shared storage)   │                                  │                                 │
+└────────────────────────┘                                  │ SecurityContextRepository       │
+                                                            │   (Spring default; reads from   │
+                                                            │    the per-chain session)       │
+                                                            │                                 │
+                                                            │ JwsKeySelectorFactory,          │
+                                                            │ AssertionJwkProvider,           │
+                                                            │ OidcUserInfoClient              │
+                                                            │   (shared today; unchanged)     │
+                                                            └─────────────────────────────────┘
 ```
 
 ### Bean catalogue
@@ -124,7 +136,7 @@ New classes / configurations introduced by the PoC:
 |----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `PhysicalTenantSecurityConfiguration` (`authentication/.../config/`) | Top-level `@Configuration`, profile-gated. Pulls `PhysicalTenantResolver`, iterates tenants, exposes `SecurityFilterChain` beans via `BeanDefinitionRegistryPostProcessor`.                                                                                                                                                                       |
 | `PerTenantSecurityChainFactory`                                      | Builds the pair of `SecurityFilterChain` (webapp + api) for one tenant. Takes a `TenantSecuritySlice` and produces the chains.                                                                                                                                                                                                                    |
-| `TenantSecuritySlice` (record)                                       | Per-tenant collaborator bundle: tenant id, `SecurityConfiguration` slice, `ClientRegistrationRepository`, `OAuth2AuthorizedClientRepository`, `JwtDecoder`, `OidcClaimsProvider`, `OAuth2AuthorizationRequestResolver`, `LogoutSuccessHandler`, `SessionRepository<WebSession>`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. |
+| `TenantSecuritySlice` (record)                                       | Per-tenant collaborator bundle: tenant id, access path, `ClientRegistrationRepository`, `SessionRepositoryFilter`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. `JwtDecoder`, `LogoutSuccessHandler`, `AuthorizedClientRepository`, `SecurityContextRepository` are intentionally NOT in the slice — they are cluster-shared (issuer-aware decoder validates any known issuer; the chains' per-tenant authorization rule enforces `iss` ∈ tenant's assigned issuers; logout/authorized-client/security-context are session-derived).                                       |
 | `PerTenantOidcRegistry`                                              | Builds the per-tenant `OidcAuthenticationConfigurationRepository` by applying `providers.assigned` to the tenant's OIDC providers map.                                                                                                                                                                                                            |
 | `PhysicalTenantRedirectUriRewriter`                                  | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time.                                                                                                                                                                                                                                      |
 | `PerTenantSessionRepository`                                         | Decorator over the existing `WebSessionRepository`; prefixes session ids with `t:` to keep keyspaces disjoint in shared secondary storage.                                                                                                                                                                                                        |
