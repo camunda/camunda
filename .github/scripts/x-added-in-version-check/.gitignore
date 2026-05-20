@@ -1,4 +1,4 @@
 node_modules/
-artefacts/*.json
+artefacts/
 .env
 output

@@ -5,7 +5,7 @@ on:
     - cron: '0 5 * * *'  # daily at 05:00 UTC
   workflow_dispatch:
     inputs:
-      camunda_branch:
+      latest_branch:
         description: 'Branch (or tag/SHA) of camunda/camunda to verify'
         required: false
         default: 'main'
@@ -73,7 +73,8 @@ jobs:
       - name: Build verifier artefacts (endpoint-map + version-map)
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
-          CAMUNDA_REF: ${{ steps.ref.outputs.ref }}
+          LATEST_BRANCH: ${{ steps.ref.outputs.ref }}
+          RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
 
       - name: Run CI verifier
@@ -82,7 +83,6 @@ jobs:
         env:
           # Spec lives in the host checkout (camunda/camunda at the requested ref).
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
-          CAMUNDA_REF: ${{ steps.ref.outputs.ref }}
           # Artefacts produced by the previous step (relative to working-directory).
           ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json
           VERSION_MAP_PATH: ./artefacts/version-map.json

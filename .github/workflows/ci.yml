@@ -2025,7 +2025,8 @@ jobs:
       - name: Build verifier artefacts (endpoint-map + version-map)
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
-          CAMUNDA_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          LATEST_BRANCH: ${{ github.event.pull_request.head.sha || github.sha }}
+          RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
       - name: Run PR verifier
         # Verifier exits non-zero on findings; continue-on-error keeps the
