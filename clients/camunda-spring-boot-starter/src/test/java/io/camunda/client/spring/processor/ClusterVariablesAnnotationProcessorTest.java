@@ -313,6 +313,7 @@ public class ClusterVariablesAnnotationProcessorTest {
     processor.start(client);
 
     // then
+    verify(globalCreateStep).create("myVar", "newValue");
     verify(globalUpdateStep).update("myVar", "newValue");
   }
 
@@ -333,6 +334,7 @@ public class ClusterVariablesAnnotationProcessorTest {
     processor.start(client);
 
     // then
+    verify(tenantCreateStep).create("tenantVar", "newValue");
     verify(tenantUpdateStep).update("tenantVar", "newValue");
   }
 
