@@ -21,6 +21,27 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
+/**
+ * Correlates published messages to message start-event subscriptions and to intermediate message
+ * catch-event subscriptions on this partition.
+ *
+ * <h3>Business-id uniqueness — local arm only</h3>
+ *
+ * When the {@code businessIdUniquenessEnabled} feature is on and a published message carries a
+ * businessId, start-event correlation additionally requires that no active root PI on this
+ * partition already holds that businessId for the same process definition. This is the local arm of
+ * the design's uniqueness check; cross-partition uniqueness (when the businessId hashes to a
+ * different partition than the message correlation key) is delegated to {@code P_B} in a later
+ * increment via a cross-partition ask.
+ *
+ * <p>A message suppressed by this check remains in the existing message buffer and is only freed by
+ * its TTL. There is no businessId-keyed retry trigger today: the buffered-message scan in {@link
+ * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior} is driven
+ * by completion of a PI that holds the correlation-key lock, so a suppressed message whose
+ * correlation key does not match an active holder's lock will not be retried even after the
+ * businessId is released. Release-driven retries — both same-partition and across partitions — are
+ * introduced in a later increment by design.
+ */
 public final class MessageCorrelateBehavior {
 
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
@@ -230,22 +251,9 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * Local arm of the design's start-event uniqueness check: when the published message carries a
-   * businessId and the feature is enabled, reject the start when a root PI with the same businessId
-   * is already active for this process definition on this partition.
-   *
-   * <p>A suppressed message remains in the existing message buffer and is only freed by its TTL.
-   * There is no businessId-keyed retry trigger today: the existing buffered-message scan in {@link
-   * io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior} is
-   * driven by completion of a PI that holds the correlation-key lock, so a suppressed message whose
-   * correlation key does not match an active holder's lock will not be retried even after the
-   * businessId is released. Release-driven retries — both same-partition and across partitions via
-   * the pull-based ask to {@code P_B} — are introduced in a later increment by design.
-   *
-   * <p>Cross-partition uniqueness (i.e. when the businessId hashes to a different partition than
-   * the correlation key) is also intentionally out of scope here and is delegated to {@code P_B} in
-   * a later increment via a cross-partition ask. This method only resolves what {@code P_K} can
-   * answer locally.
+   * Returns {@code true} when the feature is enabled, the message carries a businessId, and an
+   * active root PI on this partition already holds that businessId for this process definition. See
+   * the class JavaDoc for the system-level retry/cross-partition narrative.
    */
   private boolean isBusinessIdAlreadyHeld(
       final MessageData messageData, final MessageStartEventSubscriptionRecord subscriptionRecord) {

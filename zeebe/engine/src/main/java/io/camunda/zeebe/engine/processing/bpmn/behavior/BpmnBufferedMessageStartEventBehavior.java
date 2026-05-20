@@ -159,13 +159,10 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   /**
    * Returns {@code true} when the feature is enabled, the buffered message carries a businessId,
-   * and an active root PI on this partition already holds that businessId for the same process
-   * definition. A {@code true} result causes the buffered-message scan to skip this entry and keep
-   * looking; the entry remains in the buffer subject to its TTL. There is no businessId-keyed
-   * retrigger here: the scan only fires on completion of a PI that holds the correlation-key lock,
-   * so an entry skipped because of a long-lived businessId holder on a different correlation key
-   * can be left untouched until TTL. The release-driven retry path added in a later increment
-   * closes that gap.
+   * and an active root PI on this partition already holds that businessId for this process
+   * definition. See the class JavaDoc of {@link
+   * io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior} for the system-level
+   * retry/cross-partition narrative this predicate participates in.
    */
   private boolean isBusinessIdAlreadyHeld(
       final StoredMessage storedMessage, final String bpmnProcessId) {
