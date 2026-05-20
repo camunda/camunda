@@ -133,10 +133,11 @@ set_output("ci-database-matrix", json.dumps(ci_db_matrix))
 
 # ── RDBMS matrix (zeebe-rdbms-integration-tests.yml) ─────────────────────────
 # Maps the first segment of an Oracle image tag to its display name and
-# database-type. Oracle versions use non-numeric suffixes (21c, 23ai) that
+# database-type. Oracle versions use non-numeric suffixes (21c, 26ai) that
 # cannot be derived mechanically from the version number alone.
 oracle_meta = {
-    "23": {"name": "Oracle 23ai", "type": "oracle"},
+    # 23.x family is branded "Oracle 26ai" since RU 23.26 (Oct 2025).
+    "23": {"name": "Oracle 26ai", "type": "oracle"},
     "21": {"name": "Oracle 21c",  "type": "oracle-21"},
 }
 
@@ -177,7 +178,7 @@ for v in versions["mssql"]:
     })
 
 for v in versions["oracle"]:
-    major = v.split("-")[0]
+    major = v.split(".")[0].split("-")[0]  # "23.26.1-slim-faststart" -> "23"; "21-slim-faststart" -> "21"
     meta  = oracle_meta.get(major, {"name": f"Oracle {major}", "type": "oracle"})
     rdbms_matrix["include"].append({
         "database-name":          meta["name"],
