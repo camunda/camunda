@@ -11,10 +11,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.JobPriorityDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ScriptTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -24,6 +26,8 @@ public final class ScriptTaskTransformer implements ModelElementTransformer<Scri
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final JobPriorityDefinitionTransformer jobPriorityDefinitionTransformer =
+      new JobPriorityDefinitionTransformer();
   private final ScriptTransformer scriptTransformer = new ScriptTransformer();
 
   @Override
@@ -42,6 +46,10 @@ public final class ScriptTaskTransformer implements ModelElementTransformer<Scri
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(executableTask, taskHeaders, element);
+
+    final var jobPriorityDefinition =
+        element.getSingleExtensionElement(ZeebeJobPriorityDefinition.class);
+    jobPriorityDefinitionTransformer.transform(executableTask, context, jobPriorityDefinition);
 
     final var zeebeScript = element.getSingleExtensionElement(ZeebeScript.class);
     scriptTransformer.transform(executableTask, context, zeebeScript);

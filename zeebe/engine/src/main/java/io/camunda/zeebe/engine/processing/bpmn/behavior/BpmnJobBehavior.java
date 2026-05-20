@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -149,6 +152,10 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey, tenantId).map(p::type))
         .flatMap(
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
+        .flatMap(
+            p ->
+                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                    .map(p::priority))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
@@ -520,6 +527,50 @@ public final class BpmnJobBehavior {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
+  private Either<Failure, Integer> evalPriorityExp(
+      final Expression priority, final long scopeKey, final String tenantId) {
+    if (priority == null) {
+      return Either.right(0);
+    }
+    return expressionBehavior
+        .evaluateAnyExpression(priority, scopeKey, tenantId)
+        .flatMap(result -> mapPriorityResult(priority, result, scopeKey));
+  }
+
+  private Either<Failure, Integer> mapPriorityResult(
+      final Expression priority, final EvaluationResult result, final long scopeKey) {
+    if (result.getType() != ResultType.NUMBER) {
+      return priorityFailure(priority, scopeKey, "'NUMBER', but was '" + result.getType() + "'");
+    }
+    final Number number = result.getNumber();
+    final BigDecimal asDecimal;
+    try {
+      asDecimal = new BigDecimal(number.toString());
+    } catch (final NumberFormatException e) {
+      return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
+    }
+    try {
+      // stripTrailingZeros so `1.0` is accepted as integer 1.
+      return Either.right(asDecimal.stripTrailingZeros().intValueExact());
+    } catch (final ArithmeticException e) {
+      return priorityFailure(
+          priority,
+          scopeKey,
+          "an integer within the 32-bit signed range, but was '" + number + "'");
+    }
+  }
+
+  private static Either<Failure, Integer> priorityFailure(
+      final Expression priority, final long scopeKey, final String detail) {
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected result of the expression '%s' for the job priority to be %s.",
+                priority.getExpression(), detail),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final JobProperties props,
@@ -543,6 +594,7 @@ public final class BpmnJobBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setTags(getTagsFromProcessInstance(context))
+        .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
@@ -663,6 +715,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
+    private int priority;
     private List<LinkedResourceProps> linkedResources;
 
     public JobProperties type(final String type) {
@@ -744,6 +797,15 @@ public final class BpmnJobBehavior {
 
     public List<LinkedResourceProps> getLinkedResources() {
       return linkedResources;
+    }
+
+    public JobProperties priority(final int priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public int getPriority() {
+      return priority;
     }
   }
 
