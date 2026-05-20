@@ -12,7 +12,6 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.ElementInstanceInspectionQuery;
 import io.camunda.gateway.protocol.model.ElementInstanceInspectionQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
@@ -21,6 +20,7 @@ import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.query.ElementInstanceInspectionQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -74,14 +74,21 @@ public class ElementInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/inspection")
   public ResponseEntity<ElementInstanceInspectionQueryResult> inspectElementInstances(
-      @RequestBody(required = false) final ElementInstanceInspectionQuery query) {
+      @RequestBody(required = false)
+          final io.camunda.gateway.protocol.model.ElementInstanceInspectionQuery query) {
+    return SearchQueryRequestMapper.toElementInstanceInspectionQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::inspect);
+  }
+
+  private ResponseEntity<ElementInstanceInspectionQueryResult> inspect(
+      final ElementInstanceInspectionQuery query) {
+
     try {
-      final var filter = SearchQueryRequestMapper.toElementInstanceInspectionFilter(query);
-      final var items =
-          elementInstanceServices.inspect(
-              filter, authenticationProvider.getCamundaAuthentication());
+      final var result =
+          elementInstanceServices.inspect(query, authenticationProvider.getCamundaAuthentication());
+
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toElementInstanceInspectionQueryResult(items));
+          SearchQueryResponseMapper.toElementInstanceInspectionQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

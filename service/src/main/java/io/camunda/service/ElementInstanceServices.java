@@ -15,6 +15,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.ElementInstanceInspectionQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -167,7 +168,7 @@ public final class ElementInstanceServices
   }
 
   public List<WaitStateEntity> inspect(
-      final Object filter, final CamundaAuthentication authentication) {
+      final ElementInstanceInspectionQuery query, final CamundaAuthentication authentication) {
     // TODO: not implemented yet
     return List.of();
   }

@@ -35,6 +35,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.ElementInstanceInspectionQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
@@ -56,6 +57,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.zeebe.util.Either;
@@ -1148,9 +1150,18 @@ public final class SearchQueryRequestMapper {
         filterResult, sortResult, pageResult, SearchQueryBuilders::deployedResourceSearchQuery);
   }
 
-  public static @Nullable Object toElementInstanceInspectionFilter(
-      final ElementInstanceInspectionQuery query) {
-    // TODO not implemented yet
-    return null;
+  public static Either<ProblemDetail, ElementInstanceInspectionQuery>
+      toElementInstanceInspectionQuery(
+          final io.camunda.gateway.protocol.model.@Nullable ElementInstanceInspectionQuery
+              request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.elementInstanceInspectionSearchQuery().build());
+    }
+
+    return buildSearchQuery(
+        SearchQueryFilterMapper.toElementInstanceInspectionFilter(request.getFilter()),
+        Either.right(NoSort.NO_SORT),
+        toSearchQueryPage(request.getPage()),
+        SearchQueryBuilders::elementInstanceInspectionSearchQuery);
   }
 }

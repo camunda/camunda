@@ -414,4 +414,16 @@ public final class FilterBuilders {
       final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static ElementInstanceInspectionFilter.Builder elementInstanceInspection() {
+    return new ElementInstanceInspectionFilter.Builder();
+  }
+
+  public static ElementInstanceInspectionFilter elementInstanceInspection(
+      final Function<
+              ElementInstanceInspectionFilter.Builder,
+              ObjectBuilder<ElementInstanceInspectionFilter>>
+          fn) {
+    return fn.apply(elementInstanceInspection()).build();
+  }
 }

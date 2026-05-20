@@ -337,4 +337,15 @@ public final class SearchQueryBuilders {
       final Function<DeployedResourceQuery.Builder, ObjectBuilder<DeployedResourceQuery>> fn) {
     return fn.apply(deployedResourceSearchQuery()).build();
   }
+
+  public static ElementInstanceInspectionQuery.Builder elementInstanceInspectionSearchQuery() {
+    return new ElementInstanceInspectionQuery.Builder();
+  }
+
+  public static ElementInstanceInspectionQuery elementInstanceInspectionSearchQuery(
+      final Function<
+              ElementInstanceInspectionQuery.Builder, ObjectBuilder<ElementInstanceInspectionQuery>>
+          fn) {
+    return fn.apply(elementInstanceInspectionSearchQuery()).build();
+  }
 }
