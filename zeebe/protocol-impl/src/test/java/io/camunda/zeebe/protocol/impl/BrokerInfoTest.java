@@ -27,6 +27,90 @@ import org.junit.jupiter.api.Test;
 final class BrokerInfoTest {
 
   @Test
+  void shouldEncodeDecodePartitionGroup() {
+    // given
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(3)
+            .setClusterSize(3)
+            .setReplicationFactor(1)
+            .setPartitionGroup("tenant1");
+
+    // when
+    final var decoded = encodeDecode(brokerInfo);
+
+    // then
+    assertThat(decoded.getPartitionGroup()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldReturnDefaultPartitionGroupWhenNotSet() {
+    // given
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1);
+
+    // when
+    final var decoded = encodeDecode(brokerInfo);
+
+    // then
+    assertThat(decoded.getPartitionGroup()).isEqualTo(BrokerInfo.DEFAULT_PARTITION_GROUP);
+  }
+
+  @Test
+  void shouldDecodeVersion8PayloadWithoutPartitionGroup() {
+    // given -- a v8 payload (has zone but not partitionGroup)
+    final int nodeId = 5;
+    final int partitionsCount = 3;
+    final int clusterSize = 3;
+    final int replicationFactor = 1;
+    final String versionStr = "8.8.0";
+    final byte[] versionBytes = versionStr.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+    final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[1024]);
+    int offset = 0;
+
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    headerEncoder.wrap(buffer, offset);
+    headerEncoder
+        .blockLength(BrokerInfoEncoder.BLOCK_LENGTH)
+        .templateId(BrokerInfoEncoder.TEMPLATE_ID)
+        .schemaId(BrokerInfoEncoder.SCHEMA_ID)
+        .version(8);
+    offset += MessageHeaderEncoder.ENCODED_LENGTH;
+
+    final BrokerInfoEncoder bodyEncoder = new BrokerInfoEncoder();
+    bodyEncoder
+        .wrap(buffer, offset)
+        .nodeId(nodeId)
+        .partitionsCount(partitionsCount)
+        .clusterSize(clusterSize)
+        .replicationFactor(replicationFactor);
+
+    bodyEncoder.addressesCount(0);
+    bodyEncoder.partitionRolesCount(0);
+    bodyEncoder.partitionLeaderTermsCount(0);
+    bodyEncoder.putVersion(versionBytes, 0, versionBytes.length);
+    bodyEncoder.partitionHealthCount(0);
+    bodyEncoder.zone("eu-west-1a");
+    // partitionGroup is NOT written (v8 payload)
+
+    final int totalLength = MessageHeaderEncoder.ENCODED_LENGTH + bodyEncoder.encodedLength();
+
+    // when
+    final BrokerInfo decoded = new BrokerInfo();
+    assertThatNoException().isThrownBy(() -> decoded.wrap(buffer, 0, totalLength));
+
+    // then -- zone decoded correctly, partitionGroup falls back to default
+    assertThat(decoded.getZone()).isEqualTo("eu-west-1a");
+    assertThat(decoded.getPartitionGroup()).isEqualTo(BrokerInfo.DEFAULT_PARTITION_GROUP);
+  }
+
+  @Test
   void shouldEncodeDecodeBrokerInfo() {
     // given
     final int nodeId = 123;

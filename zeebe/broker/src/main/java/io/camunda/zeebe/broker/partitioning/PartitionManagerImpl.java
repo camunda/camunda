@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -64,7 +65,7 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String DEFAULT_GROUP_NAME = "default";
+  public static final String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
   private final String partitionGroup;

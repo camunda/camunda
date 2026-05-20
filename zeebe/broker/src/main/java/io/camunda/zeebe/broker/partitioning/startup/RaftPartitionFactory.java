@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
-  public static final String GROUP_NAME = "default";
+  public static final String GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
   private static final String LEGACY_GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final String partitionGroup;

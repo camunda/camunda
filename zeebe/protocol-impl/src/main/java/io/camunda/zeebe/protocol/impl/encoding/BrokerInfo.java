@@ -9,12 +9,14 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionGroupHeaderLength;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
@@ -57,6 +59,8 @@ import org.slf4j.Logger;
 @NullMarked
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
+  public static final String DEFAULT_PARTITION_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
   private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -83,6 +87,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
   private @Nullable String zone;
+  private @Nullable String partitionGroup;
 
   public BrokerInfo() {
     reset();
@@ -103,6 +108,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     addresses.clear();
     version.wrap(0, 0);
     zone = null;
+    partitionGroup = null;
     clearPartitions();
 
     return this;
@@ -199,6 +205,22 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public @Nullable String getZone() {
     return zone;
+  }
+
+  public String getPartitionGroup() {
+    // can be null for older versions that are received via gossip, but in that case we want to
+    // treat is as the default partition group.
+    return partitionGroup != null ? partitionGroup : DEFAULT_PARTITION_GROUP;
+  }
+
+  public BrokerInfo setPartitionGroup(final String partitionGroup) {
+    // partitionGroup can only be null in older versions that are received via gossip.
+    Objects.requireNonNull(partitionGroup);
+    if (partitionGroup.isBlank()) {
+      throw new IllegalArgumentException("partitionGroup must not be blank");
+    }
+    this.partitionGroup = partitionGroup.isBlank() ? null : partitionGroup;
+    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -351,6 +373,13 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       bodyDecoder.skipZone();
     }
 
+    if (bodyDecoder.partitionGroupLength() > 0) {
+      partitionGroup = bodyDecoder.partitionGroup();
+    } else {
+      partitionGroup = null;
+      bodyDecoder.skipPartitionGroup();
+    }
+
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()
@@ -371,7 +400,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + versionHeaderLength()
             + version.capacity()
             + zoneHeaderLength()
-            + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0);
+            + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0)
+            + partitionGroupHeaderLength()
+            + (partitionGroup != null ? partitionGroup.getBytes(StandardCharsets.UTF_8).length : 0);
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -453,6 +484,12 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       bodyEncoder.zone(zone);
     } else {
       bodyEncoder.putZone(EMPTY_BYTE_ARRAY, 0, 0);
+    }
+
+    if (partitionGroup != null) {
+      bodyEncoder.partitionGroup(partitionGroup);
+    } else {
+      bodyEncoder.putPartitionGroup(EMPTY_BYTE_ARRAY, 0, 0);
     }
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
@@ -549,6 +586,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + BufferUtil.bufferAsString(version)
         + ", zone="
         + zone
+        + ", partitionGroup="
+        + partitionGroup
         + '}';
   }
 }
