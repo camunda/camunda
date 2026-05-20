@@ -20,5 +20,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# spring-boot:run -pl dist resolves authentication/etc. from the local Maven
+# repo — it does NOT recompile upstream modules from source. We `install`
+# dist + its dependencies (-am) first so any changes in authentication/, etc.
+# land in OC before boot.
+./mvnw install -pl dist -am -Dquickly -T1C
+
 exec ./mvnw -pl dist spring-boot:run \
   -Dspring-boot.run.profiles=pt-poc 2>&1 | tee /tmp/oc.log
