@@ -116,7 +116,6 @@
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

@@ -79,6 +79,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -124,7 +125,12 @@ public final class EndpointManager {
     final String brokerAddress = topology.getBrokerAddress(brokerId);
     final Address address = Address.from(brokerAddress);
 
-    brokerInfo.setNodeId(brokerId.nodeIdx()).setHost(address.host()).setPort(address.port());
+    brokerInfo
+        .setNodeId(brokerId.nodeIdx())
+        .setHost(address.host())
+        .setPort(address.port())
+        .setBrokerId(brokerId.memberId().id())
+        .setZone(Optional.ofNullable(brokerId.zone()).orElse(""));
 
     final var brokerVersion = topology.getBrokerVersion(brokerId);
     if (brokerVersion != null) {

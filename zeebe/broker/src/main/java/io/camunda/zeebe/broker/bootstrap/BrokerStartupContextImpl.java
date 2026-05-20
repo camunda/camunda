@@ -142,7 +142,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public String toString() {
-    return "BrokerStartupContextImpl{" + "broker=" + brokerInfo.memberIdString() + '}';
+    return "BrokerStartupContextImpl{" + "broker=" + brokerInfo.brokerIdStr() + '}';
   }
 
   @Override

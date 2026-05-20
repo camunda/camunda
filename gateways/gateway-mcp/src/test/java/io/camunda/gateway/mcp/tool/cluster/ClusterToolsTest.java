@@ -158,18 +158,21 @@ class ClusterToolsTest extends OperationalToolsTest {
           new Topology(
               List.of(
                   new Broker(
+                      null,
                       0,
                       "localhost",
                       26501,
                       List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
                       version),
                   new Broker(
+                      null,
                       1,
                       "localhost",
                       26502,
                       List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                       version),
                   new Broker(
+                      null,
                       2,
                       "localhost",
                       26503,

@@ -31,10 +31,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 @NullMarked
@@ -182,30 +184,39 @@ public class TopologyServiceTest {
     verify(clusterState).getPartitionHealth(leaderId3, partitionId3);
   }
 
-  @Test
-  public void shouldGetTopology() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "us-east1"})
+  public void shouldGetTopology(String zone) {
     // given
     final var version = VersionUtil.getVersion();
     final var clusterId = "cluster-id";
 
-    when(topologyManager.getTopology()).thenReturn(new TestBrokerClusterState(version, clusterId));
+    // null cannot be used in ValueSource
+    if (zone.isEmpty()) {
+      zone = null;
+    }
+    when(topologyManager.getTopology())
+        .thenReturn(new TestBrokerClusterState(zone, version, clusterId));
 
     final var expectedTopology =
         new Topology(
             List.of(
                 new Broker(
+                    zone,
                     0,
                     "localhost",
                     26501,
                     List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
                     version),
                 new Broker(
+                    zone,
                     1,
                     "localhost",
                     26502,
                     List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                     version),
                 new Broker(
+                    zone,
                     2,
                     "localhost",
                     26503,
@@ -248,7 +259,7 @@ public class TopologyServiceTest {
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
    */
-  private record TestBrokerClusterState(String version, String clusterId)
+  private record TestBrokerClusterState(@Nullable String zone, String version, String clusterId)
       implements BrokerClusterState {
 
     @Override
@@ -273,22 +284,22 @@ public class TopologyServiceTest {
 
     @Override
     public BrokerMemberId getLeaderForPartition(final int partition) {
-      return BrokerMemberId.from(0);
+      return BrokerMemberId.from(zone, 0);
     }
 
     @Override
     public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
-      return Set.of(BrokerMemberId.from(1));
+      return Set.of(BrokerMemberId.from(zone, 1));
     }
 
     @Override
     public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
-      return Set.of(BrokerMemberId.from(2));
+      return Set.of(BrokerMemberId.from(zone, 2));
     }
 
     @Override
     public BrokerMemberId getRandomBroker() {
-      return BrokerMemberId.from(ThreadLocalRandom.current().nextInt(0, 3));
+      return BrokerMemberId.from(zone, ThreadLocalRandom.current().nextInt(0, 3));
     }
 
     @Override
@@ -298,7 +309,7 @@ public class TopologyServiceTest {
 
     @Override
     public List<BrokerMemberId> getBrokers() {
-      return Stream.of(0, 1, 2).map(BrokerMemberId::from).toList();
+      return Stream.of(0, 1, 2).map(id -> BrokerMemberId.from(zone, id)).toList();
     }
 
     @Override

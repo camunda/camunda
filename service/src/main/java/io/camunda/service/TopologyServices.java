@@ -10,7 +10,6 @@ package io.camunda.service;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.service.TopologyServices.Topology.Builder;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -21,8 +20,10 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var address = Address.from(brokerAddress);
 
     broker
-        .nodeId(brokerId.nodeIdx())
+        .brokerId(brokerId)
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
@@ -254,10 +255,40 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId, String host, Integer port, List<Partition> partitions, String version) {
+      BrokerMemberId brokerId,
+      String host,
+      Integer port,
+      List<Partition> partitions,
+      String version) {
+
+    public Broker(
+        @Nullable final String zone,
+        final int nodeId,
+        final String host,
+        final Integer port,
+        final List<Partition> partitions,
+        final String version) {
+      this(BrokerMemberId.from(zone, nodeId), host, port, partitions, version);
+    }
+
+    public Broker {
+      Objects.requireNonNull(brokerId, "Expected brokerId to not be null");
+    }
+
+    public int nodeIdx() {
+      return brokerId.nodeIdx();
+    }
+
+    public @Nullable String zone() {
+      return brokerId.zone();
+    }
+
+    public String brokerIdStr() {
+      return brokerId.id();
+    }
 
     static class Builder {
-      Integer nodeId;
+      BrokerMemberId brokerId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -267,8 +298,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         return new Builder();
       }
 
-      public Builder nodeId(final Integer nodeId) {
-        this.nodeId = nodeId;
+      public Builder brokerId(final BrokerMemberId brokerId) {
+        this.brokerId = brokerId;
         return this;
       }
 
@@ -293,7 +324,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(nodeId, host, port, partitions, version);
+        return new Broker(brokerId, host, port, partitions, version);
       }
     }
   }
