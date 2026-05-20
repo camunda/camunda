@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -34,6 +35,7 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty targetProcessDefinitionKeyProperty =
@@ -50,16 +52,18 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final IntegerProperty ordinalKeyProperty = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public ProcessInstanceMigrationRecord() {
-    super(7);
+    super(8);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(targetProcessDefinitionKeyProperty)
         .declareProperty(mappingInstructionsProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(bpmnProcessIdProperty);
+        .declareProperty(bpmnProcessIdProperty)
+        .declareProperty(ordinalKeyProperty);
   }
 
   @Override
@@ -153,6 +157,16 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   public ProcessInstanceMigrationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceMigrationRecord setOrdinalKey(final int ordinal) {
+    ordinalKeyProperty.setValue(ordinal);
     return this;
   }
 }

@@ -878,6 +878,7 @@ final class JsonSerializableToJsonTest {
                       "timeout": -1,
                       "tenantId": "<default>",
                       "rootProcessInstanceKey": 4321,
+                      "ordinalKey": 0,
                       "changedAttributes": ["bar", "foo"],
                       "tags": ["tag1", "tag2"],
                       "jobToUserTaskMigration": true,
@@ -1032,6 +1033,7 @@ final class JsonSerializableToJsonTest {
                       .setResult(result)
                       .setTags(Set.of("tag1", "tag2"))
                       .setRootProcessInstanceKey(rootProcessInstanceKey)
+                      .setOrdinalKey(5001)
                       .setIsJobToUserTaskMigration(true);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
@@ -1064,6 +1066,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": 14,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4321,
+                  "ordinalKey": 5001,
                   "tags": ["tag1", "tag2"],
                   "jobToUserTaskMigration": true,
                   "changedAttributes": ["bar", "foo"],
@@ -1139,6 +1142,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1199,6 +1203,7 @@ final class JsonSerializableToJsonTest {
                   "customHeaders": {},
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1411,7 +1416,8 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1441,7 +1447,8 @@ final class JsonSerializableToJsonTest {
                   "messageKey": -1,
                   "variables": {},
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1493,7 +1500,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "A",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 5678
+                  "rootProcessInstanceKey": 5678,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1527,7 +1535,8 @@ final class JsonSerializableToJsonTest {
                   "elementId": "",
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1608,6 +1617,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5,
                   "elementInstanceKey": 3,
+                  "ordinalKey": 0,
                   "source": {
                     "type":"API"
                   }
@@ -1651,6 +1661,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "tenant-test",
                   "rootProcessInstanceKey": 5,
                   "elementInstanceKey": 3,
+                  "ordinalKey": 0,
                   "source": {
                     "type":"API"
                   }
@@ -1761,7 +1772,8 @@ final class JsonSerializableToJsonTest {
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 3,
                   "businessId": "business-id-456",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1787,7 +1799,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "rootProcessInstanceKey": -1,
                   "businessId": "",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1877,7 +1890,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 4,
                   "processDefinitionKey": 5,
                   "bpmnProcessId": "bpmnProcessId",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1902,7 +1916,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1966,7 +1981,8 @@ final class JsonSerializableToJsonTest {
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 9999,
                   "businessId": "business-id-123",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -1998,7 +2014,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "rootProcessInstanceKey": -1,
                   "businessId": "",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2865,7 +2882,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "Reason to deny lifecycle transition",
                   "listenersConfigKey": 42,
-                  "rootProcessInstanceKey": 4321
+                  "rootProcessInstanceKey": 4321,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2904,7 +2922,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2948,7 +2967,8 @@ final class JsonSerializableToJsonTest {
                   "tags": [],
                   "deniedReason": "",
                   "listenersConfigKey": -1,
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -2997,7 +3017,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 321,
                   "processDefinitionKey": 234,
                   "bpmnProcessId": "bpmnProcessId",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -3023,7 +3044,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
-                  "elementInstanceKey": -1
+                  "elementInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },

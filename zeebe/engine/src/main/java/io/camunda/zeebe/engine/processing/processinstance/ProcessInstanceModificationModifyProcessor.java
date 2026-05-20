@@ -337,6 +337,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
+        .setOrdinalKey(processInstanceRecord.getOrdinalKey())
         .setTenantId(processInstanceRecord.getTenantId())
         .setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
 
@@ -1362,6 +1363,7 @@ public final class ProcessInstanceModificationModifyProcessor
                     process.getKey(),
                     processInstance.getKey(),
                     processInstance.getValue().getRootProcessInstanceKey(),
+                    processInstance.getValue().getOrdinalKey(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
                     variableDocument));

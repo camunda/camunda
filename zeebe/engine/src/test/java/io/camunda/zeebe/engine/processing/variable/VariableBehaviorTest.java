@@ -88,6 +88,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final long rootKey = 4;
+    final int ordinalKey = 5;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
@@ -101,6 +102,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -119,7 +121,8 @@ final class VariableBehaviorTest {
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId)
-                  .hasRootProcessInstanceKey(rootKey);
+                  .hasRootProcessInstanceKey(rootKey)
+                  .hasOrdinalKey(ordinalKey);
             },
             event -> {
               assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
@@ -132,7 +135,8 @@ final class VariableBehaviorTest {
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId)
-                  .hasRootProcessInstanceKey(rootKey);
+                  .hasRootProcessInstanceKey(rootKey)
+                  .hasOrdinalKey(ordinalKey);
             });
   }
 
@@ -142,6 +146,7 @@ final class VariableBehaviorTest {
     final long processDefinitionKey = 1;
     final long scopeKey = 1;
     final long rootKey = 2;
+    final int ordinalKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of();
@@ -153,6 +158,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         scopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -169,6 +175,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
     final long parentFooKey = 4;
+    final int ordinalKey = 6;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
@@ -184,6 +191,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         rootScopeKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -213,6 +221,7 @@ final class VariableBehaviorTest {
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
+    final int ordinalKey = 4;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
@@ -226,6 +235,7 @@ final class VariableBehaviorTest {
         rootScopeKey,
         processDefinitionKey,
         rootScopeKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -265,6 +275,7 @@ final class VariableBehaviorTest {
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
+    final int ordinalKey = 4;
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
@@ -279,6 +290,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         rootScopeKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -308,6 +320,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final long rootKey = 5;
+    final int ordinalKey = 6;
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar");
@@ -322,6 +335,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -351,6 +365,7 @@ final class VariableBehaviorTest {
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final long rootKey = 5;
+    final int ordinalKey = 6;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of();
@@ -365,6 +380,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -611,6 +627,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final long rootKey = 4;
+    final int ordinalKey = 5;
 
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
@@ -626,6 +643,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -668,6 +686,7 @@ final class VariableBehaviorTest {
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
+    final int ordinalKey = 4;
 
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
@@ -684,6 +703,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         rootScopeKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -725,6 +745,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
     final long elementInstanceKey = 42;
+    final int ordinalKey = 5;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
@@ -741,6 +762,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         rootScopeKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -757,7 +779,9 @@ final class VariableBehaviorTest {
         .hasProcessDefinitionKey(processDefinitionKey)
         .hasProcessInstanceKey(rootScopeKey)
         .hasBpmnProcessId("process")
-        .hasSource(variableSource);
+        .hasSource(variableSource)
+        .hasRootProcessInstanceKey(rootScopeKey)
+        .hasOrdinalKey(ordinalKey);
   }
 
   @ParameterizedTest
@@ -768,6 +792,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long rootKey = 3;
+    final int ordinalKey = 4;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final Map<String, Object> document = Map.of("foo", "bar");
@@ -783,6 +808,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -800,7 +826,9 @@ final class VariableBehaviorTest {
         .hasProcessInstanceKey(parentScopeKey)
         .hasBpmnProcessId("process")
         .hasTenantId(tenantId)
-        .hasSource(variableSource);
+        .hasSource(variableSource)
+        .hasRootProcessInstanceKey(rootKey)
+        .hasOrdinalKey(ordinalKey);
   }
 
   @SuppressWarnings("unchecked")

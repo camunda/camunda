@@ -53,11 +53,6 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
-  }
-
-  @Override
   public int getVersion() {
     return version;
   }
@@ -128,8 +123,17 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   }
 
   @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  @Override
   public String getBusinessId() {
     return ""; // not used in Optimize
+  }
+
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
@@ -164,8 +168,9 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     this.version = version;
   }
 
-  public void setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  @Override
+  public int getOrdinalKey() {
+    return -1; // not used in Optimize
   }
 
   protected boolean canEqual(final Object other) {

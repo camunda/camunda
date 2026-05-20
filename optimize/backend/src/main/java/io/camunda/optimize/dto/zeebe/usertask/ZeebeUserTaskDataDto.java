@@ -132,6 +132,11 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return -1L; // not used in Optimize
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
@@ -154,11 +159,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   @Override
   public Set<String> getTags() {
     return tags;
-  }
-
-  @Override
-  public long getRootProcessInstanceKey() {
-    return -1L; // not used in Optimize
   }
 
   public void setTags(final Set<String> tags) {
@@ -234,6 +234,11 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
+  public int getOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
+  @Override
   public long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -265,6 +270,32 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        userTaskKey,
+        assignee,
+        candidateGroupsList,
+        candidateUsersList,
+        dueDate,
+        elementId,
+        elementInstanceKey,
+        bpmnProcessId,
+        processDefinitionVersion,
+        processDefinitionKey,
+        processInstanceKey,
+        tenantId,
+        changedAttributes,
+        variables,
+        followUpDate,
+        formKey,
+        action,
+        externalFormReference,
+        customHeaders,
+        creationTimestamp,
+        tags);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
@@ -291,32 +322,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         && Objects.equals(externalFormReference, that.externalFormReference)
         && Objects.equals(customHeaders, that.customHeaders)
         && Objects.equals(tags, that.tags);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        userTaskKey,
-        assignee,
-        candidateGroupsList,
-        candidateUsersList,
-        dueDate,
-        elementId,
-        elementInstanceKey,
-        bpmnProcessId,
-        processDefinitionVersion,
-        processDefinitionKey,
-        processInstanceKey,
-        tenantId,
-        changedAttributes,
-        variables,
-        followUpDate,
-        formKey,
-        action,
-        externalFormReference,
-        customHeaders,
-        creationTimestamp,
-        tags);
   }
 
   @Override

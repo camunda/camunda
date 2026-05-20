@@ -196,6 +196,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getOrdinalKey(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               variableRecord.getVariablesBuffer());
@@ -205,6 +206,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               userTaskRecord.getProcessDefinitionKey(),
               userTaskRecord.getProcessInstanceKey(),
               userTaskRecord.getRootProcessInstanceKey(),
+              userTaskRecord.getOrdinalKey(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               variableRecord.getVariablesBuffer());

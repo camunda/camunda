@@ -109,6 +109,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
     this.name = name;
   }
 
+  @Override
+  public int getOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ZeebeVariableDataDto;
   }

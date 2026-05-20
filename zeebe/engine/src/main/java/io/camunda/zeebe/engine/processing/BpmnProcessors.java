@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
@@ -76,6 +77,7 @@ public final class BpmnProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -119,6 +121,7 @@ public final class BpmnProcessors {
         processingState,
         writers,
         bpmnBehaviors,
+        ordinalKeyProvider,
         processEngineMetrics,
         config,
         authCheckBehavior);
@@ -263,6 +266,7 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final ProcessEngineMetrics metrics,
       final EngineConfiguration config,
       final AuthorizationCheckBehavior authCheckBehavior) {
@@ -277,6 +281,7 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             authCheckBehavior,
             bpmnBehaviors,
+            ordinalKeyProvider,
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(

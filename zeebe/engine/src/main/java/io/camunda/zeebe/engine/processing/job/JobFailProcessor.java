@@ -157,6 +157,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
           value.getProcessDefinitionKey(),
           value.getProcessInstanceKey(),
           value.getRootProcessInstanceKey(),
+          value.getOrdinalKey(),
           value.getBpmnProcessIdBuffer(),
           value.getTenantId(),
           variables);

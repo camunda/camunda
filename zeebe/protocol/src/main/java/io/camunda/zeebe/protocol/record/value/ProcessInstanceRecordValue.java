@@ -30,12 +30,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceRecordValue.Builder.class)
 public interface ProcessInstanceRecordValue
-    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
-  /**
-   * @return the BPMN process id this process instance belongs to.
-   */
-  @Override
-  String getBpmnProcessId();
+    extends RecordValue,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        OrdinalKeyBased,
+        TenantOwned {
 
   /**
    * @return the version of the deployed process this instance belongs to.
@@ -193,7 +192,14 @@ public interface ProcessInstanceRecordValue
    *
    * @return the key of the root process instance, or {@code -1} if not set
    */
+  @Override
   long getRootProcessInstanceKey();
+
+  /**
+   * @return the BPMN process id this process instance belongs to.
+   */
+  @Override
+  String getBpmnProcessId();
 
   /**
    * Returns the business id associated with this process instance. The business id is an immutable,
