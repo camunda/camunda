@@ -23,7 +23,8 @@ import org.testcontainers.utility.DockerImageName;
 public final class TestSearchContainers {
   public static final String CAMUNDA_DATABASE = "camunda";
   public static final String CAMUNDA_USER = "camunda";
-  public static final String CAMUNDA_PASSWORD = "Camunda_Pass123!";
+  // Must not contain the DB username substring; MSSQL 2022+ rejects it on CREATE LOGIN otherwise.
+  public static final String CAMUNDA_PASSWORD = "Strong_Pass123!";
 
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")

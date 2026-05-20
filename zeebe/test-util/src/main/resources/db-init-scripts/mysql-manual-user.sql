@@ -1,5 +1,5 @@
 -- Create user with restricted privileges for manual user testing
-CREATE USER 'camunda'@'%' IDENTIFIED BY 'Camunda_Pass123!';
+CREATE USER 'camunda'@'%' IDENTIFIED BY 'Strong_Pass123!';
 
 -- CRUD operations
 GRANT SELECT, INSERT, UPDATE, DELETE ON camunda.* TO 'camunda'@'%';
