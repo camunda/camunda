@@ -110,15 +110,14 @@ public class MetricsExporter implements Exporter {
   public void export(final Record<?> record) {
     final var recordKey = record.getKey();
 
-    final var currentValueType = record.getValueType();
-    if (currentValueType == ValueType.JOB) {
-      handleJobRecord(record, recordKey);
-    } else if (currentValueType == ValueType.JOB_BATCH) {
-      handleJobBatchRecord(record);
-    } else if (currentValueType == ValueType.PROCESS_INSTANCE) {
-      handleProcessInstanceRecord(record, recordKey);
-    } else if (currentValueType == ValueType.VARIABLE) {
-      handleVariableRecord(record);
+    switch (record.getValueType()) {
+      case JOB -> handleJobRecord(record, recordKey);
+      case JOB_BATCH -> handleJobBatchRecord(record);
+      case PROCESS_INSTANCE -> handleProcessInstanceRecord(record, recordKey);
+      case VARIABLE -> handleVariableRecord(record);
+      default -> {
+        // other value types are filtered out via the RecordFilter
+      }
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition());
