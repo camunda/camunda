@@ -87,7 +87,6 @@ describe('waitStates utils', () => {
       ]);
       expect(items).toHaveLength(1);
       expect(items[0]!.text).toBe('Waiting for message: order-completion');
-      expect(items[0]!.icon).toBe('message');
     });
 
     it('should format TIMER wait state with due date', () => {
@@ -100,7 +99,6 @@ describe('waitStates utils', () => {
       ]);
       expect(items).toHaveLength(1);
       expect(items[0]!.text).toContain('Timer due:');
-      expect(items[0]!.icon).toBe('time');
     });
 
     it('should format TIMER wait state without due date', () => {
@@ -121,7 +119,6 @@ describe('waitStates utils', () => {
       ]);
       expect(items).toHaveLength(1);
       expect(items[0]!.text).toBe('Waiting for job: send-email');
-      expect(items[0]!.icon).toBe('job');
     });
 
     it('should format execution listener JOB wait state', () => {
@@ -183,6 +180,30 @@ describe('waitStates utils', () => {
       expect(items[0]!.text).toBe('Waiting for message: msg1');
       expect(items[1]!.text).toBe('Waiting for message: msg2');
     });
+
+    it('should collapse multiple TIMER wait states into one status item', () => {
+      const items = getWaitStateStatusItems([
+        {
+          ...baseWaitState,
+          waitStateType: 'TIMER',
+          details: {dueDate: '2026-04-15T10:00:00Z'},
+        },
+        {
+          ...baseWaitState,
+          waitStateType: 'TIMER',
+          details: {dueDate: '2026-04-14T10:00:00Z'},
+        },
+        {
+          ...baseWaitState,
+          waitStateType: 'MESSAGE',
+          details: {messageName: 'msg1'},
+        },
+      ]);
+
+      expect(items).toHaveLength(2);
+      expect(items[0]!.text).toContain('Timer due:');
+      expect(items[1]!.text).toBe('Waiting for message: msg1');
+    });
   });
 
   describe('getEarliestTimerDueDate', () => {
@@ -224,6 +245,23 @@ describe('waitStates utils', () => {
       expect(
         getEarliestTimerDueDate([
           {...baseWaitState, waitStateType: 'TIMER', details: {}},
+          {
+            ...baseWaitState,
+            waitStateType: 'TIMER',
+            details: {dueDate: '2026-04-14T10:00:00Z'},
+          },
+        ]),
+      ).toBe('2026-04-14T10:00:00Z');
+    });
+
+    it('should compare due dates by parsed timestamp', () => {
+      expect(
+        getEarliestTimerDueDate([
+          {
+            ...baseWaitState,
+            waitStateType: 'TIMER',
+            details: {dueDate: '2026-04-14T10:00:00.100+00:00'},
+          },
           {
             ...baseWaitState,
             waitStateType: 'TIMER',

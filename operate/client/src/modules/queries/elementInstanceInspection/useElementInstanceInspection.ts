@@ -37,8 +37,11 @@ const useElementInstanceInspection = (
 
   return useQuery<QueryElementInstanceInspectionResponseBody>({
     queryKey: queryKeys.elementInstanceInspection.search(payload),
-    queryFn: async () => {
-      const {response, error} = await searchElementInstanceInspection(payload);
+    queryFn: async ({signal}) => {
+      const {response, error} = await searchElementInstanceInspection(
+        payload,
+        signal,
+      );
       if (response !== null) {
         return response;
       }

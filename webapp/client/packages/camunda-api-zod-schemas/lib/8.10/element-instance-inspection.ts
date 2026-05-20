@@ -10,6 +10,7 @@ import {z} from 'zod';
 import {
 	API_VERSION,
 	advancedStringFilterSchema,
+	getEnumFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
@@ -38,7 +39,7 @@ const queryElementInstanceInspectionFilterSchema = z
 		processInstanceKey: advancedStringFilterSchema,
 		elementInstanceKey: advancedStringFilterSchema,
 		elementId: advancedStringFilterSchema,
-		waitStateType: advancedStringFilterSchema,
+		waitStateType: z.union([waitStateTypeSchema, getEnumFilterSchema(waitStateTypeSchema)]),
 	})
 	.partial();
 
