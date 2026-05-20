@@ -158,28 +158,15 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     for (final Map.Entry<String, Object> entry : variables.entrySet()) {
       final String name = entry.getKey();
       final Object value = entry.getValue();
-      if (clusterVariableExists(client, name, tenantId)) {
-        updateClusterVariable(client, name, value, tenantId);
-      } else {
+      try {
         createClusterVariable(client, name, value, tenantId);
+      } catch (final ProblemException e) {
+        if (e.code() == 409) {
+          updateClusterVariable(client, name, value, tenantId);
+        } else {
+          throw e;
+        }
       }
-    }
-  }
-
-  private boolean clusterVariableExists(
-      final CamundaClient client, final String name, final String tenantId) {
-    try {
-      if (tenantId != null) {
-        client.newTenantScopedClusterVariableGetRequest(tenantId).withName(name).execute();
-      } else {
-        client.newGloballyScopedClusterVariableGetRequest().withName(name).execute();
-      }
-      return true;
-    } catch (final ProblemException e) {
-      if (e.code() == 404) {
-        return false;
-      }
-      throw e;
     }
   }
 

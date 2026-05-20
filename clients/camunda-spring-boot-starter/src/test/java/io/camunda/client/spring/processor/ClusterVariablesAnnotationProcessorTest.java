@@ -28,9 +28,6 @@ import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandS
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
-import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
-import io.camunda.client.api.fetch.TenantScopedClusterVariableGetRequest;
-import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
@@ -54,11 +51,9 @@ public class ClusterVariablesAnnotationProcessorTest {
 
   @Mock private GloballyScopedClusterVariableCreationCommandStep1 globalCreateStep;
   @Mock private GloballyScopedClusterVariableUpdateCommandStep1 globalUpdateStep;
-  @Mock private GloballyScopedClusterVariableGetRequest globalGetStep;
 
   @Mock private TenantScopedClusterVariableCreationCommandStep1 tenantCreateStep;
   @Mock private TenantScopedClusterVariableUpdateCommandStep1 tenantUpdateStep;
-  @Mock private TenantScopedClusterVariableGetRequest tenantGetStep;
 
   @Mock private ResourcePatternResolver resourcePatternResolver;
 
@@ -308,7 +303,9 @@ public class ClusterVariablesAnnotationProcessorTest {
     final Resource resource = mockJsonResource("{\"myVar\": \"newValue\"}");
     when(resourcePatternResolver.getResources("classpath:variables.json"))
         .thenReturn(new Resource[] {resource});
-    mockGlobalGetFound();
+    when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
+    when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+    doThrow(new ProblemException(409, "Conflict", null)).when(globalCreateStep).execute();
     mockGlobalUpdateCommand();
 
     // when
@@ -317,7 +314,6 @@ public class ClusterVariablesAnnotationProcessorTest {
 
     // then
     verify(globalUpdateStep).update("myVar", "newValue");
-    verify(client, never()).newGloballyScopedClusterVariableCreateRequest();
   }
 
   @Test
@@ -326,7 +322,10 @@ public class ClusterVariablesAnnotationProcessorTest {
     final Resource resource = mockJsonResource("{\"tenantVar\": \"newValue\"}");
     when(resourcePatternResolver.getResources("classpath:tenant-variables.json"))
         .thenReturn(new Resource[] {resource});
-    mockTenantGetFound();
+    when(client.newTenantScopedClusterVariableCreateRequest(anyString()))
+        .thenReturn(tenantCreateStep);
+    when(tenantCreateStep.create(anyString(), any())).thenReturn(tenantCreateStep);
+    doThrow(new ProblemException(409, "Conflict", null)).when(tenantCreateStep).execute();
     mockTenantUpdateCommand();
 
     // when
@@ -335,25 +334,11 @@ public class ClusterVariablesAnnotationProcessorTest {
 
     // then
     verify(tenantUpdateStep).update("tenantVar", "newValue");
-    verify(client, never()).newTenantScopedClusterVariableCreateRequest(anyString());
   }
 
   private void mockGlobalCreateCommand() {
-    mockGlobalGetNotFound();
     when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
     when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
-  }
-
-  private void mockGlobalGetNotFound() {
-    when(client.newGloballyScopedClusterVariableGetRequest()).thenReturn(globalGetStep);
-    when(globalGetStep.withName(anyString())).thenReturn(globalGetStep);
-    doThrow(new ProblemException(404, "Not Found", null)).when(globalGetStep).execute();
-  }
-
-  private void mockGlobalGetFound() {
-    when(client.newGloballyScopedClusterVariableGetRequest()).thenReturn(globalGetStep);
-    when(globalGetStep.withName(anyString())).thenReturn(globalGetStep);
-    when(globalGetStep.execute()).thenReturn(mock(ClusterVariable.class));
   }
 
   private void mockGlobalUpdateCommand() {
@@ -362,22 +347,9 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   private void mockTenantCreateCommand() {
-    mockTenantGetNotFound();
     when(client.newTenantScopedClusterVariableCreateRequest(anyString()))
         .thenReturn(tenantCreateStep);
     when(tenantCreateStep.create(anyString(), any())).thenReturn(tenantCreateStep);
-  }
-
-  private void mockTenantGetNotFound() {
-    when(client.newTenantScopedClusterVariableGetRequest(anyString())).thenReturn(tenantGetStep);
-    when(tenantGetStep.withName(anyString())).thenReturn(tenantGetStep);
-    doThrow(new ProblemException(404, "Not Found", null)).when(tenantGetStep).execute();
-  }
-
-  private void mockTenantGetFound() {
-    when(client.newTenantScopedClusterVariableGetRequest(anyString())).thenReturn(tenantGetStep);
-    when(tenantGetStep.withName(anyString())).thenReturn(tenantGetStep);
-    when(tenantGetStep.execute()).thenReturn(mock(ClusterVariable.class));
   }
 
   private void mockTenantUpdateCommand() {
