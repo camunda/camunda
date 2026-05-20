@@ -9,14 +9,13 @@
 import {APIRequestContext, APIResponse, expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
 import {createCancellationBatch} from '@requestHelpers';
-import {defaultAssertionOptions} from 'utils/constants';
 import {validateResponse} from 'json-body-assertions';
 
 // A freshly created batch operation can take longer than the default 30s
 // to be visible to the cancel/suspend/resume commands on a loaded shared
 // cluster (404 → 204). Use a more generous budget for batch operation
 // lifecycle actions while the engine catches up.
-const batchOperationLifecycleOptions = {
+export const batchOperationLifecycleOptions = {
   intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
   timeout: 90_000,
 };
