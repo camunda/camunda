@@ -34,7 +34,7 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManager, Initializin
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final String prefix;
 
-  private boolean initialized = false;
+  private volatile boolean initialized = false;
 
   public ScriptBasedSchemaManager(
       final DataSource dataSource,
