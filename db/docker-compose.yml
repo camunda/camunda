@@ -56,7 +56,7 @@ services:
 
       # Name of the Docker Compose service
   oracle:
-    # Docker Hub image (feel free to change the tag "latest" to any other available one)
+    # Override the pinned tag via the IMAGE_VERSION env var (see Docker Hub for available tags).
     image: gvenzl/oracle-free:${IMAGE_VERSION:-23.26.1-slim-faststart}
     # Forward Oracle port to localhost
     ports:
@@ -75,7 +75,7 @@ services:
       start_period: 5s
 
   oracle-21:
-    # Docker Hub image (feel free to change the tag "latest" to any other available one)
+    # Override the pinned tag via the IMAGE_VERSION env var (see Docker Hub for available tags).
     image: gvenzl/oracle-xe:${IMAGE_VERSION:-21-slim-faststart}
     # Forward Oracle port to localhost
     ports:

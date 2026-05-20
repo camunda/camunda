@@ -136,6 +136,7 @@ set_output("ci-database-matrix", json.dumps(ci_db_matrix))
 # database-type. Oracle versions use non-numeric suffixes (21c, 26ai) that
 # cannot be derived mechanically from the version number alone.
 oracle_meta = {
+    # 23.x family is branded "Oracle 26ai" since RU 23.26 (Oct 2025).
     "23": {"name": "Oracle 26ai", "type": "oracle"},
     "21": {"name": "Oracle 21c",  "type": "oracle-21"},
 }
