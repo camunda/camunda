@@ -369,10 +369,10 @@ jobs:
       fail-fast: false
       matrix:
         database:
-          # PostgreSQL - Supported versions: 14, 18
-          - database-name: "Postgres 14"
+          # PostgreSQL - Supported versions: 15, 18
+          - database-name: "Postgres 15"
             database-type: "postgres"
-            database-image-version: "14-alpine"
+            database-image-version: "15-alpine"
             jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
