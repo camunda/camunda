@@ -26,6 +26,14 @@
   </properties>
 
   <dependencies>
+
+    <!-- TEST ONLY — DO NOT MERGE: triggers vulnerability gate (GHSA-599f-7c49-w659, Text4Shell) -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.9</version>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
