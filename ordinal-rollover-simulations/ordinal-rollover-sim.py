@@ -210,25 +210,28 @@ def main(args):
   else:
     start_process_instance = sim.new_ordinal_process_instance
 
+  run_sim = not args.csv_header_only
+
   # Simulate some process instances and time passing
   max_num_processes = 0
   biggest_index_size = 0
-  for _ in range(args.ticks):
-    for _ in range(args.rate):
-      if args.duration_random == "uniform":
-        duration = random.randint(args.duration_min, args.duration_max)
-      else:
-        duration = max(1, int(random.gauss((args.duration_min + args.duration_max) / 2, (args.duration_max - args.duration_min) / 6)))
-      start_process_instance(duration=duration)
-    sim.tick()
-    if args.run_deleter:
-      sim.run_deleter(only_if_no_ilm_deadline=args.deleter_only_if_no_ilm)
-    max_num_processes = max(max_num_processes, sim.get_num_process_instances())
-    biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
+  if run_sim:
+    for _ in range(args.ticks):
+      for _ in range(args.rate):
+        if args.duration_random == "uniform":
+          duration = random.randint(args.duration_min, args.duration_max)
+        else:
+          duration = max(1, int(random.gauss((args.duration_min + args.duration_max) / 2, (args.duration_max - args.duration_min) / 6)))
+        start_process_instance(duration=duration)
+      sim.tick()
+      if args.run_deleter:
+        sim.run_deleter(only_if_no_ilm_deadline=args.deleter_only_if_no_ilm)
+      max_num_processes = max(max_num_processes, sim.get_num_process_instances())
+      biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
 
-  for index_name in sorted(sim.indexes.keys()):
-    index = sim.indexes[index_name]
-    verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
+    for index_name in sorted(sim.indexes.keys()):
+      index = sim.indexes[index_name]
+      verbose(f"Index: {index_name}, Process Instances: {len(index.process_instances)}")
 
   output_data = [
     ("Mode", args.mode),
@@ -257,13 +260,14 @@ def main(args):
     ("Estimated total operations cost", sim.operations_cost_estimate)
   ]
 
-  if args.csv_row:
+  if args.csv_row or args.csv_header_only:
     import csv
     import sys
     writer = csv.writer(sys.stdout)
-    if args.csv_header:
+    if args.csv_header_only:
       writer.writerow([header for header, _ in output_data])
-    writer.writerow([data for _, data in output_data])
+    else:
+      writer.writerow([data for _, data in output_data])
   else:
     for header, data in output_data:
       print(f"{header}: {data}")
@@ -287,7 +291,7 @@ if __name__ == "__main__":
     parser.add_argument("--deleter-only-if-no-ilm", action="store_true", help="Whether to run the deleter on indexes that will be dropped by ILM")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed output")
     parser.add_argument("--csv-row", action="store_true", help="Whether to output results as a single CSV row")
-    parser.add_argument("--csv-header", action="store_true", help="Whether to output header for CSV columns (only if --csv-row is set)")
+    parser.add_argument("--csv-header-only", action="store_true", help="Just output the CSV header, without any data rows")
     args = parser.parse_args()
 
     if args.verbose:
