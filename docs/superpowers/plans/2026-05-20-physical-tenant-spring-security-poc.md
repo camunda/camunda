@@ -1959,10 +1959,10 @@ Restart `./pt-poc-idp.sh` so the runner re-imports the realm with the new client
 In `dist/src/main/resources/application-pt-poc.yaml`, add under `camunda.security.authentication.providers.oidc`:
 
 ```yaml
-        defaultIdpAlt:
-          client-id: camunda-pt-default-alt-client
-          client-secret: default-alt-secret
-          issuer-uri: http://localhost:8082/realms/tenanta
+defaultIdpAlt:
+  client-id: camunda-pt-default-alt-client
+  client-secret: default-alt-secret
+  issuer-uri: http://localhost:8082/realms/tenanta
 ```
 
 The default tenant chain in `PhysicalTenantSecurityConfiguration` (or `PerTenantOidcRegistry` once Task 8 has landed) must include this registration. Concrete pre-Task-8 patch:
