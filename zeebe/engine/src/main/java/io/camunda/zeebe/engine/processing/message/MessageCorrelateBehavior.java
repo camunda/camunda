@@ -206,10 +206,10 @@ public final class MessageCorrelateBehavior {
     correlatingSubscriptions.visitSubscriptions(
         subscription ->
             commandSender.correlateProcessMessageSubscription(
-                subscription.getProcessInstanceKey(),
-                subscription.getElementInstanceKey(),
-                subscription.getProcessDefinitionKey(),
-                subscription.getBpmnProcessId(),
+                subscription.processInstanceKey(),
+                subscription.elementInstanceKey(),
+                subscription.processDefinitionKey(),
+                subscription.bpmnProcessId(),
                 messageData.messageName(),
                 messageData.messageKey(),
                 messageData.variables(),
