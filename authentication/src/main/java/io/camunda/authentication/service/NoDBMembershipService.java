@@ -7,20 +7,18 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.auth.Memberships;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnSecondaryStorageDisabled
-public class NoDBMembershipService implements MembershipService {
+public class NoDBMembershipService implements MembershipPort {
 
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
@@ -34,28 +32,22 @@ public class NoDBMembershipService implements MembershipService {
   }
 
   @Override
-  public CamundaAuthentication resolveMemberships(
+  public Memberships resolveMemberships(
       final Map<String, Object> tokenClaims,
       final String principalId,
-      final PrincipalType principalType)
-      throws OAuth2AuthenticationException {
-    final Set<String> groups =
-        isGroupsClaimConfigured
-            ? new HashSet<>(oidcGroupsExtractor.extract(tokenClaims))
-            : Collections.emptySet();
+      final PrincipalType principalType) {
+    final List<String> extracted =
+        isGroupsClaimConfigured ? oidcGroupsExtractor.extract(tokenClaims) : List.of();
+    // Dedup and produce an immutable list: matches the previous Set-backed semantics and
+    // shields downstream from a mutable extractor result.
+    final List<String> groups =
+        extracted != null ? extracted.stream().distinct().toList() : List.of();
+    return new Memberships(groups, List.of(), List.of(), List.of());
+  }
 
-    return CamundaAuthentication.of(
-        a -> {
-          if (principalType.equals(PrincipalType.CLIENT)) {
-            a.clientId(principalId);
-          } else {
-            a.user(principalId);
-          }
-          return a.roleIds(Collections.emptyList())
-              .groupIds(groups.stream().toList())
-              .mappingRules(Collections.emptyList())
-              .tenants(Collections.emptyList())
-              .claims(tokenClaims);
-        });
+  @Override
+  public Memberships resolveMembershipsForUser(final String username) {
+    // No secondary storage available — username/password flow has no DB-backed lookups.
+    return Memberships.empty();
   }
 }

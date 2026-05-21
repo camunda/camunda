@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.config.BasicAuthenticationNoDbConfiguration;
-import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.converter.TokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -119,7 +119,8 @@ public class NoSecondaryStorageAuthenticationIT {
     public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final SecurityConfiguration securityConfiguration,
         final NoDBMembershipService noDBMembershipService) {
-      return new TokenClaimsConverter(securityConfiguration, noDBMembershipService);
+      return new TokenClaimsConverter(
+          securityConfiguration.getAuthentication().getOidc(), noDBMembershipService);
     }
   }
 }
