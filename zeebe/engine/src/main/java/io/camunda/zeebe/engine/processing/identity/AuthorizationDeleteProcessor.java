@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION;
 
+import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -21,14 +23,21 @@ import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 
 public class AuthorizationDeleteProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+
+  public static final String AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE =
+      "Expected to delete authorization with key %s, but it belongs to default role '%s' "
+          + "whose authorizations cannot be deleted.";
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
@@ -63,6 +72,7 @@ public class AuthorizationDeleteProcessor
             authorizationRecord ->
                 permissionsBehavior.authorizationExists(
                     authorizationRecord, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION))
+        .flatMap(AuthorizationDeleteProcessor::rejectIfProtectedRoleOwner)
         .map(PersistedAuthorization::getAuthorizationKey)
         .ifRightOrLeft(
             authorizationKey -> writeEventAndDistribute(command, authorizationKey),
@@ -93,6 +103,21 @@ public class AuthorizationDeleteProcessor
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private static Either<Rejection, PersistedAuthorization> rejectIfProtectedRoleOwner(
+      final PersistedAuthorization authorization) {
+    if (authorization.getOwnerType() == AuthorizationOwnerType.ROLE) {
+      final String roleId = authorization.getOwnerId();
+      if (roleId != null && DefaultRole.ids().contains(roleId)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_STATE,
+                AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE.formatted(
+                    authorization.getAuthorizationKey(), authorization.getOwnerId())));
+      }
+    }
+    return Either.right(authorization);
   }
 
   private void writeEventAndDistribute(

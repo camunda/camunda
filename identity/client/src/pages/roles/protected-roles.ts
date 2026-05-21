@@ -6,19 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export declare global {
-  interface ClientConfig {
-    isOidc?: string;
-    isCamundaGroupsEnabled?: string;
-    isTenantsApiEnabled?: string;
-    organizationId?: string;
-    clusterId?: string;
-    idPattern?: string;
-    resourcePermissions?: Record<string, string[]>;
-    protectedRoleIds?: string[];
-  }
+import { getClientConfigObject } from "src/configuration/clientConfig";
 
-  interface Window {
-    clientConfig?: ClientConfig;
-  }
-}
+const PROTECTED_ROLE_IDS = new Set(
+  getClientConfigObject<string[]>("protectedRoleIds", []),
+);
+
+export const isProtectedRole = (roleId: string): boolean =>
+  PROTECTED_ROLE_IDS.has(roleId);

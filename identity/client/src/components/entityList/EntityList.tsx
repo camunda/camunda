@@ -78,7 +78,7 @@ type TextMenuItem<D> = {
   label: string;
   onClick: (entity: D) => void;
   isDangerous?: boolean;
-  disabled?: boolean;
+  disabled?: boolean | ((entity: D) => boolean);
   hidden?: boolean;
 };
 
@@ -391,17 +391,33 @@ const EntityList = <D extends EntityData>({
                               {menuItems?.length > MAX_ICON_ACTIONS ? (
                                 <OverflowMenu flipped>
                                   {getVisibleMenuItems(menuItems).map(
-                                    ({ label, onClick, isDangerous }) => (
-                                      <OverflowMenuItem
-                                        key={`${label}-${rowId}`}
-                                        itemText={<p>{label}</p>}
-                                        isDelete={isDangerous}
-                                        onClick={handleMenuItemClick(
-                                          rowId,
-                                          onClick,
-                                        )}
-                                      />
-                                    ),
+                                    ({
+                                      label,
+                                      onClick,
+                                      isDangerous,
+                                      disabled: disabledProp,
+                                    }) => {
+                                      const entity = index[rowId];
+                                      const disabled =
+                                        typeof disabledProp === "function"
+                                          ? entity !== undefined
+                                            ? disabledProp(entity)
+                                            : false
+                                          : disabledProp;
+
+                                      return (
+                                        <OverflowMenuItem
+                                          key={`${label}-${rowId}`}
+                                          itemText={<p>{label}</p>}
+                                          isDelete={isDangerous}
+                                          disabled={disabled}
+                                          onClick={handleMenuItemClick(
+                                            rowId,
+                                            onClick,
+                                          )}
+                                        />
+                                      );
+                                    },
                                   )}
                                 </OverflowMenu>
                               ) : (
@@ -413,8 +429,15 @@ const EntityList = <D extends EntityData>({
                                         onClick,
                                         icon,
                                         isDangerous,
-                                        disabled,
+                                        disabled: disabledProp,
                                       } = menuItem as MenuItem<D>;
+                                      const entity = index[rowId];
+                                      const disabled =
+                                        typeof disabledProp === "function"
+                                          ? entity !== undefined
+                                            ? disabledProp(entity)
+                                            : false
+                                          : disabledProp;
 
                                       const kind: ButtonKind = isDangerous
                                         ? "danger--ghost"

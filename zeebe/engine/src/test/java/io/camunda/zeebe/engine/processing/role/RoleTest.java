@@ -127,6 +127,44 @@ public class RoleTest {
   }
 
   @Test
+  public void shouldRejectUpdateOfProtectedRole() {
+    // given
+    final var protectedRoleId = "admin";
+    engine.role().newRole(protectedRoleId).withName("Admin").create();
+
+    // when
+    final var updateRejection =
+        engine.role().updateRole(protectedRoleId).withName("renamed").expectRejection().update();
+
+    // then
+    assertThat(updateRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to update role with ID '"
+                + protectedRoleId
+                + "', which is a default role and cannot be modified.");
+  }
+
+  @Test
+  public void shouldRejectDeleteOfProtectedRole() {
+    // given
+    final var protectedRoleId = "task-worker";
+    engine.role().newRole(protectedRoleId).withName("Task worker").create();
+
+    // when
+    final var deleteRejection =
+        engine.role().deleteRole(protectedRoleId).expectRejection().delete();
+
+    // then
+    assertThat(deleteRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to delete role with ID '"
+                + protectedRoleId
+                + "', which is a default role and cannot be deleted.");
+  }
+
+  @Test
   public void shouldAddUserToRole() {
     final var username =
         engine

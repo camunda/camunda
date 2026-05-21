@@ -8,6 +8,7 @@
 package io.camunda.webapps.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -16,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -183,6 +185,25 @@ public class AdminClientConfigControllerTest {
     securityConfiguration.setSaas(saasConfiguration);
 
     return securityConfiguration;
+  }
+
+  @Test
+  void shouldExposeProtectedRoleIdsFromSharedConstant() throws Exception {
+    // given
+    final var controller =
+        new AdminClientConfigController(
+            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    final var config = extractConfigFromResponse(response);
+
+    // then
+    assertThat(config.get("protectedRoleIds"))
+        .asInstanceOf(list(String.class))
+        .containsExactlyInAnyOrderElementsOf(DefaultRole.ids());
   }
 
   @Test
