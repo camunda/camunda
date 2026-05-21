@@ -115,7 +115,9 @@ public final class TopologyManagerImpl extends Actor
   public void event(final ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
 
-    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
+    final BrokerInfo brokerInfo =
+        BrokerInfo.fromProperties(
+            eventSource.properties(), localPartitionGroupInfo.getPartitionGroup());
 
     if (brokerInfo != null && !memberIdOf(brokerInfo).equals(memberIdOf(localPartitionGroupInfo))) {
       actor.run(

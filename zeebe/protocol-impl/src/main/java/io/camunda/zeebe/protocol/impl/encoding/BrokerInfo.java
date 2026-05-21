@@ -38,10 +38,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -502,6 +504,39 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     } else {
       return null;
     }
+  }
+
+  /**
+   * Reads the {@link BrokerInfo} for the given {@code partitionGroup} from member properties. The
+   * default group uses the legacy key {@value #BROKER_INFO_PROPERTY_NAME}; other groups use a
+   * namespaced key of the form {@code "brokerInfo:<group>"}. Returns {@code null} if no entry
+   * exists for that group.
+   */
+  public static @Nullable BrokerInfo fromProperties(
+      final Properties properties, final String partitionGroup) {
+    final String key = brokerInfoPropertyName(partitionGroup);
+    final String property = properties.getProperty(key);
+    return property != null ? readFromString(property) : null;
+  }
+
+  /**
+   * Reads all {@link BrokerInfo} entries from member properties. Collects all keys equal to {@value
+   * #BROKER_INFO_PROPERTY_NAME} (legacy/default group) or starting with {@value
+   * #BROKER_INFO_PROPERTY_NAME}{@code ":"} (namespaced non-default groups). Used by the topology
+   * manager to aggregate per-group topology from a single member.
+   */
+  public static List<BrokerInfo> allFromProperties(final Properties properties) {
+    final List<BrokerInfo> result = new ArrayList<>();
+    for (final String key : properties.stringPropertyNames()) {
+      if (key.equals(BROKER_INFO_PROPERTY_NAME)
+          || key.startsWith(BROKER_INFO_PROPERTY_NAME + ":")) {
+        final String property = properties.getProperty(key);
+        if (property != null) {
+          result.add(readFromString(property));
+        }
+      }
+    }
+    return result;
   }
 
   private static BrokerInfo readFromString(final String property) {

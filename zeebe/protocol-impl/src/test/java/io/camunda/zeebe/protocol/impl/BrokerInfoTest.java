@@ -28,6 +28,85 @@ import org.junit.jupiter.api.Test;
 final class BrokerInfoTest {
 
   @Test
+  void shouldReadBrokerInfoForSpecificPartitionGroup() {
+    // given
+    final BrokerInfo defaultBroker =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1);
+
+    final BrokerInfo tenant1Broker =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1)
+            .setPartitionGroup("tenant1");
+    tenant1Broker.setLeaderForPartition(1, 5L);
+
+    final Properties props = new Properties();
+    defaultBroker.writeIntoProperties(props);
+    tenant1Broker.writeIntoProperties(props);
+
+    // when / then
+    final BrokerInfo readDefault =
+        BrokerInfo.fromProperties(props, BrokerInfo.DEFAULT_PARTITION_GROUP);
+    assertThat(readDefault).isNotNull();
+    assertThat(readDefault.getPartitionGroup()).isEqualTo(BrokerInfo.DEFAULT_PARTITION_GROUP);
+
+    final BrokerInfo readTenant1 = BrokerInfo.fromProperties(props, "tenant1");
+    assertThat(readTenant1).isNotNull();
+    assertThat(readTenant1.getPartitionGroup()).isEqualTo("tenant1");
+    assertThat(readTenant1.getPartitionRoles()).containsKey(1);
+
+    assertThat(BrokerInfo.fromProperties(props, "unknown")).isNull();
+  }
+
+  @Test
+  void shouldReadAllBrokerInfosFromProperties() {
+    // given
+    final BrokerInfo defaultBroker =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1);
+    final BrokerInfo tenant1Broker =
+        new BrokerInfo()
+            .setBrokerId(1, null)
+            .setPartitionsCount(1)
+            .setClusterSize(1)
+            .setReplicationFactor(1)
+            .setPartitionGroup("tenant1");
+
+    final Properties props = new Properties();
+    defaultBroker.writeIntoProperties(props);
+    tenant1Broker.writeIntoProperties(props);
+    props.setProperty("otherProperty", "value");
+
+    // when
+    final var all = BrokerInfo.allFromProperties(props);
+
+    // then
+    assertThat(all).hasSize(2);
+    assertThat(all)
+        .extracting(BrokerInfo::getPartitionGroup)
+        .containsExactlyInAnyOrder(BrokerInfo.DEFAULT_PARTITION_GROUP, "tenant1");
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenNoBrokerInfoInProperties() {
+    // given
+    final Properties props = new Properties();
+    props.setProperty("otherProperty", "value");
+
+    // when / then
+    assertThat(BrokerInfo.allFromProperties(props)).isEmpty();
+  }
+
+  @Test
   void shouldReturnDefaultPropertyNameForDefaultPartitionGroup() {
     assertThat(BrokerInfo.brokerInfoPropertyName(BrokerInfo.DEFAULT_PARTITION_GROUP))
         .isEqualTo("brokerInfo");
