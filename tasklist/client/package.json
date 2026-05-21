@@ -17,7 +17,7 @@
     "@uidotdev/usehooks": "2.4.1",
     "bpmn-js": "18.16.1",
     "classnames": "2.5.1",
-    "date-fns": "4.1.0",
+    "date-fns": "4.2.1",
     "event-source-polyfill": "1.0.31",
     "final-form": "5.0.1",
     "final-form-arrays": "4.0.1",
