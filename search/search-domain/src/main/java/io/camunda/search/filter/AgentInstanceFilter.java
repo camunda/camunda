@@ -9,7 +9,6 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
-import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
@@ -131,8 +130,7 @@ public record AgentInstanceFilter(
       return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder processDefinitionVersionOperations(
-        final List<Operation<Integer>> operations) {
+    public Builder processDefinitionVersionOperations(final List<Operation<Integer>> operations) {
       processDefinitionVersionOperations =
           addValuesToList(processDefinitionVersionOperations, operations);
       return this;
