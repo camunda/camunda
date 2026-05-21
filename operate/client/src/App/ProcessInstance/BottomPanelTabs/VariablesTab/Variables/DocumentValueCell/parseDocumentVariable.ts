@@ -7,6 +7,7 @@
  */
 
 import {z} from 'zod';
+import {safeJsonParse} from 'modules/utils';
 import {untruncateJson} from 'modules/utils/editor/untruncateJSON';
 
 type DocumentInfo = {
@@ -45,14 +46,6 @@ function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
     fileName: ref.metadata?.fileName ?? ref.documentId,
     size: ref.metadata?.size,
   };
-}
-
-function safeJsonParse(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return undefined;
-  }
 }
 
 function parseDocumentVariable(
