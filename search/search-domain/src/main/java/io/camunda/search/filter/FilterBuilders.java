@@ -14,6 +14,15 @@ public final class FilterBuilders {
 
   private FilterBuilders() {}
 
+  public static AgentInstanceFilter.Builder agentInstance() {
+    return new AgentInstanceFilter.Builder();
+  }
+
+  public static AgentInstanceFilter agentInstance(
+      final Function<AgentInstanceFilter.Builder, ObjectBuilder<AgentInstanceFilter>> fn) {
+    return fn.apply(agentInstance()).build();
+  }
+
   public static UsageMetricsFilter.Builder usageMetrics() {
     return new UsageMetricsFilter.Builder();
   }
