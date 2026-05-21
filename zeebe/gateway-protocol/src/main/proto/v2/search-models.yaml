@@ -49,11 +49,18 @@ components:
           format: int32
           default: 100
           minimum: 1
+        spuriousSharedProperty:
+          description: |
+            Correctly annotated new property on a schema shared between
+            endpoints from different versions; should NOT trigger CI gate.
+          type: string
       x-properties-added-in-version:
         - propertyName: from
           addedInVersion: "8.6"
         - propertyName: limit
           addedInVersion: "8.6"
+        - propertyName: spuriousSharedProperty
+          addedInVersion: "8.10"
 
     CursorForwardPagination:
       type: object
