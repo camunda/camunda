@@ -94,6 +94,27 @@ For each tenant, open the `whoami` endpoint in a fresh browser tab (or different
 
 Two simultaneous tab logins coexist — neither tenant's session cookie is sent to the other tenant's URLs (cookie `Path` scoping). To inspect cookies in DevTools: each tab should see only its own `camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`.
 
+### SPA-style page (webapp session → API call from the browser)
+
+This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` after logging in (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically). It exposes three buttons:
+
+1. **`GET /physical-tenant/<id>/whoami`** — same chain, uses the session cookie. Expected: **200** with the principal.
+2. **`GET /v2/physical-tenants/<id>/whoami` (no Authorization header)** — the SPA call. Expected with the current setup: **401**, `WWW-Authenticate: Bearer`.
+3. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
+
+The 401 is intentional in the current setup and surfaces spec **OQ-1**. Two reinforcing reasons:
+
+- **Cookie `Path` scope.** `camunda-session-<id>` is at `Path=/physical-tenant/<id>` — the browser does not send it to `/v2/physical-tenants/<id>/*`. (You can verify in DevTools' Network tab: the API request has no `Cookie` header.)
+- **API chain is bearer-only.** `SessionCreationPolicy.NEVER` + `oauth2ResourceServer.jwt()`. Even if the cookie reached the server, the chain wouldn't process it.
+
+For real webapps this needs a resolution; see [Open question OQ-1](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md). Candidate directions (none implemented yet — needs design call):
+
+1. **Widen the cookie's `Path`** to a common prefix that covers both the webapp and the API URL space (e.g., mount the API under `/physical-tenant/<id>/v2/...` and keep `Path=/physical-tenant/<id>`).
+2. **Add session-aware auth to the API chain** (accept the session cookie as an alternative to Bearer). Means the API chain needs the per-tenant `SessionRepositoryFilter` too.
+3. **Token-broker endpoint** under the webapp chain (`/physical-tenant/<id>/api/token`) that exchanges the session for an OIDC access token; the SPA puts that token in `Authorization: Bearer` on API calls.
+
+The current PoC implements **none** of these — surfacing the gap is the point of the SPA-style page.
+
 ### API (bearer token, cross-tenant isolation)
 
 The API chains are stateless: each request needs an `Authorization: Bearer <token>` header. Acquire the token from the tenant's Keycloak realm via the password grant (Direct Access Grants are enabled on both PoC realms), then call the API.
