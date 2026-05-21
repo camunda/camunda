@@ -131,11 +131,11 @@ public class PartitioningTest {
       properties = {
         "camunda.cluster.partitioning.scheme=REGION_AWARE",
         "camunda.cluster.partitioning.zone-aware.regions.0.name=us-east1",
-        "camunda.cluster.partitioning.zone-aware.regions.0.number-of-brokers=2",
+        "camunda.cluster.partitioning.zone-aware.regions.0.number-of-brokers=4",
         "camunda.cluster.partitioning.zone-aware.regions.0.number-of-replicas=2",
         "camunda.cluster.partitioning.zone-aware.regions.0.priority=1000",
         "camunda.cluster.partitioning.zone-aware.regions.1.name=us-west1",
-        "camunda.cluster.partitioning.zone-aware.regions.1.number-of-brokers=1",
+        "camunda.cluster.partitioning.zone-aware.regions.1.number-of-brokers=2",
         "camunda.cluster.partitioning.zone-aware.regions.1.number-of-replicas=1",
         "camunda.cluster.partitioning.zone-aware.regions.1.priority=500",
       })
@@ -155,7 +155,7 @@ public class PartitioningTest {
           .hasSize(2)
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactlyInAnyOrder(
-              new RegionCfg("us-east1", 2, 2, 1000), new RegionCfg("us-west1", 1, 1, 500));
+              new RegionCfg("us-east1", 4, 2, 1000), new RegionCfg("us-west1", 2, 1, 500));
     }
   }
 

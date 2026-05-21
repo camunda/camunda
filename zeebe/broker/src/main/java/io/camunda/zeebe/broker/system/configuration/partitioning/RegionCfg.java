@@ -22,4 +22,4 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
  * elections first. If all brokers in the highest-priority region are unavailable, leadership fails
  * over to the next region automatically via Raft's priority-decrement mechanism.
  */
-public record RegionCfg(String name, int numberOfReplicas, int numberOfBrokers, int priority) {}
+public record RegionCfg(String name, int numberOfBrokers, int numberOfReplicas, int priority) {}

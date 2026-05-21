@@ -15,6 +15,6 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 public record Region(String name, int numberOfBrokers, int numberOfReplicas, int priority) {
 
   public RegionCfg toRegionCfg() {
-    return new RegionCfg(name, numberOfReplicas, numberOfBrokers, priority);
+    return new RegionCfg(name, numberOfBrokers, numberOfReplicas, priority);
   }
 }

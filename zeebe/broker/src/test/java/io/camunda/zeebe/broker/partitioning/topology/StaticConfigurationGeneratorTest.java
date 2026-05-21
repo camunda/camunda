@@ -143,7 +143,7 @@ fixed:
     // given — 2 zones: us-east (2 brokers, 2 replicas), us-west (1 broker, 1 replica)
     final var zoneAwareCfg =
         new ZoneAwareCfg(
-            List.of(new RegionCfg("us-east", 2, 2, 1000), new RegionCfg("us-west", 1, 1, 500)));
+            List.of(new RegionCfg("us-east", 4, 2, 1000), new RegionCfg("us-west", 2, 1, 500)));
 
     final var partitioningCfg = new PartitioningCfg();
     partitioningCfg.setScheme(Scheme.REGION_AWARE);
