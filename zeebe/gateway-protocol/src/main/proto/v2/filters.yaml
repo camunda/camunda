@@ -37,6 +37,11 @@ components:
           type: array
           items:
             type: string
+        $spuriousShared:
+          description: |
+            Correctly annotated new property on BasicStringFilter (shared schema);
+            should NOT trigger CI gate.
+          type: string
       x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
@@ -48,6 +53,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: "$notIn"
           addedInVersion: "8.8"
+        - propertyName: "$spuriousShared"
+          addedInVersion: "8.10"
 
     AdvancedStringFilter:
       title: Advanced filter
