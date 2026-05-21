@@ -26,3 +26,8 @@ env-up:
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 		-Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
 		-Dspring-boot.run.profiles=tmp-webapp,broker,dev,dev-data,consolidated-auth
+
+.PHONY: env-down
+env-down:
+	docker compose -f docker-compose.yml down -v \
+	&& mvn clean
