@@ -2,12 +2,14 @@ camunda:
   security:
     authentication:
       method: oidc
-      # The default tenant binds to the cluster-default authentication.oidc.*
-      # slot (registration id "oidc"). Tenant A binds to a NAMED OIDC provider
-      # under authentication.providers.oidc.tenanta.* (registration id
-      # "tenanta"). Exercising both resolution paths from the start prevents
-      # one of them from rotting before Task 8 generalises via
-      # providers.assigned.
+      # Root-level OIDC slots remain populated as host-side scaffolding for the OC OIDC
+      # machinery in OidcOverrideBeansConfiguration, which (under pt-security) is still
+      # active and constructs an ambient ClientRegistrationRepository from these entries.
+      # The PT chains themselves do NOT consume these root slots — they bind their own
+      # per-tenant SecurityConfiguration under camunda.physical-tenants.<id>.security.*
+      # below and resolve providers via providers.assigned. The duplication is a
+      # walking-skeleton artefact and goes away once OidcOverrideBeansConfiguration's
+      # clientRegistrationRepository bean is also gated by !pt-security.
       oidc:
         client-id: camunda-pt-default-client
         client-secret: default-secret
@@ -18,6 +20,32 @@ camunda:
             client-id: camunda-pt-tenanta-client
             client-secret: tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
+  # Per-tenant overlays. Each tenant declares its OWN providers.assigned list and the
+  # OIDC slots those entries resolve to (default slot vs. named slots under
+  # providers.oidc.<name>). The PoC deliberately exercises BOTH resolution paths:
+  # the default tenant uses the default slot (registration id "oidc"); tenant A uses
+  # a named slot (registration id "tenanta"). See PerTenantOidcRegistry for the
+  # resolution rule.
+  physical-tenants:
+    default:
+      security:
+        authentication:
+          oidc:                # default slot — registration id "oidc"
+            client-id: camunda-pt-default-client
+            client-secret: default-secret
+            issuer-uri: http://localhost:8081/realms/default
+          providers:
+            assigned: [oidc]
+    tenanta:
+      security:
+        authentication:
+          providers:
+            assigned: [tenanta]
+            oidc:
+              tenanta:         # named slot — registration id "tenanta"
+                client-id: camunda-pt-tenanta-client
+                client-secret: tenanta-secret
+                issuer-uri: http://localhost:8082/realms/tenanta
 
 server:
   port: 8080
