@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.AbstractMeter;
 import io.micrometer.core.instrument.Gauge;
@@ -17,6 +19,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A stateful gauge is a custom meter type that wraps a {@link Gauge}, while keeping track of an
@@ -143,8 +146,8 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
   public static final class Builder {
     private final String name;
     private Tags tags = Tags.empty();
-    private String description;
-    private String baseUnit;
+    private @Nullable String description;
+    private @Nullable String baseUnit;
     private GaugeState state = GaugeState.from(new AtomicLong());
 
     private Builder(final String name) {
@@ -213,7 +216,7 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
      * @return The gauge builder with expiration configured.
      */
     public Builder valueExpires() {
-      return valueExpires(DistributionStatisticConfig.DEFAULT.getExpiry(), 0.0);
+      return valueExpires(requireNonNull(DistributionStatisticConfig.DEFAULT.getExpiry()), 0.0);
     }
 
     /**

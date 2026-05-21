@@ -25,13 +25,11 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
   private final Counter missCount;
   private final String cacheName;
   private final String namespace;
-  private final MeterRegistry meterRegistry;
 
   public CaffeineCacheStatsCounter(
       final String namespace, final String cacheName, final MeterRegistry meterRegistry) {
     this.cacheName = cacheName;
     this.namespace = namespace;
-    this.meterRegistry = meterRegistry;
 
     hitCount =
         Counter.builder(meterName("result"))
@@ -91,8 +89,7 @@ public class CaffeineCacheStatsCounter implements StatsCounter {
 
   @Override
   public CacheStats snapshot() {
-    // not implemented, as we don't need it
-    return null;
+    return CacheStats.empty();
   }
 
   private String meterName(final String name) {

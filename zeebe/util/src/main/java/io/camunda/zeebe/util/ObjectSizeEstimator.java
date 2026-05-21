@@ -11,6 +11,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.NullOutputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility class for estimating the memory footprint of objects using Kryo serialization. This
@@ -33,7 +34,7 @@ public class ObjectSizeEstimator {
    * @param object the object to estimate
    * @return estimated size in bytes
    */
-  public static long estimateSize(final Object object) {
+  public static long estimateSize(final @Nullable Object object) {
     if (object == null) {
       return 0;
     }

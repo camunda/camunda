@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,7 +177,8 @@ public final class ProcessModelReader {
         .flatMap(Query::findSingleResult);
   }
 
-  private ZeebeFormDefinition getNoneStartFormDefinition(final Collection<StartEvent> startEvents) {
+  private @Nullable ZeebeFormDefinition getNoneStartFormDefinition(
+      final Collection<StartEvent> startEvents) {
     return startEvents.stream()
         .filter(s -> isProcessStartEvent(s) && isNoneStartEvent(s) && hasFormDefinition(s))
         .findFirst()
@@ -184,7 +186,8 @@ public final class ProcessModelReader {
         .orElse(null);
   }
 
-  private ZeebeProperties getNoneStartZeebeProperties(final Collection<StartEvent> startEvents) {
+  private @Nullable ZeebeProperties getNoneStartZeebeProperties(
+      final Collection<StartEvent> startEvents) {
     return startEvents.stream()
         .filter(s -> isProcessStartEvent(s) && isNoneStartEvent(s) && hasZeebeProperties(s))
         .findFirst()
@@ -192,11 +195,11 @@ public final class ProcessModelReader {
         .orElse(null);
   }
 
-  private ZeebeFormDefinition getFormDefinition(final StartEvent startEvent) {
+  private @Nullable ZeebeFormDefinition getFormDefinition(final StartEvent startEvent) {
     return queryFormDefinition(startEvent).orElse(null);
   }
 
-  private ZeebeProperties getZeebeProperties(final StartEvent startEvent) {
+  private @Nullable ZeebeProperties getZeebeProperties(final StartEvent startEvent) {
     return getExtensionElementQuery(startEvent, ZeebeProperties.class)
         .flatMap(Query::findSingleResult)
         .orElse(null);

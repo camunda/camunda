@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.AbstractMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A wrapper around {@link Caffeine} for when you want to cache metrics with high cardinality tags
@@ -95,7 +96,7 @@ public final class BoundedMeterCache<T extends Meter> {
   }
 
   private static <T extends Meter> void removeEvictedMeter(
-      final MeterRegistry registry, final T value) {
+      final MeterRegistry registry, final @Nullable T value) {
     if (value != null) {
       registry.remove(value);
     }

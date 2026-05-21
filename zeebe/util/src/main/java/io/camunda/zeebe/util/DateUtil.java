@@ -13,6 +13,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,11 @@ public final class DateUtil {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC);
   }
 
-  public static OffsetDateTime toOffsetDateTime(final String timestamp) {
+  public static @Nullable OffsetDateTime toOffsetDateTime(final String timestamp) {
     return toOffsetDateTime(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME);
   }
 
-  public static OffsetDateTime toOffsetDateTime(
+  public static @Nullable OffsetDateTime toOffsetDateTime(
       final String timestamp, final DateTimeFormatter dateTimeFormatter) {
     try {
       final ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, dateTimeFormatter);
@@ -46,7 +47,7 @@ public final class DateUtil {
     return null;
   }
 
-  public static OffsetDateTime fuzzyToOffsetDateTime(final Object object) {
+  public static @Nullable OffsetDateTime fuzzyToOffsetDateTime(final @Nullable Object object) {
     return switch (object) {
       case null -> null;
       case final OffsetDateTime offsetDateTime -> offsetDateTime;

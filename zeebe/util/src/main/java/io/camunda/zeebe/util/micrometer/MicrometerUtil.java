@@ -22,6 +22,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
+import org.jspecify.annotations.Nullable;
 
 /** Collection of disparate convenience methods for Micrometer. */
 public final class MicrometerUtil {
@@ -125,7 +126,7 @@ public final class MicrometerUtil {
    *
    * <p>Only use if you're sure you won't use this registry again.
    */
-  public static void close(final MeterRegistry registry) {
+  public static void close(final @Nullable MeterRegistry registry) {
     if (registry == null) {
       return;
     }

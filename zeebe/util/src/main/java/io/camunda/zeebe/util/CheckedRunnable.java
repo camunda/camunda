@@ -9,6 +9,7 @@ package io.camunda.zeebe.util;
 
 import java.util.concurrent.Callable;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 
 /** A simple extension of runnable which allows for exceptions to be thrown. */
 @FunctionalInterface
@@ -27,7 +28,7 @@ public interface CheckedRunnable {
     };
   }
 
-  static Callable<Void> toCallable(final CheckedRunnable runnable) {
+  static Callable<@Nullable Void> toCallable(final CheckedRunnable runnable) {
     return () -> {
       runnable.run();
       return null;

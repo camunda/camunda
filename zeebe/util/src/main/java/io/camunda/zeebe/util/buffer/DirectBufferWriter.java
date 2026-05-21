@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.util.buffer;
 
+import static java.util.Objects.requireNonNull;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class DirectBufferWriter implements BufferWriter {
-  protected DirectBuffer buffer;
+  protected @Nullable DirectBuffer buffer;
   protected int offset;
   protected int length;
 
@@ -22,7 +25,7 @@ public final class DirectBufferWriter implements BufferWriter {
 
   @Override
   public int write(final MutableDirectBuffer writeBuffer, final int writeOffset) {
-    writeBuffer.putBytes(writeOffset, buffer, offset, length);
+    writeBuffer.putBytes(writeOffset, requireNonNull(buffer, "No buffer wrapped"), offset, length);
     return length;
   }
 

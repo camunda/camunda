@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
+import static io.camunda.zeebe.util.StringUtil.sanitizeList;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
@@ -118,7 +118,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   }
 
   public void setInitialContactPoints(final List<String> initialContactPoints) {
-    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
+    this.initialContactPoints = sanitizeList(initialContactPoints);
   }
 
   public Integer getNodeId() {

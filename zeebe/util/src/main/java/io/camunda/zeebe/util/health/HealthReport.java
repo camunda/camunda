@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A health report of a {@link #getComponentName() component}. If the status is not healthy, the
@@ -28,7 +29,7 @@ import java.util.Optional;
 public record HealthReport(
     String componentName,
     HealthStatus status,
-    HealthIssue issue,
+    @Nullable HealthIssue issue,
     ImmutableMap<String, HealthReport> children) {
   public static final Comparator<HealthReport> COMPARATOR =
       (a, b) -> HealthStatus.COMPARATOR.compare(a.status, b.status);
@@ -42,7 +43,7 @@ public record HealthReport(
   private HealthReport(
       final HealthMonitorable component,
       final HealthStatus status,
-      final HealthIssue issue,
+      final @Nullable HealthIssue issue,
       final Map<String, HealthReport> children) {
     this(component.componentName(), status, issue, ImmutableMap.copyOf(children));
   }
@@ -75,7 +76,7 @@ public record HealthReport(
   }
 
   public static HealthReport fromStatus(
-      final HealthStatus status, final HealthMonitorable component) {
+      final @Nullable HealthStatus status, final HealthMonitorable component) {
     return switch (status) {
       case HEALTHY -> HealthReport.healthy(component);
       case UNHEALTHY -> HealthReport.unhealthy(component);
@@ -108,7 +109,7 @@ public record HealthReport(
     return status;
   }
 
-  public HealthIssue getIssue() {
+  public @Nullable HealthIssue getIssue() {
     return issue;
   }
 

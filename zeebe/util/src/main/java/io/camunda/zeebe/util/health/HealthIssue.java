@@ -8,12 +8,17 @@
 package io.camunda.zeebe.util.health;
 
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A health issue contains information about the cause for unhealthy/dead components. It can either
  * be a string message, a {@link Throwable} or another {@link HealthReport}.
  */
-public record HealthIssue(String message, Throwable throwable, HealthReport cause, Instant since) {
+public record HealthIssue(
+    @Nullable String message,
+    @Nullable Throwable throwable,
+    @Nullable HealthReport cause,
+    Instant since) {
 
   public static HealthIssue of(final String message, final Instant since) {
     return new HealthIssue(message, null, null, since);
