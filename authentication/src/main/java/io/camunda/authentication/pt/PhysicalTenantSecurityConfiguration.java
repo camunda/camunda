@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.pt;
 
+import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.security.configuration.SecurityConfiguration;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,11 +19,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.session.MapSession;
 import org.springframework.session.MapSessionRepository;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
@@ -35,143 +31,87 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
 @Profile("pt-security")
 public class PhysicalTenantSecurityConfiguration {
 
-  // Walking-skeleton chains. Two near-duplicate @Bean methods, one per tenant:
-  //   - tenant A binds the NAMED OIDC provider "tenanta" under
-  //     camunda.security.authentication.providers.oidc.tenanta.*
-  //   - default tenant binds the cluster-default authentication.oidc.* slot
-  //     (registration id "oidc")
-  // Duplication is intentional and motivates the slice + chain-factory extraction
-  // in Task 6.
+  // Two near-symmetric @Bean methods, one per tenant. Each reduces to:
+  //   1) sliceFor(...) — builds the TenantSecuritySlice (ClientRegistration, session filter,
+  //      cookie resolver)
+  //   2) factory.buildWebappChain(http, slice) — applies the chain shape (security matcher,
+  //      filter ordering, oauth2Login with the prefix-aware resolver workaround)
   //
-  // OAuth2 paths are prefixed with each tenant's URL space so chains have dedicated
-  // authorize/callback URLs (per-chain isolation goal). Spring Security 7's
-  // DefaultOAuth2AuthorizationRequestResolver wires an internal PathPatternRequestMatcher
-  // from a string baseUri; in this version it silently fails to extract a registration id
-  // from a multi-segment prefix path, falling through to the AuthorizationFilter and
-  // causing a redirect loop on /oauth2/authorization/{regId}. We bypass it by providing a
-  // custom resolver that does prefix matching via String.startsWith and delegates the
-  // OAuth2AuthorizationRequest construction to the default resolver via the (request,
-  // registrationId) overload.
+  // tenant A binds the NAMED OIDC provider "tenanta" under
+  //   camunda.security.authentication.providers.oidc.tenanta.*
+  // default tenant binds the cluster-default authentication.oidc.* slot (registration id "oidc").
+  private static final String TENANTA_TENANT_ID = "tenanta";
   private static final String TENANTA_REGISTRATION_ID = "tenanta";
-  private static final String TENANTA_PREFIX = "/physical-tenant/tenanta";
-  private static final String TENANTA_AUTH_PREFIX = TENANTA_PREFIX + "/oauth2/authorization/";
-  private static final String TENANTA_CALLBACK_PREFIX = TENANTA_PREFIX + "/login/oauth2/code/*";
 
+  private static final String DEFAULT_TENANT_ID = "default";
   private static final String DEFAULT_REGISTRATION_ID = "oidc";
-  private static final String DEFAULT_PREFIX = "/physical-tenant/default";
-  private static final String DEFAULT_AUTH_PREFIX = DEFAULT_PREFIX + "/oauth2/authorization/";
-  private static final String DEFAULT_CALLBACK_PREFIX = DEFAULT_PREFIX + "/login/oauth2/code/*";
+
+  private final PerTenantSecurityChainFactory chainFactory = new PerTenantSecurityChainFactory();
 
   @Bean
   public SecurityFilterChain ptTenantaWebappChain(
       final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-
     final var providerConfig =
         security.getAuthentication().getProviders().getOidc().get(TENANTA_REGISTRATION_ID);
-
-    // Spring Security's ClientRegistrations.fromIssuerLocation seeds the builder from
-    // the IdP discovery document but does NOT populate default scopes. Without an
-    // explicit .scope(...) the OAuth2 authorization request is sent with no scope
-    // parameter; Keycloak then issues a token that lacks `openid`/`profile`/`email`,
-    // and the post-callback userinfo lookup returns 403. Explicit scopes are required.
-    final ClientRegistration registration =
-        ClientRegistrations.fromIssuerLocation(providerConfig.getIssuerUri())
-            .registrationId(TENANTA_REGISTRATION_ID)
-            .clientId(providerConfig.getClientId())
-            .clientSecret(providerConfig.getClientSecret())
-            .scope("openid", "profile", "email")
-            .redirectUri("{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}")
-            .build();
-
-    final ClientRegistrationRepository repo =
-        new InMemoryClientRegistrationRepository(registration);
-
-    final OAuth2AuthorizationRequestResolver resolver =
-        prefixAwareResolver(repo, TENANTA_AUTH_PREFIX);
-    final SessionRepositoryFilter<?> sessionFilter =
-        perChainSessionFilter("camunda-session-tenanta", TENANTA_PREFIX);
-
-    return http.securityMatcher(TENANTA_PREFIX + "/**")
-        .addFilterBefore(sessionFilter, SecurityContextHolderFilter.class)
-        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
-        .oauth2Login(
-            l ->
-                l.clientRegistrationRepository(repo)
-                    .authorizationEndpoint(
-                        // baseUri drives entry-point link generation (getLoginLinks);
-                        // authorizationRequestResolver replaces the URL→registrationId
-                        // matching that Spring Security 7's PathPatternRequestMatcher
-                        // mishandles for multi-segment prefixes. Both are needed.
-                        ae ->
-                            ae.baseUri(TENANTA_PREFIX + "/oauth2/authorization")
-                                .authorizationRequestResolver(resolver))
-                    .redirectionEndpoint(re -> re.baseUri(TENANTA_CALLBACK_PREFIX)))
-        .build();
+    return chainFactory.buildWebappChain(
+        http,
+        sliceFor(
+            TENANTA_TENANT_ID,
+            TENANTA_REGISTRATION_ID,
+            providerConfig.getIssuerUri(),
+            providerConfig.getClientId(),
+            providerConfig.getClientSecret()));
   }
 
   @Bean
   public SecurityFilterChain ptDefaultWebappChain(
       final HttpSecurity http, final SecurityConfiguration security) throws Exception {
-
     final var providerConfig = security.getAuthentication().getOidc();
+    return chainFactory.buildWebappChain(
+        http,
+        sliceFor(
+            DEFAULT_TENANT_ID,
+            DEFAULT_REGISTRATION_ID,
+            providerConfig.getIssuerUri(),
+            providerConfig.getClientId(),
+            providerConfig.getClientSecret()));
+  }
+
+  /**
+   * Builds the {@link TenantSecuritySlice} for one prefixed tenant: resolves the IdP metadata via
+   * OIDC discovery, builds the {@link ClientRegistration} with explicit scopes (Keycloak refuses to
+   * issue an OIDC token without {@code openid}; {@code ClientRegistrations.fromIssuerLocation} does
+   * NOT seed default scopes), and constructs the per-chain session filter scoped to the tenant's
+   * URL space.
+   */
+  private static TenantSecuritySlice sliceFor(
+      final String tenantId,
+      final String registrationId,
+      final String issuerUri,
+      final String clientId,
+      final String clientSecret) {
+    final String prefix = "/physical-tenant/" + tenantId;
 
     final ClientRegistration registration =
-        ClientRegistrations.fromIssuerLocation(providerConfig.getIssuerUri())
-            .registrationId(DEFAULT_REGISTRATION_ID)
-            .clientId(providerConfig.getClientId())
-            .clientSecret(providerConfig.getClientSecret())
+        ClientRegistrations.fromIssuerLocation(issuerUri)
+            .registrationId(registrationId)
+            .clientId(clientId)
+            .clientSecret(clientSecret)
             .scope("openid", "profile", "email")
-            .redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")
+            .redirectUri("{baseUrl}" + prefix + "/login/oauth2/code/{registrationId}")
             .build();
 
     final ClientRegistrationRepository repo =
         new InMemoryClientRegistrationRepository(registration);
 
-    final OAuth2AuthorizationRequestResolver resolver =
-        prefixAwareResolver(repo, DEFAULT_AUTH_PREFIX);
-    final SessionRepositoryFilter<?> sessionFilter =
-        perChainSessionFilter("camunda-session-default", DEFAULT_PREFIX);
+    final var cookieAndFilter = perChainSessionFilter("camunda-session-" + tenantId, prefix);
 
-    return http.securityMatcher(DEFAULT_PREFIX + "/**")
-        .addFilterBefore(sessionFilter, SecurityContextHolderFilter.class)
-        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
-        .oauth2Login(
-            l ->
-                l.clientRegistrationRepository(repo)
-                    .authorizationEndpoint(
-                        ae ->
-                            ae.baseUri(DEFAULT_PREFIX + "/oauth2/authorization")
-                                .authorizationRequestResolver(resolver))
-                    .redirectionEndpoint(re -> re.baseUri(DEFAULT_CALLBACK_PREFIX)))
-        .build();
-  }
-
-  /**
-   * Manual prefix-matching resolver. Bypasses Spring Security 7's {@link
-   * DefaultOAuth2AuthorizationRequestResolver} string-baseUri matcher which does not reliably match
-   * the multi-segment {@code /physical-tenant/<id>/oauth2/authorization} prefix.
-   */
-  private static OAuth2AuthorizationRequestResolver prefixAwareResolver(
-      final ClientRegistrationRepository repo, final String authPrefix) {
-    final DefaultOAuth2AuthorizationRequestResolver delegate =
-        new DefaultOAuth2AuthorizationRequestResolver(repo, "/oauth2/authorization");
-    return new OAuth2AuthorizationRequestResolver() {
-      @Override
-      public OAuth2AuthorizationRequest resolve(final HttpServletRequest request) {
-        final String uri = request.getRequestURI();
-        if (!uri.startsWith(authPrefix)) {
-          return null;
-        }
-        final String registrationId = uri.substring(authPrefix.length());
-        return delegate.resolve(request, registrationId);
-      }
-
-      @Override
-      public OAuth2AuthorizationRequest resolve(
-          final HttpServletRequest request, final String registrationId) {
-        return delegate.resolve(request, registrationId);
-      }
-    };
+    return new TenantSecuritySlice(
+        tenantId,
+        AccessPath.PREFIXED,
+        repo,
+        cookieAndFilter.sessionFilter(),
+        cookieAndFilter.idResolver());
   }
 
   /**
@@ -185,7 +125,7 @@ public class PhysicalTenantSecurityConfiguration {
    * for the walking skeleton, in-memory survives one process lifetime and is enough to verify the
    * cookie isolation.
    */
-  private static SessionRepositoryFilter<?> perChainSessionFilter(
+  private static SessionFilterAndResolver perChainSessionFilter(
       final String cookieName, final String cookiePath) {
     final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
     serializer.setCookieName(cookieName);
@@ -201,6 +141,10 @@ public class PhysicalTenantSecurityConfiguration {
     final SessionRepositoryFilter<MapSession> sessionFilter =
         new SessionRepositoryFilter<>(new MapSessionRepository(new ConcurrentHashMap<>()));
     sessionFilter.setHttpSessionIdResolver(sessionIdResolver);
-    return sessionFilter;
+    return new SessionFilterAndResolver(sessionFilter, sessionIdResolver);
   }
+
+  /** Local pair so the slice carries both the filter and the cookie id-resolver. */
+  private record SessionFilterAndResolver(
+      SessionRepositoryFilter<?> sessionFilter, CookieHttpSessionIdResolver idResolver) {}
 }
