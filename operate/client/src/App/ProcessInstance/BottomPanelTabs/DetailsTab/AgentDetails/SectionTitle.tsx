@@ -11,7 +11,7 @@ import styled from 'styled-components';
 const TitleWithIcon = styled.span`
   display: inline-flex;
   align-items: center;
-  font-weight: 600;
+  font-weight: var(--cds-heading-compact-01-font-weight);
   gap: var(--cds-spacing-03);
   & > svg {
     color: var(--cds-icon-primary);

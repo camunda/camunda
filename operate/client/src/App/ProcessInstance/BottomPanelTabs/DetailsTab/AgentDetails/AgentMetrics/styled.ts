@@ -23,7 +23,7 @@ const MetricCardTitle = styled.span`
   font-size: var(--cds-label-01-font-size);
   line-height: var(--cds-label-01-line-height);
   letter-spacing: var(--cds-label-01-letter-spacing);
-  font-weight: 600;
+  font-weight: var(--cds-heading-compact-01-font-weight);
   text-transform: uppercase;
   color: var(--cds-text-secondary);
 `;

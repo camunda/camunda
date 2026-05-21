@@ -27,7 +27,7 @@ const Accordion = styled(CarbonAccordion)`
     border-block-start: none;
   }
   .cds--accordion__content {
-    padding-inline-end: 0.2rem;
+    padding-inline-end: var(--cds-spacing-02);
   }
 `;
 
