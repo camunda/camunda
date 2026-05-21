@@ -9,6 +9,7 @@
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {getClientConfig} from '#/modules/config/getClientConfig';
 import {ComponentNotAvailableError} from '#/modules/errors/errors';
+import {Forbidden} from '#/pages/forbidden';
 
 export const Route = createFileRoute('/_auth/operate')({
 	beforeLoad: () => {
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/_auth/operate')({
 	},
 	errorComponent: ({error}) => {
 		if (error instanceof ComponentNotAvailableError) {
-			return <p>This component is not available.</p>;
+			return <Forbidden />;
 		}
 		throw error;
 	},
