@@ -51,6 +51,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/login/**",
           "/logout",
           "/admin/**",
+          "/app",
           "/operate/**",
           "/tasklist/**",
           "/webapp/**",

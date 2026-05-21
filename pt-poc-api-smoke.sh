@@ -132,25 +132,30 @@ echo
 matrix "Webapp-relative API Path" "$WEBAPP_URL_TEMPLATE"
 matrix "API Path"    "$APICLIENT_URL_TEMPLATE"
 
-# Default tenant on the unprefixed access path — /v2/whoami is now served by CSL's standard
-# OidcApi chain (Stage 2: the PoC dropped its unprefixed-default chains; CSL's standard chains
-# took over). Same expected status codes as before. Single tenant target (default), so this is a
-# 3-cell block rather than a full cross-tenant matrix.
-echo "=== Default unprefixed URL (served by CSL OidcApi) ==="
-call "default -> default" "$DEF" "/v2/whoami" 200
-call "tenanta -> default" "$TA"  "/v2/whoami" 403
-call "no token -> default" ""    "/v2/whoami" 401
+# /v2/whoami is served by CSL's OidcApi chain (Stage 2). CSL's audience validator on each
+# registration enforces the registration's declared audiences list. Since tenanta's root-level
+# provider declares audiences=[pt-tenanta-aud] and default declares audiences=[pt-default-aud],
+# any valid token issued by either IdP whose `aud` matches its own provider's declared list is
+# accepted at /v2/whoami — including tenanta tokens. /v2/whoami is the cluster's API; it is NOT
+# tenant-scoped, so per-tenant authorization is the PT chains' job (see the prefixed cells above).
+# Cross-tenant prevention via audience only applies to PT-prefixed URLs.
+echo "=== /v2/whoami (cluster API via CSL OidcApi) ==="
+call "default token" "$DEF" "/v2/whoami" 200
+call "tenanta token" "$TA"  "/v2/whoami" 200
+call "no token"      ""    "/v2/whoami" 401
 echo
 
-# Session-based cross-tenant. Default tenant has two assigned IdPs, so its login page is CSL's
-# multi-IdP chooser; the smoke helper would have to scrape the picker. To keep the helper simple,
-# enter the OAuth flow directly at /oauth2/authorization/oidc to skip the picker.
-echo "=== Session cross-tenant (logged in via default OidcWebapp; call tenanta's API) ==="
+# Session-based cross-tenant. CSL's OidcApi at /v2/whoami is bearer-only — it does not read
+# the session cookie — so a session-only request lands 401 even with a valid default-tenant
+# session. The PT-prefixed URLs are still session-or-bearer via the PT chains; tenanta's chain
+# reads its own cookie name only, so default's session cookie does not authenticate there
+# either (401 anonymous).
+echo "=== Session cross-tenant (default session; PT-prefixed targets) ==="
 DEF_JAR=/tmp/pt-poc-default-jar.txt
 oauth_login "$OC/oauth2/authorization/oidc" alice alice "$DEF_JAR"
-call_with_cookies "default session -> /v2/whoami"               "$DEF_JAR" "/v2/whoami"                          200
-call_with_cookies "default session -> tenanta webapp-aligned"   "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
-call_with_cookies "default session -> tenanta API-client URL"   "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
+call_with_cookies "default session -> /v2/whoami (CSL bearer-only)"  "$DEF_JAR" "/v2/whoami"                          401
+call_with_cookies "default session -> tenanta webapp-aligned"        "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
+call_with_cookies "default session -> tenanta API-client URL"        "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
 rm -f "$DEF_JAR"
 echo
 

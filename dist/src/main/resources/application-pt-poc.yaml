@@ -24,6 +24,12 @@ camunda:
             client-id: camunda-pt-tenanta-client
             client-secret: tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
+            # Match the audience emitted by the same client at Keycloak so CSL's standard
+            # JwtDecoder installs an audience validator on this registration too. Without it,
+            # a tenanta-issued token reaching /v2/whoami (CSL's OidcApi) would pass with no
+            # audience check at all — the tenanta token DOES have aud=pt-tenanta-aud, but
+            # the validator only fires if the registration declares an audiences list.
+            audiences: [pt-tenanta-aud]
   # Per-tenant overlays. Each tenant declares its OWN providers.assigned list and the
   # OIDC slots those entries resolve to (default slot vs. named slots under
   # providers.oidc.<name>). The PoC deliberately exercises BOTH resolution paths:
