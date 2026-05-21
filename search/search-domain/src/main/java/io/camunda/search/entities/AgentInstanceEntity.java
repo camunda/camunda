@@ -85,6 +85,7 @@ public record AgentInstanceEntity(
     THINKING,
     TOOL_CALLING,
     IDLE,
-    COMPLETED
+    COMPLETED,
+    UNKNOWN
   }
 }
