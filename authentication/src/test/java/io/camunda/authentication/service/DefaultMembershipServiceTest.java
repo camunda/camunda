@@ -1,0 +1,91 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
+import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices;
+import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class DefaultMembershipServiceTest {
+
+  @Mock private MappingRuleServices mappingRuleServices;
+  @Mock private TenantServices tenantServices;
+  @Mock private RoleServices roleServices;
+  @Mock private GroupServices groupServices;
+
+  private DefaultMembershipService service;
+
+  @BeforeEach
+  void setUp() {
+    service =
+        new DefaultMembershipService(
+            mappingRuleServices,
+            tenantServices,
+            roleServices,
+            groupServices,
+            new SecurityConfiguration());
+  }
+
+  @Test
+  void resolveMembershipsAggregatesGroupsRolesTenantsAndMappingRules() {
+    when(mappingRuleServices.getMatchingMappingRules(any(), any()))
+        .thenReturn(
+            Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new TenantEntity(1L, "t1", "tenant", null)));
+
+    final var memberships =
+        service.resolveMemberships(Map.of("sub", "alice"), "alice", PrincipalType.USER);
+
+    assertThat(memberships.groupIds()).containsExactly("g1");
+    assertThat(memberships.roleIds()).containsExactly("r1");
+    assertThat(memberships.tenantIds()).containsExactly("t1");
+    assertThat(memberships.mappingRuleIds()).containsExactly("mr1");
+  }
+
+  @Test
+  void resolveMembershipsForUserLooksUpGroupsRolesTenantsAndOmitsMappingRules() {
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new TenantEntity(1L, "t1", "tenant", null)));
+
+    final var memberships = service.resolveMembershipsForUser("alice");
+
+    assertThat(memberships.groupIds()).containsExactly("g1");
+    assertThat(memberships.roleIds()).containsExactly("r1");
+    assertThat(memberships.tenantIds()).containsExactly("t1");
+    assertThat(memberships.mappingRuleIds()).isEmpty();
+  }
+}

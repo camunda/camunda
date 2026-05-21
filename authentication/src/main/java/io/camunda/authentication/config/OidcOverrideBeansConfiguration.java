@@ -9,21 +9,24 @@ package io.camunda.authentication.config;
 
 import static java.util.stream.Collectors.toMap;
 
-import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
-import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
-import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
+import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
+import io.camunda.security.spring.converter.TokenClaimsConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
+import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
+import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -110,16 +113,22 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public TokenClaimsConverter tokenClaimsConverter(
-      final SecurityConfiguration securityConfiguration,
-      final MembershipService membershipService) {
-    return new TokenClaimsConverter(securityConfiguration, membershipService);
+      final SecurityConfiguration securityConfiguration, final MembershipPort membershipPort) {
+    return new TokenClaimsConverter(
+        securityConfiguration.getAuthentication().getOidc(), membershipPort);
   }
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
       final TokenClaimsConverter tokenClaimsConverter,
-      final OidcClaimsProvider oidcClaimsProvider) {
-    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
+      final OidcClaimsProvider hostClaimsProvider) {
+    // Bridge host's local OidcClaimsProvider (io.camunda.security.oidc.*) to CSL's
+    // (io.camunda.security.api.context.*). Interfaces have identical shape; this small
+    // adapter avoids touching the broker/gateway codepaths that still depend on the host
+    // interface — those are a clean follow-up.
+    final io.camunda.security.api.context.OidcClaimsProvider cslClaimsProvider =
+        hostClaimsProvider::claimsFor;
+    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, cslClaimsProvider);
   }
 
   /**
@@ -254,8 +263,20 @@ public class OidcOverrideBeansConfiguration {
   public TokenValidatorFactory tokenValidatorFactory(
       final SecurityConfiguration securityConfiguration,
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+    // SaaS validators stay in the host. The CSL factory composes the base validator chain
+    // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
+    final var extraValidators = new java.util.ArrayList<
+        org.springframework.security.oauth2.core.OAuth2TokenValidator<
+            org.springframework.security.oauth2.jwt.Jwt>>();
+    if (securityConfiguration.getSaas().isConfigured()) {
+      extraValidators.add(
+          new OrganizationValidator(securityConfiguration.getSaas().getOrganizationId()));
+      extraValidators.add(new ClusterValidator(securityConfiguration.getSaas().getClusterId()));
+    }
     return new TokenValidatorFactory(
-        securityConfiguration, oidcAuthenticationConfigurationRepository);
+        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations(),
+        securityConfiguration.getAuthentication().getOidc().getClockSkew(),
+        extraValidators);
   }
 
   @Bean

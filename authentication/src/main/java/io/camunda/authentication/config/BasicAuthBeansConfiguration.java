@@ -7,17 +7,15 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
-import io.camunda.service.GroupServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
+import io.camunda.security.spring.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
@@ -67,10 +65,7 @@ public class BasicAuthBeansConfiguration {
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-      final RoleServices roleServices,
-      final GroupServices groupServices,
-      final TenantServices tenantServices) {
-    return new UsernamePasswordAuthenticationTokenConverter(
-        roleServices, groupServices, tenantServices);
+      final MembershipPort membershipPort) {
+    return new UsernamePasswordAuthenticationTokenConverter(membershipPort);
   }
 }

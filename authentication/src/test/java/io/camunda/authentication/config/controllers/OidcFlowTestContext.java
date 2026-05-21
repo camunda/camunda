@@ -8,8 +8,8 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -94,8 +94,7 @@ public class OidcFlowTestContext {
   }
 
   @Bean
-  public MembershipService createMembershipService(
-      final SecurityConfiguration securityConfiguration) {
+  public MembershipPort createMembershipPort(final SecurityConfiguration securityConfiguration) {
     return new NoDBMembershipService(securityConfiguration);
   }
 }

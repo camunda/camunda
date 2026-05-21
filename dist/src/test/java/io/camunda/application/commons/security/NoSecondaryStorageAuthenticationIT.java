@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.config.BasicAuthenticationNoDbConfiguration;
-import io.camunda.authentication.converter.TokenClaimsConverter;
+import io.camunda.security.spring.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
