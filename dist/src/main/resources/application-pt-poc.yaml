@@ -2,18 +2,17 @@ camunda:
   security:
     authentication:
       method: oidc
-      # Root-level OIDC slot is consumed by CSL's standard OidcWebapp + OidcApi chains
-      # (Stage 2: dropped the PoC's unprefixed-default chains; CSL now serves the default
-      # tenant via these standard chains under the unprefixed access path). The PT chains
-      # bind their own per-tenant SecurityConfiguration under
-      # camunda.physical-tenants.<id>.security.* below and resolve providers via
-      # providers.assigned — they do NOT consume this root slot.
+      # All OIDC providers are declared at root, with their audiences alongside the rest of their
+      # settings. Tokens are routed to the right provider by the host's
+      # IssuerAndAudienceAwareOidcDecoderFactory: when two registrations share an issuer URI (as
+      # `tenanta` and `default-via-tenanta` do — both on the `tenanta` Keycloak realm), the
+      # `aud` claim picks the registration whose declared audiences intersect it. This is what
+      # makes per-provider audiences viable across registrations that share an issuer.
       #
-      # audiences must mirror what camunda.physical-tenants.default.security.authentication.oidc
-      # below declares so bearer tokens minted by camunda-pt-default-client validate the same
-      # `aud` claim against both code paths (CSL's standard JwtDecoder validates against the
-      # root list; PT API chains validate against the per-tenant list).
-      oidc:
+      # Per-PT config (under `camunda.physical-tenants.<id>.security.authentication.*`) keeps just
+      # `providers.assigned` plus optional per-field overrides (clientId/clientSecret/audiences/
+      # scope/...) — PT-side non-null fields beat root.
+      oidc:                # default slot — registration id "oidc"
         client-id: camunda-pt-default-client
         client-secret: default-secret
         issuer-uri: http://localhost:8081/realms/default
@@ -24,57 +23,27 @@ camunda:
             client-id: camunda-pt-tenanta-client
             client-secret: tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
-            # NOTE: no `audiences` here on purpose. The shared JwtDecoder (CSL's
-            # IssuerAwareTokenValidator) matches by `iss` alone and caches the validator
-            # per issuer. Two registrations share iss=http://localhost:8082/realms/tenanta
-            # (this one, plus default's `default-via-tenanta` named provider) — if we set
-            # audiences here, that validator fires for ALL tokens with that issuer, and
-            # rejects dvta tokens (aud=pt-default-via-tenanta-aud) even though they belong
-            # to the default tenant. Audience-based PT isolation is enforced inside the
-            # per-tenant API chain's AuthorizationManager (PerTenantSecurityChainFactory),
-            # which knows the right tenant context per request.
-  # Per-tenant overlays. Each tenant declares its OWN providers.assigned list and the
-  # OIDC slots those entries resolve to (default slot vs. named slots under
-  # providers.oidc.<name>). The PoC deliberately exercises BOTH resolution paths:
-  # the default tenant uses the default slot (registration id "oidc"); tenant A uses
-  # a named slot (registration id "tenanta"). See PerTenantOidcRegistry for the
-  # resolution rule.
+            audiences: [pt-tenanta-aud]
+          default-via-tenanta:
+            client-id: camunda-pt-default-via-tenanta-client
+            client-secret: default-via-tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
+            audiences: [pt-default-via-tenanta-aud]
   physical-tenants:
     default:
       security:
         authentication:
-          # Per-provider audiences come straight from each OIDC provider's `audiences` field
-          # (existing on CSL's OidcConfiguration). The per-tenant allowlist is computed as the
-          # union of audiences over the providers in `assigned` — no separate per-tenant key.
-          oidc:                # default slot — registration id "oidc"
-            client-id: camunda-pt-default-client
-            client-secret: default-secret
-            issuer-uri: http://localhost:8081/realms/default
-            audiences: [pt-default-aud]
           providers:
-            # Multi-IdP for the default tenant (spec D7 multi-IdP picker; Task 17). The
-            # first entry resolves to the default slot above; the second to a NAMED slot
-            # under providers.oidc.default-via-tenanta below. The IdP behind the second
-            # entry is the SAME Keycloak realm tenant A uses — same issuer, different
-            # client at the IdP (which emits a tenant-specific aud claim).
+            # The default PT uses the cluster-default oidc slot AND a named provider that also
+            # exists in root config. PT-side overrides (audiences, client-id, client-secret) can
+            # be applied per-provider under `providers.oidc.<id>.<field>` here to diverge from
+            # root if needed; absent overrides inherit from root.
             assigned: [oidc, default-via-tenanta]
-            oidc:
-              default-via-tenanta:
-                client-id: camunda-pt-default-via-tenanta-client
-                client-secret: default-via-tenanta-secret
-                issuer-uri: http://localhost:8082/realms/tenanta
-                audiences: [pt-default-via-tenanta-aud]
     tenanta:
       security:
         authentication:
           providers:
             assigned: [tenanta]
-            oidc:
-              tenanta:         # named slot — registration id "tenanta"
-                client-id: camunda-pt-tenanta-client
-                client-secret: tenanta-secret
-                issuer-uri: http://localhost:8082/realms/tenanta
-                audiences: [pt-tenanta-aud]
 
 server:
   port: 8080

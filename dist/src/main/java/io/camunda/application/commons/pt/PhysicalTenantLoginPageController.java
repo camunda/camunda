@@ -20,21 +20,30 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * Per-PT multi-IdP picker page. Spring Security's {@code DefaultLoginPageGeneratingFilter}
- * generates this page automatically for chains whose {@code loginPage} is the default {@code
- * /login} — but on PT chains the loginPage URL is PT-prefixed (set by the entry point in {@code
- * PerTenantSecurityChainFactory#webappAuthenticationEntryPoint}), so the filter drops out and we
- * render the picker ourselves.
+ * Multi-IdP picker page. Two entry points:
+ *
+ * <ul>
+ *   <li>{@code /physical-tenant/{tenantId}/login} — picker for a specific PT, listing only that
+ *       tenant's assigned providers, with links that target the PT-prefixed authorization URL.
+ *   <li>{@code /login} — unprefixed picker served on CSL's standard {@code OidcWebapp} chain. Lists
+ *       every registration in CSL's standard {@link ClientRegistrationRepository} (i.e. every
+ *       root-declared provider). Spring Security's {@code DefaultLoginPageGeneratingFilter} is not
+ *       registered on the OidcWebapp chain in our setup, so we render the picker ourselves; {@code
+ *       /login} is permitAll'd on that chain by CSL.
+ * </ul>
  */
 @Controller
 @Profile("pt-security")
 public class PhysicalTenantLoginPageController {
 
   private final Map<String, ClientRegistrationRepository> repositories;
+  private final ClientRegistrationRepository clientRegistrationRepository;
 
   public PhysicalTenantLoginPageController(
-      final Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories) {
+      final Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories,
+      final ClientRegistrationRepository clientRegistrationRepository) {
     this.repositories = ptClientRegistrationRepositories;
+    this.clientRegistrationRepository = clientRegistrationRepository;
   }
 
   @GetMapping(value = "/physical-tenant/{tenantId}/login", produces = MediaType.TEXT_HTML_VALUE)
@@ -46,6 +55,27 @@ public class PhysicalTenantLoginPageController {
           + escape(tenantId)
           + "</h1></body></html>";
     }
+    final List<ClientRegistration> registrations = extractRegistrations(repo);
+    final String urlPrefix = "/physical-tenant/" + tenantId;
+    return renderPicker("Sign in to physical tenant: " + tenantId, urlPrefix, registrations);
+  }
+
+  /**
+   * Unprefixed picker on CSL's standard webapp chain. Lists every registration in the standard
+   * repository — with three root-declared providers in this PoC, three options appear. Links point
+   * at the unprefixed {@code /oauth2/authorization/<regId>} since that's the chain serving this
+   * URL.
+   */
+  @GetMapping(value = "/login", produces = MediaType.TEXT_HTML_VALUE)
+  @ResponseBody
+  public String standardPicker() {
+    final List<ClientRegistration> registrations =
+        extractRegistrations(clientRegistrationRepository);
+    return renderPicker("Sign in", "", registrations);
+  }
+
+  private static List<ClientRegistration> extractRegistrations(
+      final ClientRegistrationRepository repo) {
     final List<ClientRegistration> registrations = new ArrayList<>();
     if (repo instanceof final Iterable<?> iterable) {
       for (final Object obj : iterable) {
@@ -54,13 +84,14 @@ public class PhysicalTenantLoginPageController {
         }
       }
     }
+    return registrations;
+  }
+
+  private static String renderPicker(
+      final String heading, final String urlPrefix, final List<ClientRegistration> registrations) {
     final var links = new StringBuilder();
     for (final ClientRegistration registration : registrations) {
-      final String href =
-          "/physical-tenant/"
-              + tenantId
-              + "/oauth2/authorization/"
-              + registration.getRegistrationId();
+      final String href = urlPrefix + "/oauth2/authorization/" + registration.getRegistrationId();
       final String label =
           registration.getClientName() != null
               ? registration.getClientName()
@@ -74,18 +105,18 @@ public class PhysicalTenantLoginPageController {
     }
     return ("""
             <!doctype html>
-            <html><head><meta charset="utf-8"><title>Login — %s</title>
+            <html><head><meta charset="utf-8"><title>%s</title>
             <style>body{font-family:sans-serif;margin:2em;max-width:40em}
             li{margin:.5em 0}
             a{display:inline-block;padding:.5em 1em;background:#eef;
               color:#225;text-decoration:none;border-radius:4px}
             a:hover{background:#dde}</style></head><body>
-            <h1>Sign in to physical tenant: %s</h1>
+            <h1>%s</h1>
             <p>Choose an identity provider:</p>
             <ul>%s</ul>
             </body></html>
             """)
-        .formatted(escape(tenantId), escape(tenantId), links.toString());
+        .formatted(escape(heading), escape(heading), links.toString());
   }
 
   private static String escape(final String value) {

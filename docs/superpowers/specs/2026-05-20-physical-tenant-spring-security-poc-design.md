@@ -129,7 +129,12 @@ shape from [D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-c
 exercised in Task 17, where the default tenant's secondary IdP backs onto the tenanta realm
 shared with tenant A), `iss` alone collides.
 
-To separate tenants on a shared IdP we add an **audience allowlist** that derives directly from each provider's existing `audiences` field on CSL's `OidcConfiguration` (the standard Spring/CSL property; no PoC-specific config key). Each client at the IdP is configured with a hardcoded audience mapper that emits a tenant-specific `aud` claim on its access tokens. Concretely in the PoC:
+To separate tenants on a shared IdP we use each provider's existing `audiences` field on CSL's `OidcConfiguration` (the standard Spring/CSL property; no PoC-specific config key) for two coupled responsibilities:
+
+1. **Per-registration token routing.** CSL's stock `IssuerAwareTokenValidator` matches purely by `iss` and serves the FIRST registration sharing that issuer — so when two registrations share a realm, the first one's audience validator fires for both tokens and rejects the other's `aud`. The host overrides CSL's `OidcAccessTokenDecoderFactory` with `IssuerAndAudienceAwareOidcDecoderFactory` (and its delegate `IssuerAndAudienceAwareTokenValidator`): when more than one registration matches `iss`, it picks the registration whose declared `audiences` intersect the token's `aud` claim, then delegates to that registration's per-validator (which, in turn, enforces the audience as part of its standard validation). A token whose `iss` matches but whose `aud` matches no registration is rejected. The cache key for validators is the registration id (not the issuer URI as CSL uses), so same-iss registrations get distinct cached validators.
+2. **Per-tenant audience allowlist.** The bearer branch on the per-tenant API chain ANDs an audience check on top of the issuer check — the union of `audiences` over the tenant's `assigned` providers (`ptExpectedAudiencesPerTenant`). An empty union skips the check (back-compat).
+
+Each client at the IdP is configured with a hardcoded audience mapper that emits a tenant-specific `aud` claim on its access tokens. Concretely in the PoC:
 
 |              Client at Keycloak              |    Realm    | Issued to (PT) |          `aud` claim          |
 |----------------------------------------------|-------------|----------------|-------------------------------|
@@ -137,7 +142,7 @@ To separate tenants on a shared IdP we add an **audience allowlist** that derive
 | `camunda-pt-default-via-tenanta-client`      | `tenanta`   | `default`      | `pt-default-via-tenanta-aud`  |
 | `camunda-pt-tenanta-client`                  | `tenanta`   | `tenanta`      | `pt-tenanta-aud`              |
 
-Each provider declares its `audiences` under the existing CSL field (`...providers.oidc.<name>.audiences` or `...authentication.oidc.audiences` for the default slot). The per-tenant allowlist is computed as the **union over the providers in `assigned`** — there is no separate per-tenant key. Adding a new IdP to a tenant just means adding its `audiences`, alongside `client-id`, `client-secret`, `issuer-uri`.
+All providers are declared at **root** under `camunda.security.authentication.oidc.*` (default slot) and `camunda.security.authentication.providers.oidc.<id>.*` (named slots), with their `audiences` alongside `client-id`, `client-secret`, `issuer-uri`. Per-PT config keeps just `providers.assigned: [<ids>]` plus optional per-field overrides under `camunda.physical-tenants.<id>.security.authentication.providers.oidc.<id>.<field>` (or `...oidc.<field>` for the default slot). PT-side non-null/non-empty fields beat root; absent overrides inherit. The merge is implemented in `PerTenantClientRegistrations` (helper `resolveMergedProvider` re-used by `ptAllowedIssuersPerTenant` / `ptExpectedAudiencesPerTenant`) and never mutates the root bean.
 
 The bearer branch on the per-tenant API chain now performs two allowlist checks:
 
@@ -148,7 +153,7 @@ Cross-tenant bearer access on a shared IdP fails on the audience check even when
 
 Session-derived auth (`OAuth2AuthenticationToken`) on the API chain is **not** re-audience-checked. The per-tenant `ClientRegistrationRepository` on the webapp chain only knows about that tenant's assigned providers, so a session can only be created via a client this tenant owns — the audience claim was implicitly validated at the underlying access token's issuance. Adding an explicit `OAuth2AuthenticationToken.getAuthorizedClientRegistrationId()` check against the tenant's registration ids would be strictly redundant given that scoping.
 
-The audience-allowlist set is built as a sibling Spring bean to `ptAllowedIssuersPerTenant` (`Map<String, Set<String>> ptExpectedAudiencesPerTenant`) in `OidcOverrideBeansConfiguration` — both iterate the same per-tenant `assigned` list and the same `resolveTenantProvider` helper, just collecting `getIssuerUri()` vs `getAudiences()`. Both maps flow through `PhysicalTenantSecurityChainRegistrar` into `PerTenantSecurityChainFactory.buildApiChain`. Nothing about D8 changes the chain shape, the session machinery, or the URL scheme — it is a pure addition to the bearer authorization rule.
+The audience-allowlist set is built as a sibling Spring bean to `ptAllowedIssuersPerTenant` (`Map<String, Set<String>> ptExpectedAudiencesPerTenant`) in `OidcOverrideBeansConfiguration` — both iterate the same per-tenant `assigned` list and the same `PerTenantClientRegistrations.resolveMergedProvider` helper, just collecting `getIssuerUri()` vs `getAudiences()`. Both maps flow through `PhysicalTenantSecurityChainRegistrar` into `PerTenantSecurityChainFactory.buildApiChain`. Nothing about D8 changes the chain shape, the session machinery, or the URL scheme — it is a pure addition to the bearer authorization rule plus the validator override that makes per-registration audiences viable when two registrations share an issuer.
 
 ---
 

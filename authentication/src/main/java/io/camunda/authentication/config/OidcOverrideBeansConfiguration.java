@@ -13,6 +13,7 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
+import io.camunda.authentication.oidc.IssuerAndAudienceAwareOidcDecoderFactory;
 import io.camunda.authentication.pt.PerTenantClientRegistrations;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -351,11 +352,23 @@ public class OidcOverrideBeansConfiguration {
     return new JWSKeySelectorFactory();
   }
 
+  /**
+   * Overrides CSL's default {@link OidcAccessTokenDecoderFactory} with a subclass that swaps the
+   * issuer-aware validator for {@link
+   * io.camunda.authentication.oidc.IssuerAndAudienceAwareTokenValidator}. The custom validator
+   * matches the token's {@code iss} against the registered providers; when more than one
+   * registration shares the issuer (e.g. two PoC clients on the same Keycloak realm), it
+   * disambiguates by intersecting the token's {@code aud} claim with each candidate's declared
+   * audiences. Without this override, CSL's {@code IssuerAwareTokenValidator} would always serve
+   * the FIRST registration with that issuer, breaking per-provider audience isolation.
+   */
   @Bean
   public OidcAccessTokenDecoderFactory accessTokenDecoderFactory(
       final JWSKeySelectorFactory jwsKeySelectorFactory,
-      final TokenValidatorFactory tokenValidatorFactory) {
-    return new OidcAccessTokenDecoderFactory(jwsKeySelectorFactory, tokenValidatorFactory);
+      final TokenValidatorFactory tokenValidatorFactory,
+      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+    return new IssuerAndAudienceAwareOidcDecoderFactory(
+        jwsKeySelectorFactory, tokenValidatorFactory, oidcProviderRepository);
   }
 
   @Bean
@@ -563,7 +576,9 @@ public class OidcOverrideBeansConfiguration {
       final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
       final List<String> assigned = bindAssigned(tenantId, environment);
       repositories.put(
-          tenantId, PerTenantClientRegistrations.buildFor(tenantId, tenantSecurity, assigned));
+          tenantId,
+          PerTenantClientRegistrations.buildFor(
+              tenantId, securityConfiguration, tenantSecurity, assigned));
     }
     return Map.copyOf(repositories);
   }
@@ -589,13 +604,10 @@ public class OidcOverrideBeansConfiguration {
       if (assigned.isEmpty()) {
         continue;
       }
-      final var auth = tenantSecurity.getAuthentication();
-      final Map<String, OidcConfiguration> namedProviders =
-          auth.getProviders() == null ? null : auth.getProviders().getOidc();
       final Set<String> audiences = new LinkedHashSet<>();
       for (final String id : assigned) {
         final OidcConfiguration provider =
-            resolveTenantProvider(id, auth.getOidc(), namedProviders);
+            resolveProviderForTenant(id, securityConfiguration, tenantSecurity);
         if (provider != null && provider.getAudiences() != null) {
           audiences.addAll(provider.getAudiences());
         }
@@ -615,13 +627,10 @@ public class OidcOverrideBeansConfiguration {
       if (assigned.isEmpty()) {
         continue;
       }
-      final var auth = tenantSecurity.getAuthentication();
-      final Map<String, OidcConfiguration> namedProviders =
-          auth.getProviders() == null ? null : auth.getProviders().getOidc();
       final Set<String> issuers = new LinkedHashSet<>();
       for (final String id : assigned) {
         final OidcConfiguration provider =
-            resolveTenantProvider(id, auth.getOidc(), namedProviders);
+            resolveProviderForTenant(id, securityConfiguration, tenantSecurity);
         if (provider != null && provider.getIssuerUri() != null) {
           issuers.add(provider.getIssuerUri());
         }
@@ -662,14 +671,12 @@ public class OidcOverrideBeansConfiguration {
     return bound.isBound() ? (List<String>) bound.get() : List.of();
   }
 
-  private static @Nullable OidcConfiguration resolveTenantProvider(
+  private static @Nullable OidcConfiguration resolveProviderForTenant(
       final String registrationId,
-      final @Nullable OidcConfiguration defaultProvider,
-      final @Nullable Map<String, OidcConfiguration> namedProviders) {
-    if (PerTenantClientRegistrations.DEFAULT_PROVIDER_REGISTRATION_ID.equals(registrationId)) {
-      return defaultProvider;
-    }
-    return namedProviders == null ? null : namedProviders.get(registrationId);
+      final SecurityConfiguration rootSecurity,
+      final SecurityConfiguration tenantSecurity) {
+    return PerTenantClientRegistrations.resolveMergedProvider(
+        registrationId, rootSecurity, tenantSecurity);
   }
 
   private RestClient restClient(final ObservationRegistry observationRegistry) {
