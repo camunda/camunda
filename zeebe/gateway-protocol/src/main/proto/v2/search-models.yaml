@@ -49,11 +49,18 @@ components:
           format: int32
           default: 100
           minimum: 1
+        spuriousSharedProperty:
+          description: |
+            New property on a shared schema with an INCORRECT annotation
+            version (8.9 instead of the actual 8.10); should trip the CI gate.
+          type: string
       x-properties-added-in-version:
         - propertyName: from
           addedInVersion: "8.6"
         - propertyName: limit
           addedInVersion: "8.6"
+        - propertyName: spuriousSharedProperty
+          addedInVersion: "8.9"
 
     CursorForwardPagination:
       type: object
