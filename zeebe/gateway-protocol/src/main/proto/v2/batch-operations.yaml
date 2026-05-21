@@ -393,10 +393,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+        spuriousSameVersion:
+          description: |
+            New property on BatchOperationResponse with an incorrect
+            x-properties-added-in-version entry; should provoke CI gate failure.
+          type: string
       x-properties-added-in-version:
         - propertyName: actorType
           addedInVersion: "8.9"
         - propertyName: actorId
+          addedInVersion: "8.9"
+        - propertyName: spuriousSameVersion
           addedInVersion: "8.9"
 
     BatchOperationError:
