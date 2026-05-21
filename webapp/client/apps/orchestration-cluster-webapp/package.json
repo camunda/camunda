@@ -25,7 +25,7 @@
 		"@tanstack/react-router": "1.170.3",
 		"@tanstack/react-router-devtools": "1.167.0",
 		"@tanstack/router-plugin": "1.168.5",
-		"date-fns": "4.1.0",
+		"date-fns": "4.2.1",
 		"final-form": "5.0.0",
 		"i18next": "26.0.4",
 		"i18next-browser-languagedetector": "8.2.1",
