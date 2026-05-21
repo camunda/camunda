@@ -278,7 +278,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 13 | Generalise registration via `PhysicalTenantResolver.getAll()`      | ✅ done         |
 |    | Checkpoint D — full functional surface                             | ✅ done         |
 | 16 | Manual browser smoke test                                          | ✅ done         |
-| 17 | **Multi-IdP picker + audience-based PT isolation for shared IdPs** | 🔄 in progress |
+| 17 | Multi-IdP picker + audience-based PT isolation for shared IdPs     | ✅ done         |
+| 18 | **Operate + Tasklist webapps end-to-end with PT chains**           | ⏳ pending      |
 |    | Checkpoint E — PoC acceptance                                      | ⏳ pending      |
 | 14 | `PhysicalTenantSecurityIT` happy path                              | ⏳ deferred     |
 | 15 | `PhysicalTenantSecurityIT` full flow + isolation                   | ⏳ deferred     |

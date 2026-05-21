@@ -1974,6 +1974,40 @@ Bump Task 17 to ✅ done in `pt-poc-README.md`'s Status table.
 
 ---
 
+## Task 18: Operate + Tasklist webapps end-to-end with PT chains
+
+**Goal:** Boot OC with the real `operate` and `tasklist` webapp profiles active alongside `pt-poc`, and verify the existing webapps work on both prefixed and unprefixed access paths. This exercises the PT chains against actual frontends (not just the PoC `/app` HTML demo), surfaces any deep-linking / SPA routing gaps under PT prefixes, and validates that the cookie scoping survives heavier client-side navigation.
+
+**Files / config:**
+- `dist/src/main/resources/application-pt-poc.yaml` — extend the profile group or YAML to activate `operate` + `tasklist`, or document the additional `-Dspring-boot.run.profiles=pt-poc,operate,tasklist` command line.
+- May need additional realm-export tweaks (redirect URIs for `/operate/sso-callback`, `/tasklist/sso-callback`, or wherever the webapps expect to land).
+- `pt-poc-README.md` — document the launch recipe and per-URL expectations.
+
+**Verification points:**
+- `http://localhost:8080/operate` — unprefixed; CSL's OidcWebapp chain serves it; logs in as default tenant; the webapp loads.
+- `http://localhost:8080/tasklist` — same.
+- `http://localhost:8080/physical-tenant/default/operate` — prefixed default tenant; PT chain serves it; webapp loads, sees the default tenant's context.
+- `http://localhost:8080/physical-tenant/tenanta/operate` — prefixed tenant A; PT chain serves it; webapp loads, sees tenant A's context.
+- Cross-tenant cookie isolation: an Operate session for tenant A does not authenticate Operate as default (per spec D2).
+- Static assets, deep-linked SPA routes, API calls from the webapps all work under PT prefixes.
+
+**Likely friction (record findings in the commit message):**
+- Webapps may have hardcoded relative URLs (`/v2/...`) that don't survive being mounted under a PT prefix. Workaround would be either path rewriting in the chain or webapp-side base-URL configuration.
+- Some webapp endpoints may not be in `SecurityPathPort.webappPaths()` and would fall through to CSL's catch-all 404; identifying and adding them is part of this task's discovery.
+
+**Commit:**
+```
+feat: real webapps (operate + tasklist) end-to-end on PT chains
+
+<documented friction + resolutions>
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+```
+
+Bump Task 18 to ✅ done in `pt-poc-README.md`'s Status table when complete.
+
+---
+
 ## Self-review checklist (run after the plan is written)
 
 - [x] **Spec coverage** — every spec section has at least one task:
