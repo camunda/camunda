@@ -843,9 +843,12 @@ paths:
           application/json:
             schema:
               properties:
-                type:        { type: string }                              # 8.6 — same as endpoint, NOT annotated
-                worker:      { type: string }                              # 8.6 — NOT annotated
-                tenantIds:   { type: array,  x-added-in-version: '8.7' }   # added later, annotated
+                type:      { type: string }    # 8.6 — same as endpoint, NOT annotated
+                worker:    { type: string }    # 8.6 — NOT annotated
+                tenantIds: { type: array, items: { type: string } }   # 8.7 — added later, annotated on the parent schema below
+              x-properties-added-in-version:
+                - propertyName: tenantIds
+                  addedInVersion: '8.7'
 ```
 
 ##### Rule 2 — Property version differs from its nearest property ancestor
@@ -856,16 +859,21 @@ The parent/child relation also traverses `$ref` boundaries. For example, `Decisi
 
 ```yaml
 # endpoint introduced in 8.6
-properties:
-  result:
-    x-added-in-version: '8.7'      # ancestor property annotated (later than endpoint)
-    type: object
-    properties:
-      variables:                   # 8.7 — same as ancestor property, NOT annotated
-        type: object
-      denied:                      # 8.8 — later than ancestor property, annotated
-        type: boolean
-        x-added-in-version: '8.8'
+SomeRequest:
+  properties:
+    result:
+      type: object
+      properties:
+        variables:                 # 8.7 — same as ancestor property, NOT annotated
+          type: object
+        denied:                    # 8.8 — later than ancestor property, annotated on `result`
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: denied
+          addedInVersion: '8.8'
+  x-properties-added-in-version:
+    - propertyName: result      # ancestor property annotated (later than endpoint)
+      addedInVersion: '8.7'
 ```
 
 ##### Rule 3 — Shared schemas: earliest version across all consumers
@@ -892,7 +900,9 @@ AdvancedElementInstanceStateFilter:
   properties:
     $exists:
       type: boolean
-      x-added-in-version: '8.8'
+  x-properties-added-in-version:
+    - propertyName: "$exists"
+      addedInVersion: '8.8'
 ```
 
 Had every consumer endpoint also been introduced in 8.8, no property-level annotation would be written — each endpoint's own `x-added-in-version: '8.8'` would already cover the shared schema.

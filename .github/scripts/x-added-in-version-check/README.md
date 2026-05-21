@@ -59,9 +59,12 @@ paths:
           application/json:
             schema:
               properties:
-                type:        { type: string }                              # 8.6 — same as endpoint, NOT annotated
-                worker:      { type: string }                              # 8.6 — NOT annotated
-                tenantIds:   { type: array,  x-added-in-version: '8.7' }   # added later, annotated
+                type:      { type: string }    # 8.6 — same as endpoint, NOT annotated
+                worker:    { type: string }    # 8.6 — NOT annotated
+                tenantIds: { type: array, items: { type: string } }   # 8.7 — added later, annotated on the parent schema below
+              x-properties-added-in-version:
+                - propertyName: tenantIds
+                  addedInVersion: '8.7'
 ```
 
 ### Rule 2 — Property version differs from its nearest property ancestor
@@ -72,16 +75,21 @@ The parent/child relation also traverses `$ref` boundaries. For example, `Decisi
 
 ```yaml
 # endpoint introduced in 8.6
-properties:
-  result:
-    x-added-in-version: '8.7'      # ancestor property annotated (later than endpoint)
-    type: object
-    properties:
-      variables:                   # 8.7 — same as ancestor property, NOT annotated
-        type: object
-      denied:                      # 8.8 — later than ancestor property, annotated
-        type: boolean
-        x-added-in-version: '8.8'
+SomeRequest:
+  properties:
+    result:
+      type: object
+      properties:
+        variables:                 # 8.7 — same as ancestor property, NOT annotated
+          type: object
+        denied:                    # 8.8 — later than ancestor property, annotated on `result`
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: denied
+          addedInVersion: '8.8'
+  x-properties-added-in-version:
+    - propertyName: result      # ancestor property annotated (later than endpoint)
+      addedInVersion: '8.7'
 ```
 
 ### Rule 3 — Shared schemas: earliest version across all consumers
@@ -108,7 +116,9 @@ AdvancedElementInstanceStateFilter:
   properties:
     $exists:
       type: boolean
-      x-added-in-version: '8.8'
+  x-properties-added-in-version:
+    - propertyName: "$exists"
+      addedInVersion: '8.8'
 ```
 
 Had every consumer endpoint also been introduced in 8.8, no property-level annotation would be written — each endpoint's own `x-added-in-version: '8.8'` would already cover the shared schema.
@@ -132,7 +142,9 @@ OffsetPagination:
   properties:
     from:
       type: integer
-      x-added-in-version: '8.6'    # kept — one ancestor property's intro (8.8) differs
+  x-properties-added-in-version:
+    - propertyName: from         # kept — one ancestor property's intro (8.8) differs
+      addedInVersion: '8.6'
 ```
 
 If both ancestor properties had aggregated to 8.6, Rule 2 would have suppressed the child property annotation. This is exactly why `LimitPagination.limit` and `CursorBackwardPagination.limit` get no annotation in `search-models.yaml` while their siblings `OffsetPagination.limit` and `CursorForwardPagination.limit` keep one: the former two are only ever reached through `SearchQueryRequest.page` (single ancestor property, aggregated intro 8.6, matches the child property → Rule 2 suppresses); the latter two are additionally reached from statistics-query ancestor properties (`JobTypeStatisticsQuery.page` etc., introduced in 8.9), so not every ancestor property agrees with the child property's 8.6 intro and Rule 2 cannot fire.

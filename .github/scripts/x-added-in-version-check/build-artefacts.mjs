@@ -2,7 +2,7 @@
 /**
  * Generates both version-map.json and endpoint-map.json by cloning the
  * return-of-api-added-in-analysis repo at a configurable git ref into a
- * temporary directory, running `npm install && npm run build:bundler`
+ * temporary directory, running `npm ci --omit=dev && npm run build:bundler`
  * inside it, and copying the produced `output/bundler-version-map.json` and
  * `output/endpoint-map.json` to the configured paths.
  *

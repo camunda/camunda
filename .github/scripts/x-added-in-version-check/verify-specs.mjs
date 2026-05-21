@@ -85,18 +85,44 @@ export function getAt(obj, path) {
 // YAML loader that always parses with a LineCounter so callers that need
 // line numbers (CI variant) can use `lineOfPath`, while callers that don't
 // (workflow variant) simply ignore the `line` field on errors.
+//
+// Missing files are cached as `null` so downstream code can keep treating
+// them as "file not found" (`YAML_FILE_NOT_FOUND`). Any other failure (read
+// error, YAML parse error) is re-thrown with the offending file and, where
+// available, the parse-error location so a stale or malformed spec doesn't
+// silently masquerade as a missing file.
 export function createYamlLoader(specDir) {
   const cache = new Map();
   function loadYaml(file) {
     if (!cache.has(file)) {
+      let src;
       try {
-        const src = readFileSync(join(specDir, file), "utf-8");
-        const lineCounter = new LineCounter();
-        const doc = parseDocument(src, { lineCounter });
-        cache.set(file, { doc, lineCounter });
-      } catch {
-        cache.set(file, null);
+        src = readFileSync(join(specDir, file), "utf-8");
+      } catch (err) {
+        if (err && err.code === "ENOENT") {
+          cache.set(file, null);
+          return cache.get(file);
+        }
+        throw new Error(
+          `Failed to read YAML file ${file} (${join(specDir, file)}): ${err?.message ?? err}`
+        );
       }
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(src, { lineCounter });
+      const parseErrors = doc.errors ?? [];
+      if (parseErrors.length > 0) {
+        const first = parseErrors[0];
+        const linePos = Array.isArray(first.linePos) ? first.linePos[0] : null;
+        const loc = linePos
+          ? `${linePos.line}:${linePos.col}`
+          : Array.isArray(first.pos)
+            ? String(first.pos[0])
+            : "?";
+        throw new Error(
+          `Failed to parse YAML file ${file} at ${loc}: ${first.message}`
+        );
+      }
+      cache.set(file, { doc, lineCounter });
     }
     return cache.get(file);
   }
