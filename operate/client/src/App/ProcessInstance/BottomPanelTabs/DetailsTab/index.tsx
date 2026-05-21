@@ -332,49 +332,41 @@ const DetailsTab: React.FC = () => {
       : null;
 
     return (
-      <Container data-testid="details-tab" style={{flex: 1, minHeight: 0}}>
-        <StructuredList
-          label="Element Instance Details"
-          headerSize="sm"
-          headerColumns={[
-            {cellContent: 'Property', width: '30%'},
-            {cellContent: 'Value', width: '70%'},
-          ]}
-          rows={rows}
-        />
-        <div
+      <Container
+        data-testid="details-tab"
+        style={{flex: 1, minHeight: 0, overflowY: 'auto'}}
+      >
+        <div style={{flexShrink: 0}}>
+          <StructuredList
+            label="Element Instance Details"
+            headerSize="sm"
+            headerColumns={[
+              {cellContent: 'Property', width: '30%'},
+              {cellContent: 'Value', width: '70%'},
+            ]}
+            rows={rows}
+          />
+        </div>
+        <h4
           style={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--cds-spacing-05)',
+            flexShrink: 0,
+            fontSize: 'var(--cds-heading-compact-01-font-size)',
+            fontWeight: 'var(--cds-heading-compact-01-font-weight)',
+            lineHeight: 'var(--cds-heading-compact-01-line-height)',
+            letterSpacing: 'var(--cds-heading-compact-01-letter-spacing)',
+            color: 'var(--cds-text-primary)',
+            margin: 0,
           }}
         >
-          <h4
-            style={{
-              fontSize: 'var(--cds-heading-compact-01-font-size)',
-              fontWeight: 'var(--cds-heading-compact-01-font-weight)',
-              lineHeight: 'var(--cds-heading-compact-01-line-height)',
-              letterSpacing: 'var(--cds-heading-compact-01-letter-spacing)',
-              color: 'var(--cds-text-primary)',
-              margin: 0,
-            }}
-          >
-            AI Agent
-          </h4>
-          {iteration ? (
-            <IterationDetail iteration={iteration} />
-          ) : toolInfo ? (
-            <ToolCallDetail
-              tool={toolInfo.tool}
-              iteration={toolInfo.iteration}
-            />
-          ) : (
-            <DefaultAgentDetail agentData={agentData} />
-          )}
-        </div>
+          AI Agent
+        </h4>
+        {iteration ? (
+          <IterationDetail iteration={iteration} />
+        ) : toolInfo ? (
+          <ToolCallDetail tool={toolInfo.tool} iteration={toolInfo.iteration} />
+        ) : (
+          <DefaultAgentDetail agentData={agentData} />
+        )}
       </Container>
     );
   }
