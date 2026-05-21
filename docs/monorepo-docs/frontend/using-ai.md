@@ -19,7 +19,8 @@ automated agents reviewing your PRs.
   the orchestration-cluster webapp and knows our conventions. The agent
   is currently being developed and will be available soon.
 - Break the problem down before prompting. Smaller, well-scoped
-  prompts produce better results than "implement this feature."
+  prompts produce better results than "implement this feature." Use
+  plan mode to get the agent's help with the breakdown.
 - Review each response critically. Check for unnecessary abstractions,
   dead code, wrong patterns, and deviations from project conventions.
 - Iterate. Push back on the agent when the solution is not good
