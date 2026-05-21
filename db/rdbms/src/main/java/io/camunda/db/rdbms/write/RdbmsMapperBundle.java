@@ -30,6 +30,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public record RdbmsMapperBundle(
@@ -60,32 +61,32 @@ public record RdbmsMapperBundle(
 
   public static RdbmsMapperBundle from(
       final SqlSessionFactory sqlSessionFactory,
+      final SqlSession sqlSession,
       final VendorDatabaseProperties vendorDatabaseProperties) {
-    final var cfg = sqlSessionFactory.getConfiguration();
     return new RdbmsMapperBundle(
         sqlSessionFactory,
         vendorDatabaseProperties,
-        cfg.getMapper(ExporterPositionMapper.class, null),
-        cfg.getMapper(AuditLogMapper.class, null),
-        cfg.getMapper(DecisionInstanceMapper.class, null),
-        cfg.getMapper(DecisionDefinitionMapper.class, null),
-        cfg.getMapper(DecisionRequirementsMapper.class, null),
-        cfg.getMapper(FlowNodeInstanceMapper.class, null),
-        cfg.getMapper(IncidentMapper.class, null),
-        cfg.getMapper(ProcessInstanceMapper.class, null),
-        cfg.getMapper(ProcessDefinitionMapper.class, null),
-        cfg.getMapper(PurgeMapper.class, null),
-        cfg.getMapper(UserTaskMapper.class, null),
-        cfg.getMapper(VariableMapper.class, null),
-        cfg.getMapper(JobMapper.class, null),
-        cfg.getMapper(JobMetricsBatchMapper.class, null),
-        cfg.getMapper(SequenceFlowMapper.class, null),
-        cfg.getMapper(UsageMetricMapper.class, null),
-        cfg.getMapper(UsageMetricTUMapper.class, null),
-        cfg.getMapper(BatchOperationMapper.class, null),
-        cfg.getMapper(MessageSubscriptionMapper.class, null),
-        cfg.getMapper(CorrelatedMessageSubscriptionMapper.class, null),
-        cfg.getMapper(ClusterVariableMapper.class, null),
-        cfg.getMapper(HistoryDeletionMapper.class, null));
+        sqlSession.getMapper(ExporterPositionMapper.class),
+        sqlSession.getMapper(AuditLogMapper.class),
+        sqlSession.getMapper(DecisionInstanceMapper.class),
+        sqlSession.getMapper(DecisionDefinitionMapper.class),
+        sqlSession.getMapper(DecisionRequirementsMapper.class),
+        sqlSession.getMapper(FlowNodeInstanceMapper.class),
+        sqlSession.getMapper(IncidentMapper.class),
+        sqlSession.getMapper(ProcessInstanceMapper.class),
+        sqlSession.getMapper(ProcessDefinitionMapper.class),
+        sqlSession.getMapper(PurgeMapper.class),
+        sqlSession.getMapper(UserTaskMapper.class),
+        sqlSession.getMapper(VariableMapper.class),
+        sqlSession.getMapper(JobMapper.class),
+        sqlSession.getMapper(JobMetricsBatchMapper.class),
+        sqlSession.getMapper(SequenceFlowMapper.class),
+        sqlSession.getMapper(UsageMetricMapper.class),
+        sqlSession.getMapper(UsageMetricTUMapper.class),
+        sqlSession.getMapper(BatchOperationMapper.class),
+        sqlSession.getMapper(MessageSubscriptionMapper.class),
+        sqlSession.getMapper(CorrelatedMessageSubscriptionMapper.class),
+        sqlSession.getMapper(ClusterVariableMapper.class),
+        sqlSession.getMapper(HistoryDeletionMapper.class));
   }
 }

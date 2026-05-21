@@ -62,6 +62,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,10 +197,12 @@ public class MyBatisConfiguration {
     final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
     for (final var entry : sqlSessionFactories.entrySet()) {
       final var physicalTenantId = entry.getKey();
+      final var factory = entry.getValue();
+      final var session = new SqlSessionTemplate(factory);
       bundles.put(
           physicalTenantId,
           RdbmsMapperBundle.from(
-              entry.getValue(), rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+              factory, session, rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
     }
     return Map.copyOf(bundles);
   }
