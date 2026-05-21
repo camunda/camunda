@@ -29,11 +29,11 @@ The OTel SDK's `BatchLogRecordProcessor` runs on a background thread with a boun
 When the queue fills, new records are silently dropped — the `export()` method on the Zeebe
 actor thread never blocks, never waits, never retries synchronously.
 
-### No record filter
+### Record filter
 
-The exporter does **not** set a `RecordFilter`. It accepts all records from the broker to
-track the full log position for compaction. Only event records with registered handlers
-produce OTel log records; everything else is a fast no-op (EnumMap lookup returning null).
+The exporter sets a `RecordFilter` that accepts only event records for registered handler
+types, originating from the local partition. See `AnalyticsRecordFilter` Javadoc for the
+filtering layers and the rationale behind partition-based deduplication.
 
 ## What it exports
 
