@@ -27,14 +27,16 @@ public class PhysicalTenantWhoamiController {
     return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
   }
 
-  // API endpoint sits under the same tenant prefix as the webapp chain so the webapp
-  // session cookie (Path=/physical-tenant/<t>) covers it. The API chain is session-or-bearer:
-  // session-authenticated SPA requests pass through with no Authorization header; non-browser
-  // clients still present Authorization: Bearer <jwt> as before.
-  @GetMapping("/physical-tenant/{tenantId}/v2/whoami")
+  // API endpoint is registered under BOTH supported PT API URL schemes (spec D7):
+  //   * /physical-tenant/<id>/v2/whoami  — webapp/SPA URL, inside the session cookie's Path
+  //     scope; session-authenticated SPA requests pass through with no Authorization header.
+  //   * /v2/physical-tenants/<id>/whoami — direct API-client URL, outside the cookie's Path
+  //     scope; clients authenticate with Authorization: Bearer <jwt>.
+  // Both URLs hit the same per-tenant API SecurityFilterChain.
+  @GetMapping({"/physical-tenant/{tenantId}/v2/whoami", "/v2/physical-tenants/{tenantId}/whoami"})
   @ResponseBody
   public Whoami whoamiApi(
-      @PathVariable final String tenantId, final Authentication authentication) {
+      @PathVariable("tenantId") final String tenantId, final Authentication authentication) {
     return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
   }
 
@@ -63,17 +65,27 @@ public class PhysicalTenantWhoamiController {
             <button onclick="callWebappWhoami()">GET /physical-tenant/%s/whoami</button>
             <pre id="webapp-result">(click)</pre>
 
-            <h2>API /physical-tenant/&lt;id&gt;/v2/whoami (same chain prefix, session-shared)</h2>
-            <p>The session cookie at Path=/physical-tenant/%s now covers this URL too,
+            <h2>API /physical-tenant/&lt;id&gt;/v2/whoami (webapp-aligned URL, session-shared)</h2>
+            <p>The session cookie at Path=/physical-tenant/%s covers this URL too,
             and the API chain accepts session auth (in addition to bearer tokens for
             non-browser clients). Expected: <b>200</b> with the same principal as the webapp
             chain — no Authorization header needed.</p>
             <button onclick="callApiWhoami()">GET /physical-tenant/%s/v2/whoami (no Authorization header)</button>
             <pre id="api-result">(click)</pre>
 
+            <h2>API /v2/physical-tenants/&lt;id&gt;/whoami (direct API-client URL, outside cookie scope)</h2>
+            <p>This URL is the existing REST-conventional PT API scheme — addressed for API
+            clients that bring their own Bearer token. It sits <b>outside</b> the webapp cookie's
+            <code>Path=/physical-tenant/%s</code> scope, so the browser does NOT send the session
+            cookie on this fetch. With no Authorization header either, the API chain returns
+            <b>401</b>. This is the correct outcome for the SPA flow against the API-client URL —
+            it isolates the two URL schemes by purpose.</p>
+            <button onclick="callApiClientWhoami()">GET /v2/physical-tenants/%s/whoami (no Authorization header)</button>
+            <pre id="api-client-result">(click)</pre>
+
             <h2>Diagnostics</h2>
-            <p>The SPA flow above works because (a) the API URL is under the cookie's Path
-            scope, so the browser sends the session cookie automatically, and (b) the API
+            <p>The webapp-aligned SPA flow works because (a) the API URL is under the cookie's
+            Path scope, so the browser sends the session cookie automatically, and (b) the API
             chain installs the same per-tenant SessionRepositoryFilter as the webapp chain
             and reuses the SecurityContext stored at OAuth2 login.</p>
             <button onclick="showCookies()">Show document.cookie (HttpOnly cookies are invisible here)</button>
@@ -94,6 +106,15 @@ public class PhysicalTenantWhoamiController {
                   document.getElementById('api-result').textContent = 'fetch error: ' + e;
                 }
               }
+              async function callApiClientWhoami() {
+                try {
+                  const r = await fetch('/v2/physical-tenants/%s/whoami', { credentials: 'include' });
+                  const text = await r.text();
+                  document.getElementById('api-client-result').textContent = r.status + ' ' + r.statusText + '\\n' + text;
+                } catch (e) {
+                  document.getElementById('api-client-result').textContent = 'fetch error: ' + e;
+                }
+              }
               function showCookies() {
                 document.getElementById('cookies').textContent =
                   document.cookie || '(no visible cookies — session cookies are HttpOnly)';
@@ -102,7 +123,16 @@ public class PhysicalTenantWhoamiController {
             </body></html>
             """)
         .formatted(
-            tenantId, tenantId, principal, tenantId, tenantId, tenantId, tenantId, tenantId,
-            tenantId);
+            tenantId, // <title>
+            tenantId, // <h1>
+            principal, // server-rendered principal
+            tenantId, // webapp button URL label
+            tenantId, // Path=/physical-tenant/{}
+            tenantId, // api button URL label
+            tenantId, // Path=/physical-tenant/{}
+            tenantId, // api-client button URL label
+            tenantId, // callWebappWhoami fetch URL
+            tenantId, // callApiWhoami fetch URL
+            tenantId); // callApiClientWhoami fetch URL
   }
 }

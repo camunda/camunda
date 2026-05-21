@@ -96,11 +96,12 @@ Two simultaneous tab logins coexist — neither tenant's session cookie is sent 
 
 ### SPA-style page (webapp session → API call from the browser)
 
-This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` after logging in (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically). It exposes three buttons:
+This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` after logging in (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically). It exposes four buttons:
 
 1. **`GET /physical-tenant/<id>/whoami`** — webapp chain, uses the session cookie. Expected: **200** with the principal.
-2. **`GET /physical-tenant/<id>/v2/whoami` (no Authorization header)** — the SPA call against the API chain. Expected: **200** with the same principal. The cookie at `Path=/physical-tenant/<id>` covers this URL too, and the API chain installs the same per-tenant `SessionRepositoryFilter` as the webapp chain, so it reuses the `SecurityContext` saved at OAuth2 login.
-3. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
+2. **`GET /physical-tenant/<id>/v2/whoami` (no Authorization header)** — the SPA call against the API chain on the **webapp-aligned** API URL (spec D7). Expected: **200** with the same principal. The cookie at `Path=/physical-tenant/<id>` covers this URL too, and the API chain installs the same per-tenant `SessionRepositoryFilter` as the webapp chain, so it reuses the `SecurityContext` saved at OAuth2 login.
+3. **`GET /v2/physical-tenants/<id>/whoami` (no Authorization header)** — same API endpoint reached via the **direct API-client** URL (spec D7). Expected: **401**. This URL sits outside the cookie's `Path=/physical-tenant/<id>` scope, so the browser does not send the session cookie, and with no Authorization header the API chain returns 401 via `oauth2ResourceServer`'s entry point. This confirms the two URL schemes are isolated by purpose — the SPA uses the webapp-aligned one; external API clients use the API-client one with their own bearer token.
+4. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
 
 **OQ-1 is resolved by this layout** (URL move + session-aware API chain). Two complementary mechanisms:
 
@@ -111,7 +112,12 @@ This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (ge
 
 The API chains accept either the per-tenant session cookie (SPA flow above) or a Bearer token (this section). For non-browser clients, each request carries `Authorization: Bearer <token>`. Acquire the token from the tenant's Keycloak realm via the password grant (Direct Access Grants are enabled on both PoC realms), then call the API.
 
-**One-shot script** — runs the full 5-cell smoke matrix (2 same-tenant successes, 2 cross-tenant rejections, 1 unauthenticated probe):
+**Dual URL scheme (D7).** The PT REST API is reachable under two URL prefixes that hit the same per-tenant API chain:
+
+- `/physical-tenant/<id>/v2/...` — webapp/SPA URL, inside the per-tenant cookie's `Path` scope. Use this from a browser SPA logged in via OAuth2; the session cookie covers it. Bearer tokens also work.
+- `/v2/physical-tenants/<id>/...` — direct API-client URL, the REST-conventional shape (also what the pre-PoC PT REST infrastructure registers). Outside the cookie scope, so bearer-only in practice. Use this from external API clients that bring their own JWT.
+
+**One-shot script** — runs the full 10-cell smoke matrix (the 5-cell matrix repeated against each URL scheme):
 
 ```bash
 ./pt-poc-api-smoke.sh
@@ -124,14 +130,19 @@ Expected output:
 tenanta token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
 default token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
 
-=== Cross-tenant matrix ===
+=== Cross-tenant matrix — webapp-aligned URL (cookie covers this) ===
 tenanta -> tenanta     200 /physical-tenant/tenanta/v2/whoami  OK
 tenanta -> default     403 /physical-tenant/default/v2/whoami  OK
 default -> default     200 /physical-tenant/default/v2/whoami  OK
 default -> tenanta     403 /physical-tenant/tenanta/v2/whoami  OK
-
-=== Unauthenticated probe (should be 401) ===
 no token -> tenanta    401 /physical-tenant/tenanta/v2/whoami  OK
+
+=== Cross-tenant matrix — direct API client URL (bearer-only) ===
+tenanta -> tenanta     200 /v2/physical-tenants/tenanta/whoami  OK
+tenanta -> default     403 /v2/physical-tenants/default/whoami  OK
+default -> default     200 /v2/physical-tenants/default/whoami  OK
+default -> tenanta     403 /v2/physical-tenants/tenanta/whoami  OK
+no token -> tenanta    401 /v2/physical-tenants/tenanta/whoami  OK
 ```
 
 **Manual curl** — get a token and call the API by hand (useful when iterating on a single chain):

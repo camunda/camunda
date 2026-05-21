@@ -17,6 +17,10 @@ URL scheme (final):
 | REST API | `/physical-tenant/<id>/v2/...`             | `/v2/...`             |
 | Webapps  | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...` |
 
+The REST API is **additionally** reachable under the existing API-client scheme
+`/v2/physical-tenants/<id>/...` — both schemes hit the same per-tenant security chain. See
+[D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client).
+
 Requirements:
 
 1. Each PT has an isolated Spring Security setup: its own OIDC providers, its own `authorization_code` flow, its own session.
@@ -41,7 +45,7 @@ Spring Security's filter chain is already a per-`securityMatcher` unit with its 
 For each PT we emit a session cookie scoped to the PT's path. The browser then refuses to send tenant A's cookie on tenant B's URLs — no server-side tenant fan-out required. The cookie set per chain:
 
 - `name=camunda-session-<tenantId>` (avoids name collisions when multiple chains' cookies could overlap on the default tenant's `/`)
-- `Path=/physical-tenant/<tenantId>` — a single cookie covers both the webapp URLs (`/physical-tenant/<t>/...`) and the API URLs (`/physical-tenant/<t>/v2/...`). The API URL space is mounted under the tenant prefix so the cookie's `Path` scope covers both surfaces; see [OQ-1 resolution](#open-questions).
+- `Path=/physical-tenant/<tenantId>` — a single cookie covers both the webapp URLs (`/physical-tenant/<t>/...`) and the webapp-aligned API URLs (`/physical-tenant/<t>/v2/...`). The API URL space is mounted under the tenant prefix so the cookie's `Path` scope covers both surfaces; see [OQ-1 resolution](#open-questions). The existing API-client scheme `/v2/physical-tenants/<t>/...` is supported alongside the webapp-aligned scheme ([D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client)) but sits outside the cookie's `Path`, so cookie auth doesn't apply there — that scheme is bearer-only.
 - For the default tenant's unprefixed chains: `Path=/` and `Path=/v2`. A user navigating from `/physical-tenant/default/…` to `/…` sees a different cookie and will re-auth. Per requirement-3 this is acceptable.
 
 CSRF cookies follow the same Path scoping.
@@ -76,6 +80,34 @@ We don't build C now, but we deliberately keep the per-tenant chain factory port
 - `PhysicalTenantSecurityConfiguration` is the only place that touches `PhysicalTenantResolver.getAll()` and root-context bean registration. To graduate to C, this class is replaced; the chain factory and slice are reused verbatim inside each child context's config class.
 
 Cost of this constraint inside A: essentially zero. It is good Spring hygiene anyway.
+
+### D7. URL scheme: dual API prefix (webapp-aligned and existing API-client)
+
+The PT REST API is reachable under two prefixes:
+
+- `/physical-tenant/<id>/v2/...` — **webapp/SPA addressing**, introduced by this PoC. Lives
+  inside the per-tenant webapp cookie's `Path=/physical-tenant/<id>` scope, so a SPA logged in
+  via the webapp chain can call the API directly with the session cookie (no Bearer header
+  needed). Resolves [OQ-1](#open-questions).
+- `/v2/physical-tenants/<id>/...` — **direct API client addressing**, already established by
+  the pre-existing PT REST infrastructure (`PhysicalTenantRequestMappingHandlerMapping`,
+  `PhysicalTenantInterceptor`). Outside the cookie's `Path` scope, so cookie auth doesn't
+  apply; clients authenticate with `Authorization: Bearer <jwt>`.
+
+Both prefixes hit the same per-tenant API `SecurityFilterChain` — the chain's `securityMatcher`
+takes both patterns. The chain accepts session auth (`OAuth2AuthenticationToken` — only present
+on the webapp-aligned URL because the cookie isn't sent to the other) OR bearer auth
+(`JwtAuthenticationToken` — applies to either URL). The same `PhysicalTenantInterceptor`
+resolves the URI template variable `physicalTenantId` for both prefixes and stores the resolved
+id in `PhysicalTenantContext`, so downstream services see the tenant regardless of which prefix
+the client used. `PhysicalTenantRequestMappingHandlerMapping` registers each
+`CamundaRestController`'s `/v2/...` route under both prefixed siblings.
+
+**Why both:** browser-side cookie scoping is the load-bearing isolation primitive (D2), and
+keeping it correct argues for the webapp-aligned scheme. The existing API-client scheme stays
+because (a) it's already in production-shape code and clients, (b) it's the REST-conventional
+shape (`/v2/<resource-collection>/<id>/...`), and (c) honest API clients send bearer tokens
+explicitly anyway — they don't need cookies.
 
 ---
 
@@ -330,7 +362,7 @@ If iteration speed becomes the bottleneck, swapping to `no.nav.security:mock-oau
 
 ## Open questions
 
-**OQ-1.** Single cookie covering both the webapp and the api path for a tenant (Path = `/`-rooted at a common ancestor like `/physical-tenant/tenanta`, with the API path mounted underneath), or two cookies? **Resolved:** one webapp cookie scoped to `Path=/physical-tenant/<t>`, with the API URL space moved from `/v2/physical-tenants/<t>/...` to `/physical-tenant/<t>/v2/...` so it sits inside the cookie's `Path` scope. The API chain becomes session-or-bearer: it installs the same per-tenant `SessionRepositoryFilter` instance the webapp chain uses (against the same per-tenant `WebSessionRepository`) and its authorization manager admits `OAuth2AuthenticationToken` (session, login already validated on the same tenant's webapp chain) or `JwtAuthenticationToken` (bearer, allowlist-checked). `oauth2ResourceServer.jwt()` stays wired so non-browser API clients are unaffected and unauthenticated requests still get 401 with `WWW-Authenticate: Bearer` via that entry point. Chain registration order: the API chain (`/physical-tenant/<t>/v2/**`) is `@Order`ed before the webapp chain (`/physical-tenant/<t>/**`) because the API matcher is a sub-pattern of the webapp matcher.
+**OQ-1.** Single cookie covering both the webapp and the api path for a tenant (Path = `/`-rooted at a common ancestor like `/physical-tenant/tenanta`, with the API path mounted underneath), or two cookies? **Resolved:** one webapp cookie scoped to `Path=/physical-tenant/<t>`, with a new webapp-aligned API URL `/physical-tenant/<t>/v2/...` mounted under that path so the cookie scope covers it. The pre-existing API-client URL `/v2/physical-tenants/<t>/...` stays supported alongside (bearer-only) — see [D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client). The API chain matches BOTH URL patterns via `securityMatcher(String...)` and is session-or-bearer: it installs the same per-tenant `SessionRepositoryFilter` instance the webapp chain uses (against the same per-tenant `WebSessionRepository`) and its authorization manager admits `OAuth2AuthenticationToken` (session, login already validated on the same tenant's webapp chain — fires only on the webapp-aligned URL because the cookie doesn't reach the API-client URL) or `JwtAuthenticationToken` (bearer, allowlist-checked — applies to either URL). `oauth2ResourceServer.jwt()` stays wired so non-browser API clients are unaffected and unauthenticated requests still get 401 with `WWW-Authenticate: Bearer` via that entry point. Chain registration order: the API chain is `@Order`ed before the webapp chain because the webapp-aligned API matcher (`/physical-tenant/<t>/v2/**`) is a sub-pattern of the webapp matcher (`/physical-tenant/<t>/**`).
 
 **OQ-2.** The default tenant's unprefixed chains: do we ever want the same session to be valid on both access paths, or always treat them as separate? **PoC stance:** always separate (cookie Path differs), per the user's "we may accept relogin" relaxation. Revisit when the UX is closer.
 

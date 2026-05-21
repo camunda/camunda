@@ -25,8 +25,12 @@ import org.springframework.web.util.pattern.PathPatternParser;
 
 class PhysicalTenantRequestMappingHandlerMappingTest {
 
-  private static final String EXPECTED_PREFIX =
-      "/v2/physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
+  private static final String TENANT_VAR =
+      "{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
+  // Existing API-client scheme: /v2/physical-tenants/{id}/...
+  private static final String API_CLIENT_PREFIX = "/v2/physical-tenants/" + TENANT_VAR;
+  // Webapp-aligned scheme (D7): /physical-tenant/{id}/v2/...
+  private static final String WEBAPP_ALIGNED_PREFIX = "/physical-tenant/" + TENANT_VAR + "/v2";
 
   private final PhysicalTenantRequestMappingHandlerMapping mapping =
       new PhysicalTenantRequestMappingHandlerMapping();
@@ -51,13 +55,17 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
     assertThat(mapping.shouldPrefix(Object.class)).isFalse();
   }
 
-  // ---- withPhysicalTenantPrefix / pattern rewriting ------------------------
+  // ---- withPhysicalTenantPrefixes / pattern rewriting ----------------------
 
   static Stream<Arguments> patternCases() {
     return Stream.of(
-        Arguments.of("/v2", EXPECTED_PREFIX),
-        Arguments.of("/v2/widgets", EXPECTED_PREFIX + "/widgets"),
-        Arguments.of("/v2/widgets/{id}", EXPECTED_PREFIX + "/widgets/{id}"),
+        Arguments.of("/v2", List.of(API_CLIENT_PREFIX, WEBAPP_ALIGNED_PREFIX)),
+        Arguments.of(
+            "/v2/widgets",
+            List.of(API_CLIENT_PREFIX + "/widgets", WEBAPP_ALIGNED_PREFIX + "/widgets")),
+        Arguments.of(
+            "/v2/widgets/{id}",
+            List.of(API_CLIENT_PREFIX + "/widgets/{id}", WEBAPP_ALIGNED_PREFIX + "/widgets/{id}")),
         Arguments.of("/v1/widgets", null),
         Arguments.of("/v2foo", null),
         Arguments.of("/", null));
@@ -65,20 +73,25 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
 
   @ParameterizedTest(name = "[{index}] {0} -> {1}")
   @MethodSource("patternCases")
-  void shouldRewriteOnlyV2Patterns(final String input, final String expected) {
+  void shouldRewriteOnlyV2Patterns(final String input, final List<String> expected) {
     // given
     final RequestMappingInfo info = info(input);
 
     // when
-    final RequestMappingInfo prefixed = mapping.withPhysicalTenantPrefix(info);
+    final List<RequestMappingInfo> prefixed = mapping.withPhysicalTenantPrefixes(info);
 
     // then
     if (expected == null) {
-      assertThat(prefixed).isNull();
+      assertThat(prefixed).isEmpty();
     } else {
-      assertThat(prefixed).isNotNull();
-      assertThat(prefixed.getPathPatternsCondition()).isNotNull();
-      assertThat(prefixed.getPathPatternsCondition().getPatternValues()).containsExactly(expected);
+      // Two prefixed RequestMappingInfo siblings — one per scheme, fixed order.
+      assertThat(prefixed).hasSize(2);
+      assertThat(prefixed.get(0).getPathPatternsCondition()).isNotNull();
+      assertThat(prefixed.get(0).getPathPatternsCondition().getPatternValues())
+          .containsExactly(expected.get(0));
+      assertThat(prefixed.get(1).getPathPatternsCondition()).isNotNull();
+      assertThat(prefixed.get(1).getPathPatternsCondition().getPatternValues())
+          .containsExactly(expected.get(1));
     }
   }
 
@@ -87,12 +100,13 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
   static Stream<Arguments> registerCases() {
     return Stream.of(
         Arguments.of(
-            "tenant-scoped /v2 keeps original and adds prefixed sibling",
+            "tenant-scoped /v2 keeps original and adds BOTH prefixed siblings",
             new TenantScopedController(),
             "/v2/widgets",
-            List.of("/v2/widgets", EXPECTED_PREFIX + "/widgets")),
+            List.of(
+                "/v2/widgets", API_CLIENT_PREFIX + "/widgets", WEBAPP_ALIGNED_PREFIX + "/widgets")),
         Arguments.of(
-            "cluster-scoped controller keeps only original — no sibling",
+            "cluster-scoped controller keeps only original — no siblings",
             new ClusterScopedController(),
             "/v2/widgets",
             List.of("/v2/widgets")),

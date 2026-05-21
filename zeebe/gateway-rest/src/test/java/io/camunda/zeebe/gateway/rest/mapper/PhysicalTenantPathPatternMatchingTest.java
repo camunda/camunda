@@ -41,12 +41,12 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
             "Spring MVC must be configured with PathPatternParser. "
                 + "AntPathMatcher leaves RequestMappingInfo#getPathPatternsCondition() null, "
                 + "so PhysicalTenantRequestMappingHandlerMapping would silently skip registering "
-                + "the /v2/physical-tenants/{id}/... sibling routes.")
+                + "the tenant-prefixed sibling routes.")
         .isInstanceOf(PathPatternParser.class);
   }
 
   @Test
-  void bothOriginalAndTenantPrefixedRouteShouldResolve() {
+  void originalAndBothTenantPrefixedRoutesShouldResolve() {
     // original route stays reachable
     webClient
         .get()
@@ -57,10 +57,20 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
         .expectBody(String.class)
         .isEqualTo("ok");
 
-    // tenant-prefixed sibling resolves to the same controller method
+    // existing API-client tenant-prefixed sibling resolves to the same controller method
     webClient
         .get()
         .uri("/v2/physical-tenants/default/widgets")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody(String.class)
+        .isEqualTo("ok");
+
+    // webapp-aligned tenant-prefixed sibling (D7) resolves to the same controller method
+    webClient
+        .get()
+        .uri("/physical-tenant/default/v2/widgets")
         .exchange()
         .expectStatus()
         .isOk()

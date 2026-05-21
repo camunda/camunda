@@ -73,11 +73,19 @@ public final class PerTenantSecurityChainFactory {
   }
 
   /**
-   * Builds a session-or-bearer API chain for {@code /physical-tenant/<tenant>/v2/**}.
+   * Builds a session-or-bearer API chain for a tenant. The chain matches BOTH supported API URL
+   * schemes (see spec D7):
    *
-   * <p>The API URL space lives <b>inside</b> the webapp cookie's {@code Path=/physical-tenant/<t>}
-   * scope (spec OQ-1 resolution). That means the browser sends the per-tenant session cookie on API
-   * calls too. The chain accepts <i>either</i> form of authentication:
+   * <ul>
+   *   <li>{@code /physical-tenant/<tenant>/v2/**} — webapp/SPA addressing. Lives <b>inside</b> the
+   *       webapp cookie's {@code Path=/physical-tenant/<t>} scope, so the browser sends the
+   *       per-tenant session cookie on these requests automatically.
+   *   <li>{@code /v2/physical-tenants/<tenant>/**} — direct API-client addressing (the existing PT
+   *       REST infrastructure scheme). <b>Outside</b> the cookie's {@code Path} scope, so cookie
+   *       auth does not apply on this URL; clients authenticate with bearer tokens.
+   * </ul>
+   *
+   * The chain accepts <i>either</i> form of authentication:
    *
    * <ul>
    *   <li><b>Session</b>: the tenant's {@link
@@ -87,10 +95,12 @@ public final class PerTenantSecurityChainFactory {
    *       chain never creates a session of its own) then loads the {@code SecurityContext} saved by
    *       the webapp chain at OAuth2 login. Authentication arrives as {@link
    *       OAuth2AuthenticationToken} — already validated on this tenant's webapp chain, so
-   *       authenticated ⇒ allowed.
+   *       authenticated ⇒ allowed. In practice this branch only fires on the webapp-aligned URL
+   *       because the cookie isn't sent to the API-client URL.
    *   <li><b>Bearer</b>: a non-browser API client presents {@code Authorization: Bearer <jwt>}.
    *       {@code oauth2ResourceServer.jwt()} produces a {@link JwtAuthenticationToken}; the
-   *       per-chain issuer allowlist still applies (cross-tenant tokens get 403, spec D6).
+   *       per-chain issuer allowlist still applies (cross-tenant tokens get 403, spec D6). Applies
+   *       to both URLs.
    * </ul>
    *
    * <p>The {@link JwtDecoder} is <b>cluster-shared</b> — one issuer-aware decoder built from the
@@ -108,11 +118,18 @@ public final class PerTenantSecurityChainFactory {
       final JwtDecoder sharedDecoder,
       final Set<String> allowedIssuers)
       throws Exception {
-    final String prefix =
-        slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
-            ? "/physical-tenant/" + slice.tenantId() + "/v2"
-            : "/v2";
-    final String securityMatcher = prefix + "/**";
+    final String[] securityMatchers;
+    if (slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED) {
+      securityMatchers =
+          new String[] {
+            // webapp/SPA-aligned URL — inside the per-tenant cookie's Path scope.
+            "/physical-tenant/" + slice.tenantId() + "/v2/**",
+            // direct API-client URL — outside the cookie scope, bearer-only in practice.
+            "/v2/physical-tenants/" + slice.tenantId() + "/**"
+          };
+    } else {
+      securityMatchers = new String[] {"/v2/**"};
+    }
 
     final AuthorizationManager<RequestAuthorizationContext> sessionOrBearer =
         (authSupplier, ctx) -> {
@@ -146,7 +163,7 @@ public final class PerTenantSecurityChainFactory {
         new HttpSessionSecurityContextRepository();
     sessionContextRepository.setAllowSessionCreation(false);
 
-    return http.securityMatcher(securityMatcher)
+    return http.securityMatcher(securityMatchers)
         .csrf(c -> c.disable())
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
         .securityContext(sc -> sc.securityContextRepository(sessionContextRepository))
