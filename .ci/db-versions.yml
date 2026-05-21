@@ -35,7 +35,6 @@ opensearch:
 # See: .github/workflows/zeebe-rdbms-integration-tests.yml
 
 postgresql:
-  - "14-alpine"
   - "15-alpine"
   - "16-alpine"
   - "17-alpine"
