@@ -120,7 +120,6 @@ public final class CommandApiServiceImpl extends Actor
         () -> {
           commandHandler.removePartition(partitionId);
           queryHandler.removePartition(partitionId);
-          leadPartitions.remove(partitionId);
         });
   }
 

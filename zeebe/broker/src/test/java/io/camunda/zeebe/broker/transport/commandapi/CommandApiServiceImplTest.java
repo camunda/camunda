@@ -135,7 +135,7 @@ public class CommandApiServiceImplTest {
 
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
   @Timeout(value = 10)
-  public void shouldUnsubscribeTwiceWhenTransitioningFromFollowerToInactive() {
+  public void shouldUnsubscribeOnceWhenTransitioningFromFollowerToInactive() {
     // given - partition transitions to FOLLOWER first (deactivate, no unsubscribe)
     when(transitionContext.getPartitionId()).thenReturn(1);
     final var transitionStep = new CommandApiServiceTransitionStep();
