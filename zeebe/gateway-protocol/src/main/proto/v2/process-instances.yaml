@@ -1011,6 +1011,8 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         spuriousNewProperty:
+          description: |
+            Unannotated new property to provoke CI gate failure.
           type: string
       x-properties-added-in-version:
         - propertyName: tags
