@@ -39,13 +39,12 @@ const getWrapper = (initialPath = Paths.processesVariables()) => {
 describe('<VariableFilterModal />', () => {
   beforeEach(() => {
     variableFilterStore.reset();
-    sessionStorage.removeItem('operate.variableFilter.warningShown');
   });
 
   it('should render one empty row when no initial conditions', () => {
     render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
+    expect(screen.getAllByRole('textbox', {name: 'Name'})).toHaveLength(1);
   });
 
   it('should render rows for each initial condition', () => {
@@ -55,7 +54,7 @@ describe('<VariableFilterModal />', () => {
     ]);
     render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    const nameInputs = screen.getAllByPlaceholderText('Variable name');
+    const nameInputs = screen.getAllByRole('textbox', {name: 'Name'});
     expect(nameInputs).toHaveLength(2);
     expect(nameInputs[0]!).toHaveValue('status');
     expect(nameInputs[1]!).toHaveValue('count');
@@ -72,7 +71,7 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
 
-    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
+    expect(screen.getAllByRole('textbox', {name: 'Name'})).toHaveLength(2);
   });
 
   it('should never disable Add condition button due to count', () => {
@@ -124,32 +123,31 @@ describe('<VariableFilterModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not show warning again once already shown in session', async () => {
-    sessionStorage.setItem('operate.variableFilter.warningShown', 'true');
-    const conditions: VariableCondition[] = Array.from({length: 7}, (_, i) => ({
+  it('should show warning on initial render when conditions meet threshold', () => {
+    const conditions: VariableCondition[] = Array.from({length: 8}, (_, i) => ({
       name: `var${i}`,
       operator: 'equals' as const,
       value: `"val${i}"`,
     }));
     variableFilterStore.setConditions(conditions);
-    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
-
-    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(
-      screen.queryByText(/Filtering by many conditions/),
-    ).not.toBeInTheDocument();
+      screen.getByText(
+        'Filtering by many conditions can be slow. Add conditions only if you need them.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('should update store and navigate on apply with valid conditions', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'status',
     );
     await user.type(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
       '"active"',
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -172,7 +170,7 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
 
@@ -190,7 +188,7 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
 
@@ -211,7 +209,7 @@ describe('<VariableFilterModal />', () => {
     await user.click(screen.getByText('exists'));
 
     expect(
-      screen.queryByPlaceholderText('value in JSON format'),
+      screen.queryByRole('textbox', {name: 'Value'}),
     ).not.toBeInTheDocument();
   });
 
@@ -222,14 +220,14 @@ describe('<VariableFilterModal />', () => {
     ]);
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
+    expect(screen.getAllByRole('textbox', {name: 'Name'})).toHaveLength(2);
 
     const deleteButtons = screen.getAllByRole('button', {
       name: 'Remove condition',
     });
     await user.click(deleteButtons[0]!);
 
-    const remaining = screen.getAllByPlaceholderText('Variable name');
+    const remaining = screen.getAllByRole('textbox', {name: 'Name'});
     expect(remaining).toHaveLength(1);
     expect(remaining[0]!).toHaveValue('count');
   });
@@ -237,8 +235,8 @@ describe('<VariableFilterModal />', () => {
   it('should initialize with one empty row when opened with no initial conditions', () => {
     render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
-    expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue('');
+    expect(screen.getAllByRole('textbox', {name: 'Name'})).toHaveLength(1);
+    expect(screen.getAllByRole('textbox', {name: 'Name'})[0]!).toHaveValue('');
   });
 
   it('should show name error and keep modal open when name is empty on Apply', async () => {
@@ -257,11 +255,11 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
     await user.type(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
       'not-json',
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -274,13 +272,13 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
     await user.click(screen.getByText('contains'));
     await user.type(
-      screen.getAllByPlaceholderText('search text')[0]!,
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
       'active',
     );
 
@@ -299,7 +297,7 @@ describe('<VariableFilterModal />', () => {
     expect(screen.getByText('Variable name is required')).toBeInTheDocument();
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
 
@@ -311,7 +309,7 @@ describe('<VariableFilterModal />', () => {
   it('should not show errors before a submit attempt', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    await user.click(screen.getAllByPlaceholderText('Variable name')[0]!);
+    await user.click(screen.getAllByRole('textbox', {name: 'Name'})[0]!);
     await user.tab();
 
     expect(
@@ -339,7 +337,7 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -355,7 +353,7 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
@@ -370,11 +368,11 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'status',
     );
     await user.type(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
       '"active"',
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -492,11 +490,11 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
       'myVar',
     );
     await user.type(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
       '"hello"',
     );
 
@@ -507,12 +505,12 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
-    expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue(
+    expect(screen.getAllByRole('textbox', {name: 'Name'})[0]!).toHaveValue(
       'myVar',
     );
-    expect(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
-    ).toHaveValue('"hello"');
+    expect(screen.getAllByRole('textbox', {name: 'Value'})[0]!).toHaveValue(
+      '"hello"',
+    );
   });
 
   it('should hide conditions list on editor step', async () => {
@@ -522,14 +520,16 @@ describe('<VariableFilterModal />', () => {
     ]);
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
-    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
+    expect(screen.getAllByRole('textbox', {name: 'Name'})).toHaveLength(2);
 
     await user.click(
       screen.getAllByRole('button', {name: 'Open JSON editor'})[0]!,
     );
 
-    screen.getAllByPlaceholderText('Variable name').forEach((input) => {
-      expect(input).not.toBeVisible();
-    });
+    screen
+      .getAllByRole('textbox', {name: 'Name', hidden: true})
+      .forEach((input) => {
+        expect(input).not.toBeVisible();
+      });
   });
 });

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useRef, useState} from 'react';
+import {Fragment, lazy, Suspense, useRef, useState} from 'react';
 import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -37,7 +37,6 @@ const RichTextEditor = lazy(async () => {
 });
 
 const SOFT_WARNING_THRESHOLD = 8;
-const WARNING_STORAGE_KEY = 'operate.variableFilter.warningShown';
 
 type RowErrors = {
   name?: string;
@@ -114,7 +113,6 @@ const VariableFilterModal: React.FC = observer(() => {
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const editorRef = useRef<EditorRef | null>(null);
   const preEditValueRef = useRef('');
-  const [showWarning, setShowWarning] = useState(false);
 
   const handleSubmit = (
     values: FormValues,
@@ -245,54 +243,42 @@ const VariableFilterModal: React.FC = observer(() => {
                     {({fields}) => (
                       <Stack gap={4}>
                         {fields.map((fieldName, index) => (
-                          <VariableFilterRow
-                            key={fieldName}
-                            fieldName={fieldName}
-                            rowIndex={index}
-                            onDelete={() => fields.remove(index)}
-                            isDeleteHidden={fields.length === 1}
-                            onEditValue={(i) => {
-                              const val =
-                                form.getState().values?.['conditions']?.[i]
-                                  ?.value ?? '';
-                              preEditValueRef.current = val;
-                              changeField(
-                                `conditions[${i}].value`,
-                                beautifyJSON(val),
-                              );
-                              setEditingRowIndex(i);
-                            }}
-                          />
+                          <Fragment key={fieldName}>
+                            <VariableFilterRow
+                              fieldName={fieldName}
+                              rowIndex={index}
+                              onDelete={() => fields.remove(index)}
+                              isDeleteHidden={fields.length === 1}
+                              onEditValue={(i) => {
+                                const val =
+                                  form.getState().values?.['conditions']?.[i]
+                                    ?.value ?? '';
+                                preEditValueRef.current = val;
+                                changeField(
+                                  `conditions[${i}].value`,
+                                  beautifyJSON(val),
+                                );
+                                setEditingRowIndex(i);
+                              }}
+                            />
+                            {index === (fields.length ?? 0) - 1 &&
+                              (fields.length ?? 0) >=
+                                SOFT_WARNING_THRESHOLD && (
+                                <InlineNotification
+                                  kind="info"
+                                  lowContrast
+                                  hideCloseButton
+                                  subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
+                                  role="status"
+                                />
+                              )}
+                          </Fragment>
                         ))}
-                        {showWarning && (
-                          <InlineNotification
-                            kind="info"
-                            lowContrast
-                            hideCloseButton
-                            subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
-                            role="status"
-                          />
-                        )}
                         <Button
                           kind="ghost"
                           size="sm"
                           renderIcon={Add}
-                          onClick={() => {
-                            fields.push(createDraft());
-                            if (
-                              (fields.length ?? 0) + 1 >=
-                                SOFT_WARNING_THRESHOLD &&
-                              !showWarning &&
-                              sessionStorage.getItem(WARNING_STORAGE_KEY) ===
-                                null
-                            ) {
-                              setShowWarning(true);
-                              sessionStorage.setItem(
-                                WARNING_STORAGE_KEY,
-                                'true',
-                              );
-                            }
-                          }}
+                          onClick={() => fields.push(createDraft())}
                         >
                           Add condition
                         </Button>
