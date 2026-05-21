@@ -107,7 +107,9 @@ the client used. `PhysicalTenantRequestMappingHandlerMapping` registers each
 keeping it correct argues for the webapp-aligned scheme. The existing API-client scheme stays
 because (a) it's already in production-shape code and clients, (b) it's the REST-conventional
 shape (`/v2/<resource-collection>/<id>/...`), and (c) honest API clients send bearer tokens
-explicitly anyway — they don't need cookies.
+explicitly anyway — they don't need cookies. PoC and production controllers declare their paths
+relative to `/v2` only; `PhysicalTenantRequestMappingHandlerMapping` handles the prefixing, so
+the dual URL scheme stays an infrastructure concern that never leaks into controller mappings.
 
 ---
 
