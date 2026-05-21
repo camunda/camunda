@@ -25,7 +25,6 @@ import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations
 
 const nestedSubProcessesXml = open('NestedSubProcesses.bpmn');
 
-
 // TODO: https://github.com/camunda/camunda/issues/20862
 describe.todo('ElementInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
