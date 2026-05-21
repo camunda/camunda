@@ -25,4 +25,11 @@ public class PhysicalTenantWhoamiController {
   public Whoami whoami(@PathVariable final String tenantId, final Authentication authentication) {
     return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
   }
+
+  @GetMapping("/v2/physical-tenants/{tenantId}/whoami")
+  @ResponseBody
+  public Whoami whoamiApi(
+      @PathVariable final String tenantId, final Authentication authentication) {
+    return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
+  }
 }

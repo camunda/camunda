@@ -8,14 +8,21 @@
 package io.camunda.authentication.pt;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 /**
@@ -61,6 +68,50 @@ public final class PerTenantSecurityChainFactory {
                         // mishandles for multi-segment prefixes. Both are needed.
                         ae -> ae.baseUri(authBaseUri).authorizationRequestResolver(resolver))
                     .redirectionEndpoint(re -> re.baseUri(callbackBaseUri)))
+        .build();
+  }
+
+  /**
+   * Builds a stateless bearer-token API chain for {@code /v2/physical-tenants/<tenant>/**}.
+   *
+   * <p>The {@link JwtDecoder} is <b>cluster-shared</b> — one issuer-aware decoder built from the
+   * union of all tenants' issuer URIs validates signatures for any known token. Per-tenant
+   * isolation comes from the {@code allowedIssuers} <b>allowlist</b>: each chain's authorization
+   * rule rejects authenticated tokens whose {@code iss} claim is not in that tenant's assigned
+   * issuer set. Cross-tenant valid tokens get 403, not 401 — they authenticated successfully but
+   * lack authorization for this tenant's API surface (spec D6).
+   *
+   * <p>The slice's {@code clientRegistrationRepository} / {@code sessionRepositoryFilter} / {@code
+   * httpSessionIdResolver} fields are intentionally unused here — API chains are stateless ({@link
+   * SessionCreationPolicy#NEVER}) and don't run an OAuth2 login flow. We accept the slice anyway so
+   * the chain factory has one input shape; the unused fields are a known and acceptable cost.
+   */
+  public SecurityFilterChain buildApiChain(
+      final HttpSecurity http,
+      final TenantSecuritySlice slice,
+      final JwtDecoder sharedDecoder,
+      final Set<String> allowedIssuers)
+      throws Exception {
+    final String securityMatcher =
+        slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
+            ? "/v2/physical-tenants/" + slice.tenantId() + "/**"
+            : "/v2/**";
+
+    final AuthorizationManager<RequestAuthorizationContext> issuerAllowed =
+        (auth, ctx) -> {
+          final var a = auth.get();
+          if (!(a instanceof JwtAuthenticationToken jwt)) {
+            return new AuthorizationDecision(false);
+          }
+          final var iss = jwt.getToken().getIssuer();
+          return new AuthorizationDecision(iss != null && allowedIssuers.contains(iss.toString()));
+        };
+
+    return http.securityMatcher(securityMatcher)
+        .csrf(c -> c.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+        .authorizeHttpRequests(a -> a.anyRequest().access(issuerAllowed))
+        .oauth2ResourceServer(o -> o.jwt(j -> j.decoder(sharedDecoder)))
         .build();
   }
 

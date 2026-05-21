@@ -10,9 +10,13 @@ package io.camunda.authentication.pt;
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +26,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.SessionRepositoryFilter;
@@ -66,6 +71,51 @@ public class PhysicalTenantSecurityConfiguration {
   public SecurityFilterChain ptDefaultWebappChain(
       final HttpSecurity http, final Environment environment) throws Exception {
     return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID, environment));
+  }
+
+  /**
+   * Cluster-shared issuer-aware {@link JwtDecoder} for the API chains. One bean serves <b>all</b>
+   * tenants' API chains; signature validation routes by the JWT's {@code iss} claim across the
+   * union of all assigned issuer URIs. Per-tenant isolation is enforced at the chain level via an
+   * issuer allowlist (see {@link PerTenantSecurityChainFactory#buildApiChain}), not via per-tenant
+   * decoders.
+   *
+   * <p>Bean name is deliberately distinct from {@code jwtDecoder} (the consolidated-auth host bean)
+   * to avoid type-based autowiring collisions; the API chains pass this bean explicitly to {@code
+   * oauth2ResourceServer.jwt().decoder(...)}.
+   */
+  @Bean
+  public JwtDecoder ptIssuerAwareJwtDecoder(final Environment environment) {
+    final Set<String> allIssuers = new LinkedHashSet<>();
+    allIssuers.addAll(issuerUrisFor(TENANTA_TENANT_ID, environment));
+    allIssuers.addAll(issuerUrisFor(DEFAULT_TENANT_ID, environment));
+    return new PtIssuerAwareJwtDecoder(allIssuers);
+  }
+
+  @Bean
+  public SecurityFilterChain ptTenantaApiChain(
+      final HttpSecurity http,
+      final JwtDecoder ptIssuerAwareJwtDecoder,
+      final Environment environment)
+      throws Exception {
+    return chainFactory.buildApiChain(
+        http,
+        sliceFor(TENANTA_TENANT_ID, environment),
+        ptIssuerAwareJwtDecoder,
+        issuerUrisFor(TENANTA_TENANT_ID, environment));
+  }
+
+  @Bean
+  public SecurityFilterChain ptDefaultPrefixedApiChain(
+      final HttpSecurity http,
+      final JwtDecoder ptIssuerAwareJwtDecoder,
+      final Environment environment)
+      throws Exception {
+    return chainFactory.buildApiChain(
+        http,
+        sliceFor(DEFAULT_TENANT_ID, environment),
+        ptIssuerAwareJwtDecoder,
+        issuerUrisFor(DEFAULT_TENANT_ID, environment));
   }
 
   /**
@@ -117,6 +167,35 @@ public class PhysicalTenantSecurityConfiguration {
             PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".security",
             Bindable.ofInstance(tenantSecurity));
     return tenantSecurity;
+  }
+
+  /**
+   * Returns the set of OIDC issuer URIs assigned to this tenant. Each id in {@code
+   * providers.assigned} resolves to either the default {@code authentication.oidc.*} slot (literal
+   * "oidc") or a named slot under {@code authentication.providers.oidc.<name>}. We collect issuer
+   * URIs from the resolved providers; missing or unconfigured providers are skipped silently here
+   * (the same data is consumed by {@link PerTenantOidcRegistry}, which raises precise errors at
+   * chain-build time).
+   */
+  static Set<String> issuerUrisFor(final String tenantId, final Environment environment) {
+    final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
+    final List<String> assigned = bindAssigned(tenantId, environment);
+    final AuthenticationConfiguration auth = tenantSecurity.getAuthentication();
+    final Map<String, OidcConfiguration> namedProviders =
+        auth.getProviders() == null ? null : auth.getProviders().getOidc();
+    final Set<String> issuers = new LinkedHashSet<>();
+    for (final String id : assigned) {
+      final OidcConfiguration provider;
+      if (PerTenantOidcRegistry.DEFAULT_PROVIDER_REGISTRATION_ID.equals(id)) {
+        provider = auth.getOidc();
+      } else {
+        provider = namedProviders == null ? null : namedProviders.get(id);
+      }
+      if (provider != null && provider.getIssuerUri() != null) {
+        issuers.add(provider.getIssuerUri());
+      }
+    }
+    return issuers;
   }
 
   @SuppressWarnings("unchecked")
