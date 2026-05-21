@@ -1942,6 +1942,12 @@ jobs:
     env:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
       SPECTRAL_VERSION: '6.16.0'
+      # Pin the transitive @stoplight/spectral-rulesets to avoid a nimma
+      # null-deref triggered by the duplicated-entry-in-enum rule in
+      # spectral-rulesets >= 1.22.3 against null example values in the spec.
+      # Revisit once nimma releases past 0.7.2 or spectral-rulesets ships a fix.
+      # renovate: datasource=npm depName=@stoplight/spectral-rulesets
+      SPECTRAL_RULESETS_VERSION: '1.22.2'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -1950,7 +1956,10 @@ jobs:
         with:
           node-version: 24
       - name: Install Spectral CLI
-        run: npm install -g "@stoplight/spectral-cli@${SPECTRAL_VERSION}"
+        run: |
+          npm install -g \
+            "@stoplight/spectral-cli@${SPECTRAL_VERSION}" \
+            "@stoplight/spectral-rulesets@${SPECTRAL_RULESETS_VERSION}"
         shell: bash
       - name: Run OpenAPI Linter (Structural pass)
         # Spectral provides comprehensive OpenAPI validation including:
