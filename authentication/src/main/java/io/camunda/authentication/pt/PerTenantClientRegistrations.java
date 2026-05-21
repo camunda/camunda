@@ -43,6 +43,11 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
  *
  * <p>The class name mirrors Spring Security's {@link ClientRegistrations} static utility: this is a
  * builder, not a stateful registry.
+ *
+ * <p>All built registrations have their redirect URI rewritten to the tenant's prefixed URL space
+ * via {@link PhysicalTenantRedirectUriRewriter}; the unprefixed default access path is served by
+ * CSL's standard chains, which use the standard {@link ClientRegistrationRepository} bean and do
+ * not flow through this builder.
  */
 @NullMarked
 public final class PerTenantClientRegistrations {
@@ -63,53 +68,17 @@ public final class PerTenantClientRegistrations {
       final String tenantId,
       final SecurityConfiguration tenantSecurity,
       final List<String> assigned) {
-    return buildFor(
-        tenantId,
-        tenantSecurity,
-        assigned,
-        TenantSecuritySlice.AccessPath.PREFIXED,
-        discoveringBuilder());
-  }
-
-  /**
-   * Production entry point that accepts an explicit {@link TenantSecuritySlice.AccessPath}. The
-   * access path controls whether the redirect URI is rewritten to the tenant prefix. For {@link
-   * TenantSecuritySlice.AccessPath#UNPREFIXED_DEFAULT} the rewrite is skipped so the IdP redirects
-   * back to {@code /login/oauth2/code/{registrationId}} on the root, which the unprefixed default
-   * webapp chain handles.
-   */
-  public static ClientRegistrationRepository buildFor(
-      final String tenantId,
-      final SecurityConfiguration tenantSecurity,
-      final List<String> assigned,
-      final TenantSecuritySlice.AccessPath accessPath) {
-    return buildFor(tenantId, tenantSecurity, assigned, accessPath, discoveringBuilder());
+    return buildFor(tenantId, tenantSecurity, assigned, discoveringBuilder());
   }
 
   /**
    * Test seam: build registrations with a caller-supplied {@link ClientRegistrationBuilderFactory}
-   * so unit tests can bypass live OIDC discovery. Defaults to {@link
-   * TenantSecuritySlice.AccessPath#PREFIXED}.
+   * so unit tests can bypass live OIDC discovery.
    */
   static ClientRegistrationRepository buildFor(
       final String tenantId,
       final SecurityConfiguration tenantSecurity,
       final List<String> assigned,
-      final ClientRegistrationBuilderFactory builderFactory) {
-    return buildFor(
-        tenantId,
-        tenantSecurity,
-        assigned,
-        TenantSecuritySlice.AccessPath.PREFIXED,
-        builderFactory);
-  }
-
-  /** Full-form test seam taking both the {@link TenantSecuritySlice.AccessPath} and a builder. */
-  static ClientRegistrationRepository buildFor(
-      final String tenantId,
-      final SecurityConfiguration tenantSecurity,
-      final List<String> assigned,
-      final TenantSecuritySlice.AccessPath accessPath,
       final ClientRegistrationBuilderFactory builderFactory) {
     if (assigned == null || assigned.isEmpty()) {
       throw new IllegalStateException("Tenant '" + tenantId + "' has no providers.assigned");
@@ -137,8 +106,7 @@ public final class PerTenantClientRegistrations {
                 + "' but it is missing from both authentication.oidc.* and"
                 + " authentication.providers.oidc.<name>.*.");
       }
-      registrations.add(
-          buildRegistration(tenantId, registrationId, provider, accessPath, builderFactory));
+      registrations.add(buildRegistration(tenantId, registrationId, provider, builderFactory));
     }
     return new InMemoryClientRegistrationRepository(registrations);
   }
@@ -164,19 +132,13 @@ public final class PerTenantClientRegistrations {
       final String tenantId,
       final String registrationId,
       final OidcConfiguration provider,
-      final TenantSecuritySlice.AccessPath accessPath,
       final ClientRegistrationBuilderFactory builderFactory) {
     final String redirectUriTemplate =
         provider.getRedirectUri() != null
             ? provider.getRedirectUri()
             : "{baseUrl}/login/oauth2/code/{registrationId}";
-    // For UNPREFIXED_DEFAULT the IdP must redirect back to /login/oauth2/code/{registrationId}
-    // on the root — that's the callback path the unprefixed default webapp chain serves. Skipping
-    // the rewrite means the redirect URI resolves to the un-rewritten template.
     final String redirectUri =
-        accessPath == TenantSecuritySlice.AccessPath.UNPREFIXED_DEFAULT
-            ? redirectUriTemplate
-            : PhysicalTenantRedirectUriRewriter.rewrite(redirectUriTemplate, tenantId);
+        PhysicalTenantRedirectUriRewriter.rewrite(redirectUriTemplate, tenantId);
     final var builder =
         builderFactory
             .builderFor(registrationId, provider)

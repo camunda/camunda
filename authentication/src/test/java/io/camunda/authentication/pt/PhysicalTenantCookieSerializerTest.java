@@ -26,14 +26,4 @@ class PhysicalTenantCookieSerializerTest {
     assertThat(cookie).isNotNull();
     assertThat(cookie.getPath()).isEqualTo("/physical-tenant/tenanta");
   }
-
-  @Test
-  void shouldScopeUnprefixedDefaultCookieToRoot() {
-    final var serializer = PhysicalTenantCookieSerializer.forUnprefixedDefaultChain();
-    final var response = new MockHttpServletResponse();
-    serializer.writeCookieValue(new CookieValue(new MockHttpServletRequest(), response, "raw"));
-    final Cookie cookie = response.getCookie("camunda-session-default-root");
-    assertThat(cookie).isNotNull();
-    assertThat(cookie.getPath()).isEqualTo("/");
-  }
 }

@@ -40,19 +40,38 @@ token() {
 
 # Runs the OAuth2 authorization-code flow against a webapp chain by entering at $entry_url and
 # completing Keycloak's login form with $username/$password. Session cookies land in $jar.
+#
+# The shape differs between PT (prefixed) chains and CSL's standard OidcWebapp chain: PT chains
+# forward directly to Keycloak after one redirect; CSL's chain has its own redirect dance to
+# /oauth2/authorization/<regId>. The helper handles both by following redirects in a loop and only
+# submitting Keycloak credentials when it lands on KC's login form.
 oauth_login() {
-  local entry_url="$1" username="$2" password="$3" jar="$4"
+  local entry_url="$1" user="$2" pass="$3" jar="$4"
   rm -f "$jar"
-  local loc form cb
-  loc=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" "$entry_url")
-  loc=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" "$loc")
-  curl -sS -c "$jar" -b "$jar" "$loc" -o "${jar}.form"
-  form=$(grep -oE 'action="[^"]+"' "${jar}.form" | head -1 \
-         | sed -E 's/^action="(.*)"$/\1/' | sed 's/\&amp;/\&/g')
-  cb=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" -X POST "$form" \
-        -d "username=$username" -d "password=$password" -d "credentialId=")
-  curl -sS -c "$jar" -b "$jar" -o /dev/null "$cb"
-  rm -f "${jar}.form"
+  local loc="$entry_url"
+  local response_url
+  # Follow redirects until we either land on Keycloak's login form or come back to OC.
+  while true; do
+    response_url=$(curl -sS -c "$jar" -b "$jar" -o /tmp/oauth-step.body -w "%{redirect_url}" "$loc")
+    if [ -z "$response_url" ]; then
+      break  # not a redirect; we landed on a page (KC login form, OC final page, etc.)
+    fi
+    loc="$response_url"
+  done
+  # If we landed on Keycloak's login form, submit credentials.
+  if grep -q 'action=.*login-actions/authenticate' /tmp/oauth-step.body; then
+    local form
+    form=$(grep -oE 'action="[^"]+"' /tmp/oauth-step.body | head -1 \
+           | sed -E 's/^action="(.*)"$/\1/' | sed 's/\&amp;/\&/g')
+    local cb
+    cb=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" -X POST "$form" \
+          -d "username=$user" -d "password=$pass" -d "credentialId=")
+    # Follow callback chain to completion.
+    while [ -n "$cb" ]; do
+      cb=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" "$cb")
+    done
+  fi
+  rm -f /tmp/oauth-step.body
 }
 
 call() {
@@ -113,25 +132,22 @@ echo
 matrix "Webapp-relative API Path" "$WEBAPP_URL_TEMPLATE"
 matrix "API Path"    "$APICLIENT_URL_TEMPLATE"
 
-# Default tenant on the unprefixed access path (Task 12) — /v2/whoami is served by the
-# unprefixed default API chain (cookie scoped at Path=/, name camunda-session-default-root).
-# Single tenant target (default), so this is a 3-cell block rather than a full cross-tenant
-# matrix.
-echo "=== Default unprefixed URL (cookie scoped at Path=/) ==="
+# Default tenant on the unprefixed access path — /v2/whoami is now served by CSL's standard
+# OidcApi chain (Stage 2: the PoC dropped its unprefixed-default chains; CSL's standard chains
+# took over). Same expected status codes as before. Single tenant target (default), so this is a
+# 3-cell block rather than a full cross-tenant matrix.
+echo "=== Default unprefixed URL (served by CSL OidcApi) ==="
 call "default -> default" "$DEF" "/v2/whoami" 200
 call "tenanta -> default" "$TA"  "/v2/whoami" 403
 call "no token -> default" ""    "/v2/whoami" 401
 echo
 
-# Session-based cross-tenant. Log in via /app (default unprefixed) so the browser holds
-# camunda-session-default-root at Path=/. The cookie reaches tenanta URLs because Path=/ matches
-# everything, but tenanta's chain reads cookie name "camunda-session-tenanta" — the names don't
-# match, so no session resolves. With no bearer either, the request is anonymous → 401 via
-# oauth2ResourceServer's authentication entry point. (HTTP semantics: 401 means "no credentials
-# visible to me"; the chain genuinely sees nothing for tenanta — see README note on OQ-1.)
-echo "=== Session cross-tenant (logged in via /app as default; call tenanta's API) ==="
+# Session-based cross-tenant. Default tenant has two assigned IdPs, so its login page is CSL's
+# multi-IdP chooser; the smoke helper would have to scrape the picker. To keep the helper simple,
+# enter the OAuth flow directly at /oauth2/authorization/oidc to skip the picker.
+echo "=== Session cross-tenant (logged in via default OidcWebapp; call tenanta's API) ==="
 DEF_JAR=/tmp/pt-poc-default-jar.txt
-oauth_login "$OC/app" alice alice "$DEF_JAR"
+oauth_login "$OC/oauth2/authorization/oidc" alice alice "$DEF_JAR"
 call_with_cookies "default session -> /v2/whoami"               "$DEF_JAR" "/v2/whoami"                          200
 call_with_cookies "default session -> tenanta webapp-aligned"   "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
 call_with_cookies "default session -> tenanta API-client URL"   "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401

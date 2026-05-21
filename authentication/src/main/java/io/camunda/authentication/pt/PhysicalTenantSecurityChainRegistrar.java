@@ -51,13 +51,6 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
  *       /physical-tenant/<id>/**}.
  * </ol>
  *
- * Plus, exactly once, for the {@code default} tenant:
- *
- * <ol start="3">
- *   <li>{@code ptDefaultUnprefixedApiChain} — the unprefixed API chain at {@code /v2/**}.
- *   <li>{@code ptDefaultUnprefixedWebappChain} — the unprefixed webapp chain at {@code /**}.
- * </ol>
- *
  * <h2>Ordering</h2>
  *
  * Spring Security's chain collector sorts {@link SecurityFilterChain} beans by {@link
@@ -72,30 +65,30 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
  * and {@code @Order(2)} (catch-all 404). Concretely:
  *
  * <ul>
- *   <li>PT API chains (prefixed and unprefixed-default) use {@code @Order(-1)}. They MUST beat
- *       CSL's {@code OidcApi} at {@code @Order(1)} because PT API matchers like {@code
- *       /v2/physical-tenants/<id>/**} are sub-patterns of CSL's {@code /v2/**} matcher. Among
- *       themselves their matchers are per-tenant disjoint.
- *   <li>PT webapp chains (prefixed and unprefixed-default) use {@code @Order(0)}. They tie with
- *       CSL's unprotected-paths chain, but the matchers are disjoint: {@code
- *       SecurityPathPort.unprotectedPaths()} does not include any PT or {@code /v2/...} URL. The PT
- *       API chains are at a strictly lower order so URLs like {@code
- *       /physical-tenant/<id>/v2/whoami} hit the API chain before the webapp chain.
+ *   <li>PT API chains use {@code @Order(-1)}. They MUST beat CSL's {@code OidcApi} at
+ *       {@code @Order(1)} because PT API matchers like {@code /v2/physical-tenants/<id>/**} are
+ *       sub-patterns of CSL's {@code /v2/**} matcher. Among themselves their matchers are
+ *       per-tenant disjoint.
+ *   <li>PT webapp chains use {@code @Order(0)}. They tie with CSL's unprotected-paths chain, but
+ *       the matchers are disjoint: {@code SecurityPathPort.unprotectedPaths()} does not include any
+ *       PT or {@code /v2/...} URL. The PT API chains are at a strictly lower order so URLs like
+ *       {@code /physical-tenant/<id>/v2/whoami} hit the API chain before the webapp chain.
  * </ul>
  *
  * Final ordering at runtime (low number wins):
  *
  * <pre>
- *  -1  PT API chains (prefixed, plus unprefixed-default at /v2/**)
- *   0  PT webapp chains (prefixed, plus unprefixed-default at /**)
+ *  -1  PT API chains (prefixed)
+ *   0  PT webapp chains (prefixed)
  *   0  CSL unprotectedPathsSecurityFilterChain (disjoint matchers — favicon, /error, /actuator, ...)
- *   1  CSL OidcWebapp + OidcApi (catch the residual /v2/** and webappPaths the PT chains don't claim)
+ *   1  CSL OidcWebapp + OidcApi (serve the unprefixed default tenant via /v2/** and webapp paths)
  *   2  CSL protectedUnhandledPathsSecurityFilterChain (/** denyAll -> 404, the catch-all)
  * </pre>
  *
- * <p>With N tenants the result is 2N + 2 chains (one API + one webapp per tenant, plus the
- * unprefixed-default API + webapp pair). Adding a tenant to {@code application-pt-poc.yaml}
- * automatically grows the chain set; no Java changes required.
+ * <p>With N tenants the result is 2N chains (one API + one webapp per tenant). The unprefixed
+ * default access path is served by CSL's standard {@code OidcWebapp} + {@code OidcApi} chains, not
+ * by PoC-owned chains. Adding a tenant to {@code application-pt-poc.yaml} automatically grows the
+ * chain set; no Java changes required.
  */
 @NullMarked
 public final class PhysicalTenantSecurityChainRegistrar
@@ -136,18 +129,7 @@ public final class PhysicalTenantSecurityChainRegistrar
       registerChain(
           registry, beanName(tenantId, "ApiChain"), apiOrder, ChainVariant.PREFIXED_API, tenantId);
     }
-    // 2) Unprefixed-default API chain — broader matcher (/v2/**), but still ahead of CSL's
-    //    OidcApi at @Order(1). Per-tenant API chains share apiOrder; their matchers are
-    //    per-tenant disjoint and disjoint from /v2/** for non-default tenants.
-    if (tenantIds.contains(DEFAULT_TENANT_ID)) {
-      registerChain(
-          registry,
-          "ptDefaultUnprefixedApiChain",
-          apiOrder,
-          ChainVariant.UNPREFIXED_DEFAULT_API,
-          DEFAULT_TENANT_ID);
-    }
-    // 3) Prefixed webapp chains — one per tenant.
+    // 2) Prefixed webapp chains — one per tenant.
     for (final String tenantId : tenantIds) {
       registerChain(
           registry,
@@ -155,16 +137,6 @@ public final class PhysicalTenantSecurityChainRegistrar
           webappOrder,
           ChainVariant.PREFIXED_WEBAPP,
           tenantId);
-    }
-    // 4) Unprefixed-default webapp chain — broad /** matcher, registered last so iteration order
-    //    puts it behind the prefixed PT webapp chains at the same Order value.
-    if (tenantIds.contains(DEFAULT_TENANT_ID)) {
-      registerChain(
-          registry,
-          "ptDefaultUnprefixedWebappChain",
-          webappOrder,
-          ChainVariant.UNPREFIXED_DEFAULT_WEBAPP,
-          DEFAULT_TENANT_ID);
     }
   }
 
@@ -200,15 +172,6 @@ public final class PhysicalTenantSecurityChainRegistrar
                     expectedAudiencesFor(beanFactory, tenantId));
             case PREFIXED_WEBAPP ->
                 factory.buildWebappChain(http, sliceForPrefixed(beanFactory, tenantId));
-            case UNPREFIXED_DEFAULT_API ->
-                factory.buildApiChain(
-                    http,
-                    sliceForUnprefixedDefault(beanFactory),
-                    beanFactory.getBean(JwtDecoder.class),
-                    allowedIssuersFor(beanFactory, tenantId),
-                    expectedAudiencesFor(beanFactory, tenantId));
-            case UNPREFIXED_DEFAULT_WEBAPP ->
-                factory.buildWebappChain(http, sliceForUnprefixedDefault(beanFactory));
           };
       return new OrderedSecurityFilterChain(chain, order);
     } catch (final Exception e) {
@@ -238,28 +201,6 @@ public final class PhysicalTenantSecurityChainRegistrar
         new SessionRepositoryFilter<>(webSessionRepositoryFor(beanFactory, tenantId));
     sessionFilter.setHttpSessionIdResolver(resolver);
     return new TenantSecuritySlice(tenantId, AccessPath.PREFIXED, repo, sessionFilter, resolver);
-  }
-
-  @SuppressWarnings("unchecked")
-  private static TenantSecuritySlice sliceForUnprefixedDefault(final BeanFactory beanFactory) {
-    final var unprefixedRepos =
-        (Map<String, ClientRegistrationRepository>)
-            beanFactory.getBean("ptUnprefixedDefaultClientRegistrationRepositories", Map.class);
-    final ClientRegistrationRepository unprefixedRepo = unprefixedRepos.get(DEFAULT_TENANT_ID);
-    if (unprefixedRepo == null) {
-      throw new IllegalStateException(
-          "No unprefixed-default ClientRegistrationRepository bean for physical tenant '"
-              + DEFAULT_TENANT_ID
-              + "'");
-    }
-    final var serializer = PhysicalTenantCookieSerializer.forUnprefixedDefaultChain();
-    final CookieHttpSessionIdResolver resolver =
-        PhysicalTenantCookieSerializer.resolver(serializer);
-    final SessionRepositoryFilter<WebSession> sessionFilter =
-        new SessionRepositoryFilter<>(webSessionRepositoryFor(beanFactory, DEFAULT_TENANT_ID));
-    sessionFilter.setHttpSessionIdResolver(resolver);
-    return new TenantSecuritySlice(
-        DEFAULT_TENANT_ID, AccessPath.UNPREFIXED_DEFAULT, unprefixedRepo, sessionFilter, resolver);
   }
 
   @SuppressWarnings("unchecked")
@@ -338,8 +279,6 @@ public final class PhysicalTenantSecurityChainRegistrar
 
   private enum ChainVariant {
     PREFIXED_API,
-    PREFIXED_WEBAPP,
-    UNPREFIXED_DEFAULT_API,
-    UNPREFIXED_DEFAULT_WEBAPP
+    PREFIXED_WEBAPP
   }
 }

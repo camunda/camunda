@@ -71,25 +71,6 @@ class PerTenantClientRegistrationsTest {
   }
 
   @Test
-  void shouldNotRewriteRedirectUriForUnprefixedDefaultAccessPath() {
-    // given - default tenant, unprefixed access path (Task 12).
-    final var security = sec(oidc("oidc"), Map.of());
-    // when
-    final var repository =
-        PerTenantClientRegistrations.buildFor(
-            "default",
-            security,
-            List.of("oidc"),
-            TenantSecuritySlice.AccessPath.UNPREFIXED_DEFAULT,
-            stubBuilder());
-    // then - the redirect URI is the un-rewritten template (no /physical-tenant/default prefix)
-    // because the IdP must redirect back to the unprefixed callback served by the unprefixed
-    // default webapp chain at /login/oauth2/code/{registrationId}.
-    assertThat(repository.findByRegistrationId("oidc").getRedirectUri())
-        .isEqualTo("{baseUrl}/login/oauth2/code/{registrationId}");
-  }
-
-  @Test
   void shouldFailWhenAssignedProviderIsMissingFromBothSlots() {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
     assertThatThrownBy(

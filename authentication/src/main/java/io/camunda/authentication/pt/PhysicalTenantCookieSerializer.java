@@ -11,6 +11,12 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
+/**
+ * Builds the per-PT-chain {@link DefaultCookieSerializer}s. Each prefixed PT chain gets its own
+ * cookie name and {@code Path} attribute scoped to the tenant prefix, so a session cookie minted on
+ * tenant A is not transmitted by the browser to tenant B (or to CSL's standard chains, which use
+ * the unrelated {@code camunda-session} cookie at CSL's standard Path).
+ */
 @NullMarked
 public final class PhysicalTenantCookieSerializer {
 
@@ -22,13 +28,6 @@ public final class PhysicalTenantCookieSerializer {
     final var s = base();
     s.setCookieName(COOKIE_NAME_PREFIX + tenantId);
     s.setCookiePath("/physical-tenant/" + tenantId);
-    return s;
-  }
-
-  public static DefaultCookieSerializer forUnprefixedDefaultChain() {
-    final var s = base();
-    s.setCookieName(COOKIE_NAME_PREFIX + "default-root");
-    s.setCookiePath("/");
     return s;
   }
 

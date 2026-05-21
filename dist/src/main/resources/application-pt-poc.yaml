@@ -2,18 +2,22 @@ camunda:
   security:
     authentication:
       method: oidc
-      # Root-level OIDC slots remain populated as host-side scaffolding for the OC OIDC
-      # machinery in OidcOverrideBeansConfiguration, which (under pt-security) is still
-      # active and constructs an ambient ClientRegistrationRepository from these entries.
-      # The PT chains themselves do NOT consume these root slots — they bind their own
-      # per-tenant SecurityConfiguration under camunda.physical-tenants.<id>.security.*
-      # below and resolve providers via providers.assigned. The duplication is a
-      # walking-skeleton artefact and goes away once OidcOverrideBeansConfiguration's
-      # clientRegistrationRepository bean is also gated by !pt-security.
+      # Root-level OIDC slot is consumed by CSL's standard OidcWebapp + OidcApi chains
+      # (Stage 2: dropped the PoC's unprefixed-default chains; CSL now serves the default
+      # tenant via these standard chains under the unprefixed access path). The PT chains
+      # bind their own per-tenant SecurityConfiguration under
+      # camunda.physical-tenants.<id>.security.* below and resolve providers via
+      # providers.assigned — they do NOT consume this root slot.
+      #
+      # audiences must mirror what camunda.physical-tenants.default.security.authentication.oidc
+      # below declares so bearer tokens minted by camunda-pt-default-client validate the same
+      # `aud` claim against both code paths (CSL's standard JwtDecoder validates against the
+      # root list; PT API chains validate against the per-tenant list).
       oidc:
         client-id: camunda-pt-default-client
         client-secret: default-secret
         issuer-uri: http://localhost:8081/realms/default
+        audiences: [pt-default-aud]
       providers:
         oidc:
           tenanta:

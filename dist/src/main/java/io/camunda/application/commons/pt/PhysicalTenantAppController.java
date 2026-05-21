@@ -54,10 +54,10 @@ public class PhysicalTenantAppController {
     final String sameAccessPathApiUrl =
         prefixed ? "/physical-tenant/" + resolvedTenant + "/v2/whoami" : "/v2/whoami";
     // Button 2 hits the direct API-client URL. From the prefixed access path, the cookie's Path
-    // doesn't reach this URL (no Cookie header sent). From the unprefixed access path, the cookie
-    // Path=/ does reach this URL, but the prefixed default API chain looks for a different cookie
-    // NAME (camunda-session-default vs camunda-session-default-root) so the session is still
-    // unresolved. Either way: 401 without an Authorization header.
+    // doesn't reach this URL (no Cookie header sent). From the unprefixed access path the page is
+    // served by CSL's standard OidcWebapp chain whose camunda-session cookie also does not match
+    // the prefixed default API chain (different cookie name and Path). Either way: 401 without an
+    // Authorization header.
     final String apiClientUrl = "/v2/physical-tenants/" + resolvedTenant + "/whoami";
 
     return ("""

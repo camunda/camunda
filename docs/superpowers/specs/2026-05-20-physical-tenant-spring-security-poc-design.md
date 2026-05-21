@@ -12,10 +12,12 @@ Camunda 8.10 introduces the **Physical Tenant (PT)** concept: a single OC proces
 
 URL scheme (final):
 
-| Surface  |                  Prefixed                  | Default-only fallback |
-|----------|--------------------------------------------|-----------------------|
-| REST API | `/physical-tenant/<id>/v2/...`             | `/v2/...`             |
-| Webapps  | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...` |
+| Surface  |                  Prefixed                  | Default-only fallback[^csl-default] |
+|----------|--------------------------------------------|-------------------------------------|
+| REST API | `/physical-tenant/<id>/v2/...`             | `/v2/...`                           |
+| Webapps  | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...`               |
+
+[^csl-default]: The default-only fallback URLs are served by CSL's standard `OidcWebapp` and `OidcApi` chains (Stage 2), not by PoC-owned chains. The PoC contributes only the prefixed chains; CSL handles the unprefixed default tenant through its standard configuration at the root `camunda.security.authentication.oidc.*` slot.
 
 The REST API is **additionally** reachable under the existing API-client scheme
 `/v2/physical-tenants/<id>/...` — both schemes hit the same per-tenant security chain. See
@@ -46,15 +48,8 @@ For each PT we emit a session cookie scoped to the PT's path. The browser then r
 
 - `name=camunda-session-<tenantId>` (avoids name collisions when multiple chains' cookies could overlap on the default tenant's `/`)
 - `Path=/physical-tenant/<tenantId>` — a single cookie covers both the webapp URLs (`/physical-tenant/<t>/...`) and the webapp-aligned API URLs (`/physical-tenant/<t>/v2/...`). The API URL space is mounted under the tenant prefix so the cookie's `Path` scope covers both surfaces; see [OQ-1 resolution](#open-questions). The existing API-client scheme `/v2/physical-tenants/<t>/...` is supported alongside the webapp-aligned scheme ([D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client)) but sits outside the cookie's `Path`, so cookie auth doesn't apply there — that scheme is bearer-only.
-- For the default tenant's unprefixed chains: `Path=/` (cookie name `camunda-session-default-root`). The cookie covers both the unprefixed webapp surface (`/app`, `/…`) and the unprefixed API surface (`/v2/…`) so the same OQ-1 session-shared property holds for the default-unprefixed access path. A user navigating from `/physical-tenant/default/…` to `/…` sees a *different* cookie name and will re-auth — per requirement 3 this is acceptable.
 
-**Known side effect of `Path=/` for the unprefixed default cookie.** Because Path-matching is purely browser-side (RFC 6265), the unprefixed default cookie is *transmitted* on every request to the host — including requests to tenant-prefixed URLs owned by other PTs. Other tenants' chains read a different cookie *name* and so the session does NOT resolve there (server-side isolation is preserved; cross-tenant requests still return 401 from `oauth2ResourceServer`'s entry point). The side effects are cosmetic / informational:
-
-  1. DevTools and Network panels show the cookie on every page after a user has logged in to the unprefixed default access path, which can look like a leak at first glance.
-  2. An observer on the wire sees the cookie name (`camunda-session-default-root`) on every request after that login, revealing that the browser is also logged in to the default-unprefixed access path. The cookie *value* is opaque and HttpOnly so the session itself is not exposed; only its presence is.
-  3. The cookie persists across all tabs and navigations until the browser session ends (no `Max-Age` is set; it's a session cookie).
-
-Narrowing the `Path` would either re-introduce OQ-1 for the default-unprefixed access path (separate cookies for webapp + API) or restrict the unprefixed default to a more specific subtree (which contradicts the "default tenant is reachable like operate/tasklist" goal). The PoC accepts the trade-off; production may want to revisit if (2) is a meaningful concern, e.g. by serving the default tenant only via its prefixed path and dropping the unprefixed access path entirely.
+The unprefixed default access path is served by CSL's standard `OidcWebapp` and `OidcApi` chains (Stage 2). Those chains use CSL's standard `camunda-session` cookie at CSL's standard Path; the cookie name does not overlap with any prefixed PT chain so the per-tenant isolation property still holds (a browser logged in to the unprefixed default access path holds `camunda-session`; a browser logged in to prefixed default holds `camunda-session-default`; switching access paths forces a re-auth as agreed under requirement 3).
 
 CSRF cookies follow the same Path scoping.
 
@@ -412,7 +407,7 @@ If iteration speed becomes the bottleneck, swapping to `no.nav.security:mock-oau
 
 **OQ-1.** Single cookie covering both the webapp and the api path for a tenant (Path = `/`-rooted at a common ancestor like `/physical-tenant/tenanta`, with the API path mounted underneath), or two cookies? **Resolved:** one webapp cookie scoped to `Path=/physical-tenant/<t>`, with a new webapp-aligned API URL `/physical-tenant/<t>/v2/...` mounted under that path so the cookie scope covers it. The pre-existing API-client URL `/v2/physical-tenants/<t>/...` stays supported alongside (bearer-only) — see [D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client). The API chain matches BOTH URL patterns via `securityMatcher(String...)` and is session-or-bearer: it installs the same per-tenant `SessionRepositoryFilter` instance the webapp chain uses (against the same per-tenant `WebSessionRepository`) and its authorization manager admits `OAuth2AuthenticationToken` (session, login already validated on the same tenant's webapp chain — fires only on the webapp-aligned URL because the cookie doesn't reach the API-client URL) or `JwtAuthenticationToken` (bearer, allowlist-checked — applies to either URL). `oauth2ResourceServer.jwt()` stays wired so non-browser API clients are unaffected and unauthenticated requests still get 401 with `WWW-Authenticate: Bearer` via that entry point. Chain registration order: the API chain is `@Order`ed before the webapp chain because the webapp-aligned API matcher (`/physical-tenant/<t>/v2/**`) is a sub-pattern of the webapp matcher (`/physical-tenant/<t>/**`).
 
-**OQ-2.** The default tenant's unprefixed chains: do we ever want the same session to be valid on both access paths, or always treat them as separate? **PoC stance:** always separate (cookie Path differs), per the user's "we may accept relogin" relaxation. Revisit when the UX is closer. **Related side effect** documented under [D2](#d2-use-cookie-path-attribute-as-the-browser-side-isolation-primitive): once a user has logged in to the unprefixed default access path, the `Path=/` cookie accompanies *every* request to the host (including tenant-prefixed URLs owned by other PTs). It does NOT compromise server-side isolation — other tenants' chains read a different cookie name — but it does mean the cookie is visible in DevTools / wire traces on every page. The PoC accepts this; production may consider dropping the unprefixed default access path if the visibility is a concern.
+**OQ-2.** The default tenant's unprefixed chains: do we ever want the same session to be valid on both access paths, or always treat them as separate? **Resolved:** the unprefixed default access path is served by CSL's standard chains (Stage 2), which use the standard `camunda-session` cookie at CSL's standard Path. The prefixed PT default chain uses `camunda-session-default` at `Path=/physical-tenant/default`. Different cookie names → different sessions; switching access paths forces a re-auth, per requirement 3. The previously documented `Path=/` side effect (the unprefixed-default cookie surfacing on every request to the host) is also resolved: CSL's catch-all at `@Order(2)` is `denyAll → 404`, not an OAuth2-redirect-with-cookie, so background fetches of random URLs no longer seed an unprefixed session cookie.
 
 **OQ-3.** Logout: do we tear down the session at the OIDC provider (`OidcClientInitiatedLogoutSuccessHandler` behaviour) or only locally? **PoC stance:** reuse `CamundaOidcLogoutSuccessHandler` unchanged — IdP-initiated logout on the tenant's IdP only.
 
