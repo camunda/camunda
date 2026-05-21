@@ -20,6 +20,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
+import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {searchResult} from 'modules/testUtils';
 import * as clientConfig from 'modules/utils/getClientConfig';
 import type {
@@ -28,6 +29,7 @@ import type {
   ProcessInstance,
   DecisionInstance,
   UserTask,
+  MessageSubscription,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PROCESS_INSTANCE_ID = '111222333';
@@ -62,6 +64,22 @@ const CAMUNDA_USER_TASK_XML = `<?xml version="1.0" encoding="UTF-8"?>
         <zeebe:userTask />
       </bpmn:extensionElements>
     </bpmn:userTask>
+  </bpmn:process>
+</bpmn:definitions>`;
+
+const RECEIVE_TASK_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:receiveTask id="Task_1" name="Receive Task" />
+  </bpmn:process>
+</bpmn:definitions>`;
+
+const MESSAGE_CATCH_EVENT_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:intermediateCatchEvent id="Task_1" name="Message Catch Event">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" />
+    </bpmn:intermediateCatchEvent>
   </bpmn:process>
 </bpmn:definitions>`;
 
@@ -195,6 +213,38 @@ const mockUserTask = {
   priority: 50,
 } satisfies UserTask;
 
+const mockUserTaskWithDetails = {
+  ...mockUserTask,
+  assignee: 'john.doe',
+  candidateUsers: ['alice', 'bob'],
+  candidateGroups: ['managers', 'reviewers'],
+  dueDate: '2023-02-01T10:00:00.000Z',
+  followUpDate: '2023-01-20T10:00:00.000Z',
+  priority: 80,
+  formKey: 'camunda-forms:bpmn:form_1',
+} satisfies UserTask;
+
+const mockMessageSubscription = {
+  messageSubscriptionKey: '444555666777',
+  processDefinitionId: 'process-def-1',
+  processDefinitionKey: PROCESS_DEFINITION_KEY,
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  elementId: 'Task_1',
+  elementInstanceKey: '123456789',
+  messageSubscriptionState: 'CREATED',
+  messageSubscriptionType: 'PROCESS_EVENT',
+  lastUpdatedDate: '2023-01-15T10:00:00.000Z',
+  messageName: 'order-placed',
+  correlationKey: 'order-123',
+  tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  toolProperties: {},
+  processDefinitionName: null,
+  processDefinitionVersion: null,
+  toolName: null,
+  inboundConnectorType: null,
+} satisfies MessageSubscription;
+
 function getWrapper(initialSearchParams?: string) {
   const path = Paths.processInstanceDetails({
     processInstanceId: PROCESS_INSTANCE_ID,
@@ -238,6 +288,7 @@ describe('<DetailsTab />', () => {
     mockSearchJobs().withSuccess(searchResult([]));
     mockSearchProcessInstances().withSuccess(searchResult([]));
     mockSearchDecisionInstances().withSuccess(searchResult([]));
+    mockSearchMessageSubscriptions().withSuccess(searchResult([]));
   });
 
   it('should show multi-instance message when multiple instances exist', async () => {
@@ -604,5 +655,139 @@ describe('<DetailsTab />', () => {
         'https://tasklist.example.com/tasklist/999888777?filter=all-open',
       );
     });
+  });
+
+  it('should display job type when a job exists', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchJobs().withSuccess(searchResult([mockJob]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Job Type')).toBeInTheDocument();
+    expect(screen.getByText('httpService')).toBeInTheDocument();
+  });
+
+  it('should display worker when a job exists', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchJobs().withSuccess(searchResult([mockJob]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Worker')).toBeInTheDocument();
+    expect(screen.getByText('worker-1')).toBeInTheDocument();
+  });
+
+  it('should not display job type or worker when no job exists', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.queryByText('Job Type')).not.toBeInTheDocument();
+    expect(screen.queryByText('Worker')).not.toBeInTheDocument();
+  });
+
+  it('should display user task details for camunda user tasks', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTaskWithDetails]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Assignee')).toBeInTheDocument();
+    expect(screen.getByText('john.doe')).toBeInTheDocument();
+    expect(screen.getByText('Candidate Users')).toBeInTheDocument();
+    expect(screen.getByText('alice, bob')).toBeInTheDocument();
+    expect(screen.getByText('Candidate Groups')).toBeInTheDocument();
+    expect(screen.getByText('managers, reviewers')).toBeInTheDocument();
+    expect(screen.getByText('Due Date')).toBeInTheDocument();
+    expect(screen.getByText('Follow-up Date')).toBeInTheDocument();
+    expect(screen.getByText('Priority')).toBeInTheDocument();
+    expect(screen.getByText('80')).toBeInTheDocument();
+    expect(screen.getByText('Form Key')).toBeInTheDocument();
+    expect(screen.getByText('camunda-forms:bpmn:form_1')).toBeInTheDocument();
+  });
+
+  it('should not display user task details for non-camunda user tasks', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.queryByText('Assignee')).not.toBeInTheDocument();
+  });
+
+  it('should display message subscription details for receive tasks', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(RECEIVE_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'RECEIVE_TASK',
+    });
+    mockSearchMessageSubscriptions().withSuccess(
+      searchResult([mockMessageSubscription]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Message Name')).toBeInTheDocument();
+    expect(screen.getByText('order-placed')).toBeInTheDocument();
+    expect(screen.getByText('Correlation Key')).toBeInTheDocument();
+    expect(screen.getByText('order-123')).toBeInTheDocument();
+    expect(screen.getByText('Subscription State')).toBeInTheDocument();
+    expect(screen.getByText('CREATED')).toBeInTheDocument();
+  });
+
+  it('should display message subscription details for message catch events', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(MESSAGE_CATCH_EVENT_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'INTERMEDIATE_CATCH_EVENT',
+    });
+    mockSearchMessageSubscriptions().withSuccess(
+      searchResult([mockMessageSubscription]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Message Name')).toBeInTheDocument();
+    expect(screen.getByText('order-placed')).toBeInTheDocument();
+    expect(screen.getByText('Correlation Key')).toBeInTheDocument();
+    expect(screen.getByText('order-123')).toBeInTheDocument();
+    expect(screen.getByText('Subscription State')).toBeInTheDocument();
+    expect(screen.getByText('CREATED')).toBeInTheDocument();
+  });
+
+  it('should not display message subscription details for non-message elements', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.queryByText('Message Name')).not.toBeInTheDocument();
+    expect(screen.queryByText('Correlation Key')).not.toBeInTheDocument();
+    expect(screen.queryByText('Subscription State')).not.toBeInTheDocument();
   });
 });
