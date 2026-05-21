@@ -19,7 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Subscriptions {
 
-  // DirectBuffer have stable equals/hashcode given it's not mutated: it must be cloned first
+  // UnsafeBuffer have stable equals/hashcode given it's not mutated: it must be cloned first
   private final Map<UnsafeBuffer, Subscription> subscriptions = new LinkedHashMap<>();
 
   public boolean contains(final DirectBuffer bpmnProcessId) {
