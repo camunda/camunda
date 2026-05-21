@@ -11,7 +11,6 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
 
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -33,14 +32,13 @@ import org.slf4j.LoggerFactory;
 /** Exporter that ships Camunda process analytics to the Camunda Analytics backend. */
 public class AnalyticsExporter implements Exporter {
 
+  public static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
-
   private static final ThrottledLogger SAMPLED_LOG =
       new ThrottledLogger(LOG, Duration.ofMinutes(1));
   private static final ThrottledLogger SAMPLED_WARN_LOG =
       new ThrottledLogger(LOG, Duration.ofMinutes(1));
-
   private final OtelSdkManager otelSdkManager;
 
   private AnalyticsExporterConfig config;
@@ -61,7 +59,13 @@ public class AnalyticsExporter implements Exporter {
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
     partitionId = context.getPartitionId();
-    clusterId = context.getClusterId();
+    try {
+      clusterId = context.getClusterId();
+    } catch (final NoSuchMethodError ex) {
+      // Fallback for customers testing this exporter on 8.8 where getCluserId does not exist.
+      final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
+      clusterId = fromEnv != null ? fromEnv : "";
+    }
 
     handlers = new EnumMap<>(ValueType.class);
     registerHandler(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation);
@@ -111,7 +115,9 @@ public class AnalyticsExporter implements Exporter {
                 .setAttribute(PROCESS_VERSION, (long) value.getVersion())
                 .setAttribute(PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
                 .setAttribute(PROCESS_INSTANCE_KEY, record.getKey())
-                .setAttribute(ROOT_PROCESS_INSTANCE_KEY, value.getRootProcessInstanceKey())
+                //                Uncomment as this is not available on 8.8
+                //                .setAttribute(ROOT_PROCESS_INSTANCE_KEY,
+                // value.getRootProcessInstanceKey())
                 .setAttribute(TENANT_ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
 

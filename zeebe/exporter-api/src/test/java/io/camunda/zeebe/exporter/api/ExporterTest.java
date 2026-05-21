@@ -150,6 +150,11 @@ public final class ExporterTest {
       return 0;
     }
 
+    @Override
+    public String getClusterId() {
+      return "";
+    }
+
     public RecordFilter getFilter() {
       return filter;
     }
