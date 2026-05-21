@@ -1343,12 +1343,16 @@ jobs:
     # Two conditions cover both automated (monorepo-devops-automation[bot]) and
     # manually-named (backport-* / backport/*) backports. Direct fixes on
     # stable/* branches by humans still run the gate.
+    # Skip Renovate PRs: dependency bumps never introduce flaky tests; any flake
+    # they hit is pre-existing. Renovate also automerges within minutes, leaving
+    # no time for the gate to be useful.
     if: >-
       always()
       && github.event_name == 'pull_request'
       && !github.event.pull_request.head.repo.fork
       && !startsWith(github.head_ref, 'backport')
       && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
+      && github.event.pull_request.user.login != 'renovate[bot]'
     needs:
       - detect-changes
       - archunit-tests
