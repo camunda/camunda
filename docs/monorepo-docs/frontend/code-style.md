@@ -12,7 +12,7 @@ similar lines beat a premature wrapper.
 
 ## Naming
 
-- **Booleans**: prefix with `is` (e.g. `isLoading`, `isVisible`).
+- **Booleans**: prefix with `is` or `has` (e.g. `isLoading`, `isVisible`, `hasIncident`).
 - **Constants**: `SCREAMING_SNAKE_CASE` (e.g. `MAX_RETRY_COUNT`).
 - **Components**: `PascalCase` (e.g. `DashboardHeader`).
 
