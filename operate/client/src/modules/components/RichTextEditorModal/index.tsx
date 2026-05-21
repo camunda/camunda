@@ -15,21 +15,23 @@ import {Toolbar} from './styled';
 import {CopyButton} from '../CopyButton';
 
 type EditorFirstParam = Parameters<
-  NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
+  NonNullable<React.ComponentProps<typeof RichTextEditor>['onMount']>
 >[0];
 
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
+    import('modules/components/RichTextEditor'),
   ]);
 
   loadMonaco();
 
-  return {default: JSONEditor};
+  return {default: RichTextEditor};
 });
 
 type Props = {
+  /** @default "json" */
+  language?: 'json' | 'markdown';
   value: string;
   isVisible: boolean;
   onClose?: () => void;
@@ -40,8 +42,9 @@ type Props = {
   allowModeToggle?: boolean;
 };
 
-const JSONEditorModal: React.FC<Props> = observer(
+const RichTextEditorModal: React.FC<Props> = observer(
   ({
+    language = 'json',
     value,
     isVisible,
     onClose,
@@ -58,12 +61,12 @@ const JSONEditorModal: React.FC<Props> = observer(
 
     useEffect(() => {
       if (isVisible) {
-        setEditedValue(beautifyJSON(value));
+        setEditedValue(language === 'json' ? beautifyJSON(value) : value);
       } else {
         setEditedValue('');
         setIsValid(true);
       }
-    }, [isVisible, value]);
+    }, [isVisible, value, language]);
 
     useEffect(() => {
       setIsInEditMode(!readOnly);
@@ -89,7 +92,7 @@ const JSONEditorModal: React.FC<Props> = observer(
       }
 
       setIsInEditMode(false);
-      setEditedValue(beautifyJSON(value));
+      setEditedValue(language === 'json' ? beautifyJSON(value) : value);
     };
 
     return (
@@ -127,10 +130,11 @@ const JSONEditorModal: React.FC<Props> = observer(
           <CopyButton value={editedValue} />
         </Toolbar>
         <Suspense>
-          <JSONEditor
+          <RichTextEditor
             value={editedValue}
             onChange={setEditedValue}
             readOnly={isReadOnly}
+            language={language}
             onValidate={setIsValid}
             onMount={(editor) => {
               editorRef.current = editor;
@@ -142,4 +146,4 @@ const JSONEditorModal: React.FC<Props> = observer(
   },
 );
 
-export {JSONEditorModal};
+export {RichTextEditorModal};

@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {tracking} from 'modules/tracking';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';
@@ -45,7 +45,7 @@ const ViewFullVariableButtonEdit: React.FC<ViewFullVariableButtonEditProps> = ({
         }}
       />
       {isModalVisible && (
-        <JSONEditorModal
+        <RichTextEditorModal
           value={variableEditor.fieldValue}
           onClose={() => {
             setIsModalVisible(false);

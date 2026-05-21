@@ -42,15 +42,15 @@ const OPERATION_DISPLAY_NAME = {
   EDIT_VARIABLE: 'Edit',
 };
 
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
+    import('modules/components/RichTextEditor'),
   ]);
 
   loadMonaco();
 
-  return {default: JSONEditor};
+  return {default: RichTextEditor};
 });
 
 const DiffEditor = lazy(async () => {
@@ -305,7 +305,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                 [`${scopeId}/${id}`]: (
                   <Suspense>
                     {operation === 'ADD_VARIABLE' ? (
-                      <JSONEditor
+                      <RichTextEditor
                         value={beautifyJSON(newValue)}
                         readOnly
                         height="10vh"

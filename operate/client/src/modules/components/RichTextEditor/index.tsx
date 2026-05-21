@@ -15,6 +15,8 @@ import {type editor, KeyCode} from 'monaco-editor';
 import type {ReactNode} from 'react';
 
 type Props = {
+  /** @default "json" */
+  language?: 'json' | 'markdown';
   value: string;
   readOnly?: boolean;
   onChange?: (value: string) => void;
@@ -29,8 +31,9 @@ type Props = {
   loading?: ReactNode;
 };
 
-const JSONEditor: React.FC<Props> = observer(
+const RichTextEditor: React.FC<Props> = observer(
   ({
+    language = 'json',
     value,
     onChange,
     readOnly = false,
@@ -53,7 +56,7 @@ const JSONEditor: React.FC<Props> = observer(
         <Editor
           loading={loading}
           options={editorOptions}
-          language="json"
+          language={language}
           value={value}
           height={height}
           width={width}
@@ -91,4 +94,4 @@ const JSONEditor: React.FC<Props> = observer(
   },
 );
 
-export {JSONEditor};
+export {RichTextEditor};

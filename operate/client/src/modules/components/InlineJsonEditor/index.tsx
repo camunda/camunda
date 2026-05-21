@@ -25,15 +25,15 @@ import {
 } from './constants';
 import {ReadOnlyEditor} from './ReadOnlyEditor';
 
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
+    import('modules/components/RichTextEditor'),
   ]);
 
   loadMonaco();
 
-  return {default: JSONEditor};
+  return {default: RichTextEditor};
 });
 
 type Props = {
@@ -168,7 +168,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
             </label>
             <Suspense fallback={<EditorLoader $height={height} />}>
               <WriteModeEditor $invalid={!!fieldError}>
-                <JSONEditor
+                <RichTextEditor
                   loading={null}
                   value={displayValue}
                   onChange={isReadOnly ? undefined : handleChange}

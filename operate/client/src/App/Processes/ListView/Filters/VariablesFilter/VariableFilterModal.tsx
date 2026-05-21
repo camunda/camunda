@@ -27,13 +27,13 @@ import type {DraftCondition} from './constants';
 import {Description, EditorToolbar, ModalContent} from './styled';
 import {observer} from 'mobx-react-lite';
 
-const JSONEditor = lazy(async () => {
-  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
     import('modules/loadMonaco'),
-    import('modules/components/JSONEditor'),
+    import('modules/components/RichTextEditor'),
   ]);
   loadMonaco();
-  return {default: JSONEditor};
+  return {default: RichTextEditor};
 });
 
 const MAX_CONDITIONS = 5;
@@ -215,7 +215,7 @@ const VariableFilterModal: React.FC = observer(() => {
                         <CopyButton value={editorInput.value} />
                       </EditorToolbar>
                       <Suspense>
-                        <JSONEditor
+                        <RichTextEditor
                           value={editorInput.value}
                           onChange={editorInput.onChange}
                           onValidate={(valid) => {

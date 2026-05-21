@@ -16,7 +16,7 @@ import {
   validateVariableValueValid,
 } from 'modules/validators';
 import {Field, useForm, useFormState} from 'react-final-form';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {tracking} from 'modules/tracking';
 import {Title} from 'modules/components/FiltersPanel/styled';
@@ -159,7 +159,7 @@ const Variable: React.FC = observer(() => {
             document.body,
           )
         : createPortal(
-            <JSONEditorModal
+            <RichTextEditorModal
               isVisible={isModalVisible}
               title="Edit Variable Value"
               value={formState.values?.['variableValues']}

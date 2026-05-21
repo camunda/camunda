@@ -19,7 +19,7 @@ import {
   validateNameNotDuplicate,
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 import {tracking} from 'modules/tracking';
 import {TextInputField} from 'modules/components/TextInputField';
 import {Operations} from '../Operations';
@@ -92,7 +92,7 @@ const NewVariable: React.FC = () => {
         </Operations>
       </Layer>
       {isModalVisible && (
-        <JSONEditorModal
+        <RichTextEditorModal
           isVisible={isModalVisible}
           title={
             formState.values?.name
