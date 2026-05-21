@@ -20,6 +20,7 @@ import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type MembersProps = {
   tenantId: string;
@@ -27,6 +28,7 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const isReadOnly = isDefaultTenant(tenantId);
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByTenantId,
@@ -61,7 +63,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedUsersListEmpty)
+  if (success && isAssignedUsersListEmpty && !isReadOnly)
     return (
       <>
         <TabEmptyState
@@ -95,17 +97,21 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
         data={users}
         headers={membersListHeaders}
         loading={loading}
-        addEntityLabel={t("assignUser")}
-        onAddEntity={openAssignModal}
+        addEntityLabel={isReadOnly ? null : t("assignUser")}
+        onAddEntity={isReadOnly ? undefined : openAssignModal}
         searchPlaceholder={t("searchByUsername")}
-        menuItems={[
-          {
-            label: t("remove"),
-            icon: TrashCan,
-            isDangerous: true,
-            onClick: unassignMember,
-          },
-        ]}
+        menuItems={
+          isReadOnly
+            ? undefined
+            : [
+                {
+                  label: t("remove"),
+                  icon: TrashCan,
+                  isDangerous: true,
+                  onClick: unassignMember,
+                },
+              ]
+        }
         {...paginationProps}
       />
       {assignUsersModal}

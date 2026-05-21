@@ -17,6 +17,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/tenants/detail/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type ClientsProps = {
   tenantId: Tenant["tenantId"];
@@ -24,6 +25,7 @@ type ClientsProps = {
 
 const Clients: FC<ClientsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const isReadOnly = isDefaultTenant(tenantId);
 
   const {
     data: clients,
@@ -60,7 +62,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && assignedClients.length === 0)
+  if (success && assignedClients.length === 0 && !isReadOnly)
     return (
       <>
         <TabEmptyState
@@ -80,17 +82,21 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
         data={clients?.items}
         headers={[{ header: t("clientId"), key: "clientId", isSortable: true }]}
         loading={loading}
-        addEntityLabel={t("assignClient")}
-        onAddEntity={openAssignModal}
+        addEntityLabel={isReadOnly ? null : t("assignClient")}
+        onAddEntity={isReadOnly ? undefined : openAssignModal}
         searchPlaceholder={t("searchByClientId")}
-        menuItems={[
-          {
-            label: t("remove"),
-            icon: TrashCan,
-            isDangerous: true,
-            onClick: unassignClient,
-          },
-        ]}
+        menuItems={
+          isReadOnly
+            ? undefined
+            : [
+                {
+                  label: t("remove"),
+                  icon: TrashCan,
+                  isDangerous: true,
+                  onClick: unassignClient,
+                },
+              ]
+        }
         {...paginationProps}
       />
       {assignClientModal}
