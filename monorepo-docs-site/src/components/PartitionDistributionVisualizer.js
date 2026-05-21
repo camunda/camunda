@@ -48,7 +48,7 @@ export default function PartitionDistributionVisualizer() {
   const [brokers, setBrokers] = useState(3);
   const [partitions, setPartitions] = useState(3);
   const [rf, setRf] = useState(3);
-  const [showPriority, setShowPriority] = useState(false);
+  const [showPriority, setShowPriority] = useState(true);
   const [activeTab, setActiveTab] = useState('matrix');
 
   const effectiveRf = Math.min(rf, brokers);

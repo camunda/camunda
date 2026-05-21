@@ -24,17 +24,6 @@ const sidebars = {
     'release',
     {
       type: 'category',
-      label: 'Broker',
-      items: [
-        {
-          type: 'category',
-          label: 'Consensus',
-          items: ['broker/consensus/partition-distribution'],
-        },
-      ],
-    },
-    {
-      type: 'category',
       label: 'Architecture',
       items: [
         {
@@ -98,6 +87,7 @@ const sidebars = {
               type: 'category',
               label: 'Orchestration Cluster',
               items: [
+                'architecture/components/orchestration-cluster/partition-distribution',
                 {
                   type: 'category',
                   label: 'ADRs',
