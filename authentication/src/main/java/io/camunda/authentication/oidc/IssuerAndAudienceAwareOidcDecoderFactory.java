@@ -9,7 +9,6 @@ package io.camunda.authentication.oidc;
 
 import io.camunda.authentication.config.JWSKeySelectorFactory;
 import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
-import io.camunda.authentication.config.OidcAuthenticationConfigurationRepository;
 import io.camunda.authentication.config.TokenValidatorFactory;
 import java.util.List;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -21,27 +20,25 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * IssuerAndAudienceAwareTokenValidator} for the issuer-aware validation step, so multiple {@link
  * ClientRegistration}s sharing an {@code iss} are disambiguated by their declared audiences.
  *
- * <p>The parent's {@code tokenValidatorFactory} field is package-private to CSL's implementation,
- * so we keep our own references for use by the subclass.
+ * <p>The audience source is each registration's {@code providerConfigurationMetadata} — see {@link
+ * IssuerAndAudienceAwareTokenValidator} and {@link MetadataAwareTokenValidatorFactory} for the
+ * rationale. Producers seed audiences via {@link
+ * io.camunda.authentication.pt.PerTenantClientRegistrations#AUDIENCES_METADATA_KEY}.
  */
 public class IssuerAndAudienceAwareOidcDecoderFactory extends OidcAccessTokenDecoderFactory {
 
   private final TokenValidatorFactory tokenValidatorFactory;
-  private final OidcAuthenticationConfigurationRepository oidcConfigRepository;
 
   public IssuerAndAudienceAwareOidcDecoderFactory(
       final JWSKeySelectorFactory jwsKeySelectorFactory,
-      final TokenValidatorFactory tokenValidatorFactory,
-      final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
+      final TokenValidatorFactory tokenValidatorFactory) {
     super(jwsKeySelectorFactory, tokenValidatorFactory);
     this.tokenValidatorFactory = tokenValidatorFactory;
-    this.oidcConfigRepository = oidcConfigRepository;
   }
 
   @Override
   protected OAuth2TokenValidator<Jwt> createIssuerAwareJwtValidator(
       final List<ClientRegistration> clientRegistrations) {
-    return new IssuerAndAudienceAwareTokenValidator(
-        clientRegistrations, tokenValidatorFactory, oidcConfigRepository);
+    return new IssuerAndAudienceAwareTokenValidator(clientRegistrations, tokenValidatorFactory);
   }
 }

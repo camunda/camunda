@@ -7,11 +7,13 @@
  */
 package io.camunda.authentication.oidc;
 
-import io.camunda.authentication.config.OidcAuthenticationConfigurationRepository;
 import io.camunda.authentication.config.TokenValidatorFactory;
+import io.camunda.authentication.pt.PerTenantClientRegistrations;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +42,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
  *       or no intersecting registration → {@code invalid_token}.
  * </ul>
  *
- * <p>Validators are cached by registration id (not by issuer URI as CSL does) so two same-iss
- * registrations get distinct cached validators.
+ * <p>Validators are cached by (iss, audiences) pair — the same pair the router uses to pick a
+ * registration — so distinct (iss, aud) registrations get distinct cached validators even when they
+ * share a registration id (e.g. when two physical tenants register the same id with different
+ * audience overrides).
  */
 public class IssuerAndAudienceAwareTokenValidator implements OAuth2TokenValidator<Jwt> {
 
@@ -51,16 +55,13 @@ public class IssuerAndAudienceAwareTokenValidator implements OAuth2TokenValidato
 
   private final List<ClientRegistration> clientRegistrations;
   private final TokenValidatorFactory tokenValidatorFactory;
-  private final OidcAuthenticationConfigurationRepository oidcConfigRepository;
   private final Map<String, OAuth2TokenValidator<Jwt>> validators;
 
   public IssuerAndAudienceAwareTokenValidator(
       final List<ClientRegistration> clientRegistrations,
-      final TokenValidatorFactory tokenValidatorFactory,
-      final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
+      final TokenValidatorFactory tokenValidatorFactory) {
     this.clientRegistrations = clientRegistrations;
     this.tokenValidatorFactory = tokenValidatorFactory;
-    this.oidcConfigRepository = oidcConfigRepository;
     validators = new ConcurrentHashMap<>();
   }
 
@@ -126,19 +127,44 @@ public class IssuerAndAudienceAwareTokenValidator implements OAuth2TokenValidato
     }
 
     return validators
-        .computeIfAbsent(
-            match.getRegistrationId(), k -> tokenValidatorFactory.createTokenValidator(match))
+        .computeIfAbsent(cacheKey(match), k -> tokenValidatorFactory.createTokenValidator(match))
         .validate(token);
   }
 
-  private Set<String> audiencesOf(final ClientRegistration registration) {
-    final var config =
-        oidcConfigRepository
-            .getOidcAuthenticationConfigurations()
-            .get(registration.getRegistrationId());
-    if (config == null || config.getAudiences() == null) {
+  /**
+   * Cache key for the per-registration validator. Cannot use registration id alone — under
+   * physical-tenant overrides two registrations can share the same id but declare different
+   * audiences (each PT's view of a shared IdP). Composing the key from {@code iss + audiences}
+   * matches the (iss, aud) pair the router uses to pick a registration, so distinct (iss, aud)
+   * pairs get distinct cached validators.
+   */
+  private static String cacheKey(final ClientRegistration registration) {
+    final var sortedAudiences = new TreeSet<>(audiencesOf(registration));
+    return registration.getProviderDetails().getIssuerUri() + "|" + sortedAudiences;
+  }
+
+  /**
+   * Reads expected audiences from the registration's {@code providerConfigurationMetadata} under
+   * {@link PerTenantClientRegistrations#AUDIENCES_METADATA_KEY}. This is the same source the
+   * audience-aware {@code MetadataAwareTokenValidatorFactory} reads from, so audience-based routing
+   * here and audience validation in the composed validator agree on a single source of truth —
+   * PT-side overrides reach both paths.
+   */
+  private static Set<String> audiencesOf(final ClientRegistration registration) {
+    final Object value =
+        registration
+            .getProviderDetails()
+            .getConfigurationMetadata()
+            .get(PerTenantClientRegistrations.AUDIENCES_METADATA_KEY);
+    if (!(value instanceof final List<?> list) || list.isEmpty()) {
       return Set.of();
     }
-    return config.getAudiences();
+    final Set<String> audiences = new LinkedHashSet<>();
+    for (final Object element : list) {
+      if (element instanceof final String s && !s.isBlank()) {
+        audiences.add(s);
+      }
+    }
+    return audiences;
   }
 }

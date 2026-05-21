@@ -2,16 +2,23 @@ camunda:
   security:
     authentication:
       method: oidc
-      # All OIDC providers are declared at root, with their audiences alongside the rest of their
-      # settings. Tokens are routed to the right provider by the host's
-      # IssuerAndAudienceAwareOidcDecoderFactory: when two registrations share an issuer URI (as
-      # `tenanta` and `default-via-tenanta` do — both on the `tenanta` Keycloak realm), the
-      # `aud` claim picks the registration whose declared audiences intersect it. This is what
-      # makes per-provider audiences viable across registrations that share an issuer.
+      # Root declares two OIDC providers — the default slot `oidc` (the default IdP at the
+      # `default` Keycloak realm) and the named slot `tenanta` (the shared IdP at the `tenanta`
+      # Keycloak realm). Both PTs that use the tenanta IdP refer to the same registration id
+      # (`tenanta`); per-PT overrides under `camunda.physical-tenants.<id>.security.authentication
+      # .providers.oidc.<id>.<field>` diverge clientId/clientSecret/audiences from root for that
+      # tenant's view of the shared IdP. The root `tenanta` entry below uses the DEFAULT
+      # tenant's client at that realm — i.e., it is "the tenanta IdP, as seen by the default
+      # tenant". The tenanta tenant overrides clientId/secret/audiences below.
       #
-      # Per-PT config (under `camunda.physical-tenants.<id>.security.authentication.*`) keeps just
-      # `providers.assigned` plus optional per-field overrides (clientId/clientSecret/audiences/
-      # scope/...) — PT-side non-null fields beat root.
+      # Audiences travel with the ClientRegistration via providerConfigurationMetadata (added by
+      # PerTenantClientRegistrations.buildRegistration for PT-side registrations and by
+      # OidcOverrideBeansConfiguration#jwtDecoder for root-side ones). The custom
+      # MetadataAwareTokenValidatorFactory reads audiences from that metadata, so per-PT audience
+      # overrides flow correctly through both the access-token decoder and the issuer/audience
+      # aware router. Without metadata-based audiences the validator returned for the shared
+      # `tenanta` registration would always reflect ROOT audiences regardless of which PT's
+      # registration the token routed to.
       oidc:                # default slot — registration id "oidc"
         client-id: camunda-pt-default-client
         client-secret: default-secret
@@ -20,11 +27,11 @@ camunda:
       providers:
         oidc:
           tenanta:
-            client-id: camunda-pt-tenanta-client
-            client-secret: tenanta-secret
-            issuer-uri: http://localhost:8082/realms/tenanta
-            audiences: [pt-tenanta-aud]
-          default-via-tenanta:
+            # The "tenanta" provider in root is the default tenant's view of the tenanta IdP.
+            # It uses the default tenant's client at that realm (camunda-pt-default-via-tenanta-
+            # client) and the default tenant's audience (pt-default-via-tenanta-aud). The
+            # tenanta tenant overrides clientId/secret/audiences from its physical-tenants.tenanta
+            # .security.* overlay below.
             client-id: camunda-pt-default-via-tenanta-client
             client-secret: default-via-tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
@@ -34,16 +41,23 @@ camunda:
       security:
         authentication:
           providers:
-            # The default PT uses the cluster-default oidc slot AND a named provider that also
-            # exists in root config. PT-side overrides (audiences, client-id, client-secret) can
-            # be applied per-provider under `providers.oidc.<id>.<field>` here to diverge from
-            # root if needed; absent overrides inherit from root.
-            assigned: [oidc, default-via-tenanta]
+            # The default PT picks BOTH root providers — `oidc` (its primary IdP) and `tenanta`
+            # (the shared IdP viewed as default's secondary). No PT-side overrides: the default
+            # PT uses the exact root values for both.
+            assigned: [oidc, tenanta]
     tenanta:
       security:
         authentication:
           providers:
             assigned: [tenanta]
+            oidc:
+              tenanta:
+                # PT-side override: the tenanta tenant uses its OWN client at the tenanta
+                # Keycloak realm (camunda-pt-tenanta-client) and audience pt-tenanta-aud. The
+                # remaining fields (issuerUri) inherit from root.
+                client-id: camunda-pt-tenanta-client
+                client-secret: tenanta-secret
+                audiences: [pt-tenanta-aud]
 
 server:
   port: 8080

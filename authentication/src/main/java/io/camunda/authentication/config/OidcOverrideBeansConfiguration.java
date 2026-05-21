@@ -14,6 +14,7 @@ import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.oidc.IssuerAndAudienceAwareOidcDecoderFactory;
+import io.camunda.authentication.oidc.MetadataAwareTokenValidatorFactory;
 import io.camunda.authentication.pt.PerTenantClientRegistrations;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -37,6 +38,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -304,11 +306,22 @@ public class OidcOverrideBeansConfiguration {
         .toList();
   }
 
+  /**
+   * Token validator factory that reads each registration's expected audiences from {@link
+   * ClientRegistration.ProviderDetails#getConfigurationMetadata()} rather than from a static {@code
+   * registrationId -> OidcConfiguration} map keyed off the root {@link SecurityConfiguration}. This
+   * is what makes per-PT audience overrides for a SHARED registration id actually take effect — see
+   * {@link MetadataAwareTokenValidatorFactory} for the full rationale.
+   *
+   * <p>The host's stock {@link TokenValidatorFactory} would silently use ROOT audiences for any
+   * registration whose id collides between root and a PT (e.g. both root and PT-tenanta declaring
+   * the {@code tenanta} registration id with different audiences).
+   */
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
       final SecurityConfiguration securityConfiguration,
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
-    return new TokenValidatorFactory(
+    return new MetadataAwareTokenValidatorFactory(
         securityConfiguration, oidcAuthenticationConfigurationRepository);
   }
 
@@ -365,10 +378,9 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public OidcAccessTokenDecoderFactory accessTokenDecoderFactory(
       final JWSKeySelectorFactory jwsKeySelectorFactory,
-      final TokenValidatorFactory tokenValidatorFactory,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final TokenValidatorFactory tokenValidatorFactory) {
     return new IssuerAndAudienceAwareOidcDecoderFactory(
-        jwsKeySelectorFactory, tokenValidatorFactory, oidcProviderRepository);
+        jwsKeySelectorFactory, tokenValidatorFactory);
   }
 
   @Bean
@@ -381,8 +393,18 @@ public class OidcOverrideBeansConfiguration {
       @Qualifier("ptClientRegistrationRepositories")
           final ObjectProvider<Map<String, ClientRegistrationRepository>>
               ptClientRegistrationRepositories) {
+    // Root-side registrations are produced by ClientRegistrationFactory from root config and
+    // do NOT carry audiences in their providerConfigurationMetadata (that path doesn't know
+    // about the AUDIENCES_METADATA_KEY convention). The metadata-aware validator factory looks
+    // up audiences from registration metadata, so we walk each root registration and rebuild it
+    // with audiences from the corresponding root OidcConfiguration. PT-side registrations
+    // already carry their (possibly-overridden) audiences because PerTenantClientRegistrations
+    // stashes them in buildRegistration.
     final var registrations =
-        new ArrayList<>(extractClientRegistrations(clientRegistrationRepository));
+        new ArrayList<>(extractClientRegistrations(clientRegistrationRepository))
+            .stream()
+                .map(reg -> enhanceWithAudiencesMetadata(reg, oidcProviderRepository))
+                .collect(Collectors.toCollection(ArrayList::new));
     addPtRegistrations(registrations, ptClientRegistrationRepositories.getIfAvailable());
 
     final var additionalJwkSetUrisByIssuer =
@@ -414,7 +436,15 @@ public class OidcOverrideBeansConfiguration {
 
   /**
    * Merges all {@link ClientRegistration}s from a per-tenant map of {@link
-   * ClientRegistrationRepository}s into {@code registrations}, de-duplicating by registration id.
+   * ClientRegistrationRepository}s into {@code registrations}.
+   *
+   * <p>Intentionally does NOT de-duplicate by registration id. Two PTs can register the SAME
+   * registration id (e.g. each PT's own view of a shared {@code tenanta} IdP) with different
+   * audiences/clientIds — those are logically different registrations because the audience-aware
+   * router picks by (iss, aud), not by id. De-duplicating would silently drop a PT's override. The
+   * {@code InMemoryClientRegistrationRepository} on each PT chain only ever holds that tenant's own
+   * single entry per id, so there's no id collision there; collisions only show up in this
+   * cluster-shared validator list, where they're exactly what we want.
    */
   private void addPtRegistrations(
       final List<ClientRegistration> registrations,
@@ -423,13 +453,37 @@ public class OidcOverrideBeansConfiguration {
       return;
     }
     for (final var ptRepo : ptMap.values()) {
-      for (final var reg : extractClientRegistrations(ptRepo)) {
-        if (registrations.stream()
-            .noneMatch(r -> r.getRegistrationId().equals(reg.getRegistrationId()))) {
-          registrations.add(reg);
-        }
-      }
+      registrations.addAll(extractClientRegistrations(ptRepo));
     }
+  }
+
+  /**
+   * Returns a copy of {@code original} with the matching root {@link OidcConfiguration}'s audiences
+   * stashed in {@code providerConfigurationMetadata} under {@link
+   * PerTenantClientRegistrations#AUDIENCES_METADATA_KEY}. Returns {@code original} unchanged when
+   * the root provider declares no audiences. {@link
+   * ClientRegistration#withClientRegistration(ClientRegistration)} preserves the existing metadata
+   * map, so any prior entries (e.g. {@code end_session_endpoint} written by {@link
+   * ClientRegistrationFactory}) are retained.
+   */
+  private static ClientRegistration enhanceWithAudiencesMetadata(
+      final ClientRegistration original,
+      final OidcAuthenticationConfigurationRepository configRepo) {
+    final var providerConfig =
+        configRepo.getOidcAuthenticationConfigurations().get(original.getRegistrationId());
+    if (providerConfig == null
+        || providerConfig.getAudiences() == null
+        || providerConfig.getAudiences().isEmpty()) {
+      return original;
+    }
+    final Map<String, Object> existingMetadata =
+        new HashMap<>(original.getProviderDetails().getConfigurationMetadata());
+    existingMetadata.put(
+        PerTenantClientRegistrations.AUDIENCES_METADATA_KEY,
+        List.copyOf(providerConfig.getAudiences()));
+    return ClientRegistration.withClientRegistration(original)
+        .providerConfigurationMetadata(existingMetadata)
+        .build();
   }
 
   private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(

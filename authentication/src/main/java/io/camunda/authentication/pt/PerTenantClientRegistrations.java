@@ -10,6 +10,7 @@ package io.camunda.authentication.pt;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
@@ -62,6 +63,15 @@ public final class PerTenantClientRegistrations {
 
   /** Registration id under which the default {@code authentication.oidc.*} provider lives. */
   public static final String DEFAULT_PROVIDER_REGISTRATION_ID = "oidc";
+
+  /**
+   * Key under which each registration's expected audiences are stored inside {@link
+   * org.springframework.security.oauth2.client.registration.ClientRegistration.ProviderDetails#getConfigurationMetadata()}.
+   * The value is a {@code List<String>}. Read by the audience-aware decoder factory and the
+   * issuer/audience aware router so per-registration audience overrides flow correctly even when
+   * multiple PTs register the same registration id with different audiences.
+   */
+  public static final String AUDIENCES_METADATA_KEY = "audiences";
 
   private PerTenantClientRegistrations() {
     // static-utility class — not instantiable
@@ -261,6 +271,15 @@ public final class PerTenantClientRegistrations {
             : "{baseUrl}/login/oauth2/code/{registrationId}";
     final String redirectUri =
         PhysicalTenantRedirectUriRewriter.rewrite(redirectUriTemplate, tenantId);
+    // Stash audiences on the registration via providerConfigurationMetadata so the audience-
+    // aware decoder + validator factory can route + validate by audience without consulting any
+    // static providers map keyed by registration id (which would always reflect ROOT audiences
+    // and silently discard PT-side overrides for shared registration ids — see
+    // MetadataAwareTokenValidatorFactory).
+    final Map<String, Object> metadata = new HashMap<>();
+    if (provider.getAudiences() != null && !provider.getAudiences().isEmpty()) {
+      metadata.put(AUDIENCES_METADATA_KEY, List.copyOf(provider.getAudiences()));
+    }
     final var builder =
         builderFactory
             .builderFor(registrationId, provider)
@@ -269,7 +288,8 @@ public final class PerTenantClientRegistrations {
             // Keycloak's userinfo endpoint requires "openid". fromIssuerLocation does NOT seed
             // default scopes, so we set them explicitly here.
             .scope("openid", "profile", "email")
-            .redirectUri(redirectUri);
+            .redirectUri(redirectUri)
+            .providerConfigurationMetadata(metadata);
     if (provider.getClientName() != null) {
       builder.clientName(provider.getClientName());
     }

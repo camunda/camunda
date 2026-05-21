@@ -21,8 +21,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 /**
  * Validates the audience of a JWT token. A token can have multiple audiences, but at least one of
  * the valid audiences must be present.
+ *
+ * <p>Visible across the {@code io.camunda.authentication} module so the per-registration metadata-
+ * aware validator factory can compose this validator from audiences carried on the {@link
+ * org.springframework.security.oauth2.client.registration.ClientRegistration} itself.
  */
-final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
+public final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AudienceValidator.class);
   private final Set<String> validAudiences;
@@ -32,7 +36,7 @@ final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
    *
    * @param validAudiences the valid audiences. Must not be empty.
    */
-  AudienceValidator(final Set<String> validAudiences) {
+  public AudienceValidator(final Set<String> validAudiences) {
     if (validAudiences.isEmpty()) {
       throw new IllegalArgumentException("At least one valid audience must be provided");
     }
