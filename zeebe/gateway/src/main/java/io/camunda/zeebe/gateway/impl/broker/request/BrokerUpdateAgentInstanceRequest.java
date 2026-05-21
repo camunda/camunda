@@ -21,6 +21,7 @@ public class BrokerUpdateAgentInstanceRequest extends BrokerExecuteCommand<Agent
   public BrokerUpdateAgentInstanceRequest(final AgentInstanceRecord record) {
     super(ValueType.AGENT_INSTANCE, AgentInstanceIntent.UPDATE);
     requestDto = record;
+    request.setKey(record.getAgentInstanceKey());
     // Route to the partition that owns the agent instance, decoded from the key.
     // All keys in Zeebe encode the owning partition in their high bits.
     request.setPartitionId(Protocol.decodePartitionId(record.getAgentInstanceKey()));
