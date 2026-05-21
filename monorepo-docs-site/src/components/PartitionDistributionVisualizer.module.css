@@ -1,5 +1,5 @@
 .widget {
-  border: 1px solid var(--ifm-border-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 8px;
   overflow: hidden;
   margin: 24px 0;
@@ -9,7 +9,7 @@
 /* ── Controls ─────────────────────────────────────────────── */
 .controls {
   background: var(--ifm-background-surface-color);
-  border-bottom: 1px solid var(--ifm-border-color);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
   padding: 16px 20px;
   display: flex;
   gap: 28px;
@@ -59,7 +59,7 @@
 
 .ctrlDivider {
   width: 1px;
-  background: var(--ifm-border-color);
+  background: var(--ifm-color-emphasis-300);
   align-self: stretch;
   margin: 0 4px;
 }
@@ -103,7 +103,7 @@
 .toggleTrack {
   position: absolute;
   inset: 0;
-  background: var(--ifm-border-color);
+  background: var(--ifm-color-emphasis-300);
   border-radius: 22px;
   transition: background 0.2s;
 }
@@ -137,7 +137,7 @@
 /* ── Tabs ─────────────────────────────────────────────────── */
 .tabs {
   display: flex;
-  border-bottom: 2px solid var(--ifm-border-color);
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
   background: var(--ifm-background-color);
 }
 
@@ -172,7 +172,7 @@
 
 .sep {
   border: none;
-  border-top: 1px solid var(--ifm-border-color);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
   margin: 0;
 }
 
@@ -207,7 +207,7 @@
   padding: 7px 12px;
   text-align: center;
   background: var(--ifm-background-surface-color);
-  border: 1px solid var(--ifm-border-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
   font-size: 0.78rem;
   color: var(--ifm-color-content-secondary);
   font-weight: 700;
@@ -217,7 +217,7 @@
   padding: 5px 14px 5px 8px !important;
   text-align: right !important;
   background: var(--ifm-background-surface-color) !important;
-  border: 1px solid var(--ifm-border-color) !important;
+  border: 1px solid var(--ifm-color-emphasis-300) !important;
   font-size: 0.78rem !important;
   color: var(--ifm-color-content-secondary) !important;
   font-weight: 700 !important;
@@ -227,7 +227,7 @@
 }
 
 .matrix td {
-  border: 1px solid var(--ifm-border-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
   padding: 5px 8px;
   text-align: center;
   background: var(--ifm-background-color);
@@ -266,7 +266,7 @@
   align-items: center;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--ifm-border-color);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
   flex-wrap: wrap;
 }
 
@@ -286,7 +286,7 @@
 }
 
 .pcard {
-  border: 1px solid var(--ifm-border-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 6px;
   overflow: hidden;
   flex: 0 0 auto;
@@ -360,7 +360,7 @@
 .statCard {
   flex: 1 1 76px;
   min-width: 70px;
-  border: 1px solid var(--ifm-border-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -417,7 +417,7 @@
 /* ── Summary strip ────────────────────────────────────────── */
 .summary {
   padding: 14px 20px;
-  border-top: 1px solid var(--ifm-border-color);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
   display: flex;
   gap: 28px;
   flex-wrap: wrap;
