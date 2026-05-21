@@ -128,7 +128,12 @@ export function createYamlLoader(specDir) {
   }
   function jsValue(entry) {
     if (!entry) return null;
-    return entry.doc ? entry.doc.toJS({ maxAliasCount: -1 }) : null;
+    // Bounded alias-expansion limit guards CI runners against accidental or
+    // malicious YAML alias bombs in PR content. The first-party specs use
+    // `$ref` (a string, not a YAML alias) and contain no anchors, so the
+    // default would also work; an explicit, generous ceiling is kept here
+    // to make the intent obvious and tolerate future shared-anchor use.
+    return entry.doc ? entry.doc.toJS({ maxAliasCount: 10000 }) : null;
   }
   function lineOfPath(entry, path) {
     if (!entry) return 1;
