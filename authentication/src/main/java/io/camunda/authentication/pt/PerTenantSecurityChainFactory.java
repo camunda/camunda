@@ -8,6 +8,7 @@
 package io.camunda.authentication.pt;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -116,7 +117,8 @@ public final class PerTenantSecurityChainFactory {
       final HttpSecurity http,
       final TenantSecuritySlice slice,
       final JwtDecoder sharedDecoder,
-      final Set<String> allowedIssuers)
+      final Set<String> allowedIssuers,
+      final Set<String> expectedAudiences)
       throws Exception {
     final String[] securityMatchers;
     if (slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED) {
@@ -137,15 +139,32 @@ public final class PerTenantSecurityChainFactory {
           if (authentication == null || !authentication.isAuthenticated()) {
             return new AuthorizationDecision(false);
           }
-          // Session-derived: webapp chain already authenticated this user on this tenant.
+          // Session-derived: the webapp chain already authenticated this user on this tenant.
+          // We deliberately do NOT re-check the audience here: the session was created via OAuth2
+          // login on a webapp chain whose ClientRegistrationRepository only knows about THIS
+          // tenant's assigned providers (per-tenant scoping in OidcOverrideBeansConfiguration),
+          // so the underlying access token was already issued by a client this tenant owns and
+          // its aud claim was implicitly validated at issuance. (An explicit
+          // oauth.getAuthorizedClientRegistrationId() check against this tenant's registration
+          // ids would be strictly redundant given that scoping.)
           if (authentication instanceof OAuth2AuthenticationToken) {
             return new AuthorizationDecision(true);
           }
-          // Bearer: apply the per-chain issuer allowlist.
+          // Bearer: apply the per-chain issuer allowlist (spec D6) AND the per-tenant audience
+          // allowlist (spec D8 — needed when an IdP is shared between PTs, where iss alone
+          // can't separate tenants).
           if (authentication instanceof JwtAuthenticationToken jwt) {
-            final var iss = jwt.getToken().getIssuer();
-            return new AuthorizationDecision(
-                iss != null && allowedIssuers.contains(iss.toString()));
+            final var token = jwt.getToken();
+            final var iss = token.getIssuer();
+            final boolean issuerOk = iss != null && allowedIssuers.contains(iss.toString());
+            // Empty expectedAudiences -> "skip the audience check" (back-compat).
+            // Non-empty -> at least one of the token's aud entries must be allowlisted.
+            final List<String> tokenAudiences = token.getAudience();
+            final boolean audienceOk =
+                expectedAudiences.isEmpty()
+                    || (tokenAudiences != null
+                        && tokenAudiences.stream().anyMatch(expectedAudiences::contains));
+            return new AuthorizationDecision(issuerOk && audienceOk);
           }
           // Anonymous or any other token type: deny (oauth2ResourceServer's entry point
           // will turn that into a 401 with WWW-Authenticate: Bearer).

@@ -111,6 +111,57 @@ explicitly anyway — they don't need cookies. PoC and production controllers de
 relative to `/v2` only; `PhysicalTenantRequestMappingHandlerMapping` handles the prefixing, so
 the dual URL scheme stays an infrastructure concern that never leaks into controller mappings.
 
+Multi-IdP per tenant is exercised by the default tenant (Task 17 / D8). When two or more
+`ClientRegistration`s live on a webapp chain, Spring Security's `DefaultLoginPageGeneratingFilter`
+renders a picker page listing one `<form action="/oauth2/authorization/<regId>">` per
+registration. The picker lives on the chain itself — no separate webapp work, no custom login
+template. Picking either registration completes the standard auth-code flow against that IdP.
+
+### D8. Audience-based isolation for shared IdPs
+
+The issuer allowlist ([D6](#d6-design-as-portable-to-c) / per-chain `iss` ∈ tenant's assigned
+issuers) separates tenants whose IdPs are distinct. It does **not** separate tenants that share
+an IdP — and as soon as a tenant assigns an IdP that another tenant also assigns (the multi-IdP
+shape from [D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-client)
+exercised in Task 17, where the default tenant's secondary IdP backs onto the tenanta realm
+shared with tenant A), `iss` alone collides.
+
+To separate tenants on a shared IdP we add a per-tenant **expected-audiences** allowlist. Each
+client at the IdP is configured with a hardcoded audience mapper that emits a tenant-specific
+`aud` claim on its access tokens. Concretely in the PoC:
+
+|              Client at Keycloak              |    Realm    | Issued to (PT) |          `aud` claim          |
+|----------------------------------------------|-------------|----------------|-------------------------------|
+| `camunda-pt-default-client`                  | `default`   | `default`      | `pt-default-aud`              |
+| `camunda-pt-default-via-tenanta-client`      | `tenanta`   | `default`      | `pt-default-via-tenanta-aud`  |
+| `camunda-pt-tenanta-client`                  | `tenanta`   | `tenanta`      | `pt-tenanta-aud`              |
+
+Each tenant declares its `expected-audiences` under `camunda.physical-tenants.<id>.security.authentication.expected-audiences`. The bearer branch on the per-tenant API chain now performs
+two allowlist checks:
+
+- `iss` claim ∈ tenant's allowed-issuers (existing). Empty / unmatched ⇒ deny.
+- `aud` claim ∩ tenant's expected-audiences ≠ ∅ (new). Empty config means "skip the
+  audience check" (back-compat for pre-Task-17 setups without audience mappers); non-empty
+  config requires intersection.
+
+Cross-tenant bearer access on a shared IdP fails on the audience check even when issuer would
+have matched. A token issued by tenant A's client (`aud=pt-tenanta-aud`) presented to default's
+API chain is rejected (default's expected list is `[pt-default-aud, pt-default-via-tenanta-aud]`),
+and vice versa.
+
+Session-derived auth (`OAuth2AuthenticationToken`) on the API chain is **not** re-audience-checked.
+The per-tenant `ClientRegistrationRepository` on the webapp chain only knows about that tenant's
+assigned providers, so a session can only be created via a client this tenant owns — the audience
+claim was implicitly validated at the underlying access token's issuance. Adding an explicit
+`OAuth2AuthenticationToken.getAuthorizedClientRegistrationId()` check against the tenant's
+registration ids would be strictly redundant given that scoping.
+
+The expected-audiences set is built as a sibling Spring bean to `ptAllowedIssuersPerTenant`
+(`Map<String, Set<String>> ptExpectedAudiencesPerTenant`) in
+`OidcOverrideBeansConfiguration` and passed through `PhysicalTenantSecurityChainRegistrar` into
+`PerTenantSecurityChainFactory.buildApiChain`. Nothing about D8 changes the chain shape, the
+session machinery, or the URL scheme — it is a pure addition to the bearer authorization rule.
+
 ---
 
 ## Component design
@@ -294,6 +345,8 @@ Demo:
 6. Both tabs hold valid, independent sessions simultaneously.
 7. Tab 1 logs out (`POST /physical-tenant/tenanta/logout`) — only tenant A's session is invalidated; tab 2 stays logged in.
 8. (Default-tenant access-path check) Open `https://localhost:8080/whoami` — different cookie Path, unauthenticated, fresh login flow against the default IdP. Confirms the agreed "relogin acceptable across access paths" behaviour.
+9. (Multi-IdP picker, Task 17 / D8) The default tenant is configured with two assigned providers — `oidc` (its primary IdP, default realm at `:8081`) and `default-via-tenanta` (the tenanta realm at `:8082` shared with tenant A). Open `https://localhost:8080/app`. The chain has two `ClientRegistration`s, so `DefaultLoginPageGeneratingFilter` renders a picker page listing both options as `/oauth2/authorization/<regId>` links. Picking `default-via-tenanta` routes to the tenanta realm; login as `bob`; return to `/app` with `bob` as the default tenant's session principal. The picker is exercised on the unprefixed access path so the URL matches what a real Camunda webapp user would see.
+10. (Audience-isolation cross-tenant bearer, D8) Mint a token via `camunda-pt-default-via-tenanta-client` (realm tenanta, audience `pt-default-via-tenanta-aud`). Present it to default's API → **200** (audience matches default's expected list). Present the same token to tenant A's API → **403** (issuer would match tenant A's allowlist — same realm — but the audience claim is NOT in tenant A's expected list). This is the case the audience allowlist is needed for; the issuer allowlist alone would have admitted the cross-tenant token.
 
 Verification points:
 - Browser cookie inspector shows two cookies with disjoint `Path` attributes.

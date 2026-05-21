@@ -78,6 +78,24 @@ Open `http://localhost:8080/physical-tenant/tenanta/app`. Expected flow:
 
 The full bi-directional smoke (both webapp chains + both API URL schemes, plus the cross-tenant 403 case) lives in [Smoke testing](#smoke-testing) below.
 
+### Multi-IdP picker (default tenant)
+
+The default tenant is configured with **two** assigned OIDC providers (Task 17 / spec D8):
+
+- `oidc` — default realm at `:8081`, client `camunda-pt-default-client`, audience `pt-default-aud`.
+- `default-via-tenanta` — the **tenanta** realm at `:8082` (shared with tenant A), client `camunda-pt-default-via-tenanta-client`, audience `pt-default-via-tenanta-aud`.
+
+Open `http://localhost:8080/app` while logged out. Spring Security's `DefaultLoginPageGeneratingFilter` detects two registrations and serves a picker page with one `/oauth2/authorization/<regId>` link per provider. Picking `default-via-tenanta` routes to the tenanta realm; log in as `bob`; the callback returns to `/app` with `bob` as the default tenant's session principal. A curl probe of the picker page should list two registrations:
+
+```bash
+curl -sS -L -c /tmp/picker-jar -b /tmp/picker-jar http://localhost:8080/app \
+  | grep -oE "/oauth2/authorization/[a-z-]+" | sort -u
+# /oauth2/authorization/default-via-tenanta
+# /oauth2/authorization/oidc
+```
+
+Same realm `tenanta` therefore backs **two** PT-API entry points. The issuer-allowlist mechanism (existing) can't tell the two PTs apart on a shared IdP — that's what the audience-allowlist mechanism (new) is for.
+
 ## Smoke testing
 
 Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**` and a session-or-bearer API chain at `/physical-tenant/<id>/v2/**` (sub-pattern of the webapp matcher; the API chain is ordered first via `@Order` so requests for `/v2/...` paths hit it before the webapp chain's broader matcher). The smoke matrix covers both tenants on both chains, plus the cross-tenant rejection case the PoC exists to prove.
@@ -152,7 +170,16 @@ no token -> default    401 /v2/whoami  OK
 default session -> /v2/whoami              200 /v2/whoami                          OK
 default session -> tenanta webapp-aligned  401 /physical-tenant/tenanta/v2/whoami  OK
 default session -> tenanta API-client URL  401 /v2/physical-tenants/tenanta/whoami OK
+
+=== Audience isolation (shared tenanta realm; aud-based PT separation) ===
+dvta -> default (webapp)        200 /physical-tenant/default/v2/whoami       OK
+dvta -> default (apiclient)     200 /v2/physical-tenants/default/whoami      OK
+dvta -> default (unpref.)       200 /v2/whoami                               OK
+dvta -> tenanta (webapp)        403 /physical-tenant/tenanta/v2/whoami       OK
+dvta -> tenanta (apiclient)     403 /v2/physical-tenants/tenanta/whoami      OK
 ```
+
+**Audience isolation cells (Task 17 / spec D8).** The `dvta` token is minted via Keycloak's password grant against `camunda-pt-default-via-tenanta-client` on the **tenanta** realm. Its `iss` claim is `http://localhost:8082/realms/tenanta` — the same issuer tenant A's tokens carry. So if the per-chain authorization manager only checked `iss`, the dvta token would pass tenant A's allowlist (same realm ⇒ same issuer) and grant a cross-tenant API call. The audience claim is what separates them: dvta tokens carry `aud=pt-default-via-tenanta-aud`, which is in default's expected list but not tenant A's. Hence 200 against default, 403 against tenant A.
 
 **Manual curl** — get a token and call the API by hand (useful when iterating on a single chain):
 
@@ -249,8 +276,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 12 | Default tenant unprefixed access-path chains                          | ✅ done         |
 | 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ✅ done         |
 |    | Checkpoint D — full functional surface                                | ✅ done         |
-| 16 | **Manual browser smoke test**                                         | 🔄 in progress |
-| 17 | Multi-IdP verification for default tenant (picker page)               | ⏳ pending      |
+| 16 | Manual browser smoke test                                             | ✅ done         |
+| 17 | **Multi-IdP picker + audience-based PT isolation for shared IdPs**    | 🔄 in progress |
 |    | Checkpoint E — PoC acceptance                                         | ⏳ pending      |
 | 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ deferred     |
 | 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ deferred     |
@@ -266,9 +293,9 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 **What is not yet wired:**
 
-- Default tenant's unprefixed access-path chains — Task 12.
 - End-to-end `PhysicalTenantSecurityIT` — Tasks 14–15.
-- Multi-IdP per tenant (picker page) — Task 17.
+
+**Audience-based isolation for shared IdPs (Task 17 / D8).** When the same IdP backs more than one PT (multi-IdP shape exercised by the default tenant against the tenanta realm), the issuer allowlist alone cannot separate tenants — `iss` collides. Each client at the IdP is given a hardcoded audience mapper emitting a tenant-specific `aud` claim, and each tenant declares an `expected-audiences` allowlist under `camunda.physical-tenants.<id>.security.authentication.expected-audiences`. The per-tenant API chain now enforces BOTH `iss` ∈ allowed-issuers AND (when expected-audiences is non-empty) `aud` ∩ expected-audiences ≠ ∅. Session-derived auth is not re-audience-checked — the per-tenant `ClientRegistrationRepository` on the webapp chain already scopes which IdPs can mint a session for this tenant.
 
 Per-tenant durable secondary storage is intentionally out of scope: each tenant's `WebSessionRepository` is backed by a private in-memory `PersistentWebSessionClient`. Storage isolation is structural (no shared backend, no key-prefixing), but sessions die with the process.
 
