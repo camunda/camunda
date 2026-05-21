@@ -26,6 +26,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
  * Builds a per-tenant {@link SecurityFilterChain} from a {@link TenantSecuritySlice}. Replaces the
@@ -65,6 +66,17 @@ public final class PerTenantSecurityChainFactory {
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
         .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+        // Replace the default HttpSessionRequestCache with a NullRequestCache: with
+        // alwaysUse=true on defaultSuccessUrl below, we never need to redirect the user
+        // back to the URL they originally requested, so there is no reason to save it.
+        // The default cache would call request.getSession() to store the saved request,
+        // which creates a session and emits a Set-Cookie on the response — even for
+        // anonymous background requests like /favicon.ico, /robots.txt, or any URL the
+        // chain's matcher happens to claim. With NullRequestCache the chain only creates
+        // a session when an actual OAuth2 flow is in progress (state storage at the start
+        // of the authorization request, SecurityContext storage at the end of the
+        // callback) — and those are the only legitimate reasons for a session here.
+        .requestCache(rc -> rc.requestCache(new NullRequestCache()))
         .oauth2Login(
             l ->
                 l.clientRegistrationRepository(slice.clientRegistrationRepository())
