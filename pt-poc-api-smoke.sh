@@ -145,17 +145,17 @@ call "tenanta token" "$TA"  "/v2/whoami" 200
 call "no token"      ""    "/v2/whoami" 401
 echo
 
-# Session-based cross-tenant. CSL's OidcApi at /v2/whoami is bearer-only — it does not read
-# the session cookie — so a session-only request lands 401 even with a valid default-tenant
-# session. The PT-prefixed URLs are still session-or-bearer via the PT chains; tenanta's chain
-# reads its own cookie name only, so default's session cookie does not authenticate there
-# either (401 anonymous).
+# Session-based cross-tenant. CSL's OidcApi reads the session via the default
+# HttpSessionSecurityContextRepository (set up implicitly by SecurityContextHolderFilter), so a
+# default-tenant session DOES authenticate at /v2/whoami — same session-or-bearer behaviour CSL's
+# OidcWebapp chain provides for its own URLs. PT-prefixed URLs read tenanta's cookie name only,
+# so default's session cookie still does not authenticate there.
 echo "=== Session cross-tenant (default session; PT-prefixed targets) ==="
 DEF_JAR=/tmp/pt-poc-default-jar.txt
 oauth_login "$OC/oauth2/authorization/oidc" alice alice "$DEF_JAR"
-call_with_cookies "default session -> /v2/whoami (CSL bearer-only)"  "$DEF_JAR" "/v2/whoami"                          401
-call_with_cookies "default session -> tenanta webapp-aligned"        "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
-call_with_cookies "default session -> tenanta API-client URL"        "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
+call_with_cookies "default session -> /v2/whoami (CSL session-or-bearer)" "$DEF_JAR" "/v2/whoami"                          200
+call_with_cookies "default session -> tenanta webapp-aligned"             "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
+call_with_cookies "default session -> tenanta API-client URL"             "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
 rm -f "$DEF_JAR"
 echo
 

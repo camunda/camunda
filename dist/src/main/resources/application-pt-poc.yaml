@@ -24,12 +24,15 @@ camunda:
             client-id: camunda-pt-tenanta-client
             client-secret: tenanta-secret
             issuer-uri: http://localhost:8082/realms/tenanta
-            # Match the audience emitted by the same client at Keycloak so CSL's standard
-            # JwtDecoder installs an audience validator on this registration too. Without it,
-            # a tenanta-issued token reaching /v2/whoami (CSL's OidcApi) would pass with no
-            # audience check at all — the tenanta token DOES have aud=pt-tenanta-aud, but
-            # the validator only fires if the registration declares an audiences list.
-            audiences: [pt-tenanta-aud]
+            # NOTE: no `audiences` here on purpose. The shared JwtDecoder (CSL's
+            # IssuerAwareTokenValidator) matches by `iss` alone and caches the validator
+            # per issuer. Two registrations share iss=http://localhost:8082/realms/tenanta
+            # (this one, plus default's `default-via-tenanta` named provider) — if we set
+            # audiences here, that validator fires for ALL tokens with that issuer, and
+            # rejects dvta tokens (aud=pt-default-via-tenanta-aud) even though they belong
+            # to the default tenant. Audience-based PT isolation is enforced inside the
+            # per-tenant API chain's AuthorizationManager (PerTenantSecurityChainFactory),
+            # which knows the right tenant context per request.
   # Per-tenant overlays. Each tenant declares its OWN providers.assigned list and the
   # OIDC slots those entries resolve to (default slot vs. named slots under
   # providers.oidc.<name>). The PoC deliberately exercises BOTH resolution paths:
