@@ -8,7 +8,7 @@
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {getClientConfig} from '#/modules/config/getClientConfig';
-import {ComponentNotAvailableError} from '#/modules/errors/errors';
+import {ComponentNotAvailableError, ForbiddenError} from '#/modules/errors/errors';
 import {ForbiddenPage} from '#/pages/ForbiddenPage';
 
 export const Route = createFileRoute('/_auth/admin')({
@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_auth/admin')({
 		}
 	},
 	errorComponent: ({error}) => {
-		if (error instanceof ComponentNotAvailableError) {
+		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
 			return <ForbiddenPage />;
 		}
 		throw error;
