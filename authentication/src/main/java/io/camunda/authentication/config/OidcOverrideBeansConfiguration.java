@@ -9,7 +9,6 @@ package io.camunda.authentication.config;
 
 import static java.util.stream.Collectors.toMap;
 
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
@@ -23,6 +22,7 @@ import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.oidc.OidcUserInfoClient;
+import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;

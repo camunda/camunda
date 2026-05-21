@@ -8,12 +8,12 @@
 package io.camunda.application.commons.authentication;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.context.holder.CamundaAuthenticationDelegatingHolder;
+import io.camunda.security.spring.annotation.ConditionalOnUnprotectedApi;
 import io.camunda.security.spring.context.DefaultCamundaAuthenticationProvider;
 import io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.security.spring.context.holder.RequestContextBasedAuthenticationHolder;

@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -34,6 +33,7 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.spring.annotation.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
