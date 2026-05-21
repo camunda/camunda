@@ -51,7 +51,7 @@ components:
           minimum: 1
       x-properties-added-in-version:
         - propertyName: from
-          addedInVersion: "8.6"
+          addedInVersion: "8.7"
         - propertyName: limit
           addedInVersion: "8.6"
 
