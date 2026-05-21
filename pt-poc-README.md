@@ -68,7 +68,7 @@ Wait for:
 Tomcat started on port 8080
 ```
 
-### Browser
+### One-tenant browser sanity check
 
 Open `http://localhost:8080/physical-tenant/tenanta/whoami`. Expected flow:
 
@@ -77,12 +77,80 @@ Open `http://localhost:8080/physical-tenant/tenanta/whoami`. Expected flow:
 3. Return to OC and end up at `/physical-tenant/tenanta/whoami`
 4. JSON body: `{"tenantId":"tenanta","principal":"bob"}` (the principal claim depends on the Keycloak realm config)
 
+The full bi-directional smoke (both webapp chains + both API chains, plus the cross-tenant 403 case) lives in [Smoke testing](#smoke-testing) below.
+
+## Smoke testing
+
+Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**` and a bearer-token API chain at `/v2/physical-tenants/<id>/**`. The smoke matrix covers both tenants on both chains, plus the cross-tenant rejection case the PoC exists to prove.
+
+### Webapp (browser, OAuth2 authorization code)
+
+For each tenant, open the `whoami` endpoint in a fresh browser tab (or different browser profile to keep sessions independent):
+
+|  Tenant   |                              URL                              | Login as      | Expected JSON                                |
+|-----------|---------------------------------------------------------------|---------------|----------------------------------------------|
+| `tenanta` | `http://localhost:8080/physical-tenant/tenanta/whoami`        | `bob` / `bob` | `{"tenantId":"tenanta","principal":"bob"}`   |
+| `default` | `http://localhost:8080/physical-tenant/default/whoami`        | `alice` / `alice` | `{"tenantId":"default","principal":"alice"}` (or the Keycloak `sub` UUID, depending on the realm's preferred-username mapping) |
+
+Two simultaneous tab logins coexist — neither tenant's session cookie is sent to the other tenant's URLs (cookie `Path` scoping). To inspect cookies in DevTools: each tab should see only its own `camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`.
+
+### API (bearer token, cross-tenant isolation)
+
+The API chains are stateless: each request needs an `Authorization: Bearer <token>` header. Acquire the token from the tenant's Keycloak realm via the password grant (Direct Access Grants are enabled on both PoC realms), then call the API.
+
+**One-shot script** — runs the full 5-cell smoke matrix (2 same-tenant successes, 2 cross-tenant rejections, 1 unauthenticated probe):
+
+```bash
+./pt-poc-api-smoke.sh
+```
+
+Expected output:
+
+```
+=== Acquiring tokens ===
+tenanta token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
+default token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
+
+=== Cross-tenant matrix ===
+tenanta -> tenanta     200 /v2/physical-tenants/tenanta/whoami  OK
+tenanta -> default     403 /v2/physical-tenants/default/whoami  OK
+default -> default     200 /v2/physical-tenants/default/whoami  OK
+default -> tenanta     403 /v2/physical-tenants/tenanta/whoami  OK
+
+=== Unauthenticated probe (should be 401) ===
+no token -> tenanta    401 /v2/physical-tenants/tenanta/whoami  OK
+```
+
+**Manual curl** — get a token and call the API by hand (useful when iterating on a single chain):
+
+```bash
+# Tenant A token (bob)
+TOKEN=$(curl -fsS -X POST http://localhost:8082/realms/tenanta/protocol/openid-connect/token \
+  -d grant_type=password \
+  -d client_id=camunda-pt-tenanta-client \
+  -d client_secret=tenanta-secret \
+  -d username=bob -d password=bob | jq -r .access_token)
+
+# Tenant A's API: 200 + JSON
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/v2/physical-tenants/tenanta/whoami
+
+# Default's API with tenant A's token: 403 (signature valid, issuer not in default's allowlist)
+curl -sS -i -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/v2/physical-tenants/default/whoami | head -1
+```
+
+Same shape for the default tenant — swap host `:8082`→`:8081`, realm `tenanta`→`default`, client + credentials accordingly.
+
+The 403 on cross-tenant calls comes from the per-chain `AuthorizationManager`: the JWT is decoded and signature-validated by the shared issuer-aware decoder (it knows both realms), but the chain's authorization rule rejects tokens whose `iss` claim isn't in that tenant's allowed-issuer set.
+
 ## What's where
 
 |                             Path                             |                                       Purpose                                       |
 |--------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | `pt-poc-idp.sh`                                              | Boots two `KeycloakContainer`s on fixed host ports 8081/8082 from the realm exports |
 | `pt-poc-oc.sh`                                               | Rebuilds + boots OC under the `pt-poc` profile                                      |
+| `pt-poc-api-smoke.sh`                                        | Runs the cross-tenant API matrix (200/403/401) end-to-end via curl + jq             |
 | `dist/src/test/resources/pt-poc/*.json`                      | Keycloak realm exports (one client + one test user each)                            |
 | `dist/src/main/resources/application-pt-poc.yaml`            | OC's PoC-specific Spring config (tenant A's OIDC provider, security DEBUG logging)  |
 | `dist/src/main/resources/application.properties`             | `spring.profiles.group.pt-poc=consolidated-auth,pt-security,rdbmsH2` lives here     |
@@ -142,9 +210,9 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`        | ✅ done         |
 | 9  | Wire per-tenant `WebSessionRepository`                                | ✅ done         |
 | 10 | Extract `PhysicalTenantCookieSerializer` + unit test                  | ✅ done         |
-|    | **Checkpoint C — collaborators extracted**                            | 🔄 review      |
-| 11 | API chain — shared decoder + per-chain issuer allowlist               | ⏳ pending      |
-| 12 | Default tenant unprefixed access-path chains                          | ⏳ pending      |
+|    | Checkpoint C — components extracted                                   | ✅ done         |
+| 11 | API chain — shared decoder + per-chain issuer allowlist               | ✅ done         |
+| 12 | **Default tenant unprefixed access-path chains**                      | 🔄 in progress |
 | 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ⏳ pending      |
 | 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ pending      |
 | 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ pending      |
@@ -155,15 +223,16 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 - Two Keycloak realms boot on `:8081` (default) and `:8082` (tenanta).
 - OC boots under `pt-poc` against in-memory H2 (no Elasticsearch dependency).
-- Two `SecurityFilterChain`s — one per tenant, at `/physical-tenant/tenanta/**` and `/physical-tenant/default/**`.
+- Four `SecurityFilterChain`s — one webapp + one API per tenant: `/physical-tenant/{tenanta,default}/**` and `/v2/physical-tenants/{tenanta,default}/**`.
 - Browser flow reaches Keycloak, returns to the callback, and reaches the token+userinfo exchange for both tenants.
 - Per-chain session cookies: `camunda-session-tenanta` (Path `/physical-tenant/tenanta`) and `camunda-session-default` (Path `/physical-tenant/default`). Two simultaneous tab logins coexist; neither chain sees the other's session cookie.
+- API chain enforces per-chain issuer allowlist: tenant A's token on tenant A's API → 200; same token on default's API → 403. Shared issuer-aware decoder validates signatures across all known issuers; authorization is per-chain.
 
-**What is not yet wired** (Tasks 6–16):
+**What is not yet wired:**
 
-- API chain (`/v2/physical-tenants/<tenant>/**`) with cross-tenant issuer allowlist — Task 11.
 - Default tenant's unprefixed access-path chains — Task 12.
 - End-to-end `PhysicalTenantSecurityIT` — Tasks 14–15.
+- Multi-IdP per tenant (picker page) — Task 17.
 
 Per-tenant durable secondary storage is intentionally out of scope: each tenant's `WebSessionRepository` is backed by a private in-memory `PersistentWebSessionClient`. Storage isolation is structural (no shared backend, no key-prefixing), but sessions die with the process.
 
