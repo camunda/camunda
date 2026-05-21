@@ -188,7 +188,7 @@ runs:
           "id": "camunda-nexus",
           "name": "Camunda Nexus",
           "url": "https://repository.nexus.camunda.cloud/content/groups/internal/",
-          "mirrorOf": "zeebe,zeebe-snapshots"
+          "mirrorOf": "zeebe,zeebe-snapshots,herodevs-nes"
         }]
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{

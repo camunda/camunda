@@ -211,7 +211,38 @@
       <name>Camunda BPM Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
+
+    <!-- HeroDevs Never-Ending Support (NES) -->
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes</url>
+    </repository>
   </repositories>
+
+  <pluginRepositories>
+    <!-- Resolve plugins through the HeroDevs Never-Ending Support (NES)
+         repository in addition to Maven Central — notably the Spring Boot
+         Maven plugin, which is pinned to ${version.spring-boot} and follows
+         the BOM into NES versioning. -->
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>herodevs-nes</id>
+      <name>HeroDevs NES Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/herodevs-nes</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <pluginManagement>
