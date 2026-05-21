@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {parseDocumentVariable, toHumanReadableBytes} from './parseDocumentVariable';
+import {
+  parseDocumentVariable,
+  toHumanReadableBytes,
+} from './parseDocumentVariable';
 
 const makeDocRef = (overrides: Record<string, unknown> = {}) => ({
   'camunda.document.type': 'camunda',
@@ -124,12 +127,11 @@ describe('parseDocumentVariable', () => {
     const truncated = fullJson.slice(0, fullJson.length - 5);
     const result = parseDocumentVariable(truncated, true);
 
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('single');
-    expect(
-      (result as {type: 'single'; document: {fileName: string}}).document
-        .fileName,
-    ).toBe('photo.png');
+    assert(
+      result !== null && result.type === 'single',
+      'Expected a single parsing result.',
+    );
+    expect(result!.document.fileName).toBe('photo.png');
   });
 
   it('should detect a truncated array of document references with lower bound', () => {
@@ -145,15 +147,12 @@ describe('parseDocumentVariable', () => {
     const truncated = fullJson.slice(0, fullJson.length - 30);
     const result = parseDocumentVariable(truncated, true);
 
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('list');
-    const listResult = result as {
-      type: 'list';
-      documents: unknown[];
-      isLowerBound: boolean;
-    };
-    expect(listResult.documents.length).toBeGreaterThanOrEqual(2);
-    expect(listResult.isLowerBound).toBe(true);
+    assert(
+      result !== null && result.type === 'list',
+      'Expected a list parsing result.',
+    );
+    expect(result.documents.length).toBeGreaterThanOrEqual(2);
+    expect(result.isLowerBound).toBe(true);
   });
 
   it('should return null for a document reference missing required fields', () => {
