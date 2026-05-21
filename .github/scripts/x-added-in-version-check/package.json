@@ -10,7 +10,7 @@
     "verify:specs:workflow": "node verify-specs-workflow.mjs"
   },
   "dependencies": {
-    "dotenv": "^16.4.0",
+    "dotenv": "^17.0.0",
     "yaml": "^2.8.3"
   }
 }
