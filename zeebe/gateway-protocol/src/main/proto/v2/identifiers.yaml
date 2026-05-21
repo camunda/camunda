@@ -243,6 +243,11 @@ components:
             $ref: '#/components/schemas/ElementId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+        $spuriousShared:
+          description: |
+            Unannotated new property on AdvancedElementIdFilter, a schema shared
+            between endpoints from different versions; should provoke CI gate failure.
+          type: string
       x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.10"

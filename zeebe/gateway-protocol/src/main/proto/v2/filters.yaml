@@ -37,6 +37,11 @@ components:
           type: array
           items:
             type: string
+        $spuriousShared:
+          description: |
+            Unannotated new property on BasicStringFilter, a schema shared between
+            endpoints from different versions; should provoke CI gate failure.
+          type: string
       x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.8"
