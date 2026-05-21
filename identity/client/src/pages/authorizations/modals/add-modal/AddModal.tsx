@@ -11,12 +11,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import {
-  isOIDC,
-  isTenantsApiEnabled,
-  resourcePermissions,
-} from "src/configuration";
-import { FormModal, UseEntityModalProps } from "src/components/modal";
+import { FormModal, UseEntityModalCustomProps } from "src/components/modal";
 import {
   ALL_RESOURCE_TYPES,
   createAuthorization,
@@ -40,14 +35,28 @@ import {
 } from "src/utility/validate";
 import type {
   OwnerType,
+  PermissionType,
   ResourceType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 
-export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
+type AddModalCustomProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  isTenantsApiEnabled: boolean;
+  resourcePermissions: Record<ResourceType, PermissionType[]>;
+};
+
+export const AddModal: FC<
+  UseEntityModalCustomProps<ResourceType, AddModalCustomProps>
+> = ({
   open,
   onClose,
   onSuccess,
   entity: defaultResourceType,
+  isOIDC,
+  isCamundaGroupsEnabled,
+  isTenantsApiEnabled,
+  resourcePermissions,
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
@@ -160,6 +169,8 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               onBlur={field.onBlur}
               isEmpty={fieldState.error?.type === "required"}
               isInvalidId={fieldState.error?.type === "validate"}
+              isOIDC={isOIDC}
+              isCamundaGroupsEnabled={isCamundaGroupsEnabled}
             />
           )}
         />

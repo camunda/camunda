@@ -8,7 +8,6 @@
 
 import { FC, StrictMode, useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { getBaseUrl } from "./configuration";
 import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";
 import { LoginPage } from "src/pages/login/LoginPage.tsx";
@@ -17,6 +16,9 @@ import { NotificationProvider } from "src/components/notifications";
 import { Paths } from "src/components/global/routePaths";
 import { SetupPage } from "src/pages/setup/SetupPage";
 import { cleanServiceWorkers } from "src/utility/cleanServiceWorkers.ts";
+import { getBaseUrl } from "./configuration/urlConfig";
+import { DocsUrlProvider } from "./components/documentation/DocsUrlContext.tsx";
+import { docsUrl } from "src/configuration";
 
 const App: FC = () => {
   useEffect(() => {
@@ -26,22 +28,32 @@ const App: FC = () => {
   return (
     <BrowserRouter basename={getBaseUrl()}>
       <StrictMode>
-        <NotificationProvider>
-          <Routes>
-            <Route key="setup" path={Paths.setup()} Component={SetupPage} />
-            <Route key="login" path={Paths.login()} Component={LoginPage} />
-            <Route path={Paths.forbidden()} element={<Forbidden />} />
-            <Route
-              key="identity-ui"
-              path="*"
-              element={
-                <AppRoot>
-                  <GlobalRoutes />
-                </AppRoot>
-              }
-            />
-          </Routes>
-        </NotificationProvider>
+        <DocsUrlProvider value={docsUrl}>
+          <NotificationProvider>
+            <Routes>
+              <Route key="setup" path={Paths.setup()} Component={SetupPage} />
+              <Route
+                key="login"
+                path={Paths.login()}
+                element={
+                  <LoginPage
+                    defaultRedirectUrl={getBaseUrl() + Paths.users()}
+                  />
+                }
+              />
+              <Route path={Paths.forbidden()} element={<Forbidden />} />
+              <Route
+                key="identity-ui"
+                path="*"
+                element={
+                  <AppRoot>
+                    <GlobalRoutes />
+                  </AppRoot>
+                }
+              />
+            </Routes>
+          </NotificationProvider>
+        </DocsUrlProvider>
       </StrictMode>
     </BrowserRouter>
   );

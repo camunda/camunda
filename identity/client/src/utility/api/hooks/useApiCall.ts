@@ -10,8 +10,8 @@ import { useCallback, useState } from "react";
 import { ApiCall, ApiDefinition, ErrorResponse } from "../request";
 import useTranslate from "../../localization";
 import { useNotifications } from "src/components/notifications";
-import { getApiBaseUrl } from "src/configuration";
 import { isLoggedIn } from "src/utility/auth";
+import { getApiBaseUrl } from "../../../configuration/urlConfig";
 
 type ResetApiCall = () => void;
 
@@ -133,7 +133,7 @@ const useApiCall: UseApiCall = <R, P>(
         success: apiSuccess,
       };
     },
-    [apiDefinition],
+    [apiDefinition, enqueueNotification, options.suppressErrorNotification, t],
   ) as ApiCall<R, P>;
 
   return [

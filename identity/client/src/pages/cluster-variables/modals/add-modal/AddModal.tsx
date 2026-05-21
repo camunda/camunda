@@ -19,7 +19,6 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField.tsx";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { isValid } from "src/utility/components/editor/jsonUtils.ts";
-import { isSaaS } from "src/configuration";
 import ClusterVariableTenantDropdown from "./ClusterVariableTenantDropdown.tsx";
 
 type FormData = {
@@ -29,7 +28,14 @@ type FormData = {
   tenantId?: string;
 };
 
-export const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
+type AddModalProps = UseModalProps & { isSaaS: boolean };
+
+export const AddModal: FC<AddModalProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  isSaaS,
+}) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
   const [callAddClusterVariable, { loading, error }] = useApiCall(

@@ -18,6 +18,7 @@ import DeleteModal from "./modals/DeleteModal";
 import { DataTableHeader } from "src/components/entityList/EntityList";
 import type {
   Authorization,
+  PermissionType,
   ResourceType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -30,6 +31,10 @@ type AuthorizationListProps = {
     ReturnType<typeof usePagination>,
     "pageParams" | "resetPagination"
   >;
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  isTenantsApiEnabled: boolean;
+  resourcePermissions: Record<ResourceType, PermissionType[]>;
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
@@ -37,12 +42,22 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   data,
   reload,
   paginationProps,
+  isOIDC,
+  isCamundaGroupsEnabled,
+  isTenantsApiEnabled,
+  resourcePermissions,
 }) => {
   const { t } = useTranslate("authorizations");
 
   const [addAuthorization, addAuthorizationModal] = useEntityModal(
     AddModal,
     reload,
+    {
+      isOIDC,
+      isCamundaGroupsEnabled,
+      isTenantsApiEnabled,
+      resourcePermissions,
+    },
   );
   const [deleteAuthorization, deleteAuthorizationModal] = useEntityModal(
     DeleteModal,

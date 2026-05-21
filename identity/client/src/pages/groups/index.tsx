@@ -11,10 +11,14 @@ import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
 import Detail from "src/pages/groups/detail";
 
-const Groups: FC = () => (
+type GroupsProps = {
+  isOIDC: boolean;
+};
+
+const Groups: FC<GroupsProps> = ({ isOIDC }) => (
   <PageRoutes
     indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
+    detailElement={<Detail isOIDC={isOIDC} />}
   />
 );
 

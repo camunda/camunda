@@ -16,22 +16,26 @@ import { useEntityModal } from "src/components/modal";
 import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/tenants/detail/groups/AssignGroupModal";
 import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
-import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type GroupsProps = {
   tenantId: string;
+  isCamundaGroupsEnabled: boolean;
 };
 
-const Groups: FC<GroupsProps> = ({ tenantId }) => {
+const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("tenants");
 
   const { groups, loading, success, reload, paginationProps } =
-    useEnrichedGroups(getGroupsByTenantId, {
-      tenantId,
-    });
+    useEnrichedGroups(
+      getGroupsByTenantId,
+      {
+        tenantId,
+      },
+      isCamundaGroupsEnabled,
+    );
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(

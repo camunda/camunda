@@ -1,0 +1,34 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+const adminPath = "/admin";
+const apiBaseUrl = "/v2";
+const loginApiUrl = "/login";
+const logoutApiUrl = "/logout";
+
+export function getApiBaseUrl() {
+  return getBasePathBeforeAdmin() + apiBaseUrl;
+}
+
+export function getLoginApiUrl() {
+  return getBasePathBeforeAdmin() + loginApiUrl;
+}
+
+export function getLogoutApiUrl() {
+  return getBasePathBeforeAdmin() + logoutApiUrl;
+}
+
+export function getBaseUrl() {
+  return getBasePathBeforeAdmin() + adminPath;
+}
+
+function getBasePathBeforeAdmin(): string {
+  const uiPath = window.location.pathname;
+  const endIndex = uiPath.indexOf(adminPath);
+  return uiPath.substring(0, endIndex);
+}

@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isCamundaGroupsEnabled } from "src/configuration";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
@@ -31,6 +30,7 @@ export function useEnrichedGroups<P>(
     P
   >,
   params: P,
+  isCamundaGroupsEnabled: boolean,
 ): UseEnrichedGroupsResult {
   const [callSearchMembers, paginationProps] =
     usePaginatedApiCall(apiDefinition);
@@ -40,57 +40,67 @@ export function useEnrichedGroups<P>(
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setSuccess(false);
-
-    try {
-      const result = await callSearchMembers(params);
-      const members = result.data?.items || [];
-
-      if (members.length === 0) {
-        setGroups([]);
-        setSuccess(true);
-        return;
-      }
-
-      if (!isCamundaGroupsEnabled) {
-        setGroups(
-          members.map(({ groupId }) => ({
-            groupId,
-            name: "",
-            description: "",
-          })),
-        );
-        setSuccess(true);
-        return;
-      }
-
-      const groupIds = members.map(({ groupId }) => groupId);
-      const groupResult = await callSearchGroups({ groupIds });
-
-      const fullGroups = groupResult.data?.items || [];
-
-      // Hydrate members while keeping order from original request
-      const orderedGroups = members.map((member) => {
-        // Inefficient, but we don't care as we search <100 items
-        const group = fullGroups.find((u) => u.groupId === member.groupId);
-        return {
-          groupId: member.groupId,
-          name: group?.name || "",
-          description: group?.description || "",
-        };
-      });
-
-      setGroups(orderedGroups || []);
-      setSuccess(true);
-    } catch {
-      setGroups([]);
+  const fetch = useCallback(
+    async () => {
+      setLoading(true);
       setSuccess(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [callSearchMembers, callSearchGroups, JSON.stringify(params)]);
+
+      try {
+        const result = await callSearchMembers(params);
+        const members = result.data?.items || [];
+
+        if (members.length === 0) {
+          setGroups([]);
+          setSuccess(true);
+          return;
+        }
+
+        if (!isCamundaGroupsEnabled) {
+          setGroups(
+            members.map(({ groupId }) => ({
+              groupId,
+              name: "",
+              description: "",
+            })),
+          );
+          setSuccess(true);
+          return;
+        }
+
+        const groupIds = members.map(({ groupId }) => groupId);
+        const groupResult = await callSearchGroups({ groupIds });
+
+        const fullGroups = groupResult.data?.items || [];
+
+        // Hydrate members while keeping order from original request
+        const orderedGroups = members.map((member) => {
+          // Inefficient, but we don't care as we search <100 items
+          const group = fullGroups.find((u) => u.groupId === member.groupId);
+          return {
+            groupId: member.groupId,
+            name: group?.name || "",
+            description: group?.description || "",
+          };
+        });
+
+        setGroups(orderedGroups || []);
+        setSuccess(true);
+      } catch {
+        setGroups([]);
+        setSuccess(false);
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
+    [
+      callSearchMembers,
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
+      JSON.stringify(params),
+      isCamundaGroupsEnabled,
+      callSearchGroups,
+    ],
+  );
 
   useEffect(() => {
     void fetch();

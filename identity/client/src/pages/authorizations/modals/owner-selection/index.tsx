@@ -14,7 +14,6 @@ import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
 import OwnerSelectionSearch from "./OwnerSelectionSearch";
 import TextField from "src/components/form/TextField";
-import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
@@ -27,6 +26,8 @@ type SelectionProps = {
   onBlur: () => void;
   isEmpty?: boolean;
   isInvalidId?: boolean;
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
 };
 
 const Selection: FC<SelectionProps> = ({
@@ -36,6 +37,8 @@ const Selection: FC<SelectionProps> = ({
   onBlur,
   isEmpty = false,
   isInvalidId = false,
+  isOIDC,
+  isCamundaGroupsEnabled,
 }) => {
   const { t, Translate } = useTranslate("authorizations");
 

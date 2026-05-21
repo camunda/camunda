@@ -25,11 +25,25 @@ import {
   TabsTitle,
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
-import { isTenantsApiEnabled } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
-import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.10";
+import type {
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
-const List: FC = () => {
+type ListProps = {
+  isTenantsApiEnabled: boolean;
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  resourcePermissions: Record<ResourceType, PermissionType[]>;
+};
+
+const List: FC<ListProps> = ({
+  isTenantsApiEnabled,
+  isOIDC,
+  isCamundaGroupsEnabled,
+  resourcePermissions,
+}) => {
   const { t } = useTranslate("authorizations");
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
@@ -117,6 +131,10 @@ const List: FC = () => {
                   loading={loading}
                   reload={reload}
                   paginationProps={paginationProps}
+                  isOIDC={isOIDC}
+                  isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+                  isTenantsApiEnabled={isTenantsApiEnabled}
+                  resourcePermissions={resourcePermissions}
                 />
               </CustomTabPanel>
             ))}

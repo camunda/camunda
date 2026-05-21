@@ -16,22 +16,26 @@ import { useEntityModal } from "src/components/modal";
 import AssignGroupsModal from "src/pages/roles/detail/groups/AssignGroupsModal";
 import AssignGroupModal from "src/pages/roles/detail/groups/AssignGroupModal";
 import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
-import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type GroupsProps = {
   roleId: string;
+  isCamundaGroupsEnabled: boolean;
 };
 
-const Groups: FC<GroupsProps> = ({ roleId }) => {
+const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("roles");
 
   const { groups, loading, success, reload, paginationProps } =
-    useEnrichedGroups(getGroupsByRoleId, {
-      roleId,
-    });
+    useEnrichedGroups(
+      getGroupsByRoleId,
+      {
+        roleId,
+      },
+      isCamundaGroupsEnabled,
+    );
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(

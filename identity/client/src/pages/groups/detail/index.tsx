@@ -27,9 +27,12 @@ import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import MappingRules from "src/pages/groups/detail/mapping-rules";
 import Clients from "src/pages/groups/detail/clients";
-import { isOIDC } from "src/configuration";
 
-const Details: FC = () => {
+type DetailsProps = {
+  isOIDC: boolean;
+};
+
+const Details: FC<DetailsProps> = ({ isOIDC }) => {
   const navigate = useNavigate();
   const { t } = useTranslate("groups");
   const { id = "", tab = "details" } = useParams<{
@@ -98,7 +101,7 @@ const Details: FC = () => {
                 {
                   key: "users",
                   label: t("users"),
-                  content: <Members groupId={group.groupId} />,
+                  content: <Members groupId={group.groupId} isOIDC={isOIDC} />,
                 },
                 {
                   key: "roles",

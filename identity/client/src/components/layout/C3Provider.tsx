@@ -28,7 +28,7 @@ const C3Provider: React.FC<Props> = ({ children }) => {
     if (typeof organizationId === "string") {
       void getToken();
     }
-  }, [getToken]);
+  }, [getToken, organizationId]);
 
   if (
     !token ||

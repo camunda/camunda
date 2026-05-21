@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Add } from "@carbon/react/icons";
-import { docsUrl } from "src/configuration";
+import { useDocsUrl } from "../documentation/DocsUrlContext";
 import { documentationHref } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
 
@@ -29,6 +29,7 @@ const TabEmptyState: FC<TabEmptyStateProps> = ({
   handleClick,
 }) => {
   const { t } = useTranslate();
+  const docsUrl = useDocsUrl();
 
   const childResourceTypeText = t(
     childResourceTypeTranslationKey,

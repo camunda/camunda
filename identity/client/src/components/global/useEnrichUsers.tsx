@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isOIDC } from "src/configuration";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import type {
   User,
@@ -31,6 +30,7 @@ export function useEnrichedUsers<P>(
     P
   >,
   params: P,
+  isOIDC: boolean,
 ): UseEnrichedUsersResult {
   const [callSearchMembers, paginationProps] =
     usePaginatedApiCall(apiDefinition);
@@ -90,7 +90,8 @@ export function useEnrichedUsers<P>(
     } finally {
       setLoading(false);
     }
-  }, [callSearchMembers, callSearchUser, JSON.stringify(params)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
+  }, [callSearchMembers, callSearchUser, isOIDC, JSON.stringify(params)]);
 
   useEffect(() => {
     void fetch();

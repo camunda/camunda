@@ -27,9 +27,13 @@ import Members from "src/pages/roles/detail/members";
 import Groups from "src/pages/roles/detail/groups";
 import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
-import { isOIDC } from "src/configuration";
 
-const Details: FC = () => {
+type DetailsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+};
+
+const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
   const navigate = useNavigate();
   const { t } = useTranslate("roles");
   const { id = "", tab = "details" } = useParams<{
@@ -99,12 +103,17 @@ const Details: FC = () => {
                 {
                   key: "users",
                   label: t("users"),
-                  content: <Members roleId={role.roleId} />,
+                  content: <Members roleId={role.roleId} isOIDC={isOIDC} />,
                 },
                 {
                   key: "groups",
                   label: t("groups"),
-                  content: <Groups roleId={role.roleId} />,
+                  content: (
+                    <Groups
+                      roleId={role.roleId}
+                      isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+                    />
+                  ),
                 },
                 ...(isOIDC
                   ? [

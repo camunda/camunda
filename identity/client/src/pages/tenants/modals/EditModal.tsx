@@ -44,7 +44,7 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
     const newTenantFormValues = getTenantFormValues(tenant);
     setTenantName(newTenantFormValues.name);
     setDescription(newTenantFormValues.description);
-  }, [tenant.tenantId, tenant.name, tenant.description]);
+  }, [tenant]);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateTenant({

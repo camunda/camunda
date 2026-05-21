@@ -28,8 +28,6 @@ import {
   LicenseInfo,
   Button,
 } from "src/pages/login/styled.ts";
-import { Paths } from "src/components/global/routePaths";
-import { getBaseUrl } from "src/configuration";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -158,7 +156,11 @@ function getRedirectUrl(queryString: string) {
   return next;
 }
 
-export const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  defaultRedirectUrl: string;
+}
+
+export const LoginPage: React.FC<LoginPageProps> = ({ defaultRedirectUrl }) => {
   const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
@@ -171,8 +173,8 @@ export const LoginPage: React.FC = () => {
 
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
-    window.location.href = redirectUrl ?? getBaseUrl() + Paths.users();
-  }, [redirectUrl]);
+    window.location.href = redirectUrl ?? defaultRedirectUrl;
+  }, [redirectUrl, defaultRedirectUrl]);
   const hasProductionLicense = license?.isCommercial;
 
   return (

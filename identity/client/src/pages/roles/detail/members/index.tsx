@@ -16,16 +16,16 @@ import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/roles/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/roles/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
-import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   roleId: string;
+  isOIDC: boolean;
 };
 
-const Members: FC<MembersProps> = ({ roleId }) => {
+const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
   const { t } = useTranslate("roles");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
@@ -33,6 +33,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
     {
       roleId,
     },
+    isOIDC,
   );
 
   const isUsersListEmpty = !users || users?.length === 0;
