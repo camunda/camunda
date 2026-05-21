@@ -8,7 +8,7 @@
 
 import {Document} from '@carbon/react/icons';
 import {
-  formatFileSize,
+  toHumanReadableBytes,
   type DocumentParseResult,
 } from './parseDocumentVariable';
 import {
@@ -45,7 +45,7 @@ const DocumentValueCell: React.FC<Props> = ({result}) => {
           {middleTruncate(fileName, TRUNCATION_LIMIT)}
         </DocumentFileName>
         {size !== undefined && (
-          <DocumentSize>{formatFileSize(size)}</DocumentSize>
+          <DocumentSize>{toHumanReadableBytes(size)}</DocumentSize>
         )}
       </DocumentCellContainer>
     );

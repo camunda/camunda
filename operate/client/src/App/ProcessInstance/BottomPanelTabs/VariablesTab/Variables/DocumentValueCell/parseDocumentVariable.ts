@@ -93,20 +93,34 @@ function parseDocumentVariable(
   };
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1000) {
-    return `${bytes} B`;
+const UNITS = ['B', 'KiB', 'MiB', 'GiB'];
+const BYTES_BASE = 1024;
+
+/**
+ * Formats a number of bytes into a human readable string with binary prefixes (up to GiB)
+ * @param bytes - The number of bytes to format
+ * @returns Formatted string (e.g. "1.5 MiB")
+ */
+function toHumanReadableBytes(bytes: number): string {
+  if (bytes === 0) {
+    return '0 B';
   }
-  if (bytes < 1000 * 1000) {
-    return `${Math.round(bytes / 1000)} KB`;
+
+  if (!Number.isFinite(bytes)) {
+    return 'N/A';
   }
-  if (bytes < 1000 * 1000 * 1000) {
-    const mb = bytes / (1000 * 1000);
-    return `${mb >= 10 ? Math.round(mb) : mb.toFixed(1)} MB`;
-  }
-  const gb = bytes / (1000 * 1000 * 1000);
-  return `${gb >= 10 ? Math.round(gb) : gb.toFixed(1)} GB`;
+
+  const exponent = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(BYTES_BASE)),
+    UNITS.length - 1,
+  );
+
+  const value = bytes / Math.pow(BYTES_BASE, exponent);
+  const unit = UNITS[exponent];
+  const formatted = value.toFixed(2).replace(/\.?0+$/, '');
+
+  return `${formatted} ${unit}`;
 }
 
-export {parseDocumentVariable, formatFileSize};
+export {parseDocumentVariable, toHumanReadableBytes};
 export type {DocumentParseResult};

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {parseDocumentVariable, formatFileSize} from './parseDocumentVariable';
+import {parseDocumentVariable, toHumanReadableBytes} from './parseDocumentVariable';
 
 const makeDocRef = (overrides: Record<string, unknown> = {}) => ({
   'camunda.document.type': 'camunda',
@@ -186,27 +186,36 @@ describe('parseDocumentVariable', () => {
   });
 });
 
-describe('formatFileSize', () => {
-  it('should format bytes', () => {
-    expect(formatFileSize(0)).toBe('0 B');
-    expect(formatFileSize(427)).toBe('427 B');
-    expect(formatFileSize(999)).toBe('999 B');
+describe('toHumanReadableBytes', () => {
+  it('should handle zero bytes', () => {
+    expect(toHumanReadableBytes(0)).toBe('0 B');
   });
 
-  it('should format kilobytes', () => {
-    expect(formatFileSize(1000)).toBe('1 KB');
-    expect(formatFileSize(346000)).toBe('346 KB');
-    expect(formatFileSize(999999)).toBe('1000 KB');
+  it('should handle invalid input', () => {
+    expect(toHumanReadableBytes(NaN)).toBe('N/A');
+    expect(toHumanReadableBytes(Infinity)).toBe('N/A');
   });
 
-  it('should format megabytes', () => {
-    expect(formatFileSize(1000000)).toBe('1.0 MB');
-    expect(formatFileSize(2500000)).toBe('2.5 MB');
-    expect(formatFileSize(15000000)).toBe('15 MB');
+  it('should format bytes correctly', () => {
+    expect(toHumanReadableBytes(1024)).toBe('1 KiB');
+    expect(toHumanReadableBytes(1024 * 1024)).toBe('1 MiB');
+    expect(toHumanReadableBytes(1024 * 1024 * 1024)).toBe('1 GiB');
   });
 
-  it('should format gigabytes', () => {
-    expect(formatFileSize(1000000000)).toBe('1.0 GB');
-    expect(formatFileSize(25000000000)).toBe('25 GB');
+  it('should format decimals correctly', () => {
+    expect(toHumanReadableBytes(1536)).toBe('1.5 KiB');
+    expect(toHumanReadableBytes(2560)).toBe('2.5 KiB');
+    expect(toHumanReadableBytes(1536 * 1024)).toBe('1.5 MiB');
+    expect(toHumanReadableBytes(1280)).toBe('1.25 KiB');
+  });
+
+  it('should handle small values', () => {
+    expect(toHumanReadableBytes(1)).toBe('1 B');
+    expect(toHumanReadableBytes(512)).toBe('512 B');
+  });
+
+  it('should cap large values at GiB', () => {
+    const largeValue = Math.pow(1024, 4);
+    expect(toHumanReadableBytes(largeValue)).toBe('1024 GiB');
   });
 });
