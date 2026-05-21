@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.agrona.SystemUtil;
@@ -81,10 +82,11 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    final var parent = target.getParent();
-    if (parent != null) {
-      flushDirectory(parent);
-    }
+    final var parent =
+        Objects.requireNonNull(
+            target.getParent(),
+            "Expected parent of path " + target + " to have a parent, but it was null");
+    flushDirectory(parent);
   }
 
   public static void deleteFolder(final String path) throws IOException {
