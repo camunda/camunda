@@ -792,9 +792,9 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 
 > **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
 
-### 2.17 Operation versioning annotation (`x-added-in-version`)
+### 2.17 Operation and property versioning annotations (`x-added-in-version`, `x-properties-added-in-version`)
 
-Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` extension. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` field extension on the operation, and each of its versioned properties **must** be recorded via an entry in the parent schema's `x-properties-added-in-version` list. This enables generated docs and SDKs to surface endpoint and property version availability to consumers.
 
 ```yaml
 /process-instances/{processInstanceKey}/sequence-flows:
@@ -807,7 +807,7 @@ Every operation **must** declare the Camunda version in which it was introduced 
       - Process instance
 ```
 
-#### Rules
+#### Endpoint-level annotation rules
 
 - The value is a **string** containing the minor version (e.g., `"8.6"`, `"8.9"`). Patch versions are not used.
 - Set the value to the version in which the endpoint **first** ships. Do **not** update it on subsequent changes — that's what changelogs and the breaking-change rules in §2.7 are for.
@@ -821,6 +821,98 @@ If you add a new endpoint without this annotation, CI will fail with a message s
 ```
 Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
 ```
+
+#### Property-level annotation rules
+
+The property-level rules are enforced in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../.github/scripts/x-added-in-version-check/README.md), which compares the spec against a generated version map.
+
+For these property versioning annotations, we use `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }` and records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
+
+##### Rule 1 — Property version differs from its endpoint version
+
+A property is annotated only when its introduction version is different from the endpoint's own introduction version. Same version ⇒ skipped, since the endpoint-level `x-added-in-version` already covers it.
+
+```yaml
+# POST /jobs/activation introduced in 8.6
+paths:
+  /jobs/activation:
+    post:
+      x-added-in-version: '8.6'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                type:      { type: string }    # 8.6 — same as endpoint, NOT annotated
+                worker:    { type: string }    # 8.6 — NOT annotated
+                tenantIds: { type: array, items: { type: string } }   # 8.7 — added later, annotated on the parent schema below
+              x-properties-added-in-version:
+                - propertyName: tenantIds
+                  addedInVersion: '8.7'
+```
+
+##### Rule 2 — Property version differs from its nearest property ancestor
+
+A child property added in the SAME version as its nearest ancestor property is skipped (the ancestor property already covers it). A child property added in a LATER version gets its own annotation.
+
+The parent/child relation also traverses `$ref` boundaries. For example, `DecisionInstanceFilter.evaluationDate` (in `decision-instances.yaml`) is recognised as the parent of `DateTimeFilterProperty.$eq` (in a separately referenced schema), even though the two properties live in different YAML files. Suppression only fires when every aggregated consumer's ancestor property location shares the same intro version as the child property — otherwise the child property gets its own annotation.
+
+```yaml
+# endpoint introduced in 8.6
+SomeRequest:
+  properties:
+    result:
+      type: object
+      properties:
+        variables:                 # 8.7 — same as ancestor property, NOT annotated
+          type: object
+        denied:                    # 8.8 — later than ancestor property, annotated on `result`
+          type: boolean
+      x-properties-added-in-version:
+        - propertyName: denied
+          addedInVersion: '8.8'
+  x-properties-added-in-version:
+    - propertyName: result      # ancestor property annotated (later than endpoint)
+      addedInVersion: '8.7'
+```
+
+##### Rule 3 — Shared schemas: earliest version across all consumers
+
+When a schema (or property) is referenced from multiple endpoints (via `$ref` or `allOf`), the chosen introduction version is the earliest version seen across all consumers. The property is then annotated unless every consumer endpoint's own introduction version equals the property's earliest version — in which case all endpoint-level annotations already cover it.
+
+Example — `element-instances.yaml#/components/schemas/AdvancedElementInstanceStateFilter` is referenced from seven endpoints. The `$exists` operator inside it was first seen in 8.8 by every consumer (the filter itself was introduced in 8.8), but the consuming endpoints span three different intro versions:
+
+|                                    Endpoint                                     | Endpoint version | First saw `$exists` |
+|---------------------------------------------------------------------------------|------------------|---------------------|
+| `POST /process-instances/search`                                                | 8.6              | 8.8                 |
+| `POST /process-definitions/{processDefinitionKey}/statistics/element-instances` | 8.8              | 8.8                 |
+| `POST /process-instances/cancellation`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/incident-resolution`                                   | 8.8              | 8.8                 |
+| `POST /process-instances/migration`                                             | 8.8              | 8.8                 |
+| `POST /process-instances/modification`                                          | 8.8              | 8.8                 |
+| `POST /process-instances/deletion`                                              | 8.9              | 8.8                 |
+
+Earliest property version across consumers = 8.8. Not every consumer endpoint was introduced in 8.8 (`/process-instances/search` is 8.6 and `/process-instances/deletion` is 8.9), so a property-level annotation is required to cover those mismatched cases:
+
+```yaml
+# element-instances.yaml
+AdvancedElementInstanceStateFilter:
+  properties:
+    $exists:
+      type: boolean
+  x-properties-added-in-version:
+    - propertyName: "$exists"
+      addedInVersion: '8.8'
+```
+
+Had every consumer endpoint also been introduced in 8.8, no property-level annotation would be written — each endpoint's own `x-added-in-version: '8.8'` would already cover the shared schema.
+
+##### Reverse check — orphan annotations
+
+The verifier also walks the other direction: every `x-properties-added-in-version` entry it finds in the YAML must correspond to a property that the version map knows about at that location. Entries that don't are flagged as one of:
+
+- `ORPHAN_PROPERTY_ANNOTATION` — the parent schema has no such property at all (likely a typo or a leftover after a rename/removal).
+- `UNKNOWN_PROPERTY_ANNOTATION` — the property exists in YAML but the version map has no record of it (annotation added without a corresponding upstream change, or the version map is stale).
 
 ---
 
@@ -1424,6 +1516,7 @@ Before opening a PR:
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
 - [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
+- [ ] **`x-properties-added-in-version`** entries added for properties whose intro version differs from their endpoint / nearest ancestor property, per Rules 1–3 in §2.17
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)

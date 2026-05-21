@@ -21,6 +21,8 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
   - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
+> Property-level version annotations (`x-properties-added-in-version`) are validated by a separate Node verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md), not by Spectral. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the rules.
+
 ## Running Validation Locally
 
 ```bash

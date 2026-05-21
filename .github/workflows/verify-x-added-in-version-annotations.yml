@@ -1,0 +1,127 @@
+name: Verify x-added-in-version and x-properties-added-in-version annotations
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # daily at 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      camunda_branch:
+        description: 'Branch (or tag/SHA) of camunda/camunda to verify'
+        required: false
+        default: 'main'
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve camunda ref
+        id: ref
+        run: |
+          REF="${{ inputs.camunda_branch }}"
+          if [[ -z "$REF" ]]; then REF="main"; fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          SAFE_REF="${REF//[^a-zA-Z0-9._-]/_}"
+          echo "safe=$SAFE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout camunda/camunda at requested ref
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+
+      - name: Configure git auth for transitive clones
+        # The build:version-map script spawns its own `git clone` of
+        # camunda/return-of-api-added-in-analysis from inside Node, which
+        # doesn't inherit the auth header that actions/checkout sets on the
+        # host repo. Rewrite all github.com URLs globally so any anonymous
+        # clone in this job is transparently authenticated.
+        #
+        # Prefer CROSS_REPO_TOKEN (a PAT/App token with access to
+        # camunda/return-of-api-added-in-analysis) when available; fall back
+        # to the default GITHUB_TOKEN, which works locally with
+        # `act -s GITHUB_TOKEN="$(gh auth token)"` provided your account has
+        # access to that repo.
+        env:
+          CROSS_REPO_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOKEN="${CROSS_REPO_TOKEN:-$GITHUB_TOKEN}"
+          git config --global \
+            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+          # Fail fast instead of hanging on an interactive auth prompt.
+          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
+
+      - name: Install verifier dependencies
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        run: npm ci
+
+      - name: Build verifier artefacts (endpoint-map + version-map)
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        env:
+          # LATEST_BRANCH is not consumed by the in-repo scripts directly.
+          # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
+          # forwards process.env to its bundler, which uses LATEST_BRANCH as
+          # the camunda/camunda ref to bundle as the next (in-development)
+          # version. The scheduled workflow resolves it to a branch name so
+          # the bundle always tracks the latest tip of that branch.
+          LATEST_BRANCH: ${{ steps.ref.outputs.ref }}
+          RETURN_OF_API_REF: v0.1.1
+        run: npm run build:artefacts
+
+      - name: Run CI verifier
+        id: verify
+        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        env:
+          # Spec lives in the host checkout (camunda/camunda at the requested ref).
+          OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
+          # Artefacts produced by the previous step (relative to working-directory).
+          ENDPOINT_MAP_PATH: ./artefacts/endpoint-map.json
+          VERSION_MAP_PATH: ./artefacts/version-map.json
+          # Have the verifier write its Markdown report directly into the
+          # workflow's reports/ directory; it always produces this file
+          # (success or failure).
+          REPORT_PATH: ${{ github.workspace }}/reports/verify_${{ steps.ref.outputs.safe }}.md
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/reports"
+          # Publish the report path *before* invoking the verifier: the
+          # verifier exits non-zero when it finds annotation issues, and
+          # under bash `set -e` that would skip a trailing `echo >>
+          # $GITHUB_OUTPUT`. The verifier always writes REPORT_PATH (on
+          # both success and failure), so the next step can render it.
+          echo "report=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+          npm run --silent verify:specs:workflow
+
+      - name: Display report in summary
+        if: always()
+        run: |
+          {
+            echo "_Camunda ref: \`${{ steps.ref.outputs.ref }}\` — Run date: $(date -u '+%Y-%m-%d %H:%M UTC')_"
+            echo ""
+            if [[ -f "${{ steps.verify.outputs.report }}" ]]; then
+              cat "${{ steps.verify.outputs.report }}"
+            else
+              echo "_(no report produced)_"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verify-${{ steps.ref.outputs.safe }}
+          path: ${{ github.workspace }}/reports/

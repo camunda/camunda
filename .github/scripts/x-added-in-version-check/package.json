@@ -1,0 +1,16 @@
+{
+  "name": "x-added-in-version-check",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:artefacts": "node build-artefacts.mjs",
+    "verify:specs": "npm run build:artefacts && node verify-specs.mjs",
+    "verify:specs:ci": "node verify-specs-ci.mjs",
+    "verify:specs:workflow": "node verify-specs-workflow.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "yaml": "^2.8.3"
+  }
+}
