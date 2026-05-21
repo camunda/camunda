@@ -81,7 +81,7 @@ The full bi-directional smoke (both webapp chains + both API chains, plus the cr
 
 ## Smoke testing
 
-Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**` and a bearer-token API chain at `/v2/physical-tenants/<id>/**`. The smoke matrix covers both tenants on both chains, plus the cross-tenant rejection case the PoC exists to prove.
+Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**` and a session-or-bearer API chain at `/physical-tenant/<id>/v2/**` (sub-pattern of the webapp matcher; the API chain is ordered first via `@Order` so requests for `/v2/...` paths hit it before the webapp chain's broader matcher). The smoke matrix covers both tenants on both chains, plus the cross-tenant rejection case the PoC exists to prove.
 
 ### Webapp (browser, OAuth2 authorization code)
 
@@ -98,26 +98,18 @@ Two simultaneous tab logins coexist — neither tenant's session cookie is sent 
 
 This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` after logging in (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically). It exposes three buttons:
 
-1. **`GET /physical-tenant/<id>/whoami`** — same chain, uses the session cookie. Expected: **200** with the principal.
-2. **`GET /v2/physical-tenants/<id>/whoami` (no Authorization header)** — the SPA call. Expected with the current setup: **401**, `WWW-Authenticate: Bearer`.
+1. **`GET /physical-tenant/<id>/whoami`** — webapp chain, uses the session cookie. Expected: **200** with the principal.
+2. **`GET /physical-tenant/<id>/v2/whoami` (no Authorization header)** — the SPA call against the API chain. Expected: **200** with the same principal. The cookie at `Path=/physical-tenant/<id>` covers this URL too, and the API chain installs the same per-tenant `SessionRepositoryFilter` as the webapp chain, so it reuses the `SecurityContext` saved at OAuth2 login.
 3. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
 
-The 401 is intentional in the current setup and surfaces spec **OQ-1**. Two reinforcing reasons:
+**OQ-1 is resolved by this layout** (URL move + session-aware API chain). Two complementary mechanisms:
 
-- **Cookie `Path` scope.** `camunda-session-<id>` is at `Path=/physical-tenant/<id>` — the browser does not send it to `/v2/physical-tenants/<id>/*`. (You can verify in DevTools' Network tab: the API request has no `Cookie` header.)
-- **API chain is bearer-only.** `SessionCreationPolicy.NEVER` + `oauth2ResourceServer.jwt()`. Even if the cookie reached the server, the chain wouldn't process it.
-
-For real webapps this needs a resolution; see [Open question OQ-1](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md). Candidate directions (none implemented yet — needs design call):
-
-1. **Widen the cookie's `Path`** to a common prefix that covers both the webapp and the API URL space (e.g., mount the API under `/physical-tenant/<id>/v2/...` and keep `Path=/physical-tenant/<id>`).
-2. **Add session-aware auth to the API chain** (accept the session cookie as an alternative to Bearer). Means the API chain needs the per-tenant `SessionRepositoryFilter` too.
-3. **Token-broker endpoint** under the webapp chain (`/physical-tenant/<id>/api/token`) that exchanges the session for an OIDC access token; the SPA puts that token in `Authorization: Bearer` on API calls.
-
-The current PoC implements **none** of these — surfacing the gap is the point of the SPA-style page.
+- **Cookie `Path` scope covers the API URL.** `camunda-session-<id>` at `Path=/physical-tenant/<id>` matches `/physical-tenant/<id>/v2/*`. The browser sends the cookie on API calls automatically.
+- **API chain reads the session.** `SessionCreationPolicy.STATELESS` (read-only — the chain never creates a session) + the shared per-tenant `SessionRepositoryFilter` + an authorization manager that accepts `OAuth2AuthenticationToken` (session-derived) or `JwtAuthenticationToken` (bearer, allowlist-checked). `oauth2ResourceServer.jwt()` stays wired so non-browser API clients with `Authorization: Bearer <jwt>` keep working unchanged.
 
 ### API (bearer token, cross-tenant isolation)
 
-The API chains are stateless: each request needs an `Authorization: Bearer <token>` header. Acquire the token from the tenant's Keycloak realm via the password grant (Direct Access Grants are enabled on both PoC realms), then call the API.
+The API chains accept either the per-tenant session cookie (SPA flow above) or a Bearer token (this section). For non-browser clients, each request carries `Authorization: Bearer <token>`. Acquire the token from the tenant's Keycloak realm via the password grant (Direct Access Grants are enabled on both PoC realms), then call the API.
 
 **One-shot script** — runs the full 5-cell smoke matrix (2 same-tenant successes, 2 cross-tenant rejections, 1 unauthenticated probe):
 
@@ -133,13 +125,13 @@ tenanta token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
 default token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIs...
 
 === Cross-tenant matrix ===
-tenanta -> tenanta     200 /v2/physical-tenants/tenanta/whoami  OK
-tenanta -> default     403 /v2/physical-tenants/default/whoami  OK
-default -> default     200 /v2/physical-tenants/default/whoami  OK
-default -> tenanta     403 /v2/physical-tenants/tenanta/whoami  OK
+tenanta -> tenanta     200 /physical-tenant/tenanta/v2/whoami  OK
+tenanta -> default     403 /physical-tenant/default/v2/whoami  OK
+default -> default     200 /physical-tenant/default/v2/whoami  OK
+default -> tenanta     403 /physical-tenant/tenanta/v2/whoami  OK
 
 === Unauthenticated probe (should be 401) ===
-no token -> tenanta    401 /v2/physical-tenants/tenanta/whoami  OK
+no token -> tenanta    401 /physical-tenant/tenanta/v2/whoami  OK
 ```
 
 **Manual curl** — get a token and call the API by hand (useful when iterating on a single chain):
@@ -154,11 +146,11 @@ TOKEN=$(curl -fsS -X POST http://localhost:8082/realms/tenanta/protocol/openid-c
 
 # Tenant A's API: 200 + JSON
 curl -sS -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8080/v2/physical-tenants/tenanta/whoami
+  http://localhost:8080/physical-tenant/tenanta/v2/whoami
 
 # Default's API with tenant A's token: 403 (signature valid, issuer not in default's allowlist)
 curl -sS -i -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8080/v2/physical-tenants/default/whoami | head -1
+  http://localhost:8080/physical-tenant/default/v2/whoami | head -1
 ```
 
 Same shape for the default tenant — swap host `:8082`→`:8081`, realm `tenanta`→`default`, client + credentials accordingly.
@@ -244,7 +236,7 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 - Two Keycloak realms boot on `:8081` (default) and `:8082` (tenanta).
 - OC boots under `pt-poc` against in-memory H2 (no Elasticsearch dependency).
-- Four `SecurityFilterChain`s — one webapp + one API per tenant: `/physical-tenant/{tenanta,default}/**` and `/v2/physical-tenants/{tenanta,default}/**`.
+- Four `SecurityFilterChain`s — one webapp + one API per tenant. API chains at `/physical-tenant/{tenanta,default}/v2/**` are `@Order`ed before the webapp chains at `/physical-tenant/{tenanta,default}/**` so the narrower matcher wins. The API URL move puts API requests under the webapp cookie's `Path` scope, and the API chain shares the same per-tenant `SessionRepositoryFilter`, resolving spec **OQ-1** (session-or-bearer auth on the API chain).
 - Browser flow reaches Keycloak, returns to the callback, and reaches the token+userinfo exchange for both tenants.
 - Per-chain session cookies: `camunda-session-tenanta` (Path `/physical-tenant/tenanta`) and `camunda-session-default` (Path `/physical-tenant/default`). Two simultaneous tab logins coexist; neither chain sees the other's session cookie.
 - API chain enforces per-chain issuer allowlist: tenant A's token on tenant A's API → 200; same token on default's API → 403. Shared issuer-aware decoder validates signatures across all known issuers; authorization is per-chain.

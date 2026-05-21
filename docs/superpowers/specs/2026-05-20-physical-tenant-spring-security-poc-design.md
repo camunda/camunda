@@ -14,7 +14,7 @@ URL scheme (final):
 
 | Surface  |                  Prefixed                  | Default-only fallback |
 |----------|--------------------------------------------|-----------------------|
-| REST API | `/v2/physical-tenants/<id>/...`            | `/v2/...`             |
+| REST API | `/physical-tenant/<id>/v2/...`             | `/v2/...`             |
 | Webapps  | `/physical-tenant/<id>/<webcomponent>/...` | `/<webcomponent>/...` |
 
 Requirements:
@@ -41,7 +41,7 @@ Spring Security's filter chain is already a per-`securityMatcher` unit with its 
 For each PT we emit a session cookie scoped to the PT's path. The browser then refuses to send tenant A's cookie on tenant B's URLs — no server-side tenant fan-out required. The cookie set per chain:
 
 - `name=camunda-session-<tenantId>` (avoids name collisions when multiple chains' cookies could overlap on the default tenant's `/`)
-- `Path=/physical-tenant/<tenantId>` (and `/v2/physical-tenants/<tenantId>` for the API chain, or one cookie covering both via a common ancestor — see [Open question OQ-1](#open-questions))
+- `Path=/physical-tenant/<tenantId>` — a single cookie covers both the webapp URLs (`/physical-tenant/<t>/...`) and the API URLs (`/physical-tenant/<t>/v2/...`). The API URL space is mounted under the tenant prefix so the cookie's `Path` scope covers both surfaces; see [OQ-1 resolution](#open-questions).
 - For the default tenant's unprefixed chains: `Path=/` and `Path=/v2`. A user navigating from `/physical-tenant/default/…` to `/…` sees a different cookie and will re-auth. Per requirement-3 this is acceptable.
 
 CSRF cookies follow the same Path scoping.
@@ -99,7 +99,7 @@ per-tenant beans            per-tenant chains                  cluster-shared be
 │    'assigned' to {t})  │  │   cookie name+Path per {t} │  │    validators)                  │
 └────────────────────────┘  ├────────────────────────────┤  │                                 │
 ┌────────────────────────┐  │ api chain                  │  │ CamundaOidcLogoutSuccessHandler │
-│ SessionRepositoryFilter│  │   /v2/physical-tenants/    │  │   (reads tenant IdP from active │
+│ SessionRepositoryFilter│  │   /physical-tenant/{t}/v2/ │  │   (reads tenant IdP from active │
 │   + CookieHttpSession- │  │   {t}/**                   │  │    session; OQ-3)               │
 │     IdResolver         │  │   resource-server JWT      │  │                                 │
 │     (name+Path per {t})│  │   iss allowlist:           │  │ HttpSessionOAuth2Authorized-    │
@@ -155,10 +155,13 @@ Webapp chain (`/physical-tenant/{t}/**`):
 - `logout()` with per-tenant `LogoutSuccessHandler` and `deleteCookies("camunda-session-{t}", "X-CSRF-TOKEN-{t}")`
 - `addFilterBefore(perTenantSessionRepositoryFilter, …)` so each chain pulls its own `SessionRepository`
 
-API chain (`/v2/physical-tenants/{t}/**`):
-- `oauth2ResourceServer().jwt().decoder(perTenantJwtDecoder)`
-- `sessionCreationPolicy(NEVER)`
-- CSRF off (Bearer token only)
+API chain (`/physical-tenant/{t}/v2/**`) — session-or-bearer:
+- `oauth2ResourceServer().jwt().decoder(perTenantJwtDecoder)` — bearer-token clients
+- `addFilterBefore(perTenantSessionRepositoryFilter, SecurityContextHolderFilter.class)` — same per-tenant filter instance as the webapp chain, so the `SecurityContext` saved at OAuth2 login is restored for SPA flows that send only the session cookie
+- `sessionCreationPolicy(STATELESS)` — the chain reads sessions but never creates or modifies one (login still happens exclusively on the webapp chain)
+- Authorization rule: `OAuth2AuthenticationToken` (session-derived) ⇒ allow; `JwtAuthenticationToken` (bearer) ⇒ apply the per-chain issuer allowlist; anything else (anonymous) ⇒ deny, which `oauth2ResourceServer`'s entry point turns into 401 with `WWW-Authenticate: Bearer`
+- CSRF off (API surface)
+- **Chain order**: this API matcher is a sub-pattern of the webapp matcher, so the API chain `@Bean` is `@Order`ed before the webapp chain to win the match for `/physical-tenant/{t}/v2/...`
 
 Default tenant gets a duplicate of each chain with the unprefixed `securityMatcher`s (`/<webcomponent>/**`, `/v2/**`) and cookie `Path=/`. These are wired from the same `TenantSecuritySlice` so OIDC config is shared.
 
@@ -243,7 +246,7 @@ The PoC does **not** require a working OC frontend bundle. The OC webapp ships w
 Instead, the PoC ships a minimal PT-scoped controller `PhysicalTenantWhoamiController` that exposes:
 
 - `GET /physical-tenant/{t}/whoami` (webapp chain — session/OIDC login)
-- `GET /v2/physical-tenants/{t}/whoami` (api chain — bearer token)
+- `GET /physical-tenant/{t}/v2/whoami` (api chain — session cookie or bearer token)
 
 Both return `{ tenantId, principal, providers, accessPath }`. That is sufficient to demonstrate login flow, session isolation, multi-IdP, and tenant resolution.
 
@@ -262,7 +265,7 @@ Verification points:
 - Browser cookie inspector shows two cookies with disjoint `Path` attributes.
 - Each tenant's session entities live in that tenant's own in-memory map (private to its `WebSessionRepository`). No row-level partitioning, no shared backend. Durable per-tenant storage is intentionally out of scope.
 - Replaying tenant A's OIDC `state` parameter against `/physical-tenant/default/login/oauth2/code/oidc` is rejected (per-chain `OAuth2AuthorizationRequestRepository` keys state in tenant A's session only).
-- The `/v2/physical-tenants/tenanta/whoami` endpoint requires a Bearer token whose `iss` is in tenant A's allowed-issuer set (the issuer of tenant A's named `tenanta` provider). A token issued by the default tenant's `oidc` IdP returns **403** (signature is valid against the shared decoder, but the issuer allowlist on tenant A's chain rejects it).
+- The `/physical-tenant/tenanta/v2/whoami` endpoint accepts the per-tenant session cookie (SPA flow) or a Bearer token whose `iss` is in tenant A's allowed-issuer set (the issuer of tenant A's named `tenanta` provider). A token issued by the default tenant's `oidc` IdP returns **403** (signature is valid against the shared decoder, but the issuer allowlist on tenant A's chain rejects it).
 - **Multi-IdP picker**: when the default tenant's `providers.assigned` contains more than one provider, hitting `/physical-tenant/default/whoami` unauthenticated redirects to `/physical-tenant/default/login` (Spring Security's default picker URL) — NOT directly to either IdP. The picker page lists each assigned registration as a clickable link, and clicking either completes a full OAuth flow against the chosen IdP.
 
 ---
@@ -327,7 +330,7 @@ If iteration speed becomes the bottleneck, swapping to `no.nav.security:mock-oau
 
 ## Open questions
 
-**OQ-1.** Single cookie covering both the webapp and the api path for a tenant (Path = `/`-rooted at a common ancestor like `/physical-tenant/tenanta`, with the API path mounted underneath), or two cookies? The API chain is sessionless so an API cookie is moot for OIDC bearer auth, but the webapp may need to call `/v2/…` with session cookies for unauthenticated bootstrap. **Initial answer:** one webapp cookie scoped to `/physical-tenant/<t>`, no session cookie on `/v2/physical-tenants/<t>` (bearer-only). Revisit if the webapp can't call `/v2/…` without a bearer.
+**OQ-1.** Single cookie covering both the webapp and the api path for a tenant (Path = `/`-rooted at a common ancestor like `/physical-tenant/tenanta`, with the API path mounted underneath), or two cookies? **Resolved:** one webapp cookie scoped to `Path=/physical-tenant/<t>`, with the API URL space moved from `/v2/physical-tenants/<t>/...` to `/physical-tenant/<t>/v2/...` so it sits inside the cookie's `Path` scope. The API chain becomes session-or-bearer: it installs the same per-tenant `SessionRepositoryFilter` instance the webapp chain uses (against the same per-tenant `WebSessionRepository`) and its authorization manager admits `OAuth2AuthenticationToken` (session, login already validated on the same tenant's webapp chain) or `JwtAuthenticationToken` (bearer, allowlist-checked). `oauth2ResourceServer.jwt()` stays wired so non-browser API clients are unaffected and unauthenticated requests still get 401 with `WWW-Authenticate: Bearer` via that entry point. Chain registration order: the API chain (`/physical-tenant/<t>/v2/**`) is `@Order`ed before the webapp chain (`/physical-tenant/<t>/**`) because the API matcher is a sub-pattern of the webapp matcher.
 
 **OQ-2.** The default tenant's unprefixed chains: do we ever want the same session to be valid on both access paths, or always treat them as separate? **PoC stance:** always separate (cookie Path differs), per the user's "we may accept relogin" relaxation. Revisit when the UX is closer.
 

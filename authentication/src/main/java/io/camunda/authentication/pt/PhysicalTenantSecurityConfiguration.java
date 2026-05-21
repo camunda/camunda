@@ -15,6 +15,7 @@ import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -56,17 +57,15 @@ public class PhysicalTenantSecurityConfiguration {
     this.ptAllowedIssuersPerTenant = ptAllowedIssuersPerTenant;
   }
 
-  @Bean
-  public SecurityFilterChain ptTenantaWebappChain(final HttpSecurity http) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor(TENANTA_TENANT_ID));
-  }
+  // Chain registration order is significant. Spring Security evaluates SecurityFilterChain
+  // beans in the order Spring resolves them; the API chain matcher
+  // /physical-tenant/<id>/v2/** is a sub-pattern of the webapp chain matcher
+  // /physical-tenant/<id>/**, so the API chain MUST be matched first — otherwise the broader
+  // webapp chain would swallow API requests and try to drive an OAuth2 redirect. @Order makes
+  // the precedence explicit and stable regardless of bean-resolution order.
 
   @Bean
-  public SecurityFilterChain ptDefaultWebappChain(final HttpSecurity http) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID));
-  }
-
-  @Bean
+  @Order(1)
   public SecurityFilterChain ptTenantaApiChain(final HttpSecurity http, final JwtDecoder jwtDecoder)
       throws Exception {
     return chainFactory.buildApiChain(
@@ -74,10 +73,23 @@ public class PhysicalTenantSecurityConfiguration {
   }
 
   @Bean
+  @Order(2)
   public SecurityFilterChain ptDefaultPrefixedApiChain(
       final HttpSecurity http, final JwtDecoder jwtDecoder) throws Exception {
     return chainFactory.buildApiChain(
         http, sliceFor(DEFAULT_TENANT_ID), jwtDecoder, allowedIssuersFor(DEFAULT_TENANT_ID));
+  }
+
+  @Bean
+  @Order(3)
+  public SecurityFilterChain ptTenantaWebappChain(final HttpSecurity http) throws Exception {
+    return chainFactory.buildWebappChain(http, sliceFor(TENANTA_TENANT_ID));
+  }
+
+  @Bean
+  @Order(4)
+  public SecurityFilterChain ptDefaultWebappChain(final HttpSecurity http) throws Exception {
+    return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID));
   }
 
   /**

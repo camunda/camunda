@@ -3,10 +3,10 @@
 #
 # Acquires an access token from one tenant's Keycloak via the password grant
 # and exercises the four cells of the cross-tenant matrix:
-#   tenant-A token → /v2/physical-tenants/tenanta/whoami   → 200
-#   tenant-A token → /v2/physical-tenants/default/whoami   → 403
-#   default token  → /v2/physical-tenants/default/whoami   → 200
-#   default token  → /v2/physical-tenants/tenanta/whoami   → 403
+#   tenant-A token → /physical-tenant/tenanta/v2/whoami   → 200
+#   tenant-A token → /physical-tenant/default/v2/whoami   → 403
+#   default token  → /physical-tenant/default/v2/whoami   → 200
+#   default token  → /physical-tenant/tenanta/v2/whoami   → 403
 #
 # Requires: ./pt-poc-idp.sh and ./pt-poc-oc.sh running.
 # Dependencies: curl, jq.
@@ -51,13 +51,13 @@ echo "default token: ${DEF:0:40}..."
 echo
 
 echo "=== Cross-tenant matrix ==="
-call "tenanta -> tenanta"  "$TA"  "/v2/physical-tenants/tenanta/whoami"  200
-call "tenanta -> default"  "$TA"  "/v2/physical-tenants/default/whoami"  403
-call "default -> default"  "$DEF" "/v2/physical-tenants/default/whoami"  200
-call "default -> tenanta"  "$DEF" "/v2/physical-tenants/tenanta/whoami"  403
+call "tenanta -> tenanta"  "$TA"  "/physical-tenant/tenanta/v2/whoami"  200
+call "tenanta -> default"  "$TA"  "/physical-tenant/default/v2/whoami"  403
+call "default -> default"  "$DEF" "/physical-tenant/default/v2/whoami"  200
+call "default -> tenanta"  "$DEF" "/physical-tenant/tenanta/v2/whoami"  403
 echo
 
 echo "=== Unauthenticated probe (should be 401) ==="
-call "no token -> tenanta"  ""   "/v2/physical-tenants/tenanta/whoami"  401
+call "no token -> tenanta"  ""   "/physical-tenant/tenanta/v2/whoami"  401
 
 rm -f /tmp/pt-poc-api-body

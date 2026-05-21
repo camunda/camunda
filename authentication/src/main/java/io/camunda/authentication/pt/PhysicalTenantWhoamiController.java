@@ -27,7 +27,11 @@ public class PhysicalTenantWhoamiController {
     return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
   }
 
-  @GetMapping("/v2/physical-tenants/{tenantId}/whoami")
+  // API endpoint sits under the same tenant prefix as the webapp chain so the webapp
+  // session cookie (Path=/physical-tenant/<t>) covers it. The API chain is session-or-bearer:
+  // session-authenticated SPA requests pass through with no Authorization header; non-browser
+  // clients still present Authorization: Bearer <jwt> as before.
+  @GetMapping("/physical-tenant/{tenantId}/v2/whoami")
   @ResponseBody
   public Whoami whoamiApi(
       @PathVariable final String tenantId, final Authentication authentication) {
@@ -36,10 +40,11 @@ public class PhysicalTenantWhoamiController {
 
   // Minimal SPA-style page that exercises the realistic webapp → API call.
   // Served from the OAuth2-protected webapp chain; the embedded JavaScript fetches the
-  // bearer-only API endpoint from the same origin. Surfaces the session-vs-bearer gap
-  // (spec OQ-1): the cookie's Path is /physical-tenant/<t> so the browser won't send it
-  // to /v2/physical-tenants/<t>/*; and even if it did, the API chain is sessionless and
-  // wouldn't honour it.
+  // API endpoint from the same origin without an Authorization header. With OQ-1 resolved
+  // (API moved under the tenant prefix, API chain session-aware) this fetch now succeeds:
+  // the session cookie at Path=/physical-tenant/<t> is automatically sent on
+  // /physical-tenant/<t>/v2/* and the API chain reads it via the shared
+  // SessionRepositoryFilter.
   @GetMapping(value = "/physical-tenant/{tenantId}/app", produces = MediaType.TEXT_HTML_VALUE)
   @ResponseBody
   public String app(@PathVariable final String tenantId, final Authentication authentication) {
@@ -58,15 +63,19 @@ public class PhysicalTenantWhoamiController {
             <button onclick="callWebappWhoami()">GET /physical-tenant/%s/whoami</button>
             <pre id="webapp-result">(click)</pre>
 
-            <h2>API /v2/.../whoami (bearer chain) — SPA call from this tab</h2>
-            <p>Realistic SPA flow: this tab is logged in via the webapp chain's session cookie.
-            The fetch below has no Authorization header. Expected: the cookie is NOT sent
-            (Path=/physical-tenant/%s does not cover /v2/physical-tenants/%s), and even if it
-            were, the API chain only accepts bearer tokens.</p>
-            <button onclick="callApiWhoami()">GET /v2/physical-tenants/%s/whoami (no token)</button>
+            <h2>API /physical-tenant/&lt;id&gt;/v2/whoami (same chain prefix, session-shared)</h2>
+            <p>The session cookie at Path=/physical-tenant/%s now covers this URL too,
+            and the API chain accepts session auth (in addition to bearer tokens for
+            non-browser clients). Expected: <b>200</b> with the same principal as the webapp
+            chain — no Authorization header needed.</p>
+            <button onclick="callApiWhoami()">GET /physical-tenant/%s/v2/whoami (no Authorization header)</button>
             <pre id="api-result">(click)</pre>
 
             <h2>Diagnostics</h2>
+            <p>The SPA flow above works because (a) the API URL is under the cookie's Path
+            scope, so the browser sends the session cookie automatically, and (b) the API
+            chain installs the same per-tenant SessionRepositoryFilter as the webapp chain
+            and reuses the SecurityContext stored at OAuth2 login.</p>
             <button onclick="showCookies()">Show document.cookie (HttpOnly cookies are invisible here)</button>
             <pre id="cookies">(click)</pre>
 
@@ -78,7 +87,7 @@ public class PhysicalTenantWhoamiController {
               }
               async function callApiWhoami() {
                 try {
-                  const r = await fetch('/v2/physical-tenants/%s/whoami', { credentials: 'include' });
+                  const r = await fetch('/physical-tenant/%s/v2/whoami', { credentials: 'include' });
                   const text = await r.text();
                   document.getElementById('api-result').textContent = r.status + ' ' + r.statusText + '\\n' + text;
                 } catch (e) {

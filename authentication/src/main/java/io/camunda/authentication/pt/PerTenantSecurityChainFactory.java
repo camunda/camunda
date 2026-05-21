@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 /**
@@ -72,19 +73,34 @@ public final class PerTenantSecurityChainFactory {
   }
 
   /**
-   * Builds a stateless bearer-token API chain for {@code /v2/physical-tenants/<tenant>/**}.
+   * Builds a session-or-bearer API chain for {@code /physical-tenant/<tenant>/v2/**}.
+   *
+   * <p>The API URL space lives <b>inside</b> the webapp cookie's {@code Path=/physical-tenant/<t>}
+   * scope (spec OQ-1 resolution). That means the browser sends the per-tenant session cookie on API
+   * calls too. The chain accepts <i>either</i> form of authentication:
+   *
+   * <ul>
+   *   <li><b>Session</b>: the tenant's {@link
+   *       org.springframework.session.web.http.SessionRepositoryFilter} resolves the cookie against
+   *       the same {@code WebSessionRepository} the webapp chain uses; this chain's {@link
+   *       HttpSessionSecurityContextRepository} (with {@code allowSessionCreation=false} so the API
+   *       chain never creates a session of its own) then loads the {@code SecurityContext} saved by
+   *       the webapp chain at OAuth2 login. Authentication arrives as {@link
+   *       OAuth2AuthenticationToken} — already validated on this tenant's webapp chain, so
+   *       authenticated ⇒ allowed.
+   *   <li><b>Bearer</b>: a non-browser API client presents {@code Authorization: Bearer <jwt>}.
+   *       {@code oauth2ResourceServer.jwt()} produces a {@link JwtAuthenticationToken}; the
+   *       per-chain issuer allowlist still applies (cross-tenant tokens get 403, spec D6).
+   * </ul>
    *
    * <p>The {@link JwtDecoder} is <b>cluster-shared</b> — one issuer-aware decoder built from the
    * union of all tenants' issuer URIs validates signatures for any known token. Per-tenant
-   * isolation comes from the {@code allowedIssuers} <b>allowlist</b>: each chain's authorization
-   * rule rejects authenticated tokens whose {@code iss} claim is not in that tenant's assigned
-   * issuer set. Cross-tenant valid tokens get 403, not 401 — they authenticated successfully but
-   * lack authorization for this tenant's API surface (spec D6).
+   * isolation for bearer flows comes from the {@code allowedIssuers} allowlist enforced by the
+   * authorization manager.
    *
-   * <p>The slice's {@code clientRegistrationRepository} / {@code sessionRepositoryFilter} / {@code
-   * httpSessionIdResolver} fields are intentionally unused here — API chains are stateless ({@link
-   * SessionCreationPolicy#NEVER}) and don't run an OAuth2 login flow. We accept the slice anyway so
-   * the chain factory has one input shape; the unused fields are a known and acceptable cost.
+   * <p>For unauthenticated requests (no cookie, no Bearer) Spring Security's {@code
+   * oauth2ResourceServer} authentication entry point returns 401 with {@code WWW-Authenticate:
+   * Bearer} — the right answer for an API surface.
    */
   public SecurityFilterChain buildApiChain(
       final HttpSecurity http,
@@ -92,25 +108,49 @@ public final class PerTenantSecurityChainFactory {
       final JwtDecoder sharedDecoder,
       final Set<String> allowedIssuers)
       throws Exception {
-    final String securityMatcher =
+    final String prefix =
         slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED
-            ? "/v2/physical-tenants/" + slice.tenantId() + "/**"
-            : "/v2/**";
+            ? "/physical-tenant/" + slice.tenantId() + "/v2"
+            : "/v2";
+    final String securityMatcher = prefix + "/**";
 
-    final AuthorizationManager<RequestAuthorizationContext> issuerAllowed =
-        (auth, ctx) -> {
-          final var a = auth.get();
-          if (!(a instanceof JwtAuthenticationToken jwt)) {
+    final AuthorizationManager<RequestAuthorizationContext> sessionOrBearer =
+        (authSupplier, ctx) -> {
+          final var authentication = authSupplier.get();
+          if (authentication == null || !authentication.isAuthenticated()) {
             return new AuthorizationDecision(false);
           }
-          final var iss = jwt.getToken().getIssuer();
-          return new AuthorizationDecision(iss != null && allowedIssuers.contains(iss.toString()));
+          // Session-derived: webapp chain already authenticated this user on this tenant.
+          if (authentication instanceof OAuth2AuthenticationToken) {
+            return new AuthorizationDecision(true);
+          }
+          // Bearer: apply the per-chain issuer allowlist.
+          if (authentication instanceof JwtAuthenticationToken jwt) {
+            final var iss = jwt.getToken().getIssuer();
+            return new AuthorizationDecision(
+                iss != null && allowedIssuers.contains(iss.toString()));
+          }
+          // Anonymous or any other token type: deny (oauth2ResourceServer's entry point
+          // will turn that into a 401 with WWW-Authenticate: Bearer).
+          return new AuthorizationDecision(false);
         };
+
+    // Read-but-don't-create the session-stored SecurityContext. With SessionCreationPolicy
+    // STATELESS, Spring Security installs a NullSecurityContextRepository and ignores the
+    // session entirely — even though SessionRepositoryFilter resolves it, the
+    // SecurityContextHolderFilter wouldn't load anything from it. Instead we keep the
+    // default IF_REQUIRED policy and explicitly install an HttpSessionSecurityContextRepository
+    // with allowSessionCreation=false: it reads the SecurityContext saved by the webapp chain
+    // at OAuth2 login but never creates a new session for unauthenticated API requests.
+    final HttpSessionSecurityContextRepository sessionContextRepository =
+        new HttpSessionSecurityContextRepository();
+    sessionContextRepository.setAllowSessionCreation(false);
 
     return http.securityMatcher(securityMatcher)
         .csrf(c -> c.disable())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-        .authorizeHttpRequests(a -> a.anyRequest().access(issuerAllowed))
+        .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
+        .securityContext(sc -> sc.securityContextRepository(sessionContextRepository))
+        .authorizeHttpRequests(a -> a.anyRequest().access(sessionOrBearer))
         .oauth2ResourceServer(o -> o.jwt(j -> j.decoder(sharedDecoder)))
         .build();
   }
