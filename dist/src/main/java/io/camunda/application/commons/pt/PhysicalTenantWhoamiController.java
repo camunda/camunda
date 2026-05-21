@@ -31,8 +31,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Profile("pt-security")
 public class PhysicalTenantWhoamiController {
 
-  public record Whoami(String tenantId, String principal) {}
-
   @GetMapping("/v2/whoami")
   public Whoami whoamiApi(
       @PathVariable(name = "physicalTenantId", required = false) final String physicalTenantId,
@@ -41,4 +39,6 @@ public class PhysicalTenantWhoamiController {
         physicalTenantId != null ? physicalTenantId : PhysicalTenantContext.current();
     return new Whoami(resolved, authentication != null ? authentication.getName() : "anonymous");
   }
+
+  public record Whoami(String tenantId, String principal) {}
 }
