@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -49,10 +50,11 @@ public class TenantAwareTimerStartEventTest {
                       .getInitialization()
                       .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private long processDefinitionKey;
 

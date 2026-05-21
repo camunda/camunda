@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,10 +43,11 @@ public class TenantAwareUpdateVariablesTest {
           .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
           .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 

@@ -12,6 +12,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,9 +49,9 @@ public class OidcAuthOverRestStartupIT {
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                c.getInitialization()
-                    .getDefaultRoles()
-                    .put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));
+                c.getInitialization().setDefaultRoles(defaultRoles);
               });
 
   @Test

@@ -25,6 +25,7 @@ import io.camunda.security.api.model.config.initialization.ConfiguredRole;
 import io.camunda.security.api.model.config.initialization.ConfiguredTenant;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -81,10 +82,21 @@ class InitializeEntityRelationsIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().getGroups().add(CONFIGURED_GROUP_1);
-                conf.getInitialization().getUsers().add(CONFIGURED_USER);
-                conf.getInitialization().getRoles().add(CONFIGURED_ROLE_1);
-                conf.getInitialization().getTenants().add(CONFIGURED_TENANT_1);
+                final var groups = new ArrayList<>(conf.getInitialization().getGroups());
+                groups.add(CONFIGURED_GROUP_1);
+                conf.getInitialization().setGroups(groups);
+
+                final var users = new ArrayList<>(conf.getInitialization().getUsers());
+                users.add(CONFIGURED_USER);
+                conf.getInitialization().setUsers(users);
+
+                final var roles = new ArrayList<>(conf.getInitialization().getRoles());
+                roles.add(CONFIGURED_ROLE_1);
+                conf.getInitialization().setRoles(roles);
+
+                final var tenants = new ArrayList<>(conf.getInitialization().getTenants());
+                tenants.add(CONFIGURED_TENANT_1);
+                conf.getInitialization().setTenants(tenants);
               });
 
   @UserDefinition

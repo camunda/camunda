@@ -26,6 +26,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -64,13 +65,14 @@ public class OverlappingUsernameAndClientIdClaimTest {
           .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
           .withSecurityConfig(c -> c.getAuthentication().getOidc().setUsernameClaim("client_id"))
           .withSecurityConfig(c -> c.getAuthentication().getOidc().setPreferUsernameClaim(true))
-          .withSecurityConfig(c -> c.getInitialization().getUsers().clear())
+          .withSecurityConfig(c -> c.getInitialization().setUsers(List.of()))
           .withSecurityConfig(
-              c ->
-                  c.getInitialization()
-                      .getDefaultRoles()
-                      .put(
-                          "admin", Map.of("users", List.of("admin"), "clients", List.of("admin"))));
+              c -> {
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin", Map.of("users", List.of("admin"), "clients", List.of("admin")));
+                c.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   // Injected by the MultiDbTest extension
   private static KeycloakContainer keycloak;

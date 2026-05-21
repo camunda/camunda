@@ -15,7 +15,7 @@ import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 

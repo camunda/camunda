@@ -19,7 +19,7 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

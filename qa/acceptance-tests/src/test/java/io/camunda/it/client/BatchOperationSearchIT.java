@@ -37,7 +37,7 @@ import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.lang.reflect.Method;
 import java.util.ArrayList;

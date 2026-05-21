@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;

@@ -23,6 +23,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -55,8 +56,13 @@ class InitializeGroupIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().getGroups().add(CONFIGURED_GROUP_1);
-                conf.getInitialization().getUsers().add(CONFIGURED_USER);
+                final var groups = new ArrayList<>(conf.getInitialization().getGroups());
+                groups.add(CONFIGURED_GROUP_1);
+                conf.getInitialization().setGroups(groups);
+
+                final var users = new ArrayList<>(conf.getInitialization().getUsers());
+                users.add(CONFIGURED_USER);
+                conf.getInitialization().setUsers(users);
               });
 
   @UserDefinition

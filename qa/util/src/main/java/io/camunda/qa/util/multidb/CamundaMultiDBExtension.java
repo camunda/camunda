@@ -466,12 +466,29 @@ public class CamundaMultiDBExtension
     applicationUnderTest.application.withSecurityConfig(
         cfg -> {
           final var config = cfg.getInitialization();
-          config.getUsers().addAll(configuredEntities.users());
-          config.getRoles().addAll(configuredEntities.roles());
-          config.getMappingRules().addAll(configuredEntities.mappingRules());
-          config.getGroups().addAll(configuredEntities.groups());
-          config.getAuthorizations().addAll(configuredEntities.authorizations());
-          config.getTenants().addAll(configuredEntities.tenants());
+          final var users = new ArrayList<>(config.getUsers());
+          users.addAll(configuredEntities.users());
+          config.setUsers(users);
+
+          final var roles = new ArrayList<>(config.getRoles());
+          roles.addAll(configuredEntities.roles());
+          config.setRoles(roles);
+
+          final var mappingRules = new ArrayList<>(config.getMappingRules());
+          mappingRules.addAll(configuredEntities.mappingRules());
+          config.setMappingRules(mappingRules);
+
+          final var groups = new ArrayList<>(config.getGroups());
+          groups.addAll(configuredEntities.groups());
+          config.setGroups(groups);
+
+          final var authorizations = new ArrayList<>(config.getAuthorizations());
+          authorizations.addAll(configuredEntities.authorizations());
+          config.setAuthorizations(authorizations);
+
+          final var tenants = new ArrayList<>(config.getTenants());
+          tenants.addAll(configuredEntities.tenants());
+          config.setTenants(tenants);
         });
 
     if (applicationUnderTest.shouldBeManaged) {
