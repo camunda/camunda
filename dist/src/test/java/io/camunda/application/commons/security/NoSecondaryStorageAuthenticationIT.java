@@ -119,7 +119,8 @@ public class NoSecondaryStorageAuthenticationIT {
     public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final SecurityConfiguration securityConfiguration,
         final NoDBMembershipService noDBMembershipService) {
-      return new TokenClaimsConverter(securityConfiguration, noDBMembershipService);
+      return new TokenClaimsConverter(
+          securityConfiguration.getAuthentication().getOidc(), noDBMembershipService);
     }
   }
 }
