@@ -91,6 +91,12 @@ Additional instruction files are auto-loaded when you edit matching paths:
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
 
+### Skills
+
+Repo-specific skills live in `skills/` at the repo root. They extend the org-level skills
+described in the central AGENTS.md. When a skill exists for a recurring operation, always use it
+rather than improvising steps.
+
 ### Commit message guidelines
 
 Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars for the header.
