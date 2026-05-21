@@ -106,6 +106,8 @@ public class OidcOverrideBeansConfiguration {
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
 
+  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
+
   private final SecurityConfiguration securityConfiguration;
 
   public OidcOverrideBeansConfiguration(final SecurityConfiguration securityConfiguration) {
@@ -564,8 +566,6 @@ public class OidcOverrideBeansConfiguration {
   // — the authentication module does not depend on the configuration module where
   // PhysicalTenantResolver lives.
   // --------------------------------------------------------------------------------------------
-
-  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
 
   @Bean
   @Profile("pt-security")

@@ -53,6 +53,11 @@ public final class PerTenantSecurityChainFactory {
     final String authBaseUri = prefix + "/oauth2/authorization";
     final String authPrefix = authBaseUri + "/";
     final String callbackBaseUri = prefix + "/login/oauth2/code/*";
+    // After a successful login, land the user on the PoC's SPA app page (relative to the
+    // chain's access path). Without this, Spring Security's default-success-handler falls
+    // back to "/" when there's no saved request — and the PoC has no handler at "/", so
+    // an entry via the root would 404 right after authentication.
+    final String defaultSuccessUrl = prefix + "/app";
 
     final OAuth2AuthorizationRequestResolver resolver =
         prefixAwareResolver(slice.clientRegistrationRepository(), authPrefix);
@@ -69,7 +74,11 @@ public final class PerTenantSecurityChainFactory {
                         // matching that Spring Security 7's PathPatternRequestMatcher
                         // mishandles for multi-segment prefixes. Both are needed.
                         ae -> ae.baseUri(authBaseUri).authorizationRequestResolver(resolver))
-                    .redirectionEndpoint(re -> re.baseUri(callbackBaseUri)))
+                    .redirectionEndpoint(re -> re.baseUri(callbackBaseUri))
+                    // alwaysUse=true overrides any saved request — the PoC wants every
+                    // login to terminate at /app for the demo, not at whatever URL
+                    // triggered the redirect (notably "/" which has no controller).
+                    .defaultSuccessUrl(defaultSuccessUrl, true))
         .build();
   }
 
