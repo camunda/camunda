@@ -158,7 +158,6 @@
         "dockerfile"
       ],
       "matchFileNames": [
-        "Dockerfile",
         "camunda.Dockerfile",
         "optimize.Dockerfile"
       ],
@@ -286,7 +285,6 @@
         "dockerfile"
       ],
       "matchFileNames": [
-        "Dockerfile",
         "camunda.Dockerfile"
       ],
       "matchUpdateTypes": [

@@ -10,8 +10,8 @@ description: Builds the Docker image
 
 inputs:
   repository:
-    description: 'The image repository, e.g. camunda/zeebe'
-    default: 'camunda/zeebe'
+    description: 'The image repository, e.g. camunda/camunda'
+    default: 'camunda/camunda'
     required: true
   version:
     description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
@@ -34,9 +34,9 @@ inputs:
     default: 'linux/amd64'
   dockerfile:
     # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
-    description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
+    description: 'Path to the dockerfile, that should be used; defaults to camunda.Dockerfile'
     required: false
-    default: 'Dockerfile'
+    default: 'camunda.Dockerfile'
   debug:
     description: 'Enable debug logging for BuildKit daemon'
     required: false

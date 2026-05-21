@@ -38,7 +38,6 @@ commitlint*                 @camunda/orchestration-cluster
 .gitattributes              @camunda/orchestration-cluster
 .gitignore                  @camunda/orchestration-cluster
 .suppressions.xml           @camunda/orchestration-cluster
-Dockerfile                  @camunda/orchestration-cluster
 camunda.Dockerfile          @camunda/orchestration-cluster
 
 # Zeebe shared ownership modules

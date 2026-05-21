@@ -112,10 +112,10 @@ jobs:
               fi
 
               # Validate operate and tasklist version are prior to 8.9.X
-              if [[ "$COMP" == "operate" || "$COMP" == "tasklist" ]]; then
+              if [[ "$COMP" == "operate" || "$COMP" == "tasklist" || "$COMP" == "zeebe" ]]; then
                 if [[ ! "$VER" =~ ^8\.[0-8]\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
                   echo "❌ Invalid version for $COMP: '$VER'."
-                  echo "   Separate operate/tasklist hotfix images are only supported for versions <8.9. For 8.9+, use component 'camunda' instead."
+                  echo "   Separate zeebe/operate/tasklist hotfix images are only supported for versions < 8.9. For 8.9+, use component 'camunda' instead."
                   exit 1
                 fi
               fi
