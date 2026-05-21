@@ -86,7 +86,8 @@ class AnalyticsExporterTest {
                   //                      AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY,
                   //                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
-                  .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition());
+                  .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition())
+                  .containsEntry(AnalyticsAttributes.SEQUENCE_NUMBER, 1L);
             });
   }
 
@@ -194,6 +195,7 @@ class AnalyticsExporterTest {
           void logEvent(
               final String eventName,
               final long logPosition,
+              final long sequenceNumber,
               final Consumer<LogRecordBuilder> builder) {
             throw new RuntimeException("simulated failure");
           }
