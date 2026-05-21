@@ -39,7 +39,7 @@ components:
             type: string
       x-properties-added-in-version:
         - propertyName: "$eq"
-          addedInVersion: "8.8"
+          addedInVersion: "8.7"
         - propertyName: "$neq"
           addedInVersion: "8.8"
         - propertyName: "$exists"

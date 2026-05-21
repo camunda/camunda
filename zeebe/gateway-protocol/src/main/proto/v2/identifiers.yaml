@@ -245,7 +245,7 @@ components:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
       x-properties-added-in-version:
         - propertyName: "$eq"
-          addedInVersion: "8.10"
+          addedInVersion: "8.9"
         - propertyName: "$neq"
           addedInVersion: "8.10"
         - propertyName: "$exists"
