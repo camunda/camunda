@@ -99,10 +99,17 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     validateReplicaSum(replicationFactor);
     validateZoneHasSufficientBrokers(clusterMembers);
 
-    final Set<PartitionMetadata> result = new HashSet<>();
+    // all zones have the same priority
+    if (zoneSpecs.stream().map(ZoneSpec::priority).distinct().count() == 1) {
+      // use RoundRobinDistributor instead
+      return new RoundRobinPartitionDistributor()
+          .distributePartitions(clusterMembers, sortedPartitionIds, replicationFactor);
+    }
+
+    final var result = new HashSet<PartitionMetadata>();
 
     for (int i = 0; i < sortedPartitionIds.size(); i++) {
-      final PartitionId partitionId = sortedPartitionIds.get(i);
+      final var partitionId = sortedPartitionIds.get(i);
 
       // priorityCounter starts at RF (highest Raft priority) and counts down to 1.
       // The first replica assigned — always from the highest-priority zone — gets RF,
@@ -111,7 +118,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final List<MemberId> orderedMembers = new ArrayList<>(replicationFactor);
       final Map<MemberId, Integer> priorityMap = new HashMap<>(replicationFactor);
 
-      for (final ZoneSpec spec : zoneSpecs) {
+      for (final var spec : zoneSpecs) {
         final var zoneBrokers =
             clusterMembers.stream()
                 .filter(m -> m.isInZone(spec.name()))
@@ -194,6 +201,10 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
         throw new IllegalArgumentException(
             "ZoneAwarePartitionDistributor: expected priority > 0, but got %d".formatted(priority));
       }
+    }
+
+    public ZoneSpec withPriority(final int priority) {
+      return new ZoneSpec(name, numberOfReplicas, priority);
     }
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSp
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -212,6 +213,23 @@ final class ZoneAwarePartitionDistributorTest {
     assertThat(result).isEqualTo(rrResult);
   }
 
+  @Test
+  void shouldDistribute() {
+    // given — one region, 2 brokers, 1 replica per partition
+    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000));
+    final var clusterMembers = membersOf("us-east1", 3);
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when
+    final var result = distributor.distributePartitions(clusterMembers, partitions(3), 3);
+
+    // then — partitions 1,3 → us-east1/0; partitions 2,4 → us-east1/1 (or vice versa)
+    final var rrResult =
+        new RoundRobinPartitionDistributor().distributePartitions(clusterMembers, partitions(3), 3);
+
+    assertThat(result).isEqualTo(rrResult);
+  }
+
   // -------------------------------------------------------------------------
   // Round-robin within each region
   // -------------------------------------------------------------------------
@@ -322,7 +340,7 @@ final class ZoneAwarePartitionDistributorTest {
 
   @ParameterizedTest
   @MethodSource("twoAndThreeZoneConfigs")
-  void shouldPrintPriorityTable(final TestConfig config) {
+  void shouldMatchExactlyPriorityTable(final TestConfig config) {
     // given
     final var distributor = new ZoneAwarePartitionDistributor(config.specs());
 
@@ -331,8 +349,53 @@ final class ZoneAwarePartitionDistributorTest {
         distributor.distributePartitions(config.clusterMembers(), partitions(5), config.rf());
 
     // then — table is printed to the logs; this test acts as a visual smoke-check
-    logPriorityTable(result, config.specs(), config.clusterMembers());
-    assertThat(result).hasSize(5);
+    final var table = priorityTable(result, config.specs(), config.clusterMembers());
+    final var expected =
+        Map.of(
+            2,
+"""
+Partition | us-east1/0 | us-east1/1 | us-west1/0
+----------|------------|------------|-----------
+        1 |     3      |     2      |     1    \s
+        2 |     2      |     3      |     1    \s
+        3 |     3      |     2      |     1    \s
+        4 |     2      |     3      |     1    \s
+        5 |     3      |     2      |     1    \s
+""",
+            3,
+"""
+Partition | us-east1/0 | us-east1/1 | us-west1/0 | us-west1/1 | eu-east1/0
+----------|------------|------------|------------|------------|-----------
+        1 |     5      |     4      |     3      |     2      |     1
+        2 |     4      |     5      |     2      |     3      |     1
+        3 |     5      |     4      |     3      |     2      |     1
+        4 |     4      |     5      |     2      |     3      |     1
+        5 |     5      |     4      |     3      |     2      |     1
+""");
+    assertThat(table).isEqualToIgnoringWhitespace(expected.get(config.specs.size()));
+  }
+
+  @Test
+  void shouldDistributeEvenlyAcrossZonesWhenPrioritiesAreIdentical() {
+    // given - all zones have same priorities
+    final var specs = TWO_ZONES.specs.stream().map(z -> z.withPriority(1)).toList();
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when
+    final var result =
+        distributor.distributePartitions(TWO_ZONES.clusterMembers(), partitions(3), 3);
+
+    // then
+    final var priorityTable = priorityTable(result, specs, TWO_ZONES.clusterMembers());
+    assertThat(priorityTable)
+        .isEqualToIgnoringWhitespace(
+"""
+Partition | us-east1/0 | us-east1/1 | us-west1/0
+----------|------------|------------|-----------
+        1 |     3      |     1      |     2
+        2 |     1      |     2      |     3
+        3 |     2      |     3      |     1
+""");
   }
 
   // -------------------------------------------------------------------------
@@ -345,7 +408,7 @@ final class ZoneAwarePartitionDistributorTest {
    * local broker index. The broker with priority {@code targetPriority} (== replicationFactor) is
    * the preferred leader for that partition.
    */
-  private static void logPriorityTable(
+  private static String priorityTable(
       final Set<PartitionMetadata> result,
       final List<ZoneSpec> specs,
       final Set<MemberId> clusterMembers) {
@@ -398,11 +461,7 @@ final class ZoneAwarePartitionDistributorTest {
       dataRows.append('\n').append(row);
     }
 
-    LOG.info(
-        "\nRaft priority table (priority == RF → preferred leader):\n{}\n{}{}\n",
-        header,
-        separator,
-        dataRows);
+    return String.valueOf(header) + '\n' + separator + '\n' + dataRows;
   }
 
   private static String padLeft(final String s, final int width) {
