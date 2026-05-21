@@ -195,29 +195,21 @@ final class ZoneAwarePartitionDistributorTest {
     assertThat(p1.getPriority(MemberId.from("eu-east1", 0))).isEqualTo(1);
   }
 
-  // -------------------------------------------------------------------------
-  // Leader placement: Raft priority ordering (3-zone specific)
-  // -------------------------------------------------------------------------
-
   @Test
-  void shouldRoundRobinBrokersWithinRegionAcrossPartitions() {
+  void shouldBeEqualToRoundRobinForSingleRegion() {
     // given — one region, 2 brokers, 1 replica per partition
-    final var specs = List.of(new ZoneSpec("us-east1", 1, 1000));
-    final var clusterMembers = membersOf("us-east1", 2);
+    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000));
+    final var clusterMembers = membersOf("us-east1", 3);
     final var distributor = new ZoneAwarePartitionDistributor(specs);
 
     // when
-    final var result = distributor.distributePartitions(clusterMembers, partitions(4), 1);
+    final var result = distributor.distributePartitions(clusterMembers, partitions(3), 3);
 
     // then — partitions 1,3 → us-east1/0; partitions 2,4 → us-east1/1 (or vice versa)
-    final var p1Primary = partitionById(result, 1).getPrimary().orElseThrow();
-    final var p2Primary = partitionById(result, 2).getPrimary().orElseThrow();
-    final var p3Primary = partitionById(result, 3).getPrimary().orElseThrow();
-    final var p4Primary = partitionById(result, 4).getPrimary().orElseThrow();
+    final var rrResult =
+        new RoundRobinPartitionDistributor().distributePartitions(clusterMembers, partitions(3), 3);
 
-    assertThat(p1Primary).isEqualTo(p3Primary); // same broker every 2 partitions
-    assertThat(p2Primary).isEqualTo(p4Primary);
-    assertThat(p1Primary).isNotEqualTo(p2Primary); // alternates between brokers
+    assertThat(result).isEqualTo(rrResult);
   }
 
   // -------------------------------------------------------------------------
@@ -245,24 +237,6 @@ final class ZoneAwarePartitionDistributorTest {
     // us-west1/0 is always assigned regardless of zone size or round-robin offset
     assertThat(p1.members()).contains(MemberId.from("us-west1", 0));
     assertThat(p2.members()).contains(MemberId.from("us-west1", 0));
-  }
-
-  @Test
-  void shouldBehaveCorrectlyWithSingleRegion() {
-    // given
-    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000));
-    final var clusterMembers = membersOf("us-east1", 3);
-    final var distributor = new ZoneAwarePartitionDistributor(specs);
-
-    // when
-    final var result = distributor.distributePartitions(clusterMembers, partitions(3), 3);
-
-    // then — every partition has 3 members, all from us-east1
-    result.forEach(
-        p -> {
-          assertThat(p.members()).hasSize(3);
-          p.members().forEach(m -> assertThat(m.zone()).isEqualTo("us-east1"));
-        });
   }
 
   // -------------------------------------------------------------------------
