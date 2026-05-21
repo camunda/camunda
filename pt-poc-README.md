@@ -142,6 +142,16 @@ tenanta -> default     403 /v2/physical-tenants/default/whoami  OK
 default -> default     200 /v2/physical-tenants/default/whoami  OK
 default -> tenanta     403 /v2/physical-tenants/tenanta/whoami  OK
 no token -> tenanta    401 /v2/physical-tenants/tenanta/whoami  OK
+
+=== Default unprefixed URL (cookie scoped at Path=/) ===
+default -> default     200 /v2/whoami  OK
+tenanta -> default     403 /v2/whoami  OK
+no token -> default    401 /v2/whoami  OK
+
+=== Session cross-tenant (logged in via /app as default; call tenanta's API) ===
+default session -> /v2/whoami              200 /v2/whoami                          OK
+default session -> tenanta webapp-aligned  401 /physical-tenant/tenanta/v2/whoami  OK
+default session -> tenanta API-client URL  401 /v2/physical-tenants/tenanta/whoami OK
 ```
 
 **Manual curl** — get a token and call the API by hand (useful when iterating on a single chain):
@@ -236,12 +246,13 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 10 | Extract `PhysicalTenantCookieSerializer` + unit test                  | ✅ done         |
 |    | Checkpoint C — components extracted                                   | ✅ done         |
 | 11 | API chain — shared decoder + per-chain issuer allowlist               | ✅ done         |
-| 12 | **Default tenant unprefixed access-path chains**                      | 🔄 in progress |
-| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ⏳ pending      |
-| 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ pending      |
-| 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ pending      |
+| 12 | Default tenant unprefixed access-path chains                          | ✅ done         |
+| 13 | **Generalise registration via `PhysicalTenantResolver.getAll()`**     | 🔄 in progress |
 | 16 | Manual browser smoke test                                             | ⏳ pending      |
 | 17 | Multi-IdP verification for default tenant (picker page)               | ⏳ pending      |
+|    | Checkpoint E — PoC acceptance                                         | ⏳ pending      |
+| 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ deferred     |
+| 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ deferred     |
 
 **What currently works:**
 

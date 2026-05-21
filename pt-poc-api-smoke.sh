@@ -38,6 +38,23 @@ token() {
     | jq -r .access_token
 }
 
+# Runs the OAuth2 authorization-code flow against a webapp chain by entering at $entry_url and
+# completing Keycloak's login form with $username/$password. Session cookies land in $jar.
+oauth_login() {
+  local entry_url="$1" username="$2" password="$3" jar="$4"
+  rm -f "$jar"
+  local loc form cb
+  loc=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" "$entry_url")
+  loc=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" "$loc")
+  curl -sS -c "$jar" -b "$jar" "$loc" -o "${jar}.form"
+  form=$(grep -oE 'action="[^"]+"' "${jar}.form" | head -1 \
+         | sed -E 's/^action="(.*)"$/\1/' | sed 's/\&amp;/\&/g')
+  cb=$(curl -sS -c "$jar" -b "$jar" -o /dev/null -w "%{redirect_url}" -X POST "$form" \
+        -d "username=$username" -d "password=$password" -d "credentialId=")
+  curl -sS -c "$jar" -b "$jar" -o /dev/null "$cb"
+  rm -f "${jar}.form"
+}
+
 call() {
   local label="$1" token="$2" path="$3" expected="$4"
   local status
@@ -47,6 +64,20 @@ call() {
     status=$(curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" "$OC$path")
   fi
   printf "%-22s %s %s  " "$label" "$status" "$path"
+  if [[ "$status" == "$expected" ]]; then
+    echo "OK"
+  else
+    echo "FAIL (expected $expected)"
+    cat /tmp/pt-poc-api-body
+    echo
+  fi
+}
+
+call_with_cookies() {
+  local label="$1" jar="$2" path="$3" expected="$4"
+  local status
+  status=$(curl -sS -b "$jar" -o /tmp/pt-poc-api-body -w "%{http_code}" "$OC$path")
+  printf "%-30s %s %s  " "$label" "$status" "$path"
   if [[ "$status" == "$expected" ]]; then
     echo "OK"
   else
@@ -85,6 +116,21 @@ echo "=== Default unprefixed URL (cookie scoped at Path=/) ==="
 call "default -> default" "$DEF" "/v2/whoami" 200
 call "tenanta -> default" "$TA"  "/v2/whoami" 403
 call "no token -> default" ""    "/v2/whoami" 401
+echo
+
+# Session-based cross-tenant. Log in via /app (default unprefixed) so the browser holds
+# camunda-session-default-root at Path=/. The cookie reaches tenanta URLs because Path=/ matches
+# everything, but tenanta's chain reads cookie name "camunda-session-tenanta" — the names don't
+# match, so no session resolves. With no bearer either, the request is anonymous → 401 via
+# oauth2ResourceServer's authentication entry point. (HTTP semantics: 401 means "no credentials
+# visible to me"; the chain genuinely sees nothing for tenanta — see README note on OQ-1.)
+echo "=== Session cross-tenant (logged in via /app as default; call tenanta's API) ==="
+DEF_JAR=/tmp/pt-poc-default-jar.txt
+oauth_login "$OC/app" alice alice "$DEF_JAR"
+call_with_cookies "default session -> /v2/whoami"               "$DEF_JAR" "/v2/whoami"                          200
+call_with_cookies "default session -> tenanta webapp-aligned"   "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
+call_with_cookies "default session -> tenanta API-client URL"   "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
+rm -f "$DEF_JAR"
 echo
 
 rm -f /tmp/pt-poc-api-body
