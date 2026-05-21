@@ -247,8 +247,9 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 |    | Checkpoint C — components extracted                                   | ✅ done         |
 | 11 | API chain — shared decoder + per-chain issuer allowlist               | ✅ done         |
 | 12 | Default tenant unprefixed access-path chains                          | ✅ done         |
-| 13 | **Generalise registration via `PhysicalTenantResolver.getAll()`**     | 🔄 in progress |
-| 16 | Manual browser smoke test                                             | ⏳ pending      |
+| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ✅ done         |
+|    | Checkpoint D — full functional surface                                | ✅ done         |
+| 16 | **Manual browser smoke test**                                         | 🔄 in progress |
 | 17 | Multi-IdP verification for default tenant (picker page)               | ⏳ pending      |
 |    | Checkpoint E — PoC acceptance                                         | ⏳ pending      |
 | 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ deferred     |
