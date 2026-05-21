@@ -40,7 +40,7 @@ public class ActorTask {
 
   // Start with a completed future to allow closing unscheduled tasks. The future is reset to
   // uncompleted in `onTaskScheduled`.
-  public final CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
+  public final CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed();
   final Actor actor;
   ActorJob currentJob;
   boolean shouldYield;

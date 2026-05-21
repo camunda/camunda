@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.Loggers;
 import java.util.concurrent.CompletableFuture;
@@ -91,7 +93,7 @@ public abstract class ActorThreadGroup {
             groupName,
             thread.getRunnerId(),
             e);
-        terminationFutures[i] = CompletableFuture.completedFuture(null);
+        terminationFutures[i] = CompletableFuture.completedFuture(unit());
       }
     }
 
