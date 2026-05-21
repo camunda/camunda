@@ -243,6 +243,11 @@ components:
             $ref: '#/components/schemas/ElementId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+        $spuriousShared:
+          description: |
+            New property on AdvancedElementIdFilter (shared schema) with INCORRECT
+            annotation version (8.9 instead of 8.10); should trip CI gate.
+          type: string
       x-properties-added-in-version:
         - propertyName: "$eq"
           addedInVersion: "8.10"
@@ -256,6 +261,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: "$like"
           addedInVersion: "8.10"
+        - propertyName: "$spuriousShared"
+          addedInVersion: "8.9"
 
     ProcessDefinitionIdFilterProperty:
       description: ProcessDefinitionId property with full advanced search capabilities.
