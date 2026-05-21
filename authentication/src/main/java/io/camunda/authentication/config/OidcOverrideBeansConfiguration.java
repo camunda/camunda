@@ -37,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,9 +69,11 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
@@ -265,10 +268,7 @@ public class OidcOverrideBeansConfiguration {
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
-    final var extraValidators =
-        new java.util.ArrayList<
-            org.springframework.security.oauth2.core.OAuth2TokenValidator<
-                org.springframework.security.oauth2.jwt.Jwt>>();
+    final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
     if (securityConfiguration.getSaas().isConfigured()) {
       extraValidators.add(
           new OrganizationValidator(securityConfiguration.getSaas().getOrganizationId()));
