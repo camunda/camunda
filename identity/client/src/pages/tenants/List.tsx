@@ -83,7 +83,7 @@ const List: FC = () => {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            hidden: (tenant) => isDefaultTenant(tenant.tenantId),
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
             onClick: (tenant) =>
               deleteTenant({
                 tenantId: tenant.tenantId,
