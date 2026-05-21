@@ -14,50 +14,7 @@
       "redirectUris": [
         "http://localhost:8080/physical-tenant/tenanta/login/oauth2/code/*"
       ],
-      "webOrigins": ["http://localhost:8080"],
-      "protocolMappers": [
-        {
-          "name": "audience-mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-audience-mapper",
-          "consentRequired": false,
-          "config": {
-            "included.custom.audience": "pt-tenanta-aud",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "lightweight.claim": "false",
-            "introspection.token.claim": "true"
-          }
-        }
-      ]
-    },
-    {
-      "clientId": "camunda-pt-default-via-tenanta-client",
-      "enabled": true,
-      "secret": "default-via-tenanta-secret",
-      "publicClient": false,
-      "directAccessGrantsEnabled": true,
-      "standardFlowEnabled": true,
-      "redirectUris": [
-        "http://localhost:8080/physical-tenant/default/login/oauth2/code/*",
-        "http://localhost:8080/login/oauth2/code/*"
-      ],
-      "webOrigins": ["http://localhost:8080"],
-      "protocolMappers": [
-        {
-          "name": "audience-mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-audience-mapper",
-          "consentRequired": false,
-          "config": {
-            "included.custom.audience": "pt-default-via-tenanta-aud",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "lightweight.claim": "false",
-            "introspection.token.claim": "true"
-          }
-        }
-      ]
+      "webOrigins": ["http://localhost:8080"]
     }
   ],
   "users": [

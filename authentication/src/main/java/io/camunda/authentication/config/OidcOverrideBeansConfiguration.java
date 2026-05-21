@@ -611,35 +611,6 @@ public class OidcOverrideBeansConfiguration {
             TenantSecuritySlice.AccessPath.UNPREFIXED_DEFAULT));
   }
 
-  /**
-   * Per-tenant expected-audience allowlist (spec D8 / Task 17). When non-empty, the per-tenant API
-   * chain requires that at least one entry of a bearer JWT's {@code aud} claim is contained in this
-   * set. When empty (no {@code expected-audiences} configured for a tenant) the audience check is
-   * skipped — preserving backward compatibility with pre-Task-17 PT setups that don't have audience
-   * mappers configured at the IdP.
-   *
-   * <p>This complements (does not replace) {@link #ptAllowedIssuersPerTenant}: the issuer allowlist
-   * separates tenants whose IdPs are distinct (different {@code iss}); the audience allowlist
-   * separates tenants that share an IdP (same {@code iss}, distinct {@code aud}).
-   */
-  @Bean
-  @Profile("pt-security")
-  public Map<String, Set<String>> ptExpectedAudiencesPerTenant(final Environment environment) {
-    final Map<String, Set<String>> perTenant = new LinkedHashMap<>();
-    for (final String tenantId : readTenantIds(environment)) {
-      final var bound =
-          Binder.get(environment)
-              .bind(
-                  PHYSICAL_TENANTS_PREFIX
-                      + "."
-                      + tenantId
-                      + ".security.authentication.expected-audiences",
-                  Bindable.setOf(String.class));
-      perTenant.put(tenantId, bound.isBound() ? Set.copyOf(bound.get()) : Set.of());
-    }
-    return Map.copyOf(perTenant);
-  }
-
   @Bean
   @Profile("pt-security")
   public Map<String, Set<String>> ptAllowedIssuersPerTenant(final Environment environment) {

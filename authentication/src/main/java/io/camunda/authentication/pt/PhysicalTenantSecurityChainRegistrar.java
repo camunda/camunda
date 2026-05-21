@@ -168,8 +168,7 @@ public final class PhysicalTenantSecurityChainRegistrar
                     http,
                     sliceForPrefixed(beanFactory, tenantId),
                     beanFactory.getBean(JwtDecoder.class),
-                    allowedIssuersFor(beanFactory, tenantId),
-                    expectedAudiencesFor(beanFactory, tenantId));
+                    allowedIssuersFor(beanFactory, tenantId));
             case PREFIXED_WEBAPP ->
                 factory.buildWebappChain(http, sliceForPrefixed(beanFactory, tenantId));
             case UNPREFIXED_DEFAULT_API ->
@@ -177,8 +176,7 @@ public final class PhysicalTenantSecurityChainRegistrar
                     http,
                     sliceForUnprefixedDefault(beanFactory),
                     beanFactory.getBean(JwtDecoder.class),
-                    allowedIssuersFor(beanFactory, tenantId),
-                    expectedAudiencesFor(beanFactory, tenantId));
+                    allowedIssuersFor(beanFactory, tenantId));
             case UNPREFIXED_DEFAULT_WEBAPP ->
                 factory.buildWebappChain(http, sliceForUnprefixedDefault(beanFactory));
           };
@@ -259,19 +257,6 @@ public final class PhysicalTenantSecurityChainRegistrar
           "No allowed-issuers entry for physical tenant '" + tenantId + "'");
     }
     return issuers;
-  }
-
-  /**
-   * Per-tenant expected-audience allowlist (spec D8). Absent or empty entry means "skip the
-   * audience check on this tenant's API chain" (back-compat with pre-Task-17 setups).
-   */
-  @SuppressWarnings("unchecked")
-  private static Set<String> expectedAudiencesFor(
-      final BeanFactory beanFactory, final String tenantId) {
-    final var perTenant =
-        (Map<String, Set<String>>) beanFactory.getBean("ptExpectedAudiencesPerTenant", Map.class);
-    final Set<String> audiences = perTenant.get(tenantId);
-    return audiences == null ? Set.of() : audiences;
   }
 
   // ----- environment + naming -----------------------------------------------------------------

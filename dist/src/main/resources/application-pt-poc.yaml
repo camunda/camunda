@@ -30,38 +30,15 @@ camunda:
     default:
       security:
         authentication:
-          # Per-PT audience allowlist (Task 17 / spec D8). Bearer tokens presented to the
-          # default tenant's API chain must carry an aud claim that intersects this set.
-          # The two clients backing default's two assigned IdPs each emit a different aud
-          # (see realm exports), so this list has both entries.
-          expected-audiences:
-            - pt-default-aud
-            - pt-default-via-tenanta-aud
           oidc:                # default slot — registration id "oidc"
             client-id: camunda-pt-default-client
             client-secret: default-secret
             issuer-uri: http://localhost:8081/realms/default
           providers:
-            # Multi-IdP for the default tenant (spec D7 multi-IdP picker; Task 17). The
-            # first entry resolves to the default slot above; the second to a NAMED slot
-            # under providers.oidc.default-via-tenanta below. The IdP behind the second
-            # entry is the SAME Keycloak realm tenant A uses — same issuer, different
-            # client at the IdP (which emits a tenant-specific aud claim).
-            assigned: [oidc, default-via-tenanta]
-            oidc:
-              default-via-tenanta:
-                client-id: camunda-pt-default-via-tenanta-client
-                client-secret: default-via-tenanta-secret
-                issuer-uri: http://localhost:8082/realms/tenanta
+            assigned: [oidc]
     tenanta:
       security:
         authentication:
-          # Per-PT audience allowlist (Task 17 / spec D8). Bearer tokens against tenant A's
-          # API chain must carry aud=pt-tenanta-aud. The same realm at :8082 also backs the
-          # default tenant's secondary IdP — that client emits aud=pt-default-via-tenanta-aud
-          # which is NOT in this list, so a token minted via that client is rejected here.
-          expected-audiences:
-            - pt-tenanta-aud
           providers:
             assigned: [tenanta]
             oidc:
