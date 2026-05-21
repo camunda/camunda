@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.auth;
 
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.util.List;
 
 public record TestUser(String username, String password, List<Permissions> permissions) {

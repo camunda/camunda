@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.util;
 
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
-import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;

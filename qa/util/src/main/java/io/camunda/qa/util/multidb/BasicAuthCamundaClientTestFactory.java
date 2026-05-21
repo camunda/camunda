@@ -12,7 +12,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

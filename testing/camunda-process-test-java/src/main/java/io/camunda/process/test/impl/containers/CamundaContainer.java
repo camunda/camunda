@@ -276,7 +276,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     public static final String CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI = "false";
     public static final String CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED = "true";
     /*
-     * Although the {@see io.camunda.security.configuration.InitializationConfiguration} creates a
+     * Although the {@see io.camunda.security.api.model.config.initialization.InitializationConfiguration} creates a
      * demo user by default, the user is explicity defined here in case the demo user, for whatever
      * reason, should change in the future.
      */

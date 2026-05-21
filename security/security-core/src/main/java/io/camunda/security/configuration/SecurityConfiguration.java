@@ -13,6 +13,7 @@ import io.camunda.security.api.model.config.CsrfConfiguration;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.headers.HeaderConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.util.regex.Pattern;
 
 /** Will be populated with the configuration properties of 'camunda.security' */

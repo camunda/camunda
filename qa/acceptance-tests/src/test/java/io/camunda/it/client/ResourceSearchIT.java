@@ -17,7 +17,7 @@ import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
