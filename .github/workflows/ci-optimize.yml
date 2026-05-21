@@ -62,7 +62,7 @@ jobs:
     name: "Integration / Elasticsearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
-    timeout-minutes: 120
+    timeout-minutes: 45
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
@@ -154,7 +154,7 @@ jobs:
     name: "Integration / OpenSearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
-    timeout-minutes: 120
+    timeout-minutes: 60
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
@@ -393,7 +393,7 @@ jobs:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions: { }
     env:
       TEST_TYPE: E2E
