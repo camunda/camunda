@@ -44,4 +44,11 @@ public final class DbAgentInstanceState implements MutableAgentInstanceState {
     dbAgentInstance.setRecord(record);
     agentInstancesColumnFamily.insert(agentInstanceKey, dbAgentInstance);
   }
+
+  @Override
+  public void update(final long key, final AgentInstanceRecord record) {
+    agentInstanceKey.wrapLong(key);
+    dbAgentInstance.setRecord(record);
+    agentInstancesColumnFamily.update(agentInstanceKey, dbAgentInstance);
+  }
 }

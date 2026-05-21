@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -45,9 +46,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentInstanceMetrics());
   private final ArrayProperty<AgentInstanceTool> toolsProp =
       new ArrayProperty<>("tools", AgentInstanceTool::new);
+  private final ArrayProperty<StringValue> changedAttributesProp =
+      new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(14);
+    super(15);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -61,7 +64,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(definitionProp)
         .declareProperty(limitsProp)
         .declareProperty(metricsProp)
-        .declareProperty(toolsProp);
+        .declareProperty(toolsProp)
+        .declareProperty(changedAttributesProp);
   }
 
   @Override
@@ -196,6 +200,28 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     for (final var tool : tools) {
       toolsProp.add().copy(tool);
     }
+    return this;
+  }
+
+  @Override
+  public List<String> getChangedAttributes() {
+    return changedAttributesProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public AgentInstanceRecord setChangedAttributes(final List<String> changedAttributes) {
+    changedAttributesProp.reset();
+    if (changedAttributes != null) {
+      changedAttributes.forEach(
+          attr -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attr)));
+    }
+    return this;
+  }
+
+  public AgentInstanceRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
     return this;
   }
 }

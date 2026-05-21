@@ -413,6 +413,7 @@ public class CompactRecordLogger {
         \tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
         \tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
         \tHeaders defined in 'Protocol' are abbreviated (e.g. 'io.camunda.zeebe:userTaskKey:2251799813685253' -> 'uTK:K005').
+        \tChanged-attribute names are abbreviated to first + uppercase letters (e.g. 'dueDate' -> 'dD', 'status' -> 's').
         """);
     bulkMessage.append("--------\n");
 
@@ -529,6 +530,16 @@ public class CompactRecordLogger {
     }
 
     result.append(" status:").append(value.getStatus());
+
+    final var changedAttributes = value.getChangedAttributes();
+    if (changedAttributes != null && !changedAttributes.isEmpty()) {
+      result
+          .append(" changed:")
+          .append(
+              changedAttributes.stream()
+                  .map(CompactRecordLogger::abbreviateToFirstLetters)
+                  .toList());
+    }
 
     return result.toString();
   }

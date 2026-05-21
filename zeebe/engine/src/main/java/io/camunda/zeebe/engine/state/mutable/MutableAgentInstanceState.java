@@ -14,4 +14,7 @@ public interface MutableAgentInstanceState extends AgentInstanceState {
 
   /** Inserts the record stored under {@code agentInstanceKey}. */
   void insert(long agentInstanceKey, AgentInstanceRecord record);
+
+  /** Updates the record stored under {@code agentInstanceKey}. */
+  void update(long agentInstanceKey, AgentInstanceRecord record);
 }
