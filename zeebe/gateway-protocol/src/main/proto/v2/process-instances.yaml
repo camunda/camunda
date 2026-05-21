@@ -1012,6 +1012,8 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
         spuriousNewProperty:
           type: string
+          description: |
+            Correctly annotated property should not trigger gate.
       x-properties-added-in-version:
         - propertyName: tags
           addedInVersion: "8.8"
