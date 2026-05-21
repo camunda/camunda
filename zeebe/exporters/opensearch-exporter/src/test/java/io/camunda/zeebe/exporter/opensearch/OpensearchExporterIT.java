@@ -539,6 +539,45 @@ final class OpensearchExporterIT {
     }
 
     @Test
+    void shouldPreserveExistingISMPolicyWhenManagePolicyIsDisabled() {
+      // given retention is enabled and a record exists with the policy applied
+      configureExporter(true);
+      final var record1 = generateRecord(ValueType.JOB);
+      export(record1);
+
+      final var index1 = indexRouter.indexFor(record1);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var indexPolicy1 = testClient.explainIndex(index1);
+                assertHasISMPolicy(indexPolicy1);
+              });
+
+      // when retention is disabled but the exporter is told not to manage policies
+      configureExporter(
+          config -> {
+            config.retention.setEnabled(false);
+            config.retention.setManagePolicy(false);
+          });
+      final var record2 = generateRecord(ValueType.JOB);
+      export(record2);
+
+      // then the pre-existing policy must remain on existing indices
+      final var index2 = indexRouter.indexFor(record2);
+      await()
+          .during(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var indexPolicy1 = testClient.explainIndex(index1);
+                assertHasISMPolicy(indexPolicy1);
+                final var indexPolicy2 = testClient.explainIndex(index2);
+                assertHasISMPolicy(indexPolicy2);
+              });
+    }
+
+    @Test
     void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
       configureExporter(false);
