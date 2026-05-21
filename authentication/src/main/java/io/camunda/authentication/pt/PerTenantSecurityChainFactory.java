@@ -16,14 +16,17 @@ import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
@@ -64,7 +67,12 @@ public final class PerTenantSecurityChainFactory {
 
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
-        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+        .authorizeHttpRequests(
+            a -> a.requestMatchers(prefix + "/login").permitAll().anyRequest().authenticated())
+        .exceptionHandling(
+            eh ->
+                eh.authenticationEntryPoint(
+                    webappAuthenticationEntryPoint(slice.clientRegistrationRepository(), prefix)))
         .oauth2Login(
             l ->
                 l.clientRegistrationRepository(slice.clientRegistrationRepository())
@@ -80,6 +88,34 @@ public final class PerTenantSecurityChainFactory {
                     // triggered the redirect (notably "/" which has no controller).
                     .defaultSuccessUrl(defaultSuccessUrl, true))
         .build();
+  }
+
+  /**
+   * Mirrors CSL's {@code OidcWebappSecurityConfiguration.resolveOauthRedirectTarget} — but with the
+   * PT prefix prepended. Single registration: skip the picker, redirect straight to the IdP.
+   * Multiple registrations: redirect to the PT-prefixed picker page rendered by {@code
+   * PhysicalTenantLoginPageController}.
+   */
+  private static AuthenticationEntryPoint webappAuthenticationEntryPoint(
+      final ClientRegistrationRepository repo, final String prefix) {
+    final String pickerUrl = prefix + "/login";
+    final String defaultTarget = prefix + "/oauth2/authorization/oidc";
+    if (!(repo instanceof final Iterable<?> iterable)) {
+      return new LoginUrlAuthenticationEntryPoint(defaultTarget);
+    }
+    final var iterator = iterable.iterator();
+    if (!iterator.hasNext()) {
+      return new LoginUrlAuthenticationEntryPoint(defaultTarget);
+    }
+    final Object first = iterator.next();
+    if (iterator.hasNext()) {
+      return new LoginUrlAuthenticationEntryPoint(pickerUrl);
+    }
+    if (first instanceof final ClientRegistration registration) {
+      return new LoginUrlAuthenticationEntryPoint(
+          prefix + "/oauth2/authorization/" + registration.getRegistrationId());
+    }
+    return new LoginUrlAuthenticationEntryPoint(defaultTarget);
   }
 
   /**
