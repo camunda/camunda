@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,9 +49,9 @@ public class DeleteTenantAuthorizationTest {
               cfg -> {
                 cfg.getAuthorizations().setEnabled(true);
                 cfg.getInitialization().setUsers(List.of(DEFAULT_USER));
-                cfg.getInitialization()
-                    .getDefaultRoles()
-                    .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
                 cfg.getMultiTenancy().setChecksEnabled(true);
               });
 

@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.Strings;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -85,9 +86,10 @@ public class OidcNoSecondaryStorageTest {
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID),
                             new ConfiguredMappingRule(
                                 SERVICE_CLIENT_ID, USER_ID_CLAIM_NAME, SERVICE_CLIENT_ID)));
-                c.getInitialization()
-                    .getDefaultRoles()
-                    .put("admin", Map.of("users", List.of(DEFAULT_USER_ID, SERVICE_CLIENT_ID)));
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin", Map.of("users", List.of(DEFAULT_USER_ID, SERVICE_CLIENT_ID)));
+                c.getInitialization().setDefaultRoles(defaultRoles);
               });
 
   @BeforeAll

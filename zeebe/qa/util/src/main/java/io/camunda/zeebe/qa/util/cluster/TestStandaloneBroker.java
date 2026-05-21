@@ -85,28 +85,31 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
-        .setUsers(List.of(
-            new ConfiguredUser(
-                InitializationConfiguration.DEFAULT_USER_USERNAME,
-                InitializationConfiguration.DEFAULT_USER_PASSWORD,
-                InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL)));
+        .setUsers(
+            List.of(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL)));
     securityConfig
         .getInitialization()
-        .setMappingRules(List.of(
-            new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID,
-                DEFAULT_MAPPING_RULE_CLAIM_NAME,
-                DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
+        .setMappingRules(
+            List.of(
+                new ConfiguredMappingRule(
+                    DEFAULT_MAPPING_RULE_ID,
+                    DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                    DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
     securityConfig
         .getInitialization()
-        .setDefaultRoles(Map.of(
-            "admin",
+        .setDefaultRoles(
             Map.of(
-                "users",
-                List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappingRules",
-                List.of(DEFAULT_MAPPING_RULE_ID))));
+                "admin",
+                Map.of(
+                    "users",
+                    List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
+                    "mappingRules",
+                    List.of(DEFAULT_MAPPING_RULE_ID))));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(

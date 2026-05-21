@@ -50,6 +50,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -112,14 +113,13 @@ public class MultiTenancyIT {
                                   USER_TENANT_A_AND_B,
                                   "test@camunda.com"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put(
-                          "admin",
-                          Map.of(
-                              "users",
-                              List.of(USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin",
+                    Map.of("users", List.of(USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private String processId;
   private String migratedProcessId;

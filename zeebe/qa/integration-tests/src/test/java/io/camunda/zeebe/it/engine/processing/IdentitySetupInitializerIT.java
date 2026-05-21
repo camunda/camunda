@@ -31,6 +31,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -190,17 +191,17 @@ final class IdentitySetupInitializerIT {
         cfg -> {
           cfg.getInitialization()
               .setMappingRules(List.of(mappingRules1, mappingRules2, mappingRules3));
-          cfg.getInitialization()
-              .getDefaultRoles()
-              .put(
-                  "admin",
-                  Map.of(
-                      "mappingRules",
-                      List.of(mappingRules1.getMappingRuleId()),
-                      "mappingrules",
-                      List.of(mappingRules2.getMappingRuleId()),
-                      "mapping-rules",
-                      List.of(mappingRules3.getMappingRuleId())));
+          final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+          defaultRoles.put(
+              "admin",
+              Map.of(
+                  "mappingRules",
+                  List.of(mappingRules1.getMappingRuleId()),
+                  "mappingrules",
+                  List.of(mappingRules2.getMappingRuleId()),
+                  "mapping-rules",
+                  List.of(mappingRules3.getMappingRuleId())));
+          cfg.getInitialization().setDefaultRoles(defaultRoles);
         });
 
     // then identity should be initialized

@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.BeforeClass;
@@ -50,10 +51,11 @@ public class TenantAwareResourceDeletionTest {
                       .getInitialization()
                       .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private static final String PROCESS_ID = "test";
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";

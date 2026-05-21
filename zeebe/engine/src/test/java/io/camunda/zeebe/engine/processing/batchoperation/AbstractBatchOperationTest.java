@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,14 +87,13 @@ abstract class AbstractBatchOperationTest {
           .withSecurityConfig(
               cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put(
-                          "admin",
-                          Map.of(
-                              "users",
-                              List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername()))))
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin",
+                    Map.of("users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              })
           .withEngineConfig(
               cfg ->
                   cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)

@@ -46,6 +46,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -114,9 +115,9 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                 c.getInitialization()
                     .setMappingRules(
                         List.of(new ConfiguredMappingRule(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));
-                c.getInitialization()
-                    .getDefaultRoles()
-                    .put(ADMIN_ROLE, Map.of(USERS_KEY, List.of(USER_ID)));
+                final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
+                defaultRoles.put(ADMIN_ROLE, Map.of(USERS_KEY, List.of(USER_ID)));
+                c.getInitialization().setDefaultRoles(defaultRoles);
               });
 
   @BeforeAll

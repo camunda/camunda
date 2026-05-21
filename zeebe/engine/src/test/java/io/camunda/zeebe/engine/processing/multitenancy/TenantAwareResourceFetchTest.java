@@ -30,6 +30,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -61,10 +62,11 @@ public class TenantAwareResourceFetchTest {
                     .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));
               })
           .withSecurityConfig(
-              cfg ->
-                  cfg.getInitialization()
-                      .getDefaultRoles()
-                      .put("admin", Map.of("users", List.of(USERNAME))));
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put("admin", Map.of("users", List.of(USERNAME)));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              });
 
   private CommandResponseWriter mockCommandResponseWriter;
   private ResourceRecord resourceResponse;
