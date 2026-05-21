@@ -16,7 +16,6 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
-import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import java.util.List;
 
 /**
@@ -50,10 +49,10 @@ public interface UpdateAgentInstanceCommandStep1 {
     /**
      * Sets the new status of the agent instance.
      *
-     * @param status the new status
+     * @param status the new status; see {@link AgentInstanceUpdateStatus} for available values
      * @return this builder for method chaining
      */
-    UpdateAgentInstanceCommandStep2 status(AgentInstanceStatus status);
+    UpdateAgentInstanceCommandStep2 status(AgentInstanceUpdateStatus status);
 
     /**
      * Increments the input token counter by the given delta.
@@ -88,9 +87,20 @@ public interface UpdateAgentInstanceCommandStep1 {
     UpdateAgentInstanceCommandStep2 toolCalls(int toolCalls);
 
     /**
-     * Sets the list of tools available to the agent instance.
+     * Replaces the full list of tools available to the agent instance. An empty list clears all
+     * tools. Use {@link AgentTool#of(String)} or {@link AgentTool#of(String, String, String)} to
+     * construct tool entries.
      *
-     * @param tools the tools to set
+     * <p>Example:
+     *
+     * <pre>
+     *   .tools(List.of(
+     *       AgentTool.of("search", "Search the web", "searchTask"),
+     *       AgentTool.of("summarize")
+     *   ))
+     * </pre>
+     *
+     * @param tools the tools to set; pass an empty list to clear all tools
      * @return this builder for method chaining
      */
     UpdateAgentInstanceCommandStep2 tools(List<AgentTool> tools);
@@ -103,5 +113,42 @@ public interface UpdateAgentInstanceCommandStep1 {
     String getDescription();
 
     String getElementId();
+
+    /**
+     * Creates a tool with the given name and no description or element ID.
+     *
+     * @param name the tool name. Must not be blank.
+     * @return a new {@link AgentTool}
+     */
+    static AgentTool of(final String name) {
+      return of(name, null, null);
+    }
+
+    /**
+     * Creates a tool with the given name, description, and element ID.
+     *
+     * @param name the tool name. Must not be blank.
+     * @param description optional description of the tool
+     * @param elementId optional ID of the BPMN element providing this tool
+     * @return a new {@link AgentTool}
+     */
+    static AgentTool of(final String name, final String description, final String elementId) {
+      return new AgentTool() {
+        @Override
+        public String getName() {
+          return name;
+        }
+
+        @Override
+        public String getDescription() {
+          return description;
+        }
+
+        @Override
+        public String getElementId() {
+          return elementId;
+        }
+      };
+    }
   }
 }

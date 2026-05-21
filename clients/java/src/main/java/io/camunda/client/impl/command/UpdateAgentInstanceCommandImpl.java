@@ -17,18 +17,18 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.AgentInstanceUpdateStatus;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.AgentTool;
 import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1.UpdateAgentInstanceCommandStep2;
 import io.camunda.client.api.response.UpdateAgentInstanceResponse;
-import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateAgentInstanceResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.AgentInstanceMetricsDelta;
-import io.camunda.client.protocol.rest.AgentInstanceStatusEnum;
 import io.camunda.client.protocol.rest.AgentInstanceUpdateRequest;
-import io.camunda.client.protocol.rest.AgentTool;
+import io.camunda.client.protocol.rest.AgentInstanceUpdateStatusEnum;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -62,8 +62,8 @@ public class UpdateAgentInstanceCommandImpl
   }
 
   @Override
-  public UpdateAgentInstanceCommandStep2 status(final AgentInstanceStatus status) {
-    request.status(EnumUtil.convert(status, AgentInstanceStatusEnum.class));
+  public UpdateAgentInstanceCommandStep2 status(final AgentInstanceUpdateStatus status) {
+    request.status(EnumUtil.convert(status, AgentInstanceUpdateStatusEnum.class));
     return this;
   }
 
@@ -96,15 +96,15 @@ public class UpdateAgentInstanceCommandImpl
     final List<io.camunda.client.protocol.rest.AgentTool> protocolTools =
         tools.stream()
             .map(
-                tool -> {
+                apiTool -> {
                   final io.camunda.client.protocol.rest.AgentTool protocolTool =
                       new io.camunda.client.protocol.rest.AgentTool();
-                  protocolTool.name(tool.getName());
-                  if (tool.getDescription() != null) {
-                    protocolTool.description(tool.getDescription());
+                  protocolTool.name(apiTool.getName());
+                  if (apiTool.getDescription() != null) {
+                    protocolTool.description(apiTool.getDescription());
                   }
-                  if (tool.getElementId() != null) {
-                    protocolTool.elementId(tool.getElementId());
+                  if (apiTool.getElementId() != null) {
+                    protocolTool.elementId(apiTool.getElementId());
                   }
                   return protocolTool;
                 })

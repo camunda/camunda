@@ -13,8 +13,8 @@ import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
-import io.camunda.gateway.protocol.model.AgentInstanceStatusEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
@@ -125,16 +125,12 @@ public class AgentInstanceMapper {
     }
   }
 
-  private AgentInstanceStatus mapStatus(final AgentInstanceStatusEnum status) {
+  private AgentInstanceStatus mapStatus(final AgentInstanceUpdateStatusEnum status) {
     return switch (status) {
-      case COMPLETED -> AgentInstanceStatus.COMPLETED;
       case IDLE -> AgentInstanceStatus.IDLE;
-      case INITIALIZING -> AgentInstanceStatus.INITIALIZING;
       case THINKING -> AgentInstanceStatus.THINKING;
       case TOOL_CALLING -> AgentInstanceStatus.TOOL_CALLING;
       case TOOL_DISCOVERY -> AgentInstanceStatus.TOOL_DISCOVERY;
-        // No need for default: if a new possible value is added to the API spec
-        // then this statement will fail to compile
     };
   }
 

@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.command;
 
-public enum AgentInstanceStatus {
-  INITIALIZING,
+/**
+ * Status values that can be set on an agent instance via an update request. COMPLETED is excluded
+ * because it is a terminal state reached through process completion, not through direct update.
+ * INITIALIZING is excluded because it is set by the creation command and it is not possible to
+ * transition back to it.
+ */
+public enum AgentInstanceUpdateStatus {
   TOOL_DISCOVERY,
   IDLE,
   THINKING,
-  TOOL_CALLING,
-  COMPLETED,
-  UNKNOWN_ENUM_VALUE
+  TOOL_CALLING
 }

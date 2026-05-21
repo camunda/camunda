@@ -435,6 +435,16 @@ components:
         - TOOL_CALLING
         - TOOL_DISCOVERY
 
+    AgentInstanceUpdateStatusEnum:
+      description: |
+        The status values that can be set on an agent instance via an update request.
+      type: string
+      enum:
+        - IDLE
+        - THINKING
+        - TOOL_CALLING
+        - TOOL_DISCOVERY
+
     AgentInstanceCreationRequest:
       description: Request to create a new agent instance.
       type: object
@@ -521,7 +531,7 @@ components:
         status:
           description: The new status of the agent instance.
           allOf:
-            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+            - $ref: '#/components/schemas/AgentInstanceUpdateStatusEnum'
         metrics:
           description: Metric increments to apply to the aggregate counters.
           allOf:
