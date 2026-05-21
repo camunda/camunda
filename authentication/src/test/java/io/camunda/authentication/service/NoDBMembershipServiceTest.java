@@ -9,7 +9,6 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.model.auth.Memberships;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import java.util.List;
@@ -19,42 +18,45 @@ import org.junit.jupiter.api.Test;
 class NoDBMembershipServiceTest {
 
   @Test
-  void resolveMembershipsReturnsGroupsFromClaimsWhenConfigured() {
+  void providerReturnsGroupsFromClaimsWhenConfigured() {
     final var config = securityConfigurationWithGroupsClaim("$.groups");
     final var service = new NoDBMembershipService(config);
 
-    final var memberships =
-        service.resolveMemberships(
+    final var provider =
+        service.createProvider(
             Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
-    assertThat(memberships.groupIds()).containsExactlyInAnyOrder("eng", "ops");
-    assertThat(memberships.roleIds()).isEmpty();
-    assertThat(memberships.tenantIds()).isEmpty();
-    assertThat(memberships.mappingRuleIds()).isEmpty();
+    assertThat(provider.groups()).containsExactlyInAnyOrder("eng", "ops");
+    assertThat(provider.roles()).isEmpty();
+    assertThat(provider.tenants()).isEmpty();
+    assertThat(provider.mappingRules()).isEmpty();
   }
 
   @Test
-  void resolveMembershipsReturnsEmptyGroupsWhenNoGroupsClaimConfigured() {
+  void providerReturnsEmptyGroupsWhenNoGroupsClaimConfigured() {
     final var config = new SecurityConfiguration();
     final var service = new NoDBMembershipService(config);
 
-    final var memberships =
-        service.resolveMemberships(
+    final var provider =
+        service.createProvider(
             Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
-    assertThat(memberships.groupIds()).isEmpty();
-    assertThat(memberships.roleIds()).isEmpty();
-    assertThat(memberships.tenantIds()).isEmpty();
-    assertThat(memberships.mappingRuleIds()).isEmpty();
+    assertThat(provider.groups()).isEmpty();
+    assertThat(provider.roles()).isEmpty();
+    assertThat(provider.tenants()).isEmpty();
+    assertThat(provider.mappingRules()).isEmpty();
   }
 
   @Test
-  void resolveMembershipsForUserReturnsEmptyMemberships() {
+  void providerForUserReturnsEmptyMemberships() {
     final var service = new NoDBMembershipService(new SecurityConfiguration());
 
-    final var memberships = service.resolveMembershipsForUser("alice");
+    final var provider = service.createProviderForUser("alice");
 
-    assertThat(memberships).isEqualTo(Memberships.empty());
+    assertThat(provider.groups()).isEmpty();
+    assertThat(provider.roles()).isEmpty();
+    assertThat(provider.tenants()).isEmpty();
+    assertThat(provider.mappingRules()).isEmpty();
   }
 
   private static SecurityConfiguration securityConfigurationWithGroupsClaim(

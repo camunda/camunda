@@ -9,6 +9,8 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
@@ -52,7 +54,7 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
-  void resolveMembershipsAggregatesGroupsRolesTenantsAndMappingRules() {
+  void providerExposesAllFourMembershipTypesFromTheChain() {
     when(mappingRuleServices.getMatchingMappingRules(any(), any()))
         .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
@@ -62,17 +64,42 @@ class DefaultMembershipServiceTest {
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new TenantEntity(1L, "t1", "tenant", null)));
 
-    final var memberships =
-        service.resolveMemberships(Map.of("sub", "alice"), "alice", PrincipalType.USER);
+    final var provider =
+        service.createProvider(Map.of("sub", "alice"), "alice", PrincipalType.USER);
 
-    assertThat(memberships.groupIds()).containsExactly("g1");
-    assertThat(memberships.roleIds()).containsExactly("r1");
-    assertThat(memberships.tenantIds()).containsExactly("t1");
-    assertThat(memberships.mappingRuleIds()).containsExactly("mr1");
+    assertThat(provider.groups()).containsExactly("g1");
+    assertThat(provider.roles()).containsExactly("r1");
+    assertThat(provider.tenants()).containsExactly("t1");
+    assertThat(provider.mappingRules()).containsExactly("mr1");
   }
 
   @Test
-  void resolveMembershipsForUserLooksUpGroupsRolesTenantsAndOmitsMappingRules() {
+  void providerInvokesNoServicesUntilAFieldIsRead() {
+    service.createProvider(Map.of("sub", "alice"), "alice", PrincipalType.USER);
+
+    verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
+    verify(groupServices, never()).getGroupsByMemberTypeAndMemberIds(any(), any());
+    verify(roleServices, never()).getRolesByMemberTypeAndMemberIds(any(), any());
+    verify(tenantServices, never()).getTenantsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void readingGroupsTriggersOnlyTheMappingRulesAndGroupsQueries() {
+    when(mappingRuleServices.getMatchingMappingRules(any(), any())).thenReturn(Stream.empty());
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
+
+    final var provider =
+        service.createProvider(Map.of("sub", "alice"), "alice", PrincipalType.USER);
+    provider.groups();
+
+    verify(mappingRuleServices).getMatchingMappingRules(any(), any());
+    verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
+    verify(roleServices, never()).getRolesByMemberTypeAndMemberIds(any(), any());
+    verify(tenantServices, never()).getTenantsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void providerForUserSkipsMappingRulesAndLooksUpGroupsRolesTenants() {
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
@@ -80,11 +107,12 @@ class DefaultMembershipServiceTest {
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new TenantEntity(1L, "t1", "tenant", null)));
 
-    final var memberships = service.resolveMembershipsForUser("alice");
+    final var provider = service.createProviderForUser("alice");
 
-    assertThat(memberships.groupIds()).containsExactly("g1");
-    assertThat(memberships.roleIds()).containsExactly("r1");
-    assertThat(memberships.tenantIds()).containsExactly("t1");
-    assertThat(memberships.mappingRuleIds()).isEmpty();
+    assertThat(provider.groups()).containsExactly("g1");
+    assertThat(provider.roles()).containsExactly("r1");
+    assertThat(provider.tenants()).containsExactly("t1");
+    assertThat(provider.mappingRules()).isEmpty();
+    verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
   }
 }
