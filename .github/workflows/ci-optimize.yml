@@ -59,7 +59,7 @@ jobs:
       suiteName: ${{ matrix.suiteName }}
 
   optimize-it-elasticsearch:
-    name: "[IT] Run on Elasticsearch"
+    name: "Integration / Elasticsearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 120
@@ -151,7 +151,7 @@ jobs:
           user_description: "team-core-features"
 
   optimize-it-opensearch:
-    name: "[IT] Run on OpenSearch"
+    name: "Integration / OpenSearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
     timeout-minutes: 120
