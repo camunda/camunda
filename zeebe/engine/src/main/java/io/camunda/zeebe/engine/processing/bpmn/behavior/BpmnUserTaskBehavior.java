@@ -191,7 +191,8 @@ public final class BpmnUserTaskBehavior {
             .setPriority(userTaskProperties.getPriority())
             .setCreationTimestamp(clock.millis())
             .setTags(getTagsFromProcessInstance(context))
-            .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+            .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+            .setOrdinalKey(context.getOrdinalKey());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;

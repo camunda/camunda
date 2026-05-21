@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionEvaluationRecordValue.Builder.class)
 public interface DecisionEvaluationRecordValue
-    extends RecordValue, RecordValueWithVariables, TenantOwned {
+    extends RecordValue, RecordValueWithVariables, OrdinalKeyBased, TenantOwned {
 
   /**
    * @return the key of the evaluated decision
