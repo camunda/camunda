@@ -27,7 +27,7 @@ import java.util.List;
  *   camundaClient
  *       .newUpdateAgentInstanceCommand(agentInstanceKey)
  *       .elementInstanceKey(elementInstanceKey)
- *       .status(AgentInstanceStatus.COMPLETED)
+ *       .status(AgentInstanceUpdateStatus.THINKING)
  *       .send()
  *       .join();
  * </pre>
@@ -35,9 +35,8 @@ import java.util.List;
 public interface UpdateAgentInstanceCommandStep1 {
 
   /**
-   * Sets the element instance key of the AHSP or AI Agent Task element instance owning this agent
-   * instance. The engine uses this to validate that the agent instance belongs to the expected
-   * process instance.
+   * Sets the element instance key associated with this agent instance. Used to validate that the
+   * update targets the correct process instance.
    *
    * @param elementInstanceKey the key of the element instance. Must be greater than 0.
    * @return the next step of the builder

@@ -322,7 +322,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         """
         {
           "elementInstanceKey": "%d",
-          "status": "COMPLETED"
+          "status": "THINKING"
         }
         """
             .formatted(ELEMENT_INSTANCE_KEY);
@@ -344,7 +344,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 record -> {
                   assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
                   assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
-                  assertThat(record.getStatus().name()).isEqualTo("COMPLETED");
+                  assertThat(record.getStatus().name()).isEqualTo("THINKING");
                   assertThat(record.getChangedAttributes()).containsExactly("status");
                 }),
             any());
@@ -514,21 +514,21 @@ class AgentInstanceControllerTest extends RestControllerTest {
             named(
                 "missing elementInstanceKey",
                 """
-                { "status": "COMPLETED" }
+                { "status": "THINKING" }
                 """),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
                 """
-                { "elementInstanceKey": null, "status": "COMPLETED" }
+                { "elementInstanceKey": null, "status": "THINKING" }
                 """),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
                 """
-                { "elementInstanceKey": "not-a-number", "status": "COMPLETED" }
+                { "elementInstanceKey": "not-a-number", "status": "THINKING" }
                 """),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."

@@ -3459,7 +3459,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   camundaClient
    *       .newUpdateAgentInstanceCommand(agentInstanceKey)
    *       .elementInstanceKey(elementInstanceKey)
-   *       .status(AgentInstanceStatus.COMPLETED)
+   *       .status(AgentInstanceUpdateStatus.THINKING)
    *       .send()
    *       .join();
    * </pre>

@@ -522,10 +522,8 @@ components:
         elementInstanceKey:
           nullable: false
           description: |
-            The key of the AHSP or AI Agent Task element instance.
-            The engine uses this key to infer processInstanceKey, elementId,
-            processDefinitionKey, and tenantId.
-            This is used to validate that the agent instance being updated belongs to the expected process instance and to link the agent instance to the element instance.
+            The key of the element instance associated with this agent instance.
+            Used to validate that the update targets the correct process instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         status:
