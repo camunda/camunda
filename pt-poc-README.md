@@ -141,7 +141,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test               | ✅ done         |
 | 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`        | ✅ done         |
 | 9  | Wire per-tenant `WebSessionRepository`                                | ✅ done         |
-| 10 | **Extract `PhysicalTenantCookieSerializer` + unit test**              | 🔄 in progress |
+| 10 | Extract `PhysicalTenantCookieSerializer` + unit test                  | ✅ done         |
+|    | **Checkpoint C — collaborators extracted**                            | 🔄 review      |
 | 11 | API chain — shared decoder + per-chain issuer allowlist               | ⏳ pending      |
 | 12 | Default tenant unprefixed access-path chains                          | ⏳ pending      |
 | 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ⏳ pending      |
