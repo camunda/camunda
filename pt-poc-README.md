@@ -165,6 +165,10 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 - Default tenant's unprefixed access-path chains.
 - End-to-end `PhysicalTenantSecurityIT`.
 
-**Known issues:**
+**Verified cookie surface** (re-checked end-to-end on 2026-05-21 via curl-driven OAuth flow against both tenants):
 
-- A bare `camunda-session` cookie at `Path=/` is emitted alongside the per-chain cookies (`camunda-session-tenanta` / `camunda-session-default`). It's shared across both tabs and does **not** contribute to tenant isolation — Path-scoped per-chain cookies do that. Need to investigate.
+- The only session cookies emitted are the per-chain ones, scoped correctly:
+  - `camunda-session-tenanta` at `Path=/physical-tenant/tenanta`
+  - `camunda-session-default` at `Path=/physical-tenant/default`
+- No bare `camunda-session` cookie at `Path=/` and no `JSESSIONID` anywhere. (An earlier README note observed one; that observation was stale — possibly a leftover from a browser cache at a point during Task 5 development. The current code does not emit it.)
+- `server.servlet.session.cookie.name=camunda-session` is set only by `WebappsConfigurationInitializer` and only when one of the webapp profiles (`operate`, `tasklist`, `identity`, `admin`, `tmp_webapp`) is active — none of which `pt-poc` activates.
