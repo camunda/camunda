@@ -14,13 +14,13 @@ describe('<DocumentValueCell />', () => {
   it('should render a single document with filename and size', () => {
     const result: DocumentParseResult = {
       type: 'single',
-      document: {fileName: 'photo.png', size: 109748},
+      document: {fileName: 'photo.png', size: 112640},
     };
 
     render(<DocumentValueCell result={result} />);
 
     expect(screen.getByText('photo.png')).toBeInTheDocument();
-    expect(screen.getByText('110 KB')).toBeInTheDocument();
+    expect(screen.getByText('110 KiB')).toBeInTheDocument();
   });
 
   it('should render a single document without size', () => {
