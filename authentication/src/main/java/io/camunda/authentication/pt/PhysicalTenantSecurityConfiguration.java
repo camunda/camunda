@@ -24,7 +24,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
-import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.session.web.http.SessionRepositoryFilter;
 
 @Configuration
@@ -93,8 +92,6 @@ public class PhysicalTenantSecurityConfiguration {
    * and emit the slice.
    */
   private TenantSecuritySlice sliceFor(final String tenantId, final Environment environment) {
-    final String prefix = "/physical-tenant/" + tenantId;
-
     final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
     final List<String> assigned = bindAssigned(tenantId, environment);
 
@@ -102,8 +99,7 @@ public class PhysicalTenantSecurityConfiguration {
         PerTenantOidcRegistry.forTenant(tenantId, tenantSecurity, assigned)
             .clientRegistrationRepository();
 
-    final var cookieAndFilter =
-        perChainSessionFilter("camunda-session-" + tenantId, prefix, tenantId);
+    final var cookieAndFilter = perChainSessionFilter(tenantId);
 
     return new TenantSecuritySlice(
         tenantId,
@@ -147,18 +143,12 @@ public class PhysicalTenantSecurityConfiguration {
    * store. Storage isolation is structural; there is no shared backend and no key-prefixing
    * decorator.
    */
-  private SessionFilterAndResolver perChainSessionFilter(
-      final String cookieName, final String cookiePath, final String tenantId) {
-    final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
-    serializer.setCookieName(cookieName);
-    serializer.setCookiePath(cookiePath);
-    serializer.setUseHttpOnlyCookie(true);
+  private SessionFilterAndResolver perChainSessionFilter(final String tenantId) {
     // Lax (not Strict) so the IdP return leg — a top-level navigation back to the
-    // OAuth2 callback URL — carries the session cookie.
-    serializer.setSameSite("Lax");
-
-    final CookieHttpSessionIdResolver sessionIdResolver = new CookieHttpSessionIdResolver();
-    sessionIdResolver.setCookieSerializer(serializer);
+    // OAuth2 callback URL — carries the session cookie. See PhysicalTenantCookieSerializer.
+    final var serializer = PhysicalTenantCookieSerializer.forPrefixedChain(tenantId);
+    final CookieHttpSessionIdResolver sessionIdResolver =
+        PhysicalTenantCookieSerializer.resolver(serializer);
 
     final WebSessionRepository repository = ptWebSessionRepositories.get(tenantId);
     if (repository == null) {
