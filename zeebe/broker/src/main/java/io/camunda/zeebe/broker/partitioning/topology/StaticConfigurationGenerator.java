@@ -69,7 +69,7 @@ public final class StaticConfigurationGenerator {
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
     return switch (config.getScheme()) {
       case FIXED -> buildFixedPartitionDistributor(config);
-      case REGION_AWARE -> buildZoneAwarePartitionDistributor(config);
+      case ZONE_AWARE -> buildZoneAwarePartitionDistributor(config);
       default -> new RoundRobinPartitionDistributor();
     };
   }
@@ -100,7 +100,7 @@ public final class StaticConfigurationGenerator {
 
   private static Set<MemberId> getRaftGroupMembers(
       final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
-    if (partitioningCfg.getScheme() == Scheme.REGION_AWARE) {
+    if (partitioningCfg.getScheme() == Scheme.ZONE_AWARE) {
       return getZoneAwareRaftGroupMembers(partitioningCfg);
     }
     // Legacy path: node ids are always 0 to clusterSize - 1

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
 /**
- * Per-region configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
+ * Per-region configuration for the {@link Scheme#ZONE_AWARE} partitioning scheme.
  *
  * <p>{@link #numberOfBrokers} brokers must be deployed in this region, each configured with {@code
  * zeebe.broker.cluster.region} set to this region's name.

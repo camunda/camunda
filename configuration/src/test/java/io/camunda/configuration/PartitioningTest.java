@@ -149,7 +149,7 @@ public class PartitioningTest {
     @Test
     void shouldSetRegionAwarePartitioning() {
       assertThat(brokerCfg.getExperimental().getPartitioning().getScheme())
-          .isEqualTo(Scheme.REGION_AWARE);
+          .isEqualTo(Scheme.ZONE_AWARE);
 
       assertThat(brokerCfg.getExperimental().getPartitioning().getZoneAware().zones())
           .hasSize(2)

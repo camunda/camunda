@@ -146,7 +146,7 @@ fixed:
             List.of(new ZoneCfg("us-east", 4, 2, 1000), new ZoneCfg("us-west", 2, 1, 500)));
 
     final var partitioningCfg = new PartitioningCfg();
-    partitioningCfg.setScheme(Scheme.REGION_AWARE);
+    partitioningCfg.setScheme(Scheme.ZONE_AWARE);
     partitioningCfg.setZoneAware(zoneAwareCfg);
 
     final var clusterCfg = new ClusterCfg();

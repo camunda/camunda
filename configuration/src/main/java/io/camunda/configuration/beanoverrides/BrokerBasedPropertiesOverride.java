@@ -459,7 +459,7 @@ public class BrokerBasedPropertiesOverride {
 
     if (partitioning.getScheme() == Partitioning.Scheme.ZONE_AWARE) {
       final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
-      partitioningCfg.setScheme(Scheme.REGION_AWARE);
+      partitioningCfg.setScheme(Scheme.ZONE_AWARE);
       final var regionCfgList =
           partitioning.getZoneAware().zones().stream().map(Zone::toZoneCfg).toList();
       partitioningCfg.setZoneAware(new ZoneAwareCfg(regionCfgList));

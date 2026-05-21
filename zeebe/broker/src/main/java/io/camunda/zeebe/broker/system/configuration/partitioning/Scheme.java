@@ -10,5 +10,5 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
 public enum Scheme {
   FIXED,
   ROUND_ROBIN,
-  REGION_AWARE;
+  ZONE_AWARE;
 }

@@ -129,10 +129,10 @@ public final class ClusterCfg implements ConfigurationEntry {
   private void validateZoneAwareConfig(final BrokerCfg globalConfig) {
     final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
 
-    if (zone != null && partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
+    if (zone != null && partitioningCfg.getScheme() != Scheme.ZONE_AWARE) {
       throw new IllegalArgumentException(ZONE_SCHEME_ERROR_MSG);
     }
-    if (partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
+    if (partitioningCfg.getScheme() != Scheme.ZONE_AWARE) {
       return;
     }
 
