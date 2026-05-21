@@ -393,11 +393,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+        spuriousMultiSameVersion:
+          description: |
+            Correctly annotated new property on BatchOperationResponse, a schema
+            shared between two same-version (8.8) endpoints; should pass CI.
+          type: string
       x-properties-added-in-version:
         - propertyName: actorType
           addedInVersion: "8.9"
         - propertyName: actorId
           addedInVersion: "8.9"
+        - propertyName: spuriousMultiSameVersion
+          addedInVersion: "8.10"
 
     BatchOperationError:
       required:

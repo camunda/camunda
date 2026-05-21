@@ -345,9 +345,16 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
+        spuriousMultiSameVersion:
+          description: |
+            Correctly annotated new property on AuthorizationResult, a schema
+            shared between two same-version (8.8) endpoints; should pass CI.
+          type: string
       x-properties-added-in-version:
         - propertyName: resourcePropertyName
           addedInVersion: "8.9"
+        - propertyName: spuriousMultiSameVersion
+          addedInVersion: "8.10"
 
     AuthorizationSearchResult:
       type: object
