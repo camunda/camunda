@@ -125,7 +125,7 @@ public class OidcOverrideBeansConfiguration {
     // Bridge host's local OidcClaimsProvider (io.camunda.security.oidc.*) to CSL's
     // (io.camunda.security.api.context.*). Interfaces have identical shape; this small
     // adapter avoids touching the broker/gateway codepaths that still depend on the host
-    // interface — those are a clean follow-up.
+    // interface — tracked as a follow-up in https://github.com/camunda/camunda/issues/53731.
     final io.camunda.security.api.context.OidcClaimsProvider cslClaimsProvider =
         hostClaimsProvider::claimsFor;
     return new OidcTokenAuthenticationConverter(tokenClaimsConverter, cslClaimsProvider);
