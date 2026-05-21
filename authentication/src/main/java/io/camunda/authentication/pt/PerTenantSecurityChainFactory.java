@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
@@ -46,6 +47,28 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  */
 @NullMarked
 public final class PerTenantSecurityChainFactory {
+
+  /**
+   * Cluster-shared chain that {@code permitAll}s a fixed set of path patterns — favicons, error
+   * pages, actuator endpoints, swagger UI, the host's static asset roots. These are paths that no
+   * per-tenant security chain should claim: serving them via the protected webapp chain forces
+   * each anonymous background request (e.g. the browser's auto-fetch of {@code /favicon.ico}) to
+   * pass through OAuth2 redirect machinery, which previously emitted gratuitous session cookies.
+   *
+   * <p>Registered with the highest precedence ({@code @Order(1)}) so it wins over every PT chain
+   * for the paths it claims. {@code SessionCreationPolicy.STATELESS} +
+   * {@code NullRequestCache} together guarantee no session, no cookie, no saved request — exactly
+   * the surface a public resource should expose.
+   */
+  public SecurityFilterChain buildUnauthenticatedChain(
+      final HttpSecurity http, final String... matchers) throws Exception {
+    return http.securityMatcher(matchers)
+        .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+        .csrf(c -> c.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .requestCache(rc -> rc.requestCache(new NullRequestCache()))
+        .build();
+  }
 
   public SecurityFilterChain buildWebappChain(
       final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {

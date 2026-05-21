@@ -7,10 +7,12 @@
  */
 package io.camunda.authentication.pt;
 
+import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -109,6 +111,14 @@ public final class PhysicalTenantSecurityChainRegistrar
     // explicit integers below so the boot log shows the same precedence the explicit @Order
     // annotations used to assign.
     int order = 1;
+    // 0) Unauthenticated chain — highest precedence. Claims the host's "always-public" paths
+    //    (favicons, /error, /actuator/**, swagger, static webapp assets) from
+    //    SecurityPathAdapter. Under !pt-security CSL provides this chain; under pt-security we
+    //    gated CSL off, so we have to re-introduce it here. Without it, anonymous browser
+    //    background fetches (favicon, robots, anything wrong) fall into the per-tenant webapp
+    //    chains and trigger OAuth2 redirect machinery — wasted work plus accidental cookies.
+    registerChain(
+        registry, "ptUnauthenticatedChain", order++, ChainVariant.UNAUTHENTICATED, "");
     // 1) Prefixed API chains — one per tenant, ordered by config iteration order.
     for (final String tenantId : tenantIds) {
       registerChain(
@@ -163,6 +173,8 @@ public final class PhysicalTenantSecurityChainRegistrar
     try {
       final SecurityFilterChain chain =
           switch (variant) {
+            case UNAUTHENTICATED ->
+                factory.buildUnauthenticatedChain(http, unauthenticatedPathPatterns());
             case PREFIXED_API ->
                 factory.buildApiChain(
                     http,
@@ -308,7 +320,22 @@ public final class PhysicalTenantSecurityChainRegistrar
     return "pt" + pascal + suffix;
   }
 
+  /**
+   * Union of {@link SecurityPathAdapter#unprotectedPaths()} and {@link
+   * SecurityPathAdapter#unauthenticatedWebappPaths()} — the central list the host already
+   * declares for "no auth required". Reusing the SPI keeps the PT setup consistent with the
+   * non-PT setup so changes to either list propagate without a parallel PoC-local list.
+   */
+  private static String[] unauthenticatedPathPatterns() {
+    final SecurityPathAdapter adapter = SecurityPathAdapter.INSTANCE;
+    final Set<String> all = new LinkedHashSet<>();
+    all.addAll(adapter.unprotectedPaths());
+    all.addAll(adapter.unauthenticatedWebappPaths());
+    return all.toArray(String[]::new);
+  }
+
   private enum ChainVariant {
+    UNAUTHENTICATED,
     PREFIXED_API,
     PREFIXED_WEBAPP,
     UNPREFIXED_DEFAULT_API,
