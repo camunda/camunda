@@ -37,17 +37,20 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
  *
  * <p><b>About the separate {@code assigned} parameter:</b> the external {@code
  * OidcProvidersConfiguration} (from {@code camunda-security-library-api}) does not expose an {@code
- * assigned} field, and adding one upstream is out of scope for this PoC. So the registry accepts
+ * assigned} field, and adding one upstream is out of scope for this PoC. So the builder accepts
  * {@code assigned} alongside the {@link SecurityConfiguration}; the caller binds it separately (in
  * the PoC, from {@code camunda.physical-tenants.<id>.security.authentication.providers.assigned}).
+ *
+ * <p>The class name mirrors Spring Security's {@link ClientRegistrations} static utility: this is a
+ * builder, not a stateful registry.
  */
 @NullMarked
-public final class PerTenantOidcRegistry {
+public final class PerTenantClientRegistrations {
 
   /** Registration id under which the default {@code authentication.oidc.*} provider lives. */
   public static final String DEFAULT_PROVIDER_REGISTRATION_ID = "oidc";
 
-  private PerTenantOidcRegistry() {
+  private PerTenantClientRegistrations() {
     // static-utility class — not instantiable
   }
 

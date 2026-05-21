@@ -13,7 +13,7 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.authentication.pt.PerTenantOidcRegistry;
+import io.camunda.authentication.pt.PerTenantClientRegistrations;
 import io.camunda.authentication.pt.TenantSecuritySlice;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -555,7 +555,7 @@ public class OidcOverrideBeansConfiguration {
   // ObjectProvider:
   //   * ptClientRegistrationRepositories — one ClientRegistrationRepository per tenant,
   //     assembled from camunda.physical-tenants.<id>.security.* + providers.assigned via
-  //     PerTenantOidcRegistry#buildFor.
+  //     PerTenantClientRegistrations#buildFor.
   //   * ptAllowedIssuersPerTenant — the set of OIDC issuer URIs each tenant has assigned;
   //     used both for the per-tenant API chain allowlist and (via the cluster-shared
   //     issuer-aware jwtDecoder) for the unioned validator chain.
@@ -576,7 +576,7 @@ public class OidcOverrideBeansConfiguration {
       final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
       final List<String> assigned = bindAssigned(tenantId, environment);
       repositories.put(
-          tenantId, PerTenantOidcRegistry.buildFor(tenantId, tenantSecurity, assigned));
+          tenantId, PerTenantClientRegistrations.buildFor(tenantId, tenantSecurity, assigned));
     }
     return Map.copyOf(repositories);
   }
@@ -604,7 +604,7 @@ public class OidcOverrideBeansConfiguration {
     final List<String> assigned = bindAssigned(defaultTenantId, environment);
     return Map.of(
         defaultTenantId,
-        PerTenantOidcRegistry.buildFor(
+        PerTenantClientRegistrations.buildFor(
             defaultTenantId,
             tenantSecurity,
             assigned,
@@ -672,7 +672,7 @@ public class OidcOverrideBeansConfiguration {
       final String registrationId,
       final @Nullable OidcConfiguration defaultProvider,
       final @Nullable Map<String, OidcConfiguration> namedProviders) {
-    if (PerTenantOidcRegistry.DEFAULT_PROVIDER_REGISTRATION_ID.equals(registrationId)) {
+    if (PerTenantClientRegistrations.DEFAULT_PROVIDER_REGISTRATION_ID.equals(registrationId)) {
       return defaultProvider;
     }
     return namedProviders == null ? null : namedProviders.get(registrationId);

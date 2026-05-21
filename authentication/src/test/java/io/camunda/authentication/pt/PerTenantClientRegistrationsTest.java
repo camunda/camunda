@@ -19,14 +19,14 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 /**
- * Unit tests for {@link PerTenantOidcRegistry}. We use the package-private factory hook to bypass
- * OIDC discovery — calling Keycloak from a unit test is out of scope.
+ * Unit tests for {@link PerTenantClientRegistrations}. We use the package-private factory hook to
+ * bypass OIDC discovery — calling Keycloak from a unit test is out of scope.
  *
  * <p>Note: {@code SecurityConfiguration.getAuthentication().getProviders()} on the external CSL
  * library does not expose an {@code assigned} field, so the registry accepts the {@code assigned}
  * list as a separate parameter (see the registry's javadoc for the rationale).
  */
-class PerTenantOidcRegistryTest {
+class PerTenantClientRegistrationsTest {
 
   @Test
   void shouldResolveAssignedOidcToTheDefaultProviderSlot() {
@@ -34,7 +34,7 @@ class PerTenantOidcRegistryTest {
     final var security = sec(oidc("oidc"), Map.of());
     // when
     final var repository =
-        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("oidc"), stubBuilder());
+        PerTenantClientRegistrations.buildFor("tenanta", security, List.of("oidc"), stubBuilder());
     // then
     assertThat(repository.findByRegistrationId("oidc")).isNotNull();
   }
@@ -43,7 +43,8 @@ class PerTenantOidcRegistryTest {
   void shouldResolveAssignedNamedProviderUnderProvidersOidcMap() {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
     final var repository =
-        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("idpOne"), stubBuilder());
+        PerTenantClientRegistrations.buildFor(
+            "tenanta", security, List.of("idpOne"), stubBuilder());
     assertThat(repository.findByRegistrationId("idpOne")).isNotNull();
   }
 
@@ -52,7 +53,7 @@ class PerTenantOidcRegistryTest {
     final var security =
         sec(oidc("oidc"), Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")));
     final var repository =
-        PerTenantOidcRegistry.buildFor(
+        PerTenantClientRegistrations.buildFor(
             "tenanta", security, List.of("oidc", "idpOne"), stubBuilder());
     assertThat(repository.findByRegistrationId("oidc")).isNotNull();
     assertThat(repository.findByRegistrationId("idpOne")).isNotNull();
@@ -63,7 +64,8 @@ class PerTenantOidcRegistryTest {
   void shouldRewriteRedirectUriToTenantPath() {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
     final var repository =
-        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("idpOne"), stubBuilder());
+        PerTenantClientRegistrations.buildFor(
+            "tenanta", security, List.of("idpOne"), stubBuilder());
     assertThat(repository.findByRegistrationId("idpOne").getRedirectUri())
         .isEqualTo("{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}");
   }
@@ -74,7 +76,7 @@ class PerTenantOidcRegistryTest {
     final var security = sec(oidc("oidc"), Map.of());
     // when
     final var repository =
-        PerTenantOidcRegistry.buildFor(
+        PerTenantClientRegistrations.buildFor(
             "default",
             security,
             List.of("oidc"),
@@ -92,7 +94,7 @@ class PerTenantOidcRegistryTest {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
     assertThatThrownBy(
             () ->
-                PerTenantOidcRegistry.buildFor(
+                PerTenantClientRegistrations.buildFor(
                     "tenanta", security, List.of("ghost"), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("ghost");
@@ -103,7 +105,8 @@ class PerTenantOidcRegistryTest {
     final var security = sec(null, Map.of());
     assertThatThrownBy(
             () ->
-                PerTenantOidcRegistry.buildFor("tenanta", security, List.of("oidc"), stubBuilder()))
+                PerTenantClientRegistrations.buildFor(
+                    "tenanta", security, List.of("oidc"), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("authentication.oidc.*");
   }
@@ -112,18 +115,20 @@ class PerTenantOidcRegistryTest {
   void shouldFailWhenAssignedIsEmpty() {
     final var security = sec(oidc("oidc"), Map.of());
     assertThatThrownBy(
-            () -> PerTenantOidcRegistry.buildFor("tenanta", security, List.of(), stubBuilder()))
+            () ->
+                PerTenantClientRegistrations.buildFor(
+                    "tenanta", security, List.of(), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("providers.assigned");
   }
 
   /**
-   * Returns a stub {@link PerTenantOidcRegistry.ClientRegistrationBuilderFactory} that constructs a
-   * {@link ClientRegistration.Builder} directly via {@link ClientRegistration#withRegistrationId},
-   * bypassing OIDC discovery. We pre-populate the minimum fields a built {@link ClientRegistration}
-   * requires.
+   * Returns a stub {@link PerTenantClientRegistrations.ClientRegistrationBuilderFactory} that
+   * constructs a {@link ClientRegistration.Builder} directly via {@link
+   * ClientRegistration#withRegistrationId}, bypassing OIDC discovery. We pre-populate the minimum
+   * fields a built {@link ClientRegistration} requires.
    */
-  private static PerTenantOidcRegistry.ClientRegistrationBuilderFactory stubBuilder() {
+  private static PerTenantClientRegistrations.ClientRegistrationBuilderFactory stubBuilder() {
     return (registrationId, provider) ->
         ClientRegistration.withRegistrationId(registrationId)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
