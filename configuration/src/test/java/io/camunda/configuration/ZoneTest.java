@@ -9,23 +9,23 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import org.junit.Test;
 
-public class RegionTest {
+public class ZoneTest {
   @Test
   public void shouldMapRegionCorrectly() {
     // given
-    final var region = new Region("zone", 16, 3, 1000);
+    final var region = new Zone("zone", 16, 3, 1000);
 
     // when
-    final var converted = region.toRegionCfg();
+    final var converted = region.toZoneCfg();
 
     // then'
     assertThat(converted)
-        .returns(region.name(), RegionCfg::name)
-        .returns(region.numberOfBrokers(), RegionCfg::numberOfBrokers)
-        .returns(region.numberOfReplicas(), RegionCfg::numberOfReplicas)
-        .returns(region.priority(), RegionCfg::priority);
+        .returns(region.name(), ZoneCfg::name)
+        .returns(region.numberOfBrokers(), ZoneCfg::numberOfBrokers)
+        .returns(region.numberOfReplicas(), ZoneCfg::numberOfReplicas)
+        .returns(region.priority(), ZoneCfg::priority);
   }
 }

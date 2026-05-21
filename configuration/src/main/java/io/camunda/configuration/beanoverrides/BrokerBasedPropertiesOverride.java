@@ -29,7 +29,6 @@ import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
-import io.camunda.configuration.Region;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
@@ -38,6 +37,7 @@ import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.Write;
+import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -457,11 +457,11 @@ public class BrokerBasedPropertiesOverride {
       partitioningCfg.setFixed(fixedPartitionCfgList);
     }
 
-    if (partitioning.getScheme() == Partitioning.Scheme.REGION_AWARE) {
+    if (partitioning.getScheme() == Partitioning.Scheme.ZONE_AWARE) {
       final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
       partitioningCfg.setScheme(Scheme.REGION_AWARE);
       final var regionCfgList =
-          partitioning.getZoneAware().regions().stream().map(Region::toRegionCfg).toList();
+          partitioning.getZoneAware().zones().stream().map(Zone::toZoneCfg).toList();
       partitioningCfg.setZoneAware(new ZoneAwareCfg(regionCfgList));
     }
   }

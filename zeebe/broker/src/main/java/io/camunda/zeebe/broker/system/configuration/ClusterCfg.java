@@ -12,9 +12,9 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -138,9 +138,9 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     final ZoneAwareCfg zoneAwareCfg = partitioningCfg.getZoneAware();
-    final var zones = zoneAwareCfg.regions();
+    final var zones = zoneAwareCfg.zones();
 
-    final var zoneNames = zones.stream().map(RegionCfg::name).toList();
+    final var zoneNames = zones.stream().map(ZoneCfg::name).toList();
     if (!zoneNames.contains(zone)) {
       throw new IllegalArgumentException(String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
     }
@@ -151,13 +151,13 @@ public final class ClusterCfg implements ConfigurationEntry {
           String.format(NODE_ID_ZONE_ERROR_MSG, nodeId, zone, zoneCfg.numberOfBrokers()));
     }
 
-    final int totalBrokers = zones.stream().mapToInt(RegionCfg::numberOfBrokers).sum();
+    final int totalBrokers = zones.stream().mapToInt(ZoneCfg::numberOfBrokers).sum();
     if (totalBrokers != clusterSize) {
       throw new IllegalArgumentException(
           String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
     }
 
-    final int totalReplicas = zones.stream().mapToInt(RegionCfg::numberOfReplicas).sum();
+    final int totalReplicas = zones.stream().mapToInt(ZoneCfg::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalArgumentException(
           String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));

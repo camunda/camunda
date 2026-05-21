@@ -13,8 +13,8 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -129,20 +129,20 @@ public class PartitioningTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.cluster.partitioning.scheme=REGION_AWARE",
-        "camunda.cluster.partitioning.zone-aware.regions.0.name=us-east1",
-        "camunda.cluster.partitioning.zone-aware.regions.0.number-of-brokers=4",
-        "camunda.cluster.partitioning.zone-aware.regions.0.number-of-replicas=2",
-        "camunda.cluster.partitioning.zone-aware.regions.0.priority=1000",
-        "camunda.cluster.partitioning.zone-aware.regions.1.name=us-west1",
-        "camunda.cluster.partitioning.zone-aware.regions.1.number-of-brokers=2",
-        "camunda.cluster.partitioning.zone-aware.regions.1.number-of-replicas=1",
-        "camunda.cluster.partitioning.zone-aware.regions.1.priority=500",
+        "camunda.cluster.partitioning.scheme=ZONE_AWARE",
+        "camunda.cluster.partitioning.zone-aware.zones.0.name=us-east1",
+        "camunda.cluster.partitioning.zone-aware.zones.0.number-of-brokers=4",
+        "camunda.cluster.partitioning.zone-aware.zones.0.number-of-replicas=2",
+        "camunda.cluster.partitioning.zone-aware.zones.0.priority=1000",
+        "camunda.cluster.partitioning.zone-aware.zones.1.name=us-west1",
+        "camunda.cluster.partitioning.zone-aware.zones.1.number-of-brokers=2",
+        "camunda.cluster.partitioning.zone-aware.zones.1.number-of-replicas=1",
+        "camunda.cluster.partitioning.zone-aware.zones.1.priority=500",
       })
-  class WithRegionAwareScheme {
+  class WithZoneAwareScheme {
     final BrokerBasedProperties brokerCfg;
 
-    WithRegionAwareScheme(@Autowired final BrokerBasedProperties brokerCfg) {
+    WithZoneAwareScheme(@Autowired final BrokerBasedProperties brokerCfg) {
       this.brokerCfg = brokerCfg;
     }
 
@@ -151,11 +151,11 @@ public class PartitioningTest {
       assertThat(brokerCfg.getExperimental().getPartitioning().getScheme())
           .isEqualTo(Scheme.REGION_AWARE);
 
-      assertThat(brokerCfg.getExperimental().getPartitioning().getZoneAware().regions())
+      assertThat(brokerCfg.getExperimental().getPartitioning().getZoneAware().zones())
           .hasSize(2)
           .usingRecursiveFieldByFieldElementComparator()
           .containsExactlyInAnyOrder(
-              new RegionCfg("us-east1", 4, 2, 1000), new RegionCfg("us-west1", 2, 1, 500));
+              new ZoneCfg("us-east1", 4, 2, 1000), new ZoneCfg("us-west1", 2, 1, 500));
     }
   }
 

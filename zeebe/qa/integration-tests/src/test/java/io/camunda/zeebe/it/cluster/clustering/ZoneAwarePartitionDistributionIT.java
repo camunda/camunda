@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Partitioning;
-import io.camunda.configuration.Region;
+import io.camunda.configuration.Zone;
 import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator.PartitionStatus;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 final class ZoneAwarePartitionDistributionIT {
 
   private static final ZoneAware ZONE_AWARE_CFG =
-      new ZoneAware(List.of(new Region("zoneA", 2, 2, 1000), new Region("zoneB", 1, 1, 500)));
+      new ZoneAware(List.of(new Zone("zoneA", 2, 2, 1000), new Zone("zoneB", 1, 1, 500)));
 
   // Zone A: 2 brokers, us-east1, priority 1000. Gateway enabled for topology checks.
   @AutoClose
@@ -140,7 +140,7 @@ final class ZoneAwarePartitionDistributionIT {
   }
 
   private static void applyRegionAwarePartitioning(final Partitioning partitioning) {
-    partitioning.setScheme(Partitioning.Scheme.REGION_AWARE);
+    partitioning.setScheme(Partitioning.Scheme.ZONE_AWARE);
     partitioning.setZoneAware(ZONE_AWARE_CFG);
   }
 }

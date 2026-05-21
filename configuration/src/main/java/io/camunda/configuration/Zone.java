@@ -7,14 +7,12 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 
-/**
- * Per-region configuration for the {@link Partitioning.Scheme#REGION_AWARE} partitioning scheme.
- */
-public record Region(String name, int numberOfBrokers, int numberOfReplicas, int priority) {
+/** Per-region configuration for the {@link Partitioning.Scheme#ZONE_AWARE} partitioning scheme. */
+public record Zone(String name, int numberOfBrokers, int numberOfReplicas, int priority) {
 
-  public RegionCfg toRegionCfg() {
-    return new RegionCfg(name, numberOfBrokers, numberOfReplicas, priority);
+  public ZoneCfg toZoneCfg() {
+    return new ZoneCfg(name, numberOfBrokers, numberOfReplicas, priority);
   }
 }

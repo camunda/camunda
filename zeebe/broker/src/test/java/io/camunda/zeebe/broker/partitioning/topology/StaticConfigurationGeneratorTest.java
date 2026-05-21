@@ -16,9 +16,9 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +143,7 @@ fixed:
     // given — 2 zones: us-east (2 brokers, 2 replicas), us-west (1 broker, 1 replica)
     final var zoneAwareCfg =
         new ZoneAwareCfg(
-            List.of(new RegionCfg("us-east", 4, 2, 1000), new RegionCfg("us-west", 2, 1, 500)));
+            List.of(new ZoneCfg("us-east", 4, 2, 1000), new ZoneCfg("us-west", 2, 1, 500)));
 
     final var partitioningCfg = new PartitioningCfg();
     partitioningCfg.setScheme(Scheme.REGION_AWARE);

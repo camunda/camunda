@@ -38,8 +38,8 @@ public class Partitioning {
   private List<FixedPartition> fixed = Collections.emptyList();
 
   /**
-   * The zone-aware partitioning configuration. Used when the {@link Scheme#REGION_AWARE}
-   * partitioning scheme is selected.
+   * The zone-aware partitioning configuration. Used when the {@link Scheme#ZONE_AWARE} partitioning
+   * scheme is selected.
    */
   @NestedConfigurationProperty private ZoneAware zoneAware = new ZoneAware(List.of());
 
@@ -82,6 +82,6 @@ public class Partitioning {
   public enum Scheme {
     FIXED,
     ROUND_ROBIN,
-    REGION_AWARE;
+    ZONE_AWARE;
   }
 }

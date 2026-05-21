@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
 
 import java.util.List;
 
-public record ZoneAwareCfg(List<RegionCfg> regions) {
+public record ZoneAwareCfg(List<ZoneCfg> zones) {
   public ZoneAwareCfg() {
     this(List.of());
   }

@@ -77,7 +77,7 @@ public final class StaticConfigurationGenerator {
   private static ZoneAwarePartitionDistributor buildZoneAwarePartitionDistributor(
       final PartitioningCfg config) {
     final var specs =
-        config.getZoneAware().regions().stream()
+        config.getZoneAware().zones().stream()
             .map(r -> new ZoneSpec(r.name(), r.numberOfReplicas(), r.priority()))
             .toList();
     return new ZoneAwarePartitionDistributor(specs);
@@ -118,7 +118,7 @@ public final class StaticConfigurationGenerator {
    * same insertion order used by each broker to determine its own member ID.
    */
   private static Set<MemberId> getZoneAwareRaftGroupMembers(final PartitioningCfg partitioningCfg) {
-    return partitioningCfg.getZoneAware().regions().stream()
+    return partitioningCfg.getZoneAware().zones().stream()
         .flatMap(
             r ->
                 IntStream.range(0, r.numberOfBrokers())
