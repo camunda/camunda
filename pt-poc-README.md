@@ -70,14 +70,13 @@ Tomcat started on port 8080
 
 ### One-tenant browser sanity check
 
-Open `http://localhost:8080/physical-tenant/tenanta/whoami`. Expected flow:
+Open `http://localhost:8080/physical-tenant/tenanta/app`. Expected flow:
 
 1. Redirect to `http://localhost:8082/realms/tenanta/protocol/openid-connect/auth?...`
 2. Log in as `bob` / `bob`
-3. Return to OC and end up at `/physical-tenant/tenanta/whoami`
-4. JSON body: `{"tenantId":"tenanta","principal":"bob"}` (the principal claim depends on the Keycloak realm config)
+3. Return to OC and end up on the SPA-style demo page at `/physical-tenant/tenanta/app` (server-rendered principal: `bob`, plus a few buttons that exercise the webapp-aligned API URL with the session cookie and the direct API-client URL without it).
 
-The full bi-directional smoke (both webapp chains + both API chains, plus the cross-tenant 403 case) lives in [Smoke testing](#smoke-testing) below.
+The full bi-directional smoke (both webapp chains + both API URL schemes, plus the cross-tenant 403 case) lives in [Smoke testing](#smoke-testing) below.
 
 ## Smoke testing
 
@@ -85,23 +84,22 @@ Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**
 
 ### Webapp (browser, OAuth2 authorization code)
 
-For each tenant, open the `whoami` endpoint in a fresh browser tab (or different browser profile to keep sessions independent):
+For each tenant, open the SPA-style demo page in a fresh browser tab (or different browser profile to keep sessions independent). The page is served from the OAuth2-protected webapp chain — landing on it means OAuth2 login succeeded, the session cookie is in place, and the buttons on the page exercise the API chains from that authenticated browser tab.
 
-|  Tenant   |                              URL                              | Login as      | Expected JSON                                |
-|-----------|---------------------------------------------------------------|---------------|----------------------------------------------|
-| `tenanta` | `http://localhost:8080/physical-tenant/tenanta/whoami`        | `bob` / `bob` | `{"tenantId":"tenanta","principal":"bob"}`   |
-| `default` | `http://localhost:8080/physical-tenant/default/whoami`        | `alice` / `alice` | `{"tenantId":"default","principal":"alice"}` (or the Keycloak `sub` UUID, depending on the realm's preferred-username mapping) |
+|  Tenant   |                              URL                            | Login as          | Expected after login                                                                                            |
+|-----------|-------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
+| `tenanta` | `http://localhost:8080/physical-tenant/tenanta/app`         | `bob` / `bob`     | Page renders with `Session principal: bob` and three buttons (see [SPA-style page](#spa-style-page-webapp-session--api-call-from-the-browser) below). |
+| `default` | `http://localhost:8080/physical-tenant/default/app`         | `alice` / `alice` | Page renders with `Session principal: alice` (or the Keycloak `sub` UUID, depending on the realm's preferred-username mapping).                       |
 
 Two simultaneous tab logins coexist — neither tenant's session cookie is sent to the other tenant's URLs (cookie `Path` scoping). To inspect cookies in DevTools: each tab should see only its own `camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`.
 
 ### SPA-style page (webapp session → API call from the browser)
 
-This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` after logging in (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically). It exposes four buttons:
+This is the realistic shape of a Camunda webapp: the user logs in via OAuth2 (gets a session cookie), and the JavaScript running in that tab calls the API directly. Open `http://localhost:8080/physical-tenant/<tenantId>/app` (the page is served by the webapp chain, so the OAuth2 dance kicks in automatically; once logged in the page renders the session principal server-side and exposes the buttons below).
 
-1. **`GET /physical-tenant/<id>/whoami`** — webapp chain, uses the session cookie. Expected: **200** with the principal.
-2. **`GET /physical-tenant/<id>/v2/whoami` (no Authorization header)** — the SPA call against the API chain on the **webapp-aligned** API URL (spec D7). Expected: **200** with the same principal. The cookie at `Path=/physical-tenant/<id>` covers this URL too, and the API chain installs the same per-tenant `SessionRepositoryFilter` as the webapp chain, so it reuses the `SecurityContext` saved at OAuth2 login.
-3. **`GET /v2/physical-tenants/<id>/whoami` (no Authorization header)** — same API endpoint reached via the **direct API-client** URL (spec D7). Expected: **401**. This URL sits outside the cookie's `Path=/physical-tenant/<id>` scope, so the browser does not send the session cookie, and with no Authorization header the API chain returns 401 via `oauth2ResourceServer`'s entry point. This confirms the two URL schemes are isolated by purpose — the SPA uses the webapp-aligned one; external API clients use the API-client one with their own bearer token.
-4. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
+1. **`GET /physical-tenant/<id>/v2/whoami` (no Authorization header)** — the SPA call against the API chain on the **webapp-aligned** API URL (spec D7). Expected: **200** with the same principal as the session. The cookie at `Path=/physical-tenant/<id>` covers this URL too, and the API chain installs the same per-tenant `SessionRepositoryFilter` as the webapp chain, so it reuses the `SecurityContext` saved at OAuth2 login.
+2. **`GET /v2/physical-tenants/<id>/whoami` (no Authorization header)** — same API endpoint reached via the **direct API-client** URL (spec D7). Expected: **401**. This URL sits outside the cookie's `Path=/physical-tenant/<id>` scope, so the browser does not send the session cookie, and with no Authorization header the API chain returns 401 via `oauth2ResourceServer`'s entry point. This confirms the two URL schemes are isolated by purpose — the SPA uses the webapp-aligned one; external API clients use the API-client one with their own bearer token.
+3. **Show `document.cookie`** — the session cookie is `HttpOnly`, so JavaScript can't see it; this confirms the browser-side scoping is in effect.
 
 **OQ-1 is resolved by this layout** (URL move + session-aware API chain). Two complementary mechanisms:
 
@@ -192,7 +190,7 @@ tail -f /tmp/oc.log
 To grep one request's filter chain trace:
 
 ```bash
-grep -A 30 "Securing GET /physical-tenant/tenanta/whoami" /tmp/oc.log | head -50
+grep -A 30 "Securing GET /physical-tenant/tenanta/v2/whoami" /tmp/oc.log | head -50
 ```
 
 ## Troubleshooting

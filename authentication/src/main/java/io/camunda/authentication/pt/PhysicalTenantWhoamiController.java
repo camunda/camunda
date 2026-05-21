@@ -21,12 +21,6 @@ public class PhysicalTenantWhoamiController {
 
   public record Whoami(String tenantId, String principal) {}
 
-  @GetMapping("/physical-tenant/{tenantId}/whoami")
-  @ResponseBody
-  public Whoami whoami(@PathVariable final String tenantId, final Authentication authentication) {
-    return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
-  }
-
   // API endpoint is registered under BOTH supported PT API URL schemes (spec D7):
   //   * /physical-tenant/<id>/v2/whoami  — webapp/SPA URL, inside the session cookie's Path
   //     scope; session-authenticated SPA requests pass through with no Authorization header.
@@ -59,11 +53,9 @@ public class PhysicalTenantWhoamiController {
             button{padding:.5em 1em;margin-right:.5em}
             h2{margin-top:2em}</style></head><body>
             <h1>Physical tenant: %s</h1>
-            <p>Session principal (server-rendered): <b>%s</b></p>
-
-            <h2>Webapp /whoami (cookie auth, same chain)</h2>
-            <button onclick="callWebappWhoami()">GET /physical-tenant/%s/whoami</button>
-            <pre id="webapp-result">(click)</pre>
+            <p>Session principal (server-rendered): <b>%s</b>. This page is served from the
+            OAuth2-protected webapp chain — landing here means the session cookie is in place,
+            which is the precondition the SPA-style fetches below rely on.</p>
 
             <h2>API /physical-tenant/&lt;id&gt;/v2/whoami (webapp-aligned URL, session-shared)</h2>
             <p>The session cookie at Path=/physical-tenant/%s covers this URL too,
@@ -92,11 +84,6 @@ public class PhysicalTenantWhoamiController {
             <pre id="cookies">(click)</pre>
 
             <script>
-              async function callWebappWhoami() {
-                const r = await fetch('/physical-tenant/%s/whoami', { credentials: 'include' });
-                const text = await r.text();
-                document.getElementById('webapp-result').textContent = r.status + ' ' + r.statusText + '\\n' + text;
-              }
               async function callApiWhoami() {
                 try {
                   const r = await fetch('/physical-tenant/%s/v2/whoami', { credentials: 'include' });
@@ -126,12 +113,10 @@ public class PhysicalTenantWhoamiController {
             tenantId, // <title>
             tenantId, // <h1>
             principal, // server-rendered principal
-            tenantId, // webapp button URL label
             tenantId, // Path=/physical-tenant/{}
             tenantId, // api button URL label
             tenantId, // Path=/physical-tenant/{}
             tenantId, // api-client button URL label
-            tenantId, // callWebappWhoami fetch URL
             tenantId, // callApiWhoami fetch URL
             tenantId); // callApiClientWhoami fetch URL
   }
