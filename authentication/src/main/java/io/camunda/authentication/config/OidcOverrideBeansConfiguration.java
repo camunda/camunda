@@ -13,6 +13,7 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
+import io.camunda.authentication.pt.PerTenantOidcRegistry;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -35,22 +36,29 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -515,6 +523,106 @@ public class OidcOverrideBeansConfiguration {
   @ConditionalOnMissingBean(name = "oauth2AuthenticationFailureHandler")
   public AuthenticationFailureHandler oauth2AuthenticationFailureHandler() {
     return new OAuth2AuthenticationExceptionHandler();
+  }
+
+  // --------------------------------------------------------------------------------------------
+  // Physical-tenant overlays (active only under the pt-security profile).
+  //
+  // Produces two map beans keyed by tenant id that the jwtDecoder bean above picks up via
+  // ObjectProvider:
+  //   * ptClientRegistrationRepositories — one ClientRegistrationRepository per tenant,
+  //     assembled from camunda.physical-tenants.<id>.security.* + providers.assigned via
+  //     PerTenantOidcRegistry#buildFor.
+  //   * ptAllowedIssuersPerTenant — the set of OIDC issuer URIs each tenant has assigned;
+  //     used both for the per-tenant API chain allowlist and (via the cluster-shared
+  //     issuer-aware jwtDecoder) for the unioned validator chain.
+  //
+  // Tenant ids are enumerated by binding camunda.physical-tenants directly off the Environment
+  // — the authentication module does not depend on the configuration module where
+  // PhysicalTenantResolver lives.
+  // --------------------------------------------------------------------------------------------
+
+  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
+
+  @Bean
+  @Profile("pt-security")
+  public Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories(
+      final Environment environment) {
+    final Map<String, ClientRegistrationRepository> repositories = new LinkedHashMap<>();
+    for (final String tenantId : readTenantIds(environment)) {
+      final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
+      final List<String> assigned = bindAssigned(tenantId, environment);
+      repositories.put(
+          tenantId, PerTenantOidcRegistry.buildFor(tenantId, tenantSecurity, assigned));
+    }
+    return Map.copyOf(repositories);
+  }
+
+  @Bean
+  @Profile("pt-security")
+  public Map<String, Set<String>> ptAllowedIssuersPerTenant(final Environment environment) {
+    final Map<String, Set<String>> perTenant = new LinkedHashMap<>();
+    for (final String tenantId : readTenantIds(environment)) {
+      final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
+      final List<String> assigned = bindAssigned(tenantId, environment);
+      if (assigned.isEmpty()) {
+        continue;
+      }
+      final var auth = tenantSecurity.getAuthentication();
+      final Map<String, OidcConfiguration> namedProviders =
+          auth.getProviders() == null ? null : auth.getProviders().getOidc();
+      final Set<String> issuers = new LinkedHashSet<>();
+      for (final String id : assigned) {
+        final OidcConfiguration provider =
+            resolveTenantProvider(id, auth.getOidc(), namedProviders);
+        if (provider != null && provider.getIssuerUri() != null) {
+          issuers.add(provider.getIssuerUri());
+        }
+      }
+      perTenant.put(tenantId, Set.copyOf(issuers));
+    }
+    return Map.copyOf(perTenant);
+  }
+
+  private static Set<String> readTenantIds(final Environment environment) {
+    final Map<String, Object> tenants =
+        Binder.get(environment)
+            .bind(PHYSICAL_TENANTS_PREFIX, Bindable.mapOf(String.class, Object.class))
+            .orElse(Map.of());
+    return tenants.keySet();
+  }
+
+  private static SecurityConfiguration bindTenantSecurity(
+      final String tenantId, final Environment environment) {
+    final var tenantSecurity = new SecurityConfiguration();
+    Binder.get(environment)
+        .bind(
+            PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".security",
+            Bindable.ofInstance(tenantSecurity));
+    return tenantSecurity;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> bindAssigned(final String tenantId, final Environment environment) {
+    final var bound =
+        Binder.get(environment)
+            .bind(
+                PHYSICAL_TENANTS_PREFIX
+                    + "."
+                    + tenantId
+                    + ".security.authentication.providers.assigned",
+                Bindable.listOf(String.class));
+    return bound.isBound() ? (List<String>) bound.get() : List.of();
+  }
+
+  private static @Nullable OidcConfiguration resolveTenantProvider(
+      final String registrationId,
+      final @Nullable OidcConfiguration defaultProvider,
+      final @Nullable Map<String, OidcConfiguration> namedProviders) {
+    if (PerTenantOidcRegistry.DEFAULT_PROVIDER_REGISTRATION_ID.equals(registrationId)) {
+      return defaultProvider;
+    }
+    return namedProviders == null ? null : namedProviders.get(registrationId);
   }
 
   private RestClient restClient(final ObservationRegistry observationRegistry) {

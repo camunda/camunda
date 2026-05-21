@@ -30,8 +30,8 @@ public class PhysicalTenantSecurityConfiguration {
 
   // Two near-symmetric @Bean methods, one per tenant. Each reduces to:
   //   1) sliceFor(...) — looks up the tenant's ClientRegistrationRepository and per-chain session
-  //      machinery from the map beans injected here (assembled in dist by
-  //      PhysicalTenantOidcConfiguration / PhysicalTenantWebSessionRepositoryConfiguration).
+  //      machinery from the map beans injected here (assembled by the pt-security profile gates
+  //      inside OidcOverrideBeansConfiguration and WebSessionRepositoryConfiguration).
   //   2) factory.buildWebappChain(http, slice) — applies the chain shape (security matcher,
   //      filter ordering, oauth2Login with the prefix-aware resolver workaround).
   //
@@ -83,8 +83,9 @@ public class PhysicalTenantSecurityConfiguration {
   /**
    * Builds the {@link TenantSecuritySlice} for one prefixed tenant. Pure lookup: both the
    * per-tenant {@link ClientRegistrationRepository} and the per-tenant {@link WebSessionRepository}
-   * are pre-assembled in {@code dist} (see {@code PhysicalTenantOidcConfiguration} and {@code
-   * PhysicalTenantWebSessionRepositoryConfiguration}) and injected as map beans.
+   * are pre-assembled by the pt-security profile gates inside {@code
+   * OidcOverrideBeansConfiguration} and {@code WebSessionRepositoryConfiguration}, then injected as
+   * map beans.
    */
   private TenantSecuritySlice sliceFor(final String tenantId) {
     final ClientRegistrationRepository repo = ptClientRegistrationRepositories.get(tenantId);
