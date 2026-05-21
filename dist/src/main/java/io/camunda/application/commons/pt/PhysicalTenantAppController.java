@@ -26,8 +26,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
  *       Path=/physical-tenant/<t>} covers {@code /physical-tenant/<t>/v2/*} and the API chain reads
  *       it via the shared {@code SessionRepositoryFilter}.
  *   <li>{@code /app} — unprefixed default access path. Mirrors how existing Camunda webapps
- *       (operate, tasklist) are reached. Session cookie at {@code Path=/} covers {@code /v2/*}.
+ *       (operate, tasklist) are reached.
  * </ul>
+ *
+ * <p>The JavaScript lives at the sibling {@code /app/script.js} (or {@code
+ * /physical-tenant/{tenantId}/app/script.js}) endpoint and is loaded via {@code <script src="...">}
+ * — inline scripts and inline event handlers would be blocked by CSL's Content Security Policy
+ * ({@code script-src 'self'}, {@code script-src-attr 'none'}).
  *
  * <p>This is a plain {@code @Controller} (not {@code @CamundaRestController}) because the path
  * {@code /app} is not a {@code /v2/...} REST endpoint — the {@code
@@ -49,15 +54,9 @@ public class PhysicalTenantAppController {
     final String principal = authentication != null ? authentication.getName() : "anonymous";
     final String accessPathLabel = prefixed ? "/physical-tenant/" + resolvedTenant : "/ (default)";
     final String cookieScopeLabel = prefixed ? "/physical-tenant/" + resolvedTenant : "/";
-    // Button 1 hits the API URL that shares the cookie scope with this page — the natural SPA
-    // call from the access path the user is on.
-    final String sameAccessPathApiUrl =
-        prefixed ? "/physical-tenant/" + resolvedTenant + "/v2/whoami" : "/v2/whoami";
-    // Button 2 hits the direct API-client URL. From the prefixed access path, the cookie's Path
-    // doesn't reach this URL (no Cookie header sent). From the unprefixed access path the page is
-    // served by CSL's standard OidcWebapp chain whose camunda-session cookie also does not match
-    // the prefixed default API chain (different cookie name and Path). Either way: 401 without an
-    // Authorization header.
+    final String basePrefix = prefixed ? "/physical-tenant/" + resolvedTenant : "";
+    final String scriptUrl = basePrefix + "/app/script.js";
+    final String sameAccessPathApiUrl = basePrefix + "/v2/whoami";
     final String apiClientUrl = "/v2/physical-tenants/" + resolvedTenant + "/whoami";
 
     return ("""
@@ -78,7 +77,7 @@ public class PhysicalTenantAppController {
             the session cookie automatically, the API chain reads it via the shared
             <code>SessionRepositoryFilter</code>, and authentication resolves to the same principal
             as the webapp chain. Expected: <b>200</b>, no Authorization header needed.</p>
-            <button onclick="callSameAccessPath()">GET <code>%s</code></button>
+            <button id="same-button" data-url="%s">GET <code>%s</code></button>
             <pre id="same-result">(click)</pre>
 
             <h2>2. Direct API-client URL (bearer-only territory)</h2>
@@ -88,7 +87,7 @@ public class PhysicalTenantAppController {
             match what the prefixed default API chain looks for (unprefixed access path) — both
             paths land at <b>401</b>. This isolates the two URL schemes by purpose: the SPA uses
             its same-access-path URL; external clients use this one with their bearer.</p>
-            <button onclick="callApiClient()">GET <code>%s</code></button>
+            <button id="api-client-button" data-url="%s">GET <code>%s</code></button>
             <pre id="api-client-result">(click)</pre>
 
             <h2>Diagnostics</h2>
@@ -96,33 +95,10 @@ public class PhysicalTenantAppController {
             <code>Path</code>, so the browser sends the session cookie automatically, and (b) the
             API chain installs the same per-tenant <code>SessionRepositoryFilter</code> as the
             webapp chain and reuses the <code>SecurityContext</code> stored at OAuth2 login.</p>
-            <button onclick="showCookies()">Show document.cookie (HttpOnly cookies are invisible here)</button>
+            <button id="cookies-button">Show document.cookie (HttpOnly cookies are invisible here)</button>
             <pre id="cookies">(click)</pre>
 
-            <script>
-              async function callSameAccessPath() {
-                try {
-                  const r = await fetch('%s', { credentials: 'include' });
-                  const text = await r.text();
-                  document.getElementById('same-result').textContent = r.status + ' ' + r.statusText + '\\n' + text;
-                } catch (e) {
-                  document.getElementById('same-result').textContent = 'fetch error: ' + e;
-                }
-              }
-              async function callApiClient() {
-                try {
-                  const r = await fetch('%s', { credentials: 'include' });
-                  const text = await r.text();
-                  document.getElementById('api-client-result').textContent = r.status + ' ' + r.statusText + '\\n' + text;
-                } catch (e) {
-                  document.getElementById('api-client-result').textContent = 'fetch error: ' + e;
-                }
-              }
-              function showCookies() {
-                document.getElementById('cookies').textContent =
-                  document.cookie || '(no visible cookies — session cookies are HttpOnly)';
-              }
-            </script>
+            <script src="%s"></script>
             </body></html>
             """)
         .formatted(
@@ -131,9 +107,50 @@ public class PhysicalTenantAppController {
             accessPathLabel, // <h1> small access-path label
             principal, // server-rendered principal
             cookieScopeLabel, // cookie Path label in the intro
+            sameAccessPathApiUrl, // button 1 data-url
             sameAccessPathApiUrl, // button 1 label
+            apiClientUrl, // button 2 data-url
             apiClientUrl, // button 2 label
-            sameAccessPathApiUrl, // callSameAccessPath fetch URL
-            apiClientUrl); // callApiClient fetch URL
+            scriptUrl); // <script src>
+  }
+
+  /**
+   * External JavaScript for the SPA demo page. Lives at a sibling URL so it satisfies CSL's CSP
+   * ({@code script-src 'self'}) — inline {@code <script>} blocks and {@code onclick=} attribute
+   * handlers are blocked by {@code script-src-attr 'none'} on CSL's chains.
+   *
+   * <p>The script wires event listeners for the three buttons declared by {@link #app}. Each button
+   * uses a {@code data-url} attribute to declare the URL it should fetch, so the script is generic
+   * across the prefixed and unprefixed access paths.
+   */
+  @GetMapping(
+      value = {"/physical-tenant/{tenantId}/app/script.js", "/app/script.js"},
+      produces = "application/javascript")
+  @ResponseBody
+  public String script() {
+    return """
+           async function callFetch(buttonId, resultId) {
+             const button = document.getElementById(buttonId);
+             const result = document.getElementById(resultId);
+             const url = button.dataset.url;
+             try {
+               const r = await fetch(url, { credentials: 'include' });
+               const text = await r.text();
+               result.textContent = r.status + ' ' + r.statusText + '\\n' + text;
+             } catch (e) {
+               result.textContent = 'fetch error: ' + e;
+             }
+           }
+           document.getElementById('same-button')
+             .addEventListener('click', () => callFetch('same-button', 'same-result'));
+           document.getElementById('api-client-button')
+             .addEventListener('click', () => callFetch('api-client-button', 'api-client-result'));
+           document.getElementById('cookies-button')
+             .addEventListener('click', () => {
+               const el = document.getElementById('cookies');
+               el.textContent =
+                 document.cookie || '(no visible cookies — session cookies are HttpOnly)';
+             });
+           """;
   }
 }
