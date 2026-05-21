@@ -16,14 +16,14 @@ import {getCurrentCopyrightNoticeText} from '#/modules/login/getCurrentCopyright
 import {Disclaimer} from '#/modules/login/components/Disclaimer';
 import {LoadingSpinner} from '#/modules/login/components/LoadingSpinner';
 import {authenticationStore} from '#/modules/auth/authentication.store';
-import styles from './login.module.scss';
+import styles from './LoginPage.module.scss';
 
 type FormValues = {
 	username: string;
 	password: string;
 };
 
-const Login: React.FC = () => {
+const LoginPage: React.FC = () => {
 	const router = useRouter();
 	const {t} = useTranslation();
 
@@ -156,4 +156,4 @@ const Login: React.FC = () => {
 	);
 };
 
-export {Login};
+export {LoginPage};

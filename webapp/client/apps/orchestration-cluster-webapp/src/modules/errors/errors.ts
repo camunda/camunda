@@ -17,4 +17,11 @@ class ComponentNotAvailableError extends Error {
 	}
 }
 
-export {ComponentNotAvailableError};
+class ForbiddenError extends Error {
+	constructor() {
+		super('Forbidden');
+		this.name = 'ForbiddenError';
+	}
+}
+
+export {ComponentNotAvailableError, ForbiddenError};

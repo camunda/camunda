@@ -1,0 +1,40 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type { SVGProps } from "react";
+const SvgErrorRobot = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={58}
+    height={58}
+    fill="none"
+    {...props}
+  >
+    <path
+      fill="url(#ErrorRobot_svg__a)"
+      d="M32.18 42.95a3.23 3.23 0 1 1-6.47 0 3.23 3.23 0 0 1 6.47 0m25.61-14.53v4.45a1.7 1.7 0 0 1-3.04.66 2.09 2.09 0 0 0-1.69-.82h-.58a22.2 22.2 0 0 1-.5 7.01 22.8 22.8 0 0 1-14.1 16.11A24.4 24.4 0 0 1 29 57.5c-3.04 0-6.05-.56-8.89-1.67A22.8 22.8 0 0 1 5.43 34.6c0-.64.04-1.27.1-1.89h-.6a2.09 2.09 0 0 0-1.67.82 1.69 1.69 0 0 1-1.38.68 1.66 1.66 0 0 1-1.17-.46 1.7 1.7 0 0 1-.5-.88v-4.44a1.7 1.7 0 0 1 2.36-1.2 32 32 0 0 1 2.99-10l.04-.1.2-.4.14-.26.14-.26.22-.4.07-.13a29 29 0 0 1 6.38-7.84L11.6 4.68a2.1 2.1 0 1 1 1.56-1.04l2.5 2.04A24.6 24.6 0 0 1 26.72 1.8l.16-.02.33-.03.27-.01.34-.02.42-.02h1.54l.41.02.35.02.27.01.33.03.16.02c3.94.38 7.74 1.71 11.06 3.88l2.5-2.04a2.1 2.1 0 1 1 1.56 1.04l-1.17 3.16a29 29 0 0 1 6.37 7.83l.07.13.23.4.14.27.13.26.25.5a32 32 0 0 1 2.98 10 1.7 1.7 0 0 1 .96-.13 1.7 1.7 0 0 1 1.41 1.33Zm-21.95-7.1H22.16A13.1 13.1 0 0 0 9.06 34.4v1.19c0 7.23 5.87 16.03 13.1 16.03h13.68c7.23 0 13.1-8.8 13.1-16.03V34.4a13.1 13.1 0 0 0-13.1-13.09Zm17.22 7.28c.36 0 .71-.1 1.03-.27-2.9-10.77-13-18.76-25.02-18.8h-.16C16.9 9.57 6.8 17.56 3.9 28.33c.3.18.66.27 1.02.27h1.35C9.02 19 18.14 11.92 28.95 11.92h.08c10.8 0 19.93 7.08 22.68 16.68zM25.7 34.8l-2.6-2.6 2.6-2.6a1.47 1.47 0 1 0-2.08-2.08l-2.6 2.6-2.6-2.6a1.47 1.47 0 0 0-2.07 2.08l2.6 2.6-2.6 2.6a1.47 1.47 0 0 0 2.08 2.07l2.6-2.6 2.6 2.6a1.47 1.47 0 1 0 2.07-2.08Zm15.86-7.28a1.47 1.47 0 0 0-2.08 0l-2.6 2.6-2.6-2.6a1.47 1.47 0 0 0-2.07 2.08l2.6 2.6-2.6 2.6a1.47 1.47 0 0 0 2.08 2.07l2.6-2.6 2.59 2.6a1.47 1.47 0 1 0 2.08-2.08l-2.6-2.6 2.6-2.59a1.47 1.47 0 0 0 0-2.08"
+    />
+    <defs>
+      <linearGradient
+        id="ErrorRobot_svg__a"
+        x1={0.21}
+        x2={57.79}
+        y1={29}
+        y2={29}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop offset={0.11} stopColor="#FF1E00" />
+        <stop offset={0.25} stopColor="#FF2700" />
+        <stop offset={0.48} stopColor="#FF3F00" />
+        <stop offset={0.77} stopColor="#FF6700" />
+        <stop offset={1} stopColor="#FF8B00" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+export default SvgErrorRobot;

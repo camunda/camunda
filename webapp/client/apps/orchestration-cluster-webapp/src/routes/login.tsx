@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Login} from '#/pages/login';
+import {LoginPage} from '#/pages/LoginPage';
 import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
 import {z} from 'zod';
 import {queries} from '#/modules/http/queries';
@@ -29,5 +29,5 @@ export const Route = createFileRoute('/login')({
 			// Not authenticated — show login form
 		}
 	},
-	component: Login,
+	component: LoginPage,
 });

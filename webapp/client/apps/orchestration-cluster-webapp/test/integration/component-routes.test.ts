@@ -66,26 +66,9 @@ test.describe('component routes', () => {
 		await expect(page.getByRole('heading', {name: 'Admin'})).toBeVisible();
 	});
 
-	test('should show error when Operate is not active', async ({network, page}) => {
+	test('should show error page when Tasklist is not active', async ({network, page}) => {
 		network.use(
-			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json({}),
-			}),
-			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(mockSystemConfiguration),
-			}),
-		);
-
-		await page.goto('/operate');
-
-		await expect(page.getByText('This component is not available.')).toBeVisible();
-	});
-
-	test('should show error when Tasklist is not active', async ({network, page}) => {
-		network.use(
-			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json({}),
-			}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(mockSystemConfiguration),
 			}),
@@ -93,14 +76,13 @@ test.describe('component routes', () => {
 
 		await page.goto('/tasklist');
 
-		await expect(page.getByText('This component is not available.')).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
+		await expect(page.getByText('Please contact the owner to get access.')).toBeVisible();
 	});
 
-	test('should show error when Admin is not active', async ({network, page}) => {
+	test('should show error page when Admin is not active', async ({network, page}) => {
 		network.use(
-			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json({}),
-			}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(mockSystemConfiguration),
 			}),
@@ -108,7 +90,8 @@ test.describe('component routes', () => {
 
 		await page.goto('/admin');
 
-		await expect(page.getByText('This component is not available.')).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
+		await expect(page.getByText('Please contact the owner to get access.')).toBeVisible();
 	});
 
 	test('should redirect to login when system configuration endpoint fails', async ({network, page}) => {
