@@ -9,7 +9,7 @@
 import {Layer, Stack, Button} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import SvgErrorRobot from '#/modules/svg/ErrorRobot';
-import styles from './GenericErrorPagePage.module.scss';
+import styles from './GenericErrorPage.module.scss';
 
 type Props = {reset: () => void};
 
