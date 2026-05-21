@@ -77,4 +77,14 @@ echo
 matrix "Webapp-relative API Path" "$WEBAPP_URL_TEMPLATE"
 matrix "API Path"    "$APICLIENT_URL_TEMPLATE"
 
+# Default tenant on the unprefixed access path (Task 12) — /v2/whoami is served by the
+# unprefixed default API chain (cookie scoped at Path=/, name camunda-session-default-root).
+# Single tenant target (default), so this is a 3-cell block rather than a full cross-tenant
+# matrix.
+echo "=== Default unprefixed URL (cookie scoped at Path=/) ==="
+call "default -> default" "$DEF" "/v2/whoami" 200
+call "tenanta -> default" "$TA"  "/v2/whoami" 403
+call "no token -> default" ""    "/v2/whoami" 401
+echo
+
 rm -f /tmp/pt-poc-api-body

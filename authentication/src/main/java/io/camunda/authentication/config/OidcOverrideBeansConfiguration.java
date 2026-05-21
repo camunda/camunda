@@ -14,6 +14,7 @@ import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.pt.PerTenantOidcRegistry;
+import io.camunda.authentication.pt.TenantSecuritySlice;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -362,23 +363,22 @@ public class OidcOverrideBeansConfiguration {
       final ClientRegistrationRepository clientRegistrationRepository,
       final OidcAuthenticationConfigurationRepository oidcProviderRepository,
       // PoC pt-security: optional per-tenant client-registration repositories. Absent under
-      // the non-PT setup, present (one entry per physical tenant) under pt-security.
-      final ObjectProvider<Map<String, ClientRegistrationRepository>>
-          ptClientRegistrationRepositories) {
+      // the non-PT setup, present (one entry per physical tenant) under pt-security. Two Map
+      // beans live under pt-security — ptClientRegistrationRepositories (prefixed tenants) and
+      // ptUnprefixedDefaultClientRegistrationRepositories (unprefixed default access path,
+      // Task 12); we use a qualifier to pick the prefixed map and pull the unprefixed-default
+      // map separately so the union covers every registration id across both access paths.
+      @Qualifier("ptClientRegistrationRepositories")
+          final ObjectProvider<Map<String, ClientRegistrationRepository>>
+              ptClientRegistrationRepositories,
+      @Qualifier("ptUnprefixedDefaultClientRegistrationRepositories")
+          final ObjectProvider<Map<String, ClientRegistrationRepository>>
+              ptUnprefixedDefaultClientRegistrationRepositories) {
     final var registrations =
         new ArrayList<>(extractClientRegistrations(clientRegistrationRepository));
-    final var ptMap = ptClientRegistrationRepositories.getIfAvailable();
-    if (ptMap != null) {
-      for (final var ptRepo : ptMap.values()) {
-        for (final var reg : extractClientRegistrations(ptRepo)) {
-          // De-duplicate by registration id.
-          if (registrations.stream()
-              .noneMatch(r -> r.getRegistrationId().equals(reg.getRegistrationId()))) {
-            registrations.add(reg);
-          }
-        }
-      }
-    }
+    addPtRegistrations(registrations, ptClientRegistrationRepositories.getIfAvailable());
+    addPtRegistrations(
+        registrations, ptUnprefixedDefaultClientRegistrationRepositories.getIfAvailable());
 
     final var additionalJwkSetUrisByIssuer =
         buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
@@ -404,6 +404,29 @@ public class OidcOverrideBeansConfiguration {
           () ->
               oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
                   registrations, additionalJwkSetUrisByIssuer));
+    }
+  }
+
+  /**
+   * Merges all {@link ClientRegistration}s from a per-tenant map of {@link
+   * ClientRegistrationRepository}s into {@code registrations}, de-duplicating by registration id.
+   * Both PT map beans share this de-dup logic because the unprefixed-default access path produces a
+   * {@link ClientRegistration} with the same registration id as its prefixed sibling (only the
+   * redirect URI differs).
+   */
+  private void addPtRegistrations(
+      final List<ClientRegistration> registrations,
+      final @Nullable Map<String, ClientRegistrationRepository> ptMap) {
+    if (ptMap == null) {
+      return;
+    }
+    for (final var ptRepo : ptMap.values()) {
+      for (final var reg : extractClientRegistrations(ptRepo)) {
+        if (registrations.stream()
+            .noneMatch(r -> r.getRegistrationId().equals(reg.getRegistrationId()))) {
+          registrations.add(reg);
+        }
+      }
     }
   }
 
@@ -556,6 +579,36 @@ public class OidcOverrideBeansConfiguration {
           tenantId, PerTenantOidcRegistry.buildFor(tenantId, tenantSecurity, assigned));
     }
     return Map.copyOf(repositories);
+  }
+
+  /**
+   * Second {@link ClientRegistrationRepository} for the default tenant, scoped to the unprefixed
+   * access path (Task 12). Same per-tenant configuration as the prefixed default repo, but the
+   * redirect URI is <b>not</b> rewritten with the {@code /physical-tenant/default} prefix — so the
+   * IdP redirects back to {@code /login/oauth2/code/{registrationId}} on the root and the
+   * unprefixed default webapp chain handles the callback.
+   *
+   * <p>Exposed as a {@link Map} bean (rather than a bare {@link ClientRegistrationRepository}) for
+   * the same reason {@link #ptClientRegistrationRepositories} is: Spring's by-type autowiring for
+   * {@code ClientRegistrationRepository} would otherwise see two beans of the type — the
+   * cluster-shared {@code clientRegistrationRepository} above, and this PT-scoped one — and fail
+   * with {@code NoUniqueBeanDefinitionException}. Wrapping in a {@code Map} hides it from that
+   * by-type lookup (consumers receive a {@code Map<String, …>}, not a {@code …}).
+   */
+  @Bean
+  @Profile("pt-security")
+  public Map<String, ClientRegistrationRepository>
+      ptUnprefixedDefaultClientRegistrationRepositories(final Environment environment) {
+    final String defaultTenantId = "default";
+    final SecurityConfiguration tenantSecurity = bindTenantSecurity(defaultTenantId, environment);
+    final List<String> assigned = bindAssigned(defaultTenantId, environment);
+    return Map.of(
+        defaultTenantId,
+        PerTenantOidcRegistry.buildFor(
+            defaultTenantId,
+            tenantSecurity,
+            assigned,
+            TenantSecuritySlice.AccessPath.UNPREFIXED_DEFAULT));
   }
 
   @Bean
