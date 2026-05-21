@@ -84,7 +84,7 @@ public final class ManifestManager {
     try {
       serializedManifest = MAPPER.writeValueAsBytes(manifest);
       Files.write(path, serializedManifest, StandardOpenOption.CREATE_NEW, StandardOpenOption.SYNC);
-      FileUtil.flushDirectory(path.getParent());
+      FileUtil.flushParentDirectory(path);
 
       return manifest;
     } catch (final FileAlreadyExistsException e) {

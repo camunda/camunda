@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
@@ -22,7 +24,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Objects;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +74,7 @@ final class SegmentLoader {
     // necessary to flush the directory to ensure that the file itself is visible as an entry of
     // that directory after recovery
     try {
-      FileUtil.flushDirectory(segmentFile.getParent());
+      FileUtil.flushParentDirectory(segmentFile);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),
@@ -104,7 +105,7 @@ final class SegmentLoader {
     // necessary to flush the directory to ensure that the file itself is visible as an entry of
     // that directory after recovery
     try {
-      FileUtil.flushDirectory(segmentFile.getParent());
+      FileUtil.flushParentDirectory(segmentFile);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),

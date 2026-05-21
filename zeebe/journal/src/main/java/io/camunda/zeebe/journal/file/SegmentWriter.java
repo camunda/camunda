@@ -175,8 +175,9 @@ final class SegmentWriter {
     // write serialized RecordData
     writeBuffer.putBytes(startPosition + frameLength + metadataLength, serializedRecord);
 
-    finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-    return Either.right(lastEntry);
+    final var record =
+        finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+    return Either.right(record);
   }
 
   private void verifyAsqnIsIncreasing(final long asqn) {
@@ -206,11 +207,9 @@ final class SegmentWriter {
       final Either<SegmentFull, Integer> writeResult) {
     return writeResult
         .map(
-            recordLength -> {
-              finalizeAppend(
-                  expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-              return lastEntry;
-            })
+            recordLength ->
+                finalizeAppend(
+                    expectedChecksum, startPosition, frameLength, metadataLength, recordLength))
         .mapLeft(
             segmentFull -> {
               buffer.position(startPosition);
@@ -218,8 +217,12 @@ final class SegmentWriter {
             });
   }
 
-  /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
-  private void finalizeAppend(
+  /**
+   * Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex
+   *
+   * @return the written entry (equal to lastEntry) but guaranteed to be non-null
+   */
+  private JournalRecord finalizeAppend(
       final @Nullable Long expectedChecksum,
       final int startPosition,
       final int frameLength,
@@ -242,15 +245,17 @@ final class SegmentWriter {
     final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
     invalidateNextEntry(nextEntryOffset);
 
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    final var record =
+        updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     final int appendedBytes = frameLength + metadataLength + recordLength;
     buffer.position(startPosition + appendedBytes);
     metrics.observeAppend(appendedBytes);
+    return record;
   }
 
-  private void updateLastWrittenEntry(
+  private JournalRecord updateLastWrittenEntry(
       final int startPosition,
       final int frameLength,
       final int metadataLength,
@@ -268,6 +273,7 @@ final class SegmentWriter {
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
     lastEntryPosition = startPosition;
+    return lastEntry;
   }
 
   private void updateLastAsqn(final long asqn) {
