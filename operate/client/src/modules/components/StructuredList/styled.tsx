@@ -25,7 +25,7 @@ const StructuredListCell = styled(
 )<StructuredListCellProps>`
   ${({$size = 'md', $width, $verticalCellPadding}) => {
     return css`
-      vertical-align: top;
+      vertical-align: middle;
       ${$size === 'sm' &&
       css`
         ${styles.label01};
