@@ -30,6 +30,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -263,7 +264,9 @@ final class IdentitySetupInitializerIT {
         partitionCount,
         cfg -> {
           final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
-          cfg.getInitialization().getUsers().add(user);
+          final var users = new ArrayList<>(cfg.getInitialization().getUsers());
+          users.add(user);
+          cfg.getInitialization().setUsers(users);
         });
   }
 

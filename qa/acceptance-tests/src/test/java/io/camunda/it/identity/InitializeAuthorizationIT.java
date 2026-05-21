@@ -30,6 +30,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -59,8 +60,14 @@ class InitializeAuthorizationIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().getAuthorizations().add(CONFIGURED_AUTH_1);
-                conf.getInitialization().getUsers().add(RESTRICTED_USER);
+                final var authorizations =
+                    new ArrayList<>(conf.getInitialization().getAuthorizations());
+                authorizations.add(CONFIGURED_AUTH_1);
+                conf.getInitialization().setAuthorizations(authorizations);
+
+                final var users = new ArrayList<>(conf.getInitialization().getUsers());
+                users.add(RESTRICTED_USER);
+                conf.getInitialization().setUsers(users);
               });
 
   @UserDefinition

@@ -23,6 +23,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.initialization.ConfiguredRole;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -55,8 +56,13 @@ class InitializeRoleIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().getRoles().add(CONFIGURED_ROLE_1);
-                conf.getInitialization().getUsers().add(CONFIGURED_USER);
+                final var roles = new ArrayList<>(conf.getInitialization().getRoles());
+                roles.add(CONFIGURED_ROLE_1);
+                conf.getInitialization().setRoles(roles);
+
+                final var users = new ArrayList<>(conf.getInitialization().getUsers());
+                users.add(CONFIGURED_USER);
+                conf.getInitialization().setUsers(users);
               });
 
   @UserDefinition

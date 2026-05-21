@@ -23,6 +23,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.initialization.ConfiguredTenant;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -55,8 +56,13 @@ class InitializeTenantIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().getTenants().add(CONFIGURED_TENANT_1);
-                conf.getInitialization().getUsers().add(CONFIGURED_USER);
+                final var tenants = new ArrayList<>(conf.getInitialization().getTenants());
+                tenants.add(CONFIGURED_TENANT_1);
+                conf.getInitialization().setTenants(tenants);
+
+                final var users = new ArrayList<>(conf.getInitialization().getUsers());
+                users.add(CONFIGURED_USER);
+                conf.getInitialization().setUsers(users);
               });
 
   @UserDefinition

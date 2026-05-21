@@ -27,7 +27,7 @@ import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -116,31 +116,31 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
-        .getUsers()
-        .add(
-            new ConfiguredUser(
-                InitializationConfiguration.DEFAULT_USER_USERNAME,
-                InitializationConfiguration.DEFAULT_USER_PASSWORD,
-                InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL));
+        .setUsers(
+            List.of(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL)));
     securityConfig
         .getInitialization()
-        .getMappingRules()
-        .add(
-            new ConfiguredMappingRule(
-                DEFAULT_MAPPING_RULE_ID,
-                DEFAULT_MAPPING_RULE_CLAIM_NAME,
-                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
+        .setMappingRules(
+            List.of(
+                new ConfiguredMappingRule(
+                    DEFAULT_MAPPING_RULE_ID,
+                    DEFAULT_MAPPING_RULE_CLAIM_NAME,
+                    DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
     securityConfig
         .getInitialization()
-        .getDefaultRoles()
-        .put(
-            "admin",
+        .setDefaultRoles(
             Map.of(
-                "users",
-                List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappingRules",
-                List.of(DEFAULT_MAPPING_RULE_ID)));
+                "admin",
+                Map.of(
+                    "users",
+                    List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
+                    "mappingRules",
+                    List.of(DEFAULT_MAPPING_RULE_ID))));
 
     //noinspection resource
     withBean("security-config", securityConfig, CamundaSecurityProperties.class)

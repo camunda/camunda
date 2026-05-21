@@ -25,7 +25,7 @@ import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
-import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -85,31 +85,28 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
-        .getUsers()
-        .add(
+        .setUsers(List.of(
             new ConfiguredUser(
                 InitializationConfiguration.DEFAULT_USER_USERNAME,
                 InitializationConfiguration.DEFAULT_USER_PASSWORD,
                 InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL));
+                InitializationConfiguration.DEFAULT_USER_EMAIL)));
     securityConfig
         .getInitialization()
-        .getMappingRules()
-        .add(
+        .setMappingRules(List.of(
             new ConfiguredMappingRule(
                 DEFAULT_MAPPING_RULE_ID,
                 DEFAULT_MAPPING_RULE_CLAIM_NAME,
-                DEFAULT_MAPPING_RULE_CLAIM_VALUE));
+                DEFAULT_MAPPING_RULE_CLAIM_VALUE)));
     securityConfig
         .getInitialization()
-        .getDefaultRoles()
-        .put(
+        .setDefaultRoles(Map.of(
             "admin",
             Map.of(
                 "users",
                 List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
                 "mappingRules",
-                List.of(DEFAULT_MAPPING_RULE_ID)));
+                List.of(DEFAULT_MAPPING_RULE_ID))));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(

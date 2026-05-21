@@ -19,6 +19,7 @@ import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -36,10 +37,10 @@ class AdminUserPresenceAdapterTest {
   @Test
   void shouldReturnTrueWhenInitializationConfiguresAdminUser() {
     // given
-    securityConfiguration
-        .getInitialization()
-        .getDefaultRoles()
-        .put(ADMIN_ROLE_ID, Map.of(USER_MEMBERS, Set.of("admin")));
+    final var defaultRoles =
+        new HashMap<>(securityConfiguration.getInitialization().getDefaultRoles());
+    defaultRoles.put(ADMIN_ROLE_ID, Map.of(USER_MEMBERS, Set.of("admin")));
+    securityConfiguration.getInitialization().setDefaultRoles(defaultRoles);
 
     // when / then
     assertThat(port.adminUserExists()).isTrue();
