@@ -15,17 +15,13 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
-import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
@@ -90,32 +86,27 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     }
 
     final var reader = getProcessModelReader(process);
-
-    final boolean hasUserTasks;
-    final Map<String, Map<String, String>> elementExtensionProperties;
     if (reader != null) {
-      final var flowNodes = reader.extractFlowNodes();
-      extractProcessModelData(reader, entity, flowNodes);
-      hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      elementExtensionProperties =
-          ProcessModelReader.extractExtensionProperties(
-              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
-    } else {
-      hasUserTasks = true;
-      elementExtensionProperties = Map.of();
+      extractProcessModelData(reader, entity);
     }
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
     final var cachedProcessEntity =
-        new CachedProcessEntity(
+        ProcessCacheUtil.createCachedProcessEntity(
             entity.getName(),
             entity.getVersion(),
             entity.getVersionTag(),
-            entity.getCallActivityIds(),
-            getFlowNodesMap(entity.getFlowNodes()),
-            hasUserTasks,
-            elementExtensionProperties);
+            reader,
+            extensionPropertiesConfiguration);
+
+    // add extracted flow nodes data from cached entity to avoid reading model nodes multiple times
+    entity.setFlowNodes(
+        cachedProcessEntity.flowNodesMap().entrySet().stream()
+            .map(e -> new ProcessFlowNodeEntity(e.getKey(), e.getValue()))
+            .toList());
+    entity.setCallActivityIds(cachedProcessEntity.callElementIds());
+
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -134,15 +125,9 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   }
 
   private void extractProcessModelData(
-      final ProcessModelReader reader,
-      final ProcessEntity entity,
-      final Collection<FlowNode> flowNodes) {
+      final ProcessModelReader reader, final ProcessEntity entity) {
     entity.setName(reader.extractProcessName());
     entity.setIsPublic(reader.extractIsPublicAccess());
-    entity.setFlowNodes(
-        flowNodes.stream().map(fn -> new ProcessFlowNodeEntity(fn.getId(), fn.getName())).toList());
-    entity.setCallActivityIds(
-        ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities()));
     reader
         .extractStartFormLink()
         .ifPresent(
@@ -151,14 +136,5 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
               entity.setFormKey(formLink.formKey());
               entity.setIsFormEmbedded(!ExporterUtil.isEmpty(formLink.formKey()));
             });
-  }
-
-  private static Map<String, String> getFlowNodesMap(final List<ProcessFlowNodeEntity> flowNodes) {
-    final Map<String, String> flowNodesMap = new HashMap<>();
-    for (final ProcessFlowNodeEntity flowNode : flowNodes) {
-      flowNodesMap.put(flowNode.getId(), flowNode.getName());
-    }
-
-    return flowNodesMap;
   }
 }

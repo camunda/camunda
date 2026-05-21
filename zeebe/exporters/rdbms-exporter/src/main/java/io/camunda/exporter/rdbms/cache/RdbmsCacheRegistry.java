@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -133,7 +134,7 @@ public final class RdbmsCacheRegistry {
     return new RdbmsEntityCacheLoader<>(
         "BatchOperation",
         reader::findOne,
-        entity -> entity.batchOperationKey(),
+        BatchOperationEntity::batchOperationKey,
         entity ->
             new CachedBatchOperationEntity(entity.batchOperationKey(), entity.operationType()));
   }
@@ -141,16 +142,12 @@ public final class RdbmsCacheRegistry {
   private static CachedProcessEntity toCachedProcessEntity(
       final ProcessDefinitionEntity processDefinitionEntity,
       final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
-    final var processDiagramData =
-        ProcessCacheUtil.extractProcessDiagramData(
-            processDefinitionEntity, extensionPropertiesConfiguration);
-    return new CachedProcessEntity(
+    return ProcessCacheUtil.createCachedProcessEntity(
         processDefinitionEntity.name(),
         processDefinitionEntity.version(),
         processDefinitionEntity.versionTag(),
-        processDiagramData.callActivityIds(),
-        processDiagramData.flowNodesMap(),
-        processDiagramData.hasUserTasks(),
-        processDiagramData.elementExtensionProperties());
+        processDefinitionEntity.bpmnXml(),
+        processDefinitionEntity.processDefinitionId(),
+        extensionPropertiesConfiguration);
   }
 }

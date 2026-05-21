@@ -16,7 +16,6 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -59,23 +58,11 @@ public class ProcessCacheUtilTest {
     final var bpmnXml = Bpmn.convertToString(model);
     // when
     final var callActivities =
-        ProcessCacheUtil.extractProcessDiagramData(
-                bpmnXml, processId, new ExtensionPropertyConfiguration())
-            .callActivityIds();
+        ProcessCacheUtil.createCachedProcessEntity(
+                null, 0, null, bpmnXml, processId, new ExtensionPropertyConfiguration())
+            .callElementIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
-  }
-
-  @Test
-  void shouldSortCallActivityIds() {
-    // given
-    final var model =
-        buildModel("testProcessId", List.of("C_Activity", "A_Activity", "D_Activity"));
-    final var callActivities = model.getModelElementsByType(CallActivity.class).stream().toList();
-    // when
-    final var ids = ProcessCacheUtil.sortedCallActivityIds(callActivities);
-    // then
-    assertThat(ids).containsExactly("A_Activity", "C_Activity", "D_Activity");
   }
 
   @Test
@@ -98,7 +85,8 @@ public class ProcessCacheUtilTest {
 
     // when
     final var diagramData =
-        ProcessCacheUtil.extractProcessDiagramData(Bpmn.convertToString(model), processId, config);
+        ProcessCacheUtil.createCachedProcessEntity(
+            null, 0, null, Bpmn.convertToString(model), processId, config);
     final var task1Props = diagramData.elementExtensionProperties().get("task1");
 
     // then — only tool-related keys are retained
@@ -128,7 +116,8 @@ public class ProcessCacheUtilTest {
 
     // when
     final var diagramData =
-        ProcessCacheUtil.extractProcessDiagramData(Bpmn.convertToString(model), processId, config);
+        ProcessCacheUtil.createCachedProcessEntity(
+            null, 0, null, Bpmn.convertToString(model), processId, config);
     final var task1Props = diagramData.elementExtensionProperties().get("task1");
 
     // then — only the exact toolName key is retained; prefix-based match is skipped
@@ -153,7 +142,8 @@ public class ProcessCacheUtilTest {
 
     // when
     final var diagramData =
-        ProcessCacheUtil.extractProcessDiagramData(Bpmn.convertToString(model), processId, config);
+        ProcessCacheUtil.createCachedProcessEntity(
+            null, 0, null, Bpmn.convertToString(model), processId, config);
     final var task1Props = diagramData.elementExtensionProperties().get("task1");
 
     // then — only the exact toolName key is retained; blank prefix does not match everything

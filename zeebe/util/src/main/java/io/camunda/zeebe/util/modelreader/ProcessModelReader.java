@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.jspecify.annotations.Nullable;
@@ -109,6 +110,19 @@ public final class ProcessModelReader {
       }
     }
     return result;
+  }
+
+  /**
+   * @return all extension properties that match the provided prefix
+   */
+  public static Map<String, String> extractExtensionProperties(
+      final Map<String, String> extensionProperties, final String prefix) {
+    if (extensionProperties == null || prefix == null || prefix.isBlank()) {
+      return Map.of();
+    }
+    return extensionProperties.entrySet().stream()
+        .filter(e -> e.getKey().startsWith(prefix))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private static Map<String, String> zeebePropertiesAsMap(

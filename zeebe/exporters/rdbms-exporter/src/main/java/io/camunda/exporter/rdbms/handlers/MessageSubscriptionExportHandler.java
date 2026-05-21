@@ -17,11 +17,11 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionT
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
-import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -99,12 +99,10 @@ public class MessageSubscriptionExportHandler
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
         .toolProperties(
-            ProcessCacheUtil.getToolProperties(
+            ProcessModelReader.extractExtensionProperties(
                 ext, extensionPropertyConfig.getToolPropertiesPrefix()))
-        .toolName(ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
-        .inboundConnectorType(
-            ProcessCacheUtil.getInboundConnectorType(
-                ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
+        .toolName(ext.get(extensionPropertyConfig.getToolNameProperty()))
+        .inboundConnectorType(ext.get(extensionPropertyConfig.getInboundConnectorTypeProperty()))
         .build();
   }
 }
