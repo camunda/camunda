@@ -208,6 +208,31 @@ A missing or unconfigured provider fails startup with an explicit error.
 
 The `cluster-admin` block, CSRF, multi-tenancy, and `http-headers` are out of scope for the PoC and remain global (validated as non-overridable per the existing rules in #52680).
 
+### Multi-IdP per tenant
+
+`providers.assigned` is a list, not a singleton — a tenant can declare more than one provider. The PoC exercises this with the **default tenant assigning both its primary IdP and a second one**:
+
+```yaml
+camunda:
+  physical-tenants:
+    default:
+      security:
+        authentication:
+          oidc:                      # default slot — registration id "oidc"
+            client-id: camunda-pt-default-client
+            issuer-uri: http://localhost:8081/realms/default
+          providers:
+            assigned: [oidc, defaultIdpAlt]
+            oidc:
+              defaultIdpAlt:         # named slot — registration id "defaultIdpAlt"
+                client-id: camunda-pt-default-alt-client
+                issuer-uri: http://localhost:8082/realms/tenanta
+```
+
+When a chain's `ClientRegistrationRepository` contains more than one registration, Spring Security's `oauth2Login()` does **not** redirect unauthenticated requests directly to an IdP. Instead it sends the user to the chain's login page (`<tenant-prefix>/login`), which `DefaultLoginPageGeneratingFilter` renders with one clickable link per registration (`<tenant-prefix>/oauth2/authorization/<registrationId>`). The user picks; the standard OAuth flow proceeds against their choice. The picker page itself is served by the chain — no separate webapp work.
+
+This shape is what the PoC needs to demonstrate: tenants can have any number of IdPs assigned, and `oauth2Login`'s default behavior with multiple registrations gives the picker for free.
+
 ---
 
 ## End-to-end demo path
@@ -237,6 +262,7 @@ Verification points:
 - Each tenant's session rows live in that tenant's dedicated storage backend (separate RDBMS schema, or separate ES/OS index, per the existing per-tenant storage routing). No row-level partitioning.
 - Replaying tenant A's OIDC `state` parameter against `/physical-tenant/default/login/oauth2/code/oidc` is rejected (per-chain `OAuth2AuthorizationRequestRepository` keys state in tenant A's session only).
 - The `/v2/physical-tenants/tenanta/whoami` endpoint requires a Bearer token whose `iss` is in tenant A's allowed-issuer set (the issuer of tenant A's named `tenanta` provider). A token issued by the default tenant's `oidc` IdP returns **403** (signature is valid against the shared decoder, but the issuer allowlist on tenant A's chain rejects it).
+- **Multi-IdP picker**: when the default tenant's `providers.assigned` contains more than one provider, hitting `/physical-tenant/default/whoami` unauthenticated redirects to `/physical-tenant/default/login` (Spring Security's default picker URL) — NOT directly to either IdP. The picker page lists each assigned registration as a clickable link, and clicking either completes a full OAuth flow against the chosen IdP.
 
 ---
 

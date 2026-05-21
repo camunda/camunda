@@ -1921,6 +1921,112 @@ Follow the steps in the spec's "End-to-end demo path" section. Record results on
 
 ---
 
+## Task 17: Multi-IdP verification for default tenant
+
+**Goal:** Demonstrate multi-IdP per tenant. Configure the default tenant with **two** `assigned` OIDC providers and verify Spring Security renders a picker page (via `DefaultLoginPageGeneratingFilter`) at `/physical-tenant/default/login` listing both, and that either choice completes a full OAuth flow.
+
+Spring Security's `oauth2Login()` switches from "redirect directly to the only IdP" to "render the picker page" automatically when the chain's `ClientRegistrationRepository` holds more than one registration. No picker code lives in the PoC — only the per-chain wiring needs to assemble multiple registrations.
+
+**Files:**
+- Modify: `dist/src/test/resources/pt-poc/tenanta-realm.json` — add a second client `camunda-pt-default-alt-client` whose redirect URIs allow the default tenant's callback path. The IdP is the tenanta realm — convenient because the IdP runner already has it up; the realm being named "tenanta" is incidental.
+- Modify: `dist/src/main/resources/application-pt-poc.yaml` — add the second named provider under `authentication.providers.oidc.defaultIdpAlt` and (once Task 8 has landed) extend `physical-tenants.default.security.authentication.providers.assigned` to `[oidc, defaultIdpAlt]`. Before Task 8 lands, expand the default-tenant chain's `InMemoryClientRegistrationRepository` directly in `PhysicalTenantSecurityConfiguration` to include both registrations.
+
+### Step 1 — Provision a second client in the tenanta realm
+
+Edit `dist/src/test/resources/pt-poc/tenanta-realm.json`. Add a second entry to the `clients` array:
+
+```json
+{
+  "clientId": "camunda-pt-default-alt-client",
+  "enabled": true,
+  "secret": "default-alt-secret",
+  "publicClient": false,
+  "directAccessGrantsEnabled": true,
+  "standardFlowEnabled": true,
+  "redirectUris": [
+    "http://localhost:8080/physical-tenant/default/login/oauth2/code/*"
+  ],
+  "webOrigins": ["http://localhost:8080"]
+}
+```
+
+The existing `bob / bob` user in the tenanta realm can log in via this client to authenticate against the default tenant.
+
+Restart `./pt-poc-idp.sh` so the runner re-imports the realm with the new client.
+
+### Step 2 — Add the second provider to OC's config
+
+In `dist/src/main/resources/application-pt-poc.yaml`, add under `camunda.security.authentication.providers.oidc`:
+
+```yaml
+        defaultIdpAlt:
+          client-id: camunda-pt-default-alt-client
+          client-secret: default-alt-secret
+          issuer-uri: http://localhost:8082/realms/tenanta
+```
+
+The default tenant chain in `PhysicalTenantSecurityConfiguration` (or `PerTenantOidcRegistry` once Task 8 has landed) must include this registration. Concrete pre-Task-8 patch:
+
+```java
+// in ptDefaultWebappChain (or its slice construction):
+final ClientRegistration primary = ClientRegistrations
+    .fromIssuerLocation(defaultProvider.getIssuerUri())
+    .registrationId("oidc")
+    .clientId(defaultProvider.getClientId())
+    .clientSecret(defaultProvider.getClientSecret())
+    .scope("openid", "profile", "email")
+    .redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")
+    .clientName("Primary IdP (Keycloak default)")
+    .build();
+
+final var altProvider = security.getAuthentication().getProviders().getOidc().get("defaultIdpAlt");
+final ClientRegistration alt = ClientRegistrations
+    .fromIssuerLocation(altProvider.getIssuerUri())
+    .registrationId("defaultIdpAlt")
+    .clientId(altProvider.getClientId())
+    .clientSecret(altProvider.getClientSecret())
+    .scope("openid", "profile", "email")
+    .redirectUri("{baseUrl}/physical-tenant/default/login/oauth2/code/{registrationId}")
+    .clientName("Alternative IdP (Keycloak tenanta)")
+    .build();
+
+final ClientRegistrationRepository repo =
+    new InMemoryClientRegistrationRepository(primary, alt);
+```
+
+Note `.clientName(...)` — the picker shows the client name as the link text. Without it the picker shows the registration id, which is less descriptive but still functional.
+
+Once Task 8 lands, this whole construction lives inside `PerTenantOidcRegistry.forTenant(...)` and the YAML's `providers.assigned: [oidc, defaultIdpAlt]` drives the registration set automatically.
+
+### Step 3 — Update the prefixAwareResolver to handle both registration ids
+
+The current `prefixAwareResolver` extracts the registration id via `uri.substring(authPrefix.length())`. With two registrations it still works — the URL `/physical-tenant/default/oauth2/authorization/oidc` vs `/physical-tenant/default/oauth2/authorization/defaultIdpAlt` yield different registration ids and the delegate's `resolve(request, registrationId)` looks each up in the same `InMemoryClientRegistrationRepository`. No code change needed; just verify in step 4.
+
+### Step 4 — Browser smoke
+
+1. Restart OC.
+2. Browser → `http://localhost:8080/physical-tenant/default/whoami`.
+3. Expect redirect to `http://localhost:8080/physical-tenant/default/login` (NOT to a Keycloak realm).
+4. The page lists two links: "Primary IdP (Keycloak default)" and "Alternative IdP (Keycloak tenanta)".
+5. Click "Primary IdP" → redirect to `localhost:8081/realms/default/...` → login as `alice / alice` → return → `/whoami` shows the default-realm principal.
+6. Log out (or use incognito); repeat hitting `/physical-tenant/default/whoami`; click "Alternative IdP" → redirect to `localhost:8082/realms/tenanta/...` → login as `bob / bob` (the user in the tenanta realm) → return → `/whoami` shows the tenanta-realm principal.
+7. Confirm tenant A's chain remains unchanged: `/physical-tenant/tenanta/whoami` still redirects directly to its single assigned IdP (no picker).
+
+### Step 5 — Commit and update README
+
+```bash
+./mvnw license:format spotless:apply -T1C
+git add dist/src/test/resources/pt-poc/tenanta-realm.json \
+        dist/src/main/resources/application-pt-poc.yaml \
+        authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java \
+        pt-poc-README.md
+git commit -m "feat: default tenant assigns two IdPs; picker page demonstrates multi-IdP"
+```
+
+Bump Task 17 to ✅ done in `pt-poc-README.md`'s Status table.
+
+---
+
 ## Self-review checklist (run after the plan is written)
 
 - [x] **Spec coverage** — every spec section has at least one task:
