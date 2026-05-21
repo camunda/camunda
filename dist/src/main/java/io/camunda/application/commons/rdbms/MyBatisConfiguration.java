@@ -63,7 +63,6 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -165,6 +164,22 @@ public class MyBatisConfiguration {
   }
 
   @Bean
+  public Map<String, SqlSessionTemplate> sqlSessionTemplates(
+      final Map<String, SqlSessionFactory> sqlSessionFactories) {
+    final var templates = new LinkedHashMap<String, SqlSessionTemplate>();
+    for (final var entry : sqlSessionFactories.entrySet()) {
+      templates.put(entry.getKey(), new SqlSessionTemplate(entry.getValue()));
+    }
+    return Map.copyOf(templates);
+  }
+
+  @Bean
+  public SqlSessionTemplate sqlSessionTemplate(
+      final Map<String, SqlSessionTemplate> sqlSessionTemplates) {
+    return sqlSessionTemplates.get(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
   public Map<String, SqlSessionFactory> sqlSessionFactories(
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver,
@@ -193,12 +208,13 @@ public class MyBatisConfiguration {
   @Bean
   public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
       final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final Map<String, SqlSessionTemplate> sqlSessionTemplates,
       final RdbmsDataSources rdbmsDataSources) {
     final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
     for (final var entry : sqlSessionFactories.entrySet()) {
       final var physicalTenantId = entry.getKey();
       final var factory = entry.getValue();
-      final var session = new SqlSessionTemplate(factory);
+      final var session = sqlSessionTemplates.get(physicalTenantId);
       bundles.put(
           physicalTenantId,
           RdbmsMapperBundle.from(
@@ -232,207 +248,179 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public MapperFactoryBean<AuthorizationMapper> authorizationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuthorizationMapper.class);
+  public AuthorizationMapper authorizationMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(AuthorizationMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<AuditLogMapper> auditLogMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuditLogMapper.class);
+  public AuditLogMapper auditLogMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(AuditLogMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<DecisionDefinitionMapper> decisionDefinitionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionDefinitionMapper.class);
+  public DecisionDefinitionMapper decisionDefinitionMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(DecisionDefinitionMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<DecisionInstanceMapper> decisionInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionInstanceMapper.class);
+  public DecisionInstanceMapper decisionInstanceMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(DecisionInstanceMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<DecisionRequirementsMapper> decisionRequirementsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DecisionRequirementsMapper.class);
+  public DecisionRequirementsMapper decisionRequirementsMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(DecisionRequirementsMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<FlowNodeInstanceMapper> flowNodeInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FlowNodeInstanceMapper.class);
+  public FlowNodeInstanceMapper flowNodeInstanceMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(FlowNodeInstanceMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<GroupMapper> groupInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, GroupMapper.class);
+  public GroupMapper groupInstanceMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(GroupMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<IncidentMapper> incidentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, IncidentMapper.class);
+  public IncidentMapper incidentMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(IncidentMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<ProcessInstanceMapper> processInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessInstanceMapper.class);
+  public ProcessInstanceMapper processInstanceMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(ProcessInstanceMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ProcessDefinitionMapper.class);
+  public ProcessDefinitionMapper processDeploymentMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(ProcessDefinitionMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<TenantMapper> tenantMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TenantMapper.class);
+  public TenantMapper tenantMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(TenantMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<VariableMapper> variableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
+  public VariableMapper variableMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(VariableMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<ClusterVariableMapper> clusterVariableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ClusterVariableMapper.class);
+  public ClusterVariableMapper clusterVariableMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(ClusterVariableMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<JobMetricsBatchMapper> jobMetricsBatchMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, JobMetricsBatchMapper.class);
+  public JobMetricsBatchMapper jobMetricsBatchMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(JobMetricsBatchMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<RoleMapper> roleMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, RoleMapper.class);
+  public RoleMapper roleMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(RoleMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<UserMapper> userMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserMapper.class);
+  public UserMapper userMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(UserMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<UserTaskMapper> userTaskMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UserTaskMapper.class);
+  public UserTaskMapper userTaskMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(UserTaskMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<FormMapper> formMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, FormMapper.class);
+  public FormMapper formMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(FormMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<MappingRuleMapper> mappingMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MappingRuleMapper.class);
+  public MappingRuleMapper mappingMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(MappingRuleMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<ExporterPositionMapper> exporterPosition(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ExporterPositionMapper.class);
+  public ExporterPositionMapper exporterPosition(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(ExporterPositionMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<PurgeMapper> purgeMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PurgeMapper.class);
+  public PurgeMapper purgeMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(PurgeMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, BatchOperationMapper.class);
+  public BatchOperationMapper batchOperationMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(BatchOperationMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<JobMapper> jobMapper(final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, JobMapper.class);
+  public JobMapper jobMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(JobMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<SequenceFlowMapper> sequenceFlowMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, SequenceFlowMapper.class);
+  public SequenceFlowMapper sequenceFlowMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(SequenceFlowMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<UsageMetricMapper> usageMetricMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricMapper.class);
+  public UsageMetricMapper usageMetricMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(UsageMetricMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
+  public UsageMetricTUMapper usageMetricTUMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(UsageMetricTUMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
+  MessageSubscriptionMapper messageSubscriptionMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(MessageSubscriptionMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
+  CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(CorrelatedMessageSubscriptionMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
+  TableMetricsMapper tableMetricsMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(TableMetricsMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
+  HistoryDeletionMapper historyDeletionMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(HistoryDeletionMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<ReplicationStatusMapper> replicationStatusMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ReplicationStatusMapper.class);
+  ReplicationStatusMapper replicationStatusMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(ReplicationStatusMapper.class);
   }
 
   @Bean
-  MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
+  PersistentWebSessionMapper persistentWebSessionMapper(
+      final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(PersistentWebSessionMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
+  public GlobalListenerMapper globalListenerMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(GlobalListenerMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<DeployedResourceMapper> resourceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, DeployedResourceMapper.class);
-  }
-
-  private <T> MapperFactoryBean<T> createMapperFactoryBean(
-      final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
-    final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+  public DeployedResourceMapper resourceMapper(final SqlSessionTemplate sqlSessionTemplate) {
+    return sqlSessionTemplate.getMapper(DeployedResourceMapper.class);
   }
 }
