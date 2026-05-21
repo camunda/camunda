@@ -106,6 +106,45 @@ const sidebars = {
         },
       ],
     },
+    {
+      type: 'category',
+      label: 'Frontend',
+      link: { type: 'doc', id: 'frontend/frontend' },
+      items: [
+        'frontend/getting-started',
+        'frontend/project-outline',
+        'frontend/orchestration-cluster-webapp',
+        'frontend/camunda-api-zod-schemas',
+        'frontend/data-loading',
+        'frontend/forms',
+        {
+          type: 'category',
+          label: 'Development process',
+          link: {
+            type: 'doc',
+            id: 'frontend/development-process/development-process',
+          },
+          items: [
+            'frontend/development-process/before-starting',
+            'frontend/development-process/creating-a-new-page',
+            'frontend/development-process/extending-an-existing-page',
+            'frontend/development-process/working-on-large-feature',
+            'frontend/development-process/generating-svg-components',
+          ],
+        },
+        'frontend/testing',
+        'frontend/using-ai',
+        'frontend/code-reviews',
+        {
+          type: 'category',
+          label: 'ADRs',
+          link: { type: 'doc', id: 'frontend/adr/adr' },
+          items: [],
+        },
+        'frontend/code-style',
+        'frontend/legacy-components',
+      ],
+    },
   ],
 };
 
