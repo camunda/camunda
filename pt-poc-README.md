@@ -88,8 +88,9 @@ For each tenant, open the SPA-style demo page in a fresh browser tab (or differe
 
 |  Tenant   |                              URL                            | Login as          | Expected after login                                                                                            |
 |-----------|-------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
-| `tenanta` | `http://localhost:8080/physical-tenant/tenanta/app`         | `bob` / `bob`     | Page renders with `Session principal: bob` and three buttons (see [SPA-style page](#spa-style-page-webapp-session--api-call-from-the-browser) below). |
-| `default` | `http://localhost:8080/physical-tenant/default/app`         | `alice` / `alice` | Page renders with `Session principal: alice` (or the Keycloak `sub` UUID, depending on the realm's preferred-username mapping).                       |
+| `tenanta` (prefixed)                | `http://localhost:8080/physical-tenant/tenanta/app`         | `bob` / `bob`     | Page renders with `Session principal: bob` and three buttons (see [SPA-style page](#spa-style-page-webapp-session--api-call-from-the-browser) below). Button 1 calls `/physical-tenant/tenanta/v2/whoami`. |
+| `default` (prefixed)                | `http://localhost:8080/physical-tenant/default/app`         | `alice` / `alice` | Page renders with `Session principal: alice`. Button 1 calls `/physical-tenant/default/v2/whoami`.                                                                                                          |
+| `default` (unprefixed, like operate/tasklist) | `http://localhost:8080/app`                                 | `alice` / `alice` | Same page, but accessed via the default-unprefixed access path. Button 1 calls bare `/v2/whoami` (cookie at `Path=/`).                                                                                      |
 
 Two simultaneous tab logins coexist — neither tenant's session cookie is sent to the other tenant's URLs (cookie `Path` scoping). To inspect cookies in DevTools: each tab should see only its own `camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`.
 
