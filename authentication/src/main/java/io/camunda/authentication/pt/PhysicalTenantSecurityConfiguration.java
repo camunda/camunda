@@ -98,7 +98,9 @@ public class PhysicalTenantSecurityConfiguration {
             .clientId(clientId)
             .clientSecret(clientSecret)
             .scope("openid", "profile", "email")
-            .redirectUri("{baseUrl}" + prefix + "/login/oauth2/code/{registrationId}")
+            .redirectUri(
+                PhysicalTenantRedirectUriRewriter.rewrite(
+                    "{baseUrl}/login/oauth2/code/{registrationId}", tenantId))
             .build();
 
     final ClientRegistrationRepository repo =
