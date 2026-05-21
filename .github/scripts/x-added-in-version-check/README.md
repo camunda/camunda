@@ -29,13 +29,14 @@ artefacts/                # generated; gitignored (endpoint-map.json, version-ma
 
 ## Env
 
-|         Var         |             Default             |                                                             Purpose                                                             |
-|---------------------|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `OCA_SPEC_PATH`     | _required_                      | Directory of multi-file specs to verify (CI sets it to `zeebe/gateway-protocol/src/main/proto/v2`)                              |
-| `RETURN_OF_API_REF` | `main`                          | Git ref of `return-of-api-added-in-analysis` to fetch the endpoint and version maps from                                        |
-| `ENDPOINT_MAP_PATH` | `./artefacts/endpoint-map.json` | Where the endpoint map is written/read                                                                                          |
-| `VERSION_MAP_PATH`  | `./artefacts/version-map.json`  | Where the version map is written/read                                                                                           |
-| `BUNDLER_SPECS_DIR` | `./artefacts/bundler-specs`     | Persistent cache; `build:bundler:latest` refetches every version listed in `MAIN_BRANCH_VERSIONS` (the entries tracking `main`) |
+|         Var         |             Default             |                                                                                                                                             Purpose                                                                                                                                              |
+|---------------------|---------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `OCA_SPEC_PATH`     | _required_                      | Directory of multi-file specs to verify (CI sets it to `zeebe/gateway-protocol/src/main/proto/v2`)                                                                                                                                                                                               |
+| `RETURN_OF_API_REF` | `main`                          | Git ref of `return-of-api-added-in-analysis` to fetch the endpoint and version maps from                                                                                                                                                                                                         |
+| `LATEST_BRANCH`     | _(none)_                        | Forwarded to the cloned `return-of-api-added-in-analysis` bundler; identifies the in-development ref of `camunda/camunda` to bundle as the next (unreleased) version. Accepts a branch name or a commit SHA. CI sets it to the PR head SHA (PR check) or the resolved branch ref (scheduled run) |
+| `ENDPOINT_MAP_PATH` | `./artefacts/endpoint-map.json` | Where the endpoint map is written/read                                                                                                                                                                                                                                                           |
+| `VERSION_MAP_PATH`  | `./artefacts/version-map.json`  | Where the version map is written/read                                                                                                                                                                                                                                                            |
+| `BUNDLER_SPECS_DIR` | `./artefacts/bundler-specs`     | Persistent cache; `build:bundler:latest` refetches every version listed in `MAIN_BRANCH_VERSIONS` (the entries tracking `main`)                                                                                                                                                                  |
 
 ## Annotation rules
 

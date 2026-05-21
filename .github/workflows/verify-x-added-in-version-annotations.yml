@@ -73,6 +73,12 @@ jobs:
       - name: Build verifier artefacts (endpoint-map + version-map)
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
+          # LATEST_BRANCH is not consumed by the in-repo scripts directly.
+          # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
+          # forwards process.env to its bundler, which uses LATEST_BRANCH as
+          # the camunda/camunda ref to bundle as the next (in-development)
+          # version. The scheduled workflow resolves it to a branch name so
+          # the bundle always tracks the latest tip of that branch.
           LATEST_BRANCH: ${{ steps.ref.outputs.ref }}
           RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
