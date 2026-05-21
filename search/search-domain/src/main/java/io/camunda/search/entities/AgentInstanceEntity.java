@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentInstanceEntity(
     Long agentInstanceKey,
-    Long elementInstanceKey,
+    List<Long> elementInstanceKeys,
     AgentInstanceStatus status,
     AgentInstanceDefinition definition,
     AgentInstanceMetrics metrics,
@@ -38,7 +38,6 @@ public record AgentInstanceEntity(
 
   public AgentInstanceEntity {
     Objects.requireNonNull(agentInstanceKey, "agentInstanceKey");
-    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(status, "status");
     Objects.requireNonNull(definition, "definition");
     Objects.requireNonNull(metrics, "metrics");
@@ -51,7 +50,9 @@ public record AgentInstanceEntity(
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(creationDate, "creationDate");
     Objects.requireNonNull(lastUpdatedDate, "lastUpdatedDate");
-    // Mutable list required: MyBatis hydrates by calling .add()
+    // Mutable lists required: MyBatis hydrates by calling .add()
+    elementInstanceKeys =
+        elementInstanceKeys != null ? new ArrayList<>(elementInstanceKeys) : new ArrayList<>();
     tools = tools != null ? new ArrayList<>(tools) : new ArrayList<>();
   }
 
