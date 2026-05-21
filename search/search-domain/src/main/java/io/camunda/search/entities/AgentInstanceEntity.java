@@ -44,7 +44,7 @@ public record AgentInstanceEntity(
     Objects.requireNonNull(creationDate, "creationDate");
     Objects.requireNonNull(lastUpdatedDate, "lastUpdatedDate");
     // Mutable list required: MyBatis hydrates by calling .add()
-    tools = tools != null ? tools : new ArrayList<>();
+    tools = tools != null ? new ArrayList<>(tools) : new ArrayList<>();
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
