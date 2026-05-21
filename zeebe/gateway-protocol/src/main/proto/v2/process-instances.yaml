@@ -967,6 +967,7 @@ components:
         - processInstanceKey
         - tags
         - businessId
+        - spuriousNewProperty
       type: object
       properties:
         processDefinitionId:
@@ -1009,10 +1010,16 @@ components:
           description: Business id as provided on creation.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        spuriousNewProperty:
+          type: string
+          description: |
+            Correctly annotated property should not trigger gate.
       x-properties-added-in-version:
         - propertyName: tags
           addedInVersion: "8.8"
         - propertyName: businessId
+          addedInVersion: "8.9"
+        - propertyName: spuriousNewProperty
           addedInVersion: "8.9"
 
     ProcessInstanceSearchQuerySortRequest:
