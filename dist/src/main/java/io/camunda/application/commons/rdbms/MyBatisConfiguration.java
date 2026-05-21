@@ -158,6 +158,20 @@ public class MyBatisConfiguration {
   }
 
   @Bean
+  public Map<String, DataSource> dataSources(
+      final DataSource dataSource, final RdbmsDataSources rdbmsDataSources) {
+    final var map = new LinkedHashMap<String, DataSource>();
+    for (final var physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
+      map.put(
+          physicalTenantId,
+          DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
+              ? dataSource
+              : rdbmsDataSources.dataSourceFor(physicalTenantId));
+    }
+    return Map.copyOf(map);
+  }
+
+  @Bean
   public SqlSessionFactory sqlSessionFactory(
       final Map<String, SqlSessionFactory> sqlSessionFactories) {
     return sqlSessionFactories.get(DEFAULT_PHYSICAL_TENANT_ID);
@@ -181,12 +195,14 @@ public class MyBatisConfiguration {
 
   @Bean
   public Map<String, SqlSessionFactory> sqlSessionFactories(
+      final Map<String, DataSource> dataSources,
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver,
       final DatabaseIdProvider databaseIdProvider)
       throws Exception {
     final var factories = new LinkedHashMap<String, SqlSessionFactory>();
-    for (final var physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
+    for (final var entry : dataSources.entrySet()) {
+      final var physicalTenantId = entry.getKey();
       final var prefix =
           physicalTenantResolver
               .forPhysicalTenant(physicalTenantId)
@@ -197,7 +213,7 @@ public class MyBatisConfiguration {
       factories.put(
           physicalTenantId,
           buildSqlSessionFactory(
-              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              entry.getValue(),
               databaseIdProvider,
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
               prefix));

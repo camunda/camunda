@@ -102,7 +102,10 @@ class MyBatisConfigurationPerTenantIT {
         RdbmsDataSources.of(
             resolver.mapValues(c -> c.getData().getSecondaryStorage().getRdbms()),
             DATABASE_ID_PROVIDER);
-    final var factories = MY_BATIS.sqlSessionFactories(dataSources, resolver, DATABASE_ID_PROVIDER);
+    final var dataSourceMap =
+        MY_BATIS.dataSources(dataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID), dataSources);
+    final var factories =
+        MY_BATIS.sqlSessionFactories(dataSourceMap, dataSources, resolver, DATABASE_ID_PROVIDER);
     final var templates = MY_BATIS.sqlSessionTemplates(factories);
     final var bundles = MY_BATIS.rdbmsMapperBundles(factories, templates, dataSources);
     return new TenantFixture(dataSources, factories, bundles);
