@@ -1013,7 +1013,7 @@ components:
         - propertyName: tags
           addedInVersion: "8.8"
         - propertyName: businessId
-          addedInVersion: "8.9"
+          addedInVersion: "8.10"
 
     ProcessInstanceSearchQuerySortRequest:
       type: object
