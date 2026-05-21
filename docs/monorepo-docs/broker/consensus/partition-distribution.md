@@ -1,16 +1,16 @@
 # Partition Distribution
 
+import PartitionDistributionVisualizer from '@site/src/components/PartitionDistributionVisualizer';
+
 Zeebe distributes partitions across brokers using a **round-robin** strategy, implemented in
 [`RoundRobinPartitionDistributor`](https://github.com/camunda/camunda/blob/main/zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/util/RoundRobinPartitionDistributor.java).
 
 For a cluster of _N_ brokers, partition _i_ (zero-indexed) is assigned as follows:
 
 - **Primary (leader)**: broker `i % N`
-- **Followers**: brokers `(i+1) % N` through `(i+RF−1) % N`
+- **Followers**: brokers `(i+1) % N` through `(i+RF-1) % N`
 
 The replication factor is automatically capped to the number of brokers.
-
-import PartitionDistributionVisualizer from '@site/src/components/PartitionDistributionVisualizer';
 
 ## Interactive Visualizer
 
