@@ -185,6 +185,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
