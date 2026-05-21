@@ -160,6 +160,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
   }
 
   private void validateReplicaSum(final int replicationFactor) {
+
     final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalStateException(
@@ -193,13 +194,14 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
         throw new IllegalArgumentException(
             "ZoneAwarePartitionDistributor: expected non-empty name, but got empty string");
       }
-      if (numberOfReplicas == 0) {
+      if (numberOfReplicas <= 0) {
         throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected numberOfReplicas >= 1, but got 0");
+            "ZoneAwarePartitionDistributor: expected numberOfReplicas >= 1, but got "
+                + numberOfReplicas);
       }
       if (priority <= 0) {
         throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected priority > 0, but got %d".formatted(priority));
+            "ZoneAwarePartitionDistributor: expected priority > 0, but got " + priority);
       }
     }
 
