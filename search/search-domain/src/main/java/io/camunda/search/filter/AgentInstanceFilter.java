@@ -21,6 +21,7 @@ import java.util.function.Function;
 
 public record AgentInstanceFilter(
     List<Long> agentInstanceKeys,
+    List<Long> elementInstanceKeys,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<Operation<String>> elementIdOperations,
@@ -39,6 +40,7 @@ public record AgentInstanceFilter(
   public static final class Builder implements ObjectBuilder<AgentInstanceFilter> {
 
     private List<Long> agentInstanceKeys;
+    private List<Long> elementInstanceKeys;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<Operation<String>> elementIdOperations;
@@ -55,6 +57,15 @@ public record AgentInstanceFilter(
 
     public Builder agentInstanceKeys(final Long... values) {
       return agentInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder elementInstanceKeys(final List<Long> values) {
+      elementInstanceKeys = addValuesToList(elementInstanceKeys, values);
+      return this;
+    }
+
+    public Builder elementInstanceKeys(final Long... values) {
+      return elementInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder processInstanceKeys(final List<Long> values) {
@@ -157,6 +168,7 @@ public record AgentInstanceFilter(
     public AgentInstanceFilter build() {
       return new AgentInstanceFilter(
           Objects.requireNonNullElse(agentInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIdOperations, Collections.emptyList()),
