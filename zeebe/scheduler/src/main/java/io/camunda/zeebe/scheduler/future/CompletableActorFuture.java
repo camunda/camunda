@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.future;
 
 import static io.camunda.zeebe.util.Nulls.uncheckedCastToNonNull;
+import static io.camunda.zeebe.util.Unit.unit;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -90,9 +91,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     isDoneCondition = completionLock.newCondition();
   }
 
-  @SuppressWarnings("NullAway")
   public static CompletableActorFuture<Void> completed() {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(unit());
   }
 
   public static <V extends @Nullable Object> CompletableActorFuture<V> completed(final V result) {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler.future;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ActorTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -245,12 +247,11 @@ public interface ActorFuture<V extends @Nullable Object>
    *     exceptionally if this future completes exceptionally. This future can be used for further
    *     chaining.
    */
-  @SuppressWarnings("NullAway")
   default ActorFuture<Void> thenAccept(final Consumer<V> next, final Executor executor) {
     return thenApply(
         value -> {
           next.accept(value);
-          return null;
+          return unit();
         },
         executor);
   }
@@ -303,12 +304,11 @@ public interface ActorFuture<V extends @Nullable Object>
    *     exceptionally if this future completes exceptionally. This future can be used for further
    *     chaining.
    */
-  @SuppressWarnings("NullAway")
   default ActorFuture<Void> thenAccept(final Consumer<V> next) {
     return thenApply(
         value -> {
           next.accept(value);
-          return null;
+          return unit();
         });
   }
 
