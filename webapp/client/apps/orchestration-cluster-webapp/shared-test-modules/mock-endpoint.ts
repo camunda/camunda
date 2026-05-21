@@ -50,16 +50,16 @@ function createEndpointMock<Method extends RequestMethod>({
 			}
 
 			if (!('schema' in params)) {
-				return params.successResponse;
+				return params.successResponse.clone();
 			}
 
 			try {
 				const payload = await request.json();
 				const result = params.schema.safeParse(payload);
 
-				return result.success ? params.successResponse : params.failureResponse;
+				return result.success ? params.successResponse.clone() : params.failureResponse.clone();
 			} catch {
-				return params.failureResponse;
+				return params.failureResponse.clone();
 			}
 		};
 

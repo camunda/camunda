@@ -22,6 +22,7 @@ import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.WebappComponent;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -129,10 +130,7 @@ public class SystemController {
   }
 
   private AuthenticationConfigurationResponse buildAuthenticationConfiguration() {
-    final boolean canLogout =
-        securityConfiguration == null
-            || securityConfiguration.getSaas() == null
-            || securityConfiguration.getSaas().getClusterId() == null;
+    final boolean canLogout = !SaasConfigurationHelper.isSaas(securityConfiguration);
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)
@@ -141,14 +139,8 @@ public class SystemController {
   }
 
   private CloudConfigurationResponse buildCloudConfiguration() {
-    final String organizationId =
-        securityConfiguration != null && securityConfiguration.getSaas() != null
-            ? securityConfiguration.getSaas().getOrganizationId()
-            : null;
-    final String clusterId =
-        securityConfiguration != null && securityConfiguration.getSaas() != null
-            ? securityConfiguration.getSaas().getClusterId()
-            : null;
+    final String organizationId = SaasConfigurationHelper.organizationId(securityConfiguration);
+    final String clusterId = SaasConfigurationHelper.clusterId(securityConfiguration);
 
     return CloudConfigurationResponse.Builder.create()
         .organizationId(organizationId)

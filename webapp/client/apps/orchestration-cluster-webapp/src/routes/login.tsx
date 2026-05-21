@@ -21,7 +21,7 @@ export const Route = createFileRoute('/login')({
 	beforeLoad: async ({search, context: {queryClient}}) => {
 		try {
 			await queryClient.ensureQueryData(queries.getCurrentUser());
-			throw redirect({href: search.redirect ?? '/', replace: true});
+			throw redirect({href: search.redirect ?? '/operate', replace: true});
 		} catch (e) {
 			if (isRedirect(e)) {
 				throw e;

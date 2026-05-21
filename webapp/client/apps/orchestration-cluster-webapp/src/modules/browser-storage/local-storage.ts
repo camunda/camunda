@@ -6,17 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, redirect} from '@tanstack/react-router';
+import {z} from 'zod';
+import {createBrowserStorage} from './createBrowserStorage';
 
-export const Route = createFileRoute('/_auth/')({
-	beforeLoad: () => {
-		throw redirect({to: '/operate', replace: true});
-	},
-	head: () => ({
-		meta: [
-			{
-				title: 'Camunda',
-			},
-		],
-	}),
+const {
+	store: storeStateLocally,
+	get: getStateLocally,
+	clear: clearStateLocally,
+} = createBrowserStorage(localStorage, {
+	theme: z.enum(['light', 'dark', 'system']),
+	wasReloaded: z.boolean(),
 });
+
+export {storeStateLocally, getStateLocally, clearStateLocally};

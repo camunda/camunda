@@ -1,0 +1,128 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse} from 'msw';
+import {mockCurrentUserEndpoint, mockSystemConfigurationEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+
+test.describe('component routes', () => {
+	test('should render Operate when component is active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['operate']},
+				}),
+			}),
+		);
+
+		await page.goto('/operate');
+
+		await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
+	});
+
+	test('should render Tasklist when component is active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['tasklist']},
+				}),
+			}),
+		);
+
+		await page.goto('/tasklist');
+
+		await expect(page.getByRole('heading', {name: 'Tasklist'})).toBeVisible();
+	});
+
+	test('should render Admin when component is active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['admin']},
+				}),
+			}),
+		);
+
+		await page.goto('/admin');
+
+		await expect(page.getByRole('heading', {name: 'Admin'})).toBeVisible();
+	});
+
+	test('should show error when Operate is not active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(mockSystemConfiguration),
+			}),
+		);
+
+		await page.goto('/operate');
+
+		await expect(page.getByText('This component is not available.')).toBeVisible();
+	});
+
+	test('should show error when Tasklist is not active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(mockSystemConfiguration),
+			}),
+		);
+
+		await page.goto('/tasklist');
+
+		await expect(page.getByText('This component is not available.')).toBeVisible();
+	});
+
+	test('should show error when Admin is not active', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json(mockSystemConfiguration),
+			}),
+		);
+
+		await page.goto('/admin');
+
+		await expect(page.getByText('This component is not available.')).toBeVisible();
+	});
+
+	test('should redirect to login when system configuration endpoint fails', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({
+				successResponse: HttpResponse.json({}),
+			}),
+			mockSystemConfigurationEndpoint({
+				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+		);
+
+		await page.goto('/operate');
+
+		await expect(page).toHaveURL('/login?redirect=%2Foperate');
+	});
+});

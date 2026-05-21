@@ -8,9 +8,10 @@
 
 import {makeObservable, observable, action} from 'mobx';
 import {endpoints} from '#/modules/http/endpoints';
+import {getClientConfig} from '#/modules/config/getClientConfig';
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
 import {request} from '#/modules/http/request';
-import {storeStateLocally} from '#/modules/local-storage/local-storage';
+import {getStateLocally, storeStateLocally} from '#/modules/browser-storage/local-storage';
 import {z} from 'zod';
 
 type Status =
@@ -51,8 +52,6 @@ class Authentication {
 
 		if (error === null) {
 			this.activateSession();
-			// TODO: prefetch current user after login once getClientConfig is migrated
-			// https://github.com/camunda/camunda/issues/51322
 		}
 
 		return {response, error};
@@ -62,8 +61,22 @@ class Authentication {
 		this.status = status;
 	};
 
-	// TODO: handle third-party session expiration (IdP logout redirect / reload)
-	// once getClientConfig is migrated: https://github.com/camunda/camunda/issues/51322
+	#handleThirdPartySessionExpiration = (redirectUrl?: string) => {
+		this.setStatus('invalid-third-party-session');
+
+		const wasReloaded = getStateLocally('wasReloaded');
+		if (wasReloaded) {
+			return;
+		}
+		storeStateLocally('wasReloaded', true);
+
+		if (redirectUrl) {
+			window.location.href = redirectUrl;
+		} else {
+			window.location.reload();
+		}
+	};
+
 	handleLogout = async () => {
 		const {response, error} = await request(endpoints.logout(), {
 			skipSessionCheck: true,
@@ -75,14 +88,21 @@ class Authentication {
 
 		reactQueryClient.clear();
 
-		// TODO: handle getClientConfig().canLogout / isLoginDelegated (IdP RP-initiated logout)
-		// https://github.com/camunda/camunda/issues/51322
-		try {
-			if (response.status === 200) {
-				await parseRedirectUrl(response);
+		const {canLogout, isLoginDelegated} = getClientConfig().authentication;
+
+		if (!canLogout || isLoginDelegated) {
+			/*
+			 * In case an IdP supports RP-initiated logout,
+			 * its logout endpoint will be returned in a JSON response.
+			 * For Basic Auth and unsupported IdPs, there will be a 204 response.
+			 */
+			try {
+				const idpLogoutUrl = response.status === 200 ? await parseRedirectUrl(response) : undefined;
+				this.#handleThirdPartySessionExpiration(idpLogoutUrl);
+				return;
+			} catch (e) {
+				return e;
 			}
-		} catch {
-			// ignore — standard 204 logout path
 		}
 
 		this.setStatus('logged-out');
@@ -95,8 +115,12 @@ class Authentication {
 	};
 
 	disableSession = () => {
-		// TODO: handle getClientConfig().canLogout / isLoginDelegated (third-party session expiration)
-		// https://github.com/camunda/camunda/issues/51322
+		const {canLogout, isLoginDelegated} = getClientConfig().authentication;
+
+		if (!canLogout || isLoginDelegated) {
+			this.#handleThirdPartySessionExpiration();
+			return;
+		}
 
 		if (['session-invalid', 'session-expired'].includes(this.status)) {
 			return;

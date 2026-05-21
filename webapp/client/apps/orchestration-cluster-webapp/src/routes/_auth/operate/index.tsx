@@ -8,15 +8,10 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_auth/about')({
-	component: About,
+export const Route = createFileRoute('/_auth/operate/')({
+	component: Operate,
 });
 
-function About() {
-	return (
-		<main>
-			<h1>About</h1>
-			<p>About page loaded</p>
-		</main>
-	);
+function Operate() {
+	return <h1>Operate</h1>;
 }

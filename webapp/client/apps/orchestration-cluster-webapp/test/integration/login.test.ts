@@ -8,7 +8,12 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
-import {mockCurrentUserEndpoint, mockLoginEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockLoginEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -27,12 +32,18 @@ test('should redirect to the initial page on success', async ({network, page, lo
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
 		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
+		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/');
+	await expect(page).toHaveURL('/operate');
 });
 
 test('should redirect to the referrer page', async ({network, page, loginPage}) => {
@@ -43,21 +54,33 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 		mockLoginEndpoint({
 			successResponse: new HttpResponse(null, {status: 200}),
 		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
+		}),
 	);
 
-	await page.goto('/about');
+	await page.goto('/operate');
 	await expect(loginPage.usernameInput).toBeVisible();
 
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json({}),
 		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json({
+				...mockSystemConfiguration,
+				components: {active: ['operate']},
+			}),
+		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/about');
+	await expect(page).toHaveURL('/operate');
 });
 
 test('should show an error for wrong credentials', async ({network, loginPage}) => {

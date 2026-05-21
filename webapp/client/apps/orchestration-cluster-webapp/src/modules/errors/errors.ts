@@ -6,17 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, redirect} from '@tanstack/react-router';
+type CamundaComponent = 'operate' | 'tasklist' | 'admin';
+class ComponentNotAvailableError extends Error {
+	readonly component: CamundaComponent;
 
-export const Route = createFileRoute('/_auth/')({
-	beforeLoad: () => {
-		throw redirect({to: '/operate', replace: true});
-	},
-	head: () => ({
-		meta: [
-			{
-				title: 'Camunda',
-			},
-		],
-	}),
-});
+	constructor(component: CamundaComponent) {
+		super(`Component "${component}" is not available`);
+		this.name = 'ComponentNotAvailableError';
+		this.component = component;
+	}
+}
+
+export {ComponentNotAvailableError};

@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
-import { Route as AuthAboutRouteImport } from './routes/_auth/about'
+import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
+import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
+import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
+import { Route as AuthTasklistIndexRouteImport } from './routes/_auth/tasklist/index'
+import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
+import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -28,35 +33,90 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AuthAboutRoute = AuthAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
+  id: '/tasklist',
+  path: '/tasklist',
   getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthOperateRouteRoute = AuthOperateRouteRouteImport.update({
+  id: '/operate',
+  path: '/operate',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthAdminRouteRoute = AuthAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthTasklistIndexRoute = AuthTasklistIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthTasklistRouteRoute,
+} as any)
+const AuthOperateIndexRoute = AuthOperateIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthOperateRouteRoute,
+} as any)
+const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthAdminRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
   '/login': typeof LoginRoute
-  '/about': typeof AuthAboutRoute
+  '/admin': typeof AuthAdminRouteRouteWithChildren
+  '/operate': typeof AuthOperateRouteRouteWithChildren
+  '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/admin/': typeof AuthAdminIndexRoute
+  '/operate/': typeof AuthOperateIndexRoute
+  '/tasklist/': typeof AuthTasklistIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/about': typeof AuthAboutRoute
   '/': typeof AuthIndexRoute
+  '/admin': typeof AuthAdminIndexRoute
+  '/operate': typeof AuthOperateIndexRoute
+  '/tasklist': typeof AuthTasklistIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteRouteWithChildren
   '/login': typeof LoginRoute
-  '/_auth/about': typeof AuthAboutRoute
+  '/_auth/admin': typeof AuthAdminRouteRouteWithChildren
+  '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
+  '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/admin/': typeof AuthAdminIndexRoute
+  '/_auth/operate/': typeof AuthOperateIndexRoute
+  '/_auth/tasklist/': typeof AuthTasklistIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/about'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/admin'
+    | '/operate'
+    | '/tasklist'
+    | '/admin/'
+    | '/operate/'
+    | '/tasklist/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/about' | '/'
-  id: '__root__' | '/_auth' | '/login' | '/_auth/about' | '/_auth/'
+  to: '/login' | '/' | '/admin' | '/operate' | '/tasklist'
+  id:
+    | '__root__'
+    | '/_auth'
+    | '/login'
+    | '/_auth/admin'
+    | '/_auth/operate'
+    | '/_auth/tasklist'
+    | '/_auth/'
+    | '/_auth/admin/'
+    | '/_auth/operate/'
+    | '/_auth/tasklist/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -87,23 +147,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/about': {
-      id: '/_auth/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AuthAboutRouteImport
+    '/_auth/tasklist': {
+      id: '/_auth/tasklist'
+      path: '/tasklist'
+      fullPath: '/tasklist'
+      preLoaderRoute: typeof AuthTasklistRouteRouteImport
       parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/operate': {
+      id: '/_auth/operate'
+      path: '/operate'
+      fullPath: '/operate'
+      preLoaderRoute: typeof AuthOperateRouteRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/admin': {
+      id: '/_auth/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthAdminRouteRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/tasklist/': {
+      id: '/_auth/tasklist/'
+      path: '/'
+      fullPath: '/tasklist/'
+      preLoaderRoute: typeof AuthTasklistIndexRouteImport
+      parentRoute: typeof AuthTasklistRouteRoute
+    }
+    '/_auth/operate/': {
+      id: '/_auth/operate/'
+      path: '/'
+      fullPath: '/operate/'
+      preLoaderRoute: typeof AuthOperateIndexRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/admin/': {
+      id: '/_auth/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthAdminIndexRouteImport
+      parentRoute: typeof AuthAdminRouteRoute
     }
   }
 }
 
+interface AuthAdminRouteRouteChildren {
+  AuthAdminIndexRoute: typeof AuthAdminIndexRoute
+}
+
+const AuthAdminRouteRouteChildren: AuthAdminRouteRouteChildren = {
+  AuthAdminIndexRoute: AuthAdminIndexRoute,
+}
+
+const AuthAdminRouteRouteWithChildren = AuthAdminRouteRoute._addFileChildren(
+  AuthAdminRouteRouteChildren,
+)
+
+interface AuthOperateRouteRouteChildren {
+  AuthOperateIndexRoute: typeof AuthOperateIndexRoute
+}
+
+const AuthOperateRouteRouteChildren: AuthOperateRouteRouteChildren = {
+  AuthOperateIndexRoute: AuthOperateIndexRoute,
+}
+
+const AuthOperateRouteRouteWithChildren =
+  AuthOperateRouteRoute._addFileChildren(AuthOperateRouteRouteChildren)
+
+interface AuthTasklistRouteRouteChildren {
+  AuthTasklistIndexRoute: typeof AuthTasklistIndexRoute
+}
+
+const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
+  AuthTasklistIndexRoute: AuthTasklistIndexRoute,
+}
+
+const AuthTasklistRouteRouteWithChildren =
+  AuthTasklistRouteRoute._addFileChildren(AuthTasklistRouteRouteChildren)
+
 interface AuthRouteRouteChildren {
-  AuthAboutRoute: typeof AuthAboutRoute
+  AuthAdminRouteRoute: typeof AuthAdminRouteRouteWithChildren
+  AuthOperateRouteRoute: typeof AuthOperateRouteRouteWithChildren
+  AuthTasklistRouteRoute: typeof AuthTasklistRouteRouteWithChildren
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
-  AuthAboutRoute: AuthAboutRoute,
+  AuthAdminRouteRoute: AuthAdminRouteRouteWithChildren,
+  AuthOperateRouteRoute: AuthOperateRouteRouteWithChildren,
+  AuthTasklistRouteRoute: AuthTasklistRouteRouteWithChildren,
   AuthIndexRoute: AuthIndexRoute,
 }
 

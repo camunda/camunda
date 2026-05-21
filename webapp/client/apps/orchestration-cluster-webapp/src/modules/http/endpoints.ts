@@ -6,16 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getCurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {getBootConfig} from '#/modules/config/getBootConfig';
+import {mergePathname} from './mergePathname';
 
 const BASE_REQUEST_OPTIONS: RequestInit = {
 	credentials: 'include',
 	mode: 'cors',
 };
 
-// TODO: prepend getClientConfig().contextPath once getClientConfig is supported https://github.com/camunda/camunda/issues/51322
-function getFullURL(path: string) {
-	return new URL(path, window.location.origin);
+function getFullURL(url: string) {
+	if (typeof window.location.origin !== 'string') {
+		throw new Error('window.location.origin is not set');
+	}
+
+	return new URL(mergePathname(getBootConfig().contextPath, url), window.location.origin);
 }
 
 const endpoints = {
@@ -36,9 +41,16 @@ const endpoints = {
 		}),
 
 	getCurrentUser: () =>
-		new Request(getFullURL(getCurrentUser.getUrl()), {
+		new Request(getFullURL(unifiedAPIEndpoints.getCurrentUser.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
-			method: getCurrentUser.method,
+			method: unifiedAPIEndpoints.getCurrentUser.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSystemConfiguration: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getSystemConfiguration.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getSystemConfiguration.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

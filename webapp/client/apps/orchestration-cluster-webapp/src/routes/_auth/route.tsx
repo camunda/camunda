@@ -9,12 +9,20 @@
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
 import {SessionWatcher} from '#/modules/auth/components/SessionWatcher';
 import {queries} from '#/modules/http/queries';
+import {storeSessionState} from '#/modules/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
 		try {
-			await queryClient.ensureQueryData(queries.getCurrentUser());
+			const [, systemConfig] = await Promise.all([
+				queryClient.ensureQueryData(queries.getCurrentUser()),
+				queryClient.ensureQueryData(queries.getSystemConfiguration()),
+			]);
+
+			storeSessionState('clientConfig', systemConfig);
 		} catch {
+			queryClient.cancelQueries();
+			queryClient.clear();
 			throw redirect({
 				to: '/login',
 				search: location.href === '/' ? {} : {redirect: location.href},

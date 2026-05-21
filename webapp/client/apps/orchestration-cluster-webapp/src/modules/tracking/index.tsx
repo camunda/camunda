@@ -9,6 +9,7 @@
 import {type Mixpanel} from 'mixpanel-browser';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10/authentication';
 import {getStage} from '#/modules/config/getStage';
+import {getBootConfig} from '#/modules/config/getBootConfig';
 
 type Events =
 	| {
@@ -125,18 +126,15 @@ class Tracking {
 	#mixpanel: null | Mixpanel = null;
 
 	#baseProperties = {
-		// TODO: add organizationId and clusterId once available:
-		// organizationId: getClientConfig().organizationId,
-		// clusterId: getClientConfig().clusterId,
+		organizationId: getBootConfig().organizationId,
+		clusterId: getBootConfig().clusterId,
 		stage: STAGE_ENV,
 		version: import.meta.env.VITE_VERSION,
 	} as const;
 
 	#isTrackingSupported = () => {
 		return (
-			!import.meta.env.DEV && ['prod', 'int', 'dev'].includes(STAGE_ENV)
-			// TODO: add organizationId check once available
-			// && getClientConfig().organizationId
+			!import.meta.env.DEV && ['prod', 'int', 'dev'].includes(STAGE_ENV) && getBootConfig().organizationId !== null
 		);
 	};
 
@@ -167,21 +165,18 @@ class Tracking {
 	};
 
 	#loadMixpanel = async (): Promise<void> => {
+		const token = getBootConfig().mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN;
+		const api_host = getBootConfig().mixpanelApiHost ?? import.meta.env.VITE_MIXPANEL_HOST;
+
+		if (!token) {
+			return;
+		}
+
 		return import('mixpanel-browser').then(({default: mixpanel}) => {
-			mixpanel.init(import.meta.env.VITE_MIXPANEL_TOKEN, {
-				api_host: import.meta.env.VITE_MIXPANEL_HOST,
+			mixpanel.init(token, {
+				api_host,
 				opt_out_tracking_by_default: true,
 			});
-			// TODO: add mixpanelToken and mixpanelHost to client config once available
-			// mixpanel.init(
-			// getClientConfig().mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN,
-			// {
-			//   api_host:
-			//     getClientConfig().mixpanelAPIHost ??
-			//     import.meta.env.VITE_MIXPANEL_HOST,
-			//   opt_out_tracking_by_default: true,
-			// },
-			//   );
 			mixpanel.register(this.#baseProperties);
 			this.#mixpanel = mixpanel;
 			window.mixpanel = mixpanel;
@@ -214,11 +209,9 @@ class Tracking {
 
 		await this.#loadOsano();
 
-		const analyticsConsented = window.Osano?.cm?.analytics === true;
-
 		await this.#loadMixpanel();
 
-		if (analyticsConsented) {
+		if (this.#isTrackingAllowed()) {
 			this.#mixpanel?.opt_in_tracking();
 		}
 
