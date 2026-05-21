@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useRef, useState} from 'react';
-import {Button, Modal, Stack} from '@carbon/react';
+import {Fragment, lazy, Suspense, useRef, useState} from 'react';
+import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -36,7 +36,7 @@ const RichTextEditor = lazy(async () => {
   return {default: RichTextEditor};
 });
 
-const MAX_CONDITIONS = 5;
+const SOFT_WARNING_THRESHOLD = 8;
 
 type RowErrors = {
   name?: string;
@@ -243,30 +243,41 @@ const VariableFilterModal: React.FC = observer(() => {
                     {({fields}) => (
                       <Stack gap={4}>
                         {fields.map((fieldName, index) => (
-                          <VariableFilterRow
-                            key={fieldName}
-                            fieldName={fieldName}
-                            rowIndex={index}
-                            onDelete={() => fields.remove(index)}
-                            isDeleteHidden={fields.length === 1}
-                            onEditValue={(i) => {
-                              const val =
-                                form.getState().values?.['conditions']?.[i]
-                                  ?.value ?? '';
-                              preEditValueRef.current = val;
-                              changeField(
-                                `conditions[${i}].value`,
-                                beautifyJSON(val),
-                              );
-                              setEditingRowIndex(i);
-                            }}
-                          />
+                          <Fragment key={fieldName}>
+                            <VariableFilterRow
+                              fieldName={fieldName}
+                              rowIndex={index}
+                              onDelete={() => fields.remove(index)}
+                              isDeleteHidden={fields.length === 1}
+                              onEditValue={(i) => {
+                                const val =
+                                  form.getState().values?.['conditions']?.[i]
+                                    ?.value ?? '';
+                                preEditValueRef.current = val;
+                                changeField(
+                                  `conditions[${i}].value`,
+                                  beautifyJSON(val),
+                                );
+                                setEditingRowIndex(i);
+                              }}
+                            />
+                            {index === (fields.length ?? 0) - 1 &&
+                              (fields.length ?? 0) >=
+                                SOFT_WARNING_THRESHOLD && (
+                                <InlineNotification
+                                  kind="info"
+                                  lowContrast
+                                  hideCloseButton
+                                  subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
+                                  role="status"
+                                />
+                              )}
+                          </Fragment>
                         ))}
                         <Button
                           kind="ghost"
                           size="sm"
                           renderIcon={Add}
-                          disabled={(fields.length ?? 0) >= MAX_CONDITIONS}
                           onClick={() => fields.push(createDraft())}
                         >
                           Add condition
