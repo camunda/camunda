@@ -17,7 +17,6 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/tenants/detail/mapping-rules/AssignMappingRulesModal.tsx";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type MappingRulesProps = {
   tenantId: string;
@@ -25,7 +24,6 @@ type MappingRulesProps = {
 
 const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
-  const isReadOnly = isDefaultTenant(tenantId);
 
   const {
     data: mappingRules,
@@ -67,7 +65,7 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedMappingRulesListEmpty && !isReadOnly)
+  if (success && isAssignedMappingRulesListEmpty)
     return (
       <>
         <TabEmptyState
@@ -96,21 +94,17 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
           { header: t("claimValue"), key: "claimValue", isSortable: true },
         ]}
         loading={loading}
-        addEntityLabel={isReadOnly ? null : t("assignMappingRule")}
-        onAddEntity={isReadOnly ? undefined : openAssignModal}
+        addEntityLabel={t("assignMappingRule")}
+        onAddEntity={openAssignModal}
         searchPlaceholder={t("searchByMappingRuleId")}
-        menuItems={
-          isReadOnly
-            ? undefined
-            : [
-                {
-                  label: t("remove"),
-                  icon: TrashCan,
-                  isDangerous: true,
-                  onClick: unassignMappingRule,
-                },
-              ]
-        }
+        menuItems={[
+          {
+            label: t("remove"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: unassignMappingRule,
+          },
+        ]}
         {...paginationProps}
       />
       {assignMappingRulesModal}

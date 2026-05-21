@@ -17,7 +17,6 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/roles/DeleteModal";
 import AssignRolesModal from "src/pages/tenants/detail/roles/AssignRolesModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type RolesProps = {
   tenantId: string;
@@ -25,7 +24,6 @@ type RolesProps = {
 
 const Roles: FC<RolesProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
-  const isReadOnly = isDefaultTenant(tenantId);
 
   const {
     data: roles,
@@ -66,7 +64,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedRolesListEmpty && !isReadOnly)
+  if (success && isAssignedRolesListEmpty)
     return (
       <>
         <TabEmptyState
@@ -89,21 +87,17 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
           { header: t("roleName"), key: "name", isSortable: true },
         ]}
         loading={loading}
-        addEntityLabel={isReadOnly ? null : t("assignRole")}
-        onAddEntity={isReadOnly ? undefined : openAssignModal}
+        addEntityLabel={t("assignRole")}
+        onAddEntity={openAssignModal}
         searchPlaceholder={t("searchByRoleId")}
-        menuItems={
-          isReadOnly
-            ? undefined
-            : [
-                {
-                  label: t("remove"),
-                  icon: TrashCan,
-                  isDangerous: true,
-                  onClick: unassignRole,
-                },
-              ]
-        }
+        menuItems={[
+          {
+            label: t("remove"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: unassignRole,
+          },
+        ]}
         {...paginationProps}
       />
       {assignRolesModal}
