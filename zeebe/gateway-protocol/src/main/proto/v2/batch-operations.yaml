@@ -395,7 +395,7 @@ components:
             $ref: '#/components/schemas/BatchOperationError'
       x-properties-added-in-version:
         - propertyName: actorType
-          addedInVersion: "8.9"
+          addedInVersion: "8.10"
         - propertyName: actorId
           addedInVersion: "8.9"
 
