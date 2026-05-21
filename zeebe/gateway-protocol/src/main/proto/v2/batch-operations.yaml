@@ -393,10 +393,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+        spuriousMultiSameVersion:
+          description: |
+            Incorrectly annotated (8.9) new property on BatchOperationResponse,
+            actually new in 8.10; should fail CI.
+          type: string
       x-properties-added-in-version:
         - propertyName: actorType
           addedInVersion: "8.9"
         - propertyName: actorId
+          addedInVersion: "8.9"
+        - propertyName: spuriousMultiSameVersion
           addedInVersion: "8.9"
 
     BatchOperationError:
