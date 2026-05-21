@@ -38,7 +38,7 @@ public class RecordingJobStreamer implements JobStreamer {
     return jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
         .filter(jobStream -> predicate.test(jobStream.getProperties()))
         .findAny()
-        .map(s -> (JobStream) s);
+        .map(JobStream.class::cast);
   }
 
   public int notificationsForJob(final String jobType) {

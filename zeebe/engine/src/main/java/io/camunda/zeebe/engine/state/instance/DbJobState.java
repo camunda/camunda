@@ -460,6 +460,48 @@ public final class DbJobState implements JobState, MutableJobState {
     }
   }
 
+  @Override
+  public JobRecord getJob(final long key) {
+    jobKey.wrapLong(key);
+    final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
+    return jobState == null ? null : jobState.getRecord();
+  }
+
+  @Override
+  public JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds) {
+    final JobRecord jobRecord = getJob(key);
+    if (jobRecord != null && authorizedTenantIds.isAuthorizedForTenantId(jobRecord.getTenantId())) {
+      return jobRecord;
+    }
+    return null;
+  }
+
+  @Override
+  public boolean jobDeadlineExists(final long jobKey, final long deadline) {
+    this.jobKey.wrapLong(jobKey);
+    deadlineKey.wrapLong(deadline);
+    return deadlinesColumnFamily.exists(deadlineJobKey);
+  }
+
+  @Override
+  public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
+    nextBackOffDueDate = -1L;
+    backoffColumnFamily.whileTrue(
+        key -> {
+          final long deadline = key.first().getValue();
+          boolean consumed = false;
+          if (deadline <= timestamp) {
+            final long jobKey = key.second().inner().getValue();
+            consumed = visitJob(jobKey, callback);
+          }
+          if (!consumed) {
+            nextBackOffDueDate = deadline;
+          }
+          return consumed;
+        });
+    return nextBackOffDueDate;
+  }
+
   /**
    * Phase 1 — yields all priority > 0 jobs from {@code JOB_ACTIVATABLE_BY_PRIORITY} in descending
    * priority order. Stops at the first entry where the actual priority drops to 0 or below.
@@ -527,9 +569,10 @@ public final class DbJobState implements JobState, MutableJobState {
    * Phase 3 — yields all priority ≤ 0 jobs from {@code JOB_ACTIVATABLE_BY_PRIORITY}.
    *
    * <p>Uses the three-argument {@link
-   * io.camunda.zeebe.db.ColumnFamily#whileEqualPrefix(io.camunda.zeebe.db.DbKey, Object,
-   * io.camunda.zeebe.db.KeyValuePairVisitor)} overload to seek directly to the start of the
-   * priority = 0 range rather than re-scanning the priority > 0 entries already served in Phase 1.
+   * io.camunda.zeebe.db.ColumnFamily#whileEqualPrefix(io.camunda.zeebe.db.DbKey,
+   * io.camunda.zeebe.db.DbKey, io.camunda.zeebe.db.KeyValuePairVisitor)} overload to seek directly
+   * to the start of the priority = 0 range rather than re-scanning the priority > 0 entries already
+   * served in Phase 1.
    *
    * <p>The seek key is constructed by setting {@code invertedPriorityKey = Integer.MAX_VALUE} (the
    * encoded form of priority = 0), {@code jobKey = 0} and {@code tenantIdKey = ""} — the
@@ -558,48 +601,6 @@ public final class DbJobState implements JobState, MutableJobState {
           final var invertedPriorityAndJob = entry.wrappedKey().second();
           return visitJob(invertedPriorityAndJob.second().inner().getValue(), callback::apply);
         });
-  }
-
-  @Override
-  public JobRecord getJob(final long key) {
-    jobKey.wrapLong(key);
-    final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
-    return jobState == null ? null : jobState.getRecord();
-  }
-
-  @Override
-  public JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds) {
-    final JobRecord jobRecord = getJob(key);
-    if (jobRecord != null && authorizedTenantIds.isAuthorizedForTenantId(jobRecord.getTenantId())) {
-      return jobRecord;
-    }
-    return null;
-  }
-
-  @Override
-  public boolean jobDeadlineExists(final long jobKey, final long deadline) {
-    this.jobKey.wrapLong(jobKey);
-    deadlineKey.wrapLong(deadline);
-    return deadlinesColumnFamily.exists(deadlineJobKey);
-  }
-
-  @Override
-  public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
-    nextBackOffDueDate = -1L;
-    backoffColumnFamily.whileTrue(
-        key -> {
-          final long deadline = key.first().getValue();
-          boolean consumed = false;
-          if (deadline <= timestamp) {
-            final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback);
-          }
-          if (!consumed) {
-            nextBackOffDueDate = deadline;
-          }
-          return consumed;
-        });
-    return nextBackOffDueDate;
   }
 
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {

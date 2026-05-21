@@ -36,9 +36,44 @@ public class JobActivationByPriorityTest {
   }
 
   @Test
+  public void shouldActivateJobsInJobKeyAscOrderWithinSamePriority() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("same-priority")
+                .startEvent()
+                .serviceTask("task", b -> b.zeebeJobType(jobType).zeebeJobPriority("50"))
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
+    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
+    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
+    awaitJobsCreated(3);
+
+    // when
+    final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
+
+    // then
+    assertThat(batch.getValue().getJobKeys()).isSorted();
+  }
+
+  @Test
   public void shouldActivateJobsInPriorityDescendingOrder() {
-    // given — three jobs of the same type with different priorities
-    for (final int priority : new int[] {10, 50, 90}) {
+    // given — boundary values covering MAX_VALUE, MAX_VALUE-1, positive, zero, negative,
+    // MIN_VALUE+1, and MIN_VALUE to exercise the full inversion-encoding range
+    final int[] priorities =
+        new int[] {
+          Integer.MIN_VALUE,
+          -1,
+          0,
+          1,
+          Integer.MAX_VALUE - 1,
+          Integer.MAX_VALUE,
+          Integer.MIN_VALUE + 1
+        };
+    for (final int priority : priorities) {
       final String processId = "priority-desc-" + priority;
       ENGINE
           .deployment()
@@ -53,44 +88,29 @@ public class JobActivationByPriorityTest {
           .deploy();
       ENGINE.processInstance().ofBpmnProcessId(processId).create();
     }
-    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(3).toList();
+
+    awaitJobsCreated(priorities.length);
 
     // when
-    final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
+    final var batch =
+        ENGINE.jobs().withType(jobType).withMaxJobsToActivate(priorities.length).activate();
 
-    // then — highest priority first
+    // then — Phase 1 (priority > 0) then Phase 3 (priority ≤ 0), each in descending order
     assertThat(batch.getValue().getJobs())
         .extracting(JobRecordValue::getPriority)
-        .containsExactly(90, 50, 10);
-  }
-
-  @Test
-  public void shouldActivateJobsInJobKeyAscOrderWithinSamePriority() {
-    // given — three jobs with the same priority
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("same-priority")
-                .startEvent()
-                .serviceTask("task", b -> b.zeebeJobType(jobType).zeebeJobPriority("50"))
-                .endEvent()
-                .done())
-        .deploy();
-    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
-    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
-    ENGINE.processInstance().ofBpmnProcessId("same-priority").create();
-    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(3).toList();
-
-    // when
-    final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
-
-    // then — FIFO within the same priority band (jobKey ASC)
-    assertThat(batch.getValue().getJobKeys()).isSorted();
+        .containsExactly(
+            Integer.MAX_VALUE,
+            Integer.MAX_VALUE - 1,
+            1,
+            0,
+            -1,
+            Integer.MIN_VALUE + 1,
+            Integer.MIN_VALUE);
   }
 
   @Test
   public void shouldActivateDefaultPriorityJobsInJobKeyOrder() {
-    // given — three jobs with no explicit priority (default = 0)
+    // given
     ENGINE
         .deployment()
         .withXmlResource(
@@ -103,12 +123,12 @@ public class JobActivationByPriorityTest {
     ENGINE.processInstance().ofBpmnProcessId("default-priority").create();
     ENGINE.processInstance().ofBpmnProcessId("default-priority").create();
     ENGINE.processInstance().ofBpmnProcessId("default-priority").create();
-    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(3).toList();
+    awaitJobsCreated(3);
 
     // when
     final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
 
-    // then — FIFO (jobKey ASC = creation order)
+    // then
     assertThat(batch.getValue().getJobKeys()).isSorted();
     assertThat(batch.getValue().getJobs()).extracting(JobRecordValue::getPriority).containsOnly(0);
   }
@@ -134,12 +154,12 @@ public class JobActivationByPriorityTest {
           .deploy();
       ENGINE.processInstance().ofBpmnProcessId(processId).create();
     }
-    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(3).toList();
+    awaitJobsCreated(3);
 
     // when
     final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
 
-    // then — 5, then 0, then -5
+    // then
     assertThat(batch.getValue().getJobs())
         .extracting(JobRecordValue::getPriority)
         .containsExactly(5, 0, -5);
@@ -147,7 +167,7 @@ public class JobActivationByPriorityTest {
 
   @Test
   public void shouldNotActivateJobsOfDifferentTenant() {
-    // given — tenant A has priority=1 jobs, tenant B has priority=90 jobs (same job type)
+    // given
     final String tenantA = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final String tenantB = "tenant-b";
 
@@ -175,14 +195,20 @@ public class JobActivationByPriorityTest {
         .deploy();
     ENGINE.processInstance().ofBpmnProcessId("process-tenant-b").withTenantId(tenantB).create();
 
-    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(2).toList();
+    awaitJobsCreated(2);
 
-    // when — activate for tenant A only
+    // when
     final var batch = ENGINE.jobs().withType(jobType).withTenantId(tenantA).activate();
 
-    // then — only tenant A's priority=1 job is returned; tenant B's priority=90 job is not
+    // then
     assertThat(batch.getValue().getJobs()).hasSize(1);
     assertThat(batch.getValue().getJobs().get(0).getPriority()).isEqualTo(1);
     assertThat(batch.getValue().getJobs().get(0).getTenantId()).isEqualTo(tenantA);
+  }
+
+  // Blocks until the engine has exported `count` CREATED records, so jobs are in state before
+  // activating.
+  private void awaitJobsCreated(final int count) {
+    RecordingExporter.jobRecords(CREATED).withType(jobType).limit(count).toList();
   }
 }

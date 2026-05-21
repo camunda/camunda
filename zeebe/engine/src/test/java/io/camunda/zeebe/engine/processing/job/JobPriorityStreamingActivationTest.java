@@ -64,31 +64,6 @@ public class JobPriorityStreamingActivationTest {
     JOB_STREAMER.clearStreams();
   }
 
-  private void deployPriorityProcess(final int priority) {
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(
-                    "task", b -> b.zeebeJobType(jobType).zeebeJobPriority(String.valueOf(priority)))
-                .endEvent()
-                .done())
-        .deploy();
-  }
-
-  private void deployDefaultPriorityProcess() {
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("task", b -> b.zeebeJobType(jobType))
-                .endEvent()
-                .done())
-        .deploy();
-  }
-
   @Test
   public void shouldLeaveNoStaleCfEntryAfterStreamingActivationOfNonZeroPriorityJob() {
     // given
@@ -174,5 +149,30 @@ public class JobPriorityStreamingActivationTest {
     final var pullResponse = ENGINE.jobs().withType(jobType).activate();
     assertThat(pullResponse.getValue().getJobKeys()).hasSize(1);
     assertThat(pullResponse.getValue().getJobs().get(0).getPriority()).isEqualTo(50);
+  }
+
+  private void deployPriorityProcess(final int priority) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task", b -> b.zeebeJobType(jobType).zeebeJobPriority(String.valueOf(priority)))
+                .endEvent()
+                .done())
+        .deploy();
+  }
+
+  private void deployDefaultPriorityProcess() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("task", b -> b.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
   }
 }
