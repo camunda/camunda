@@ -11,14 +11,14 @@ import {TanStackRouterDevtoolsPanel} from '@tanstack/react-router-devtools';
 import {TanStackDevtools} from '@tanstack/react-devtools';
 import {ReactQueryDevtoolsPanel} from '@tanstack/react-query-devtools';
 import type {QueryClient} from '@tanstack/react-query';
-import {NotFound} from '#/pages/notFound';
-import {Error} from '#/pages/error';
+import {NotFoundPage} from '#/pages/NotFoundPage';
+import {GenericErrorPage} from '#/pages/GenericErrorPage';
 
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
 }>()({
-	notFoundComponent: NotFound,
-	errorComponent: ({reset}) => <Error reset={reset} />,
+	notFoundComponent: NotFoundPage,
+	errorComponent: ({reset}) => <GenericErrorPage reset={reset} />,
 	head: () => ({
 		meta: [
 			{

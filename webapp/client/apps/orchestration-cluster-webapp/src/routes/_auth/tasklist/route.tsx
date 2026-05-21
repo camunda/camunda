@@ -9,7 +9,7 @@
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {getClientConfig} from '#/modules/config/getClientConfig';
 import {ComponentNotAvailableError} from '#/modules/errors/errors';
-import {Forbidden} from '#/pages/forbidden';
+import {ForbiddenPage} from '#/pages/ForbiddenPage';
 
 export const Route = createFileRoute('/_auth/tasklist')({
 	beforeLoad: () => {
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/_auth/tasklist')({
 	},
 	errorComponent: ({error}) => {
 		if (error instanceof ComponentNotAvailableError) {
-			return <Forbidden />;
+			return <ForbiddenPage />;
 		}
 		throw error;
 	},
