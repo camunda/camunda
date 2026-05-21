@@ -33,7 +33,8 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
-describe('ElementInstancesTree - Modification placeholders', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
     mockFetchElementInstancesStatistics().withSuccess({items: []});

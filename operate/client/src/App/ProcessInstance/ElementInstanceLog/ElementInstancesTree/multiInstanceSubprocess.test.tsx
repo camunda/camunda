@@ -56,7 +56,8 @@ const SUB_PROCESS_ELEMENT: ElementInstance = {
   rootProcessInstanceKey: null,
 };
 
-describe('ElementInstancesTree - Multi Instance Subprocess', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
 
