@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -99,7 +97,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
     final String token = authorization.replaceFirst("^Bearer ", "");
     try {
       identity.authentication().verifyAndDecode(token, audience);
-    } catch (final JWTVerificationException | TokenVerificationException e) {
+    } catch (final Exception e) {
       LOGGER.debug(
           "Denying call {} as the token could not be verified successfully. Error message: {}",
           methodDescriptor.getFullMethodName(),
