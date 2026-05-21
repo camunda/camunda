@@ -1,0 +1,85 @@
+camunda:
+  security:
+    authentication:
+      method: oidc
+      # Root-level OIDC slot is consumed by CSL's standard OidcWebapp + OidcApi chains
+      # (Stage 2: dropped the PoC's unprefixed-default chains; CSL now serves the default
+      # tenant via these standard chains under the unprefixed access path). The PT chains
+      # bind their own per-tenant SecurityConfiguration under
+      # camunda.physical-tenants.<id>.security.* below and resolve providers via
+      # providers.assigned — they do NOT consume this root slot.
+      #
+      # audiences must mirror what camunda.physical-tenants.default.security.authentication.oidc
+      # below declares so bearer tokens minted by camunda-pt-default-client validate the same
+      # `aud` claim against both code paths (CSL's standard JwtDecoder validates against the
+      # root list; PT API chains validate against the per-tenant list).
+      oidc:
+        client-id: camunda-pt-default-client
+        client-secret: default-secret
+        issuer-uri: http://localhost:8081/realms/default
+        audiences: [pt-default-aud]
+      providers:
+        oidc:
+          tenanta:
+            client-id: camunda-pt-tenanta-client
+            client-secret: tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
+  # Per-tenant overlays. Each tenant declares its OWN providers.assigned list and the
+  # OIDC slots those entries resolve to (default slot vs. named slots under
+  # providers.oidc.<name>). The PoC deliberately exercises BOTH resolution paths:
+  # the default tenant uses the default slot (registration id "oidc"); tenant A uses
+  # a named slot (registration id "tenanta"). See PerTenantOidcRegistry for the
+  # resolution rule.
+  physical-tenants:
+    default:
+      security:
+        authentication:
+          # Per-provider audiences come straight from each OIDC provider's `audiences` field
+          # (existing on CSL's OidcConfiguration). The per-tenant allowlist is computed as the
+          # union of audiences over the providers in `assigned` — no separate per-tenant key.
+          oidc:                # default slot — registration id "oidc"
+            client-id: camunda-pt-default-client
+            client-secret: default-secret
+            issuer-uri: http://localhost:8081/realms/default
+            audiences: [pt-default-aud]
+          providers:
+            # Multi-IdP for the default tenant (spec D7 multi-IdP picker; Task 17). The
+            # first entry resolves to the default slot above; the second to a NAMED slot
+            # under providers.oidc.default-via-tenanta below. The IdP behind the second
+            # entry is the SAME Keycloak realm tenant A uses — same issuer, different
+            # client at the IdP (which emits a tenant-specific aud claim).
+            assigned: [oidc, default-via-tenanta]
+            oidc:
+              default-via-tenanta:
+                client-id: camunda-pt-default-via-tenanta-client
+                client-secret: default-via-tenanta-secret
+                issuer-uri: http://localhost:8082/realms/tenanta
+                audiences: [pt-default-via-tenanta-aud]
+    tenanta:
+      security:
+        authentication:
+          providers:
+            assigned: [tenanta]
+            oidc:
+              tenanta:         # named slot — registration id "tenanta"
+                client-id: camunda-pt-tenanta-client
+                client-secret: tenanta-secret
+                issuer-uri: http://localhost:8082/realms/tenanta
+                audiences: [pt-tenanta-aud]
+
+server:
+  port: 8080
+
+# Walking-skeleton diagnostics: trace which SecurityFilterChain matches each
+# request and which filter handles it. Remove once Task 4 is verified.
+# Also writes the log to /tmp/oc.log for easier consumption than terminal output.
+logging:
+  file:
+    name: /tmp/oc.log
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.web.FilterChainProxy: TRACE
+
+# NOTE: the consolidated-auth and pt-security profiles are pulled in by the
+# spring.profiles.group.pt-poc declaration in application.properties — Spring
+# Boot 2.4+ forbids spring.profiles.include inside profile-specific resources.

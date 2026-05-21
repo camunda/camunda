@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -21,22 +22,30 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 /**
  * Custom {@link RequestMappingHandlerMapping} that, in addition to the original path declared on
- * each {@link CamundaRestController}, registers a tenant-prefixed variant under {@code
- * /v2/physical-tenants/{physicalTenantId}/...}.
+ * each {@link CamundaRestController}, registers two tenant-prefixed variants (spec D7):
+ *
+ * <ul>
+ *   <li>{@code /v2/physical-tenants/{physicalTenantId}/...} — direct API-client addressing
+ *       (existing, REST-conventional shape).
+ *   <li>{@code /physical-tenant/{physicalTenantId}/v2/...} — webapp/SPA addressing, aligned with
+ *       the per-tenant webapp session cookie's {@code Path=/physical-tenant/<id>} scope so a
+ *       browser-side session cookie covers both webapp and API URLs of the same tenant.
+ * </ul>
+ *
+ * <p>Both prefixed variants use the same URI template variable name {@link
+ * PhysicalTenantContext#PATH_VARIABLE_PHYSICAL_TENANT_ID}, so the same {@link
+ * PhysicalTenantInterceptor} resolves the tenant id regardless of which prefix the client used.
  *
  * <p>Controllers annotated with {@link ClusterScoped} are skipped — their endpoints stay
  * cluster-level and remain reachable only under their original path.
- *
- * <p>Validation of the {@code physicalTenantId} captured by the prefix and propagation to the
- * request scope is performed by {@link PhysicalTenantInterceptor}.
  */
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
-  /** Path segment inserted between {@code /v2} and the original resource path. */
-  private static final String PREFIX_SEGMENT =
-      "physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
-
   private static final String V2 = "/v2";
+
+  /** URI template path variable expression, e.g. {@code {physicalTenantId}}. */
+  private static final String TENANT_VAR =
+      "{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   @Override
   protected void registerHandlerMethod(
@@ -49,8 +58,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
       return;
     }
 
-    final RequestMappingInfo prefixed = withPhysicalTenantPrefix(mapping);
-    if (prefixed != null) {
+    for (final RequestMappingInfo prefixed : withPhysicalTenantPrefixes(mapping)) {
       super.registerHandlerMethod(handler, method, prefixed);
     }
   }
@@ -61,20 +69,31 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
         && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
   }
 
+  /**
+   * Returns one {@link RequestMappingInfo} per prefixed scheme (D7). Each returned mapping has the
+   * full set of original patterns rewritten under one of the two prefixes. Returns an empty list if
+   * no original pattern is eligible for prefixing (i.e. nothing starts with {@code /v2}).
+   */
   @VisibleForTesting
-  RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
+  List<RequestMappingInfo> withPhysicalTenantPrefixes(final RequestMappingInfo mapping) {
     final Set<String> patterns = extractPatterns(mapping);
-    final Set<String> prefixed = new LinkedHashSet<>();
+    final Set<String> apiClientScheme = new LinkedHashSet<>();
+    final Set<String> webappAlignedScheme = new LinkedHashSet<>();
     for (final String pattern : patterns) {
-      final String rewritten = prefix(pattern);
-      if (rewritten != null) {
-        prefixed.add(rewritten);
+      final List<String> rewritten = prefixes(pattern);
+      if (rewritten.isEmpty()) {
+        continue;
       }
+      // prefixes() always returns the two schemes in a fixed order: [api-client, webapp-aligned].
+      apiClientScheme.add(rewritten.get(0));
+      webappAlignedScheme.add(rewritten.get(1));
     }
-    if (prefixed.isEmpty()) {
-      return null;
+    if (apiClientScheme.isEmpty()) {
+      return List.of();
     }
-    return mapping.mutate().paths(prefixed.toArray(String[]::new)).build();
+    return List.of(
+        mapping.mutate().paths(apiClientScheme.toArray(String[]::new)).build(),
+        mapping.mutate().paths(webappAlignedScheme.toArray(String[]::new)).build());
   }
 
   private Set<String> extractPatterns(final RequestMappingInfo mapping) {
@@ -84,20 +103,33 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
     return Set.of();
   }
 
-  private String prefix(final String pattern) {
+  /**
+   * Returns the two prefixed siblings for {@code pattern}, in fixed order:
+   *
+   * <ol>
+   *   <li>{@code /v2/physical-tenants/{physicalTenantId}<tail>} — existing API-client scheme.
+   *   <li>{@code /physical-tenant/{physicalTenantId}/v2<tail>} — webapp-aligned scheme (D7).
+   * </ol>
+   *
+   * Returns an empty list if {@code pattern} is not eligible (doesn't start with {@code /v2}, or
+   * looks like {@code /v2foo}).
+   */
+  @VisibleForTesting
+  List<String> prefixes(final String pattern) {
     if (pattern == null || !pattern.startsWith(V2)) {
       // Only /v2 routes participate in the physical-tenant addressing scheme.
-      return null;
+      return List.of();
     }
     final String tail = pattern.substring(V2.length());
-    if (tail.isEmpty()) {
-      return V2 + "/" + PREFIX_SEGMENT;
-    }
-    if (!tail.startsWith("/")) {
+    if (!tail.isEmpty() && !tail.startsWith("/")) {
       // Avoid prefixing things like "/v2foo".
-      return null;
+      return List.of();
     }
-    return V2 + "/" + PREFIX_SEGMENT + tail;
+    return List.of(
+        // existing API-client scheme: /v2/physical-tenants/{id}/<rest>
+        V2 + "/physical-tenants/" + TENANT_VAR + tail,
+        // webapp-aligned scheme: /physical-tenant/{id}/v2/<rest>
+        "/physical-tenant/" + TENANT_VAR + V2 + tail);
   }
 
   private Class<?> resolveBeanType(final Object handler) {

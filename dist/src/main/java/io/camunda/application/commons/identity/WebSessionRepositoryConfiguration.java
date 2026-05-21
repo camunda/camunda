@@ -14,6 +14,7 @@ import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionA
 import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
@@ -27,26 +28,24 @@ import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDesc
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 
 @Configuration
-@EnableSpringHttpSession
 @ConditionalOnPersistentWebSessionEnabled
 @ConditionalOnRestGatewayEnabled
 public class WebSessionRepositoryConfiguration {
 
-  private final GenericConversionService conversionService;
   private final ConnectConfiguration connectConfiguration;
 
-  public WebSessionRepositoryConfiguration(
-      final GenericConversionService conversionService,
-      final ConnectConfiguration connectConfiguration) {
-    this.conversionService = conversionService;
+  public WebSessionRepositoryConfiguration(final ConnectConfiguration connectConfiguration) {
     this.connectConfiguration = connectConfiguration;
   }
 
@@ -83,45 +82,101 @@ public class WebSessionRepositoryConfiguration {
         persistentWebSessionDbReader, persistentWebSessionWriter);
   }
 
-  @Bean
-  public WebSessionRepository webSessionRepository(
-      final PersistentWebSessionClient persistentWebSessionClient,
-      final HttpServletRequest request) {
-    final var webSessionAttributeConverter =
-        new SpringBasedWebSessionAttributeConverter(conversionService);
-    final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
-    return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
+  /**
+   * Non-PT configuration: single cluster-wide {@link WebSessionRepository} plus the {@link
+   * EnableSpringHttpSession} integration that registers a servlet-container-wide {@code
+   * SessionRepositoryFilter}.
+   */
+  @Configuration(proxyBeanMethods = false)
+  @EnableSpringHttpSession
+  @Profile("!pt-security")
+  static class SingleTenant {
+
+    private final GenericConversionService conversionService;
+
+    SingleTenant(final GenericConversionService conversionService) {
+      this.conversionService = conversionService;
+    }
+
+    @Bean
+    public WebSessionRepository webSessionRepository(
+        final PersistentWebSessionClient persistentWebSessionClient,
+        final HttpServletRequest request) {
+      final var webSessionAttributeConverter =
+          new SpringBasedWebSessionAttributeConverter(conversionService);
+      final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
+      return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
+    }
+
+    @Bean("persistentWebSessionDeletionTaskExecutor")
+    public ScheduledThreadPoolExecutor persistentWebSessionDeletionTaskExecutor(
+        final WebSessionRepository webSessionRepository) {
+      final var executor = createTaskExecutor();
+      executor.schedule(
+          new SelfSchedulingTask(
+              executor,
+              new WebSessionDeletionTask(webSessionRepository),
+              WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_RUN_DELAY),
+          WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_INITIAL_DELAY,
+          TimeUnit.MILLISECONDS);
+      return executor;
+    }
+
+    private static ScheduledThreadPoolExecutor createTaskExecutor() {
+      final var threadFactory =
+          Thread.ofPlatform()
+              .name("camunda-web-session-deletion-", 0)
+              .uncaughtExceptionHandler(
+                  FatalErrorHandler.uncaughtExceptionHandler(WebSessionRepository.LOGGER))
+              .factory();
+      final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
+      executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+      executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+      executor.setRemoveOnCancelPolicy(true);
+      executor.allowCoreThreadTimeOut(true);
+      executor.setKeepAliveTime(1, TimeUnit.MINUTES);
+      executor.setCorePoolSize(1);
+      return executor;
+    }
   }
 
-  @Bean("persistentWebSessionDeletionTaskExecutor")
-  public ScheduledThreadPoolExecutor persistentWebSessionDeletionTaskExecutor(
-      final WebSessionRepository webSessionRepository) {
-    final var executor = createTaskExecutor();
-    executor.schedule(
-        new SelfSchedulingTask(
-            executor,
-            new WebSessionDeletionTask(webSessionRepository),
-            WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_RUN_DELAY),
-        WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_INITIAL_DELAY,
-        TimeUnit.MILLISECONDS);
-    return executor;
-  }
+  /**
+   * Per-physical-tenant configuration: produces one {@link WebSessionRepository} per tenant,
+   * exposed as a {@code Map<String, WebSessionRepository>} keyed by tenant id. Injected directly
+   * into {@code PhysicalTenantSecurityConfiguration}, which looks up the right instance per chain.
+   *
+   * <p>Notably absent: {@link EnableSpringHttpSession}. The PT setup wires per-chain {@code
+   * SessionRepositoryFilter}s manually rather than relying on a servlet-container-wide one.
+   *
+   * <p>Storage isolation is structural: each tenant's repository owns its own backing client — no
+   * shared backend, no key-prefixing decorator. The backing client is an in-memory {@link
+   * InMemoryPersistentWebSessionClient}; per-tenant durable storage is out of scope for the PoC.
+   * Sessions live for the lifetime of the process. Because sessions are in-memory and die with the
+   * process, no per-tenant {@code WebSessionDeletionTask} runs.
+   */
+  @Configuration(proxyBeanMethods = false)
+  @Profile("pt-security")
+  static class PerPhysicalTenant {
 
-  public ScheduledThreadPoolExecutor createTaskExecutor() {
-    final var threadFactory =
-        Thread.ofPlatform()
-            .name("camunda-web-session-deletion-", 0)
-            .uncaughtExceptionHandler(
-                FatalErrorHandler.uncaughtExceptionHandler(WebSessionRepository.LOGGER))
-            .factory();
-    final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
-    executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    executor.setRemoveOnCancelPolicy(true);
-    executor.allowCoreThreadTimeOut(true);
-    executor.setKeepAliveTime(1, TimeUnit.MINUTES);
-    executor.setCorePoolSize(1);
-    return executor;
+    @Bean
+    public Map<String, WebSessionRepository> ptWebSessionRepositories(
+        final PhysicalTenantResolver physicalTenantResolver,
+        final GenericConversionService conversionService,
+        final HttpServletRequest request) {
+      final var mapper =
+          new WebSessionMapper(new SpringBasedWebSessionAttributeConverter(conversionService));
+      final var repositories = new LinkedHashMap<String, WebSessionRepository>();
+      physicalTenantResolver
+          .getAll()
+          .keySet()
+          .forEach(
+              tenantId ->
+                  repositories.put(
+                      tenantId,
+                      new WebSessionRepository(
+                          new InMemoryPersistentWebSessionClient(), mapper, request)));
+      return Map.copyOf(repositories);
+    }
   }
 
   static final class SelfSchedulingTask implements Runnable {
