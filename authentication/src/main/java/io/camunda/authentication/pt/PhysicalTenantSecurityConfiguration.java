@@ -8,9 +8,9 @@
 package io.camunda.authentication.pt;
 
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
+import io.camunda.authentication.session.WebSession;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +21,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.session.MapSession;
-import org.springframework.session.MapSessionRepository;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.session.web.http.SessionRepositoryFilter;
@@ -50,6 +48,12 @@ public class PhysicalTenantSecurityConfiguration {
   private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
 
   private final PerTenantSecurityChainFactory chainFactory = new PerTenantSecurityChainFactory();
+  private final PerTenantWebSessionRepositories perTenantWebSessionRepositories;
+
+  public PhysicalTenantSecurityConfiguration(
+      final PerTenantWebSessionRepositories perTenantWebSessionRepositories) {
+    this.perTenantWebSessionRepositories = perTenantWebSessionRepositories;
+  }
 
   @Bean
   public SecurityFilterChain ptTenantaWebappChain(
@@ -96,7 +100,8 @@ public class PhysicalTenantSecurityConfiguration {
         PerTenantOidcRegistry.forTenant(tenantId, tenantSecurity, assigned)
             .clientRegistrationRepository();
 
-    final var cookieAndFilter = perChainSessionFilter("camunda-session-" + tenantId, prefix);
+    final var cookieAndFilter =
+        perChainSessionFilter("camunda-session-" + tenantId, prefix, tenantId);
 
     return new TenantSecuritySlice(
         tenantId,
@@ -135,13 +140,12 @@ public class PhysicalTenantSecurityConfiguration {
    * (spec D2): a cookie at {@code Path=/physical-tenant/<t>} is never sent to a different tenant's
    * URLs (RFC 6265 path-matching).
    *
-   * <p>The session store is an in-memory {@link MapSessionRepository} stub. Task 9 replaces it with
-   * a per-tenant {@code WebSessionRepository} bound to each tenant's dedicated secondary storage;
-   * for the walking skeleton, in-memory survives one process lifetime and is enough to verify the
-   * cookie isolation.
+   * <p>The session store is resolved from {@link PerTenantWebSessionRepositories}, which hands back
+   * a {@code WebSessionRepository} bound to the tenant's dedicated backend instance. Storage
+   * isolation is structural at the backend layer — no shared backend, no key-prefixing decorator.
    */
-  private static SessionFilterAndResolver perChainSessionFilter(
-      final String cookieName, final String cookiePath) {
+  private SessionFilterAndResolver perChainSessionFilter(
+      final String cookieName, final String cookiePath, final String tenantId) {
     final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
     serializer.setCookieName(cookieName);
     serializer.setCookiePath(cookiePath);
@@ -153,8 +157,8 @@ public class PhysicalTenantSecurityConfiguration {
     final CookieHttpSessionIdResolver sessionIdResolver = new CookieHttpSessionIdResolver();
     sessionIdResolver.setCookieSerializer(serializer);
 
-    final SessionRepositoryFilter<MapSession> sessionFilter =
-        new SessionRepositoryFilter<>(new MapSessionRepository(new ConcurrentHashMap<>()));
+    final SessionRepositoryFilter<WebSession> sessionFilter =
+        new SessionRepositoryFilter<>(perTenantWebSessionRepositories.forTenant(tenantId));
     sessionFilter.setHttpSessionIdResolver(sessionIdResolver);
     return new SessionFilterAndResolver(sessionFilter, sessionIdResolver);
   }
