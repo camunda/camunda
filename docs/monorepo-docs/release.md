@@ -58,7 +58,6 @@ Components that depend on the C8 monorepo releases:
 
 * [Maven Central](https://mvnrepository.com/artifact/io.camunda)
 * DockerHub:
-  * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
   * [Optimize](https://hub.docker.com/r/camunda/optimize/)
   * [Camunda](https://hub.docker.com/r/camunda/camunda/) (future "Single Application" Docker image)
 * [GitHub releases](https://github.com/camunda/camunda/releases)
@@ -493,7 +492,6 @@ The Monorepo release produces core backend artifacts, while the Big Release Trai
 
 While Monorepo (camunda/camunda) releases artifacts for:
 * [Camunda](https://hub.docker.com/r/camunda/camunda/)
-* [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
 
 The big release train releases:
 * Identity Management Component (camunda-cloud/identity)

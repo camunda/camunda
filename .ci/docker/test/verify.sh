@@ -3,8 +3,8 @@
 # on `jq` as an external dependency.
 #
 # Example usage:
-#   $ ./verify.sh camunda/zeebe:8.1.0
-#   $ ./verify.sh camunda/zeebe:8.1.0 arm64
+#   $ ./verify.sh camunda/camunda:8.10.0
+#   $ ./verify.sh camunda/camunda:8.10.0 arm64
 #
 # Globals:
 #   VERSION - required; the semantic version, e.g. 8.1.0 or 1.2.0-alpha1
@@ -44,12 +44,12 @@ if [ -z "${DATE}" ]; then
 fi
 
 if [ -z "${DOCKERFILENAME}" ]; then
-  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'optimize.Dockerfile'"
+  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'camunda.Dockerfile' or 'optimize.Dockerfile'"
   exit 1
 fi
 
 if [ -z "${GOLDENFILE}" ]; then
-  echo >&2 "No GOLDENFILE was given; make sure to pass an name for the corresponding golden file, like 'zeebe-docker-labels.golden.json'."
+  echo >&2 "No GOLDENFILE was given; make sure to pass an name for the corresponding golden file, like 'camunda-docker-labels.golden.json'."
   exit 1
 fi
 
