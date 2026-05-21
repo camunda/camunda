@@ -22,6 +22,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Truncate the log up front. `tee` without -a also truncates on its first
+# write, but logback's file appender (logging.file.name in application-pt-poc
+# .yaml) opens in append mode — between them, a stale log from a previous
+# session can linger across restarts. Explicit rm makes it deterministic.
+rm -f /tmp/oc.log
+
 # spring-boot:run -pl dist resolves authentication/etc. from the local Maven
 # repo — it does NOT recompile upstream modules from source. Two steps:
 #  1. install -pl dist -am: rebuilds dist + every upstream module
