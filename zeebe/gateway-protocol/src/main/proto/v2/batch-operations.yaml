@@ -393,6 +393,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationError'
+        spuriousSameVersion:
+          description: |
+            Unannotated new property on BatchOperationResponse, a schema shared
+            between two same-version (8.8) endpoints; should provoke CI gate failure.
+          type: string
       x-properties-added-in-version:
         - propertyName: actorType
           addedInVersion: "8.9"
