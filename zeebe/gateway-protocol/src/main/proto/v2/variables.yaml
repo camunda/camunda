@@ -7,6 +7,9 @@ paths:
       tags:
         - Variable
       operationId: searchVariables
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search variables
       description: |-
         Search for variables based on given criteria.
@@ -54,6 +57,9 @@ paths:
       tags:
         - Variable
       operationId: getVariable
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get variable
       description: |-
         Get a variable by its key.

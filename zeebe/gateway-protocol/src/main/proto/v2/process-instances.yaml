@@ -7,6 +7,9 @@ paths:
       tags:
         - Process instance
       operationId: createProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Create process instance
       description: |
         Creates and starts an instance of the specified process.
@@ -74,6 +77,9 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get process instance
       description: Get the process instance by the process instance key.
       parameters:
@@ -112,6 +118,9 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceSequenceFlows
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get sequence flows
       description: Get sequence flows taken by the process instance.
       parameters:
@@ -144,6 +153,9 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get element instance statistics
       description: Get statistics about elements by the process instance key.
       parameters:
@@ -176,6 +188,9 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstances
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search process instances
       description: Search for process instances based on given criteria.
       requestBody:
@@ -207,6 +222,9 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstanceIncidents
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search related incidents
       description: |
         Search for incidents caused by the process instance or any of its called process or decision instances.
@@ -257,6 +275,9 @@ paths:
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Resolve related incidents
       description: Creates a batch operation to resolve multiple incidents of a process instance.
       parameters:
@@ -295,6 +316,9 @@ paths:
       tags:
         - Process instance
       operationId: cancelProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Cancel process instance
       description: >
         Cancels a running process instance. As a cancellation includes more than just the removal
@@ -340,6 +364,9 @@ paths:
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Cancel process instances (batch)
       description: |
         Cancels multiple running process instances.
@@ -381,6 +408,9 @@ paths:
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Resolve related incidents (batch)
       description: |
         Resolves multiple instances of process instances.
@@ -422,6 +452,9 @@ paths:
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Migrate process instances (batch)
       description: |
         Migrate multiple process instances.
@@ -463,6 +496,9 @@ paths:
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Modify process instances (batch)
       description: |
         Modify multiple process instances.
@@ -506,6 +542,9 @@ paths:
       tags:
         - Process instance
       operationId: deleteProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Delete process instance
       description: Deletes a process instance. Only instances that are completed or terminated can be deleted.
       parameters:
@@ -552,6 +591,9 @@ paths:
       tags:
         - Process instance
       operationId: deleteProcessInstancesBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Delete process instances (batch)
       description: |
         Delete multiple process instances. This will delete the historic data from secondary storage.
@@ -592,6 +634,9 @@ paths:
       tags:
         - Process instance
       operationId: migrateProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Migrate process instance
       description: |
         Migrates a process instance to a new process definition.
@@ -645,6 +690,9 @@ paths:
       tags:
         - Process instance
       operationId: modifyProcessInstance
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Modify process instance
       description: |
         Modifies a running process instance.
@@ -689,6 +737,9 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceCallHierarchy
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get call hierarchy
       description: Returns the call hierarchy for a given process instance, showing its ancestry up to the root instance.
       parameters:

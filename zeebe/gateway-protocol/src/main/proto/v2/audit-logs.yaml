@@ -6,6 +6,9 @@ paths:
       tags:
         - Audit Log
       operationId: searchAuditLogs
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search audit logs
       description: Search for audit logs based on given criteria.
       requestBody:
@@ -37,6 +40,9 @@ paths:
       tags:
         - Audit Log
       operationId: getAuditLog
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get audit log
       description: Get an audit log entry by auditLogKey.
       parameters:

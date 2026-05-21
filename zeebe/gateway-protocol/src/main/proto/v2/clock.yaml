@@ -7,6 +7,9 @@ paths:
       tags:
         - Clock
       operationId: pinClock
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Pin internal clock (alpha)
       description: |
         Set a precise, static time for the Zeebe engine's internal clock.
@@ -38,6 +41,9 @@ paths:
       tags:
         - Clock
       operationId: resetClock
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Reset internal clock (alpha)
       description: |
         Resets the Zeebe engine's internal clock to the current system time, enabling it to tick in real-time.

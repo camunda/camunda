@@ -7,6 +7,9 @@ paths:
       tags:
         - Resource
       operationId: createDeployment
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Deploy resources
       description: |
         Deploys one or more resources (e.g. processes, decision models, or forms).
@@ -49,6 +52,9 @@ paths:
       tags:
         - Resource
       operationId: getResource
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get resource
       description: |
         Returns a deployed resource.
@@ -88,6 +94,9 @@ paths:
       tags:
         - Resource
       operationId: getResourceContent
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get RPA resource content (deprecated)
       description: |
         **Deprecated** — use `/resources/{resourceKey}/content/binary` instead, which supports all
@@ -135,6 +144,9 @@ paths:
       tags:
         - Resource
       operationId: getResourceContentBinary
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get resource content as binary
       description: |
         Returns the content of a deployed resource in binary format (octet-stream).
@@ -174,6 +186,9 @@ paths:
       tags:
         - Resource
       operationId: searchResources
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search resources
       description: |
         Search for deployed resources based on given criteria.
@@ -211,6 +226,9 @@ paths:
       tags:
         - Resource
       operationId: deleteResource
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Delete resource
       description: |-
         Deletes a deployed resource. This can be a process definition, decision requirements

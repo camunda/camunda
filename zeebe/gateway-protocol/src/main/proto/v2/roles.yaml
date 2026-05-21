@@ -7,6 +7,9 @@ paths:
       tags:
         - Role
       operationId: createRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Create role
       description: Create a new role.
       x-semantic-establishes:
@@ -49,6 +52,9 @@ paths:
       tags:
         - Role
       operationId: searchRoles
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search roles
       description: Search for roles based on given criteria.
       requestBody:
@@ -80,6 +86,9 @@ paths:
       tags:
         - Role
       operationId: getRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get role
       description: Get a role by its ID.
       x-semantic-requires:
@@ -119,6 +128,9 @@ paths:
       tags:
         - Role
       operationId: updateRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Update role
       description: Update a role with the given ID.
       x-semantic-requires:
@@ -166,6 +178,9 @@ paths:
       tags:
         - Role
       operationId: deleteRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Delete role
       description: Deletes the role with the given ID.
       x-semantic-requires:
@@ -202,6 +217,9 @@ paths:
       tags:
         - Role
       operationId: assignRoleToUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a user
       description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
       x-semantic-establishes:
@@ -253,6 +271,9 @@ paths:
       tags:
         - Role
       operationId: unassignRoleFromUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a user
       description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
       x-semantic-requires:
@@ -298,6 +319,9 @@ paths:
       tags:
         - Role
       operationId: searchUsersForRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search role users
       description: Search users with assigned role.
       x-semantic-requires:
@@ -346,6 +370,9 @@ paths:
       tags:
         - Role
       operationId: assignRoleToClient
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a client
       description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
       x-semantic-establishes:
@@ -397,6 +424,9 @@ paths:
       tags:
         - Role
       operationId: unassignRoleFromClient
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a client
       description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
       x-semantic-requires:
@@ -442,6 +472,9 @@ paths:
       tags:
         - Role
       operationId: searchClientsForRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search role clients
       description: Search clients with assigned role.
       x-semantic-requires:
@@ -490,6 +523,9 @@ paths:
       tags:
         - Role
       operationId: assignRoleToGroup
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a group
       description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
       x-semantic-establishes:
@@ -547,6 +583,9 @@ paths:
       tags:
         - Role
       operationId: unassignRoleFromGroup
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a group
       description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
       x-semantic-requires:
@@ -592,6 +631,9 @@ paths:
       tags:
         - Role
       operationId: searchGroupsForRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search role groups
       description: Search groups with assigned role.
       x-semantic-requires:
@@ -640,6 +682,9 @@ paths:
       tags:
         - Role
       operationId: assignRoleToMappingRule
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a mapping rule
       description: Assigns a role to a mapping rule.
       x-semantic-establishes:
@@ -691,6 +736,9 @@ paths:
       tags:
         - Role
       operationId: unassignRoleFromMappingRule
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a mapping rule
       description: Unassigns a role from a mapping rule.
       x-semantic-requires:
@@ -736,6 +784,9 @@ paths:
       tags:
         - Role
       operationId: searchMappingRulesForRole
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search role mapping rules
       description: Search mapping rules with assigned role.
       x-semantic-requires:

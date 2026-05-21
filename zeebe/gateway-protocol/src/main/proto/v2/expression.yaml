@@ -4,6 +4,9 @@ paths:
   /expression/evaluation:
     post:
       operationId: evaluateExpression
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Expression

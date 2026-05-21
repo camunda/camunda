@@ -7,6 +7,9 @@ paths:
       tags:
         - User
       operationId: createUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Create user
       description: Create a new user.
       x-semantic-establishes:
@@ -50,6 +53,9 @@ paths:
       tags:
         - User
       operationId: searchUsers
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search users
       description: Search for users based on given criteria.
       requestBody:
@@ -80,6 +86,9 @@ paths:
       tags:
         - User
       operationId: getUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get user
       description: Get a user by its username.
       x-semantic-requires:
@@ -119,6 +128,9 @@ paths:
       tags:
         - User
       operationId: updateUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Update user
       description: Updates a user.
       x-semantic-requires:
@@ -166,6 +178,9 @@ paths:
       tags:
         - User
       operationId: deleteUser
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Delete user
       description: Deletes a user.
       x-semantic-requires:

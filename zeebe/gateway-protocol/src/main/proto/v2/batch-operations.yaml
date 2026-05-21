@@ -7,6 +7,9 @@ paths:
       tags:
         - Batch operation
       operationId: getBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Get batch operation
       description: Get batch operation by key.
       parameters:
@@ -45,6 +48,9 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperations
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search batch operations
       description: Search for batch operations based on given criteria.
       requestBody:
@@ -76,6 +82,9 @@ paths:
       tags:
         - Batch operation
       operationId: cancelBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Cancel Batch operation
       description: |
         Cancels a running batch operation.
@@ -115,6 +124,9 @@ paths:
       tags:
         - Batch operation
       operationId: suspendBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Suspend Batch operation
       description: |
         Suspends a running batch operation.
@@ -156,6 +168,9 @@ paths:
       tags:
         - Batch operation
       operationId: resumeBatchOperation
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Resume Batch operation
       description: |
         Resumes a suspended batch operation.
@@ -197,6 +212,9 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperationItems
+      security:
+        - BearerAuth: []
+        - basicAuth: []
       summary: Search batch operation items
       description: Search for batch operation items based on given criteria.
       requestBody:
