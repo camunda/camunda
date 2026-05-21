@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -351,14 +352,31 @@ public class OidcOverrideBeansConfiguration {
   public JwtDecoder jwtDecoder(
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-    final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
+      final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+      // PoC pt-security: optional per-tenant client-registration repositories. Absent under
+      // the non-PT setup, present (one entry per physical tenant) under pt-security.
+      final ObjectProvider<Map<String, ClientRegistrationRepository>>
+          ptClientRegistrationRepositories) {
+    final var registrations =
+        new ArrayList<>(extractClientRegistrations(clientRegistrationRepository));
+    final var ptMap = ptClientRegistrationRepositories.getIfAvailable();
+    if (ptMap != null) {
+      for (final var ptRepo : ptMap.values()) {
+        for (final var reg : extractClientRegistrations(ptRepo)) {
+          // De-duplicate by registration id.
+          if (registrations.stream()
+              .noneMatch(r -> r.getRegistrationId().equals(reg.getRegistrationId()))) {
+            registrations.add(reg);
+          }
+        }
+      }
+    }
 
     final var additionalJwkSetUrisByIssuer =
         buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
 
-    if (clientRegistrations.size() == 1) {
-      final var clientRegistration = clientRegistrations.getFirst();
+    if (registrations.size() == 1) {
+      final var clientRegistration = registrations.getFirst();
       final var additionalUris =
           additionalJwkSetUrisByIssuer.get(clientRegistration.getProviderDetails().getIssuerUri());
       LOG.info(
@@ -371,13 +389,13 @@ public class OidcOverrideBeansConfiguration {
     } else {
       LOG.info(
           "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
-          clientRegistrations.stream()
+          registrations.stream()
               .map(ClientRegistration::getRegistrationId)
               .collect(Collectors.joining(", ")));
       return new SupplierJwtDecoder(
           () ->
               oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                  clientRegistrations, additionalJwkSetUrisByIssuer));
+                  registrations, additionalJwkSetUrisByIssuer));
     }
   }
 

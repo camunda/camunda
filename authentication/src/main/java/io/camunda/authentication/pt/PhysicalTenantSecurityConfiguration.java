@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.pt;
 
-import static java.util.stream.Collectors.toUnmodifiableSet;
-
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
@@ -68,45 +66,18 @@ public class PhysicalTenantSecurityConfiguration {
     return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID));
   }
 
-  /**
-   * Cluster-shared issuer-aware {@link JwtDecoder} for the API chains. One bean serves <b>all</b>
-   * tenants' API chains; signature validation routes by the JWT's {@code iss} claim across the
-   * union of all assigned issuer URIs. Per-tenant isolation is enforced at the chain level via an
-   * issuer allowlist (see {@link PerTenantSecurityChainFactory#buildApiChain}), not via per-tenant
-   * decoders.
-   *
-   * <p>Bean name is deliberately distinct from {@code jwtDecoder} (the consolidated-auth host bean)
-   * to avoid type-based autowiring collisions; the API chains pass this bean explicitly to {@code
-   * oauth2ResourceServer.jwt().decoder(...)}.
-   */
   @Bean
-  public JwtDecoder ptIssuerAwareJwtDecoder(
-      final Map<String, Set<String>> ptAllowedIssuersPerTenant) {
-    final Set<String> allIssuers =
-        ptAllowedIssuersPerTenant.values().stream()
-            .flatMap(Set::stream)
-            .collect(toUnmodifiableSet());
-    return new PtIssuerAwareJwtDecoder(allIssuers);
-  }
-
-  @Bean
-  public SecurityFilterChain ptTenantaApiChain(
-      final HttpSecurity http, final JwtDecoder ptIssuerAwareJwtDecoder) throws Exception {
+  public SecurityFilterChain ptTenantaApiChain(final HttpSecurity http, final JwtDecoder jwtDecoder)
+      throws Exception {
     return chainFactory.buildApiChain(
-        http,
-        sliceFor(TENANTA_TENANT_ID),
-        ptIssuerAwareJwtDecoder,
-        allowedIssuersFor(TENANTA_TENANT_ID));
+        http, sliceFor(TENANTA_TENANT_ID), jwtDecoder, allowedIssuersFor(TENANTA_TENANT_ID));
   }
 
   @Bean
   public SecurityFilterChain ptDefaultPrefixedApiChain(
-      final HttpSecurity http, final JwtDecoder ptIssuerAwareJwtDecoder) throws Exception {
+      final HttpSecurity http, final JwtDecoder jwtDecoder) throws Exception {
     return chainFactory.buildApiChain(
-        http,
-        sliceFor(DEFAULT_TENANT_ID),
-        ptIssuerAwareJwtDecoder,
-        allowedIssuersFor(DEFAULT_TENANT_ID));
+        http, sliceFor(DEFAULT_TENANT_ID), jwtDecoder, allowedIssuersFor(DEFAULT_TENANT_ID));
   }
 
   /**
