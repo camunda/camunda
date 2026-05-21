@@ -33,39 +33,38 @@ class PerTenantOidcRegistryTest {
     // given - authentication.oidc.* is the default provider (registration id "oidc")
     final var security = sec(oidc("oidc"), Map.of());
     // when
-    final var registry =
-        PerTenantOidcRegistry.forTenant("tenanta", security, List.of("oidc"), stubBuilder());
+    final var repository =
+        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("oidc"), stubBuilder());
     // then
-    assertThat(registry.clientRegistrationRepository().findByRegistrationId("oidc")).isNotNull();
+    assertThat(repository.findByRegistrationId("oidc")).isNotNull();
   }
 
   @Test
   void shouldResolveAssignedNamedProviderUnderProvidersOidcMap() {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
-    final var registry =
-        PerTenantOidcRegistry.forTenant("tenanta", security, List.of("idpOne"), stubBuilder());
-    assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpOne")).isNotNull();
+    final var repository =
+        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("idpOne"), stubBuilder());
+    assertThat(repository.findByRegistrationId("idpOne")).isNotNull();
   }
 
   @Test
   void shouldRegisterMultipleAssignedProvidersAcrossDefaultAndNamedSlots() {
     final var security =
         sec(oidc("oidc"), Map.of("idpOne", oidc("idpOne"), "idpTwo", oidc("idpTwo")));
-    final var registry =
-        PerTenantOidcRegistry.forTenant(
+    final var repository =
+        PerTenantOidcRegistry.buildFor(
             "tenanta", security, List.of("oidc", "idpOne"), stubBuilder());
-    assertThat(registry.clientRegistrationRepository().findByRegistrationId("oidc")).isNotNull();
-    assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpOne")).isNotNull();
-    assertThat(registry.clientRegistrationRepository().findByRegistrationId("idpTwo")).isNull();
+    assertThat(repository.findByRegistrationId("oidc")).isNotNull();
+    assertThat(repository.findByRegistrationId("idpOne")).isNotNull();
+    assertThat(repository.findByRegistrationId("idpTwo")).isNull();
   }
 
   @Test
   void shouldRewriteRedirectUriToTenantPath() {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
-    final var registry =
-        PerTenantOidcRegistry.forTenant("tenanta", security, List.of("idpOne"), stubBuilder());
-    assertThat(
-            registry.clientRegistrationRepository().findByRegistrationId("idpOne").getRedirectUri())
+    final var repository =
+        PerTenantOidcRegistry.buildFor("tenanta", security, List.of("idpOne"), stubBuilder());
+    assertThat(repository.findByRegistrationId("idpOne").getRedirectUri())
         .isEqualTo("{baseUrl}/physical-tenant/tenanta/login/oauth2/code/{registrationId}");
   }
 
@@ -74,7 +73,7 @@ class PerTenantOidcRegistryTest {
     final var security = sec(null, Map.of("idpOne", oidc("idpOne")));
     assertThatThrownBy(
             () ->
-                PerTenantOidcRegistry.forTenant(
+                PerTenantOidcRegistry.buildFor(
                     "tenanta", security, List.of("ghost"), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("ghost");
@@ -85,8 +84,7 @@ class PerTenantOidcRegistryTest {
     final var security = sec(null, Map.of());
     assertThatThrownBy(
             () ->
-                PerTenantOidcRegistry.forTenant(
-                    "tenanta", security, List.of("oidc"), stubBuilder()))
+                PerTenantOidcRegistry.buildFor("tenanta", security, List.of("oidc"), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("authentication.oidc.*");
   }
@@ -95,7 +93,7 @@ class PerTenantOidcRegistryTest {
   void shouldFailWhenAssignedIsEmpty() {
     final var security = sec(oidc("oidc"), Map.of());
     assertThatThrownBy(
-            () -> PerTenantOidcRegistry.forTenant("tenanta", security, List.of(), stubBuilder()))
+            () -> PerTenantOidcRegistry.buildFor("tenanta", security, List.of(), stubBuilder()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("providers.assigned");
   }

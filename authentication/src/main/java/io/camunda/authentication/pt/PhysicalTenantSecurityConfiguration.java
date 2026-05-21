@@ -7,22 +7,16 @@
  */
 package io.camunda.authentication.pt;
 
+import static java.util.stream.Collectors.toUnmodifiableSet;
+
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -37,10 +31,9 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
 public class PhysicalTenantSecurityConfiguration {
 
   // Two near-symmetric @Bean methods, one per tenant. Each reduces to:
-  //   1) sliceFor(...) — resolves the tenant's SecurityConfiguration from the
-  //      camunda.physical-tenants.<tenantId>.security.* overlay, builds the
-  //      ClientRegistrationRepository via PerTenantOidcRegistry (which consumes the
-  //      tenant's providers.assigned list), and wraps it with per-chain session machinery.
+  //   1) sliceFor(...) — looks up the tenant's ClientRegistrationRepository and per-chain session
+  //      machinery from the map beans injected here (assembled in dist by
+  //      PhysicalTenantOidcConfiguration / PhysicalTenantWebSessionRepositoryConfiguration).
   //   2) factory.buildWebappChain(http, slice) — applies the chain shape (security matcher,
   //      filter ordering, oauth2Login with the prefix-aware resolver workaround).
   //
@@ -51,26 +44,28 @@ public class PhysicalTenantSecurityConfiguration {
   private static final String TENANTA_TENANT_ID = "tenanta";
   private static final String DEFAULT_TENANT_ID = "default";
 
-  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
-
   private final PerTenantSecurityChainFactory chainFactory = new PerTenantSecurityChainFactory();
   private final Map<String, WebSessionRepository> ptWebSessionRepositories;
+  private final Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories;
+  private final Map<String, Set<String>> ptAllowedIssuersPerTenant;
 
   public PhysicalTenantSecurityConfiguration(
-      final Map<String, WebSessionRepository> ptWebSessionRepositories) {
+      final Map<String, WebSessionRepository> ptWebSessionRepositories,
+      final Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories,
+      final Map<String, Set<String>> ptAllowedIssuersPerTenant) {
     this.ptWebSessionRepositories = ptWebSessionRepositories;
+    this.ptClientRegistrationRepositories = ptClientRegistrationRepositories;
+    this.ptAllowedIssuersPerTenant = ptAllowedIssuersPerTenant;
   }
 
   @Bean
-  public SecurityFilterChain ptTenantaWebappChain(
-      final HttpSecurity http, final Environment environment) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor(TENANTA_TENANT_ID, environment));
+  public SecurityFilterChain ptTenantaWebappChain(final HttpSecurity http) throws Exception {
+    return chainFactory.buildWebappChain(http, sliceFor(TENANTA_TENANT_ID));
   }
 
   @Bean
-  public SecurityFilterChain ptDefaultWebappChain(
-      final HttpSecurity http, final Environment environment) throws Exception {
-    return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID, environment));
+  public SecurityFilterChain ptDefaultWebappChain(final HttpSecurity http) throws Exception {
+    return chainFactory.buildWebappChain(http, sliceFor(DEFAULT_TENANT_ID));
   }
 
   /**
@@ -85,72 +80,48 @@ public class PhysicalTenantSecurityConfiguration {
    * oauth2ResourceServer.jwt().decoder(...)}.
    */
   @Bean
-  public JwtDecoder ptIssuerAwareJwtDecoder(final Environment environment) {
-    final Set<String> allIssuers = new LinkedHashSet<>();
-    allIssuers.addAll(issuerUrisFor(TENANTA_TENANT_ID, environment));
-    allIssuers.addAll(issuerUrisFor(DEFAULT_TENANT_ID, environment));
+  public JwtDecoder ptIssuerAwareJwtDecoder(
+      final Map<String, Set<String>> ptAllowedIssuersPerTenant) {
+    final Set<String> allIssuers =
+        ptAllowedIssuersPerTenant.values().stream()
+            .flatMap(Set::stream)
+            .collect(toUnmodifiableSet());
     return new PtIssuerAwareJwtDecoder(allIssuers);
   }
 
   @Bean
   public SecurityFilterChain ptTenantaApiChain(
-      final HttpSecurity http,
-      final JwtDecoder ptIssuerAwareJwtDecoder,
-      final Environment environment)
-      throws Exception {
+      final HttpSecurity http, final JwtDecoder ptIssuerAwareJwtDecoder) throws Exception {
     return chainFactory.buildApiChain(
         http,
-        sliceFor(TENANTA_TENANT_ID, environment),
+        sliceFor(TENANTA_TENANT_ID),
         ptIssuerAwareJwtDecoder,
-        issuerUrisFor(TENANTA_TENANT_ID, environment));
+        allowedIssuersFor(TENANTA_TENANT_ID));
   }
 
   @Bean
   public SecurityFilterChain ptDefaultPrefixedApiChain(
-      final HttpSecurity http,
-      final JwtDecoder ptIssuerAwareJwtDecoder,
-      final Environment environment)
-      throws Exception {
+      final HttpSecurity http, final JwtDecoder ptIssuerAwareJwtDecoder) throws Exception {
     return chainFactory.buildApiChain(
         http,
-        sliceFor(DEFAULT_TENANT_ID, environment),
+        sliceFor(DEFAULT_TENANT_ID),
         ptIssuerAwareJwtDecoder,
-        issuerUrisFor(DEFAULT_TENANT_ID, environment));
+        allowedIssuersFor(DEFAULT_TENANT_ID));
   }
 
   /**
-   * Builds the {@link TenantSecuritySlice} for one prefixed tenant.
-   *
-   * <p>Step 1: bind the tenant's {@code camunda.physical-tenants.<id>.security.*} overlay into a
-   * fresh {@link SecurityConfiguration}. We bind directly via Spring's {@link Binder} because the
-   * authentication module does not depend on the {@code configuration} module that hosts {@code
-   * PhysicalTenantResolver} — and pulling that dependency in just for the PoC is a heavier change
-   * than this small binding.
-   *
-   * <p>Step 2: read the tenant's {@code providers.assigned} list. The external CSL {@code
-   * OidcProvidersConfiguration} does not carry an {@code assigned} field, so we bind it as a
-   * separate property and hand it to the registry alongside the tenant {@link
-   * SecurityConfiguration}.
-   *
-   * <p>Step 3: hand both to {@link PerTenantOidcRegistry}. The registry resolves each entry in
-   * {@code assigned} to either the default {@code authentication.oidc.*} slot (literal name {@code
-   * "oidc"}) or a named {@code authentication.providers.oidc.<name>.*} slot, builds one {@link
-   * org.springframework.security.oauth2.client.registration.ClientRegistration} per resolved
-   * provider via OIDC discovery, and returns the assembled {@code ClientRegistrationRepository}.
-   *
-   * <p>Step 4: wrap the repository with this tenant's per-chain session filter / cookie resolver
-   * and emit the slice.
+   * Builds the {@link TenantSecuritySlice} for one prefixed tenant. Pure lookup: both the
+   * per-tenant {@link ClientRegistrationRepository} and the per-tenant {@link WebSessionRepository}
+   * are pre-assembled in {@code dist} (see {@code PhysicalTenantOidcConfiguration} and {@code
+   * PhysicalTenantWebSessionRepositoryConfiguration}) and injected as map beans.
    */
-  private TenantSecuritySlice sliceFor(final String tenantId, final Environment environment) {
-    final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
-    final List<String> assigned = bindAssigned(tenantId, environment);
-
-    final ClientRegistrationRepository repo =
-        PerTenantOidcRegistry.forTenant(tenantId, tenantSecurity, assigned)
-            .clientRegistrationRepository();
-
+  private TenantSecuritySlice sliceFor(final String tenantId) {
+    final ClientRegistrationRepository repo = ptClientRegistrationRepositories.get(tenantId);
+    if (repo == null) {
+      throw new IllegalStateException(
+          "No ClientRegistrationRepository bean for physical tenant '" + tenantId + "'");
+    }
     final var cookieAndFilter = perChainSessionFilter(tenantId);
-
     return new TenantSecuritySlice(
         tenantId,
         AccessPath.PREFIXED,
@@ -159,56 +130,13 @@ public class PhysicalTenantSecurityConfiguration {
         cookieAndFilter.idResolver());
   }
 
-  private static SecurityConfiguration bindTenantSecurity(
-      final String tenantId, final Environment environment) {
-    final var tenantSecurity = new SecurityConfiguration();
-    Binder.get(environment)
-        .bind(
-            PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".security",
-            Bindable.ofInstance(tenantSecurity));
-    return tenantSecurity;
-  }
-
-  /**
-   * Returns the set of OIDC issuer URIs assigned to this tenant. Each id in {@code
-   * providers.assigned} resolves to either the default {@code authentication.oidc.*} slot (literal
-   * "oidc") or a named slot under {@code authentication.providers.oidc.<name>}. We collect issuer
-   * URIs from the resolved providers; missing or unconfigured providers are skipped silently here
-   * (the same data is consumed by {@link PerTenantOidcRegistry}, which raises precise errors at
-   * chain-build time).
-   */
-  static Set<String> issuerUrisFor(final String tenantId, final Environment environment) {
-    final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
-    final List<String> assigned = bindAssigned(tenantId, environment);
-    final AuthenticationConfiguration auth = tenantSecurity.getAuthentication();
-    final Map<String, OidcConfiguration> namedProviders =
-        auth.getProviders() == null ? null : auth.getProviders().getOidc();
-    final Set<String> issuers = new LinkedHashSet<>();
-    for (final String id : assigned) {
-      final OidcConfiguration provider;
-      if (PerTenantOidcRegistry.DEFAULT_PROVIDER_REGISTRATION_ID.equals(id)) {
-        provider = auth.getOidc();
-      } else {
-        provider = namedProviders == null ? null : namedProviders.get(id);
-      }
-      if (provider != null && provider.getIssuerUri() != null) {
-        issuers.add(provider.getIssuerUri());
-      }
+  private Set<String> allowedIssuersFor(final String tenantId) {
+    final Set<String> issuers = ptAllowedIssuersPerTenant.get(tenantId);
+    if (issuers == null) {
+      throw new IllegalStateException(
+          "No allowed-issuers entry for physical tenant '" + tenantId + "'");
     }
     return issuers;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static List<String> bindAssigned(final String tenantId, final Environment environment) {
-    final var bound =
-        Binder.get(environment)
-            .bind(
-                PHYSICAL_TENANTS_PREFIX
-                    + "."
-                    + tenantId
-                    + ".security.authentication.providers.assigned",
-                Bindable.listOf(String.class));
-    return bound.isBound() ? (List<String>) bound.get() : List.of();
   }
 
   /**

@@ -47,25 +47,23 @@ public final class PerTenantOidcRegistry {
   /** Registration id under which the default {@code authentication.oidc.*} provider lives. */
   public static final String DEFAULT_PROVIDER_REGISTRATION_ID = "oidc";
 
-  private final ClientRegistrationRepository clientRegistrationRepository;
-
-  private PerTenantOidcRegistry(final ClientRegistrationRepository repo) {
-    clientRegistrationRepository = repo;
+  private PerTenantOidcRegistry() {
+    // static-utility class — not instantiable
   }
 
   /** Production entry point — uses {@link ClientRegistrations#fromIssuerLocation} for discovery. */
-  public static PerTenantOidcRegistry forTenant(
+  public static ClientRegistrationRepository buildFor(
       final String tenantId,
       final SecurityConfiguration tenantSecurity,
       final List<String> assigned) {
-    return forTenant(tenantId, tenantSecurity, assigned, discoveringBuilder());
+    return buildFor(tenantId, tenantSecurity, assigned, discoveringBuilder());
   }
 
   /**
    * Test seam: build registrations with a caller-supplied {@link ClientRegistrationBuilderFactory}
    * so unit tests can bypass live OIDC discovery.
    */
-  static PerTenantOidcRegistry forTenant(
+  static ClientRegistrationRepository buildFor(
       final String tenantId,
       final SecurityConfiguration tenantSecurity,
       final List<String> assigned,
@@ -98,11 +96,7 @@ public final class PerTenantOidcRegistry {
       }
       registrations.add(buildRegistration(tenantId, registrationId, provider, builderFactory));
     }
-    return new PerTenantOidcRegistry(new InMemoryClientRegistrationRepository(registrations));
-  }
-
-  public ClientRegistrationRepository clientRegistrationRepository() {
-    return clientRegistrationRepository;
+    return new InMemoryClientRegistrationRepository(registrations);
   }
 
   private static @Nullable OidcConfiguration resolveProvider(
