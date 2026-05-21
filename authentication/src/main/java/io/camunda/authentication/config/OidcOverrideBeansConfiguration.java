@@ -612,11 +612,11 @@ public class OidcOverrideBeansConfiguration {
   }
 
   /**
-   * Per-tenant expected-audience allowlist (spec D8 / Task 17). When non-empty, the per-tenant API
-   * chain requires that at least one entry of a bearer JWT's {@code aud} claim is contained in this
-   * set. When empty (no {@code expected-audiences} configured for a tenant) the audience check is
-   * skipped — preserving backward compatibility with pre-Task-17 PT setups that don't have audience
-   * mappers configured at the IdP.
+   * Per-tenant expected-audience allowlist (spec D8 / Task 17). Computed as the union of each
+   * assigned OIDC provider's {@link OidcConfiguration#getAudiences()} list — no separate per-tenant
+   * config key. Empty when none of the tenant's providers configure {@code audiences}, in which
+   * case the per-tenant API chain skips the audience check (back-compat with PT setups whose IdPs
+   * don't emit a hardcoded audience claim).
    *
    * <p>This complements (does not replace) {@link #ptAllowedIssuersPerTenant}: the issuer allowlist
    * separates tenants whose IdPs are distinct (different {@code iss}); the audience allowlist
@@ -627,15 +627,23 @@ public class OidcOverrideBeansConfiguration {
   public Map<String, Set<String>> ptExpectedAudiencesPerTenant(final Environment environment) {
     final Map<String, Set<String>> perTenant = new LinkedHashMap<>();
     for (final String tenantId : readTenantIds(environment)) {
-      final var bound =
-          Binder.get(environment)
-              .bind(
-                  PHYSICAL_TENANTS_PREFIX
-                      + "."
-                      + tenantId
-                      + ".security.authentication.expected-audiences",
-                  Bindable.setOf(String.class));
-      perTenant.put(tenantId, bound.isBound() ? Set.copyOf(bound.get()) : Set.of());
+      final SecurityConfiguration tenantSecurity = bindTenantSecurity(tenantId, environment);
+      final List<String> assigned = bindAssigned(tenantId, environment);
+      if (assigned.isEmpty()) {
+        continue;
+      }
+      final var auth = tenantSecurity.getAuthentication();
+      final Map<String, OidcConfiguration> namedProviders =
+          auth.getProviders() == null ? null : auth.getProviders().getOidc();
+      final Set<String> audiences = new LinkedHashSet<>();
+      for (final String id : assigned) {
+        final OidcConfiguration provider =
+            resolveTenantProvider(id, auth.getOidc(), namedProviders);
+        if (provider != null && provider.getAudiences() != null) {
+          audiences.addAll(provider.getAudiences());
+        }
+      }
+      perTenant.put(tenantId, Set.copyOf(audiences));
     }
     return Map.copyOf(perTenant);
   }

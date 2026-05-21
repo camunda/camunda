@@ -134,9 +134,7 @@ shape from [D7](#d7-url-scheme-dual-api-prefix-webapp-aligned-and-existing-api-c
 exercised in Task 17, where the default tenant's secondary IdP backs onto the tenanta realm
 shared with tenant A), `iss` alone collides.
 
-To separate tenants on a shared IdP we add a per-tenant **expected-audiences** allowlist. Each
-client at the IdP is configured with a hardcoded audience mapper that emits a tenant-specific
-`aud` claim on its access tokens. Concretely in the PoC:
+To separate tenants on a shared IdP we add an **audience allowlist** that derives directly from each provider's existing `audiences` field on CSL's `OidcConfiguration` (the standard Spring/CSL property; no PoC-specific config key). Each client at the IdP is configured with a hardcoded audience mapper that emits a tenant-specific `aud` claim on its access tokens. Concretely in the PoC:
 
 |              Client at Keycloak              |    Realm    | Issued to (PT) |          `aud` claim          |
 |----------------------------------------------|-------------|----------------|-------------------------------|
@@ -144,31 +142,18 @@ client at the IdP is configured with a hardcoded audience mapper that emits a te
 | `camunda-pt-default-via-tenanta-client`      | `tenanta`   | `default`      | `pt-default-via-tenanta-aud`  |
 | `camunda-pt-tenanta-client`                  | `tenanta`   | `tenanta`      | `pt-tenanta-aud`              |
 
-Each tenant declares its `expected-audiences` under `camunda.physical-tenants.<id>.security.authentication.expected-audiences`. The bearer branch on the per-tenant API chain now performs
-two allowlist checks:
+Each provider declares its `audiences` under the existing CSL field (`...providers.oidc.<name>.audiences` or `...authentication.oidc.audiences` for the default slot). The per-tenant allowlist is computed as the **union over the providers in `assigned`** — there is no separate per-tenant key. Adding a new IdP to a tenant just means adding its `audiences`, alongside `client-id`, `client-secret`, `issuer-uri`.
+
+The bearer branch on the per-tenant API chain now performs two allowlist checks:
 
 - `iss` claim ∈ tenant's allowed-issuers (existing). Empty / unmatched ⇒ deny.
-- `aud` claim ∩ tenant's expected-audiences ≠ ∅ (new). Empty config means "skip the
-  audience check" (back-compat for pre-Task-17 setups without audience mappers); non-empty
-  config requires intersection.
+- `aud` claim ∩ tenant's expected-audiences ≠ ∅ (new). Empty union (no provider in `assigned` declares `audiences`) means "skip the audience check" (back-compat for pre-Task-17 setups without audience mappers); non-empty union requires intersection.
 
-Cross-tenant bearer access on a shared IdP fails on the audience check even when issuer would
-have matched. A token issued by tenant A's client (`aud=pt-tenanta-aud`) presented to default's
-API chain is rejected (default's expected list is `[pt-default-aud, pt-default-via-tenanta-aud]`),
-and vice versa.
+Cross-tenant bearer access on a shared IdP fails on the audience check even when issuer would have matched. A token issued by tenant A's client (`aud=pt-tenanta-aud`) presented to default's API chain is rejected (default's union is `{pt-default-aud, pt-default-via-tenanta-aud}`), and vice versa.
 
-Session-derived auth (`OAuth2AuthenticationToken`) on the API chain is **not** re-audience-checked.
-The per-tenant `ClientRegistrationRepository` on the webapp chain only knows about that tenant's
-assigned providers, so a session can only be created via a client this tenant owns — the audience
-claim was implicitly validated at the underlying access token's issuance. Adding an explicit
-`OAuth2AuthenticationToken.getAuthorizedClientRegistrationId()` check against the tenant's
-registration ids would be strictly redundant given that scoping.
+Session-derived auth (`OAuth2AuthenticationToken`) on the API chain is **not** re-audience-checked. The per-tenant `ClientRegistrationRepository` on the webapp chain only knows about that tenant's assigned providers, so a session can only be created via a client this tenant owns — the audience claim was implicitly validated at the underlying access token's issuance. Adding an explicit `OAuth2AuthenticationToken.getAuthorizedClientRegistrationId()` check against the tenant's registration ids would be strictly redundant given that scoping.
 
-The expected-audiences set is built as a sibling Spring bean to `ptAllowedIssuersPerTenant`
-(`Map<String, Set<String>> ptExpectedAudiencesPerTenant`) in
-`OidcOverrideBeansConfiguration` and passed through `PhysicalTenantSecurityChainRegistrar` into
-`PerTenantSecurityChainFactory.buildApiChain`. Nothing about D8 changes the chain shape, the
-session machinery, or the URL scheme — it is a pure addition to the bearer authorization rule.
+The audience-allowlist set is built as a sibling Spring bean to `ptAllowedIssuersPerTenant` (`Map<String, Set<String>> ptExpectedAudiencesPerTenant`) in `OidcOverrideBeansConfiguration` — both iterate the same per-tenant `assigned` list and the same `resolveTenantProvider` helper, just collecting `getIssuerUri()` vs `getAudiences()`. Both maps flow through `PhysicalTenantSecurityChainRegistrar` into `PerTenantSecurityChainFactory.buildApiChain`. Nothing about D8 changes the chain shape, the session machinery, or the URL scheme — it is a pure addition to the bearer authorization rule.
 
 ---
 
