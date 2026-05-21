@@ -254,52 +254,6 @@ public class TenantServiceTest {
     assertThat(stubbedBrokerClient.getBrokerRequests()).isEmpty();
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = EntityType.class,
-      names = {"USER", "MAPPING_RULE", "GROUP", "ROLE", "CLIENT"})
-  public void shouldRejectAddMemberToDefaultTenant(final EntityType entityType) {
-    // given
-    final var tenantMemberRequest =
-        new TenantMemberRequest(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "entityId", entityType);
-
-    // when
-    final var future = services.addMember(tenantMemberRequest);
-
-    // then
-    assertThat(future).isCompletedExceptionally();
-    final var cause =
-        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class).actual().getCause();
-    assertThat(cause)
-        .isInstanceOf(ServiceException.class)
-        .extracting(t -> ((ServiceException) t).getStatus())
-        .isEqualTo(Status.FORBIDDEN);
-    assertThat(stubbedBrokerClient.getBrokerRequests()).isEmpty();
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = EntityType.class,
-      names = {"USER", "MAPPING_RULE", "GROUP", "ROLE", "CLIENT"})
-  public void shouldRejectRemoveMemberFromDefaultTenant(final EntityType entityType) {
-    // given
-    final var tenantMemberRequest =
-        new TenantMemberRequest(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "entityId", entityType);
-
-    // when
-    final var future = services.removeMember(tenantMemberRequest);
-
-    // then
-    assertThat(future).isCompletedExceptionally();
-    final var cause =
-        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class).actual().getCause();
-    assertThat(cause)
-        .isInstanceOf(ServiceException.class)
-        .extracting(t -> ((ServiceException) t).getStatus())
-        .isEqualTo(Status.FORBIDDEN);
-    assertThat(stubbedBrokerClient.getBrokerRequests()).isEmpty();
-  }
-
   @Test
   public void shouldThrowForbiddenIfNotAuthorized() {
     when(client.getTenant(eq("tenant-id")))

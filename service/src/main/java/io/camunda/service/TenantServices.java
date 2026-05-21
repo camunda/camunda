@@ -113,10 +113,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> addMember(final TenantMemberRequest request) {
-    final var rejection = rejectIfDefaultTenant(request.tenantId(), "modify members of");
-    if (rejection != null) {
-      return rejection;
-    }
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(request.tenantId())
@@ -124,10 +120,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> removeMember(final TenantMemberRequest request) {
-    final var rejection = rejectIfDefaultTenant(request.tenantId(), "modify members of");
-    if (rejection != null) {
-      return rejection;
-    }
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
