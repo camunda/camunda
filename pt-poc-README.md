@@ -177,6 +177,7 @@ The 403 on cross-tenant calls comes from the per-chain `AuthorizationManager`: t
 | `dist/src/main/resources/application-pt-poc.yaml`            | OC's PoC-specific Spring config (tenant A's OIDC provider, security DEBUG logging)  |
 | `dist/src/main/resources/application.properties`             | `spring.profiles.group.pt-poc=consolidated-auth,pt-security,rdbmsH2` lives here     |
 | `authentication/src/main/java/io/camunda/authentication/pt/` | Per-tenant Spring Security wiring                                                   |
+| `dist/src/main/java/io/camunda/application/commons/pt/`      | PoC controllers (PT whoami REST + SPA-style HTML page) — REST endpoint declares `/v2/...` only; auto-prefixed by `PhysicalTenantRequestMappingHandlerMapping` |
 | `/tmp/oc.log`                                                | OC's stdout/stderr, including Spring Security DEBUG + FilterChainProxy TRACE        |
 
 ## Logs

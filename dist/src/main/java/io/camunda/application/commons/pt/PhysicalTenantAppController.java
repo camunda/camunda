@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.pt;
+package io.camunda.application.commons.pt;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
@@ -15,24 +15,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+/**
+ * SPA-style HTML demo page for the per-tenant webapp chain. Served from the OAuth2-protected webapp
+ * chain; the embedded JavaScript fetches the API endpoint from the same origin without an
+ * Authorization header. The session cookie at {@code Path=/physical-tenant/<t>} is automatically
+ * sent on {@code /physical-tenant/<t>/v2/*} and the API chain reads it via the shared {@code
+ * SessionRepositoryFilter}.
+ *
+ * <p>This is a plain {@code @Controller} (not {@code @CamundaRestController}) because the path
+ * {@code /physical-tenant/{tenantId}/app} is not a {@code /v2/...} REST endpoint — the {@code
+ * PhysicalTenantRequestMappingHandlerMapping} correctly ignores it.
+ */
 @Controller
 @Profile("pt-security")
-public class PhysicalTenantWhoamiController {
-
-  public record Whoami(String tenantId, String principal) {}
-
-  // API endpoint is registered under BOTH supported PT API URL schemes (spec D7):
-  //   * /physical-tenant/<id>/v2/whoami  — webapp/SPA URL, inside the session cookie's Path
-  //     scope; session-authenticated SPA requests pass through with no Authorization header.
-  //   * /v2/physical-tenants/<id>/whoami — direct API-client URL, outside the cookie's Path
-  //     scope; clients authenticate with Authorization: Bearer <jwt>.
-  // Both URLs hit the same per-tenant API SecurityFilterChain.
-  @GetMapping({"/physical-tenant/{tenantId}/v2/whoami", "/v2/physical-tenants/{tenantId}/whoami"})
-  @ResponseBody
-  public Whoami whoamiApi(
-      @PathVariable("tenantId") final String tenantId, final Authentication authentication) {
-    return new Whoami(tenantId, authentication != null ? authentication.getName() : "anonymous");
-  }
+public class PhysicalTenantAppController {
 
   // Minimal SPA-style page that exercises the realistic webapp → API call.
   // Served from the OAuth2-protected webapp chain; the embedded JavaScript fetches the
