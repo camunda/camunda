@@ -171,7 +171,7 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render model section with provider and model name', () => {
+  it('should render the model provider and name', () => {
     render(
       <AgentDetails
         agentInstance={mockAgentInstance}
@@ -189,7 +189,7 @@ describe('<AgentDetails />', () => {
     expect(within(section).getByText('gpt-4')).toBeInTheDocument();
   });
 
-  it('should render system prompt section with preview text', () => {
+  it('should render the system prompt with copy and expand options', () => {
     render(
       <AgentDetails
         agentInstance={mockAgentInstance}
@@ -205,7 +205,7 @@ describe('<AgentDetails />', () => {
       within(section).getByText('You are a helpful assistant.'),
     ).toBeInTheDocument();
     expect(
-      within(section).getByRole('button', {name: 'Copy'}),
+      within(section).getByRole('button', {name: 'Copy to clipboard'}),
     ).toBeInTheDocument();
     expect(
       within(section).getByRole('button', {name: 'Expand'}),
