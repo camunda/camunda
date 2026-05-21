@@ -74,7 +74,7 @@ echo "tenanta token: ${TA:0:40}..."
 echo "default token: ${DEF:0:40}..."
 echo
 
-matrix "webapp-aligned URL (cookie covers this)" "$WEBAPP_URL_TEMPLATE"
-matrix "direct API client URL (bearer-only)"    "$APICLIENT_URL_TEMPLATE"
+matrix "Webapp-relative API Path" "$WEBAPP_URL_TEMPLATE"
+matrix "API Path"    "$APICLIENT_URL_TEMPLATE"
 
 rm -f /tmp/pt-poc-api-body
