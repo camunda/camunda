@@ -390,81 +390,73 @@ const EntityList = <D extends EntityData>({
                             <TableCell>
                               {menuItems?.length > MAX_ICON_ACTIONS ? (
                                 <OverflowMenu flipped>
-                                  {getVisibleMenuItems(menuItems).map(
+                                  {getVisibleMenuItems(
+                                    menuItems,
+                                    index[rowId],
+                                  ).map(
                                     ({
                                       label,
                                       onClick,
                                       isDangerous,
-                                      disabled: disabledProp,
-                                    }) => {
-                                      const entity = index[rowId];
-                                      const disabled =
-                                        typeof disabledProp === "function"
-                                          ? entity !== undefined
-                                            ? disabledProp(entity)
-                                            : false
-                                          : disabledProp;
-
-                                      return (
-                                        <OverflowMenuItem
-                                          key={`${label}-${rowId}`}
-                                          itemText={<p>{label}</p>}
-                                          isDelete={isDangerous}
-                                          disabled={disabled}
-                                          onClick={handleMenuItemClick(
-                                            rowId,
-                                            onClick,
-                                          )}
-                                        />
-                                      );
-                                    },
+                                      disabled,
+                                    }) => (
+                                      <OverflowMenuItem
+                                        key={`${label}-${rowId}`}
+                                        itemText={<p>{label}</p>}
+                                        isDelete={isDangerous}
+                                        disabled={resolveMenuItemFlag(
+                                          disabled,
+                                          index[rowId],
+                                        )}
+                                        onClick={handleMenuItemClick(
+                                          rowId,
+                                          onClick,
+                                        )}
+                                      />
+                                    ),
                                   )}
                                 </OverflowMenu>
                               ) : (
                                 <Flex>
-                                  {getVisibleMenuItems(menuItems).map(
-                                    (menuItem) => {
-                                      const {
-                                        label,
-                                        onClick,
-                                        icon,
-                                        isDangerous,
-                                        disabled: disabledProp,
-                                      } = menuItem as MenuItem<D>;
-                                      const entity = index[rowId];
-                                      const disabled =
-                                        typeof disabledProp === "function"
-                                          ? entity !== undefined
-                                            ? disabledProp(entity)
-                                            : false
-                                          : disabledProp;
+                                  {getVisibleMenuItems(
+                                    menuItems,
+                                    index[rowId],
+                                  ).map((menuItem) => {
+                                    const {
+                                      label,
+                                      onClick,
+                                      icon,
+                                      isDangerous,
+                                      disabled,
+                                    } = menuItem as MenuItem<D>;
 
-                                      const kind: ButtonKind = isDangerous
-                                        ? "danger--ghost"
-                                        : "ghost";
-                                      const hasIconOnly =
-                                        !!icon && !isDangerous;
+                                    const kind: ButtonKind = isDangerous
+                                      ? "danger--ghost"
+                                      : "ghost";
+                                    const hasIconOnly = !!icon && !isDangerous;
 
-                                      return (
-                                        <Button
-                                          key={`${label}-${rowId}`}
-                                          kind={kind}
-                                          size="md"
-                                          disabled={disabled}
-                                          hasIconOnly={hasIconOnly}
-                                          renderIcon={icon}
-                                          tooltipAlignment="end"
-                                          iconDescription={label}
-                                          onClick={handleMenuItemClick(
-                                            rowId,
-                                            onClick,
-                                          )}
-                                        >
-                                          {hasIconOnly ? "" : label}
-                                        </Button>
-                                      );
-                                    },
-                                  )}
+                                    return (
+                                      <Button
+                                        key={`${label}-${rowId}`}
+                                        kind={kind}
+                                        size="md"
+                                        disabled={resolveMenuItemFlag(
+                                          disabled,
+                                          index[rowId],
+                                        )}
+                                        hasIconOnly={hasIconOnly}
+                                        renderIcon={icon}
+                                        tooltipAlignment="end"
+                                        iconDescription={label}
+                                        onClick={handleMenuItemClick(
+                                          rowId,
+                                          onClick,
+                                        )}
+                                      >
+                                        {hasIconOnly ? "" : label}
+                                      </Button>
+                                    );
+                                  })}
                                 </Flex>
                               )}
                             </TableCell>
@@ -533,9 +525,23 @@ const EntityList = <D extends EntityData>({
 };
 
 function getVisibleMenuItems<D>(
-  menuItems?: (MenuItem<D> | TextMenuItem<D>)[],
+  menuItems: (MenuItem<D> | TextMenuItem<D>)[] | undefined,
+  entity: D | undefined,
 ): (MenuItem<D> | TextMenuItem<D>)[] {
-  return menuItems ? menuItems.filter((item) => !item.hidden) : [];
+  if (!menuItems) {
+    return [];
+  }
+  return menuItems.filter((item) => !resolveMenuItemFlag(item.hidden, entity));
+}
+
+function resolveMenuItemFlag<D>(
+  flag: boolean | ((entity: D) => boolean) | undefined,
+  entity: D | undefined,
+): boolean {
+  if (typeof flag === "function") {
+    return entity !== undefined && flag(entity);
+  }
+  return !!flag;
 }
 
 export default EntityList;
