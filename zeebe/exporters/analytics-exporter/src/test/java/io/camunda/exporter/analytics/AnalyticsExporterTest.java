@@ -81,9 +81,10 @@ class AnalyticsExporterTest {
                   .containsEntry(
                       AnalyticsAttributes.PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
                   .containsEntry(AnalyticsAttributes.PROCESS_INSTANCE_KEY, record.getKey())
-                  .containsEntry(
-                      AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY,
-                      value.getRootProcessInstanceKey())
+                  // Temporarily commented out as root process instance key doesn't exist on 8.8.
+                  //                  .containsEntry(
+                  //                      AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY,
+                  //                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition());
             });

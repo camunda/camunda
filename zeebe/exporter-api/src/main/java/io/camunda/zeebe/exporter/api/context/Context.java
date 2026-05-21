@@ -64,10 +64,7 @@ public interface Context {
    *
    * @return the cluster ID, or an empty string if not configured.
    */
-  default String getClusterId() {
-    final var fromEnv = System.getenv("ZEEBE_BROKER_CLUSTER_CLUSTERID");
-    return fromEnv != null ? fromEnv : "";
-  }
+  String getClusterId();
 
   /**
    * Apply the given filter to limit the records which are exported.

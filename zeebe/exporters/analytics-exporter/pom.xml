@@ -141,4 +141,58 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>standalone-jar</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <!-- Produce an extra jar with classifier 'standalone'; leave the original jar intact -->
+                  <shadedArtifactAttached>true</shadedArtifactAttached>
+                  <shadedClassifierName>standalone</shadedClassifierName>
+                  <createDependencyReducedPom>false</createDependencyReducedPom>
+                  <artifactSet>
+                    <excludes>
+                      <!-- Provided by the Zeebe broker at runtime -->
+                      <exclude>io.camunda:zeebe-exporter-api</exclude>
+                      <exclude>io.camunda:zeebe-protocol</exclude>
+                      <exclude>io.camunda:zeebe-util</exclude>
+                      <exclude>org.slf4j:slf4j-api</exclude>
+                    </excludes>
+                  </artifactSet>
+                  <relocations>
+                    <!--
+                      Relocate all OTel classes to avoid version conflicts when the exporter is
+                      deployed alongside a broker that ships its own OTel dependencies.
+                    -->
+                    <relocation>
+                      <pattern>io.opentelemetry</pattern>
+                      <shadedPattern>io.camunda.shaded.otel</shadedPattern>
+                    </relocation>
+                  </relocations>
+                  <transformers>
+                    <!--
+                      Rename META-INF/services file names to match relocated package names,
+                      so ServiceLoader can find the HttpSenderProvider after relocation.
+                    -->
+                    <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  </transformers>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
