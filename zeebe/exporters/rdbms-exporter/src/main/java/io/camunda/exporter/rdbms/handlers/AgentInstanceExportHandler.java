@@ -7,10 +7,9 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceStatus;
+import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -19,9 +18,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +30,6 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
   private static final Set<AgentInstanceIntent> EXPORTABLE_INTENTS =
       Set.of(
           AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
-
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final AgentInstanceWriter writer;
 
@@ -86,7 +81,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
         .outputTokens(value.getMetrics().getOutputTokens())
         .modelCalls(value.getMetrics().getModelCalls())
         .toolCalls(value.getMetrics().getToolCalls())
-        .tools(serializeTools(value.getTools()))
+        .toolValues(toToolDbValues(value.getTools()))
         .creationDate(timestamp)
         .lastUpdatedDate(timestamp)
         .elementInstanceKeys(List.of(value.getElementInstanceKey()))
@@ -106,7 +101,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .outputTokens(value.getMetrics().getOutputTokens())
             .modelCalls(value.getMetrics().getModelCalls())
             .toolCalls(value.getMetrics().getToolCalls())
-            .tools(serializeTools(value.getTools()))
+            .toolValues(toToolDbValues(value.getTools()))
             .lastUpdatedDate(timestamp)
             .elementInstanceKeys(List.of(value.getElementInstanceKey()));
 
@@ -135,27 +130,13 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
     };
   }
 
-  private static String serializeTools(
+  private static List<AgentInstanceToolDbValue> toToolDbValues(
       final List<? extends AgentInstanceRecordValue.AgentInstanceToolValue> tools) {
     if (tools == null || tools.isEmpty()) {
       return null;
     }
-    final var toolMaps =
-        tools.stream()
-            .map(
-                t -> {
-                  final Map<String, Object> m = new HashMap<>();
-                  m.put("name", t.getName());
-                  m.put("description", t.getDescription());
-                  m.put("elementId", t.getElementId());
-                  return m;
-                })
-            .toList();
-    try {
-      return MAPPER.writeValueAsString(toolMaps);
-    } catch (final JsonProcessingException e) {
-      LOGGER.error("Failed to serialize agent instance tools", e);
-      return null;
-    }
+    return tools.stream()
+        .map(t -> new AgentInstanceToolDbValue(t.getName(), t.getDescription(), t.getElementId()))
+        .toList();
   }
 }

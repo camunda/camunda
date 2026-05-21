@@ -7,12 +7,21 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AgentInstanceDbModel.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private long agentInstanceKey;
   private String elementId;
@@ -36,6 +45,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
   private int modelCalls;
   private int toolCalls;
   private String tools;
+  private List<AgentInstanceToolDbValue> toolValues;
   private OffsetDateTime creationDate;
   private OffsetDateTime lastUpdatedDate;
   private OffsetDateTime completionDate;
@@ -73,7 +83,9 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
         .outputTokens(outputTokens)
         .modelCalls(modelCalls)
         .toolCalls(toolCalls)
-        .tools(tools)
+        // route through the getter so DB-hydrated models (only `tools` JSON populated)
+        // are lazily deserialized and the structured form is preserved on the copy
+        .toolValues(toolValues())
         .creationDate(creationDate)
         .lastUpdatedDate(lastUpdatedDate)
         .completionDate(completionDate)
@@ -252,8 +264,61 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     return tools;
   }
 
+  /**
+   * Setter used by MyBatis when hydrating this model from the DB. Stores the raw JSON and
+   * invalidates the cached structured form so the next {@link #toolValues()} call re-derives from
+   * the new JSON (otherwise readers see stale data).
+   */
   public void tools(final String tools) {
     this.tools = tools;
+    toolValues = null;
+  }
+
+  /**
+   * Returns the structured tool list. If only the JSON form (set via {@link #tools(String)}, e.g.
+   * when the model is hydrated from the DB) is present, the JSON is deserialized lazily and cached
+   * on the model.
+   */
+  public List<AgentInstanceToolDbValue> toolValues() {
+    if (toolValues == null && tools != null && !tools.isEmpty()) {
+      toolValues = deserializeTools(tools);
+    }
+    return toolValues;
+  }
+
+  /**
+   * Sets the structured tool list and derives the JSON form from it. The JSON is what MyBatis
+   * writes to the {@code AGENT_INSTANCE.TOOLS} CLOB column.
+   */
+  public void toolValues(final List<AgentInstanceToolDbValue> toolValues) {
+    this.toolValues = toolValues;
+    tools = serializeTools(toolValues);
+  }
+
+  private static List<AgentInstanceToolDbValue> deserializeTools(final String tools) {
+    if (tools == null || tools.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    try {
+      return MAPPER.readValue(tools, new TypeReference<>() {});
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to deserialize agent instance tools", e);
+      return Collections.emptyList();
+    }
+  }
+
+  private static String serializeTools(final List<AgentInstanceToolDbValue> toolValues) {
+    if (toolValues == null || toolValues.isEmpty()) {
+      return null;
+    }
+
+    try {
+      return MAPPER.writeValueAsString(toolValues);
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to serialize agent instance tools", e);
+      return null;
+    }
   }
 
   public OffsetDateTime creationDate() {
@@ -311,7 +376,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     private long outputTokens;
     private int modelCalls;
     private int toolCalls;
-    private String tools;
+    private List<AgentInstanceToolDbValue> toolValues;
     private OffsetDateTime creationDate;
     private OffsetDateTime lastUpdatedDate;
     private OffsetDateTime completionDate;
@@ -422,8 +487,8 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       return this;
     }
 
-    public Builder tools(final String tools) {
-      this.tools = tools;
+    public Builder toolValues(final List<AgentInstanceToolDbValue> tools) {
+      toolValues = tools;
       return this;
     }
 
@@ -471,7 +536,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       result.outputTokens(outputTokens);
       result.modelCalls(modelCalls);
       result.toolCalls(toolCalls);
-      result.tools(tools);
+      result.toolValues(toolValues);
       result.creationDate(creationDate);
       result.lastUpdatedDate(lastUpdatedDate);
       result.completionDate(completionDate);
@@ -479,6 +544,12 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       return result;
     }
   }
+
+  /**
+   * Structured input for {@link Builder#toolValues(List)}. Serialised by the model into the JSON
+   * string stored in the AGENT_INSTANCE.TOOLS CLOB column.
+   */
+  public record AgentInstanceToolDbValue(String name, String description, String elementId) {}
 
   /**
    * Stored as the enum constant name in the AGENT_INSTANCE.STATUS column via MyBatis' default enum

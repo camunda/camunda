@@ -52,7 +52,7 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
                   .outputTokens(agentInstance.outputTokens())
                   .modelCalls(agentInstance.modelCalls())
                   .toolCalls(agentInstance.toolCalls())
-                  .tools(agentInstance.tools())
+                  .toolValues(agentInstance.toolValues())
                   .lastUpdatedDate(agentInstance.lastUpdatedDate());
               if (agentInstance.completionDate() != null) {
                 b.completionDate(agentInstance.completionDate());
