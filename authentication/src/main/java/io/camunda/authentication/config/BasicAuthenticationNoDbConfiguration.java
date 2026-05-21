@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

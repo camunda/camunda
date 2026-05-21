@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.security.ConditionalOnSelfManagedConfigured;
+import io.camunda.security.spring.annotation.ConditionalOnUnprotectedApi;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import java.util.List;
