@@ -565,5 +565,49 @@ public class ExecutionListenerGatewayElementsTest {
                   ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
               tuple("end_b", BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
     }
+
+    @Test
+    public void shouldCreateExecutionListenerJobsWithCustomHeadersForExclusiveGateway() {
+      // given: Exclusive Gateway with start execution listener having custom headers
+      final var modelInstance =
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("start")
+              .exclusiveGateway("xor")
+              .zeebeExecutionListener(
+                  l ->
+                      l.start()
+                          .type(START_EL_TYPE)
+                          .zeebeTaskHeader("gatewayHeader", "gatewayValue")
+                          .zeebeTaskHeader("anotherHeader", "anotherValue"))
+              .sequenceFlowId("to_end_a")
+              .conditionExpression("foo < 5")
+              .endEvent("end_a")
+              .moveToLastExclusiveGateway()
+              .sequenceFlowId("to_end_b")
+              .defaultFlow()
+              .endEvent("end_b")
+              .done();
+
+      final long processInstanceKey =
+          createProcessInstance(ENGINE, modelInstance, Map.of("foo", 1));
+
+      // when: complete start execution listener job
+      ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+
+      // then: assert that the execution listener job was created with custom headers
+      assertThat(
+              jobRecords()
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .withIntent(JobIntent.CREATED)
+                  .findFirst())
+          .hasValueSatisfying(
+              r ->
+                  assertThat(r.getValue())
+                      .hasType(START_EL_TYPE)
+                      .hasCustomHeaders(
+                          Map.of(
+                              "gatewayHeader", "gatewayValue", "anotherHeader", "anotherValue")));
+    }
   }
 }

@@ -38,6 +38,14 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+// Use when an assertion polls on data that has to propagate through the
+// secondary-storage indexer on a loaded shared cluster (e.g. post-batch
+// user-task search, cross-view count reconciliation).
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
+
 export const uniqueBusinessId = (prefix = 'biz'): string => {
   return `${prefix}-${generateUniqueId()}`;
 };
@@ -77,6 +85,14 @@ export const createUniqueTenant = (customId?: string) => {
     tenantId: `tenant${id}`,
     name: `Test Tenant ${id}`,
     description: `Test tenant description ${id}`,
+  };
+};
+
+export const createEditedTenant = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Tenant ${id}`,
+    description: `Edited tenant description ${id}`,
   };
 };
 
@@ -131,6 +147,7 @@ export const createTestData = (options: {
   group?: boolean;
   editedGroup?: boolean;
   tenant?: boolean;
+  editedTenant?: boolean;
   mappingRule?: boolean;
   editedMappingRule?: boolean;
 }) => {
@@ -142,6 +159,7 @@ export const createTestData = (options: {
     group = false,
     editedGroup = false,
     tenant = false,
+    editedTenant = false,
     mappingRule = false,
     editedMappingRule = false,
   } = options;
@@ -155,6 +173,7 @@ export const createTestData = (options: {
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
+    editedTenant?: ReturnType<typeof createEditedTenant>;
     mappingRule?: ReturnType<typeof createUniqueMappingRule>;
     editedMappingRule?: ReturnType<typeof createEditedMappingRule>;
     id: string;
@@ -180,6 +199,10 @@ export const createTestData = (options: {
     result.tenant = createUniqueTenant(sharedId);
   }
 
+  if (editedTenant) {
+    result.editedTenant = createEditedTenant(sharedId);
+  }
+
   if (mappingRule) {
     result.mappingRule = createUniqueMappingRule(sharedId);
   }
@@ -203,4 +226,21 @@ export const createTestData = (options: {
 export const NEW_AUTH_ROLE = {
   id: 'authrole',
   name: 'Auth role',
+};
+
+export const createUniqueGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    id: `test-gl-${id}`,
+    type: `io.camunda.test.listener.${id}`,
+    eventType: 'creating',
+  };
+};
+
+export const createEditedGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    type: `io.camunda.test.edited.${id}`,
+    eventType: 'completing',
+  };
 };

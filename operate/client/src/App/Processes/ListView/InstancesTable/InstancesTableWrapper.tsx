@@ -21,15 +21,16 @@ import {
 } from 'modules/hooks/processInstancesSearch';
 import {useSearchParams} from 'react-router-dom';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {useEffect, useMemo} from 'react';
+import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 type ProcessInstancesHandle = {
   processInstances: ProcessInstance[];
-  totalProcessInstancesCount: number;
+  totalCount: number;
   hasMoreTotalItems: boolean;
   displayState: React.ComponentProps<typeof InstancesTable>['state'];
   handleScrollStartReach: React.ComponentProps<
@@ -46,7 +47,10 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
   const variable = variableFilterStore.variable;
-  const filter = useProcessInstancesSearchFilter(variable);
+  const conditions = MULTI_VARIABLE_FILTER
+    ? variableFilterStore.conditions
+    : undefined;
+  const filter = useProcessInstancesSearchFilter(variable, conditions);
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =
@@ -61,7 +65,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
 
   const {
     processInstances,
-    totalProcessInstancesCount,
+    totalCount,
     hasMoreTotalItems,
     displayState,
     handleScrollStartReach,
@@ -84,18 +88,18 @@ const InstancesTableWrapper: React.FC = observer(() => {
       .map((instance) => instance.processInstanceKey);
 
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount,
+      totalCount,
       visibleIds,
       visibleRunningIds,
       visibleFinishedIds,
     });
-  }, [processInstances, totalProcessInstancesCount]);
+  }, [processInstances, totalCount]);
 
   return (
     <InstancesTable
       state={displayState}
       processInstances={processInstances}
-      totalProcessInstancesCount={totalProcessInstancesCount}
+      totalCount={totalCount}
       hasMoreTotalItems={hasMoreTotalItems}
       onVerticalScrollStartReach={handleScrollStartReach}
       onVerticalScrollEndReach={handleScrollEndReach}
@@ -109,18 +113,14 @@ function mapQueryResultToProcessInstancesHandle(
   >,
 ): ProcessInstancesHandle {
   const processInstances = result.data?.pages.flatMap((p) => p.items) ?? [];
-  const totalProcessInstancesCount =
-    result.data?.pages[0]?.page.totalItems ?? 0;
+  const totalCount = result.data?.pages[0]?.page.totalItems ?? 0;
   const hasMoreTotalItems =
     result.data?.pages[0]?.page.hasMoreTotalItems ?? false;
-  const displayState = computeDisplayStateFromQueryResult(
-    result,
-    totalProcessInstancesCount,
-  );
+  const displayState = computeDisplayStateFromQueryResult(result, totalCount);
 
   return {
     processInstances,
-    totalProcessInstancesCount,
+    totalCount,
     hasMoreTotalItems,
     displayState,
     handleScrollStartReach: async (scrollDown) => {

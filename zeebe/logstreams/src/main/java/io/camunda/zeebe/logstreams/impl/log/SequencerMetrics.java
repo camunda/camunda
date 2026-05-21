@@ -23,9 +23,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 final class SequencerMetrics {
   private final MeterRegistry meterRegistry;
   private final DistributionSummary batchSize;

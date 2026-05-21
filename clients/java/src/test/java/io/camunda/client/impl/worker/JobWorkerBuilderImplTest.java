@@ -43,6 +43,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.AfterEach;
@@ -55,10 +61,13 @@ import org.mockito.Mockito;
 @SuppressWarnings("resource")
 class JobWorkerBuilderImplTest {
 
+  private static final String JOB_WORKER_LOGGER_NAME = "io.camunda.client.job.worker";
+
   private JobWorkerBuilderImpl jobWorkerBuilder;
   private JobClient jobClient;
   private List<Closeable> closeables;
   private CamundaClientConfiguration zeebeClientConfig;
+  private ListAppender logCapture;
 
   @BeforeEach
   void setUp() {
@@ -69,6 +78,14 @@ class JobWorkerBuilderImplTest {
     jobWorkerBuilder =
         new JobWorkerBuilderImpl(
             zeebeClientConfig, jobClient, executorService, executorService, closeables);
+
+    logCapture = new ListAppender("capture-" + JOB_WORKER_LOGGER_NAME);
+    logCapture.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    ctx.getConfiguration()
+        .getLoggerConfig(JOB_WORKER_LOGGER_NAME)
+        .addAppender(logCapture, null, null);
+    ctx.updateLoggers();
   }
 
   @AfterEach
@@ -76,6 +93,21 @@ class JobWorkerBuilderImplTest {
     for (final Closeable closeable : closeables) {
       closeable.close();
     }
+    if (logCapture != null) {
+      final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      ctx.getConfiguration()
+          .getLoggerConfig(JOB_WORKER_LOGGER_NAME)
+          .removeAppender(logCapture.getName());
+      ctx.updateLoggers();
+      logCapture.stop();
+    }
+  }
+
+  private List<LogEvent> eventsAt(final Level level) {
+    return logCapture.getEvents().stream()
+        .filter(e -> JOB_WORKER_LOGGER_NAME.equals(e.getLoggerName()))
+        .filter(e -> level.equals(e.getLevel()))
+        .collect(Collectors.toList());
   }
 
   @Test
@@ -140,6 +172,46 @@ class JobWorkerBuilderImplTest {
 
     // then
     verify(jobClient, atLeast(1)).newStreamJobsCommand();
+  }
+
+  @Test
+  void shouldThrowErrorIfStreamInactivityTimeoutIsZero() {
+    // given / when
+    assertThatThrownBy(
+            () ->
+                jobWorkerBuilder
+                    .jobType("some-type")
+                    .handler(mock())
+                    .streamEnabled(true)
+                    .streamInactivityTimeout(Duration.ZERO)
+                    .open())
+        // then
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("streamInactivityTimeout");
+  }
+
+  @Test
+  void shouldLogInfoWhenStreamInactivityTimeoutNotLessThanStreamTimeout() {
+    // given / when - users may legitimately configure a streamTimeout below the default
+    // streamInactivityTimeout to enforce a more frequent hard cutoff. The build must succeed
+    // and the runtime must inform the operator that inactivity-based recreation will not fire.
+    jobWorkerBuilder
+        .jobType("some-type")
+        .handler(mock())
+        .streamEnabled(true)
+        .streamTimeout(Duration.ofMinutes(5))
+        .streamInactivityTimeout(Duration.ofMinutes(5))
+        .open();
+
+    // then
+    final List<LogEvent> infos = eventsAt(Level.INFO);
+    assertThat(infos)
+        .anySatisfy(
+            event ->
+                assertThat(event.getMessage().getFormattedMessage())
+                    .contains("streamInactivityTimeout")
+                    .contains("streamTimeout")
+                    .contains("preempt"));
   }
 
   @Test

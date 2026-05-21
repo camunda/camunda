@@ -88,6 +88,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
   private final List<String> exporterPositionsReceivingSubjects;
+  private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
@@ -114,6 +115,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     name = context.getName();
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    clusterId = context.getClusterId();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
     containers =
@@ -123,9 +125,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
+                        clusterId,
                         descriptorEntry.getValue(),
                         meterRegistry,
-                        clock))
+                        clock,
+                        this::onReplayRequested))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
@@ -139,7 +143,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final var exporterPositionsLegacySubject =
         String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     final var exporterPositionsSubject =
-        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getEngineName(), partitionId);
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getTenantName(), partitionId);
     exporterPositionsSendingSubject =
         context.isSendOnLegacySubject() ? exporterPositionsLegacySubject : exporterPositionsSubject;
     exporterPositionsReceivingSubjects =
@@ -341,7 +345,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            clusterId,
+            initializationInfo,
+            meterRegistry,
+            clock,
+            this::onReplayRequested);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -473,6 +484,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     if (state.getPosition(exporterId) < exporterState.position()) {
       state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
+      metrics.setLastUpdatedExportedPosition(exporterId, exporterState.position());
     }
   }
 
@@ -606,6 +618,47 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void restartActiveExportingMode() {
     logStreamReader = logStream.newLogStreamReader();
     startActiveExportingFrom(-1);
+  }
+
+  /**
+   * Handles a replay request from an exporter container. Seeks the log reader to {@code
+   * lastExportedPosition} so that records from that position onward will be re-exported.
+   *
+   * <p>Replay is only valid during startup, i.e. while exporters are still being opened. If all
+   * exporters have already been opened ({@code allExportersOpened == true}) or the director is
+   * currently mid-export ({@code inExportingPhase == true}), the request is rejected with a warning
+   * and {@code false} is returned.
+   *
+   * @param lastExportedPosition the position to seek the log reader to for replay
+   * @return {@code true} if the seek succeeded, {@code false} if the request was rejected or the
+   *     required log segments are no longer available
+   */
+  private boolean onReplayRequested(final long lastExportedPosition) {
+    if (logStreamReader == null) {
+      LOG.warn(
+          "Cannot process replay request at position {}: log stream reader is not available.",
+          lastExportedPosition);
+      return false;
+    }
+
+    if (allExportersOpened || inExportingPhase) {
+      LOG.warn(
+          "Replay requested at position {}, but all exporters are already opened and exporting started. Request should only be triggered during exporter opening. Ignoring replay request.",
+          lastExportedPosition);
+      return false;
+    }
+
+    LOG.info("Replay requested: seeking log reader to position {}", lastExportedPosition);
+
+    final boolean sought = logStreamReader.seek(lastExportedPosition);
+    if (!sought) {
+      LOG.warn(
+          "Could not seek log reader to replay position {}. Log segments may have been deleted.",
+          lastExportedPosition);
+      return false;
+    }
+
+    return true;
   }
 
   private void startActiveExportingFrom(final long snapshotPosition) {

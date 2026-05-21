@@ -9,18 +9,22 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.gateway.protocol.model.ResourceSearchQuery;
+import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
+import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.ResourceServices.ResourceFetchRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -70,17 +74,53 @@ public class ResourceController {
   @CamundaGetMapping(path = "/resources/{resourceKey}")
   public CompletableFuture<ResponseEntity<Object>> getResource(
       @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse, HttpStatus.OK);
+        () -> resourceServices.getByKey(resourceKey, authentication),
+        ResponseMapper::toGetResourceResponse,
+        HttpStatus.OK);
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content")
   public CompletableFuture<ResponseEntity<Object>> getResourceContent(
       @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> fetchResource(resourceKey),
-        ResponseMapper::toGetResourceContentResponse,
-        HttpStatus.OK);
+        () -> resourceServices.getContentByKeyFilteredByType(resourceKey, "rpa", authentication),
+        entity ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ResponseMapper.toGetResourceContentResponse(entity)));
+  }
+
+  @CamundaGetMapping(path = "/resources/{resourceKey}/content/binary")
+  public CompletableFuture<ResponseEntity<Object>> getResourceContentBinary(
+      @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> resourceServices.getContentByKey(resourceKey, authentication),
+        entity ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(ResponseMapper.toGetResourceContentResponse(entity)));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/resources/search")
+  public ResponseEntity<ResourceSearchQueryResult> searchResources(
+      @RequestBody(required = false) final ResourceSearchQuery query) {
+    return SearchQueryRequestMapper.toDeployedResourceQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<ResourceSearchQueryResult> search(final DeployedResourceQuery query) {
+    try {
+      final var result =
+          resourceServices.search(query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(SearchQueryResponseMapper.toResourceSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
@@ -98,10 +138,5 @@ public class ResourceController {
         () -> resourceServices.deleteResource(request, authentication),
         ResponseMapper::toDeleteResourceResponse,
         HttpStatus.OK);
-  }
-
-  private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
-    return resourceServices.fetchResource(new ResourceFetchRequest(resourceKey), authentication);
   }
 }

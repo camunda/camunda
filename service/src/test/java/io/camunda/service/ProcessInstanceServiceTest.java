@@ -36,9 +36,9 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.authorization.Authorizations;
@@ -496,7 +496,7 @@ public final class ProcessInstanceServiceTest {
     verify(incidentServices).search(incidentQueryCaptor.capture(), any());
     final var incidentQuery = incidentQueryCaptor.getValue();
     assertThat(incidentQuery.filter().treePathOperations())
-        .containsExactly(Operation.like("*" + processInstance.treePath() + "*"));
+        .containsExactly(Operation.like(processInstance.treePath() + "*"));
     assertThat(incidentQuery.page()).isEqualTo(query.page());
     assertThat(incidentQuery.sort()).isEqualTo(query.sort());
   }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ReplicationStatusMapper">
+
+  <resultMap id="replicationLogStatusResultMap" type="io.camunda.db.rdbms.read.replication.ReplicationLogStatus">
+    <constructor>
+      <arg column="logStatus" javaType="java.lang.Long"/>
+      <arg column="replicaId" javaType="java.lang.String"/>
+      <arg column="replicationLagMs" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
+    SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
+  </select>
+
+  <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="postgresql">
+    SELECT
+      COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
+      pid::text AS replicaId,
+      COALESCE((EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint, 0) AS replicationLagMs
+    FROM pg_stat_replication
+    WHERE pid IS NOT NULL;
+  </select>
+
+</mapper>
+

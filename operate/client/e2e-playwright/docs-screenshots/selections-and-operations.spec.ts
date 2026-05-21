@@ -76,7 +76,6 @@ test.describe('selections and operations', () => {
 
   test('view operations page after retry operation', async ({
     page,
-    commonPage,
     processesPage,
     processesPage: {filtersPanel},
   }) => {

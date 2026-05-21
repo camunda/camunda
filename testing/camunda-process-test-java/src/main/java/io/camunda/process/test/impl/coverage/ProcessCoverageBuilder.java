@@ -32,6 +32,7 @@ public class ProcessCoverageBuilder {
 
   private String reportDirectory = null;
   private List<String> excludedProcessDefinitionIds = Collections.emptyList();
+  private List<String> excludedDecisionDefinitionIds = Collections.emptyList();
   private Class<?> testClass = null;
   private Supplier<CamundaDataSource> dataSourceSupplier;
   private Consumer<String> printStream;
@@ -45,6 +46,18 @@ public class ProcessCoverageBuilder {
   public ProcessCoverageBuilder excludeProcessDefinitionIds(
       final List<String> processDefinitionIds) {
     excludedProcessDefinitionIds = processDefinitionIds;
+    return this;
+  }
+
+  /**
+   * Specifies decision definition IDs to exclude from coverage analysis.
+   *
+   * @param decisionDefinitionIds the decision definition IDs to exclude
+   * @return This builder instance for method chaining
+   */
+  public ProcessCoverageBuilder excludeDecisionDefinitionIds(
+      final List<String> decisionDefinitionIds) {
+    excludedDecisionDefinitionIds = decisionDefinitionIds;
     return this;
   }
 
@@ -102,6 +115,11 @@ public class ProcessCoverageBuilder {
    */
   public ProcessCoverage build() {
     return new ProcessCoverage(
-        testClass, excludedProcessDefinitionIds, reportDirectory, printStream, dataSourceSupplier);
+        testClass,
+        excludedProcessDefinitionIds,
+        excludedDecisionDefinitionIds,
+        reportDirectory,
+        printStream,
+        dataSourceSupplier);
   }
 }

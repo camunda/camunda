@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Detect base branch
         id: detect-base
@@ -89,7 +89,7 @@ jobs:
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 
@@ -203,7 +203,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           cache: npm
@@ -235,7 +235,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -271,17 +271,18 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E API Test Result Release v${{ needs.validate-release.outputs.release_version }}
@@ -290,7 +291,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: json-report-release-api
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -318,7 +319,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 
@@ -351,7 +352,7 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
@@ -401,10 +402,10 @@ jobs:
             jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # Microsoft SQL Server - Supported versions: 2019, 2025
-          - database-name: "MSSQL 2019"
+          # Microsoft SQL Server - Supported versions: 2022, 2025
+          - database-name: "MSSQL 2022"
             database-type: "mssql"
-            database-image-version: "2019-latest"
+            database-image-version: "2022-latest"
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
@@ -414,10 +415,10 @@ jobs:
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
-          # Oracle - Supported versions: 21c, 23ai
-          - database-name: "Oracle 23ai"
+          # Oracle - Supported versions: 21c, 26ai
+          - database-name: "Oracle 26ai"
             database-type: "oracle"
-            database-image-version: "23-slim-faststart"
+            database-image-version: "23.26.1-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
@@ -440,7 +441,7 @@ jobs:
         run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
 
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 
@@ -477,14 +478,14 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -496,7 +497,7 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Download distribution artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
@@ -634,7 +635,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           cache: npm
@@ -688,7 +689,7 @@ jobs:
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.validate-release.outputs.base }}
 
@@ -801,7 +802,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           cache: npm
@@ -833,7 +834,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -892,17 +893,18 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
@@ -911,7 +913,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -949,7 +951,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

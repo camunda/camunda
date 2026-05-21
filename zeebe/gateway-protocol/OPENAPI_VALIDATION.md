@@ -18,6 +18,8 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Key property type validation (`...Key` properties must be strings)
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
+  - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
 ## Running Validation Locally
 
@@ -123,6 +125,46 @@ schema:
 ```
 
 See [#46224](https://github.com/camunda/camunda/issues/46224) for details.
+
+### Missing `x-added-in-version` on an Operation
+
+Every operation must declare the Camunda version in which it was first introduced via the `x-added-in-version` extension. The `require-added-in-version` rule fails the build if this annotation is missing.
+
+**Wrong:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      tags: [My resource]
+      # ❌ Missing x-added-in-version
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      x-added-in-version: "8.9"  # ✓ String containing the minor version (no patch)
+      tags: [My resource]
+```
+
+Set the value to the version in which the endpoint **first** ships and do not update it on later changes. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention.
+
+### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
+
+Three rules validate the producer/consumer dependency annotations consumed by the API test generator:
+
+- `semantic-establishes-shape` — `x-semantic-establishes` must conform to the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal: true`).
+- `semantic-requires-shape` — `x-semantic-requires` must conform to the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (custom JS function in `spectral-functions/`) — every `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level body property that exists on the operation; operations must not directly establish/require kinds whose registry shape is `external-entity`; `identifiedBy[].acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+For the full annotation reference (including `x-semantic-provider`, `x-semantic-client-minted`, kind-level `shape: external-entity`, and the per-tuple `acceptsExternal` flag), see §2.18 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md). The kind registry itself is [`src/main/proto/v2/semantic-kinds.json`](src/main/proto/v2/semantic-kinds.json) — its `$comment` block documents how to add a new kind.
 
 ## Testing Custom Spectral Functions
 

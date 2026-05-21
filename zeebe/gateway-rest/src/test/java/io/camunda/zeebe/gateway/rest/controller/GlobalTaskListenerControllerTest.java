@@ -17,7 +17,7 @@ import io.camunda.search.entities.GlobalListenerSource;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;

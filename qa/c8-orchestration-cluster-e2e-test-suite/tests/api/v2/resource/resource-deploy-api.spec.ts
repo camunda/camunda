@@ -206,7 +206,7 @@ test.describe.parallel('Resource Deploy API', () => {
     const body = await res.json();
     expect(body.tenantId).toEqual('<default>');
     expect(body.deploymentKey).toBeDefined();
-    expect(body.deployments.length).toBe(5);
+    expect(body.deployments).toHaveLength(5);
 
     const deploymentTypes = body.deployments.map(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -35,6 +35,12 @@ public final class CreateClusterVariableMultiPartitionTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private static boolean isClusterVariableCreateDistributionRecord(final Record<?> record) {
+    return record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+        && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+            == ClusterVariableIntent.CREATE;
+  }
+
   @Test
   public void createGlobalScopedClusterVariableMultiPartition() {
     // when
@@ -49,13 +55,14 @@ public final class CreateClusterVariableMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .limit(
+                    record ->
+                        record.getIntent().equals(CommandDistributionIntent.FINISHED)
+                            && isClusterVariableCreateDistributionRecord(record))
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE
-                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
-                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
-                                    == ClusterVariableIntent.CREATE)))
+                            || isClusterVariableCreateDistributionRecord(record)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -77,7 +84,7 @@ public final class CreateClusterVariableMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
 
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.clusterVariableRecords()
                   .withName("KEY_1")
@@ -92,6 +99,8 @@ public final class CreateClusterVariableMultiPartitionTest {
   @Test
   public void createTenantScopedClusterVariableMultiPartition() {
     // when
+    ENGINE_RULE.tenant().newTenant().withTenantId("tenant_1").create();
+
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_2")
@@ -104,13 +113,14 @@ public final class CreateClusterVariableMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .limit(
+                    record ->
+                        record.getIntent().equals(CommandDistributionIntent.FINISHED)
+                            && isClusterVariableCreateDistributionRecord(record))
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE
-                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
-                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
-                                    == ClusterVariableIntent.CREATE)))
+                            || isClusterVariableCreateDistributionRecord(record)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -132,7 +142,7 @@ public final class CreateClusterVariableMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
 
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.clusterVariableRecords()
                   .withName("KEY_2")

@@ -104,7 +104,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
     );
 
     return (
-      <article className={cn(styles.container, {[styles.active]: isActive})}>
+      <article className={cn(styles.container, {[styles.active!]: isActive})}>
         <NavLink
           className={styles.taskLink}
           to={{

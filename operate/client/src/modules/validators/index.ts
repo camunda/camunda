@@ -24,7 +24,7 @@ const ERRORS = {
   parentInstanceId: 'Key has to be a 16 to 19 digit number',
   time: 'Time has to be in the format hh:mm:ss',
   timeRange: '"From time" is after "To time"',
-  operationId: 'Id has to be a 16 to 19 digit number or a UUID',
+  batchOperationKey: 'Key has to be a 16 to 19 digit number or a UUID',
   variables: {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
@@ -68,6 +68,7 @@ const validateIdsCharacters: FieldValidator<
   ) {
     return ERRORS.ids;
   }
+  return undefined;
 };
 
 const validateDecisionIdsCharacters: FieldValidator<
@@ -79,6 +80,7 @@ const validateDecisionIdsCharacters: FieldValidator<
   ) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 };
 
 const validateIdsLength: FieldValidator<
@@ -87,6 +89,7 @@ const validateIdsLength: FieldValidator<
   if (areIdsTooLong(value)) {
     return ERRORS.ids;
   }
+  return undefined;
 };
 
 const validateDecisionIdsLength: FieldValidator<
@@ -95,6 +98,7 @@ const validateDecisionIdsLength: FieldValidator<
   if (areDecisionIdsTooLong(value)) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 };
 
 const validatesIdsComplete: FieldValidator<
@@ -103,6 +107,7 @@ const validatesIdsComplete: FieldValidator<
   if (!areIdsComplete(value)) {
     return ERRORS.ids;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validatesDecisionIdsComplete: FieldValidator<
@@ -111,6 +116,7 @@ const validatesDecisionIdsComplete: FieldValidator<
   if (!areDecisionIdsComplete(value)) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdCharacters: FieldValidator<
@@ -119,6 +125,7 @@ const validateParentInstanceIdCharacters: FieldValidator<
   if (value !== '' && !/^[0-9]+$/.test(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 };
 
 const validateParentInstanceIdComplete: FieldValidator<
@@ -127,6 +134,7 @@ const validateParentInstanceIdComplete: FieldValidator<
   if (!areIdsComplete(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdNotTooLong: FieldValidator<
@@ -135,12 +143,14 @@ const validateParentInstanceIdNotTooLong: FieldValidator<
   if (areIdsTooLong(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 };
 
 const validateTimeComplete = promisifyValidator((value = '') => {
   if (value !== '' && !isValid(parseFilterTime(value.trim()))) {
     return ERRORS.time;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateTimeRange = promisifyValidator(
@@ -174,6 +184,7 @@ const validateTimeRange = promisifyValidator(
       // ' ' allows the field to have error indicators without error message
       return meta?.name === 'fromTime' ? ERRORS.timeRange : ' ';
     }
+    return undefined;
   },
   VALIDATION_TIMEOUT,
 );
@@ -182,6 +193,7 @@ const validateTimeCharacters = (value = '') => {
   if (value !== '' && value.replace(/[0-9]|:/g, '') !== '') {
     return ERRORS.time;
   }
+  return undefined;
 };
 
 const validateVariableNameCharacters: FieldValidator<string | undefined> = (
@@ -250,8 +262,8 @@ const validateMultipleVariableValuesValid: FieldValidator<
 /**
  * Validates if value contains only characters from a key or UUID
  */
-const validateOperationIdCharacters: FieldValidator<
-  ProcessInstanceFilters['batchOperationId']
+const validateBatchOperationKeyCharacters: FieldValidator<
+  ProcessInstanceFilters['batchOperationKey']
 > = (value = '') => {
   const schema = z.union([
     z.string().length(0),
@@ -260,15 +272,16 @@ const validateOperationIdCharacters: FieldValidator<
   ]);
 
   if (!schema.safeParse(value).success) {
-    return ERRORS.operationId;
+    return ERRORS.batchOperationKey;
   }
+  return undefined;
 };
 
 /**
  * Validates if value is a complete key (16-19 characters) or a complete UUID
  */
-const validateOperationIdComplete: FieldValidator<
-  ProcessInstanceFilters['batchOperationId']
+const validateBatchOperationKeyComplete: FieldValidator<
+  ProcessInstanceFilters['batchOperationKey']
 > = promisifyValidator((value = '') => {
   const schema = z.union([
     z.string().length(0),
@@ -277,8 +290,9 @@ const validateOperationIdComplete: FieldValidator<
   ]);
 
   if (!schema.safeParse(value).success) {
-    return ERRORS.operationId;
+    return ERRORS.batchOperationKey;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 export {
@@ -290,8 +304,8 @@ export {
   validateParentInstanceIdNotTooLong,
   validateTimeComplete,
   validateTimeCharacters,
-  validateOperationIdCharacters,
-  validateOperationIdComplete,
+  validateBatchOperationKeyCharacters,
+  validateBatchOperationKeyComplete,
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValuesComplete,

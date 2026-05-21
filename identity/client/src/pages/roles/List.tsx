@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { TrashCan } from "@carbon/react/icons";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -18,6 +18,7 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/roles/modals/AddModal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
+import EditModal from "src/pages/roles/modals/EditModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -34,6 +35,7 @@ const List: FC = () => {
   } = usePaginatedApi(searchRoles);
 
   const [addRole, addRoleModal] = useModal(AddModal, reload);
+  const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
   const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ roleId }: Role) => navigate(roleId);
@@ -78,6 +80,11 @@ const List: FC = () => {
         loading={loading}
         menuItems={[
           {
+            label: t("editRole"),
+            icon: Edit,
+            onClick: editRole,
+          },
+          {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
@@ -95,6 +102,7 @@ const List: FC = () => {
         />
       )}
       {addRoleModal}
+      {editRoleModal}
       {deleteRoleModal}
     </Page>
   );

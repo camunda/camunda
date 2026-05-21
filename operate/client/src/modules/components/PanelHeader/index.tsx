@@ -9,7 +9,7 @@
 import {Header} from './styled';
 import {Title} from '../PanelTitle';
 import {forwardRef} from 'react';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Props = {
   title?: string;

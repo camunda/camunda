@@ -32,8 +32,7 @@ public class RaftCommandTest {
   @Test
   public void shouldReadAndPrintRaftMetadataFile() throws JsonProcessingException {
     // given
-    final var resourceUrl =
-        getClass().getClassLoader().getResource("raft-partition-partition-1.meta");
+    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.meta");
     assertThat(resourceUrl).isNotNull();
     final var filePath = Path.of(resourceUrl.getPath());
 
@@ -52,8 +51,7 @@ public class RaftCommandTest {
   @Test
   public void shouldReadAndPrintRaftConfigurationFile() {
     // given
-    final var resourceUrl =
-        getClass().getClassLoader().getResource("raft-partition-partition-1.conf");
+    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.conf");
     assertThat(resourceUrl).isNotNull();
     final var filePath = Path.of(resourceUrl.getPath());
 

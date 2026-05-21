@@ -11,7 +11,7 @@ import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
-  navigateToApp,
+  navigateToAppHome,
   hideHelperModals,
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
@@ -30,9 +30,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Batch Modification', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await hideHelperModals(page);
   });
@@ -45,7 +44,6 @@ test.describe('Process Instance Batch Modification', () => {
   test('Move Operation', async ({
     page,
     operateProcessesPage,
-    operateFiltersPanelPage,
     operateDiagramPage,
     operateProcessModificationModePage,
   }) => {

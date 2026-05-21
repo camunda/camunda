@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from '../../utils/waitForAssertion';
@@ -57,9 +57,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 
@@ -90,8 +89,8 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.editVariableButtonInList.click();
 
-      await operateProcessInstancePage.editVariableValueField.clear();
-      await operateProcessInstancePage.editVariableValueField.type('20');
+      await operateProcessInstancePage.clearVariableValueInput();
+      await operateProcessInstancePage.fillVariableValueInput('20');
 
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
@@ -148,9 +147,15 @@ test.describe('Process Instance', () => {
     await test.step('Add variable isCool', async () => {
       await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.addVariableButton.click();
-
+      await expect(
+        operateProcessInstancePage.newVariableNameField,
+      ).toBeFocused();
       await operateProcessInstancePage.newVariableNameField.type('isCool');
-      await operateProcessInstancePage.newVariableValueField.type('true');
+      await expect(operateProcessInstancePage.newVariableNameField).toHaveValue(
+        'isCool',
+      );
+      await operateProcessInstancePage.newVariableValueField.click();
+      await operateProcessInstancePage.fillVariableValueInput('true');
 
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
 
@@ -354,9 +359,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Incident', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 

@@ -1,24 +1,47 @@
 #!/bin/bash -xeu
 # Usage:
-#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+#  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
+#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
-#
+# DATABASE can be:
+#   elasticsearch (default), opensearch, postgresql, oracle, mysql, mssql, mariadb, none
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
+#
+# Environment variables:
+#   PROFILING_DURATION - profiling duration in seconds (default: 100)
 set -oxe pipefail
 
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
+  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]"
   exit 1
 fi
 node=$1
-profiler_event=${2:-cpu}
-additional_options=${3:-}
+
+valid_databases=("elasticsearch" "opensearch" "postgresql" "oracle" "mysql" "mssql" "mariadb" "none")
+is_database() { [[ -n "${1:-}" ]] && [[ " ${valid_databases[*]} " =~ " ${1} " ]]; }
+
+if is_database "${2:-}"; then
+  # EVENT-TYPE omitted — $2 is DATABASE
+  profiler_event="cpu"
+  database="${2}"
+  additional_options="${3:-}"
+else
+  profiler_event="${2:-cpu}"
+  if is_database "${3:-}"; then
+    database="${3}"
+    additional_options="${4:-}"
+  else
+    # $3 is not a known database — treat it as additional options
+    database=""
+    additional_options="${3:-} ${4:-}"
+  fi
+fi
 
 if [[ $profiler_event == "wall" ]]; then
   # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
@@ -50,7 +73,11 @@ then
 fi
 
 # Run profiling
-filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+if [ -n "$database" ]; then
+  filename=flamegraph-$database-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+else
+  filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+fi
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax
@@ -64,7 +91,7 @@ filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
+kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d "${PROFILING_DURATION:-100}" -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
 # Copy result
 kubectl cp "$node:$containerPath/$filename" "$node-$filename"

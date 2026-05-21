@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   @Override
   public ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final Duration timeout) {
@@ -56,14 +57,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   @Override
   public ActorFuture<DirectBuffer> sendRequest(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
     return sendRequestInternal(nodeAddressSupplier, r -> true, clientRequest, false, timeout);
   }
 
   private ActorFuture<DirectBuffer> sendRequestInternal(
-      final Supplier<String> nodeAddressSupplier,
+      final Supplier<@Nullable String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final boolean shouldRetry,
@@ -171,7 +172,9 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
   }
 
   private void handleResponse(
-      final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
+      final RequestContext requestContext,
+      final byte[] response,
+      final @Nullable Throwable errorOnRequest) {
     if (requestContext.isDone()) {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Handle response, but request {} is already done", requestContext.hashCode());
@@ -224,7 +227,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     }
   }
 
-  private boolean exceptionShowsConnectionIssue(final Throwable throwable) {
+  private boolean exceptionShowsConnectionIssue(final @Nullable Throwable throwable) {
     return throwable instanceof ConnectException
         || throwable instanceof MessagingException.NoRemoteHandler;
   }

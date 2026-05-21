@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -25,7 +27,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
+import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
@@ -43,6 +47,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -77,6 +82,24 @@ public final class BpmnJobBehavior {
       To resolve this incident, migrate the process instance to a process definition \
       that is deployed together with the intended resource to use.\
       """;
+  public static final String FIND_LATEST_FORM_BY_ID_FAILED_MESSAGE =
+      """
+      Expected to link a form with id '%s', but no form with this id is found, \
+      at least a form with this id should be available. \
+      To resolve the Incident please deploy a form with the same id.
+      """;
+  public static final String FIND_FORM_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE =
+      """
+      Expected to link a form with id '%s' and version tag '%s', but no such form found. \
+      To resolve the incident, deploy a form with the given id and version tag.
+      """;
+  public static final String FIND_FORM_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE =
+      """
+      Expected to link a form with id '%s' and binding type 'deployment', \
+      but no such form found in the deployment with key %s which contained the current process. \
+      To resolve this incident, migrate the process instance to a process definition \
+      that is deployed together with the intended form to use.\
+      """;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
@@ -90,6 +113,7 @@ public final class BpmnJobBehavior {
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final ResourceState resourceState;
+  private final FormState formState;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -102,6 +126,7 @@ public final class BpmnJobBehavior {
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final ResourceState resourceState,
+      final FormState formState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
@@ -112,6 +137,7 @@ public final class BpmnJobBehavior {
     stateWriter = writers.state();
     this.stateBehavior = stateBehavior;
     this.resourceState = resourceState;
+    this.formState = formState;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
@@ -126,6 +152,10 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey, tenantId).map(p::type))
         .flatMap(
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
+        .flatMap(
+            p ->
+                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                    .map(p::priority))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
@@ -196,14 +226,28 @@ public final class BpmnJobBehavior {
 
   private Either<Failure, String> resolveLinkedResourceKey(
       final LinkedResource linkedResource, final BpmnElementContext context, final long scopeKey) {
-    return findLinkedResource(
-            linkedResource.getResourceId(),
-            linkedResource.getBindingType(),
-            linkedResource.getVersionTag(),
-            context,
-            scopeKey)
-        .map(PersistedResource::getResourceKey)
-        .map(String::valueOf);
+    final String resourceType = linkedResource.getResourceType();
+
+    // Check if this is a form resource type
+    if ("form".equalsIgnoreCase(resourceType)) {
+      return findLinkedForm(
+              linkedResource.getResourceId(),
+              linkedResource.getBindingType(),
+              linkedResource.getVersionTag(),
+              context,
+              scopeKey)
+          .map(PersistedForm::getFormKey)
+          .map(String::valueOf);
+    } else {
+      return findLinkedResource(
+              linkedResource.getResourceId(),
+              linkedResource.getBindingType(),
+              linkedResource.getVersionTag(),
+              context,
+              scopeKey)
+          .map(PersistedResource::getResourceKey)
+          .map(String::valueOf);
+    }
   }
 
   private Either<Failure, PersistedResource> findLinkedResource(
@@ -261,6 +305,59 @@ public final class BpmnJobBehavior {
                 String.format(
                     FIND_RESOURCE_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE, resourceId, versionTag),
                 ErrorType.RESOURCE_NOT_FOUND,
+                scopeKey));
+  }
+
+  private Either<Failure, PersistedForm> findLinkedForm(
+      final String formId,
+      final ZeebeBindingType bindingType,
+      final String versionTag,
+      final BpmnElementContext context,
+      final long scopeKey) {
+    return switch (bindingType) {
+      case deployment -> findFormByIdInSameDeployment(formId, context, scopeKey);
+      case latest -> findLatestFormById(formId, context.getTenantId(), scopeKey);
+      case versionTag ->
+          findFormByIdAndVersionTag(formId, versionTag, context.getTenantId(), scopeKey);
+    };
+  }
+
+  private Either<Failure, PersistedForm> findFormByIdInSameDeployment(
+      final String formId, final BpmnElementContext context, final long scopeKey) {
+    return stateBehavior
+        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .flatMap(
+            deploymentKey ->
+                Either.ofOptional(
+                        formState.findFormByIdAndDeploymentKey(
+                            formId, deploymentKey, context.getTenantId()))
+                    .orElse(
+                        new Failure(
+                            String.format(
+                                FIND_FORM_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
+                                formId,
+                                deploymentKey),
+                            ErrorType.FORM_NOT_FOUND,
+                            scopeKey)));
+  }
+
+  private Either<Failure, PersistedForm> findLatestFormById(
+      final String formId, final String tenantId, final long scopeKey) {
+    return Either.ofOptional(formState.findLatestFormById(formId, tenantId))
+        .orElse(
+            new Failure(
+                String.format(FIND_LATEST_FORM_BY_ID_FAILED_MESSAGE, formId),
+                ErrorType.FORM_NOT_FOUND,
+                scopeKey));
+  }
+
+  private Either<Failure, PersistedForm> findFormByIdAndVersionTag(
+      final String formId, final String versionTag, final String tenantId, final long scopeKey) {
+    return Either.ofOptional(formState.findFormByIdAndVersionTag(formId, versionTag, tenantId))
+        .orElse(
+            new Failure(
+                String.format(FIND_FORM_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE, formId, versionTag),
+                ErrorType.FORM_NOT_FOUND,
                 scopeKey));
   }
 
@@ -388,8 +485,10 @@ public final class BpmnJobBehavior {
   private static JobListenerEventType fromExecutionListenerEventType(
       final ZeebeExecutionListenerEventType eventType) {
     return switch (eventType) {
+      case beforeAll -> JobListenerEventType.BEFORE_ALL;
       case start -> JobListenerEventType.START;
       case end -> JobListenerEventType.END;
+      case cancel -> JobListenerEventType.CANCEL;
     };
   }
 
@@ -428,6 +527,50 @@ public final class BpmnJobBehavior {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
+  private Either<Failure, Integer> evalPriorityExp(
+      final Expression priority, final long scopeKey, final String tenantId) {
+    if (priority == null) {
+      return Either.right(0);
+    }
+    return expressionBehavior
+        .evaluateAnyExpression(priority, scopeKey, tenantId)
+        .flatMap(result -> mapPriorityResult(priority, result, scopeKey));
+  }
+
+  private Either<Failure, Integer> mapPriorityResult(
+      final Expression priority, final EvaluationResult result, final long scopeKey) {
+    if (result.getType() != ResultType.NUMBER) {
+      return priorityFailure(priority, scopeKey, "'NUMBER', but was '" + result.getType() + "'");
+    }
+    final Number number = result.getNumber();
+    final BigDecimal asDecimal;
+    try {
+      asDecimal = new BigDecimal(number.toString());
+    } catch (final NumberFormatException e) {
+      return priorityFailure(priority, scopeKey, "a finite number, but was '" + number + "'");
+    }
+    try {
+      // stripTrailingZeros so `1.0` is accepted as integer 1.
+      return Either.right(asDecimal.stripTrailingZeros().intValueExact());
+    } catch (final ArithmeticException e) {
+      return priorityFailure(
+          priority,
+          scopeKey,
+          "an integer within the 32-bit signed range, but was '" + number + "'");
+    }
+  }
+
+  private static Either<Failure, Integer> priorityFailure(
+      final Expression priority, final long scopeKey, final String detail) {
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected result of the expression '%s' for the job priority to be %s.",
+                priority.getExpression(), detail),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final JobProperties props,
@@ -451,6 +594,7 @@ public final class BpmnJobBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setTags(getTagsFromProcessInstance(context))
+        .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
@@ -571,6 +715,7 @@ public final class BpmnJobBehavior {
     private String dueDate;
     private String followUpDate;
     private String formKey;
+    private int priority;
     private List<LinkedResourceProps> linkedResources;
 
     public JobProperties type(final String type) {
@@ -652,6 +797,15 @@ public final class BpmnJobBehavior {
 
     public List<LinkedResourceProps> getLinkedResources() {
       return linkedResources;
+    }
+
+    public JobProperties priority(final int priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public int getPriority() {
+      return priority;
     }
   }
 

@@ -9,19 +9,18 @@
 import {render, screen, within} from 'modules/testing-library';
 import {multiInstanceProcess, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
-import {Wrapper, mockMultiInstanceProcessInstance} from './mocks';
+import {
+  getWrapper,
+  mockMultiInstanceProcessInstance,
+  parseBusinessObjects,
+} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
-
-const diagramModel = await parseDiagramXML(multiInstanceProcess);
-const businessObjects = businessObjectsParser({diagramModel});
 
 const MULTI_INSTANCE_BODY_ELEMENT: ElementInstance = {
   elementInstanceKey: '2251799813686156',
@@ -87,6 +86,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should load the instance history', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({
       items: [],
@@ -98,7 +98,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -112,6 +112,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({
       items: [],
@@ -123,7 +124,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -210,6 +211,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
+    const {businessObjects} = await parseBusinessObjects(multiInstanceProcess);
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({
       items: [],
@@ -226,7 +228,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

@@ -167,8 +167,8 @@ describe('useDeleteProcessInstance', () => {
     });
 
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
-    expect(onError.mock.calls[0][0].message).toBe('Forbidden');
+    expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(Error);
+    expect(onError.mock.calls[0]?.[0].message).toBe('Forbidden');
   });
 
   it('should successfully complete deletion verification', async () => {

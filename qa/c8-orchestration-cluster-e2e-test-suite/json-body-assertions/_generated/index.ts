@@ -430,12 +430,12 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
-  '/resources/{resourceKey}': {
-    GET: {
+  '/resources/search': {
+    POST: {
       '200': 1,
     },
   },
-  '/resources/{resourceKey}/content': {
+  '/resources/{resourceKey}': {
     GET: {
       '200': 1,
     },

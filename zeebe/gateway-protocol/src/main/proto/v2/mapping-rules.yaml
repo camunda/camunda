@@ -10,6 +10,10 @@ paths:
       summary: Create mapping rule
       description: |
         Create a new mapping rule
+      x-semantic-establishes:
+        kind: MappingRule
+        identifiedBy:
+          - { in: body, name: mappingRuleId, semanticType: MappingRuleId }
       requestBody:
         content:
           application/json:
@@ -38,8 +42,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: Mapping rule with this id already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-added-in-version: "8.8"
   /mapping-rules/{mappingRuleId}:
     put:
       x-eventually-consistent: false
@@ -49,13 +60,17 @@ paths:
       summary: Update mapping rule
       description: |
         Update a mapping rule.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to update.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       requestBody:
         content:
           application/json:
@@ -88,6 +103,7 @@ paths:
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
           $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
+      x-added-in-version: "8.8"
     delete:
       x-eventually-consistent: false
       tags:
@@ -96,13 +112,17 @@ paths:
       summary: Delete a mapping rule
       description: |
         Deletes the mapping rule with the given ID.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to delete.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was deleted successfully.
@@ -118,6 +138,7 @@ paths:
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
           $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
+      x-added-in-version: "8.8"
     get:
       x-eventually-consistent: true
       tags:
@@ -126,13 +147,17 @@ paths:
       summary: Get a mapping rule
       description: |
         Gets the mapping rule with the given ID.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to get.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "200":
           description: The mapping rule was returned successfully.
@@ -150,6 +175,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-added-in-version: "8.8"
   /mapping-rules/search:
     post:
       x-eventually-consistent: true
@@ -179,6 +205,7 @@ paths:
           $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 
@@ -208,7 +235,8 @@ components:
         - $ref: '#/components/schemas/MappingRuleCreateUpdateRequest'
       properties:
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - mappingRuleId
@@ -231,7 +259,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - claimName
@@ -275,7 +304,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
       required:
         - claimName
@@ -329,5 +359,6 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.

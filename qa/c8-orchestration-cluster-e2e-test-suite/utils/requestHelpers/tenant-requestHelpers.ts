@@ -20,7 +20,7 @@ import {
   jsonHeaders,
 } from '../http';
 import {expect} from '@playwright/test';
-import {generateUniqueId} from '../constants';
+import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {
   CREATE_NEW_TENANT,
   roleRequiredFields,
@@ -156,13 +156,17 @@ export async function assignRolesToTenant(
       roleId: roleIdValueUsingKey(tenantIdKey, state, i) as string,
       tenantId: tenantId as string,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    await assertStatusCode(res, 204);
+    // Retry to absorb read-after-write lag: the role created above may not
+    // yet be visible to the assign endpoint on a shared cluster (404 → 204).
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
   }
 }
 

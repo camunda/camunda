@@ -28,6 +28,7 @@ const CopyVariablesButton: React.FC = () => {
     if (isTruncated(data)) {
       return 'Copying is disabled for variable values larger than 8192 characters';
     }
+    return undefined;
   };
 
   const isDisabled = isPaginated(data) || isTruncated(data) || !hasItems(data);

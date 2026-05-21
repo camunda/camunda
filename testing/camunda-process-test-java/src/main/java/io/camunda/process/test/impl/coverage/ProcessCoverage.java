@@ -45,12 +45,16 @@ public class ProcessCoverage {
   public ProcessCoverage(
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
+      final List<String> excludedDecisionDefinitionIds,
       final String reportDirectory,
       final Consumer<String> printStream,
       final Supplier<CamundaDataSource> dataSourceSupplier) {
     coverageCollector =
         CoverageCollector.createCollector(
-            testClass, excludedProcessDefinitionIds, dataSourceSupplier);
+            testClass,
+            excludedProcessDefinitionIds,
+            excludedDecisionDefinitionIds,
+            dataSourceSupplier);
     coverageReporter = new CoverageReporter(reportDirectory, printStream);
   }
 

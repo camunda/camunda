@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;

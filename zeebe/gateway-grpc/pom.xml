@@ -51,6 +51,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -104,6 +109,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
       <scope>test</scope>
@@ -117,6 +127,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

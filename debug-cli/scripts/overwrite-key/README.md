@@ -709,7 +709,7 @@ Then remove the backups:
 for broker_id in $PARTITION_BROKER_IDS; do
   echo "Removing backup from broker $broker_id..."
   kubectl exec -n $NAMESPACE ${POD_PREFIX}-${broker_id} -- \
-    rm -rf $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+    rm -rf $MOUNT_POINT/data/default/partitions/${PARTITION_ID}/snapshots-backup
 done
 ```
 
@@ -781,11 +781,11 @@ export MOUNT_POINT="/usr/local/camunda"
 
 # Check what's in the backup (replace broker_id with actual broker, e.g., 0, 1, 2)
 kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
-  ls -la $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+  ls -la $MOUNT_POINT/data/default/partitions/${PARTITION_ID}/snapshots-backup
 
 # Remove if safe
 kubectl exec -n $NAMESPACE ${POD_PREFIX}-<broker_id> -- \
-  rm -rf $MOUNT_POINT/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup
+  rm -rf $MOUNT_POINT/data/default/partitions/${PARTITION_ID}/snapshots-backup
 ```
 
 ### Job Fails: "Snapshot directory does not exist"

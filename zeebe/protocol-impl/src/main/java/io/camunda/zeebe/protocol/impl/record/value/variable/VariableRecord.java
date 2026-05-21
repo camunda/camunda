@@ -89,6 +89,13 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return cachedJsonValue;
   }
 
+  // Internal accessor used by MetricsExporter for size-based metrics; not part of
+  // VariableRecordValue and excluded from JSON serialization.
+  @JsonIgnore
+  public int getValueLength() {
+    return valueProp.getValue().capacity();
+  }
+
   @Override
   public long getScopeKey() {
     return scopeKeyProp.getValue();

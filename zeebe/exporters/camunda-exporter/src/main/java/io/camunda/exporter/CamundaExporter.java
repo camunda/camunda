@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
@@ -61,6 +62,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -92,6 +94,7 @@ public class CamundaExporter implements Exporter {
   private long lastFlushTimestamp = 0L;
 
   private long flushDelayMs;
+  private ScheduledTask scheduledFlushTask;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -153,6 +156,10 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
 
     if (writer != null) {
       try {
@@ -301,10 +308,20 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
-        || (writer.getBatchSize() > 0
-            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
+    if (writer.getBatchSize() >= configuration.getBulk().getSize()) {
+      metrics.recordFlushReasonBatchSize();
+      return true;
+    }
+    if (writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()) {
+      metrics.recordFlushReasonBatchMemory();
+      return true;
+    }
+    if (writer.getBatchSize() > 0
+        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+      metrics.recordFlushReasonScheduled();
+      return true;
+    }
+    return false;
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -321,13 +338,16 @@ public class CamundaExporter implements Exporter {
       nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
 
-    controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
       if (now - lastFlushTimestamp >= flushDelayMs) {
+        metrics.recordFlushReasonScheduled();
         flush();
       }
     } catch (final Exception e) {
@@ -340,7 +360,9 @@ public class CamundaExporter implements Exporter {
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
-        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        final long maxBulkBytes = configuration.getBulk().getMemoryLimit() * 1024L * 1024L;
+        final BatchRequest batchRequest =
+            clientAdapter.createBatchRequest().withMetrics(metrics).withMaxBytes(maxBulkBytes);
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
@@ -396,7 +418,8 @@ public class CamundaExporter implements Exporter {
             CLUSTER_VARIABLE,
             HISTORY_DELETION,
             JOB_METRICS_BATCH,
-            GLOBAL_LISTENER);
+            GLOBAL_LISTENER,
+            AGENT_INSTANCE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

@@ -79,10 +79,7 @@ public final class ExporterBatchWriter {
     totalMemoryEstimate += length;
     final var cached =
         cachedEntities.computeIfAbsent(
-            cacheKey,
-            (k) -> {
-              return new CachedEntity(handler.createNewEntity(id), length);
-            });
+            cacheKey, (k) -> new CachedEntity(handler.createNewEntity(id), length));
 
     handler.updateEntity(record, cached.entity());
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());

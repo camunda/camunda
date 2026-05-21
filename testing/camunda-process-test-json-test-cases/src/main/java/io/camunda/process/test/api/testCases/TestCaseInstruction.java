@@ -24,6 +24,7 @@ import io.camunda.process.test.api.testCases.instructions.AssertElementInstances
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobAdHocSubProcessInstruction;
@@ -70,6 +71,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = AssertUserTaskInstruction.class,
       name = TestCaseInstructionType.ASSERT_USER_TASK),
+  @JsonSubTypes.Type(
+      value = AssertVariableInstruction.class,
+      name = TestCaseInstructionType.ASSERT_VARIABLE),
   @JsonSubTypes.Type(
       value = AssertVariablesInstruction.class,
       name = TestCaseInstructionType.ASSERT_VARIABLES),

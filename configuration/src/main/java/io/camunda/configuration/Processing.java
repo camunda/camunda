@@ -28,6 +28,8 @@ public class Processing {
   private static final boolean DEFAULT_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
 
+  private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
+
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
   private static final Set<String> LEGACY_ENABLE_ASYNC_SCHEDULED_TASKS_PROPERTIES =
@@ -167,8 +169,15 @@ public class Processing {
    */
   private boolean enableMessageBodyOnExpired = DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED;
 
+  /**
+   * Sets the maximum number of recoverable retries for state update and replay operations. When the
+   * limit is reached, the operation fails and the partition restarts. Must be a positive integer.
+   * Default is 1000.
+   */
+  private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
+
   public Integer getMaxCommandsInBatch() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-commands-in-batch",
         maxCommandsInBatch,
         Integer.class,
@@ -181,7 +190,7 @@ public class Processing {
   }
 
   public boolean isEnableAsyncScheduledTasks() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-async-scheduled-tasks",
         enableAsyncScheduledTasks,
         Boolean.class,
@@ -194,7 +203,7 @@ public class Processing {
   }
 
   public Duration getScheduledTasksCheckInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".scheduled-tasks-check-interval",
         scheduledTasksCheckInterval,
         Duration.class,
@@ -207,7 +216,7 @@ public class Processing {
   }
 
   public Set<Long> getSkipPositions() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".skip-positions",
         skipPositions,
         ResolvableType.forClassWithGenerics(Set.class, Long.class),
@@ -228,7 +237,7 @@ public class Processing {
   }
 
   public boolean isEnablePreconditionsCheck() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-preconditions-check",
         enablePreconditionsCheck,
         Boolean.class,
@@ -241,7 +250,7 @@ public class Processing {
   }
 
   public boolean isEnableForeignKeyChecks() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-foreign-key-checks",
         enableForeignKeyChecks,
         Boolean.class,
@@ -254,7 +263,7 @@ public class Processing {
   }
 
   public boolean isEnableYieldingDueDateChecker() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-yielding-duedate-checker",
         enableYieldingDueDateChecker,
         Boolean.class,
@@ -267,7 +276,7 @@ public class Processing {
   }
 
   public boolean isEnableAsyncMessageTtlChecker() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-async-message-ttl-checker",
         enableAsyncMessageTtlChecker,
         Boolean.class,
@@ -280,7 +289,7 @@ public class Processing {
   }
 
   public boolean isEnableAsyncTimerDuedateChecker() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-async-timer-duedate-checker",
         enableAsyncTimerDuedateChecker,
         Boolean.class,
@@ -293,7 +302,7 @@ public class Processing {
   }
 
   public boolean isEnableStraightthroughProcessingLoopDetector() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-straightthrough-processing-loop-detector",
         enableStraightthroughProcessingLoopDetector,
         Boolean.class,
@@ -307,7 +316,7 @@ public class Processing {
   }
 
   public boolean isEnableMessageBodyOnExpired() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-message-body-on-expired",
         enableMessageBodyOnExpired,
         Boolean.class,
@@ -317,6 +326,14 @@ public class Processing {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public int getMaxRecoverableRetries() {
+    return maxRecoverableRetries;
+  }
+
+  public void setMaxRecoverableRetries(final int maxRecoverableRetries) {
+    this.maxRecoverableRetries = maxRecoverableRetries;
   }
 
   public FlowControl getFlowControl() {

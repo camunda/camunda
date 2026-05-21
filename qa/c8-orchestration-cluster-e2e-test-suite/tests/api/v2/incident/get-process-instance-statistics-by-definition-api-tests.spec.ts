@@ -7,10 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {
-  cancelProcessInstance,
-  deploy,
-} from '../../../../utils/zeebeClient';
+import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertStatusCode,
@@ -29,7 +26,8 @@ import {
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
-test.describe.parallel('Get Process Instance Statistics By Definition API Tests', () => {
+test.describe
+  .parallel('Get Process Instance Statistics By Definition API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
@@ -87,11 +85,18 @@ test.describe.parallel('Get Process Instance Statistics By Definition API Tests'
       await test.step('Start a process instance that will have an incident', async () => {
         const firstLocalState: Record<string, unknown> = {};
         await createTwoDifferentIncidentsInOneProcess(firstLocalState, request);
-        processInstanceKeys.push(firstLocalState['processInstanceKey'] as string);
+        processInstanceKeys.push(
+          firstLocalState['processInstanceKey'] as string,
+        );
 
         const secondLocalState: Record<string, unknown> = {};
-        await createTwoDifferentIncidentsInOneProcess(secondLocalState, request);
-        processInstanceKeys.push(secondLocalState['processInstanceKey'] as string);
+        await createTwoDifferentIncidentsInOneProcess(
+          secondLocalState,
+          request,
+        );
+        processInstanceKeys.push(
+          secondLocalState['processInstanceKey'] as string,
+        );
       });
 
       const processInstanceKeyToSearch =
@@ -246,7 +251,7 @@ test.describe.parallel('Get Process Instance Statistics By Definition API Tests'
         },
         res,
       );
-      expect(responseBody.items.length).toBe(0);
+      expect(responseBody.items).toHaveLength(0);
       expect(responseBody.page.hasMoreTotalItems).toBe(false);
       expect(responseBody.page.totalItems).toBe(0);
     });

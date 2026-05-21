@@ -362,6 +362,9 @@ K10 <-> 2251799813685258
 
 ### Event appliers are not allowed to be changed after having been released
 
+See [Event Applier Golden Files](../../docs/zeebe/event-applier-golden-files.md) for an in-depth
+guide on golden files, common scenarios, and porting pitfalls.
+
 - Events must be applied in the same way on replay as when they were initially appended.
 - **Don't** change the event applier implementation.
 - **Do** register a new version of an event applier.

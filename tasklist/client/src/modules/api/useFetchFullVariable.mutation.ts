@@ -7,13 +7,22 @@
  */
 
 import {api} from 'modules/api';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query';
 import {request} from 'modules/api/request';
 import type {
   Variable,
   QueryVariablesByUserTaskResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getAllVariablesQueryKey} from './useQueryAllVariables.query';
+
+type VariablesInfiniteData = InfiniteData<
+  QueryVariablesByUserTaskResponseBody,
+  number
+>;
 
 function useFetchFullVariable() {
   const client = useQueryClient();
@@ -30,30 +39,27 @@ function useFetchFullVariable() {
         >;
         const variablesQueryKey = getAllVariablesQueryKey(userTaskKey);
         const allVariables =
-          client.getQueryData<QueryVariablesByUserTaskResponseBody>(
-            variablesQueryKey,
-          );
+          client.getQueryData<VariablesInfiniteData>(variablesQueryKey);
         const hasVariable =
-          allVariables?.items.some(
-            (variable) => variable.variableKey === variableKey,
+          allVariables?.pages.some((page) =>
+            page.items.some((variable) => variable.variableKey === variableKey),
           ) ?? false;
 
         if (hasVariable) {
-          client.setQueryData<QueryVariablesByUserTaskResponseBody>(
-            variablesQueryKey,
-            {
-              ...allVariables!,
-              items: allVariables!.items.map((oldVariable) =>
+          client.setQueryData<VariablesInfiniteData>(variablesQueryKey, {
+            ...allVariables!,
+            pages: allVariables!.pages.map((page) => ({
+              ...page,
+              items: page.items.map((oldVariable) =>
                 oldVariable.variableKey === variableKey
                   ? {
                       ...variable,
-                      value: variable.value,
                       isTruncated: false,
                     }
                   : oldVariable,
               ),
-            },
-          );
+            })),
+          });
         }
 
         return variable;

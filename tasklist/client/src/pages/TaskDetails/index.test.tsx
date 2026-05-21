@@ -23,7 +23,7 @@ import * as formMocks from 'modules/mocks/form';
 import * as variableMocks from 'modules/mocks/variables';
 import * as taskMocks from 'modules/mocks/task';
 import * as tasksMocks from 'modules/mocks/tasks';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 
@@ -91,7 +91,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -143,7 +143,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -197,7 +197,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -257,7 +257,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -343,7 +343,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -418,7 +418,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -503,7 +503,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -568,7 +568,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -637,14 +637,14 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
       http.post(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
-          return HttpResponse.json([]);
+          return HttpResponse.json(getQueryVariablesResponseMock([]));
         },
       ),
       http.delete('/v2/user-tasks/:userTaskKey/assignee', () => {
@@ -716,7 +716,7 @@ describe('<Task />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),

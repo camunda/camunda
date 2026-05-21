@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
@@ -162,6 +163,7 @@ class RestoreValidatorTest {
 
   private Path getPartitionDir(final int partitionId) {
     return RaftPartitionFactory.getPartitionDirectory(
-        PartitionId.from(RaftPartitionFactory.GROUP_NAME, partitionId), dataDirectory.toString());
+        PartitionId.from(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionId),
+        dataDirectory.toString());
   }
 }

@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertEqualsForKeys,
   assertUnauthorizedRequest,
   assertInvalidArgument,

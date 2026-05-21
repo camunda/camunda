@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
+@ClusterScoped
 @RequestMapping(path = {"/v2"})
 public class LicenseController {
 
@@ -32,14 +34,12 @@ public class LicenseController {
 
   @CamundaGetMapping(path = "/license")
   public LicenseResponse get() {
-    final LicenseResponse response = new LicenseResponse();
-    response.setValidLicense(managementServices.isCamundaLicenseValid());
-    response.setLicenseType(managementServices.getCamundaLicenseType().getName());
-    response.setIsCommercial(managementServices.isCommercialCamundaLicense());
     final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
-    response.setExpiresAt(
-        expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
-
-    return response;
+    return LicenseResponse.Builder.create()
+        .validLicense(managementServices.isCamundaLicenseValid())
+        .licenseType(managementServices.getCamundaLicenseType().getName())
+        .isCommercial(managementServices.isCommercialCamundaLicense())
+        .expiresAt(expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate))
+        .build();
   }
 }

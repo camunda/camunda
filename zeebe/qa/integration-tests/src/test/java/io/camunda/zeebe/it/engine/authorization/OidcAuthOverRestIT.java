@@ -17,8 +17,8 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -75,17 +75,20 @@ public class OidcAuthOverRestIT {
           .withProperty(
               "camunda.data.secondary-storage.elasticsearch.url",
               "http://" + CONTAINER.getHttpHostAddress())
+          // OIDC client config goes through withProperty (not withSecurityConfig) so CSL's
+          // CamundaSecurityLibraryProperties — bound from Spring's property sources — sees the
+          // values. Mutating SecurityConfiguration post-binding would only update OC's typed
+          // config and leave CSL's clientRegistrationRepository looking at an empty OIDC block.
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
+          // The following two properties are only needed for the webapp login flow which we don't
+          // test here, but CSL requires client-id to build a ClientRegistrationRepository.
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
-
                 c.getInitialization()
                     .setMappingRules(
                         List.of(

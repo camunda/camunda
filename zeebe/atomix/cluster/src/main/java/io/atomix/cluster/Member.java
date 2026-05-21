@@ -23,15 +23,21 @@ import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import java.util.Objects;
 import java.util.Properties;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** Represents a node as a member in a cluster. */
+@NullMarked
 public class Member extends Node {
+
   private static final int UNKNOWN_TIMESTAMP = 0;
+  private static final String ZONE_ID_MISMATCH =
+      "Expected id to start with zone %s, but did not: id=%s";
 
   private final MemberId id;
-  private final String zone;
-  private final String rack;
-  private final String host;
+  private final @Nullable String zone;
+  private final @Nullable String rack;
+  private final @Nullable String host;
   private final Properties properties;
   private final long nodeVersion;
 
@@ -44,6 +50,9 @@ public class Member extends Node {
     nodeVersion = config.getNodeVersion();
     properties = new Properties();
     properties.putAll(config.getProperties());
+    if (id != null && !id.isInZone(zone)) {
+      throw new IllegalArgumentException(String.format(ZONE_ID_MISMATCH, zone, id));
+    }
   }
 
   protected Member(final MemberId id, final Address address) {
@@ -54,14 +63,17 @@ public class Member extends Node {
       final MemberId id,
       final long nodeVersion,
       final Address address,
-      final String zone,
-      final String rack,
-      final String host,
+      final @Nullable String zone,
+      final @Nullable String rack,
+      final @Nullable String host,
       final Properties properties) {
     super(id, address);
     this.id = checkNotNull(id, "id cannot be null");
     this.nodeVersion = nodeVersion;
     this.zone = zone;
+    if (!id.isInZone(zone)) {
+      throw new IllegalArgumentException(String.format(ZONE_ID_MISMATCH, zone, id));
+    }
     this.rack = rack;
     this.host = host;
     this.properties = properties;
@@ -163,12 +175,12 @@ public class Member extends Node {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(final @Nullable Object o) {
     if (this == o) {
       return true;
     }
 
-    if (!(o instanceof Member)) {
+    if (!(o instanceof final Member member)) {
       return false;
     }
 
@@ -176,7 +188,6 @@ public class Member extends Node {
       return false;
     }
 
-    final Member member = (Member) o;
     return Objects.equals(id, member.id)
         && Objects.equals(nodeVersion, member.nodeVersion)
         && Objects.equals(zone, member.zone)
@@ -236,7 +247,7 @@ public class Member extends Node {
    *
    * @return the zone to which the member belongs
    */
-  public String zone() {
+  public @Nullable String zone() {
     return zone;
   }
 
@@ -245,7 +256,7 @@ public class Member extends Node {
    *
    * @return the rack to which the member belongs
    */
-  public String rack() {
+  public @Nullable String rack() {
     return rack;
   }
 
@@ -254,7 +265,7 @@ public class Member extends Node {
    *
    * @return the host to which the member belongs
    */
-  public String host() {
+  public @Nullable String host() {
     return host;
   }
 
@@ -272,7 +283,7 @@ public class Member extends Node {
    *
    * @return the node version
    */
-  public Version version() {
+  public @Nullable Version version() {
     return null;
   }
 

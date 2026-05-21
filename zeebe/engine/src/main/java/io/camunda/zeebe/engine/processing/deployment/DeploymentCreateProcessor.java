@@ -13,6 +13,7 @@ import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -91,6 +92,7 @@ public final class DeploymentCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -102,7 +104,8 @@ public final class DeploymentCreateProcessor
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -117,6 +120,7 @@ public final class DeploymentCreateProcessor
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    this.processDefinitionMetrics = processDefinitionMetrics;
     deploymentTransformer =
         new DeploymentTransformer(
             stateWriter,
@@ -131,7 +135,8 @@ public final class DeploymentCreateProcessor
                 .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
                 .build(),
             clock,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
@@ -177,20 +182,10 @@ public final class DeploymentCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-    if (command.getValue().hasBpmnResources()) {
-      processState.clearCache();
-    }
-    if (command.getValue().hasDmnResources()) {
-      decisionState.clearCache();
-    }
-    if (command.getValue().hasForms()) {
-      formState.clearCache();
-    }
-    if (command.getValue().hasResources()) {
-      resourceState.clearCache();
-    }
-
+    // invalidate caches based on the existence of metadata in the deployment
+    // since metadata is generated first - caches only get updated
+    // when the created events have already been written
+    invalidateCache(command.getValue());
     if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
@@ -204,8 +199,23 @@ public final class DeploymentCreateProcessor
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void invalidateCache(final DeploymentRecord record) {
+    if (record.processesMetadata().stream().findAny().isPresent()) {
+      processState.clearCache();
+    }
+    if (record.decisionsMetadata().stream().findAny().isPresent()
+        || record.decisionRequirementsMetadata().stream().findAny().isPresent()) {
+      decisionState.clearCache();
+    }
+    if (record.formMetadata().stream().findAny().isPresent()) {
+      formState.clearCache();
+    }
+    if (record.resourceMetadata().stream().findAny().isPresent()) {
+      resourceState.clearCache();
+    }
   }
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
@@ -256,10 +266,14 @@ public final class DeploymentCreateProcessor
                 final var resourceChecksum =
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
+                  final var processRecord =
+                      new ProcessRecord().wrap(metadata, resource.getResource());
                   stateWriter.appendFollowUpEvent(
+                      metadata.getKey(), ProcessIntent.CREATED, processRecord);
+                  processDefinitionMetrics.processDefinitionDeployed(
                       metadata.getKey(),
-                      ProcessIntent.CREATED,
-                      new ProcessRecord().wrap(metadata, resource.getResource()));
+                      processRecord.getBpmnProcessId(),
+                      resource.getResource().length);
                 }
               }
             });
@@ -278,7 +292,7 @@ public final class DeploymentCreateProcessor
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
-            (record) ->
+            record ->
                 stateWriter.appendFollowUpEvent(
                     record.getDecisionKey(), DecisionIntent.CREATED, record));
   }

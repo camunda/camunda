@@ -13,7 +13,10 @@ import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -85,23 +88,31 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldHandleNullFieldsInBatchOperationItemEntity() {
-    // given
+  void shouldHandleNullOptionalFieldsInBatchOperationItemEntity() {
+    // given — all optional fields null, required fields populated per OpenAPI contract
     final BatchOperationItemEntity item =
-        new BatchOperationItemEntity(null, null, null, null, null, null, null, null);
+        new BatchOperationItemEntity(
+            "batch-1",
+            BatchOperationType.CANCEL_PROCESS_INSTANCE,
+            123L,
+            456L,
+            null, // rootProcessInstanceKey is optional
+            BatchOperationItemState.ACTIVE,
+            null, // processedDate is optional
+            null); // errorMessage is optional
 
     // when
     final BatchOperationItemResponse response =
         SearchQueryResponseMapper.toBatchOperationItem(item);
 
-    // then
-    assertThat(response.getBatchOperationKey()).isNull();
-    assertThat(response.getOperationType()).isNull();
-    assertThat(response.getItemKey()).isNull();
-    assertThat(response.getProcessInstanceKey()).isNull();
-    assertThat(response.getState()).isNull();
+    // then — optional fields remain null
+    assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getProcessedDate()).isNull();
     assertThat(response.getErrorMessage()).isNull();
+    // required fields carry through
+    assertThat(response.getBatchOperationKey()).isEqualTo("batch-1");
+    assertThat(response.getItemKey()).isEqualTo("123");
+    assertThat(response.getProcessInstanceKey()).isEqualTo("456");
   }
 
   @Test
@@ -252,6 +263,32 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldHandleNullIncidentErrorType() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            null, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant"); // tenantId
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getErrorType()).isEqualTo(IncidentErrorTypeEnum.UNKNOWN);
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForElementInstance() {
     // given
     final var entity =
@@ -323,7 +360,7 @@ class SearchQueryResponseMapperTest {
             456L, // scopeKey
             789L, // processInstanceKey
             999L, // rootProcessInstanceKey
-            null, // processDefinitionId
+            "processDefinitionId", // processDefinitionId
             "tenant"); // tenantId
 
     // when
@@ -354,6 +391,8 @@ class SearchQueryResponseMapperTest {
             .elementId("serviceTask1")
             .elementInstanceKey(111L)
             .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // when
@@ -372,12 +411,21 @@ class SearchQueryResponseMapperTest {
         new JobEntity.Builder()
             .jobKey(123L)
             .type("test-type")
+            .worker("test-worker")
             .state(JobState.CREATED)
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.UNSPECIFIED)
+            .retries(1)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
             .processInstanceKey(789L)
+            .elementId("serviceTask1")
+            .elementInstanceKey(111L)
             .rootProcessInstanceKey(null)
             .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // when
@@ -424,9 +472,13 @@ class SearchQueryResponseMapperTest {
     final var entity =
         MessageSubscriptionEntity.builder()
             .messageSubscriptionKey(123L)
+            .processDefinitionId("processId")
+            .flowNodeId("flowNode")
+            .messageName("testMessage")
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
             .messageSubscriptionState(MessageSubscriptionState.CREATED)
+            .dateTime(OffsetDateTime.now())
             .tenantId("tenant")
             .build();
 
@@ -476,8 +528,16 @@ class SearchQueryResponseMapperTest {
     final var entity =
         CorrelatedMessageSubscriptionEntity.builder()
             .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("flowNode")
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
+            .subscriptionKey(333L)
             .tenantId("tenant")
             .build();
 
@@ -549,6 +609,8 @@ class SearchQueryResponseMapperTest {
             .entityKey("entity-456")
             .entityType(AuditLogEntityType.PROCESS_INSTANCE)
             .operationType(AuditLogOperationType.CREATE)
+            .result(AuditLogOperationResult.SUCCESS)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .timestamp(OffsetDateTime.now())
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
@@ -696,7 +758,7 @@ class SearchQueryResponseMapperTest {
             456L, // scopeKey
             789L, // processInstanceKey
             null, // rootProcessInstanceKey
-            null, // processDefinitionId
+            "processDefinitionId", // processDefinitionId
             "tenant"); // tenantId
 
     // when
@@ -778,5 +840,76 @@ class SearchQueryResponseMapperTest {
     assertThat(result.getC8Links())
         .containsEntry("operate", "https://operate.example.com")
         .containsEntry("tasklist", "https://tasklist.example.com");
+  }
+
+  @Test
+  void shouldMapJobSearchResultWithBeforeAllListenerEventType() {
+    // given
+    final JobEntity job =
+        new JobEntity.Builder()
+            .jobKey(1L)
+            .type("before-all-job")
+            .worker("worker1")
+            .state(JobState.CREATED)
+            .kind(JobKind.EXECUTION_LISTENER)
+            .listenerEventType(ListenerEventType.BEFORE_ALL)
+            .retries(3)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("process1")
+            .processDefinitionKey(10L)
+            .processInstanceKey(20L)
+            .elementId("element1")
+            .elementInstanceKey(30L)
+            .tenantId("default")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
+            .build();
+    final SearchQueryResult<JobEntity> result =
+        new SearchQueryResult<>(1, false, List.of(job), null, null);
+
+    // when
+    final JobSearchQueryResult response =
+        SearchQueryResponseMapper.toJobSearchQueryResponse(result);
+
+    // then
+    assertThat(response.getItems()).hasSize(1);
+    assertThat(response.getItems().getFirst().getListenerEventType())
+        .isEqualTo(JobListenerEventTypeEnum.BEFORE_ALL);
+  }
+
+  @Test
+  void shouldMapAllListenerEventTypesToJobSearchResult() {
+    // given / when / then
+    for (final ListenerEventType type : ListenerEventType.values()) {
+      final JobEntity job =
+          new JobEntity.Builder()
+              .jobKey(1L)
+              .type("job")
+              .worker("worker")
+              .state(JobState.CREATED)
+              .kind(JobKind.EXECUTION_LISTENER)
+              .listenerEventType(type)
+              .retries(1)
+              .hasFailedWithRetriesLeft(false)
+              .processDefinitionId("p1")
+              .processDefinitionKey(1L)
+              .processInstanceKey(2L)
+              .elementId("e1")
+              .elementInstanceKey(3L)
+              .tenantId("default")
+              .creationTime(OffsetDateTime.now())
+              .lastUpdateTime(OffsetDateTime.now())
+              .build();
+      final SearchQueryResult<JobEntity> result =
+          new SearchQueryResult<>(1, false, List.of(job), null, null);
+
+      final JobSearchQueryResult response =
+          SearchQueryResponseMapper.toJobSearchQueryResponse(result);
+
+      assertThat(response.getItems().getFirst().getListenerEventType())
+          .as("ListenerEventType.%s should map without error", type)
+          .isNotNull()
+          .isEqualTo(JobListenerEventTypeEnum.fromValue(type.name()));
+    }
   }
 }

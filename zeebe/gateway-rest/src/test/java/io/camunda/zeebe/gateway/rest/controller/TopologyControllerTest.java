@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Health;
@@ -93,19 +94,19 @@ public class TopologyControllerTest extends RestControllerTest {
         new Topology(
             List.of(
                 new Broker(
-                    0,
+                    BrokerMemberId.from(0),
                     "localhost",
                     26501,
                     List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
                     version),
                 new Broker(
-                    1,
+                    BrokerMemberId.from(1),
                     "localhost",
                     26502,
                     List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                     version),
                 new Broker(
-                    2,
+                    BrokerMemberId.from(2),
                     "localhost",
                     26503,
                     List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
@@ -135,26 +136,14 @@ public class TopologyControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  void shouldReturnEmptyTopology(final String baseUrl) {
+  void shouldReturn503WhenTopologyNotYetAvailable(final String baseUrl) {
     // given
-    final var version = VersionUtil.getVersion();
-    final var expectedResponse =
-        """
-        {
-          "clusterId": null,
-          "clusterSize": null,
-          "partitionsCount": null,
-          "replicationFactor": null,
-          "lastCompletedChangeId": null,
-          "brokers":[],
-          "gatewayVersion": "%s"
-        }
-        """
-            .formatted(version);
     Mockito.when(topologyServices.getTopology())
         .thenReturn(
-            CompletableFuture.completedFuture(
-                new Topology(List.of(), null, null, null, null, version, null)));
+            CompletableFuture.failedFuture(
+                new io.camunda.service.exception.ServiceException(
+                    "Cluster topology is not yet available. The gateway has not received cluster state from any broker.",
+                    io.camunda.service.exception.ServiceException.Status.UNAVAILABLE)));
 
     // when / then
     webClient
@@ -163,10 +152,6 @@ public class TopologyControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .isEqualTo(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
   }
 }

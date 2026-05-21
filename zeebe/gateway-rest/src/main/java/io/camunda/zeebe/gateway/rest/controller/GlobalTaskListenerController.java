@@ -17,7 +17,7 @@ import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.search.query.GlobalListenerQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;

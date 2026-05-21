@@ -540,6 +540,20 @@ public class RestGatewayService {
   }
 
   public void onResourceContentGetRequest(final long resourceKey, final String response) {
-    registerGet(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)), response);
+    // The real API returns the resource content as raw bytes with application/json content type
+    // (not JSON-encoded), so we register it as a raw body string here.
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)))
+                .willReturn(WireMock.okJson(response)));
+  }
+
+  public void onResourceContentBinaryGetRequest(final long resourceKey, final String response) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getResourceContentBinaryUrl(String.valueOf(resourceKey)))
+                .willReturn(WireMock.okForContentType("application/octet-stream", response)));
   }
 }

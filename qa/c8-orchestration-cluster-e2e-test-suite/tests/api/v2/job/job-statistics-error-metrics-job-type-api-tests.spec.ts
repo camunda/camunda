@@ -8,10 +8,8 @@
 
 import {expect, test} from '@playwright/test';
 import {
-  assertBadRequest,
   assertInvalidArgument,
   assertStatusCode,
-  assertUnauthorizedRequest,
   buildUrl,
   encode,
   jsonHeaders,
@@ -91,7 +89,11 @@ test.describe.parallel('Get error metrics for a job type API Tests', () => {
       }
 
       if (failedItems.length === 0) {
-        test.info().annotations.push({ type: 'blocked', description: 'No failed jobs in the last 24 hours to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No failed jobs in the last 24 hours to verify the response with jobType filter',
+        });
         return;
       }
     });
@@ -166,6 +168,6 @@ test.describe.parallel('Get error metrics for a job type API Tests', () => {
       res,
     );
     const responseBody = await res.json();
-    expect(responseBody.items.length).toBe(0);
+    expect(responseBody.items).toHaveLength(0);
   });
 });

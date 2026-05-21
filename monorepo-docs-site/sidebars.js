@@ -15,6 +15,7 @@
 const sidebars = {
   tutorialSidebar: [
     'index',
+    'monorepo-devops-team-processes',
     'collaboration-guidelines',
     'ci',
     'ci-runbooks',
@@ -81,6 +82,25 @@ const sidebars = {
                   ],
                 },
               ],
+            },
+            {
+              type: 'category',
+              label: 'Orchestration Cluster',
+              items: [
+                {
+                  type: 'category',
+                  label: 'ADRs',
+                  items: [
+                    'architecture/components/orchestration-cluster/adr/jvm-options-argfile-for-runtime-specific-flags',
+                    'architecture/components/orchestration-cluster/adr/jdk-25-base-images-with-jdk-21-runtime-support',
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              id: 'architecture/components/identity/management_identity_architecture_docs',
+              label: 'Management Identity',
             },
           ],
         },

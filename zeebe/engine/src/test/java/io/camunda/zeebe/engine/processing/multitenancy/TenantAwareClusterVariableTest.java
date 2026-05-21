@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -307,6 +307,26 @@ public class TenantAwareClusterVariableTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID.");
+  }
+
+  @Test
+  public void shouldRejectTenantScopedVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE
+            .clusterVariables()
+            .withName("invalidTenantVar")
+            .setTenantScope()
+            .withValue("\"value\"")
+            .withTenantId("INVALID_TENANT")
+            .expectRejection()
+            .create(USERNAME);
+
+    // then
+    assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason("Tenant with ID 'INVALID_TENANT' does not exist.");
   }
 
   @Test

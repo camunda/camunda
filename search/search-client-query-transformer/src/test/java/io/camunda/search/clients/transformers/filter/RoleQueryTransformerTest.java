@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;

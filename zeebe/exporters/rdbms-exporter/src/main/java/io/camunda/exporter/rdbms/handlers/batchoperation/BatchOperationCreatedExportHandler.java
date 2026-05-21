@@ -48,12 +48,18 @@ public class BatchOperationCreatedExportHandler
 
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
-    batchOperationWriter.createIfNotAlreadyExists(map(record));
+    batchOperationWriter.create(map(record));
     batchOperationCache.put(
         String.valueOf(record.getKey()),
         new CachedBatchOperationEntity(
             String.valueOf(record.getValue().getBatchOperationKey()),
             BatchOperationType.valueOf(record.getValue().getBatchOperationType().name())));
+  }
+
+  @Override
+  public boolean shouldFlushAfterRecordProcessed() {
+    // to minimize the risk of PK violations during MERGE INTO we want to flush fast here
+    return true;
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {

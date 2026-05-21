@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.engine.authorization;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -50,16 +50,18 @@ public class OidcAuthOverRestInitializerIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
+          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
+          // The following two properties are only needed for the webapp login flow which we don't
+          // test here, but CSL requires client-id to build a ClientRegistrationRepository.
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
                 // add a preconfigured user. This should not be allowed with OIDC
                 c.getInitialization()
                     .getUsers()

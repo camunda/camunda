@@ -12,7 +12,7 @@ import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_ILLEGAL
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static java.util.Collections.emptyList;
 
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;

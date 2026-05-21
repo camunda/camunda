@@ -10,6 +10,8 @@ package io.camunda.search.clients;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
@@ -23,6 +25,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -43,7 +46,7 @@ class CamundaSearchClientsTest {
   @BeforeEach
   void setUp() {
     camundaSearchClients =
-        new CamundaSearchClients(readers, resourceAccessController, SecurityContext.of(b -> b));
+        new CamundaSearchClients(Map.of("default", readers), resourceAccessController);
 
     // Make the resource access controller simply invoke the applier with a no-op check
     when(resourceAccessController.doSearch(any(), any()))
@@ -181,6 +184,87 @@ class CamundaSearchClientsTest {
           .hasCause(cause)
           .extracting(t -> ((CamundaSearchException) t).getReason())
           .isEqualTo(Reason.SEARCH_SERVER_FAILED);
+    }
+  }
+
+  @Nested
+  class WithPhysicalTenant {
+
+    private static final String DEFAULT = "default";
+    private static final String TENANT_A = "tenant-a";
+    private static final String TENANT_B = "tenant-b";
+
+    private final SearchClientReaders tenantAReaders = mock(SearchClientReaders.class);
+    private final SearchClientReaders tenantBReaders = mock(SearchClientReaders.class);
+    private final ProcessInstanceReader tenantAProcessInstanceReader =
+        mock(ProcessInstanceReader.class);
+    private final ProcessInstanceReader tenantBProcessInstanceReader =
+        mock(ProcessInstanceReader.class);
+
+    @Test
+    void shouldThrowWhenNoTenantsAreConfigured() {
+      // given
+
+      // when / then
+      assertThatThrownBy(() -> camundaSearchClients.withPhysicalTenant(TENANT_A))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Unknown physical tenant: '" + TENANT_A + "'");
+    }
+
+    @Test
+    void shouldThrowWhenPhysicalTenantIsUnknown() {
+      // given
+      final var clients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
+              resourceAccessController);
+
+      // when / then
+      assertThatThrownBy(() -> clients.withPhysicalTenant("unknown"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Unknown physical tenant: 'unknown'")
+          .hasMessageContaining(TENANT_A)
+          .hasMessageContaining(TENANT_B);
+    }
+
+    @Test
+    void shouldRouteReadsToTheSelectedTenantsReaders() {
+      // given
+      when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
+      when(tenantBReaders.processInstanceReader()).thenReturn(tenantBProcessInstanceReader);
+
+      final var clients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
+              resourceAccessController);
+
+      // when
+      clients.withPhysicalTenant(TENANT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then
+      verify(tenantAProcessInstanceReader).search(any(), any());
+      verifyNoInteractions(tenantBProcessInstanceReader);
+    }
+
+    @Test
+    void shouldPreserveSecurityContextAndResourceAccessControllerOnTheReturnedInstance() {
+      // given
+      when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
+      when(readers.processInstanceReader()).thenReturn(processInstanceReader);
+      final var securityContext = SecurityContext.of(b -> b);
+      final var clients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders), resourceAccessController);
+
+      // when
+      clients
+          .withPhysicalTenant(TENANT_A)
+          .withSecurityContext(securityContext)
+          .searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then — switching the security context must not reset the physical tenant scoping
+      verify(tenantAProcessInstanceReader).search(any(), any());
+      verifyNoInteractions(processInstanceReader);
     }
   }
 }

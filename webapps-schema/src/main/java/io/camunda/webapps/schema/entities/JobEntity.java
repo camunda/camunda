@@ -44,6 +44,10 @@ public class JobEntity
   @BeforeVersion880 private String type;
   @BeforeVersion880 private String worker;
   @BeforeVersion880 private Integer retries;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer priority;
+
   @BeforeVersion880 private String state;
   @BeforeVersion880 private String errorMessage;
   @BeforeVersion880 private String errorCode;
@@ -161,6 +165,15 @@ public class JobEntity
 
   public JobEntity setRetries(final Integer retries) {
     this.retries = retries;
+    return this;
+  }
+
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public JobEntity setPriority(final Integer priority) {
+    this.priority = priority;
     return this;
   }
 
@@ -323,6 +336,7 @@ public class JobEntity
         type,
         worker,
         retries,
+        priority,
         state,
         errorMessage,
         errorCode,
@@ -362,6 +376,7 @@ public class JobEntity
         && Objects.equals(type, jobEntity.type)
         && Objects.equals(worker, jobEntity.worker)
         && Objects.equals(retries, jobEntity.retries)
+        && Objects.equals(priority, jobEntity.priority)
         && Objects.equals(state, jobEntity.state)
         && Objects.equals(errorMessage, jobEntity.errorMessage)
         && Objects.equals(errorCode, jobEntity.errorCode)
@@ -404,6 +419,8 @@ public class JobEntity
         + '\''
         + ", retries="
         + retries
+        + ", priority="
+        + priority
         + ", state='"
         + state
         + '\''

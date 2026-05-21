@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -30,7 +30,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private JobKind kind;
   private ListenerEventType listenerEventType;
   private Integer retries;
-  private Boolean isDenied = false;
+  private Integer priority;
+  private Boolean isDenied;
   private String deniedReason;
   private Boolean hasFailedWithRetriesLeft = false;
   private String errorCode;
@@ -62,7 +63,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final JobKind kind,
       final ListenerEventType listenerEventType,
       final Integer retries,
-      final boolean isDenied,
+      final Integer priority,
+      final Boolean isDenied,
       final String deniedReason,
       final boolean hasFailedWithRetriesLeft,
       final String errorCode,
@@ -87,12 +89,13 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.kind = kind;
     this.listenerEventType = listenerEventType;
     this.retries = retries;
+    this.priority = priority;
     this.isDenied = isDenied;
     this.deniedReason = deniedReason;
     this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
-    serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
+    serializedCustomHeaders = MapSerializer.serialize(customHeaders);
     this.customHeaders = customHeaders;
     this.deadline = deadline;
     this.endTime = endTime;
@@ -128,6 +131,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         kind,
         listenerEventType,
         retries,
+        priority,
         isDenied,
         deniedReason,
         hasFailedWithRetriesLeft,
@@ -217,6 +221,14 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.retries = retries;
   }
 
+  public Integer priority() {
+    return priority;
+  }
+
+  public void priority(final Integer priority) {
+    this.priority = priority;
+  }
+
   public Boolean isDenied() {
     return isDenied;
   }
@@ -263,7 +275,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
   public void setSerializedCustomHeaders(final String serializedCustomHeaders) {
     this.serializedCustomHeaders = serializedCustomHeaders;
-    customHeaders = CustomHeaderSerializer.deserialize(serializedCustomHeaders);
+    customHeaders = MapSerializer.deserialize(serializedCustomHeaders);
   }
 
   public Map<String, String> customHeaders() {
@@ -375,6 +387,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .kind(kind)
         .listenerEventType(listenerEventType)
         .retries(retries)
+        .priority(priority)
         .isDenied(isDenied)
         .deniedReason(deniedReason)
         .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
@@ -404,7 +417,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
-    private Boolean isDenied = false;
+    private Integer priority;
+    private Boolean isDenied;
     private String deniedReason;
     private Boolean hasFailedWithRetriesLeft = false;
     private String errorCode;
@@ -455,6 +469,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
     public Builder retries(final Integer retries) {
       this.retries = retries;
+      return this;
+    }
+
+    public Builder priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 
@@ -563,6 +582,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
           kind,
           listenerEventType,
           retries,
+          priority,
           isDenied,
           deniedReason,
           hasFailedWithRetriesLeft,

@@ -19,8 +19,9 @@ import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
@@ -34,7 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
@@ -163,7 +164,8 @@ public class RoleServicesTest {
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
-    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+    assertThat(brokerRequestValue.getEntityType())
+        .isEqualTo(AuthzModelMapper.toProtocol(EntityType.USER));
   }
 
   @Test
@@ -182,7 +184,8 @@ public class RoleServicesTest {
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
-    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+    assertThat(brokerRequestValue.getEntityType())
+        .isEqualTo(AuthzModelMapper.toProtocol(EntityType.USER));
   }
 
   @Test

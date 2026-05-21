@@ -53,7 +53,7 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
         },
         body,
       );
-      expect(body.items.length).toBe(2);
+      expect(body.items).toHaveLength(2);
       // Sort by elementId before asserting — the API does not guarantee
       // a specific ordering of element instance statistics.
       const sorted = [...body.items].sort((a, b) =>
@@ -130,7 +130,7 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
         },
         body,
       );
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
       expect(body.items[0].elementId).toBe('StartEvent');
     }).toPass(defaultAssertionOptions);
   });
@@ -161,7 +161,7 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
       },
       body,
     );
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
   });
 
   test('Get Process Definition Statistics - Or Filter', async ({request}) => {
@@ -190,7 +190,7 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
         },
         body,
       );
-      expect(body.items.length).toBe(2);
+      expect(body.items).toHaveLength(2);
       const elementIds = body.items.map(
         (item: Record<string, number>) => item.elementId,
       );

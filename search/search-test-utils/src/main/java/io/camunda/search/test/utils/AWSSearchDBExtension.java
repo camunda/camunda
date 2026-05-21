@@ -11,9 +11,14 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
+import java.time.Duration;
 import java.util.UUID;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ExpandWildcard;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@code AWSSearchDBExtension} is an extension that manages an AWS-based OpenSearch instance,
@@ -33,13 +38,18 @@ import org.opensearch.client.opensearch.OpenSearchClient;
  */
 public class AWSSearchDBExtension extends SearchDBExtension {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(AWSSearchDBExtension.class);
+
   private static OpenSearchClient osClient;
 
   private final String osUrl;
+  private final Duration dataAvailabilityTimeout;
   private ObjectMapper objectMapper;
 
-  public AWSSearchDBExtension(final String openSearchAwsInstanceUrl) {
+  public AWSSearchDBExtension(
+      final String openSearchAwsInstanceUrl, final Duration dataAvailabilityTimeout) {
     osUrl = openSearchAwsInstanceUrl;
+    this.dataAvailabilityTimeout = dataAvailabilityTimeout;
   }
 
   @Override
@@ -89,16 +99,59 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     return true;
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public Duration dataAvailabilityTimeout() {
+    return dataAvailabilityTimeout;
+  }
+
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    osClient.indices().delete(req -> req.index(IDX_FORM_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(IDX_PROCESS_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(ZEEBE_IDX_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(ARCHIVER_IDX_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(BATCH_IDX_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index(INCIDENT_IDX_PREFIX + "*"));
-    osClient.indices().delete(req -> req.index("*" + ENGINE_CLIENT_TEST_MARKERS + "*"));
-    osClient._transport().close();
+    final String[] prefixes = {
+      IDX_FORM_PREFIX,
+      CUSTOM_PREFIX,
+      IDX_PROCESS_PREFIX,
+      ZEEBE_IDX_PREFIX,
+      ARCHIVER_IDX_PREFIX,
+      BATCH_IDX_PREFIX,
+      INCIDENT_IDX_PREFIX,
+      IDX_DECISIONREQUIREMENTS_PREFIX,
+      IDX_BATCH_OPERATION_PREFIX,
+      HISTORY_DELETION_ID_PREFIX,
+    };
+
+    CloseHelper.quietCloseAll(
+        () -> {
+          for (final String prefix : prefixes) {
+            deleteIndicesQuietly(prefix + "*");
+            deleteIndexTemplatesQuietly(prefix + "*");
+          }
+          deleteIndicesQuietly("*" + ENGINE_CLIENT_TEST_MARKERS + "*");
+          deleteIndexTemplatesQuietly("*" + ENGINE_CLIENT_TEST_MARKERS + "*");
+        },
+        () -> osClient._transport().close());
+  }
+
+  private void deleteIndicesQuietly(final String pattern) {
+    try {
+      osClient
+          .indices()
+          .delete(
+              req ->
+                  req.index(pattern)
+                      .ignoreUnavailable(true)
+                      .allowNoIndices(true)
+                      .expandWildcards(ExpandWildcard.Open));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete indices matching {}", pattern, e);
+    }
+  }
+
+  private void deleteIndexTemplatesQuietly(final String pattern) {
+    try {
+      osClient.indices().deleteIndexTemplate(req -> req.name(pattern));
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to delete index templates matching {}", pattern, e);
+    }
   }
 }

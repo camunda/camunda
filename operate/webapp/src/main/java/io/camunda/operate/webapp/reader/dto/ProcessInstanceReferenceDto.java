@@ -11,18 +11,8 @@ import java.util.Objects;
 
 public class ProcessInstanceReferenceDto {
 
-  private String instanceId;
   private String processDefinitionId;
   private String processDefinitionName;
-
-  public String getInstanceId() {
-    return instanceId;
-  }
-
-  public ProcessInstanceReferenceDto setInstanceId(final String instanceId) {
-    this.instanceId = instanceId;
-    return this;
-  }
 
   public String getProcessDefinitionId() {
     return processDefinitionId;
@@ -44,7 +34,7 @@ public class ProcessInstanceReferenceDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(instanceId, processDefinitionId, processDefinitionName);
+    return Objects.hash(processDefinitionId, processDefinitionName);
   }
 
   @Override
@@ -56,8 +46,7 @@ public class ProcessInstanceReferenceDto {
       return false;
     }
     final ProcessInstanceReferenceDto that = (ProcessInstanceReferenceDto) o;
-    return Objects.equals(instanceId, that.instanceId)
-        && Objects.equals(processDefinitionId, that.processDefinitionId)
+    return Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(processDefinitionName, that.processDefinitionName);
   }
 }

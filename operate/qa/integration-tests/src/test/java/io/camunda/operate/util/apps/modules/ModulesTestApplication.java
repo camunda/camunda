@@ -11,12 +11,12 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -65,7 +65,7 @@ import org.springframework.context.annotation.Import;
 })
 public class ModulesTestApplication {
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) {
     SpringApplication.run(ModulesTestApplication.class, args);
   }
 }

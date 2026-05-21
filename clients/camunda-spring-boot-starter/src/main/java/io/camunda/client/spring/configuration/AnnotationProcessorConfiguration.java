@@ -15,12 +15,14 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientEventListener;
@@ -45,6 +47,13 @@ public class AnnotationProcessorConfiguration {
   public DeploymentAnnotationProcessor deploymentPostProcessor(
       final ApplicationEventPublisher publisher, final CamundaClientProperties properties) {
     return new DeploymentAnnotationProcessor(publisher, properties);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "camunda.client.cluster-variables.enabled", matchIfMissing = true)
+  public ClusterVariablesAnnotationProcessor clusterVariablesPostProcessor(
+      final JsonMapper jsonMapper, final CamundaClientProperties properties) {
+    return new ClusterVariablesAnnotationProcessor(jsonMapper, properties.getClusterVariables());
   }
 
   @Bean

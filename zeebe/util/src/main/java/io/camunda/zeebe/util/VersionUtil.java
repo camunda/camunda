@@ -68,7 +68,30 @@ public final class VersionUtil {
   }
 
   /**
-   * @return the previous stable version or null if none was found.
+   * Returns the configured backwards-compatibility baseline version used by Zeebe tests and RevAPI
+   * checks.
+   *
+   * <p>The value is read from the {@code zeebe.last.version} property of {@code
+   * /zeebe-util.properties}, which is populated at build time from the Maven property {@code
+   * backwards.compat.version} declared in {@code parent/pom.xml} (commented there as "version
+   * against which backwards compatibility is checked").
+   *
+   * <p>By convention:
+   *
+   * <ul>
+   *   <li>On {@code main}, this baseline points to a release of the previous minor version (e.g.
+   *       while {@code main} targets 8.8.x, the baseline is an 8.7.x release).
+   *   <li>On a stable branch (e.g. {@code stable/8.7}), it points to a release of the previous
+   *       stable minor (e.g. an 8.6.x release).
+   * </ul>
+   *
+   * <p>The property is a <em>manually maintained</em> baseline, not "the latest previous patch at
+   * the moment of invocation" -- its value is only updated when a new baseline is intentionally
+   * chosen, and it can legitimately differ between branches. This method is currently referenced
+   * from tests only.
+   *
+   * @return the configured backwards-compatibility baseline, or {@code null} if the property is not
+   *     set or the properties file cannot be read.
    */
   public static String getPreviousVersion() {
     if (lastVersion == null) {
@@ -83,15 +106,17 @@ public final class VersionUtil {
   }
 
   /**
-   * Overrides the cached version with the given value. This is intended for testing only, to allow
-   * setting a specific version without relying on environment variables or properties files.
+   * Overrides the cached version by extracting only the major, minor and patch version. This is
+   * intended for testing only.
    *
    * <p>Call {@link #resetVersionForTesting()} to clear the override and allow the version to be
    * re-read from the normal sources.
    */
-  @VisibleForTesting("Allow tests to override the version without setting env vars")
-  public static void overrideVersionForTesting(final String versionOverride) {
-    version = versionOverride;
+  @VisibleForTesting("Allow tests to override the version to a non-prerelease version")
+  public static void overridePrerelease() {
+    final SemanticVersion semanticVersion = getSemanticVersion().orElseThrow();
+    version =
+        semanticVersion.major() + "." + semanticVersion.minor() + "." + semanticVersion.patch();
     versionLowerCase = null;
   }
 

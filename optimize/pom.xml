@@ -46,6 +46,8 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <zeebe.version>${project.version}</zeebe.version>
+    <!-- This is used in the start-backend.js script to determine the backing Camunda version -->
+    <camunda.docker.version>8.9.0</camunda.docker.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
@@ -58,18 +60,16 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch>8.19.13</version.elasticsearch>
-    <version.elasticsearch-java-client>8.19.13</version.elasticsearch-java-client>
+    <version.elasticsearch>8.19.15</version.elasticsearch>
+    <version.elasticsearch-java-client>8.19.14</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
+    <!-- The least supported opensearch version we should test against-->
+    <opensearch.test.version>2.19.4</opensearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.16.6</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.2</elasticsearch.log4j.version>
-    <!-- The least supported opensearch version we should test against-->
-    <opensearch.test.version>2.19.4</opensearch.test.version>
-    <!-- the opensearch version of the previous Optimize version -->
-    <previous.optimize.opensearch.version>2.17.0</previous.optimize.opensearch.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.2</quartz.version>
 
@@ -373,7 +373,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.1</version>
           <configuration>
             <java>
               <includes>

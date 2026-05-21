@@ -12,12 +12,14 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -47,6 +49,7 @@ public class MetricsExporter implements Exporter {
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(60);
 
   private ExecutionLatencyMetrics executionLatencyMetrics;
+  private VariableMetrics variableMetrics;
   private final TtlKeyCache processInstanceCache;
   private final TtlKeyCache jobCache;
   private InstantSource clock;
@@ -67,11 +70,16 @@ public class MetricsExporter implements Exporter {
   public void configure(final Context context) throws Exception {
     final MeterRegistry meterRegistry = context.getMeterRegistry();
     executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry);
+    variableMetrics = new VariableMetrics(meterRegistry);
     clock = context.clock();
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
-              Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
+              Set.of(
+                  ValueType.JOB,
+                  ValueType.JOB_BATCH,
+                  ValueType.PROCESS_INSTANCE,
+                  ValueType.VARIABLE);
 
           @Override
           public boolean acceptType(final RecordType recordType) {
@@ -102,16 +110,25 @@ public class MetricsExporter implements Exporter {
   public void export(final Record<?> record) {
     final var recordKey = record.getKey();
 
-    final var currentValueType = record.getValueType();
-    if (currentValueType == ValueType.JOB) {
-      handleJobRecord(record, recordKey);
-    } else if (currentValueType == ValueType.JOB_BATCH) {
-      handleJobBatchRecord(record);
-    } else if (currentValueType == ValueType.PROCESS_INSTANCE) {
-      handleProcessInstanceRecord(record, recordKey);
+    switch (record.getValueType()) {
+      case JOB -> handleJobRecord(record, recordKey);
+      case JOB_BATCH -> handleJobBatchRecord(record);
+      case PROCESS_INSTANCE -> handleProcessInstanceRecord(record, recordKey);
+      case VARIABLE -> handleVariableRecord(record);
+      default -> {
+        // other value types are filtered out via the RecordFilter
+      }
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition());
+  }
+
+  private void handleVariableRecord(final Record<?> record) {
+    if (record.getIntent() != VariableIntent.CREATED) {
+      return;
+    }
+    final var value = (VariableRecord) record.getValue();
+    variableMetrics.recordVariableCreated(value.getBpmnProcessId(), value.getValueLength());
   }
 
   private void handleProcessInstanceRecord(final Record<?> record, final long recordKey) {

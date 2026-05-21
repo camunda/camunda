@@ -12,14 +12,14 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABAS
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.BasicAuthenticationNoDbConfiguration;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ public class NoSecondaryStorageAuthenticationIT {
         .put("camunda.security.authentication.method", "basic");
 
     // when - trying to start application with basic auth in no-db mode
-    context.register(WebSecurityConfig.BasicAuthenticationNoDbConfiguration.class);
+    context.register(BasicAuthenticationNoDbConfiguration.class);
 
     // then - should fail fast with clear error message
     assertThatThrownBy(context::refresh)
@@ -99,7 +99,7 @@ public class NoSecondaryStorageAuthenticationIT {
     public SecurityConfiguration securityConfiguration() {
       final var config = new SecurityConfiguration();
       final var authConfig = new AuthenticationConfiguration();
-      final var oidcConfig = new OidcAuthenticationConfiguration();
+      final var oidcConfig = new OidcConfiguration();
       oidcConfig.setUsernameClaim("preferred_username");
       oidcConfig.setClientIdClaim("azp");
       oidcConfig.setGroupsClaim("groups");

@@ -148,6 +148,11 @@
       <artifactId>netty-codec-dns</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>

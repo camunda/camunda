@@ -26,7 +26,6 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -80,7 +79,6 @@ import org.jspecify.annotations.Nullable;
  * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
-@NullMarked
 public final class FlowControl {
 
   private final LogStreamMetrics metrics;

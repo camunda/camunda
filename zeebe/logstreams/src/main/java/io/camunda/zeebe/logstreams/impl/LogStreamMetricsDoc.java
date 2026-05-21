@@ -17,11 +17,9 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
-import org.jspecify.annotations.NullMarked;
 
 /** Flow control metrics for the log storage appender. */
 @SuppressWarnings("NullableProblems")
-@NullMarked
 public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
   /** The count of records passing through the flow control, organized by context and outcome */
   FLOW_CONTROL_OUTCOME {

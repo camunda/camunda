@@ -94,7 +94,11 @@ class CoverageReportUtilTest {
     // given
     final HtmlCoverageReport coverageReport =
         new HtmlCoverageReport(
-            Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            Collections.emptyMap());
 
     // when
     final String html = CoverageReportUtil.toHtml(coverageReport);
@@ -118,7 +122,12 @@ class CoverageReportUtilTest {
     definitions.put("process-1", "<bpmn>test</bpmn>");
 
     final HtmlCoverageReport coverageReport =
-        new HtmlCoverageReport(Collections.emptyList(), Collections.emptyList(), definitions);
+        new HtmlCoverageReport(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            definitions,
+            Collections.emptyMap());
 
     // when
     final String html = CoverageReportUtil.toHtml(coverageReport);
@@ -203,7 +212,8 @@ class CoverageReportUtilTest {
             "Test Suite",
             Collections.emptyList(),
             Collections.emptyList(),
-            Collections.singletonList(coverage));
+            Collections.singletonList(coverage),
+            Collections.emptyList());
 
     final Map<String, String> definitions = new HashMap<>();
     definitions.put("process-1", "<bpmn>process definition</bpmn>");
@@ -212,7 +222,9 @@ class CoverageReportUtilTest {
         new HtmlCoverageReport(
             Collections.singletonList(suiteReport),
             Collections.singletonList(coverage),
-            definitions);
+            Collections.emptyList(),
+            definitions,
+            Collections.emptyMap());
 
     // when
     final String json = CoverageReportUtil.toJson(report);

@@ -110,6 +110,7 @@ const mockProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 const mockElementInstance: ElementInstance = {
@@ -414,7 +415,7 @@ describe('TopPanel', () => {
 
     const modifications = modificationsStore.state.modifications;
     expect(modifications).toHaveLength(1);
-    expect(modifications[0].payload).toMatchObject({
+    expect(modifications[0]?.payload).toMatchObject({
       operation: 'MOVE_TOKEN',
       ancestorScopeType: 'sourceParent',
     });

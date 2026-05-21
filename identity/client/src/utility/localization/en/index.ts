@@ -18,6 +18,7 @@ import clusterVariables from "./clusterVariables.json";
 import operationsLog from "./operationsLog.json";
 import authentication from "./authentication.json";
 import globalTaskListeners from "./globalTaskListeners.json";
+import mcpProcesses from "./mcpProcesses.json";
 
 export default {
   components,
@@ -32,4 +33,5 @@ export default {
   operationsLog,
   authentication,
   globalTaskListeners,
+  mcpProcesses,
 };

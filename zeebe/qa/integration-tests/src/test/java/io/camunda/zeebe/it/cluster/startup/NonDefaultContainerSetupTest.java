@@ -9,16 +9,16 @@ package io.camunda.zeebe.it.cluster.startup;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebeGatewayContainer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -68,25 +68,29 @@ public class NonDefaultContainerSetupTest {
                     cmd -> Objects.requireNonNull(cmd.getHostConfig()).withReadonlyRootfs(true))));
   }
 
+  // Use env var configuration since on CI a RO_BIND from the host filesystem is not possible
+  // in order to mount the exported unified config file
   @ParameterizedTest
   @MethodSource("containerModifiers")
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
-    try (final ZeebeBrokerContainer broker =
-            new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+    try (final BrokerContainer broker =
+            new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+                .withReadOnlyFileSystem()
+                .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", SecondaryStorageType.none.name())
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
                 .withCreateContainerCmdModifier(containerModifier);
-        final ZeebeGatewayContainer gateway =
-            new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        final GatewayContainer gateway =
+            new GatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
+                .withReadOnlyFileSystem()
                 .withNetwork(broker.getNetwork())
-                .withCreateContainerCmdModifier(containerModifier)
-                .dependsOn(broker)
+                .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", SecondaryStorageType.none.name())
                 .withEnv(
                     "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
                     broker.getInternalClusterAddress())
+                .withCreateContainerCmdModifier(containerModifier)
+                .dependsOn(broker)
                 .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                 .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")) {
       // given
       broker.start();

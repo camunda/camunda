@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.api;
 
 import static io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PARTITION_ROLE;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.TopologyKeyNames;
 import io.camunda.zeebe.util.collection.Table;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class BrokerClientTopologyMetrics {
 
   private final MeterRegistry registry;
-  private final Table<Integer, Integer, AtomicInteger> brokerTopologyRole;
+  private final Table<Integer, BrokerMemberId, AtomicInteger> brokerTopologyRole;
 
   public BrokerClientTopologyMetrics(final MeterRegistry registry) {
     this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
@@ -37,18 +38,19 @@ public final class BrokerClientTopologyMetrics {
    * {@code partitionId}
    */
   public void setRoleForPartition(
-      final int partitionId, final int brokerId, final PartitionRoleValues roleValue) {
+      final int partitionId, final BrokerMemberId brokerId, final PartitionRoleValues roleValue) {
     brokerTopologyRole
         .computeIfAbsent(partitionId, brokerId, this::registerBrokerTopologyRole)
         .set(roleValue.value());
   }
 
-  private AtomicInteger registerBrokerTopologyRole(final int partitionId, final int brokerId) {
+  private AtomicInteger registerBrokerTopologyRole(
+      final int partitionId, final BrokerMemberId brokerId) {
     final var role = new AtomicInteger();
     Gauge.builder(PARTITION_ROLE.getName(), role, Number::intValue)
         .description(PARTITION_ROLE.getDescription())
         .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
-        .tag(TopologyKeyNames.BROKER.asString(), String.valueOf(brokerId))
+        .tag(TopologyKeyNames.BROKER.asString(), brokerId.id())
         .register(registry);
     return role;
   }

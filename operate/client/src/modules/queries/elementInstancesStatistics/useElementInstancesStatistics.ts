@@ -46,6 +46,7 @@ const useElementInstancesStatistics = <
       if (isProcessInstanceRunning) {
         return 5000;
       }
+      return undefined;
     },
   });
 };

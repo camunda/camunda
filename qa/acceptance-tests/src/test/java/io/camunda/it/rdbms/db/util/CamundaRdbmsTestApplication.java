@@ -7,11 +7,10 @@
  */
 package io.camunda.it.rdbms.db.util;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
-
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -38,8 +37,6 @@ public final class CamundaRdbmsTestApplication
     super(springConfigurations);
 
     unifiedConfig = new Camunda();
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class);
   }
 
   public CamundaRdbmsTestApplication withDatabaseContainer(
@@ -73,14 +70,24 @@ public final class CamundaRdbmsTestApplication
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
         final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
         rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
-        // In order to ensure that a test runs against the intended database, we also need to set
-        // Spring’s datasource properties. Otherwise, Spring might default to an embedded database
-        // (H2). See also property substitution in dist/application.properties for further details.
         withAdditionalProperties(
             Map.of(
-                "spring.datasource.url", rdbms.getUrl(),
-                "spring.datasource.username", rdbms.getUsername(),
-                "spring.datasource.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),
+                "camunda.data.secondary-storage.rdbms.username", rdbms.getUsername(),
+                "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
+      } else if (databaseContainer
+          instanceof
+          final PostgresReplicationClusterContainer postgresReplicationClusterContainer) {
+        final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
+        rdbms.setUrl(postgresReplicationClusterContainer.getJdbcUrl());
+        rdbms.setUsername(postgresReplicationClusterContainer.getUsername());
+        rdbms.setPassword(postgresReplicationClusterContainer.getPassword());
+        withAdditionalProperties(
+            Map.of(
+                "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),
+                "camunda.data.secondary-storage.rdbms.username", rdbms.getUsername(),
+                "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
                 "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       }
     }
@@ -98,6 +105,10 @@ public final class CamundaRdbmsTestApplication
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
     withProperty("zeebe.broker.gateway.enable", true);
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
+    // so the rdbms URL set in start() (after the container is up) is captured. Refreshable so that
+    // fields cleared between stop/start don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -151,9 +162,8 @@ public final class CamundaRdbmsTestApplication
   }
 
   private void setSecondaryStorageToRdbms() {
-    // set environment variable camunda.data.secondary-storage.type to ensure that
-    // ConditionalOnSecondaryStorageType behaves as expected
-    super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
+    // The unified-config type is emitted as camunda.data.secondary-storage.type when the unified
+    // config is flattened at startup, which ConditionalOnSecondaryStorageType reads.
     unifiedConfig.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
     unifiedConfig
         .getData()

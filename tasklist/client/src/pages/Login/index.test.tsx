@@ -18,7 +18,7 @@ import {Component} from './index';
 import {authenticationStore} from 'modules/auth/authentication';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {LocationLog} from 'modules/testing/LocationLog';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 
 function createWrapper(
   initialEntries: React.ComponentProps<

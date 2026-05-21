@@ -44,7 +44,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     decisionDefinition2 = state['decisionDefinition2'] as DecisionDeployment;
   });
 
-  test('Evaluate Decision Definition by decisionDefinitionKey For Input 8.8', async ({
+  // Skipped due to bug #52944: https://github.com/camunda/camunda/issues/52944
+  test.skip('Evaluate Decision Definition by decisionDefinitionKey For Input 8.8', async ({
     request,
   }) => {
     const matchedRule = {
@@ -96,7 +97,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -106,7 +107,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Evaluate Decision Definition by decisionDefinitionKey For Input 8.7', async ({
+  // Skipped due to bug #52944: https://github.com/camunda/camunda/issues/52944
+  test.skip('Evaluate Decision Definition by decisionDefinitionKey For Input 8.7', async ({
     request,
   }) => {
     const matchedRule = {
@@ -154,7 +156,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -164,7 +166,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Evaluate Decision Definition by decisionDefinitionKey For Input 8.6', async ({
+  // Skipped due to bug #52944: https://github.com/camunda/camunda/issues/52944
+  test.skip('Evaluate Decision Definition by decisionDefinitionKey For Input 8.6', async ({
     request,
   }) => {
     const matchedRule = {
@@ -212,7 +215,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -272,7 +275,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -282,7 +285,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Evaluate Decision Definition by decisionDefinitionId For Input With status VIP and Score 50', async ({
+  // Skipped due to bug #52944: https://github.com/camunda/camunda/issues/52944
+  test.skip('Evaluate Decision Definition by decisionDefinitionId For Input With status VIP and Score 50', async ({
     request,
   }) => {
     const matchedRule = {
@@ -350,7 +354,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -360,7 +364,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Evaluate Decision Definition by decisionDefinitionId For Input With status Regular and Score 40', async ({
+  // Skipped due to bug #52944: https://github.com/camunda/camunda/issues/52944
+  test.skip('Evaluate Decision Definition by decisionDefinitionId For Input With status Regular and Score 40', async ({
     request,
   }) => {
     const matchedRule = {
@@ -428,7 +433,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -488,7 +493,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,

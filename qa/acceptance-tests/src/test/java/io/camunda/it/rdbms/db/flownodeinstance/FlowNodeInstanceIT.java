@@ -26,7 +26,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

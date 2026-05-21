@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -153,6 +154,41 @@ public class SearchClientAdapter {
     return null;
   }
 
+  public String getLifecyclePolicyNameForIndex(final String indexName) throws IOException {
+    if (elsClient != null) {
+      final var response = elsClient.indices().getSettings(req -> req.index(indexName));
+
+      final var state = response.result().get(indexName);
+      return Optional.ofNullable(state)
+          .map(co.elastic.clients.elasticsearch.indices.IndexState::settings)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::index)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::lifecycle)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle::name)
+          .orElse(null);
+    } else if (osClient != null) {
+      final var request =
+          Requests.builder()
+              .method("GET")
+              .endpoint("_plugins/_ism/explain/" + indexName)
+              .query(Map.of("show_policy", "true"))
+              .build();
+
+      try (final var response = osClient.generic().execute(request)) {
+        final var json = objectMapper.readTree(response.getBody().get().body());
+        return Optional.ofNullable(json.get(indexName))
+            .filter(
+                explain -> {
+                  final var enabled = explain.get("enabled");
+                  return enabled != null && enabled.asBoolean();
+                })
+            .map(explain -> explain.get("policy_id"))
+            .map(JsonNode::asText)
+            .orElse(null);
+      }
+    }
+    return null;
+  }
+
   public JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
     if (elsClient != null) {
       final var template =
@@ -177,20 +213,38 @@ public class SearchClientAdapter {
 
   public <T> T get(final String id, final String index, final Class<T> classType)
       throws IOException {
+    return get(id, null, index, classType);
+  }
+
+  public <T> T get(
+      final String id, final String routing, final String index, final Class<T> classType)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.get(r -> r.id(id).index(index), classType).source();
+      return elsClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     } else if (osClient != null) {
-      return osClient.get(r -> r.id(id).index(index), classType).source();
+      return osClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     }
     return null;
   }
 
   public String index(final String id, final String index, final Object document)
       throws IOException {
+    return index(id, null, index, document);
+  }
+
+  public String index(
+      final String id, final String routing, final String index, final Object document)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return elsClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     } else if (osClient != null) {
-      return osClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return osClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     }
     return "";
   }

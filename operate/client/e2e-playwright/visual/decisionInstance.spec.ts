@@ -37,13 +37,16 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decision instance page', () => {
-  //TODO: enable when https://github.com/camunda/operate/issues/3344 is implemented
-  test.skip(`error page`, async ({page, decisionInstancePage}) => {
+  test('error page', async ({page, decisionInstancePage}) => {
     await page.route(URL_API_PATTERN, mockResponses({}));
 
     await decisionInstancePage.gotoDecisionInstance({
       decisionInstanceKey: '1',
     });
+
+    await expect(
+      page.getByText('Data could not be fetched').first(),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

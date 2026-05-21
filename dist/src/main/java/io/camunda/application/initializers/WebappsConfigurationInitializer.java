@@ -12,11 +12,12 @@ import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
+import static io.camunda.application.Profile.TMP_WEBAPP;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +32,8 @@ public class WebappsConfigurationInitializer
 
   public static final String CAMUNDA_WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
   private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
+      Set.of(
+          OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId(), TMP_WEBAPP.getId());
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
@@ -53,7 +55,8 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
       propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
-      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put(
+          "server.servlet.session.cookie.name", CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     }
 
     // locations and home page
@@ -111,6 +114,15 @@ public class WebappsConfigurationInitializer
       }
     }
 
+    // The tmp-webapp is temporary profile while the FUA
+    // https://github.com/camunda/product-hub/issues/3456
+    // project is in progress. Deliberately does NOT set defaultWebapp: legacy profiles win the
+    // home-page contest if mixed.
+
+    if (activeProfiles.contains(TMP_WEBAPP.getId())) {
+      locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
+    }
+
     // Store locations, default homepage and merge everything
 
     propertyMap.put("spring.web.resources.static-locations", locations);
@@ -123,7 +135,6 @@ public class WebappsConfigurationInitializer
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
     final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
-    return authenticationMethod.isPresent()
-        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
+    return AuthenticationMethod.OIDC.equals(authenticationMethod);
   }
 }

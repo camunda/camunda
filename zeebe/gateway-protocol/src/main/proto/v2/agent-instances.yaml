@@ -1,0 +1,561 @@
+## Endpoint definitions
+
+paths:
+  /agent-instances:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Agent instance
+      operationId: createAgentInstance
+      summary: Create agent instance
+      description: |
+        Creates a new agent instance. The returned key identifies the instance and must
+        be used in subsequent update and query calls.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceCreationRequest'
+      responses:
+        "200":
+          description: The agent instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceCreationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The elementInstanceKey does not correspond to an active element instance.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /agent-instances/{agentInstanceKey}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Agent instance
+      operationId: getAgentInstance
+      summary: Get agent instance
+      description: Returns agent instance as JSON.
+      parameters:
+        - name: agentInstanceKey
+          in: path
+          required: true
+          description: The key of the agent instance to retrieve.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+      responses:
+        "200":
+          description: The agent instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The agent instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Agent instance
+      operationId: updateAgentInstance
+      summary: Update agent instance
+      description: |
+        Updates the mutable fields of an agent instance: status, metric counters, and
+        tools. Metric values are treated as deltas and applied immediately to the
+        aggregate counters. Tool updates replace the existing tool list. At least one of
+        status, metrics, or tools must be provided.
+      parameters:
+        - name: agentInstanceKey
+          in: path
+          required: true
+          description: The key of the agent instance to update.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceUpdateRequest'
+      responses:
+        "204":
+          description: The agent instance was updated successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The agent instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+  /agent-instances/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Agent instance
+      operationId: searchAgentInstances
+      summary: Search agent instances
+      description: Search for agent instances based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceSearchQuery'
+      responses:
+        "200":
+          description: The agent instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+## Schema definitions
+
+components:
+  schemas:
+    AgentInstanceSearchQuerySortRequest:
+      type: object
+      required:
+        - field
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - creationDate
+            - lastUpdatedDate
+            - completionDate
+            - status
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+
+    AgentInstanceSearchQuery:
+      description: Agent instance search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceSearchQuerySortRequest'
+        filter:
+          description: The agent instance search filters.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceFilter'
+
+    AgentInstanceFilter:
+      description: Agent instance search filter.
+      type: object
+      properties:
+        agentInstanceKey:
+          description: The unique key of the agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentInstanceKeyFilterProperty'
+        status:
+          description: The current status of the agent instance.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusFilterProperty'
+        elementId:
+          description: The BPMN element ID of the agent task.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+        processInstanceKey:
+          description: The key of the process instance that owns this agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        processDefinitionKey:
+          description: The key of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+        tenantId:
+          description: The tenant ID of the agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        creationDate:
+          description: The creation date of the agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        lastUpdatedDate:
+          description: The date the agent instance was last updated.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        completionDate:
+          description: The completion date of the agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        elementInstanceKeys:
+            description: |-
+              The keys of element instances associated with this agent instance.
+              If multiple keys are provided, the filter matches agent instances associated with all of the provided keys at the same time.
+            type: array
+            items:
+              allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+
+    AgentInstanceSearchQueryResult:
+      description: Agent instance search response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching agent instances.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceResult'
+
+    AgentInstanceResult:
+      type: object
+      required:
+        - agentInstanceKey
+        - status
+        - definition
+        - metrics
+        - limits
+        - tools
+        - elementId
+        - processInstanceKey
+        - processDefinitionKey
+        - tenantId
+        - creationDate
+        - lastUpdatedDate
+        - completionDate
+        - elementInstanceKeys
+      properties:
+        agentInstanceKey:
+          description: The unique key for this agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+        status:
+          $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        definition:
+          description: The static definition of the agent, including model, provider, and system prompt.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceDefinition'
+        metrics:
+          description: Aggregated metrics across all iterations of this agent instance.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceMetrics'
+        limits:
+          description: The configured limits for this agent instance, set once at creation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceLimits'
+        tools:
+          description: The tools available to the agent.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTool'
+        elementId:
+          description: The BPMN element ID of the ad-hoc sub-process or AI agent task that owns this agent instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        processInstanceKey:
+          description: The key of the process instance that owns this agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        processDefinitionKey:
+          description: The key of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        tenantId:
+          description: The tenant ID of this agent instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        creationDate:
+          type: string
+          format: date-time
+          description: The date when this agent instance was created.
+        lastUpdatedDate:
+          type: string
+          format: date-time
+          description: The date when this agent instance was last updated.
+        completionDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: The date when this agent instance completed. Null while the agent is still running.
+        elementInstanceKeys:
+          description: The keys of all element instances associated with this agent instance.
+          type: array
+          items:
+            allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+
+    AgentInstanceDefinition:
+      description: The static definition of an agent instance, set once at creation.
+      type: object
+      required:
+        - model
+        - provider
+        - systemPrompt
+      properties:
+        model:
+          type: string
+          description: The LLM model identifier (for example, gpt-4o).
+        provider:
+          type: string
+          description: The LLM provider (for example, openai or anthropic).
+        systemPrompt:
+          type: string
+          description: The system prompt configured for this agent instance.
+
+    AgentTool:
+      description: A tool available to the agent.
+      type: object
+      required:
+        - name
+        - description
+        - elementId
+      properties:
+        name:
+          type: string
+          description: The tool name as visible to the LLM.
+        description:
+          type: string
+          nullable: true
+          description: A human-readable description of the tool.
+        elementId:
+          type: string
+          nullable: true
+          description: The BPMN element ID of the tool element within the ad-hoc sub-process.
+
+    AgentInstanceMetrics:
+      description: Aggregated metrics for an agent instance across all model calls.
+      type: object
+      required:
+        - inputTokens
+        - outputTokens
+        - modelCalls
+        - toolCalls
+      properties:
+        inputTokens:
+          type: integer
+          format: int64
+          description: Total input tokens consumed across all model calls.
+        outputTokens:
+          type: integer
+          format: int64
+          description: Total output tokens produced across all model calls.
+        modelCalls:
+          type: integer
+          format: int32
+          description: Total number of LLM calls made.
+        toolCalls:
+          type: integer
+          format: int32
+          description: Total number of tool calls made.
+
+    AgentInstanceLimits:
+      description: The configured limits for an agent instance, set once at creation.
+      type: object
+      required:
+        - maxModelCalls
+        - maxTokens
+        - maxToolCalls
+      properties:
+        maxModelCalls:
+          type: integer
+          format: int32
+          description: Maximum LLM calls allowed. -1 if no limit is configured.
+        maxToolCalls:
+          type: integer
+          format: int32
+          description: Maximum tool calls allowed. -1 if no limit is configured.
+        maxTokens:
+          type: integer
+          format: int64
+          description: Maximum total tokens allowed. -1 if no limit is configured.
+
+    AgentInstanceStatusEnum:
+      description: The current status of an agent instance.
+      type: string
+      enum:
+        - COMPLETED
+        - IDLE
+        - INITIALIZING
+        - THINKING
+        - TOOL_CALLING
+        - TOOL_DISCOVERY
+
+    AgentInstanceCreationRequest:
+      description: Request to create a new agent instance.
+      type: object
+      required:
+        - elementInstanceKey
+        - definition
+      properties:
+        elementInstanceKey:
+          description: |
+            The key of the AHSP or AI Agent Task element instance.
+            The engine uses this key to infer processInstanceKey, elementId,
+            processDefinitionKey, and tenantId.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        definition:
+          description: Static definition set once at creation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceDefinition'
+        limits:
+          description: |
+            Limits for the agent execution. When omitted, all limits default to -1
+            (no limit).
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceLimits'
+
+    AgentInstanceCreationResult:
+      description: Response returned after successfully creating an agent instance.
+      type: object
+      x-semantic-provider:
+        - agentInstanceKey
+      required:
+        - agentInstanceKey
+      properties:
+        agentInstanceKey:
+          description: The system-generated key for the created agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+
+    AgentInstanceMetricsDelta:
+      description: |
+        Metric increments to apply to the agent instance aggregate counters. The engine
+        accumulates these deltas into running totals on each UPDATED event. All fields
+        are optional; omit a field to leave the corresponding counter unchanged.
+      type: object
+      properties:
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total input token counter.
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total output token counter.
+        modelCalls:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Increment to apply to the total model call counter.
+        toolCalls:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Increment to apply to the total tool call counter.
+
+    AgentInstanceUpdateRequest:
+      description: |
+        Request to update the mutable state of an agent instance. At least one of
+        status, metrics, or tools must be provided.
+      type: object
+      properties:
+        status:
+          description: The new status of the agent instance.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        metrics:
+          description: Metric increments to apply to the aggregate counters.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceMetricsDelta'
+        tools:
+          description: |
+            The complete list of tools available to the agent, replacing any previously
+            stored tools. When provided, the engine replaces the existing tool list with
+            this value.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTool'
+
+    ## Filters
+
+    AgentInstanceStatusFilterProperty:
+      description: AgentInstanceStatusEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        - $ref: '#/components/schemas/AdvancedAgentInstanceStatusFilter'
+
+    AdvancedAgentInstanceStatusFilter:
+      title: Advanced filter
+      description: Advanced AgentInstanceStatusEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'

@@ -44,7 +44,7 @@ const useBuiltMessage = (options: {
           .concat([`and ${namedFieldsSlice[namedFieldsSlice.length - 1]}`])
           .join(', '),
       );
-    } else {
+    } else if (namedFieldsSlice[0] !== undefined) {
       parts.push(': ', namedFieldsSlice[0]);
     }
   }

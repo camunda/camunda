@@ -10,12 +10,10 @@ import type {Locator, Page} from '@playwright/test';
 
 class JSONEditor {
   private readonly page: Page;
-  private readonly readOnlyEditor: Locator;
   private readonly codeEditor: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.readOnlyEditor = this.page.getByTestId('json-editor-readonly');
     this.codeEditor = this.page.getByRole('code').first();
   }
 
@@ -42,6 +40,13 @@ class JSONEditor {
 
   async blur() {
     await this.page.keyboard.press('Escape');
+  }
+
+  async hideCaret() {
+    await this.page.addStyleTag({
+      content:
+        '* { caret-color: transparent !important; } .monaco-editor .cursor { animation: none !important; opacity: 0 !important; }',
+    });
   }
 }
 

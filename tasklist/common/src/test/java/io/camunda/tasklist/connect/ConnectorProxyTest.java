@@ -19,7 +19,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.tasklist.os.OpenSearchConnector;
 import io.camunda.tasklist.property.ProxyProperties;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;

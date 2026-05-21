@@ -8,8 +8,8 @@
 package io.camunda.search.clients.auth.matcher;
 
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;

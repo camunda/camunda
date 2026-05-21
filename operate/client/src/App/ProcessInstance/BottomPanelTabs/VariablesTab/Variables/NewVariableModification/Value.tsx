@@ -52,7 +52,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
             id={valueFieldName}
             fieldError={fieldError}
             onBlur={() => {
-              form.mutators?.triggerValidation?.(valueFieldName);
+              form.mutators?.['triggerValidation']?.(valueFieldName);
               input.onBlur();
 
               createModification({

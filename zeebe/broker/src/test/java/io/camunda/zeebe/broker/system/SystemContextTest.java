@@ -17,8 +17,10 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;
@@ -375,17 +378,22 @@ final class SystemContextTest {
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(
+        SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
+        null,
         mock(ActorScheduler.class),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
+        new SimpleMeterRegistry(),
         new SecurityConfiguration(),
         mock(UserServices.class),
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),
+        new NoopOidcClaimsProvider(),
         mock(SearchClientsProxy.class),
         mock(BrokerRequestAuthorizationConverter.class),
-        mock(NodeIdProvider.class));
+        mock(NodeIdProvider.class),
+        List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
   }
 
   @Test

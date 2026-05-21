@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,12 +22,13 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
-  private final OidcGroupsLoader oidcGroupsLoader;
+  private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    oidcGroupsLoader =
-        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+    oidcGroupsExtractor =
+        new OidcGroupsExtractor(
+            securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
         securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
@@ -40,7 +41,7 @@ public class NoDBMembershipService implements MembershipService {
       throws OAuth2AuthenticationException {
     final Set<String> groups =
         isGroupsClaimConfigured
-            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
+            ? new HashSet<>(oidcGroupsExtractor.extract(tokenClaims))
             : Collections.emptySet();
 
     return CamundaAuthentication.of(
@@ -52,7 +53,7 @@ public class NoDBMembershipService implements MembershipService {
           }
           return a.roleIds(Collections.emptyList())
               .groupIds(groups.stream().toList())
-              .mappingRule(Collections.emptyList())
+              .mappingRules(Collections.emptyList())
               .tenants(Collections.emptyList())
               .claims(tokenClaims);
         });

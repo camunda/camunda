@@ -70,6 +70,7 @@ const apiTestIgnore = [
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
+  'tests/api/v2/optimize/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -172,6 +173,14 @@ const normalProjects = [
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
+  {
+    name: 'optimize-default-config',
+    testMatch: ['tests/api/v2/optimize/default-config.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
+
 ];
 
 const v2StatelessProjects = [

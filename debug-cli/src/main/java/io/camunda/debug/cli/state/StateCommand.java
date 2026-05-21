@@ -7,15 +7,13 @@
  */
 package io.camunda.debug.cli.state;
 
-import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_MEMORY_LIMIT;
-
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import picocli.CommandLine.Command;
 
@@ -34,8 +32,7 @@ public class StateCommand {
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            SharedRocksDbResources.allocate(DEFAULT_MEMORY_LIMIT),
-            3);
+            new RocksDbResources.Shared(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT, 3));
   }
 
   public ZeebeDbFactory getZeebeDbFactory() {

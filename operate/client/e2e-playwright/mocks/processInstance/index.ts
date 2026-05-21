@@ -251,7 +251,7 @@ function mockResponses({
       });
     }
 
-    route.continue();
+    return route.continue();
   };
 }
 

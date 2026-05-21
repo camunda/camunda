@@ -73,6 +73,7 @@ public final class ExportersState {
   public long getPosition(final String exporterId) {
     return findExporterStateEntry(exporterId)
         .map(ExporterStateEntry::getPosition)
+        .map(ExportersState::normalizePosition)
         .orElse(VALUE_NOT_FOUND);
   }
 
@@ -103,8 +104,20 @@ public final class ExportersState {
     final LongArrayList positions = new LongArrayList();
 
     visitExporterState(
-        (exporterId, exporterStateEntry) -> positions.addLong(exporterStateEntry.getPosition()));
-    return positions.longStream().min().orElse(-1L);
+        (exporterId, exporterStateEntry) ->
+            positions.addLong(normalizePosition(exporterStateEntry.getPosition())));
+    return positions.longStream().min().orElse(VALUE_NOT_FOUND);
+  }
+
+  /**
+   * Position 0 is not a valid log entry position; the first valid position is 1. A persisted 0 is
+   * the result of a historical bug where {@code undoSoftPauseExporter} flushed the long default
+   * value of {@code lastAcknowledgedPosition}. Treat such entries as uninitialized so seek and
+   * compaction behave like for a fresh exporter and the first real acknowledgment overwrites the
+   * stale entry.
+   */
+  private static long normalizePosition(final long position) {
+    return position == 0 ? VALUE_NOT_FOUND : position;
   }
 
   /**
@@ -114,8 +127,9 @@ public final class ExportersState {
     final var max = new MutableLong(Long.MIN_VALUE);
     visitExporterState(
         (exporterId, exporterStateEntry) -> {
-          if (max.longValue() < exporterStateEntry.getPosition()) {
-            max.set(exporterStateEntry.getPosition());
+          final var position = normalizePosition(exporterStateEntry.getPosition());
+          if (max.longValue() < position) {
+            max.set(position);
           }
         });
     return max.get();

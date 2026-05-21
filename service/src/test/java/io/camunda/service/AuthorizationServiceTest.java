@@ -17,7 +17,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;

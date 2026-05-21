@@ -8,13 +8,14 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.in.ResourcePermissionPort;
+import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.reader.ResourceAccessProvider;
 import java.util.List;
 import java.util.Map;
@@ -52,9 +53,33 @@ public class OidcFlowTestContext {
     return new DisabledResourceAccessProvider();
   }
 
+  /**
+   * Permissive {@link ResourcePermissionPort} so CSL's webapp authorization filter does not deny
+   * access. Slice tests don't wire OC's authorization data store; without an override CSL's default
+   * {@code ResourcePermissionService} would resolve no permissions for the authenticated test
+   * principal and redirect every webapp request to {@code /<webapp>/forbidden}.
+   */
   @Bean
-  public AuthFailureHandler createFailureHandler() {
-    return new AuthFailureHandler(new ObjectMapper());
+  public ResourcePermissionPort resourcePermissionPort() {
+    return (authentication, resourceType, resourceId, permissionType) -> true;
+  }
+
+  /**
+   * Empty {@link AuthorizationRepositoryPort} so the host's {@code AuthorizationRepositoryAdapter}
+   * (gated on secondary storage being enabled, which is the slice-test default) backs off via
+   * {@code @ConditionalOnMissingBean} and doesn't try to autowire an {@code AuthorizationReader}
+   * the slice context doesn't pull in.
+   */
+  @Bean
+  public AuthorizationRepositoryPort authorizationRepositoryPort() {
+    return (authentication, resourceType) -> java.util.Set.of();
+  }
+
+  // CSL's default JsonProblemDetailAuthFailureHandler requires an ObjectMapper; slice tests don't
+  // pull JacksonAutoConfiguration so we provide one explicitly.
+  @Bean
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper();
   }
 
   /**

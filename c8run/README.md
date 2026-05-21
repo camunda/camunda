@@ -67,6 +67,27 @@ go build -o c8run ./cmd/c8run/
 ./start.sh
 ```
 
+## Build C8Run from a feature branch (via CI)
+
+The [`c8run-build.yaml`](https://github.com/camunda/camunda/actions/workflows/c8run-build.yaml) workflow supports `workflow_dispatch`, so you can trigger a full build and package from any branch without setting up a local environment.
+
+Steps:
+
+1. Go to the [C8Run: build/test workflow](https://github.com/camunda/camunda/actions/workflows/c8run-build.yaml).
+2. Click **Run workflow**, select your feature branch, and start the run.
+3. Wait for the run to complete.
+4. Download the `camunda8-run-build-<os>` artifacts from the run summary.
+
+The workflow produces platform-specific artifacts for Linux, macOS (ARM and Intel), and Windows; the downloaded artifacts contain the corresponding `camunda8-run*` files ready to share with colleagues or customers.
+
+> **macOS only — Gatekeeper warning:** CI build artifacts are not code-signed (only release artifacts go through Apple notarization). If macOS blocks the binary with _"cannot be opened because the developer cannot be verified"_, remove the quarantine flag before running:
+>
+> ```bash
+> xattr -dr com.apple.quarantine <path-to-unpacked-artifact>
+> ```
+>
+> This is safe for internal CI artifacts. End-user release builds downloaded from the Camunda website or GitHub releases are already notarized and will not trigger this warning.
+
 ### Connectors launcher
 
 C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.

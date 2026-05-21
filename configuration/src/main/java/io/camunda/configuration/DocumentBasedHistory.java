@@ -20,10 +20,14 @@ public class DocumentBasedHistory {
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
   private static final ProcessInstanceRetentionMode
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
+  private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 2500;
+  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 3;
+  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_RETRY_DELAY_MS = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -50,6 +54,8 @@ public class DocumentBasedHistory {
   private ProcessInstanceRetentionMode processInstanceRetentionMode =
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE;
 
+  private boolean archiveByIdEnabled = DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED;
+
   /** Date format for historical indices in Java DateTimeFormatter syntax */
   private String elsRolloverDateFormat = DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT;
 
@@ -58,6 +64,9 @@ public class DocumentBasedHistory {
 
   /** Maximum number of process instances per archiving batch */
   private int rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+
+  /** Maximum number of docs reindexed/deleted in a batch */
+  private int reindexBatchSize = DEFAULT_HISTORY_REINDEX_BATCH_SIZE;
 
   /**
    * Grace period before archiving completed processes. Processes finished within this window are
@@ -71,6 +80,12 @@ public class DocumentBasedHistory {
   /** Maximum millisecond interval between archiver runs due to failure backoffs */
   private Duration maxDelayBetweenRuns = DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS;
 
+  /** Maximum number of retries for archive-by-id batch operations on retryable errors */
+  private int archiveByIdMaxRetryAttempts = DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS;
+
+  /** Retry delay in millisecond interval when archive-by-id batch fails on retryable errors */
+  private int archiveByIdRetryDelayMs = DEFAULT_HISTORY_ARCHIVE_BY_ID_RETRY_DELAY_MS;
+
   /** Defines the name of the created and applied ILM policy. */
   private String policyName = DEFAULT_HISTORY_POLICY_NAME;
 
@@ -79,7 +94,7 @@ public class DocumentBasedHistory {
   }
 
   public boolean isProcessInstanceEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".process-instance-enabled",
         processInstanceEnabled,
         Boolean.class,
@@ -92,7 +107,7 @@ public class DocumentBasedHistory {
   }
 
   public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".process-instance-retention-mode",
         processInstanceRetentionMode,
         ProcessInstanceRetentionMode.class,
@@ -105,12 +120,20 @@ public class DocumentBasedHistory {
     this.processInstanceRetentionMode = processInstanceRetentionMode;
   }
 
+  public boolean isArchiveByIdEnabled() {
+    return archiveByIdEnabled;
+  }
+
+  public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
+    this.archiveByIdEnabled = archiveByIdEnabled;
+  }
+
   public String getPrefix() {
     return prefix;
   }
 
   public String getElsRolloverDateFormat() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".els-rollover-date-format",
         elsRolloverDateFormat,
         String.class,
@@ -123,7 +146,7 @@ public class DocumentBasedHistory {
   }
 
   public String getRolloverInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-interval",
         rolloverInterval,
         String.class,
@@ -136,7 +159,7 @@ public class DocumentBasedHistory {
   }
 
   public int getRolloverBatchSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-batch-size",
         rolloverBatchSize,
         Integer.class,
@@ -148,8 +171,16 @@ public class DocumentBasedHistory {
     this.rolloverBatchSize = rolloverBatchSize;
   }
 
+  public int getReindexBatchSize() {
+    return reindexBatchSize;
+  }
+
+  public void setReindexBatchSize(final int reindexBatchSize) {
+    this.reindexBatchSize = reindexBatchSize;
+  }
+
   public String getWaitPeriodBeforeArchiving() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".wait-period-before-archiving",
         waitPeriodBeforeArchiving,
         String.class,
@@ -162,7 +193,7 @@ public class DocumentBasedHistory {
   }
 
   public Duration getDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".delay-between-runs",
         delayBetweenRuns,
         Duration.class,
@@ -175,7 +206,7 @@ public class DocumentBasedHistory {
   }
 
   public Duration getMaxDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".max-delay-between-runs",
         maxDelayBetweenRuns,
         Duration.class,
@@ -188,7 +219,7 @@ public class DocumentBasedHistory {
   }
 
   public String getPolicyName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".policy-name",
         policyName,
         String.class,
@@ -198,6 +229,22 @@ public class DocumentBasedHistory {
 
   public void setPolicyName(final String policyName) {
     this.policyName = policyName;
+  }
+
+  public int getArchiveByIdMaxRetryAttempts() {
+    return archiveByIdMaxRetryAttempts;
+  }
+
+  public void setArchiveByIdMaxRetryAttempts(final int archiveByIdMaxRetryAttempts) {
+    this.archiveByIdMaxRetryAttempts = archiveByIdMaxRetryAttempts;
+  }
+
+  public int getArchiveByIdRetryDelayMs() {
+    return archiveByIdRetryDelayMs;
+  }
+
+  public void setArchiveByIdRetryDelayMs(final int archiveByIdRetryDelayMs) {
+    this.archiveByIdRetryDelayMs = archiveByIdRetryDelayMs;
   }
 
   private Set<String> legacyPolicyNameProperties() {

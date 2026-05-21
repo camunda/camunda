@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
@@ -65,11 +65,12 @@ public final class Broker implements AutoCloseable {
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
-    final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
+    final var cluster = getConfig().getCluster();
+    final var nodeId = BrokerMemberId.from(cluster.getZone(), cluster.getNodeId());
 
     healthCheckService =
         new BrokerHealthCheckService(
-            nodeId,
+            nodeId.memberId(),
             new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")));
 
     final var startupContext =
@@ -90,9 +91,11 @@ public final class Broker implements AutoCloseable {
             systemContext.getUserServices(),
             systemContext.getPasswordEncoder(),
             systemContext.getJwtDecoder(),
+            systemContext.getOidcClaimsProvider(),
             systemContext.getSearchClientsProxy(),
             systemContext.getBrokerRequestAuthorizationConverter(),
-            systemContext.getNodeIdProvider());
+            systemContext.getNodeIdProvider(),
+            systemContext.getPhysicalTenantIds());
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
@@ -146,6 +149,7 @@ public final class Broker implements AutoCloseable {
     final BrokerInfo result =
         new BrokerInfo(
             clusterCfg.getNodeId(),
+            clusterCfg.getZone(),
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
 
@@ -160,6 +164,7 @@ public final class Broker implements AutoCloseable {
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
     }
+
     return result;
   }
 
@@ -223,10 +228,7 @@ public final class Broker implements AutoCloseable {
 
     private final BrokerStartupProcess brokerStartupProcess;
 
-    private final int nodeId;
-
     private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
-      nodeId = startupContext.getBrokerInfo().getNodeId();
       startupContext.setConcurrencyControl(actor);
       brokerStartupProcess = new BrokerStartupProcess(startupContext);
     }

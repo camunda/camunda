@@ -87,13 +87,14 @@ All components are configured in `camunda-platform-values.yaml`.
 If you run `newLoadTest.sh` without arguments, it will display the following help message.
 
 ```sh
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
@@ -111,7 +112,10 @@ Example:
 . ./newLoadTest.sh my-load-test-name
 ```
 
-This will source and run the `newLoadTest.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
+This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and (under `resources/`) two Kubernetes manifests: `namespace.yaml` (labels, AZ pinning, TTL) and `camunda-credentials.yaml` (randomly generated passwords/tokens). The cluster itself is unchanged by this script — `make install` from inside the folder runs `kubectl apply -f resources/…` to create the namespace and secret. Reruns after a TTL deletion reapply the same manifests, so the orchestration secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
+
+`resources/camunda-credentials.yaml` is git-ignored (random secrets on disk; do not commit).
+
 If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
@@ -185,9 +189,15 @@ To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/c
 make install
 ```
 
+`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadline-date` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `create-namespace` and `create-credentials` which `kubectl apply -f resources/namespace.yaml` and `resources/camunda-credentials.yaml`. Both are idempotent, so reruns after a TTL deletion recreate the namespace and reapply the same credentials — the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
+
 Or install/upgrade them separately:
 
 ```shell
+# Apply the namespace + secret manifests (idempotent)
+make create-namespace
+make create-credentials
+
 # Install/upgrade the Camunda Platform (includes leader balancer cronjob)
 make install-platform
 
@@ -195,20 +205,86 @@ make install-platform
 make install-load-test
 ```
 
+To bump the deadline of an existing namespace without re-scaffolding, edit `deadline-date` in `resources/namespace.yaml` (single source of truth — `check-deadline` reads it directly) and reapply:
+
+```sh
+make create-namespace
+```
+
 The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
-### How to clean up a load test
+### Running specific scenarios
 
-After you're done with your load test, you should remove the remaining namespace.
-In order to do this easily, just run:
+By default, `make install` uses the load test chart's own defaults (no workload profile applied).
+To run a specific workload profile, use one of the named targets:
 
 ```sh
-./deleteLoadTest.sh my-load-test-name
+make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
+make typical   # 50 instances/s, 6 workers, typical_process BPMN
+make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
+make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
-This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.
+You can also pass `scenario=` directly to combine with additional overrides:
+
+```sh
+make install scenario=max additional_platform_configuration="--set orchestration.resources.limits.memory=4Gi"
+```
+
+For stable (non-spot) VMs, use `install-stable` with the `scenario=` variable:
+
+```sh
+make install-stable scenario=max
+```
+
+To inspect the resolved flags without running any Helm commands:
+
+```sh
+make print-scenario scenario=max
+```
+
+To render Helm templates for inspection:
+
+```sh
+make template scenario=max          # renders platform manifests
+make template-load-test scenario=max  # renders load test manifests
+```
+
+### Accessing Services
+
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
+
+1. Port-forward both Camunda and Keycloak:
+
+```sh
+kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
+kubectl -n <namespace> port-forward pod/keycloak-0 18080:8080 &
+wait
+```
+
+2. Get the `demo` user password:
+
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-firstuser-password}" | base64 --decode
+```
+
+3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
+
+### How to clean up a load test
+
+When you're done, run `make clean` from inside the namespace folder:
+
+```sh
+cd c8-my-load-test-name
+make clean
+```
+
+This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter), removes any secondary-storage chart/PVCs, drops the leader-balancer cronjob, and finally `kubectl delete -f resources/namespace.yaml --ignore-not-found` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+
+The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reapply `resources/namespace.yaml` + `resources/camunda-credentials.yaml`), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 
 ## Running on stable/non-spot VMs
 

@@ -14,6 +14,9 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -33,11 +36,16 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
           ProcessMessageSubscriptionIntent.MIGRATED);
 
   private final ExporterMetadata exporterMetadata;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public MessageSubscriptionFromProcessMessageSubscriptionHandler(
-      final String indexName, final ExporterMetadata exporterMetadata) {
-    super(indexName);
+      final String indexName,
+      final ExporterMetadata exporterMetadata,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
+    super(indexName, extensionPropertyConfig);
     this.exporterMetadata = exporterMetadata;
+    this.processCache = processCache;
   }
 
   @Override
@@ -72,30 +80,17 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
 
     final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
 
-    entity.setPositionProcessMessageSubscription(record.getPosition());
-
     loadEventGeneralData(record, entity);
 
-    final long processInstanceKey = recordValue.getProcessInstanceKey();
-    if (processInstanceKey > 0) {
-      entity.setProcessInstanceKey(processInstanceKey);
-    }
-
-    final long processDefinitionKey = recordValue.getProcessDefinitionKey();
-    if (processDefinitionKey > 0) {
-      entity.setProcessDefinitionKey(processDefinitionKey);
-    }
+    final String elementId = recordValue.getElementId();
+    extractDefinitionData(entity, elementId, recordValue.getProcessDefinitionKey(), processCache);
 
     entity
         .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setFlowNodeId(recordValue.getElementId())
+        .setFlowNodeId(elementId)
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPositionProcessMessageSubscription(record.getPosition());
-
-    final long activityInstanceKey = recordValue.getElementInstanceKey();
-    if (activityInstanceKey > 0) {
-      entity.setFlowNodeInstanceKey(activityInstanceKey);
-    }
+        .setPositionProcessMessageSubscription(record.getPosition())
+        .setMessageSubscriptionType("PROCESS_EVENT");
 
     final MessageSubscriptionMetadataEntity eventMetadata = new MessageSubscriptionMetadataEntity();
     eventMetadata.setMessageName(recordValue.getMessageName());
@@ -103,6 +98,14 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
 
     entity.setMetadata(eventMetadata);
 
+    final long processInstanceKey = recordValue.getProcessInstanceKey();
+    if (processInstanceKey > 0) {
+      entity.setProcessInstanceKey(processInstanceKey);
+    }
+    final long activityInstanceKey = recordValue.getElementInstanceKey();
+    if (activityInstanceKey > 0) {
+      entity.setFlowNodeInstanceKey(activityInstanceKey);
+    }
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);

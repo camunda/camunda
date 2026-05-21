@@ -18,9 +18,12 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
+import io.camunda.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 
-public final class PersistedProcess extends UnpackedObject implements DbValue {
+public final class PersistedProcess extends UnpackedObject
+    implements DbValue, ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess> {
   private static final long NO_DEPLOYMENT_KEY = -1L;
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final LongProperty keyProp = new LongProperty("key", -1L);
@@ -46,6 +49,12 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp);
+  }
+
+  @Override
+  public PersistedProcess wrap(final Tuple<ProcessRecord, Long> source) {
+    wrap(source.getLeft(), source.getRight());
+    return this;
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {

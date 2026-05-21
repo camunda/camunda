@@ -20,6 +20,7 @@ import {
   validateResponseShape,
 } from '../../../../json-body-assertions';
 import {deployResourceAndGetMetadata, ResourceMetadata} from '@requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 function validateResourceResponse(
   body: JSONDoc,
@@ -45,7 +46,6 @@ function validateResourceResponse(
 }
 
 test.describe.parallel('Resource Get API', () => {
-  // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - RPA Success 200', async ({request}) => {
     const resourceName = 'rpa_get_resource_api_test.rpa';
     const metadata = await deployResourceAndGetMetadata(
@@ -54,24 +54,27 @@ test.describe.parallel('Resource Get API', () => {
       0,
     );
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}', {resourceKey: metadata.resourceKey}),
-      {
-        headers: jsonHeaders(),
-      },
-    );
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/resources/{resourceKey}', {
+          resourceKey: metadata.resourceKey,
+        }),
+        {
+          headers: jsonHeaders(),
+        },
+      );
 
-    await assertStatusCode(res, 200);
-    await validateResponse(
-      {
-        path: '/resources/{resourceKey}',
-        method: 'GET',
-        status: '200',
-      },
-      res,
-    );
-    const body = await res.json();
-    validateResourceResponse(body, metadata);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/resources/{resourceKey}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
+      validateResourceResponse(await res.json(), metadata);
+    }).toPass(defaultAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect
@@ -89,7 +92,7 @@ test.describe.parallel('Resource Get API', () => {
 
     await assertNotFoundRequest(
       res,
-      "Command 'FETCH' rejected with code 'NOT_FOUND': Expected to fetch resource but no resource found with key `2251799813733053`",
+      `Resource with key '${nonExistentResourceKey}' not found`,
     );
   });
 

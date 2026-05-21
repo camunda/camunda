@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -28,10 +29,11 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   public StubbedTopologyManager(final int partitionsCount) {
     clusterConfiguration = ClusterConfiguration.uninitialized();
     clusterState = new TestBrokerClusterState(partitionsCount);
-    clusterState.addBroker(0, "localhost:26501");
+    clusterState.addBroker(BrokerMemberId.from(0), "localhost:26501");
     clusterState.setClusterId(UUID.randomUUID().toString());
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
-      clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0, 1);
+      clusterState.setPartitionLeader(
+          START_PARTITION_ID + partitionOffset, BrokerMemberId.from(0), 1);
       clusterState.addPartition(START_PARTITION_ID + partitionOffset);
     }
   }
@@ -62,7 +64,9 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   public void setPartitionHealthStatus(
-      final int nodeId, final int partitionId, final PartitionHealthStatus partitionHealthStatus) {
+      final BrokerMemberId nodeId,
+      final int partitionId,
+      final PartitionHealthStatus partitionHealthStatus) {
     clusterState.setPartitionHealthStatus(nodeId, partitionId, partitionHealthStatus);
   }
 
@@ -70,7 +74,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
     clusterState.setClusterId(clusterId);
   }
 
-  public void addPartitionInactive(final int partitionId, final int nodeId) {
+  public void addPartitionInactive(final int partitionId, final BrokerMemberId nodeId) {
     clusterState.addPartitionInactive(partitionId, nodeId);
   }
 }

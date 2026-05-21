@@ -33,6 +33,7 @@ public class ExporterContextTest {
         LOG,
         new ExporterTestConfiguration<>(exporterId, Collections.emptyMap()),
         partitionId,
+        "",
         underlying,
         FIXED_INSTANT_SOURCE);
   }

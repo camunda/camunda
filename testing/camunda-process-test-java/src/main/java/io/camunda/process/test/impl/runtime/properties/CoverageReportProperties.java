@@ -27,9 +27,12 @@ public class CoverageReportProperties {
   public static final String PROPERTY_NAME_COVERAGE_REPORT_DIRECTORY = "coverage.reportDirectory";
   public static final String PROPERTY_NAME_COVERAGE_REPORT_EXCLUDED_PROCESSES =
       "coverage.excludedProcesses";
+  public static final String PROPERTY_NAME_COVERAGE_REPORT_EXCLUDED_DECISIONS =
+      "coverage.excludedDecisions";
 
   private final String coverageReportDirectory;
   private final List<String> coverageExcludedProcesses;
+  private final List<String> coverageExcludedDecisions;
 
   public CoverageReportProperties(final Properties properties) {
     coverageReportDirectory =
@@ -40,6 +43,9 @@ public class CoverageReportProperties {
 
     coverageExcludedProcesses =
         getPropertyListOrEmpty(properties, PROPERTY_NAME_COVERAGE_REPORT_EXCLUDED_PROCESSES);
+
+    coverageExcludedDecisions =
+        getPropertyListOrEmpty(properties, PROPERTY_NAME_COVERAGE_REPORT_EXCLUDED_DECISIONS);
   }
 
   public String getCoverageReportDirectory() {
@@ -48,5 +54,9 @@ public class CoverageReportProperties {
 
   public List<String> getCoverageExcludedProcesses() {
     return coverageExcludedProcesses;
+  }
+
+  public List<String> getCoverageExcludedDecisions() {
+    return coverageExcludedDecisions;
   }
 }

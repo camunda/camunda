@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -374,6 +375,11 @@ public final class CatchEventBehavior {
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
+    // Capture the process instance's businessId at subscription-open time and ship it with the
+    // OPEN command so the message partition can apply business-id-based filtering locally at
+    // correlation time. Reading PI state from another partition at correlation time would
+    // reintroduce the cross-partition chatter the design explicitly avoids.
+    final DirectBuffer businessId = wrapString(context.getBusinessId());
 
     final int subscriptionPartitionId = routingInfo.partitionForCorrelationKey(correlationKey);
 
@@ -388,6 +394,7 @@ public final class CatchEventBehavior {
     subscription.setInterrupting(event.isInterrupting());
     subscription.setTenantId(context.getTenantId());
     subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
+    subscription.setBusinessId(businessId);
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -402,7 +409,8 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         event.isInterrupting(),
-        context.getTenantId());
+        context.getTenantId(),
+        businessId);
 
     final String subscriptionMessageName = subscription.getMessageName();
     final String tenantId = subscription.getTenantId();
@@ -673,7 +681,8 @@ public final class CatchEventBehavior {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
-      final String tenantId) {
+      final String tenantId,
+      final DirectBuffer businessId) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
@@ -683,7 +692,8 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         closeOnCorrelate,
-        tenantId);
+        tenantId,
+        businessId);
   }
 
   public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName, Timer timer) {

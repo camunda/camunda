@@ -9,7 +9,7 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '../index';
 import {MemoryRouter} from 'react-router-dom';
@@ -37,7 +37,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
     useEffect(() => {
       processInstancesSelectionStore.init();
       processInstancesSelectionStore.setRuntime({
-        totalProcessInstancesCount: 10,
+        totalCount: 10,
         visibleIds: ['123', '456', '789'],
         visibleRunningIds: ['123', '456', '789'],
         visibleFinishedIds: [],
@@ -53,16 +53,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter>
           {children}
-          <button
-            onClick={processInstancesSelectionStore.selectAllProcessInstances}
-          >
+          <button onClick={processInstancesSelectionStore.selectAll}>
             Toggle select all instances
           </button>
-          <button
-            onClick={() =>
-              processInstancesSelectionStore.selectProcessInstance('123')
-            }
-          >
+          <button onClick={() => processInstancesSelectionStore.select('123')}>
             select single instance
           </button>
           <button

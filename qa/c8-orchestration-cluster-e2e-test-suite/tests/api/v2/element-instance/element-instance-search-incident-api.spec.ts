@@ -15,6 +15,7 @@ import {
 import {
   assertBadRequest,
   assertForbiddenRequest,
+  assertInvalidArgument,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -214,7 +215,7 @@ test.describe('Element Instance Incident Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 46661: https://github.com/camunda/camunda/issues/46661
+  //Skipped due to bug: 48703 https://github.com/camunda/camunda/issues/48703
   test.skip('Search for incidents of a specific element instance - ascending order by errorMessage - Success', async ({
     request,
   }) => {
@@ -433,8 +434,7 @@ test.describe('Element Instance Incident Search API', () => {
     });
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search for incidents of a specific element instance - with invalid pagination parameters', async ({
+  test('Search for incidents of a specific element instance - with invalid pagination parameters', async ({
     request,
   }) => {
     await expect(async () => {
@@ -451,10 +451,10 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(
+      await assertInvalidArgument(
         res,
-        'Sort field must not be null.',
-        'INVALID_ARGUMENT',
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
       );
     }).toPass(defaultAssertionOptions);
   });

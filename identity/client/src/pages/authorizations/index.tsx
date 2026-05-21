@@ -11,7 +11,10 @@ import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
 
 const Authorizations: FC = () => (
-  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+  <PageRoutes
+    indexElement={<Lazy load={() => import("./List")} />}
+    detailElement={<Lazy load={() => import("./List")} />}
+  />
 );
 
 export default Authorizations;

@@ -22,16 +22,8 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.GroupDefinition;
-import io.camunda.qa.util.auth.MappingRuleDefinition;
-import io.camunda.qa.util.auth.Membership;
-import io.camunda.qa.util.auth.RoleDefinition;
-import io.camunda.qa.util.auth.TestGroup;
-import io.camunda.qa.util.auth.TestMappingRule;
-import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
@@ -51,27 +43,6 @@ public class AuditLogIdentityOperationsIT {
           .withMultiTenancyEnabled()
           .withAuthorizationsEnabled()
           .withAuthenticatedAccess();
-
-  private static final String MAPPING_RULE_CLAIM_VALUE = "test-claim-value";
-  private static final String GROUP_A_ID = "AGroupName";
-  private static final String ROLE_A_ID = "ARoleName";
-
-  @MappingRuleDefinition
-  private static final TestMappingRule MAPPING_RULE_A =
-      new TestMappingRule(
-          Strings.newRandomValidIdentityId(),
-          TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME,
-          MAPPING_RULE_CLAIM_VALUE);
-
-  @GroupDefinition
-  private static final TestGroup GROUP_A =
-      TestGroup.withoutPermissions(
-          GROUP_A_ID, GROUP_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
-
-  @RoleDefinition
-  private static final TestRole ROLE_A =
-      TestRole.withoutPermissions(
-          ROLE_A_ID, ROLE_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
 
   // ==================== USER TESTS ====================
 
@@ -257,17 +228,20 @@ public class AuditLogIdentityOperationsIT {
 
   @Test
   void shouldTrackRoleCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    final var roleId = "role-" + Strings.newRandomValidIdentityId();
+
     // when
+    client.newCreateRoleCommand().roleId(roleId).name(roleId).send().join();
     final var auditLogs =
         awaitAuditLogEntry(
-            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.CREATE, ROLE_A_ID);
+            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.CREATE, roleId);
 
     // then
     assertAuditLog(
-        findByEntityKey(auditLogs, ROLE_A_ID),
+        findByEntityKey(auditLogs, roleId),
         AuditLogEntityTypeEnum.ROLE,
         AuditLogOperationTypeEnum.CREATE,
-        ROLE_A_ID);
+        roleId);
   }
 
   @Test
@@ -321,15 +295,21 @@ public class AuditLogIdentityOperationsIT {
 
   @Test
   void shouldTrackRoleAssign(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    final var roleId = "role-" + Strings.newRandomValidIdentityId();
+
+    client.newCreateRoleCommand().roleId(roleId).name(roleId).send().join();
+    awaitAuditLogEntry(
+        client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.CREATE, roleId);
+
     // when
+    client.newAssignRoleToUserCommand().roleId(roleId).username(DEFAULT_USERNAME).send().join();
     final var auditLogs =
         awaitAuditLogEntry(
-            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, ROLE_A_ID);
+            client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, roleId);
 
     // then
-    final var result = findByEntityKey(auditLogs, ROLE_A_ID);
-    assertAuditLog(
-        result, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, ROLE_A_ID);
+    final var result = findByEntityKey(auditLogs, roleId);
+    assertAuditLog(result, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, roleId);
     assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
@@ -361,17 +341,21 @@ public class AuditLogIdentityOperationsIT {
 
   @Test
   void shouldTrackGroupCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var groupId = "group-" + Strings.newRandomValidIdentityId();
+
     // when
+    client.newCreateGroupCommand().groupId(groupId).name(groupId).send().join();
     final var auditLogs =
         awaitAuditLogEntry(
-            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.CREATE, GROUP_A_ID);
+            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.CREATE, groupId);
 
     // then
     assertAuditLog(
-        findByEntityKey(auditLogs, GROUP_A_ID),
+        findByEntityKey(auditLogs, groupId),
         AuditLogEntityTypeEnum.GROUP,
         AuditLogOperationTypeEnum.CREATE,
-        GROUP_A_ID);
+        groupId);
   }
 
   @Test
@@ -425,15 +409,22 @@ public class AuditLogIdentityOperationsIT {
 
   @Test
   void shouldTrackGroupAssign(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var groupId = "group-" + Strings.newRandomValidIdentityId();
+
+    client.newCreateGroupCommand().groupId(groupId).name(groupId).send().join();
+    awaitAuditLogEntry(
+        client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.CREATE, groupId);
+
     // when
+    client.newAssignUserToGroupCommand().username(DEFAULT_USERNAME).groupId(groupId).send().join();
     final var auditLogs =
         awaitAuditLogEntry(
-            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, GROUP_A_ID);
+            client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, groupId);
 
     // then
-    final var result = findByEntityKey(auditLogs, GROUP_A_ID);
-    assertAuditLog(
-        result, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, GROUP_A_ID);
+    final var result = findByEntityKey(auditLogs, groupId);
+    assertAuditLog(result, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, groupId);
     assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
@@ -467,21 +458,32 @@ public class AuditLogIdentityOperationsIT {
 
   @Test
   void shouldTrackMappingRuleCreate(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var mappingRuleId = "rule-" + Strings.newRandomValidIdentityId();
+
     // when
+    client
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
+        .name("Test Mapping Rule")
+        .claimName(TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME)
+        .claimValue("test-claim-value")
+        .send()
+        .join();
     final var auditLogs =
         awaitAuditLogEntry(
             client,
             AuditLogEntityTypeEnum.MAPPING_RULE,
             AuditLogOperationTypeEnum.CREATE,
-            MAPPING_RULE_A.id());
+            mappingRuleId);
 
     // then
-    final var result = findByEntityKey(auditLogs, MAPPING_RULE_A.id());
+    final var result = findByEntityKey(auditLogs, mappingRuleId);
     assertAuditLog(
         result,
         AuditLogEntityTypeEnum.MAPPING_RULE,
         AuditLogOperationTypeEnum.CREATE,
-        MAPPING_RULE_A.id());
+        mappingRuleId);
     assertThat(result.getEntityDescription()).isNotBlank();
   }
 

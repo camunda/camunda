@@ -15,9 +15,10 @@ import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,7 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,7 +103,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
   }
 
@@ -111,7 +112,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
   }
 

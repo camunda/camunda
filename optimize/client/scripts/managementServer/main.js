@@ -35,8 +35,7 @@ socket.onmessage = function (evt) {
   let logContainer;
   if (content.type === 'docker') {
     let subType = entry.textContent.split('|')[0].trim();
-
-    if (['elasticsearch', 'zeebe', 'keycloak', 'identity'].includes(subType)) {
+    if (['elasticsearch', 'camunda', 'keycloak', 'identity'].includes(subType)) {
       logContainer = document.querySelector('#' + subType);
       const regex = new RegExp(subType + '\\s*\\|\\s', 'g');
       entry.textContent = entry.textContent.replace(regex, '');

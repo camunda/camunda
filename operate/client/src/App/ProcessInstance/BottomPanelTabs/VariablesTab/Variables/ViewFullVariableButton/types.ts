@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export interface MaximizeButtonProps {
+interface MaximizeButtonProps {
   onClick: () => void;
 }
 
@@ -15,25 +15,34 @@ interface ViewFullVariableBaseProps {
   shouldSubmitOnApply?: boolean;
 }
 
-export interface ViewFullVariableButtonAddProps extends ViewFullVariableBaseProps {
+interface ViewFullVariableButtonAddProps extends ViewFullVariableBaseProps {
   mode: 'add';
   scopeId: string | null;
 }
 
-export interface ViewFullVariableButtonEditProps extends ViewFullVariableBaseProps {
+interface ViewFullVariableButtonEditProps extends ViewFullVariableBaseProps {
   mode: 'edit';
   variableValue: string;
   variableKey: string;
 }
 
-export interface ViewFullVariableButtonShowProps extends ViewFullVariableBaseProps {
+interface ViewFullVariableButtonShowProps extends ViewFullVariableBaseProps {
   mode: 'show';
   variableValue: string;
   variableKey: string;
   buttonLabel?: string;
+  canEdit?: boolean;
 }
 
-export type ViewFullVariableWrapperProps =
+type ViewFullVariableWrapperProps =
   | ViewFullVariableButtonAddProps
   | ViewFullVariableButtonEditProps
   | ViewFullVariableButtonShowProps;
+
+export type {
+  MaximizeButtonProps,
+  ViewFullVariableButtonAddProps,
+  ViewFullVariableButtonEditProps,
+  ViewFullVariableButtonShowProps,
+  ViewFullVariableWrapperProps,
+};

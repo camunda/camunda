@@ -25,7 +25,7 @@ public class CamundaClientWorkerProperties {
 
   /**
    * Properties for overriding settings of individual job workers registered to the Camunda client.
-   * The key of the override is the job type.
+   * The key of the override is the job type or worker name.
    */
   private Map<String, CamundaClientJobWorkerProperties> override = new HashMap<>();
 

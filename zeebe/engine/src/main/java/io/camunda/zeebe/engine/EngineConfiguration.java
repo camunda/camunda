@@ -63,6 +63,7 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
@@ -106,6 +107,7 @@ public final class EngineConfiguration {
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
+  private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -485,6 +487,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setIncludeVariablesInJobCompletedEvent(
       final boolean includeVariablesInJobCompletedEvent) {
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    return this;
+  }
+
+  public boolean isEnableRpaReexportMigration() {
+    return enableRpaReexportMigration;
+  }
+
+  public EngineConfiguration setEnableRpaReexportMigration(
+      final boolean enableRpaReexportMigration) {
+    this.enableRpaReexportMigration = enableRpaReexportMigration;
     return this;
   }
 }

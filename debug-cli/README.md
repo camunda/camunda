@@ -47,6 +47,22 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
     debug-cli topology -s -f /path/to/topology.meta --source /path/to/input.json
     ```
 
+#### `sbe`
+
+- **Description:**
+  Decode an SBE-encoded file to JSON using a user-provided schema.
+- **Options:**
+  - `-s`, `--schema`: Path to the SBE schema (`.xml` or `.sbeir`).
+  - `-o`, `--offset`: Byte offset where the SBE message header starts. Defaults to `0`.
+  - `-f`, `--file`: Path to the encoded input file.
+  - `FILE`: Positional alternative to `--file`.
+- **Examples:**
+
+  ```
+  debug-cli sbe --schema /path/to/protocol.xml /path/to/message.bin
+  debug-cli sbe --schema /path/to/raft-entry-schema.xml -f /path/to/default-partition-1.meta --offset 1
+  ```
+
 #### `help`
 
 - **Description:** Show help for the CLI or any subcommand.
@@ -55,6 +71,7 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
   ```
   debug-cli --help
   debug-cli topology --help
+  debug-cli sbe --help
   ```
 
 ## License

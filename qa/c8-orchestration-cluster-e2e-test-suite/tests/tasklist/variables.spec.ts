@@ -7,16 +7,21 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+
+const MANY_VARIABLES = Object.fromEntries(
+  Array.from({length: 60}, (_, i) => [`variable_${i}`, `value_${i}`]),
+);
 
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_with_variables.bpmn',
     './resources/usertask_with_variables2.bpmn',
     './resources/usertask_without_variables.bpmn',
+    './resources/usertask_with_many_variables.bpmn',
   ]);
   await createInstances('usertask_without_variables', 1, 1);
   await createInstances('usertask_with_variables', 1, 3, {
@@ -25,6 +30,7 @@ test.beforeAll(async () => {
   await createInstances('usertask_with_variables2', 1, 1, {
     testData: 'something',
   });
+  await createInstances('usertask_with_many_variables', 1, 1, MANY_VARIABLES);
 });
 
 test.describe('variables page', () => {
@@ -165,6 +171,47 @@ test.describe('variables page', () => {
     await expect(
       taskDetailsPage.variablesTable.getByText('newVariableValue'),
     ).toBeHidden();
+  });
+
+  test('loads all variables via infinite scroll pagination', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('usertask_with_many_variables')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
+    await taskPanelPage.openTask('usertask_with_many_variables');
+
+    await expect(
+      taskDetailsPage.variablesTable
+
+        .getByRole('cell', {
+          name: /^variable_\d+$/,
+        })
+        .first(),
+    ).toBeVisible({timeout: 30000});
+
+    // Use mouse-wheel scroll (the pattern used in operateProcessesPage's
+    // scrollUntilElementIsVisible). Setting `scrollTop = scrollHeight` on
+    // `variablesTable.locator('..')` works locally but doesn't reliably
+    // trigger the lazy loader on slow CI runners — only ~13 of 60 cells end
+    // up rendered. Wheel events dispatch real scroll events, which the
+    // virtual list's intersection observer responds to consistently.
+    const targetCell = taskDetailsPage.variablesTable.getByRole('cell', {
+      name: 'variable_59',
+    });
+    await taskDetailsPage.variablesTable.hover();
+    await expect(async () => {
+      if (!(await targetCell.isVisible())) {
+        await taskDetailsPage.variablesTable.page().mouse.wheel(0, 600);
+      }
+      await expect(targetCell).toBeVisible();
+    }).toPass({timeout: 60000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({

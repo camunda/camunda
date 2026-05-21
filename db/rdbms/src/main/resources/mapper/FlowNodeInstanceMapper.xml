@@ -105,16 +105,16 @@
         <foreach collection="filter.types" item="value" open="(" separator=", " close=")">#{value}
         </foreach>
       </if>
-      <if test="filter.flowNodeIds != null and !filter.flowNodeIds.isEmpty()">
-        AND FLOW_NODE_ID IN
-        <foreach collection="filter.flowNodeIds" item="value" open="(" separator=", " close=")">
-          #{value}
+      <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">
+        <foreach collection="filter.flowNodeIdOperations" item="operation">
+          AND FLOW_NODE_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.flowNodeNames != null and !filter.flowNodeNames.isEmpty()">
-        AND FLOW_NODE_NAME IN
-        <foreach collection="filter.flowNodeNames" item="value" open="(" separator=", " close=")">
-          #{value}
+      <if test="filter.flowNodeNameOperations != null and !filter.flowNodeNameOperations.isEmpty()">
+        <foreach collection="filter.flowNodeNameOperations" item="operation">
+          AND FLOW_NODE_NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if

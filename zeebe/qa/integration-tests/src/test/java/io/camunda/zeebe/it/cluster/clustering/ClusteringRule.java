@@ -38,6 +38,7 @@ import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -114,12 +115,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
+/**
+ * @deprecated Do not use this class in new tests. It is a JUnit 4 {@link
+ *     org.junit.rules.ExternalResource} that wires up an embedded cluster manually, which is
+ *     fragile and hard to maintain. New tests should use the {@code @ZeebeIntegration} JUnit 5
+ *     extension together with {@link io.camunda.zeebe.qa.util.cluster.TestCluster}, which provides
+ *     the same multi-broker/multi-partition capabilities with a cleaner lifecycle and better
+ *     isolation.
+ */
+@Deprecated
 public class ClusteringRule extends ExternalResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
-      PartitionManagerImpl.GROUP_NAME + "/partitions/1";
+      PartitionManagerImpl.DEFAULT_GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -382,9 +392,11 @@ public class ClusteringRule extends ExternalResource {
             null,
             null,
             null,
+            new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     final Broker broker =
         new Broker(

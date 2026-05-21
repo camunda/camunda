@@ -13,6 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
@@ -27,13 +28,13 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,10 +59,9 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
-    ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getProcessDefinitionKeyQuery(filter.processDefinitionKeys()))
-        .ifPresent(queries::add);
-    ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
+    queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
+    queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
+    queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
@@ -168,12 +168,15 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return or(queries);
   }
 
-  private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
-    return longTerms(PROCESS_INSTANCE_ID, processInstanceKeys);
+  private List<SearchQuery> getProcessInstanceKeyQuery(
+      final List<Operation<Long>> processInstanceKeys) {
+    return longOperations(PROCESS_INSTANCE_ID, processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
-    return longTerms(PROCESS_DEFINITION_ID, processDefinitionIds);
+  private List<SearchQuery> getProcessDefinitionKeyQuery(
+      final List<Operation<Long>> processDefinitionKeys) {
+    // In ElasticSearch, "processDefinitionKey" is stored in field "processDefinitionId"
+    return longOperations(PROCESS_DEFINITION_ID, processDefinitionKeys);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
@@ -223,8 +226,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return stringOperations(TENANT_ID, tenant);
   }
 
-  private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
-    return stringTerms(BPMN_PROCESS_ID, bpmnProcessId);
+  private List<SearchQuery> getProcessDefinitionIdsQuery(
+      final List<Operation<String>> processDefinitionIds) {
+    // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
+    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 
   private SearchQuery getElementInstanceKeyQuery(final List<Long> elementInstanceKeys) {

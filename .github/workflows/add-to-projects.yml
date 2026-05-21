@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@732a017b858dbc516d87dbe0780fafb770532ed7 # main
         with:
           github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -27,7 +27,7 @@ jobs:
       - id: add-to-zdp
         if: github.event.action != 'labeled' || github.event.label.name == 'component/zeebe'
         name: Add to ZDP project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ steps.github-token.outputs.token }}
@@ -36,7 +36,7 @@ jobs:
       - id: add-operate-to-core-features
         if: github.event.action != 'labeled' || github.event.label.name == 'component/operate'
         name: Add Operate issues to Core Features project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ steps.github-token.outputs.token }}
@@ -45,7 +45,7 @@ jobs:
       - id: add-tasklist-to-core-features
         if: github.event.action != 'labeled' || github.event.label.name == 'component/tasklist'
         name: Add Tasklist issues to Core Features project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ steps.github-token.outputs.token }}
@@ -54,7 +54,7 @@ jobs:
       - id: add-optimize-to-core-features
         if: github.event.action != 'labeled' || github.event.label.name == 'component/optimize'
         name: Add Optimize issues to Core Features project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ steps.github-token.outputs.token }}
@@ -63,7 +63,7 @@ jobs:
       - id: add-to-data-layer
         if: github.event.action != 'labeled' || github.event.label.name == 'component/data-layer'
         name: Add to Data Layer project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/184
           github-token: ${{ steps.github-token.outputs.token }}
@@ -75,7 +75,7 @@ jobs:
             (github.event.label.name == 'component/c8-api'
               && github.event.label.name == 'kind/proposal')
         name: Add to C8 Rest API Proposals
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/111
           github-token: ${{ steps.github-token.outputs.token }}
@@ -85,7 +85,7 @@ jobs:
       - id: add-to-connectors
         if: github.event.action != 'labeled' || github.event.label.name == 'component/connectors'
         name: Add to Connectors project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/23
           github-token: ${{ steps.github-token.outputs.token }}
@@ -97,7 +97,7 @@ jobs:
             || github.event.label.name == 'component/identity'
             || github.event.label.name == 'component/management-identity'
         name: Add to Identity project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/209
           github-token: ${{ steps.github-token.outputs.token }}
@@ -105,7 +105,7 @@ jobs:
       - id: add-to-distribution
         if: github.event.action != 'labeled' || github.event.label.name == 'component/c8run'
         name: Add to Distribution Team project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ steps.github-token.outputs.token }}
@@ -114,7 +114,7 @@ jobs:
       - id: add-to-feel
         if: github.event.action != 'labeled' || github.event.label.name == 'component/feel-js'
         name: Add to Feel Team project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ steps.github-token.outputs.token }}
@@ -126,7 +126,7 @@ jobs:
             || github.event.label.name == 'component/build-pipeline'
             || github.event.label.name == 'component/release'
         name: Add to Monorepo DevOps Team project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/115
           github-token: ${{ steps.github-token.outputs.token }}
@@ -141,7 +141,7 @@ jobs:
             || github.event.label.name == 'component/camunda-process-test'
             || github.event.label.name == 'component/c8-api'
         name: Add to CamundaEx Team project
-        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/camunda/projects/182
           github-token: ${{ steps.github-token.outputs.token }}
@@ -154,7 +154,7 @@ jobs:
         # extracts the labels for component and severity and sets them in the project accordingly.
         # The action must be triggered for any label change to keep the project data up to date.
         name: Add issue to Quality Board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # main
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@732a017b858dbc516d87dbe0780fafb770532ed7 # main
         with:
           github-token: ${{ steps.github-token.outputs.token }}
           project-number: "187"

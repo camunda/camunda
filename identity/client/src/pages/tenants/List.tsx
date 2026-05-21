@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { TrashCan } from "@carbon/react/icons";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -17,6 +17,7 @@ import { searchTenant } from "src/utility/api/tenants";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
+import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -34,6 +35,7 @@ const List: FC = () => {
   } = usePaginatedApi(searchTenant);
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
@@ -78,6 +80,7 @@ const List: FC = () => {
         onAddEntity={addTenant}
         loading={loading}
         menuItems={[
+          { label: t("edit"), icon: Edit, onClick: editTenant },
           {
             label: t("delete"),
             icon: TrashCan,
@@ -101,6 +104,7 @@ const List: FC = () => {
         />
       )}
       {addTenantModal}
+      {editTenantModal}
       {deleteTenantModal}
     </Page>
   );

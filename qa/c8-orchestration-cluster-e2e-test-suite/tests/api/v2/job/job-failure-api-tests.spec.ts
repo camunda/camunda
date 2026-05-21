@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
   assertBadRequest,
@@ -19,6 +19,7 @@ import {
   activateJobToObtainAValidJobKey,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {defaultAssertionOptions} from 'utils/constants';
 
 const runSuffix = randomUUID().slice(0, 8);
 const processId = `jobApiProcess-failure-${runSuffix}`;
@@ -44,15 +45,17 @@ test.describe('Job Fail API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     // Now fail the job
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: 0,
-        errorMessage: 'Simulated failure',
-      },
-    });
+    await expect(async () => {
+      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
+        headers: jsonHeaders(),
+        data: {
+          retries: 0,
+          errorMessage: 'Simulated failure',
+        },
+      });
 
-    await assertStatusCode(failRes, 204);
+      await assertStatusCode(failRes, 204);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Fail Job - Job not found', async ({request}) => {
@@ -95,17 +98,19 @@ test.describe('Job Fail API Tests', () => {
     });
 
     await test.step('fail the job for the first time', async () => {
-      const failRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
-        {
-          headers: jsonHeaders(),
-          data: {
-            retries: 0,
-            errorMessage: 'Simulated failure',
+      await expect(async () => {
+        const failRes = await request.post(
+          buildUrl(`/jobs/${localState['jobKey']}/failure`),
+          {
+            headers: jsonHeaders(),
+            data: {
+              retries: 0,
+              errorMessage: 'Simulated failure',
+            },
           },
-        },
-      );
-      await assertStatusCode(failRes, 204);
+        );
+        await assertStatusCode(failRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('fail the job for the second time', async () => {

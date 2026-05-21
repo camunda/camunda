@@ -242,7 +242,7 @@ public class UserTaskCreatingHandlerTest {
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), false));
+            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), false, Map.of()));
 
     // when
     final TaskEntity taskEntity =

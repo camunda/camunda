@@ -28,7 +28,9 @@ import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -97,6 +99,7 @@ public class PartitionRestoreService {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
         }
+        renameLegacyJournalFiles(restoreTarget);
         copyBetweenCheckpoints(previousBackup, backup, restoreTarget, restoredJournal);
         previousBackup = backup;
         FileUtil.deleteFolder(restoreTarget);
@@ -204,6 +207,34 @@ public class PartitionRestoreService {
     throw new IllegalStateException(
         "Failed to restore from backup. Cannot find a record at checkpoint position %d in the log."
             .formatted(checkpointPosition));
+  }
+
+  /**
+   * Renames any journal segment files in the restore target that use the legacy partition group
+   * name {@code raft-partition} to the current partition name. This allows restoring backups taken
+   * with the old partition group naming (see #50538) by a broker using the new {@code default}
+   * naming.
+   *
+   * <p>The source {@link SegmentedJournal} used by {@link #copyBetweenCheckpoints} discovers
+   * segments by exact prefix match against {@link RaftPartition#name()}; without this rename, files
+   * from old backups are invisible to it and the restore fails with a missing checkpoint.
+   */
+  private void renameLegacyJournalFiles(final Path restoreTarget) throws IOException {
+    final var legacyPrefix = "raft-partition-partition-" + partitionId;
+    final var currentPrefix = partition.name();
+    if (legacyPrefix.equals(currentPrefix)) {
+      return;
+    }
+    try (final var files = Files.newDirectoryStream(restoreTarget)) {
+      for (final var file : files) {
+        final var fileName = file.getFileName().toString();
+        if (fileName.startsWith(legacyPrefix + "-") && fileName.endsWith(".log")) {
+          final var newName = currentPrefix + fileName.substring(legacyPrefix.length());
+          LOG.debug("Renaming legacy journal file {} to {}", fileName, newName);
+          Files.move(file, restoreTarget.resolve(newName), StandardCopyOption.ATOMIC_MOVE);
+        }
+      }
+    }
   }
 
   private void moveSnapshotFiles(final Backup backup) {

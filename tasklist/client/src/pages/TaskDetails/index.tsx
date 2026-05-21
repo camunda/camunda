@@ -77,10 +77,19 @@ const TaskDetails: React.FC = observer(() => {
     if (autoSelectNextTaskEnabled) {
       const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
       const openTasks = newTasks.filter(({state}) => state === 'CREATED');
-      if (openTasks.length > 1 && openTasks[0].userTaskKey === id) {
-        autoSelectGoToTask(openTasks[1].userTaskKey);
-      } else if (openTasks.length > 0 && openTasks[0].userTaskKey !== id) {
-        autoSelectGoToTask(openTasks[0].userTaskKey);
+      const [firstOpenTask, secondOpenTask] = openTasks;
+
+      if (
+        firstOpenTask !== undefined &&
+        secondOpenTask !== undefined &&
+        firstOpenTask.userTaskKey === id
+      ) {
+        autoSelectGoToTask(secondOpenTask.userTaskKey);
+      } else if (
+        firstOpenTask !== undefined &&
+        firstOpenTask.userTaskKey !== id
+      ) {
+        autoSelectGoToTask(firstOpenTask.userTaskKey);
       } else {
         navigate({
           pathname: pages.initial,

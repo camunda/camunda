@@ -17,7 +17,7 @@ import {
   searchResult,
   createProcessInstance,
 } from 'modules/testUtils';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
@@ -354,7 +354,7 @@ describe('Instances', () => {
     });
   });
 
-  it('should hide Operation State column when Operation Id filter is not set', async () => {
+  it('should hide Operation State column when batch operation key filter is not set', async () => {
     mockSearchProcessInstances().withSuccess(
       mockProcessInstancesV2WithOperation,
     );
@@ -370,9 +370,9 @@ describe('Instances', () => {
     expect(screen.queryByText('Operation State')).not.toBeInTheDocument();
   });
 
-  it('should show Operation State column when Operation Id filter is set', async () => {
+  it('should show Operation State column when batch operation key filter is set', async () => {
     const queryString =
-      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+      '?batchOperationKey=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -399,7 +399,7 @@ describe('Instances', () => {
 
   it('should show correct error message when error row is expanded', async () => {
     const queryString =
-      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+      '?batchOperationKey=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -448,7 +448,7 @@ describe('Instances', () => {
 
   it('should display correct operation from process instance with multiple operations', async () => {
     const queryString =
-      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+      '?batchOperationKey=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,

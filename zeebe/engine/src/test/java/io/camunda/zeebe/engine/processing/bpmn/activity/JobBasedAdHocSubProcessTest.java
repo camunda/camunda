@@ -1203,6 +1203,65 @@ public class JobBasedAdHocSubProcessTest {
         .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
   }
 
+  @Test
+  public void shouldNotLeakInnerInstanceLocalVariablesWhenActivityHasOutputMapping() {
+    // given
+    final var ahspJobType = UUID.randomUUID().toString();
+    final var taskJobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(
+            ahspJobType,
+            adHocSubProcess ->
+                adHocSubProcess
+                    .serviceTask("A", t -> t.zeebeJobType(taskJobType))
+                    .zeebeOutputExpression("=1", "outputResult"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - the ad-hoc job worker activates A and sets `toolCall` local on the inner instance
+    completeJob(ahspJobType, false, false, activateElement("A", Map.of("toolCall", "abc")));
+
+    // ... and the activated service task completes, triggering applyOutputMappings on A
+    final var taskJobKey =
+        ENGINE.jobs().withType(taskJobType).activate().getValue().getJobKeys().getFirst();
+    ENGINE.job().withKey(taskJobKey).complete();
+
+    // then - wait for A's inner instance to complete (output mapping has run by then)
+    final var innerInstanceCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_INNER_ELEMENT_ID)
+            .getFirst();
+
+    // complete the ad-hoc sub-process
+    // guaranteed that all variable records of interest have been exported
+    completeJob(ahspJobType, true, false);
+    final var processCompleted =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(PROCESS_ID)
+            .getFirst();
+
+    // sanity check: the output mapping was actually applied
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("outputResult")
+                .exists())
+        .as("output mapping for service task A must have produced `outputResult`")
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= processCompleted.getPosition())
+                .variableRecords()
+                .withIntents(VariableIntent.CREATED, VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("toolCall"))
+        .extracting(r -> r.getValue().getScopeKey())
+        .containsOnly(innerInstanceCompleted.getKey());
+  }
+
   private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,

@@ -67,7 +67,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
             hideLabel
             labelText="Name"
             onBlur={() => {
-              form.mutators?.triggerValidation?.(
+              form.mutators?.['triggerValidation']?.(
                 createNewVariableFieldName(variableName, 'name'),
               );
 

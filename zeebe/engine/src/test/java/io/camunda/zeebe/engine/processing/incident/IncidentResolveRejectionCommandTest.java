@@ -281,4 +281,67 @@ public class IncidentResolveRejectionCommandTest {
             "Rejection record should have empty elementInstancePath when incident not found")
         .isEmpty();
   }
+
+  @Test
+  public void shouldRejectIncidentResolveForBannedProcessInstance() {
+    // given - create a process instance with a job incident
+    final String processId = Strings.newRandomValidBpmnId();
+    final String jobType = Strings.newRandomValidBpmnId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .withTenantId(TENANT)
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withTenantId(TENANT).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.jobs().withType(jobType).withTenantId(TENANT).activate(USERNAME);
+
+    final var failedEvent =
+        ENGINE.job().withType(jobType).ofInstance(processInstanceKey).withRetries(0).fail(USERNAME);
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withJobKey(failedEvent.getKey())
+            .getFirst();
+
+    // Update retries to allow incident resolution
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(jobType)
+        .withRetries(1)
+        .updateRetries(USERNAME);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when - try to resolve the incident
+    final var rejectionRecord =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .expectRejection()
+            .resolve(USERNAME);
+
+    // then
+    assertThat(rejectionRecord)
+        .hasIntent(IncidentIntent.RESOLVE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
+  }
 }

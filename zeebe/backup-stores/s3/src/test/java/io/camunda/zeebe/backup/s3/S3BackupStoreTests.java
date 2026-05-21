@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.util.S3TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -288,9 +289,10 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   default void shouldListBackupsForBothStructures() throws IOException {
     // given
     final var legacyBackup =
-        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), true);
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), "8.8.0");
     final var backup =
-        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 10), false);
+        S3TestBackupProvider.simpleBackupWithId(
+            new BackupIdentifierImpl(1, 2, 10), VersionUtil.getVersion());
 
     getStore().save(legacyBackup).join();
     getStore().save(backup).join();
@@ -311,9 +313,10 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   default void backupStructureShouldBeDistinct() throws IOException {
     // given
     final var legacyBackup =
-        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), true);
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), "8.8.0");
     final var backup =
-        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 10), false);
+        S3TestBackupProvider.simpleBackupWithId(
+            new BackupIdentifierImpl(1, 2, 10), VersionUtil.getVersion());
 
     // when
     getStore().save(legacyBackup).join();

@@ -80,7 +80,7 @@ public class UserTaskVariableSearchRequestImpl
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,
-        SearchResponseMapper::toVariableSearchResponse,
+        r -> SearchResponseMapper.toVariableSearchResponse(r, jsonMapper),
         result);
     return result;
   }

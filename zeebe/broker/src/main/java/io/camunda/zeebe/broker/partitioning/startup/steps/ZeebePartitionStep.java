@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 
@@ -28,15 +29,21 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    final var zeebePartition =
-        context
-            .zeebePartitionFactory()
-            .constructPartition(
-                context.raftPartition(),
-                context.snapshotStore(),
-                context.initialPartitionConfig(),
-                context.brokerHealthCheckService(),
-                context.partitionMeterRegistry());
+    final ZeebePartition zeebePartition;
+    try {
+      zeebePartition =
+          context
+              .zeebePartitionFactory()
+              .constructPartition(
+                  context.raftPartition(),
+                  context.snapshotStore(),
+                  context.initialPartitionConfig(),
+                  context.brokerHealthCheckService(),
+                  context.partitionMeterRegistry());
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+      return result;
+    }
     final var submit = context.schedulingService().submitActor(zeebePartition);
     context
         .concurrencyControl()

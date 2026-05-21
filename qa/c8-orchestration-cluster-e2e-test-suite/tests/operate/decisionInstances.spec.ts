@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {deploy} from 'utils/zeebeClient';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 
 interface DecisionInfo {
@@ -51,9 +51,8 @@ test.describe('Decision Instances', () => {
     await sleep(2000);
   });
 
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 

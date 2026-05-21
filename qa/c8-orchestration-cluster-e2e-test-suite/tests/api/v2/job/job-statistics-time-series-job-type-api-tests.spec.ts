@@ -16,6 +16,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {
   createUser,
   grantUserResourceAuthorization,
@@ -97,40 +98,53 @@ test.describe
       }
 
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
-              resolution,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+                resolution,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        const extendedItem = extendedResponseBody.items[0];
+        expect(extendedItem).toBeDefined();
+        expect(extendedItem.created.count).toBe(item.created.count);
+        expect(extendedItem.completed.count).toBe(item.completed.count);
+        expect(extendedItem.failed.count).toBe(item.failed.count);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -175,7 +189,7 @@ test.describe
       res,
     );
     const responseBody = await res.json();
-    expect(responseBody.items.length).toBe(0);
+    expect(responseBody.items).toHaveLength(0);
   });
 
   test('Get time-series metrics for a job type with no jobtype parameter - Bad Request', async ({
@@ -231,41 +245,54 @@ test.describe
           break;
         }
       }
-      
+
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        const extendedItem = extendedResponseBody.items[0];
+        expect(extendedItem).toBeDefined();
+        expect(extendedItem.created.count).toBe(item.created.count);
+        expect(extendedItem.completed.count).toBe(item.completed.count);
+        expect(extendedItem.failed.count).toBe(item.failed.count);
+      }).toPass(extendedAssertionOptions);
     });
   });
 
@@ -296,6 +323,6 @@ test.describe
       res,
     );
     const responseBody = await res.json();
-    expect(responseBody.items.length).toBe(0);
+    expect(responseBody.items).toHaveLength(0);
   });
 });

@@ -16,8 +16,10 @@
 package io.camunda.process.test.utils;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 public class MessageSubscriptionBuilder implements MessageSubscription {
 
@@ -33,6 +35,12 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private String correlationKey;
   private String tenantId;
   private MessageSubscriptionState messageSubscriptionState;
+  private MessageSubscriptionType messageSubscriptionType;
+  private String processDefinitionName;
+  private Integer processDefinitionVersion;
+  private Map<String, String> toolProperties;
+  private String toolName;
+  private String inboundConnectorType;
 
   @Override
   public Long getMessageSubscriptionKey() {
@@ -75,6 +83,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   }
 
   @Override
+  public MessageSubscriptionType getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  @Override
   public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
@@ -94,6 +107,47 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
     return tenantId;
   }
 
+  @Override
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  @Override
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  @Override
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
+  }
+
+  @Override
+  public String getToolName() {
+    return toolName;
+  }
+
+  @Override
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public MessageSubscriptionBuilder setToolProperties(final Map<String, String> toolProperties) {
+    this.toolProperties = toolProperties;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+    return this;
+  }
+
   public MessageSubscriptionBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
@@ -111,6 +165,12 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setLastUpdatedDate(final OffsetDateTime lastUpdatedDate) {
     this.lastUpdatedDate = lastUpdatedDate;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setMessageSubscriptionType(
+      final MessageSubscriptionType messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
     return this;
   }
 
@@ -152,6 +212,16 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setMessageSubscriptionKey(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
     return this;
   }
 

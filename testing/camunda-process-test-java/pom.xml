@@ -15,7 +15,7 @@
 
   <properties>
     <version.java>8</version.java>
-    <maven-commit-id-plugin-version>9.1.0</maven-commit-id-plugin-version>
+    <maven-commit-id-plugin-version>10.0.0</maven-commit-id-plugin-version>
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
@@ -29,6 +29,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-json-test-cases</artifactId>
+    </dependency>
+
+    <!-- Frontend coverage report resources (bundled by camunda-process-test-coverage-frontend-new) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
     </dependency>
 
     <dependency>
@@ -182,11 +188,6 @@
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
       </resource>
-      <!-- Frontend files with filtering disabled -->
-      <resource>
-        <filtering>false</filtering>
-        <directory>target/generated-frontend-resources</directory>
-      </resource>
     </resources>
 
     <plugins>
@@ -199,55 +200,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-
-      <!-- Coverage frontend build with frontend-maven-plugin -->
-      <plugin>
-        <groupId>com.github.eirslett</groupId>
-        <artifactId>frontend-maven-plugin</artifactId>
-        <configuration>
-          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</workingDirectory>
-          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</installDirectory>
-        </configuration>
-        <executions>
-          <!-- Install Node and NPM -->
-          <execution>
-            <id>install-node-and-npm</id>
-            <goals>
-              <goal>install-node-and-npm</goal>
-            </goals>
-            <phase>initialize</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <nodeVersion>v24.13.0</nodeVersion>
-              <npmVersion>11.9.0</npmVersion>
-            </configuration>
-          </execution>
-          <!-- Install dependencies -->
-          <execution>
-            <id>npm-install</id>
-            <goals>
-              <goal>npm</goal>
-            </goals>
-            <phase>initialize</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <arguments>install</arguments>
-            </configuration>
-          </execution>
-          <!-- Build frontend (output: target/generated-frontend-resources/coverage) -->
-          <execution>
-            <id>npm-build</id>
-            <goals>
-              <goal>npm</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <arguments>run build</arguments>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -307,15 +259,23 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>analyze-dependencies</id>
+            <configuration>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <dep>io.camunda:camunda-process-test-coverage-frontend-new</dep>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>skipFrontendBuild</id>
-      <properties>
-        <skip.fe.build>true</skip.fe.build>
-      </properties>
-    </profile>
-  </profiles>
 </project>

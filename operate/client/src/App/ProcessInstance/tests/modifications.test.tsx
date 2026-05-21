@@ -23,6 +23,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockModifyProcessInstance} from 'modules/mocks/api/v2/processInstances/modifyProcessInstance';
+import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/stores/process', () => ({
@@ -198,6 +199,9 @@ describe('ProcessInstance - modification mode', () => {
         },
       ]),
     );
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([]),
+    );
 
     updateSearchParams({elementId: 'taskD'});
 
@@ -282,6 +286,9 @@ describe('ProcessInstance - modification mode', () => {
           endDate: null,
         },
       ]),
+    );
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([]),
     );
     mockSearchJobs().withSuccess(searchResult([]));
     mockSearchJobs().withSuccess(searchResult([]));

@@ -16,6 +16,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
+import io.camunda.exporter.handlers.AgentInstanceHandler;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
@@ -48,10 +49,13 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
+import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ResourceCreatedHandler;
+import io.camunda.exporter.handlers.ResourceDeletedHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
 import io.camunda.exporter.handlers.RoleMemberAddedHandler;
@@ -100,6 +104,7 @@ import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -109,6 +114,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -186,7 +192,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                configuration.getExtensionProperties()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     decisionRequirementsCache =
@@ -276,7 +283,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                processCache,
+                configuration.getExtensionProperties()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -284,7 +293,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(HistoryDeletionIndex.class).getFullQualifiedName()),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
-                exporterMetadata),
+                exporterMetadata,
+                processCache,
+                configuration.getExtensionProperties()),
+            new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
+                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
+                processCache,
+                configuration.getExtensionProperties()),
             new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
@@ -323,6 +338,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
+            new AgentInstanceHandler(
+                indexDescriptors.get(AgentInstanceTemplate.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
@@ -382,7 +399,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GlobalListenerCreatedUpdatedHandler(
                 indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
             new GlobalListenerDeletedHandler(
-                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName())));
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
+            new ResourceCreatedHandler(
+                indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName()),
+            new ResourceDeletedHandler(
+                indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName())));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);

@@ -124,7 +124,7 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
       );
 
       const body = await res.json();
-      expect(body.items.length).toEqual(1);
+      expect(body.items).toHaveLength(1);
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       assertEqualsForKeys(
         decisionRequirementToSearch,
@@ -180,7 +180,7 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
       );
 
       const body = await res.json();
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
       expect(body.page.totalItems).toEqual(0);
     }).toPass(defaultAssertionOptions);
   });

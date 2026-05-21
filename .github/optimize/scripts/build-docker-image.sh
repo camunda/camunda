@@ -22,7 +22,6 @@ docker buildx create --use
 export VERSION="${VERSION}"
 export DATE="$(date +%FT%TZ)"
 export REVISION="${REVISION}"
-export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
 
 # if CI (GHA) export the variables for pushing in a later step
 if [ "${CI}" = "true" ]; then

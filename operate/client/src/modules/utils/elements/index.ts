@@ -14,11 +14,11 @@ import type {
 import type {DiagramModel} from 'bpmn-moddle';
 import {SUBPROCESS_WITH_INCIDENTS} from 'modules/bpmn-js/badgePositions';
 
-export function isFlowNode(businessObject: BusinessObject) {
+function isFlowNode(businessObject: BusinessObject) {
   return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
 }
 
-export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
+function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   if (elementsById === undefined) {
     return [];
   }
@@ -28,7 +28,7 @@ export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   );
 }
 
-export function getElement({
+function getElement({
   businessObjects,
   elementId,
 }: {
@@ -38,7 +38,7 @@ export function getElement({
   return elementId ? businessObjects?.[elementId] : undefined;
 }
 
-export function getElementName({
+function getElementName({
   businessObjects,
   elementId,
 }: {
@@ -48,7 +48,7 @@ export function getElementName({
   return getElement({businessObjects, elementId})?.name ?? elementId ?? '';
 }
 
-export function getSubprocessOverlayFromIncidentElements(
+function getSubprocessOverlayFromIncidentElements(
   flowNodes?: (BusinessObject | undefined)[],
   type: string = 'elementState',
 ) {
@@ -71,3 +71,11 @@ export function getSubprocessOverlayFromIncidentElements(
 
   return overlays;
 }
+
+export {
+  isFlowNode,
+  getFlowNodes,
+  getElement,
+  getElementName,
+  getSubprocessOverlayFromIncidentElements,
+};

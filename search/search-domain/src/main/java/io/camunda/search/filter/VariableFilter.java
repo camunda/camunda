@@ -21,6 +21,7 @@ public record VariableFilter(
     List<UntypedOperation> valueOperations,
     List<Operation<Long>> scopeKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
     Boolean isTruncated)
@@ -31,6 +32,7 @@ public record VariableFilter(
     private List<UntypedOperation> valueOperations;
     private List<Operation<Long>> scopeKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private Boolean isTruncated;
@@ -115,6 +117,21 @@ public record VariableFilter(
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      processDefinitionKeyOperations = addValuesToList(processDefinitionKeyOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
+      return processDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     public Builder variableKeyOperations(final List<Operation<Long>> operations) {
       variableKeyOperations = addValuesToList(variableKeyOperations, operations);
       return this;
@@ -149,6 +166,7 @@ public record VariableFilter(
           .valueUntypedOperations(sourceFilter.valueOperations)
           .scopeKeyOperations(sourceFilter.scopeKeyOperations())
           .processInstanceKeyOperations(sourceFilter.processInstanceKeyOperations())
+          .processDefinitionKeyOperations(sourceFilter.processDefinitionKeyOperations())
           .variableKeyOperations(sourceFilter.variableKeyOperations())
           .tenantIds(sourceFilter.tenantIds())
           .isTruncated(sourceFilter.isTruncated());
@@ -161,6 +179,7 @@ public record VariableFilter(
           Objects.requireNonNullElseGet(valueOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(processInstanceKeyOperations, Collections::emptyList),
+          Objects.requireNonNullElseGet(processDefinitionKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
           isTruncated);

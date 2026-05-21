@@ -14,8 +14,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * This class contains all project configuration parameters.
  *
  * <p>NOTE: Some of the fields of this object are overridden with values coming from the Unified
- * Configuration system, from the object
- * io.camunda.configuration.beanoverrides.TasklistPropertiesOverride
+ * Configuration system, from the object io.camunda.tasklist.TasklistPropertiesOverride
  */
 public class TasklistProperties {
 
@@ -29,7 +28,7 @@ public class TasklistProperties {
 
   private boolean enterprise = false;
 
-  @Value("${camunda.tasklist.internal.version.current}")
+  @Value("${camunda.tasklist.internal.version.current:unknown-version}")
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty

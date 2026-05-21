@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public interface BatchOperationMapper extends HistoryCleanupMapper {
 
-  void insert(BatchOperationDbModel batchOperationDbModel);
+  void createIfNotExists(BatchOperationDbModel batchOperationDbModel);
 
   void insertItems(BatchOperationItemsDto items);
 

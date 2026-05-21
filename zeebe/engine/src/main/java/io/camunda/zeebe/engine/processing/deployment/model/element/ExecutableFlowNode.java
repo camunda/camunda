@@ -60,7 +60,40 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     this.outputMappings = Optional.of(outputMappings);
   }
 
-  public void addListener(
+  public List<ExecutionListener> getBeforeAllExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+        .toList();
+  }
+
+  public List<ExecutionListener> getStartExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
+        .toList();
+  }
+
+  public List<ExecutionListener> getEndExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
+        .toList();
+  }
+
+  public List<ExecutionListener> getCancelExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel)
+        .toList();
+  }
+
+  public boolean hasCancelExecutionListeners() {
+    return executionListeners.stream()
+        .anyMatch(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel);
+  }
+
+  public boolean hasExecutionListeners() {
+    return !executionListeners.isEmpty();
+  }
+
+  public void addExecutionListener(
       final ZeebeExecutionListenerEventType eventType,
       final Expression type,
       final Expression retries,
@@ -76,19 +109,17 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     executionListeners.add(listener);
   }
 
-  public List<ExecutionListener> getStartExecutionListeners() {
-    return executionListeners.stream()
-        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
-        .toList();
+  public void addExecutionListener(final ExecutionListener listener) {
+    executionListeners.add(listener);
   }
 
-  public List<ExecutionListener> getEndExecutionListeners() {
-    return executionListeners.stream()
-        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
-        .toList();
-  }
-
-  public boolean hasExecutionListeners() {
-    return !executionListeners.isEmpty();
+  /**
+   * Removes all {@code beforeAll} execution listeners from this flow node and returns them. Used
+   * during multi-instance body transformation to re-attach them to the body.
+   */
+  public List<ExecutionListener> removeBeforeAllExecutionListeners() {
+    final List<ExecutionListener> removed = getBeforeAllExecutionListeners();
+    executionListeners.removeAll(removed);
+    return removed;
   }
 }

@@ -74,7 +74,7 @@ public final class StaticConfigurationGenerator {
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
       final PartitioningCfg config) {
     final var distributionBuilder =
-        new FixedPartitionDistributorBuilder(PartitionManagerImpl.GROUP_NAME);
+        new FixedPartitionDistributorBuilder(PartitionManagerImpl.DEFAULT_GROUP_NAME);
 
     for (final var partition : config.getFixed()) {
       for (final var node : partition.getNodes()) {
@@ -97,7 +97,7 @@ public final class StaticConfigurationGenerator {
   private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     // partition ids start from 1
     return IntStream.rangeClosed(1, partitionCount)
-        .mapToObj(p -> PartitionId.from(PartitionManagerImpl.GROUP_NAME, p))
+        .mapToObj(p -> PartitionId.from(PartitionManagerImpl.DEFAULT_GROUP_NAME, p))
         .sorted()
         .toList();
   }

@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.ExtensionProperties;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
@@ -21,6 +22,7 @@ import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,15 +153,19 @@ public final class CamundaExporterConfigurationApplier {
     final HistoryConfiguration target = exporterConfiguration.getHistory();
     target.setProcessInstanceEnabled(source.getHistory().isProcessInstanceEnabled());
     target.setProcessInstanceRetentionMode(source.getHistory().getProcessInstanceRetentionMode());
+    target.setArchiveByIdEnabled(source.getHistory().isArchiveByIdEnabled());
     target.getRetention().setPolicyName(source.getHistory().getPolicyName());
     target.setElsRolloverDateFormat(source.getHistory().getElsRolloverDateFormat());
     target.setRolloverInterval(source.getHistory().getRolloverInterval());
     target.setRolloverBatchSize(source.getHistory().getRolloverBatchSize());
+    target.setReindexBatchSize(source.getHistory().getReindexBatchSize());
     target.setWaitPeriodBeforeArchiving(source.getHistory().getWaitPeriodBeforeArchiving());
+    target.setArchiveByIdRetryDelayMs(source.getHistory().getArchiveByIdRetryDelayMs());
     target.setDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getMaxDelayBetweenRuns().toMillis()));
+    target.setArchiveByIdMaxRetryAttempts(source.getHistory().getArchiveByIdMaxRetryAttempts());
   }
 
   public static void applyPostExportConfiguration(
@@ -239,6 +245,19 @@ public final class CamundaExporterConfigurationApplier {
         .getDecisionRequirementsCache()
         .setMaxCacheSize(source.getDecisionRequirementsCache().getMaxSize());
     exporterConfiguration.getFormCache().setMaxCacheSize(source.getFormCache().getMaxSize());
+  }
+
+  public static void applyExtensionProperties(
+      final ExporterConfiguration exporterConfiguration,
+      final UnifiedConfiguration unifiedConfiguration) {
+
+    final ExtensionProperties source =
+        unifiedConfiguration.getCamunda().getData().getExtensionProperties();
+    final ExtensionPropertyConfiguration target = exporterConfiguration.getExtensionProperties();
+
+    target.setToolNameProperty(source.getToolNameProperty());
+    target.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    target.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(

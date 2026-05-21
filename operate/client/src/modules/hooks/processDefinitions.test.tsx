@@ -114,10 +114,10 @@ describe('useProcessDefinitions', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data![0].label).toBe('Process A');
-    expect(result.current.data![0].identifier).toBe('processA##<default>');
-    expect(result.current.data![1].label).toBe('Process B');
-    expect(result.current.data![1].identifier).toBe('processB##<default>');
+    expect(result.current.data?.[0]?.label).toBe('Process A');
+    expect(result.current.data?.[0]?.identifier).toBe('processA##<default>');
+    expect(result.current.data?.[1]?.label).toBe('Process B');
+    expect(result.current.data?.[1]?.identifier).toBe('processB##<default>');
   });
 });
 

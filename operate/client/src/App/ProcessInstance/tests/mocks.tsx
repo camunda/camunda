@@ -171,6 +171,4 @@ function getWrapper(options?: {
   return Wrapper;
 }
 
-export {getWrapper, updateSearchParams};
-
-export {mockRequests};
+export {getWrapper, updateSearchParams, mockRequests};

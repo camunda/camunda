@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -31,6 +32,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -43,13 +45,16 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
 
+  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
+
   public ExpressionRecord() {
-    super(5);
+    super(6);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(scopeKeyProp);
   }
 
   @Override
@@ -110,6 +115,16 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getScopeKey() {
+    return scopeKeyProp.getValue();
+  }
+
+  public ExpressionRecord setScopeKey(final long scopeKey) {
+    scopeKeyProp.setValue(scopeKey);
     return this;
   }
 }

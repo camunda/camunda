@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
-import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
@@ -27,7 +26,6 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
@@ -128,7 +126,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeConfiguration);
+    camundaManagementClient = createManagementClient();
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -148,6 +146,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(coverageReportConfiguration.getReportDirectory())
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
+            .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
             .build();
 
     // initializations
@@ -183,6 +182,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources
     testDeploymentService.deployTestResources(
@@ -283,18 +285,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+  private CamundaManagementClient createManagementClient() {
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void printTestResults() {
@@ -354,17 +346,21 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final TestContext testContext,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
-    final CamundaClientProperties clientProperties =
-        testContext.getApplicationContext().getBean(CamundaClientProperties.class);
-
     final Map<String, CamundaProcessTestContainerProvider> containerProviders =
         testContext
             .getApplicationContext()
             .getBeansOfType(CamundaProcessTestContainerProvider.class);
     containerProviders.values().forEach(containerRuntimeBuilder::withContainerProvider);
 
+    // Load the CamundaClientBuilderFactory from the Spring context.
+    // This factory applies all camunda.client.* properties (including auth) to the client builder.
+    // It is created in CamundaProcessTestDefaultConfiguration unless overridden by a custom bean.
+    final CamundaClientBuilderFactory clientBuilderFactory =
+        testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
+    containerRuntimeBuilder.withCamundaClientBuilderFactory(clientBuilderFactory);
+
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration, clientProperties);
+        containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(

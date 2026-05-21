@@ -24,7 +24,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {VariableValueCell} from './VariableValueCell';
 
 type Props = {
   scopeId: string | null;
@@ -38,7 +38,7 @@ const VariablesTable: React.FC<Props> = ({
   isVariableModificationAllowed,
 }) => {
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-  const {initialValues} = useFormState();
+  const {initialValues} = useFormState<VariableFormValues>();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
 
@@ -77,23 +77,13 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <InlineJsonEditor
+              <VariableValueCell
+                variableKey={variableKey}
+                variableName={name}
                 value={value}
-                isTruncatedValue={Boolean(isTruncated)}
-                readOnly
-                renderButton={
-                  isTruncated
-                    ? () => (
-                        <ViewFullVariableButton
-                          mode="show"
-                          variableKey={variableKey}
-                          variableName={name}
-                          variableValue={value}
-                          buttonLabel="Show all"
-                        />
-                      )
-                    : undefined
-                }
+                isTruncated={isTruncated}
+                isModificationModeEnabled={isModificationModeEnabled}
+                isProcessInstanceRunning={isProcessInstanceRunning}
               />
             ),
             width: 'auto',
@@ -106,6 +96,9 @@ const VariablesTable: React.FC<Props> = ({
                   variableKey={variableKey}
                   variableValue={value}
                   mode={isEditMode(name) ? 'edit' : 'show'}
+                  canEdit={
+                    !isModificationModeEnabled && !!isProcessInstanceRunning
+                  }
                 />
                 {(() => {
                   if (isModificationModeEnabled || !isProcessInstanceRunning) {
@@ -127,7 +120,7 @@ const VariablesTable: React.FC<Props> = ({
                         isFetchingNextPage || form.getState().submitting
                       }
                       onClick={async () => {
-                        form.reset({name, value});
+                        form.reset({name, value, variableKey});
                         form.change('value', value);
                       }}
                       hasIconOnly

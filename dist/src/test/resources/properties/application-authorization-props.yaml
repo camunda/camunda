@@ -43,3 +43,23 @@ camunda:
           resourceType: PROCESS_DEFINITION
           permissions:
             - CREATE_PROCESS_INSTANCE
+
+        # [5] Trailing comma in permissions (e.g. PERMISSIONS=READ,UPDATE,)
+        - ownerType: USER
+          ownerId: trailing.comma
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ
+            - UPDATE
+            - ""
+
+        # [6] Whitespace-only permission entry (e.g. PERMISSIONS=READ, ,UPDATE)
+        - ownerType: USER
+          ownerId: whitespace.entry
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ
+            - "  "
+            - UPDATE

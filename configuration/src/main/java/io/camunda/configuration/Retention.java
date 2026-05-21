@@ -30,7 +30,7 @@ public class Retention {
   private String minimumAge = "30d";
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -43,7 +43,7 @@ public class Retention {
   }
 
   public String getMinimumAge() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".minimum-age",
         minimumAge,
         String.class,

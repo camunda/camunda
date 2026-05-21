@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.dmn;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;

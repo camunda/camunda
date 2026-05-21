@@ -27,8 +27,8 @@ public record FlowNodeInstanceFilter(
     List<String> processDefinitionIds,
     List<Operation<String>> stateOperations,
     List<FlowNodeType> types,
-    List<String> flowNodeIds,
-    List<String> flowNodeNames,
+    List<Operation<String>> flowNodeIdOperations,
+    List<Operation<String>> flowNodeNameOperations,
     List<String> treePaths,
     Boolean hasIncident,
     List<Long> incidentKeys,
@@ -58,8 +58,8 @@ public record FlowNodeInstanceFilter(
     private List<String> processDefinitionIds;
     private List<Operation<String>> stateOperations;
     private List<FlowNodeType> types;
-    private List<String> flowNodeIds;
-    private List<String> flowNodeNames;
+    private List<Operation<String>> flowNodeIdOperations;
+    private List<Operation<String>> flowNodeNameOperations;
     private List<String> treePaths;
     private Boolean hasIncident;
     private List<Long> incidentKeys;
@@ -77,8 +77,8 @@ public record FlowNodeInstanceFilter(
       processDefinitionIds(filter.processDefinitionIds());
       stateOperations(filter.stateOperations());
       types(filter.types());
-      flowNodeIds(filter.flowNodeIds());
-      flowNodeNames(filter.flowNodeNames());
+      flowNodeIdOperations(filter.flowNodeIdOperations());
+      flowNodeNameOperations(filter.flowNodeNameOperations());
       treePaths(filter.treePaths());
       hasIncident(filter.hasIncident());
       incidentKeys(filter.incidentKeys());
@@ -152,22 +152,37 @@ public record FlowNodeInstanceFilter(
       return types(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder flowNodeIds(final List<String> values) {
-      flowNodeIds = addValuesToList(flowNodeIds, values);
+    public FlowNodeInstanceFilter.Builder flowNodeIdOperations(
+        final List<Operation<String>> operations) {
+      flowNodeIdOperations = addValuesToList(flowNodeIdOperations, operations);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder flowNodeIds(final String... values) {
-      return flowNodeIds(collectValuesAsList(values));
+    @SafeVarargs
+    public final FlowNodeInstanceFilter.Builder flowNodeIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeIdOperations(collectValues(operation, operations));
     }
 
-    public FlowNodeInstanceFilter.Builder flowNodeNames(final List<String> values) {
-      flowNodeNames = addValuesToList(flowNodeNames, values);
+    public FlowNodeInstanceFilter.Builder flowNodeIds(final String value, final String... values) {
+      return flowNodeIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public FlowNodeInstanceFilter.Builder flowNodeNameOperations(
+        final List<Operation<String>> operations) {
+      flowNodeNameOperations = addValuesToList(flowNodeNameOperations, operations);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder flowNodeNames(final String... values) {
-      return flowNodeNames(collectValuesAsList(values));
+    @SafeVarargs
+    public final FlowNodeInstanceFilter.Builder flowNodeNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeNameOperations(collectValues(operation, operations));
+    }
+
+    public FlowNodeInstanceFilter.Builder flowNodeNames(
+        final String value, final String... values) {
+      return flowNodeNameOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public FlowNodeInstanceFilter.Builder treePaths(final List<String> values) {
@@ -258,8 +273,8 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(types, Collections.emptyList()),
-          Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
-          Objects.requireNonNullElse(flowNodeNames, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),

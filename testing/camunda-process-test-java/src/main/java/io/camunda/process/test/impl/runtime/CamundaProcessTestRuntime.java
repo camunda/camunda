@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
+import java.time.Duration;
 
 public interface CamundaProcessTestRuntime extends AutoCloseable {
 
@@ -31,4 +33,13 @@ public interface CamundaProcessTestRuntime extends AutoCloseable {
   URI getConnectorsRestApiAddress();
 
   CamundaClientBuilderFactory getCamundaClientBuilderFactory();
+
+  /**
+   * Waits until the runtime is ready (all partitions healthy, at least one partition available).
+   * Throws a {@link RuntimeException} if the runtime does not become ready within the timeout.
+   *
+   * @param timeout maximum time to wait
+   * @return the cluster {@link Topology} once ready
+   */
+  Topology waitUntilClusterReady(final Duration timeout);
 }

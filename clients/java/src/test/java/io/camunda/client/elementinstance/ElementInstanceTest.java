@@ -76,7 +76,7 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getElementId()).isEqualTo("elementId");
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");

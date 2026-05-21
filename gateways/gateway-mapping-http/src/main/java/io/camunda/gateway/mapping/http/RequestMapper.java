@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLong;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLongOrNull;
 import static io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
 import static io.camunda.gateway.mapping.http.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest;
@@ -28,6 +30,7 @@ import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestVa
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.gateway.mapping.http.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -39,7 +42,6 @@ import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
@@ -131,11 +133,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.multipart.MultipartFile;
@@ -169,10 +173,11 @@ public class RequestMapper {
       final long userTaskKey) {
 
     return toUserTaskAssignmentRequest(
-        new UserTaskAssignmentRequest()
+        UserTaskAssignmentRequest.Builder.create()
             .action(assignmentRequest.getAction())
             .allowOverride(assignmentRequest.getAllowOverride())
-            .assignee(assignmentRequest.getAssignee()),
+            .assignee(assignmentRequest.getAssignee())
+            .build(),
         userTaskKey);
   }
 
@@ -340,7 +345,7 @@ public class RequestMapper {
       final List<Part> parts,
       final String storeId,
       final ObjectMapper objectMapper,
-      final List<DocumentMetadata> metadataList) {
+      final @Nullable List<DocumentMetadata> metadataList) {
 
     final boolean hasList = metadataList != null && !metadataList.isEmpty();
     final boolean hasHeaderMetadata =
@@ -353,7 +358,7 @@ public class RequestMapper {
       return Either.left(pd);
     }
 
-    if (hasList) {
+    if (hasList && metadataList != null) {
       // Size must match number of files
       if (metadataList.size() != parts.size()) {
         final ProblemDetail pd = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -388,7 +393,9 @@ public class RequestMapper {
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
         final DocumentMetadata metadata =
-            metadataList.get(i) == null ? new DocumentMetadata() : metadataList.get(i);
+            metadataList.get(i) == null
+                ? DocumentMetadata.Builder.create().build()
+                : metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -419,7 +426,7 @@ public class RequestMapper {
                                     throw new RuntimeException(e);
                                   }
                                 })
-                            .orElse(new DocumentMetadata())));
+                            .orElse(DocumentMetadata.Builder.create().build())));
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()
@@ -465,10 +472,9 @@ public class RequestMapper {
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
       final String expression,
       final String tenantId,
+      final String scopeKey,
       final Map<String, Object> variables,
       final boolean isMultiTenancyEnabled) {
-    final var validator =
-        validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
     if (expression == null || expression.isBlank()) {
       return Either.left(
           GatewayErrorMapper.createProblemDetail(
@@ -476,8 +482,23 @@ public class RequestMapper {
               ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("expression"),
               INVALID_ARGUMENT.name()));
     }
-    return validator.map(
-        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId, variables));
+
+    final var scopeKeyValidation = validateScopeKey(scopeKey);
+    if (scopeKeyValidation.isPresent()) {
+      return Either.left(scopeKeyValidation.get());
+    }
+
+    return validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation")
+        .map(
+            tenant ->
+                new ExpressionEvaluationRequest(
+                    expression, tenant, keyToLongOrNull(scopeKey), variables));
+  }
+
+  private static Optional<ProblemDetail> validateScopeKey(final @Nullable String scopeKey) {
+    final List<String> validationErrors = new ArrayList<>();
+    validateKeyFormat(scopeKey, "scopeKey", validationErrors);
+    return createProblemDetail(validationErrors);
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
@@ -591,7 +612,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadata metadata, final Part file) {
+      final @Nullable DocumentMetadata metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -620,7 +641,7 @@ public class RequestMapper {
         expiresAt,
         file.getSize(),
         metadata.getProcessDefinitionId(),
-        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
+        keyToLongOrNull(metadata.getProcessInstanceKey()),
         metadata.getCustomProperties());
   }
 
@@ -636,7 +657,7 @@ public class RequestMapper {
   private static ProblemDetail createInternalErrorProblemDetail(
       final IOException e, final String message) {
     return GatewayErrorMapper.createProblemDetail(
-        HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
+        HttpStatus.INTERNAL_SERVER_ERROR, Objects.requireNonNullElse(e.getMessage(), ""), message);
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -760,7 +781,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
-                KeyUtil.keyToLong(request.getTargetProcessDefinitionKey()),
+                keyToLong(request.getTargetProcessDefinitionKey()),
                 request.getMappingInstructions().stream()
                     .map(
                         instruction ->
@@ -791,7 +812,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceMigrateBatchOperationRequest(
                 toRequiredProcessInstanceFilter(request.getFilter()).get(),
-                KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
+                keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
                 migrationPlan.getMappingInstructions().stream()
                     .map(
                         instruction ->
@@ -820,7 +841,7 @@ public class RequestMapper {
                               instanceof
                               final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
                             mappedInstruction.setElementInstanceKey(
-                                KeyUtil.keyToLong(byKey.getElementInstanceKey()));
+                                keyToLong(byKey.getElementInstanceKey()));
                           } else {
                             mappedInstruction.setElementId(
                                 ((ProcessInstanceModificationTerminateByIdInstruction) instruction)
@@ -1011,11 +1032,11 @@ public class RequestMapper {
         .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.getVariables())));
   }
 
-  private static Long getAncestorKey(final String ancestorElementInstanceKey) {
+  private static Long getAncestorKey(final @Nullable String ancestorElementInstanceKey) {
     if (ancestorElementInstanceKey == null) {
       return -1L;
     }
-    return KeyUtil.keyToLong(ancestorElementInstanceKey);
+    return keyToLong(ancestorElementInstanceKey);
   }
 
   private static List<ProcessInstanceModificationMoveInstruction>
@@ -1034,7 +1055,7 @@ public class RequestMapper {
                     mappedInstruction.setSourceElementId(byId.getSourceElementId());
                 case final SourceElementInstanceKeyInstruction byKey ->
                     mappedInstruction.setSourceElementInstanceKey(
-                        KeyUtil.keyToLong(byKey.getSourceElementInstanceKey()));
+                        keyToLong(byKey.getSourceElementInstanceKey()));
                 default ->
                     throw new IllegalStateException(
                         "Unexpected value: " + instruction.getSourceElementInstruction());
@@ -1071,7 +1092,7 @@ public class RequestMapper {
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
-      final R request, final Function<R, Map<String, Object>> mapExtractor) {
+      final @Nullable R request, final NullableExtractor<R, Map<String, Object>> mapExtractor) {
     final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
     return value == null ? Map.of() : value;
   }
@@ -1157,29 +1178,36 @@ public class RequestMapper {
   }
 
   private static <R> boolean getBooleanOrDefault(
-      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, Boolean> valueExtractor,
+      final boolean defaultValue) {
     final Boolean value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
 
   private static <R> String getStringOrEmpty(
-      final R request, final Function<R, String> valueExtractor) {
+      final @Nullable R request, final NullableExtractor<R, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
   }
 
-  private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+  private static <R> long getLongOrZero(
+      final @Nullable R request, final NullableExtractor<R, Long> valueExtractor) {
     return getLongOrDefault(request, valueExtractor, 0L);
   }
 
   private static <R> long getLongOrDefault(
-      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, Long> valueExtractor,
+      final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
 
   private static <R> long getKeyOrDefault(
-      final R request, final Function<R, String> valueExtractor, final Long defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, String> valueExtractor,
+      final Long defaultValue) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : Long.parseLong(value);
   }
@@ -1206,7 +1234,7 @@ public class RequestMapper {
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
   public record AssignUserTaskRequest(
-      long userTaskKey, String assignee, String action, boolean allowOverride) {}
+      long userTaskKey, @Nullable String assignee, String action, boolean allowOverride) {}
 
   public record FailJobRequest(
       long jobKey,
@@ -1221,11 +1249,21 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
   public record UpdateJobRequest(
-      long jobKey, Long operationReference, UpdateJobChangeset changeset) {}
+      long jobKey, @Nullable Long operationReference, UpdateJobChangeset changeset) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  /**
+   * Functional interface variant that permits a {@code @Nullable} return value. Used for method
+   * references into generated models whose getters are {@code @Nullable}, which would otherwise be
+   * rejected when passed as {@link Function}.
+   */
+  @FunctionalInterface
+  private interface NullableExtractor<R, T> {
+    @Nullable T apply(R request);
+  }
 }

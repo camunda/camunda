@@ -966,6 +966,19 @@ public class CamundaClientPropertiesPostProcessorTest {
       }
 
       @Nested
+      @SpringBootTest
+      class DefaultCredentialsCachePath {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldDefaultCredentialsCachePathToNull() {
+          // Opt-in file cache: without a path, the provider uses in-memory caching only
+          // so it does not write to the filesystem (see issue #13124).
+          assertThat(camundaClientProperties.getAuth().getCredentialsCachePath()).isNull();
+        }
+      }
+
+      @Nested
       @SpringBootTest(
           properties = "spring.config.location=classpath:properties/8.7/execution-threads.yaml")
       class ExecutionThreads {

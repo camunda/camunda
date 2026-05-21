@@ -49,6 +49,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
+      ref: stable/8.9
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -102,13 +103,13 @@ jobs:
             run: false
     steps:
       - name: Install Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
           version: auto
 
       - name: Authenticate to Teleport
-        uses: teleport-actions/auth@v2
+        uses: teleport-actions/auth@3b365df2b4f64891358392a444ff34929ba0d0b1 # v2.1.2
         with:
           # Required for tsh proxy app: allows the bot to reissue app-specific TLS certificates.
           # Without this, the bot cert has "disallow-reissue" extension and tsh proxy app fails with:
@@ -156,7 +157,7 @@ jobs:
           repositories: c8-cross-component-e2e-tests
 
       - name: Checkout Smoke Tests
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
@@ -164,7 +165,7 @@ jobs:
           ref: main
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           cache: npm
@@ -198,7 +199,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-${{ matrix.deployment.version }}-${{ github.run_number }}
           path: |
@@ -232,10 +233,11 @@ jobs:
     needs:
     - deploy-8-9
     - test
-    uses: ./.github/workflows/preview-env-teardown.yml
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.9
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
+      ref: stable/8.9
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
@@ -309,7 +311,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Notify Slack on Failure
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: incoming-webhook

@@ -20,10 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQuery;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
+import io.camunda.client.protocol.rest.MessageSubscriptionTypeEnum;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -66,10 +68,13 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .elementId("element-id")
                     .elementInstanceKey(789L)
                     .messageSubscriptionState(MessageSubscriptionState.CORRELATED)
+                    .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
                     .lastUpdatedDate(lastUpdatedDate)
                     .messageName("message-name")
                     .correlationKey("correlation-key")
-                    .tenantId("tenant-id"))
+                    .tenantId("tenant-id")
+                    .processDefinitionName("process-definition-name")
+                    .processDefinitionVersion(987))
         .send()
         .join();
 
@@ -91,6 +96,9 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getMessageSubscriptionState()).isNotNull();
     assertThat(request.getFilter().getMessageSubscriptionState().get$Eq())
         .isEqualTo(MessageSubscriptionStateEnum.CORRELATED);
+    assertThat(request.getFilter().getMessageSubscriptionType()).isNotNull();
+    assertThat(request.getFilter().getMessageSubscriptionType().get$Eq())
+        .isEqualTo(MessageSubscriptionTypeEnum.PROCESS_EVENT);
     assertThat(request.getFilter().getLastUpdatedDate()).isNotNull();
     assertThat(request.getFilter().getLastUpdatedDate().get$Eq())
         .isEqualTo(lastUpdatedDate.toString());
@@ -100,6 +108,11 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getCorrelationKey().get$Eq()).isEqualTo("correlation-key");
     assertThat(request.getFilter().getTenantId()).isNotNull();
     assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-id");
+    assertThat(request.getFilter().getProcessDefinitionName()).isNotNull();
+    assertThat(request.getFilter().getProcessDefinitionName().get$Eq())
+        .isEqualTo("process-definition-name");
+    assertThat(request.getFilter().getProcessDefinitionVersion()).isNotNull();
+    assertThat(request.getFilter().getProcessDefinitionVersion().get$Eq()).isEqualTo(987);
   }
 
   @Test
@@ -121,6 +134,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .desc()
                     .messageSubscriptionState()
                     .asc()
+                    .messageSubscriptionType()
+                    .desc()
                     .lastUpdatedDate()
                     .desc()
                     .messageName()
@@ -128,6 +143,10 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .correlationKey()
                     .desc()
                     .tenantId()
+                    .asc()
+                    .processDefinitionName()
+                    .desc()
+                    .processDefinitionVersion()
                     .asc())
         .send()
         .join();
@@ -138,16 +157,19 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromMessageSubscriptionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(10);
+    assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "messageSubscriptionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "processInstanceKey", SortOrderEnum.DESC);
     assertSort(sorts.get(3), "elementId", SortOrderEnum.ASC);
     assertSort(sorts.get(4), "elementInstanceKey", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "messageSubscriptionState", SortOrderEnum.ASC);
-    assertSort(sorts.get(6), "lastUpdatedDate", SortOrderEnum.DESC);
-    assertSort(sorts.get(7), "messageName", SortOrderEnum.ASC);
-    assertSort(sorts.get(8), "correlationKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(9), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(6), "messageSubscriptionType", SortOrderEnum.DESC);
+    assertSort(sorts.get(7), "lastUpdatedDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(8), "messageName", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "correlationKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(10), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(11), "processDefinitionName", SortOrderEnum.DESC);
+    assertSort(sorts.get(12), "processDefinitionVersion", SortOrderEnum.ASC);
   }
 }

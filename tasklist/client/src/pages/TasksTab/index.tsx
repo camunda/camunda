@@ -39,12 +39,15 @@ function useAutoSelectNextTaskSideEffects() {
   useEffect(() => {
     if (previousFilters !== filtersKey && !isFetching) {
       setPreviousFilters(filtersKey);
+      const firstTask = tasks[0];
+
       if (
         enabled &&
-        tasks.length > 0 &&
-        location.pathname !== pages.taskDetails(tasks[0].userTaskKey.toString())
+        firstTask !== undefined &&
+        location.pathname !==
+          pages.taskDetails(firstTask.userTaskKey.toString())
       ) {
-        goToTask(tasks[0].userTaskKey.toString());
+        goToTask(firstTask.userTaskKey.toString());
       }
     }
   }, [
@@ -63,8 +66,14 @@ function useAutoSelectNextTaskSideEffects() {
   useEffect(() => {
     if (!isFinishedLoading && !isLoading) {
       setIsFinishedLoading(true);
-      if (enabled && tasks.length > 0 && location.pathname === pages.initial) {
-        goToTask(tasks[0].userTaskKey.toString());
+      const firstTask = tasks[0];
+
+      if (
+        enabled &&
+        firstTask !== undefined &&
+        location.pathname === pages.initial
+      ) {
+        goToTask(firstTask.userTaskKey.toString());
       }
     }
   }, [
@@ -98,9 +107,10 @@ const TasksTab: React.FC = observer(() => {
   const onAutoSelectToggle = useCallback(
     (state: boolean) => {
       if (state && location.pathname === pages.initial) {
-        const openTasks = tasks.filter(({state}) => state === 'CREATED');
-        if (openTasks.length > 0) {
-          autoSelectGoToTask(openTasks[0].userTaskKey.toString());
+        const firstOpenTask = tasks.find(({state}) => state === 'CREATED');
+
+        if (firstOpenTask !== undefined) {
+          autoSelectGoToTask(firstOpenTask.userTaskKey.toString());
         }
       }
     },

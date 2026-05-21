@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;

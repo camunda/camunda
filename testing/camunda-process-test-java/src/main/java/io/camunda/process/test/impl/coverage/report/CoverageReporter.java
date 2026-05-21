@@ -19,7 +19,10 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
+import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.DecisionCoverage;
+import io.camunda.process.test.impl.coverage.model.DecisionModel;
 import io.camunda.process.test.impl.coverage.model.Model;
 import io.camunda.process.test.impl.coverage.model.Suite;
 import java.io.File;
@@ -92,12 +95,20 @@ public class CoverageReporter {
             .flatMap(c -> c.getModels().stream())
             .distinct()
             .collect(Collectors.toList());
+    final Collection<DecisionModel> decisionModels =
+        CoverageCollector.collectors().stream()
+            .flatMap(c -> c.getDecisionModels().stream())
+            .distinct()
+            .collect(Collectors.toList());
 
     writeJsonReport(
         CoverageReportCreator.createSuiteCoverageReport(
-            coverageCollector.getSuite(), coverageCollector.getModels()));
-    writeJsonReport(CoverageReportCreator.createAggregatedCoverageReport(suites, models));
-    writeHtmlReport(CoverageReportCreator.createHtmlCoverageReport(suites, models));
+            coverageCollector.getSuite(),
+            coverageCollector.getModels(),
+            coverageCollector.getDecisionModels()));
+    writeJsonReport(
+        CoverageReportCreator.createAggregatedCoverageReport(suites, models, decisionModels));
+    writeHtmlReport(CoverageReportCreator.createHtmlCoverageReport(suites, models, decisionModels));
   }
 
   /**
@@ -116,7 +127,7 @@ public class CoverageReporter {
                 .flatMap(r -> r.getCoverages().stream())
                 .collect(Collectors.toList()),
             coverageCollector.getModels());
-    final String coverageList =
+    final String processCoverageList =
         coverages.stream()
             .map(
                 coverage ->
@@ -124,13 +135,39 @@ public class CoverageReporter {
                         "- %s: %.0f%%",
                         coverage.getProcessDefinitionId(), coverage.getCoverage() * 100))
             .collect(Collectors.joining("\n"));
+
+    final Collection<DecisionCoverage> decisionCoverages =
+        DecisionCoverageCreator.aggregateCoverages(
+            suite.getRuns().stream()
+                .flatMap(r -> r.getDecisionCoverages().stream())
+                .collect(Collectors.toList()),
+            coverageCollector.getDecisionModels());
+    final String decisionCoverageList =
+        decisionCoverages.stream()
+            .map(
+                dc ->
+                    String.format(
+                        "- %s: %.0f%%", dc.getDecisionDefinitionId(), dc.getCoverage() * 100))
+            .collect(Collectors.joining("\n"));
+
+    final StringBuilder coverageText = new StringBuilder();
+    if (!processCoverageList.isEmpty()) {
+      coverageText.append("Process coverage:\n").append(processCoverageList);
+    }
+    if (!decisionCoverageList.isEmpty()) {
+      if (coverageText.length() > 0) {
+        coverageText.append("\n\n");
+      }
+      coverageText.append("Decision coverage:\n").append(decisionCoverageList);
+    }
+
     final String message =
         MessageFormat.format(
-            "Process coverage: {1} \n"
+            "Coverage: {1} \n"
                 + "========================\n"
                 + "{2}\n\n"
                 + " Coverage report: file://{0}/report.html\n",
-            resourceDirectory, suite.getId(), coverageList);
+            resourceDirectory, suite.getId(), coverageText.toString());
     printStream.accept(message);
   }
 

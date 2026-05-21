@@ -231,6 +231,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
 
     // then
     assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(true);
+    assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
   }
 
   @Test
@@ -251,5 +252,52 @@ public class ListViewFlowNodeFromJobHandlerTest {
 
     // then
     assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(false);
+    assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
+  }
+
+  @Test
+  public void shouldNotOverwriteActivityIdOnErrorThrown() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withElementId("NO_CATCH_EVENT_FOUND")
+            .withRetries(0)
+            .build();
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB, r -> r.withIntent(JobIntent.ERROR_THROWN).withValue(value));
+
+    // when
+    final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
+        new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(jobRecord, flowNodeInstanceForListViewEntity);
+
+    // then
+    assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
+    assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(false);
+  }
+
+  @Test
+  public void shouldSetJobFailedWithRetriesLeftOnErrorThrownWithRetries() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withElementId("NO_CATCH_EVENT_FOUND")
+            .withRetries(3)
+            .build();
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB, r -> r.withIntent(JobIntent.ERROR_THROWN).withValue(value));
+
+    // when
+    final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
+        new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(jobRecord, flowNodeInstanceForListViewEntity);
+
+    // then
+    assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
+    assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(true);
   }
 }

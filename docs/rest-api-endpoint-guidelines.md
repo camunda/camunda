@@ -85,6 +85,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `description` — full sentence(s) with period. First line must be a complete sentence (used as `meta description` in docs)
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
+- `x-added-in-version` — the Camunda version in which the operation was introduced, e.g., `"8.9"` (see §2.17)
 
 **Path patterns:**
 
@@ -268,6 +269,8 @@ This is enforced by the `array-properties-must-be-required` Spectral rule.
 
 Use `nullable: true` only when the property can genuinely be `null` in the response (e.g., `name` on a process definition that may not have one). Never use `nullable` on array properties.
 
+For how the `required` / `nullable` flags propagate from the spec down through the generated POJOs, search-domain entities, transformers, and response mapper — and how NullAway and ArchUnit enforce the contract at compile and build time — see [api-entities-nullaway-enforcement.md](api-entities-nullaway-enforcement.md).
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
 Every operation **should** declare `x-eventually-consistent` explicitly:
@@ -287,7 +290,7 @@ On the Java controller side, query endpoints that read from the secondary storag
 - If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
 - If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
+A mismatch means SDK consumers get incorrect consistency guarantees. See §2.16 for more details on controller–spec alignment.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -597,7 +600,35 @@ MyResourceFilter:
       description: Whether the resource is active.
 ```
 
-### 2.12 Deprecated enum members
+### 2.12 Upgrading an existing filter field to advanced search
+
+When an **existing** search filter field needs to be upgraded from a plain string to support advanced
+operators (e.g., adding `$like` to `elementId`), do not swap the type to `StringFilterProperty`
+directly. This would change the codegen output and break generated SDKs (see the compatibility table
+in §2.8). Instead, create a **dedicated filter property type** in `identifiers.yaml` that preserves
+the original identifier type.
+
+**Do not use `StringFilterProperty` directly** for existing fields because it loses identifier
+metadata (`example`, `format`, `x-semantic-type`) and causes codegen type conflicts in the gateway
+model.
+
+#### Checklist
+
+1. **`identifiers.yaml`** - Define a `<Type>FilterProperty` as a `oneOf` of the original identifier
+   (plain string, backward compatible) and a new `Advanced<Type>Filter` object. The advanced filter
+   references the original identifier in each operator field.
+2. **Endpoint spec** - Reference the new filter type instead of the original identifier.
+3. **`gateways/gateway-model/pom.xml`** - Add type mappings for both profiles: advanced
+   (`=StringFilterProperty`) and simple (`=String`).
+4. **Java client** - Add `Consumer<StringProperty>` overload. Keep the existing `String` method,
+   delegating to `b -> b.eq(value)`.
+5. **Search domain** - Change `List<String>` to `List<Operation<String>>` in the filter record.
+   Keep convenience methods that wrap in `EQUALS`. Update the transformer from `stringTerms()` to
+   `stringOperations()`. Update RDBMS MyBatis mapper to use `operationCondition`.
+
+For a complete reference implementation, see [#50744](https://github.com/camunda/camunda/pull/50744).
+
+### 2.13 Deprecated enum members
 
 When deprecating enum values, use the `x-deprecated-enum-members` vendor extension:
 
@@ -619,7 +650,7 @@ Rules enforced by the `valid-deprecated-enum-members` Spectral rule:
 - No duplicate names.
 - No extra keys beyond `name` and `deprecatedInVersion`.
 
-### 2.13 Polymorphic union types (`x-polymorphic-schema`)
+### 2.14 Polymorphic union types (`x-polymorphic-schema`)
 
 When a request body accepts **mutually exclusive** sets of properties — e.g., identify a process by `processDefinitionId` **or** by `processDefinitionKey`, but never both — model this as a `oneOf` composition and annotate the wrapper schema with `x-polymorphic-schema: true`.
 
@@ -729,11 +760,11 @@ Omit the discriminator when:
 | `AuthorizationPatchInstruction`                   | `authorizations.yaml`       | (permission variants)                                                          |
 | `SearchQueryPageRequest`                          | `search-models.yaml`        | `LimitPagination`, `OffsetPagination`, `CursorForward...`, `CursorBackward...` |
 
-### 2.14 Security schemes
+### 2.15 Security schemes
 
 Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes defined in `OpenApiResourceConfig.java`. Any changes to the security config must be reflected in both places for SDK generators to produce correct authentication boilerplate.
 
-### 2.15 Controller–spec alignment and the `@Hidden` annotation
+### 2.16 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
@@ -760,6 +791,303 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 - The endpoint will reject requests when secondary storage is disabled but the spec doesn't indicate it requires it.
 
 > **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
+
+### 2.17 Operation versioning annotation (`x-added-in-version`)
+
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` extension. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+
+```yaml
+/process-instances/{processInstanceKey}/sequence-flows:
+  get:
+    operationId: getProcessInstanceSequenceFlows
+    summary: Get sequence flows of a process instance
+    description: Returns the sequence flows traversed by the given process instance.
+    x-added-in-version: "8.9"
+    tags:
+      - Process instance
+```
+
+#### Rules
+
+- The value is a **string** containing the minor version (e.g., `"8.6"`, `"8.9"`). Patch versions are not used.
+- Set the value to the version in which the endpoint **first** ships. Do **not** update it on subsequent changes — that's what changelogs and the breaking-change rules in §2.7 are for.
+
+#### What the Spectral rule enforces
+
+The `require-added-in-version` rule (severity `error`) checks every operation under `paths` (`get`, `post`, `put`, `patch`, `delete`) and fails the build if `x-added-in-version` is missing. The rule does **not** validate the version string format — that's a reviewer responsibility.
+
+If you add a new endpoint without this annotation, CI will fail with a message such as:
+
+```
+Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
+```
+
+---
+
+### 2.18 Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`, `x-semantic-provider`, `x-semantic-client-minted`)
+
+These annotations declare the **producer/consumer dependencies between
+operations and entities**, and are consumed by the API test generator
+(camunda/api-test-generator) to plan dependency-respecting integration test
+chains. They have no effect on generated SDK code or the published wire
+contract — they're vendor extensions for tooling.
+
+The single source of truth for which kinds exist is
+[`zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json`](../zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json).
+Read the `$comment` block at the top of that file before adding a new
+entry.
+
+Tracking issues: camunda/camunda#52169 (audit), camunda/camunda#52272
+(establishes/requires), camunda/camunda#52320 (`shape: external-entity`),
+camunda/camunda#52322 (`identifiedBy.acceptsExternal`).
+
+#### `x-semantic-establishes` (operation-level)
+
+Declares that an operation **creates** (or first observes the existence
+of) an instance of an entity or edge. Mutating CRUD endpoints, edge
+assignments, and a small number of search endpoints that are the only
+observation point for a derived entity all carry it.
+
+```yaml
+/groups:
+  post:
+    operationId: createGroup
+    x-semantic-establishes:
+      kind: Group               # PascalCase singular noun, must appear in semantic-kinds.json
+      identifiedBy:
+        - { in: body, name: groupId, semanticType: GroupId }
+
+/roles/{roleId}/groups/{groupId}:
+  put:
+    operationId: assignRoleToGroup
+    x-semantic-establishes:
+      kind: RoleGroupMembership
+      shape: edge               # required for membership-style relationships
+      identifiedBy:
+        - { in: path, name: roleId,  semanticType: RoleId }
+        - { in: path, name: groupId, semanticType: GroupId }
+```
+
+The shape above is the **closed-graph slice**: it describes the
+annotations needed for the default embedded-IDC deployment, where
+Groups CRUD is enabled and `groupId` is produced by `createGroup`. Real
+production `assignRoleToGroup` carries `acceptsExternal: true` on the
+`groupId` tuple to encode the BYOG/OIDC-`groupsClaim` variant where
+the runtime accepts an externally-minted IdP ID; see the [Per-tuple
+`acceptsExternal: true`](#per-tuple-acceptsexternal-true-camundacamunda52322)
+section below for that worked example. The orthogonal
+*operation-availability* axis (e.g. that `createGroup` itself is
+disabled in OIDC-`groupsClaim` mode) is not yet annotated; it is
+tracked in camunda/camunda#52511.
+
+Field reference:
+
+|     Field      |                                                  Meaning                                                  |
+|----------------|-----------------------------------------------------------------------------------------------------------|
+| `kind`         | The kind name, registered in `semantic-kinds.json`. PascalCase singular noun.                             |
+| `shape`        | Optional. Defaults to `entity`. Use `edge` for memberships observable only via member-list search.        |
+| `identifiedBy` | Ordered tuple of identifying members. Length 1 for single-key entities, ≥ 2 for composite keys and edges. |
+
+Each `identifiedBy[]` entry has `in` (`body` / `path` / `query` / `header`),
+`name` (the parameter or top-level body property name), `semanticType`
+(the `x-semantic-type` of the identifier — must match the registered
+`identifiers` of exactly one entity kind in `semantic-kinds.json`), and
+optionally `acceptsExternal: true` (see below).
+
+#### `x-semantic-requires` (operation-level)
+
+Declares that an operation **needs** an existing entity to operate on.
+Maps each member of the established tuple to a local parameter of the
+consumer.
+
+```yaml
+/groups/{groupId}:
+  get:
+    operationId: getGroup
+    x-semantic-requires:
+      kind: Group
+      bind:
+        groupId: { from: path, name: groupId }
+```
+
+The planner uses `requires` to schedule a call to a `Group`-establishing
+operation (e.g. `createGroup`) before this one. The `bind` map propagates
+the identifier values produced by the upstream call into this call's
+parameters.
+
+> **Edge producers do not declare explicit `x-semantic-requires`.**
+> The planner derives the implicit requires for an `edge` producer
+> from each foreign identifier in its `identifiedBy` tuple (resolved
+> via single-owner identifier resolution). Adding an explicit
+> `x-semantic-requires` on a membership endpoint such as
+> `assignUserToGroup` or `assignRoleToGroup` is redundant — use this
+> annotation only on entity consumers (operations without an
+> `x-semantic-establishes`, or whose `shape` defaults to `entity`).
+>
+> **Composite-key entities — declare a `requires` for every foreign
+> identifier you borrow.** When an entity producer's `identifiedBy`
+> includes an identifier registered to a different entity kind (e.g.
+> `createTenantClusterVariable` carries `TenantId`, which is owned by
+> `Tenant`, in its identity tuple), the operation MUST also declare an
+> `x-semantic-requires` on that owning kind. The runtime rejects
+> requests against unknown referenced entities (`NOT_FOUND`); without
+> the explicit `requires`, downstream chain planners walk the producer
+> as a root, synthesise the identifier value, and the call fails.
+> Enforced by `verify-semantic-kinds-registered`. Exceptions: edge
+> producers (the planner derives implicit `requires` from the edge's
+> `identifiedBy`), and the multi-owner sibling pattern where the
+> identifier is also one of the establishing kind's own `identifiers`
+> (e.g. `ClusterVariableName` is shared between
+> `GlobalClusterVariable` and `TenantClusterVariable` as parallel
+> variants, not parent/child).
+>
+> When the foreign identifier is owned by an `external-entity` kind
+> (e.g. `ClientId`, owned by `Client`), `x-semantic-requires` is
+> **not** the answer — direct `requires` on an external-entity is
+> forbidden. The producer MUST instead set `acceptsExternal: true` on
+> that `identifiedBy` entry (see the section below), declaring that
+> the site accepts an externally-minted ID. Without either an
+> `acceptsExternal: true` or a routable `requires`, the producer is
+> unreachable via chain planning and is flagged as an unreachable
+> orphan.
+>
+> **Producer must include the establishing kind's own identifier.**
+> An entity producer's `identifiedBy` MUST contain at least one entry
+> whose `semanticType` is one of the establishing kind's own
+> `identifiers` in `semantic-kinds.json`. A producer that lists only
+> foreign identifiers does not actually produce the kind's identifier
+> tuple, even though it satisfies the producer-existence gate;
+> downstream consumers' orphan errors would silently disappear.
+> Enforced by `verify-semantic-kinds-registered`. Edge producers are
+> exempt (every edge `identifiedBy` is a foreign identifier by
+> definition, resolved via single-owner edge-endpoint resolution).
+>
+> **Consumer must bind the full identifier tuple.** Every
+> `x-semantic-requires.bind` for an entity-kind consumer MUST cover
+> the kind's complete identity tuple. For composite-key entities
+> registered with `requiredBindKeys` (e.g. `TenantClusterVariable`
+> requires `[tenantId, name]`), every listed key must be present;
+> otherwise the planner has an under-specified reference. For
+> non-composite kinds, every `camelCase(identifier)` must be bound
+> (substitutable via `legacyBindKeys`). Enforced by
+> `verify-semantic-kinds-registered`.
+
+#### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
+
+Marks a single `identifiedBy` endpoint as **bimodal** — either an in-API
+producer (the canonical local entity) OR an externally-minted ID is
+acceptable. Set it on edge endpoints whose runtime accepts client-minted
+IDs in some deployments but the kind itself is still locally producible
+elsewhere.
+
+> Note: this annotation encodes **identifier provenance** (the value at
+> this site may originate inside or outside the API), which is
+> orthogonal to **operation availability** (whether the producer
+> endpoint itself is callable in a given deployment mode). The
+> mode-availability axis — for example, that the entire Groups API is
+> disabled when `oidc.groupsClaim` is set — is not yet annotated and
+> is tracked in camunda/camunda#52511.
+
+```yaml
+# roles.yaml — assignRoleToGroup
+x-semantic-establishes:
+  kind: RoleGroupMembership
+  shape: edge
+  identifiedBy:
+    - { in: path, name: roleId,  semanticType: RoleId }
+    # BYOG: under OIDC `groupsClaim`, runtime accepts external IdP IDs.
+    - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
+```
+
+Effect on the verifier: single-owner identifier resolution still runs
+(typo / config-error check), but the resolved entity kind is **not**
+pushed onto the producer-existence required-set for that tuple. A chain
+planner that prefers an in-API producer when one exists still sees the
+`createGroup → assignRoleToGroup` chain, but is free to fall back to
+client-minting an external ID when no producer is reachable.
+
+Distinct from kind-level `shape: external-entity` (below) — use the
+per-tuple flag when the kind IS locally producible elsewhere and only a
+specific edge endpoint is bimodal.
+
+#### Kind-level `shape: external-entity` (camunda/camunda#52320)
+
+Set in `semantic-kinds.json` (not in the path YAML files) for kinds
+whose identifier is **always** minted outside the Camunda REST API
+(e.g. `Client` IDs minted by Console or an external IdP). External
+kinds are referenced via edge `identifiedBy` tuples only — it is an
+error to use them directly in operation-level
+`x-semantic-establishes` or `x-semantic-requires`, and the
+producer-existence cross-reference is skipped for them entirely.
+
+```jsonc
+// semantic-kinds.json
+{ "name": "Client", "shape": "external-entity", "identifiers": ["ClientId"] }
+```
+
+#### `x-semantic-provider` (schema-level)
+
+Declares that a response/result schema is the **canonical producer** of
+one or more identifier values. Lists the property names that carry the
+produced IDs.
+
+```yaml
+DeploymentProcessResult:
+  description: A deployed process.
+  x-semantic-provider:
+    - processDefinitionKey
+    - processDefinitionId
+  type: object
+  required:
+    - processDefinitionId
+    # …
+```
+
+Used by the test generator to lift identifier values out of upstream
+responses and bind them into downstream `x-semantic-requires.bind`
+slots. Schema-level annotation; a single schema can provide multiple
+identifiers.
+
+> **Caveat — shared response schemas.** Because the annotation lives on
+> the schema, it implicitly claims provider semantics for **every**
+> operation whose response `$ref`s that schema. Do not add
+> `x-semantic-provider` to a schema that is shared across operations
+> with different identity contracts (e.g. a single `FooResult` reused by
+> `createFoo`, `getFoo`, `updateFoo`, and `searchFoos`) — the create
+> response is the canonical producer of `id`, but the search items are
+> not, and the annotation cannot distinguish. In that case either split
+> the schema (a dedicated `FooCreateResult` for the producing
+> operation), or omit `x-semantic-provider` and let consumers chain via
+> `x-semantic-establishes` on the producing operation instead. A
+> structural lint guard for this is tracked in
+> [#52414](https://github.com/camunda/camunda/issues/52414).
+
+#### `x-semantic-client-minted` (identifier-level)
+
+Set on identifier schemas in `identifiers.yaml` to declare that the ID
+value is **minted by the client** rather than allocated by the server
+(e.g. `TenantId`, `Username`, `RoleId`, `GroupId`). The test generator
+uses this signal to know it can synthesise a fresh value at chain-plan
+time instead of needing to extract one from an upstream response.
+
+```yaml
+# identifiers.yaml
+TenantId:
+  description: The unique identifier of the tenant.
+  type: string
+  format: TenantId
+  x-semantic-type: TenantId
+  x-semantic-client-minted: true
+  pattern: ^(<default>|[\w\.\-]{1,31})$
+```
+
+#### What the Spectral rules enforce
+
+- `semantic-establishes-shape` (severity `error`) — `x-semantic-establishes` matches the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal`).
+- `semantic-requires-shape` (severity `error`) — `x-semantic-requires` matches the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (severity `error`, custom JS function) — every referenced `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level requestBody property that exists; no operation directly establishes/requires an `external-entity` kind; per-tuple `acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+`x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
 
 ---
 
@@ -806,6 +1134,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                   |
 | `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                  |
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
 | `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
 
 ### 3.4 Adding new Spectral rules
@@ -1094,6 +1423,7 @@ Before opening a PR:
 - [ ] **All properties have descriptions**
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
+- [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)
@@ -1183,6 +1513,32 @@ properties:
 ```
 
 **Fix:** Change to `x-eventually-consistent: false`. Only search/statistics/GET endpoints use `true`.
+
+---
+
+### ❌ Missing `x-added-in-version` on a new operation
+
+```yaml
+# Wrong — Spectral error: require-added-in-version
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    tags: [My resource]
+```
+
+**Fix:** Add `x-added-in-version` set to the version in which the endpoint first ships:
+
+```yaml
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    x-added-in-version: "8.9"
+    tags: [My resource]
+```
+
+See §2.17 for full conventions.
 
 ---
 

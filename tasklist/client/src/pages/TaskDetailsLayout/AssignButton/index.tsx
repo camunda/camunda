@@ -81,6 +81,7 @@ const AssignButton: React.FC<Props> = ({
       const result = await assignTask({
         userTaskKey: id,
         assignee: currentUser,
+        allowOverride: false,
       });
 
       if (result === null) {

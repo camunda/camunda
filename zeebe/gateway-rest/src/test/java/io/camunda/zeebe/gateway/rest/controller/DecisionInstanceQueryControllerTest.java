@@ -25,8 +25,8 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
@@ -315,8 +315,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "3",
                                      "outputName": "name3",
                                      "outputValue": "value3",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId2",
+                                     "ruleIndex": 2
                                  }
                              ]
                          },
@@ -328,15 +328,15 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "1",
                                      "outputName": "name1",
                                      "outputValue": "value1",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  },
                                  {
                                      "outputId": "2",
                                      "outputName": "name2",
                                      "outputValue": "value2",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  }
                              ]
                          }
@@ -433,6 +433,37 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "instance": "/v2/decision-instances/123-1"
                 }""",
             JsonCompareMode.STRICT);
+  }
+
+  private static Stream<Arguments> provideInvalidDecisionEvaluationInstanceKeys() {
+    return Stream.of(
+        Arguments.of("+++"),
+        Arguments.of("abc"),
+        Arguments.of("123"),
+        Arguments.of("-1-2"),
+        Arguments.of("1-"),
+        Arguments.of("-1"),
+        Arguments.of("1--1"),
+        Arguments.of("1-2-3"),
+        Arguments.of("1-a"),
+        Arguments.of("a-1"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidDecisionEvaluationInstanceKeys")
+  void shouldReturn400ForInvalidDecisionEvaluationInstanceKeyFormat(final String invalidKey) {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/decision-instances/{decisionInstanceId}", invalidKey)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+    // then - the service must not be invoked when validation fails
+    verify(decisionInstanceServices, never()).getById(eq(invalidKey), any());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {

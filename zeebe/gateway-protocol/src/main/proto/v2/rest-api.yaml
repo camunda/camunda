@@ -5,7 +5,23 @@ info:
   contact:
     name: Camunda Engineering
     url: https://github.com/camunda/camunda/issues
-  description: API for communicating with a Camunda 8 cluster.
+  description: |
+    API for communicating with a Camunda 8 cluster.
+
+    ## Conventions
+
+    ### Enum value casing
+
+    Server-side, enum-typed request fields accept any casing of a
+    documented value (for example `ACTIVE`, `active`, and `Active` are
+    all accepted on input). Responses always use the canonical casing
+    shown in this specification.
+
+    This permissive request behavior is a server-side convenience and
+    is **not** part of the OpenAPI enum contract — SDKs generated from
+    this specification by strict generators may reject non-canonical
+    casing on the client side. For portability across SDKs, always
+    send the canonical casing shown in this document.
   license:
     name: Camunda License Version 1.0
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
@@ -26,6 +42,7 @@ servers:
         description: The schema of the Orchestration Cluster REST API server.
 tags:
   - name: Ad-hoc sub-process
+  - name: Agent instance
   - name: Audit Log
   - name: Authentication
   - name: Authorization
@@ -40,6 +57,7 @@ tags:
   - name: Document
   - name: Element instance
   - name: Expression
+  - name: Form
   - name: Global listener
   - name: Group
   - name: Incident
@@ -62,6 +80,14 @@ tags:
   - name: Variable
 
 paths:
+  # Agent instance endpoints
+  /agent-instances:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances'
+  /agent-instances/{agentInstanceKey}:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
+  /agent-instances/search:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1search'
+
   # Audit Log endpoints
   /audit-logs/search:
     $ref: 'audit-logs.yaml#/paths/~1audit-logs~1search'
@@ -177,6 +203,10 @@ paths:
   # Expression endpoints
   /expression/evaluation:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
+  # Form endpoints
+  /forms/{formKey}:
+    $ref: 'forms.yaml#/paths/~1forms~1{formKey}'
 
   # Global listeners endpoints
   /global-task-listeners:
@@ -321,10 +351,14 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
 
   # Resource endpoints
+  /resources/search:
+    $ref: 'deployments.yaml#/paths/~1resources~1search'
   /resources/{resourceKey}:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
   /resources/{resourceKey}/content:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content'
+  /resources/{resourceKey}/content/binary:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content~1binary'
   /resources/{resourceKey}/deletion:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1deletion'
 

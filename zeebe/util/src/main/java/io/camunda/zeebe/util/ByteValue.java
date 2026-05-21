@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.util;
 
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
 import java.util.Locale;
 
 public final class ByteValue {
   private static final int CONVERSION_FACTOR_KB = 1024;
   private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
   private static final int CONVERSION_FACTOR_GB = CONVERSION_FACTOR_MB * 1024;
+  private static final char[] PREFIXES = {'K', 'M', 'G', 'T', 'P', 'E'};
 
   /**
    * Converts the {@code value} kilobytes into bytes
@@ -47,19 +46,21 @@ public final class ByteValue {
   }
 
   public static String prettyPrint(final long bytes) {
-    if (bytes < 0) {
-      throw new IllegalArgumentException("Value must be >= 0");
-    }
     if (bytes < 1024) {
-      return bytes + " B";
+      return bytes + "B";
     }
-    long value = bytes;
-    final CharacterIterator ci = new StringCharacterIterator("KMGTPE");
-    for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
-      value >>= 10;
-      ci.next();
+    int exp = (63 - Long.numberOfLeadingZeros(bytes)) / 10;
+    final double value = bytes / (double) (1L << (exp * 10));
+    double rounded = (value < 10) ? Math.round(value * 10) / 10.0 : Math.round(value);
+
+    // Handle rollover (e.g. 1,048,575 → 1024 KiB → 1 MiB)
+    if (rounded >= 1024) {
+      exp++;
+      rounded = 1;
     }
-    value *= Long.signum(bytes);
-    return String.format(Locale.US, "%.1f %cB", value / 1024.0, ci.current());
+
+    final var prefix = PREFIXES[exp - 1];
+    final var fmt = rounded == (long) rounded ? "%.0f%ciB" : "%.1f%ciB";
+    return String.format(Locale.ROOT, fmt, rounded, prefix);
   }
 }

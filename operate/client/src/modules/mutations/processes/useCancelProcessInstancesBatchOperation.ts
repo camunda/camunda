@@ -6,18 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  useMutation,
-  type UseMutationOptions,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateCancellationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {createCancellationBatchOperation} from 'modules/api/v2/processInstances/createCancellationBatchOperation';
 import type {RequestError} from 'modules/request';
-import {queryKeys} from 'modules/queries/queryKeys';
 
 const useCancelProcessInstancesBatchOperation = (
   options?: Partial<
@@ -28,16 +23,11 @@ const useCancelProcessInstancesBatchOperation = (
     >
   >,
 ) => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationKey: ['createProcessInstanceCancellationBatchOperation'],
     mutationFn: async (payload) => {
       const {response, error} = await createCancellationBatchOperation(payload);
       if (response !== null) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.batchOperations.query(),
-        });
         return response;
       }
       throw error;

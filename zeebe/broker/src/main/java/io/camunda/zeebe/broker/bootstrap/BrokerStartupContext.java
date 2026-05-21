@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -39,6 +41,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -106,9 +109,22 @@ public interface BrokerStartupContext {
 
   ExporterRepository getExporterRepository();
 
-  PartitionManagerImpl getPartitionManager();
+  /** Returns all currently registered partition managers, keyed by physical tenant ID. */
+  Map<String, PartitionManagerImpl> getPartitionManagers();
 
-  void setPartitionManager(PartitionManagerImpl partitionManager);
+  /** Registers a partition manager for the given physical tenant ID. */
+  void addPartitionManager(String physicalTenantId, PartitionManagerImpl partitionManager);
+
+  /** Deregisters the partition manager for the given physical tenant ID. */
+  void removePartitionManager(String physicalTenantId);
+
+  /**
+   * Returns the broker-wide shared RocksDB cache and write buffer manager. Allocated once per
+   * broker and shared across every physical tenant's partition manager.
+   */
+  RocksDbResources getRocksDbResources();
+
+  void setRocksDbResources(RocksDbResources sharedRocksDbResources);
 
   BrokerAdminServiceImpl getBrokerAdminService();
 
@@ -140,6 +156,8 @@ public interface BrokerStartupContext {
 
   JwtDecoder getJwtDecoder();
 
+  OidcClaimsProvider getOidcClaimsProvider();
+
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
@@ -151,4 +169,7 @@ public interface BrokerStartupContext {
   void setCheckpointSchedulingService(CheckpointSchedulingService checkpointSchedulingService);
 
   NodeIdProvider getNodeIdProvider();
+
+  /** Returns the list of physical tenant IDs this broker should run. */
+  List<String> getPhysicalTenantIds();
 }

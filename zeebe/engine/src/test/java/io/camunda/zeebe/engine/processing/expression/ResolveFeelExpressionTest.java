@@ -10,10 +10,14 @@ package io.camunda.zeebe.engine.processing.expression;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Map;
@@ -216,6 +220,7 @@ public class ResolveFeelExpressionTest {
   @Test
   public void shouldResolveExpressionWithTenantScopedClusterVariable() {
     // given
+    ENGINE_RULE.tenant().newTenant().withTenantId("tenant-1").create();
     ENGINE_RULE
         .clusterVariables()
         .withName("tenantVar")
@@ -716,5 +721,413 @@ public class ResolveFeelExpressionTest {
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo("Alice is 30 years old");
+  }
+
+  @Test
+  public void shouldResolveVariablesFromProcessInstanceScope() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processWithVars")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId("processWithVars")
+            .withVariables(Map.of("myVar", "hello from process"))
+            .create();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=myVar")
+            .withScopeKey(processInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("hello from process");
+  }
+
+  @Test
+  public void shouldResolveVariablesFromElementInstanceScope() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processForElement")
+                .startEvent()
+                .serviceTask("elementTask", t -> t.zeebeJobType("elementTest"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId("processForElement")
+            .withVariables(Map.of("elemVar", 42))
+            .create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=elemVar")
+            .withScopeKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(42);
+  }
+
+  @Test
+  public void shouldResolveVariableLocalToIntermediateCatchEventScope() {
+    // given - a process waiting on an intermediate catch event (the typical Connector use case)
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processWithCatchEvent")
+                .startEvent()
+                .intermediateCatchEvent("catch-event", e -> e.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processWithCatchEvent").create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+            .getFirst()
+            .getKey();
+
+    // a variable created by the catch event itself (local to its own scope),
+    // simulating a Connector writing its result onto the catch event instance
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("catchVar", "hello from catch event"))
+        .withLocalSemantic()
+        .update();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=catchVar")
+            .withScopeKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("hello from catch event");
+  }
+
+  @Test
+  public void shouldResolveVariableLocalToServiceTaskWithBoundaryEventScope() {
+    // given - a service task with a boundary event (the typical Connector use case)
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processWithBoundaryEvent")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .boundaryEvent("boundary-event", b -> b.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processWithBoundaryEvent").create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // a variable created by the service task itself (local to its own scope),
+    // simulating a Connector writing its result onto the service task instance
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("boundaryVar", 123))
+        .withLocalSemantic()
+        .update();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=boundaryVar")
+            .withScopeKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(123);
+  }
+
+  @Test
+  public void shouldWriteProcessInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processScopeKey").create();
+
+    // when
+    final var record =
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(processInstanceKey).resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldWriteElementInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("elementScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("elementScopeKey").create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var record =
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(elementInstanceKey).resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(elementInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectWhenScopeKeyNotFound() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=1")
+            .withScopeKey(999999L)
+            .expectRejection()
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATE)
+        .hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(record.getRejectionReason()).contains("999999");
+  }
+
+  @Test
+  public void shouldPrioritizeBodyVariablesOverProcessInstanceVariables() {
+    // given - process instance has "score = 1"
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("priorityBodyOverProcess")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId("priorityBodyOverProcess")
+            .withVariables(Map.of("score", 1))
+            .create();
+
+    // when - body also has "score = 99", body takes precedence
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=score")
+            .withScopeKey(processInstanceKey)
+            .withVariables(Map.of("score", 99))
+            .resolve();
+
+    // then - body variable wins
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(99);
+  }
+
+  @Test
+  public void shouldPrioritizeElementInstanceVariablesOverProcessInstanceVariables() {
+    // given - process instance has "score = 1", same name will be set locally on the
+    // service task scope below
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("priorityElementOverProcess")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId("priorityElementOverProcess")
+            .withVariables(Map.of("score", 1))
+            .create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // and - "score = 99" written locally onto the element instance scope, shadowing
+    // the process-scope value of the same name
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("score", 99))
+        .withLocalSemantic()
+        .update();
+
+    // when - resolved through the element instance key, scope walk-up starts at the element
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=score")
+            .withScopeKey(elementInstanceKey)
+            .resolve();
+
+    // then - element-scope variable shadows the process-scope one
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(99);
+  }
+
+  @Test
+  public void shouldPrioritizeProcessInstanceVariablesOverClusterVariables() {
+    // given - cluster has "score = 1", process instance also has "score = 99"
+    ENGINE_RULE.clusterVariables().withName("score").setGlobalScope().withValue("1").create();
+
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("priorityProcessOverCluster")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId("priorityProcessOverCluster")
+            .withVariables(Map.of("score", 99))
+            .create();
+
+    // when - process instance variable has "score", takes precedence over cluster
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=score")
+            .withScopeKey(processInstanceKey)
+            .resolve();
+
+    // then - process instance variable wins over cluster variable
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(99);
+  }
+
+  @Test
+  public void shouldRejectWhenTenantDoesNotMatchProcessInstance() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processTenantA")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processTenantA").create();
+
+    // when - request with a tenant that does not own this process instance
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=1")
+            .withScopeKey(processInstanceKey)
+            .withTenantId("wrong-tenant")
+            .expectRejection()
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATE)
+        .hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(record.getRejectionReason()).contains("wrong-tenant");
   }
 }

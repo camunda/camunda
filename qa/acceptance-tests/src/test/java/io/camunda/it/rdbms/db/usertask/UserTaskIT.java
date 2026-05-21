@@ -34,13 +34,13 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -192,7 +192,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -225,6 +225,227 @@ public class UserTaskIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessDefinitionIdEq(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String processDefinitionId = generateRandomString("processDefinitionId");
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .processDefinitionIdOperations(Operation.eq(processDefinitionId))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessDefinitionIdNeq(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = generateRandomString("tenant");
+    final String processDefinitionIdA = generateRandomString("proc-a");
+    final String processDefinitionIdB = generateRandomString("proc-b");
+    final UserTaskDbModel taskA =
+        UserTaskFixtures.createRandomized(
+            b -> b.tenantId(tenantId).processDefinitionId(processDefinitionIdA));
+    final UserTaskDbModel taskB =
+        UserTaskFixtures.createRandomized(
+            b -> b.tenantId(tenantId).processDefinitionId(processDefinitionIdB));
+    createAndSaveUserTask(rdbmsService, taskA);
+    createAndSaveUserTask(rdbmsService, taskB);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .tenantIds(tenantId)
+                        .processDefinitionIdOperations(Operation.neq(processDefinitionIdA))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), taskB);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessDefinitionIdLike(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String prefix = generateRandomString("order-process");
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.processDefinitionId(prefix + "-v1"));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .processDefinitionIdOperations(Operation.like(prefix + "*"))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessDefinitionKeyNeq(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = generateRandomString("tenant");
+    final UserTaskDbModel taskA = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskB = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    createAndSaveUserTask(rdbmsService, taskA);
+    createAndSaveUserTask(rdbmsService, taskB);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .tenantIds(tenantId)
+                        .processDefinitionKeyOperations(Operation.neq(taskA.processDefinitionKey()))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), taskB);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessDefinitionKeyIn(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = generateRandomString("tenant");
+    final UserTaskDbModel taskA = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskB = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskC = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    createAndSaveUserTask(rdbmsService, taskA);
+    createAndSaveUserTask(rdbmsService, taskB);
+    createAndSaveUserTask(rdbmsService, taskC);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .tenantIds(tenantId)
+                        .processDefinitionKeyOperations(
+                            Operation.in(
+                                taskA.processDefinitionKey(), taskB.processDefinitionKey()))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(UserTaskEntity::userTaskKey))
+        .containsExactlyInAnyOrder(taskA.userTaskKey(), taskB.userTaskKey());
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessInstanceKeyNeq(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = generateRandomString("tenant");
+    final UserTaskDbModel taskA = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskB = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    createAndSaveUserTask(rdbmsService, taskA);
+    createAndSaveUserTask(rdbmsService, taskB);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .tenantIds(tenantId)
+                        .processInstanceKeyOperations(Operation.neq(taskA.processInstanceKey()))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), taskB);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessInstanceKeyIn(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = generateRandomString("tenant");
+    final UserTaskDbModel taskA = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskB = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    final UserTaskDbModel taskC = UserTaskFixtures.createRandomized(b -> b.tenantId(tenantId));
+    createAndSaveUserTask(rdbmsService, taskA);
+    createAndSaveUserTask(rdbmsService, taskB);
+    createAndSaveUserTask(rdbmsService, taskC);
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder()
+                        .tenantIds(tenantId)
+                        .processInstanceKeyOperations(
+                            Operation.in(taskA.processInstanceKey(), taskB.processInstanceKey()))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(UserTaskEntity::userTaskKey))
+        .containsExactlyInAnyOrder(taskA.userTaskKey(), taskB.userTaskKey());
   }
 
   @TestTemplate
@@ -1114,7 +1335,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -1136,7 +1357,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(null).size(null))));
 

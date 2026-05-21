@@ -8,11 +8,11 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import java.util.regex.PatternSyntaxException;
@@ -63,7 +63,7 @@ public class CamundaSecurityConfiguration {
   @PostConstruct
   public void validate() {
     final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
-    final var apiUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedApi();
+    final var apiUnprotected = camundaSecurityProperties.getAuthentication().isUnprotectedApi();
 
     if (multiTenancyEnabled && apiUnprotected) {
       throw new IllegalStateException(

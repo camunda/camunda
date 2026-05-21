@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
@@ -58,7 +59,7 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
   ElementInstanceFilter processInstanceKey(final long value);
 
   /**
-   * Filters element instances by element id.
+   * Filters element instances by element id (exact match).
    *
    * @param value the element id of element instance
    * @return the updated filter
@@ -66,13 +67,30 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
   ElementInstanceFilter elementId(final String value);
 
   /**
-   * Filters element instances by element name. This only works for data created with 8.8 and
-   * onwards. Instances from prior versions don't contain this data.
+   * Filters element instances by element id using advanced {@link StringProperty} operations.
+   *
+   * @param fn the element id filter configuration
+   * @return the updated filter
+   */
+  ElementInstanceFilter elementId(final Consumer<StringProperty> fn);
+
+  /**
+   * Filters element instances by element name (exact match). This only works for data created with
+   * 8.8 and onwards. Instances from prior versions don't contain this data.
    *
    * @param value the element name of element instance
    * @return the updated filter
    */
   ElementInstanceFilter elementName(final String value);
+
+  /**
+   * Filters element instances by element name using advanced {@link StringProperty} operations.
+   * This only works for data created with 8.8 and onwards.
+   *
+   * @param fn the element name filter configuration
+   * @return the updated filter
+   */
+  ElementInstanceFilter elementName(final Consumer<StringProperty> fn);
 
   /**
    * Filters element instances by state.

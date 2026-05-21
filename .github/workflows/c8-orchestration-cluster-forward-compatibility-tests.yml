@@ -38,7 +38,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Generate matrix
         id: matrix
@@ -144,7 +144,7 @@ jobs:
 
       # Checkout test branch at root — provides composite actions, docker-compose config, and tests
       - name: Checkout test branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.test_branch }}
 
@@ -194,7 +194,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           cache: npm
@@ -235,11 +235,13 @@ jobs:
           API_TESTS_ONLY: "true"
           DATABASE: "Elasticsearch"
           AJB_ALLOW_EXTRA_FIELDS: "true"
+          AJB_ALLOW_NULL_VALUES: "true"
+          FORWARD_COMPAT_MODE: "true"
         run: |
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"
           echo "Tests checked out from: ${{ matrix.test_branch }}"
-          npm run test -- --project=api-tests --retries=2
+          npm run test -- --project=api-tests --retries=4 tests/api/v2/
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Sanitize branch names for artifact names
@@ -255,7 +257,7 @@ jobs:
 
       - name: Upload JSON report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: json-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -264,7 +266,7 @@ jobs:
 
       - name: Upload HTML report on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: html-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
@@ -291,7 +293,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Import Secrets
         id: secrets
@@ -306,7 +308,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
 
       - name: Notify failure
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}

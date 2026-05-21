@@ -23,6 +23,36 @@
       WHERE PARTITION_ID = #{partitionId}
   </select>
 
+  <select id="findOneForUpdate"
+    parameterType="java.lang.Integer"
+    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
+    databaseId="mssql">
+      SELECT
+        PARTITION_ID,
+        EXPORTER,
+        LAST_EXPORTED_POSITION,
+        CREATED,
+        LAST_UPDATED
+      FROM
+        ${prefix}EXPORTER_POSITION WITH (UPDLOCK, ROWLOCK)
+      WHERE PARTITION_ID = #{partitionId}
+  </select>
+
+  <select id="findOneForUpdate"
+    parameterType="java.lang.Integer"
+    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
+      SELECT
+        PARTITION_ID,
+        EXPORTER,
+        LAST_EXPORTED_POSITION,
+        CREATED,
+        LAST_UPDATED
+      FROM
+        ${prefix}EXPORTER_POSITION
+      WHERE PARTITION_ID = #{partitionId}
+      FOR UPDATE
+  </select>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       INSERT INTO ${prefix}EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
       VALUES (#{partitionId}, #{exporter}, #{lastExportedPosition}, #{created}, #{lastUpdated})

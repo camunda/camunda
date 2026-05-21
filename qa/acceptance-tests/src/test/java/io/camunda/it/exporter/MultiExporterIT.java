@@ -17,7 +17,7 @@ import io.camunda.it.document.DocumentClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -203,7 +203,7 @@ public class MultiExporterIT {
     final MultiDbConfigurator configurator = new MultiDbConfigurator(testStandaloneApplication);
 
     // configure the app to use RDBMS as secondary storage, with an in-memory H2 database
-    configurator.configureRDBMSSupport(false, "jdbc:h2:mem:camunda", "sa", "", "org.h2.Driver");
+    configurator.configureRDBMSSupport(false, "jdbc:h2:mem:camunda", "sa", "");
 
     final String containerUrl =
         String.format(

@@ -35,6 +35,12 @@ public final class UpdateClusterVariableMultiPartitionTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private static boolean isClusterVariableUpdateDistributionRecord(final Record<?> record) {
+    return record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+        && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+            == ClusterVariableIntent.UPDATE;
+  }
+
   @Test
   public void updateGlobalScopedClusterVariableMultiPartition() {
     // given
@@ -61,14 +67,14 @@ public final class UpdateClusterVariableMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limit(
+                    record ->
+                        record.getIntent().equals(CommandDistributionIntent.FINISHED)
+                            && isClusterVariableUpdateDistributionRecord(record))
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE
-                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
-                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
-                                    == ClusterVariableIntent.UPDATE)))
+                            || isClusterVariableUpdateDistributionRecord(record)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -90,7 +96,7 @@ public final class UpdateClusterVariableMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
 
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)
@@ -104,6 +110,8 @@ public final class UpdateClusterVariableMultiPartitionTest {
   @Test
   public void updateTenantScopedClusterVariableMultiPartition() {
     // given
+    ENGINE_RULE.tenant().newTenant().withTenantId("tenant_2").create();
+
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_2")
@@ -129,14 +137,14 @@ public final class UpdateClusterVariableMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limit(
+                    record ->
+                        record.getIntent().equals(CommandDistributionIntent.FINISHED)
+                            && isClusterVariableUpdateDistributionRecord(record))
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE
-                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
-                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
-                                    == ClusterVariableIntent.UPDATE)))
+                            || isClusterVariableUpdateDistributionRecord(record)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -158,7 +166,7 @@ public final class UpdateClusterVariableMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
 
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)

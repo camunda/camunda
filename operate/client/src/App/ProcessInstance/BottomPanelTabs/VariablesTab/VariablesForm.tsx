@@ -46,7 +46,7 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
         {isModificationAllowed && (
           <AddVariableButton
             onClick={() => {
-              form.mutators.push?.('newVariables', {
+              form.mutators['push']?.('newVariables', {
                 id: generateUniqueID(),
               });
             }}

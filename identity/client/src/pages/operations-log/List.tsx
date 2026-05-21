@@ -35,7 +35,8 @@ import {
 import useDebounce from "react-debounced";
 import { useForm, FieldPath, FieldPathValue } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
-import { User } from "@carbon/react/icons";
+import { Api, User } from "@carbon/react/icons";
+import AiAgentIcon from "src/assets/images/ai-agent.svg";
 import { DateRangeField } from "src/components/form/DateRangeField";
 import {
   ALLOWED_ENTITY_TYPES,
@@ -305,7 +306,13 @@ const List: FC = () => {
                   property: <CellProperty item={log} />,
                   actorId: log.actorId ? (
                     <OperationLogName>
-                      <User /> {log.actorId}
+                      {log.actorType === "CLIENT" ? (
+                        <Api aria-label="Client" />
+                      ) : (
+                        <User aria-label="User" />
+                      )}
+                      {log.agentElementId && <AiAgentIcon aria-label="Agent" />}
+                      {log.actorId}
                     </OperationLogName>
                   ) : (
                     "-"

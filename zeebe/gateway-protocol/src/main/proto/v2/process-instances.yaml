@@ -66,6 +66,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-added-in-version: "8.6"
 
   /process-instances/{processInstanceKey}:
     get:
@@ -103,6 +104,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/{processInstanceKey}/sequence-flows:
     get:
@@ -134,6 +136,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
     get:
@@ -165,6 +168,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/search:
     post:
@@ -195,6 +199,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.6"
 
   /process-instances/{processInstanceKey}/incidents/search:
     post:
@@ -244,6 +249,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
@@ -281,6 +287,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.9"
 
   /process-instances/{processInstanceKey}/cancellation:
     post:
@@ -325,6 +332,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+      x-added-in-version: "8.6"
 
   /process-instances/cancellation:
     post:
@@ -365,6 +373,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/incident-resolution:
     post:
@@ -405,6 +414,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/migration:
     post:
@@ -445,6 +455,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/modification:
     post:
@@ -487,6 +498,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /process-instances/{processInstanceKey}/deletion:
     post:
@@ -532,6 +544,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.9"
 
   /process-instances/deletion:
     post:
@@ -571,6 +584,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.9"
 
   /process-instances/{processInstanceKey}/migration:
     post:
@@ -623,6 +637,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /process-instances/{processInstanceKey}/modification:
     post:
@@ -666,6 +681,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
@@ -705,6 +721,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 
@@ -797,6 +814,13 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: runtimeInstructions
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -878,6 +902,13 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: runtimeInstructions
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -920,6 +951,9 @@ components:
           example: Activity_106kb
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+      x-properties-added-in-version:
+        - propertyName: type
+          addedInVersion: "8.9"
 
     CreateProcessInstanceResult:
       x-semantic-provider:
@@ -975,6 +1009,11 @@ components:
           description: Business id as provided on creation.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     ProcessInstanceSearchQuerySortRequest:
       type: object
@@ -1100,6 +1139,45 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The business id associated with the process instance.
+      x-properties-added-in-version:
+        - propertyName: startDate
+          addedInVersion: "8.6"
+        - propertyName: endDate
+          addedInVersion: "8.6"
+        - propertyName: state
+          addedInVersion: "8.8"
+        - propertyName: hasIncident
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: variables
+          addedInVersion: "8.8"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: parentProcessInstanceKey
+          addedInVersion: "8.6"
+        - propertyName: parentElementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: batchOperationId
+          addedInVersion: "8.6"
+        - propertyName: batchOperationKey
+          addedInVersion: "8.8"
+        - propertyName: errorMessage
+          addedInVersion: "8.6"
+        - propertyName: hasRetriesLeft
+          addedInVersion: "8.8"
+        - propertyName: elementInstanceState
+          addedInVersion: "8.8"
+        - propertyName: elementId
+          addedInVersion: "8.8"
+        - propertyName: hasElementInstanceIncident
+          addedInVersion: "8.8"
+        - propertyName: incidentErrorHashCode
+          addedInVersion: "8.8"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     ProcessDefinitionStatisticsFilter:
       description: Process definition statistics search filter.
@@ -1169,6 +1247,17 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key.
+      x-properties-added-in-version:
+        - propertyName: processDefinitionId
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionName
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionVersion
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionVersionTag
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.8"
 
     ProcessInstanceFilter:
       description: Process instance search filter.
@@ -1211,6 +1300,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/ProcessInstanceFilterFields'
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.8"
 
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
@@ -1310,6 +1402,39 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: processDefinitionId
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionName
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionVersion
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionVersionTag
+          addedInVersion: "8.8"
+        - propertyName: startDate
+          addedInVersion: "8.6"
+        - propertyName: endDate
+          addedInVersion: "8.6"
+        - propertyName: state
+          addedInVersion: "8.6"
+        - propertyName: hasIncident
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: processDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: parentProcessInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: parentElementInstanceKey
+          addedInVersion: "8.8"
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
+        - propertyName: tags
+          addedInVersion: "8.8"
+        - propertyName: businessId
+          addedInVersion: "8.9"
 
     CancelProcessInstanceRequest:
       type: object
@@ -1399,6 +1524,9 @@ components:
           description: The element id for this sequence flow, as provided in the BPMN process.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      x-properties-added-in-version:
+        - propertyName: rootProcessInstanceKey
+          addedInVersion: "8.9"
 
     ProcessInstanceElementStatisticsQueryResult:
       description: Process instance element statistics query response.
@@ -1449,6 +1577,11 @@ components:
       required:
         - sourceElementId
         - targetElementId
+      x-properties-added-in-version:
+        - propertyName: sourceElementId
+          addedInVersion: "8.6"
+        - propertyName: targetElementId
+          addedInVersion: "8.6"
 
     ProcessInstanceModificationInstruction:
       type: object
@@ -1471,6 +1604,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceModificationTerminateInstruction'
+      x-properties-added-in-version:
+        - propertyName: moveInstructions
+          addedInVersion: "8.9"
 
     ProcessInstanceModificationActivateInstruction:
       description: Instruction describing an element to activate.
@@ -1671,6 +1807,9 @@ components:
           description: The id of the elements to terminate. The element instances are determined at runtime.
       required:
         - elementId
+      x-properties-added-in-version:
+        - propertyName: elementId
+          addedInVersion: "8.9"
 
     ProcessInstanceModificationTerminateByKeyInstruction:
       description: Instruction providing the key of the element instance to terminate.

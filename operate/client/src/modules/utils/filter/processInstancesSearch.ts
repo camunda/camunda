@@ -31,7 +31,7 @@ const ProcessInstancesFilterSchema = z
     completed: z.coerce.boolean().optional(),
     canceled: z.coerce.boolean().optional(),
     elementId: z.string().optional(),
-    batchOperationId: z.string().optional(),
+    batchOperationKey: z.string().optional(),
     errorMessage: z.string().optional(),
     hasRetriesLeft: z.coerce.boolean().optional(),
     hasElementInstanceIncident: z.coerce.boolean().optional(),
@@ -42,6 +42,7 @@ const ProcessInstancesFilterSchema = z
     endDateTo: z.string().optional(),
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
+    businessId: z.string().optional(),
   })
   .catch({});
 
@@ -64,7 +65,7 @@ const parseProcessInstancesSearchFilter = (
   const hasStateFilters =
     filter.active || filter.completed || filter.canceled || filter.incidents;
 
-  if (!hasStateFilters && !filter.batchOperationId) {
+  if (!hasStateFilters && !filter.batchOperationKey) {
     return undefined;
   }
 
@@ -128,8 +129,8 @@ const parseProcessInstancesSearchFilter = (
     apiFilter.elementInstanceState = {$eq: 'ACTIVE'};
   }
 
-  if (filter.batchOperationId) {
-    apiFilter.batchOperationId = {$eq: filter.batchOperationId};
+  if (filter.batchOperationKey) {
+    apiFilter.batchOperationKey = {$eq: filter.batchOperationKey};
   }
 
   if (filter.errorMessage) {
@@ -164,6 +165,10 @@ const parseProcessInstancesSearchFilter = (
       ...(filter.endDateFrom && {$gt: formatToISO(filter.endDateFrom)}),
       ...(filter.endDateTo && {$lt: formatToISO(filter.endDateTo)}),
     };
+  }
+
+  if (filter.businessId) {
+    apiFilter.businessId = {$eq: filter.businessId};
   }
 
   return apiFilter;

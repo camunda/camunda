@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   private final MemberId serverId;
 
   private State state = State.INITIAL;
-  private CompletionStage<byte[]> pendingRequest;
+  private @Nullable CompletionStage<byte[]> pendingRequest;
 
   ClientStreamRegistration(final AggregatedClientStream<M> stream, final MemberId serverId) {
     this.stream = stream;
@@ -54,7 +55,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     return state;
   }
 
-  CompletionStage<byte[]> pendingRequest() {
+  @Nullable CompletionStage<byte[]> pendingRequest() {
     return pendingRequest;
   }
 

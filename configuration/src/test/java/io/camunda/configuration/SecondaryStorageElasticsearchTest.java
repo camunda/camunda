@@ -10,18 +10,18 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -828,14 +828,18 @@ public class SecondaryStorageElasticsearchTest {
     @Test
     void shouldUseOperatePropertiesDefaults() {
       assertThat(operateProperties.getElasticsearch())
-          .returns(null, OperateElasticsearchProperties::getSocketTimeout)
+          .returns(
+              OperateElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              OperateElasticsearchProperties::getSocketTimeout)
           .returns(null, OperateElasticsearchProperties::getConnectTimeout);
     }
 
     @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getElasticsearch())
-          .returns(null, TasklistElasticsearchProperties::getSocketTimeout)
+          .returns(
+              TasklistElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              TasklistElasticsearchProperties::getSocketTimeout)
           .returns(null, TasklistElasticsearchProperties::getConnectTimeout);
     }
 
@@ -1013,6 +1017,35 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(proxy.isSslEnabled()).isTrue();
       assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
       assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
+  class WithDefaultValues {
+
+    final Camunda camunda;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
+
+    WithDefaultValues(
+        @Autowired final Camunda camunda,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+      this.camunda = camunda;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
+    }
+
+    @Test
+    void shouldNumberOfReplicasDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getElasticsearch().getNumberOfReplicas())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldNumberOfShardsDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getElasticsearch().getNumberOfShards())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfShards()).isEqualTo(1);
     }
   }
 }

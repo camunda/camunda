@@ -23,6 +23,7 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -72,6 +73,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -124,16 +126,33 @@ import org.slf4j.LoggerFactory;
 public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
+  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private final SearchClientReaders readers;
+  private final Map<String, SearchClientReaders> tenantReaders;
+  private final String currentPhysicalTenantId;
   private final ResourceAccessController resourceAccessController;
   private final SecurityContext securityContext;
 
   public CamundaSearchClients(
-      final SearchClientReaders readers,
+      final Map<String, SearchClientReaders> tenantReaders,
+      final ResourceAccessController resourceAccessController) {
+    this(tenantReaders, DEFAULT_PHYSICAL_TENANT_ID, resourceAccessController, null);
+  }
+
+  private CamundaSearchClients(
+      final Map<String, SearchClientReaders> tenantReaders,
+      final String currentPhysicalTenantId,
       final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
-    this.readers = readers;
+    this.tenantReaders = Map.copyOf(tenantReaders);
+    readers = this.tenantReaders.get(currentPhysicalTenantId);
+    if (readers == null) {
+      throw new IllegalArgumentException(
+          "Missing readers for physical tenant '%s'. Known physical tenants: %s"
+              .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
+    }
+    this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
@@ -165,6 +184,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return doSearchWithReader(readers.correlatedMessageSubscriptionReader(), query);
+  }
+
+  @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    return doGetWithReader(readers.messageSubscriptionReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Message Subscription", key));
   }
 
   @Override
@@ -211,8 +236,20 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    if (!tenantReaders.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException(
+          "Unknown physical tenant: '%s'. Known tenants: %s"
+              .formatted(physicalTenantId, tenantReaders.keySet()));
+    }
+    return new CamundaSearchClients(
+        tenantReaders, physicalTenantId, resourceAccessController, securityContext);
+  }
+
+  @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new CamundaSearchClients(readers, resourceAccessController, securityContext);
+    return new CamundaSearchClients(
+        tenantReaders, currentPhysicalTenantId, resourceAccessController, securityContext);
   }
 
   @Override
@@ -554,6 +591,24 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
       final GlobalListenerQuery query) {
     return doSearchWithReader(readers.globalListenerReader(), query);
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResource(final long key) {
+    return doGet(a -> readers.deployedResourceReader().getByKey(key, a))
+        .orElseThrow(() -> entityByKeyNotFoundException("Resource", key));
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
+    return doGet(a -> readers.deployedResourceReader().getByKeyMetadata(key, a))
+        .orElseThrow(() -> entityByKeyNotFoundException("Resource", key));
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final DeployedResourceQuery query) {
+    return doSearchWithReader(readers.deployedResourceReader(), query);
   }
 
   protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(

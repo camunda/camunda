@@ -12,14 +12,27 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class KeyUtil {
 
-  public static Long keyToLong(final String key) {
-    return key != null ? Long.parseLong(key) : null;
+  public static String keyToString(final long value) {
+    return String.valueOf(value);
   }
 
-  public static Function<String, Long> mapKeyToLong(
+  public static Long keyToLong(final String key) {
+    return Long.parseLong(key);
+  }
+
+  public static @Nullable String keyToStringOrNull(final @Nullable Long value) {
+    return value != null ? keyToString(value) : null;
+  }
+
+  public static @Nullable Long keyToLongOrNull(final @Nullable String key) {
+    return key != null ? keyToLong(key) : null;
+  }
+
+  public static Function<String, @Nullable Long> mapKeyToLong(
       final String fieldName, final List<String> validationErrors) {
     return key -> {
       if (key == null) {
@@ -34,13 +47,9 @@ public class KeyUtil {
     };
   }
 
-  public static String keyToString(final Long value) {
-    return value != null ? String.valueOf(value) : null;
-  }
-
-  public static Optional<Long> tryParseLong(final String key) {
+  public static Optional<Long> tryParseLong(final @Nullable String key) {
     try {
-      return Optional.ofNullable(keyToLong(key));
+      return Optional.ofNullable(keyToLongOrNull(key));
     } catch (final NumberFormatException e) {
       return Optional.empty();
     }

@@ -13,7 +13,16 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockVariables} from './index.setup';
+import {createVariable} from 'modules/testUtils';
 import {VariablesTab} from '../index';
+import {notificationsStore} from 'modules/stores/notifications';
+import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 describe('Add variable', () => {
   beforeEach(() => {
@@ -535,5 +544,66 @@ describe('Add variable', () => {
     expect(
       await within(screen.getByRole('dialog')).findByTestId('monaco-editor'),
     ).toBeInTheDocument();
+  });
+
+  it('should save a large new variable even when search response is truncated', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    await user.type(
+      screen.getByRole('textbox', {name: /name/i}),
+      'largeVariable',
+    );
+    await user.type(
+      screen.getByRole('textbox', {name: /value/i}),
+      '"large-value"',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /save/i})).toBeEnabled();
+    });
+
+    mockUpdateElementInstanceVariables(':1').withDelay(null);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'largeVariable',
+          value: '"truncated-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    await user.click(screen.getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Variable added',
+        isDismissable: true,
+      });
+    });
   });
 });

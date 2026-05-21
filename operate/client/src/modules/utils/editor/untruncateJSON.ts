@@ -92,6 +92,9 @@ function untruncateJson(json: string): {
 
   for (const {length} = json; position < length; position++) {
     const char = json[position];
+    if (char === undefined) {
+      break;
+    }
     switch (contextStack[contextStack.length - 1]) {
       case 'topLevel':
         startAny(char);
@@ -205,7 +208,7 @@ function untruncateJson(json: string): {
     respawnPosition != null ? json.slice(0, respawnPosition) : json,
   ];
   const finishWord = (word: string) =>
-    result.push(word.slice(json.length - json.lastIndexOf(word[0])));
+    result.push(word.slice(json.length - json.lastIndexOf(word.charAt(0))));
 
   let collectionDepth = 0;
 

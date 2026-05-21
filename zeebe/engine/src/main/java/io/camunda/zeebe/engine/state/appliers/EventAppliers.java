@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -158,7 +160,17 @@ public final class EventAppliers implements EventApplier {
     registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
     registerJobMetricsBatchEventAppliers(state);
+    registerAgentInstanceEventAppliers(state);
     return this;
+  }
+
+  private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {
+    register(
+        AgentInstanceIntent.CREATED,
+        new AgentInstanceCreatedApplier(
+            state.getAgentInstanceState(), state.getElementInstanceState()));
+    register(AgentInstanceIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(AgentInstanceIntent.COMPLETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
@@ -353,6 +365,16 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementMigratedV3Applier(
             elementInstanceState, processState, state.getMessageState()));
     register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        4,
+        new ProcessInstanceElementMigratedV4Applier(
+            elementInstanceState, processState, state.getMessageState()));
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        5,
+        new ProcessInstanceElementMigratedV5Applier(
+            elementInstanceState, processState, state.getMessageState()));
+    register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
     register(
@@ -535,6 +557,13 @@ public final class EventAppliers implements EventApplier {
             state.getProcessState(),
             state.getUsageMetricState()));
     register(
+        ProcessEventIntent.TRIGGERING,
+        3,
+        new ProcessEventTriggeringV3Applier(
+            state.getEventScopeInstanceState(),
+            state.getElementInstanceState(),
+            state.getProcessState()));
+    register(
         ProcessEventIntent.TRIGGERED,
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
@@ -586,6 +615,11 @@ public final class EventAppliers implements EventApplier {
     register(ResourceIntent.CREATED, new ResourceCreatedApplier(state.getResourceState()));
     register(ResourceIntent.DELETED, new ResourceDeletedApplier(state.getResourceState()));
     register(ResourceIntent.FETCHED, NOOP_EVENT_APPLIER);
+    register(ResourceIntent.REEXPORTED, NOOP_EVENT_APPLIER);
+    register(
+        ResourceReexportIntent.STARTED,
+        new ResourceReexportStartedApplier(state.getResourceState()));
+    register(ResourceReexportIntent.FINISHED, NOOP_EVENT_APPLIER);
   }
 
   private void registerUserTaskAppliers(final MutableProcessingState state) {
@@ -614,7 +648,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
     register(UserTaskIntent.ASSIGNED, 3, new UserTaskAssignedV3Applier(state));
     register(UserTaskIntent.ASSIGNED, 4, new UserTaskAssignedV4Applier(state));
-    register(UserTaskIntent.CLAIMING, new UserTaskClaimingApplier(state));
+    register(UserTaskIntent.CLAIMING, 1, new UserTaskClaimingV1Applier(state));
+    register(UserTaskIntent.CLAIMING, 2, new UserTaskClaimingV2Applier(state));
     register(UserTaskIntent.UPDATING, 1, new UserTaskUpdatingV1Applier(state));
     register(UserTaskIntent.UPDATING, 2, new UserTaskUpdatingV2Applier(state));
     register(UserTaskIntent.UPDATING, 3, new UserTaskUpdatingV3Applier(state));

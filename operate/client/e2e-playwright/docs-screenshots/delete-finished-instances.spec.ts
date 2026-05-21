@@ -227,7 +227,7 @@ test.describe('delete finished instances', () => {
         });
       }
 
-      route.continue();
+      return route.continue();
     });
 
     await expect(

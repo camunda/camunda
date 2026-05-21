@@ -11,7 +11,6 @@ import {
   jsonHeaders,
   buildUrl,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
@@ -177,7 +176,7 @@ test.describe.parallel('Groups API Tests', () => {
     );
     const json = await res.json();
     expect(json.page.totalItems).toBe(0);
-    expect(json.items.length).toBe(0);
+    expect(json.items).toHaveLength(0);
   });
 
   test('Search Groups Unauthorized', async ({request}) => {

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -77,6 +78,173 @@ public class ProcessEventsClaimsTest {
             .findFirst();
     assertAuthorizationClaims(record);
     assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldIncludeClaimsInProcessInstanceCreationCreatedEventsForMessageCorrelation() {
+    // given
+    deployMessageStartProcess();
+
+    // when
+    final var processInstanceKey =
+        engine
+            .messageCorrelation()
+            .withName("startMessage")
+            .withCorrelationKey("key-1")
+            .correlate(DEFAULT_USER.getUsername())
+            .getValue()
+            .getProcessInstanceKey();
+
+    // then
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldIncludeClaimsInProcessInstanceCreationCreatedEventsForMessagePublication() {
+    // given
+    deployMessageStartProcess();
+
+    // when
+    engine
+        .message()
+        .withName("startMessage")
+        .withCorrelationKey("key-1")
+        .publish(DEFAULT_USER.getUsername());
+
+    // then
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst()
+            .getKey();
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldIncludeClaimsInProcessInstanceCreationCreatedEventsForSignalBroadcast() {
+    // given
+    deploySignalStartProcess();
+
+    // when
+    engine.signal().withSignalName("startSignal").broadcast(DEFAULT_USER.getUsername());
+
+    // then
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst()
+            .getKey();
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldIncludeClaimsInProcessInstanceCreationCreatedEventsForConditionalEvaluation() {
+    // given
+    deployConditionalStartProcess();
+
+    // when
+    engine
+        .conditionalEvaluation()
+        .withVariables(Map.of("x", 1000, "y", 100))
+        .evaluate(DEFAULT_USER.getUsername());
+
+    // then
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst()
+            .getKey();
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldNotIncludeUserClaimsInProcessInstanceCreationCreatedEventsForTimerTrigger() {
+    // given
+    deployTimerStartProcess();
+
+    // when - the engine fires the timer internally with no user context
+    engine.increaseTime(Duration.ofSeconds(2));
+
+    // then - the CREATED event must be present but must carry no user/client claims, which means
+    // AuditLogConfiguration will classify it as UNKNOWN actor and skip writing an audit log entry
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst()
+            .getKey();
+    final var record =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(processInstanceKey)
+            .findFirst();
+    assertThat(record).isPresent();
+    assertThat(record.get().getAuthorizations())
+        .doesNotContainKey(Authorization.AUTHORIZED_USERNAME)
+        .doesNotContainKey(Authorization.AUTHORIZED_CLIENT_ID);
+  }
+
+  @Test
+  public void
+      shouldNotIncludeUserClaimsInProcessInstanceCreationCreatedEventsForBufferedMessageCorrelation() {
+    // given - a process with a message start event and a service task to keep the first instance
+    // alive
+    deployMessageStartProcessWithServiceTask();
+
+    // start the first instance with a user-issued publish command (first CREATED has user claims)
+    engine
+        .message()
+        .withName("startMessage")
+        .withCorrelationKey("key-1")
+        .publish(DEFAULT_USER.getUsername());
+    final var firstJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType("task").getFirst();
+
+    // publish a second message with the same correlation key — it will be buffered
+    engine
+        .message()
+        .withName("startMessage")
+        .withCorrelationKey("key-1")
+        .publish(DEFAULT_USER.getUsername());
+
+    // when - completing the first job triggers buffered message correlation internally (no user)
+    engine.job().withKey(firstJob.getKey()).complete();
+
+    // then - the second CREATED event is produced by an engine-internal follow-up event and must
+    // carry no user/client claims, so AuditLogConfiguration will not write an audit log entry
+    final var createdRecords =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .limit(2)
+            .asList();
+    assertThat(createdRecords).hasSize(2);
+    final var bufferedCreatedRecord = createdRecords.get(1);
+    assertThat(bufferedCreatedRecord.getAuthorizations())
+        .doesNotContainKey(Authorization.AUTHORIZED_USERNAME)
+        .doesNotContainKey(Authorization.AUTHORIZED_CLIENT_ID);
   }
 
   @Test
@@ -469,6 +637,72 @@ public class ProcessEventsClaimsTest {
             Bpmn.createExecutableProcess("childProcess")
                 .startEvent()
                 .serviceTask("childTask", t -> t.zeebeJobType("childTask"))
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+  }
+
+  private void deployMessageStartProcess() {
+    engine
+        .deployment()
+        .withXmlResource(
+            "messageStartProcess.bpmn",
+            Bpmn.createExecutableProcess("messageStartProcess")
+                .startEvent()
+                .message("startMessage")
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+  }
+
+  private void deployMessageStartProcessWithServiceTask() {
+    engine
+        .deployment()
+        .withXmlResource(
+            "messageStartProcess.bpmn",
+            Bpmn.createExecutableProcess("messageStartProcess")
+                .startEvent()
+                .message("startMessage")
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+  }
+
+  private void deploySignalStartProcess() {
+    engine
+        .deployment()
+        .withXmlResource(
+            "signalStartProcess.bpmn",
+            Bpmn.createExecutableProcess("signalStartProcess")
+                .startEvent()
+                .signal("startSignal")
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+  }
+
+  private void deployConditionalStartProcess() {
+    engine
+        .deployment()
+        .withXmlResource(
+            "conditionalStartProcess.bpmn",
+            Bpmn.createExecutableProcess("conditionalStartProcess")
+                .startEvent("start")
+                .condition(c -> c.condition("=x > y"))
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+  }
+
+  private void deployTimerStartProcess() {
+    engine
+        .deployment()
+        .withXmlResource(
+            "timerStartProcess.bpmn",
+            Bpmn.createExecutableProcess("timerStartProcess")
+                .startEvent()
+                .timerWithCycle("R1/PT1S")
                 .endEvent()
                 .done())
         .deploy(DEFAULT_USER.getUsername());

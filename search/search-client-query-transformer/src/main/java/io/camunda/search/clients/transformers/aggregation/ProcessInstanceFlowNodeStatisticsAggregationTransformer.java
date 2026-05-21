@@ -22,6 +22,7 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filt
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_TYPE;
 
@@ -72,11 +73,15 @@ public class ProcessInstanceFlowNodeStatisticsAggregationTransformer
             .aggregations(filtersAgg)
             .build();
 
-    // aggregate filter flow nodes
+    // aggregate filter flow nodes - exclude multi-instance bodies UNLESS they have incidents
+    // so that incidents on the multi-instance body itself are counted
     final var filterFlowNodesAgg =
         filter()
             .name(AGGREGATION_FILTER_FLOW_NODES)
-            .query(not(term(ACTIVITY_TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())))
+            .query(
+                or(
+                    not(term(ACTIVITY_TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())),
+                    term(ListViewTemplate.INCIDENT, true)))
             .aggregations(groupFlowNodesAgg)
             .build();
 

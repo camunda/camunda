@@ -129,10 +129,30 @@ public final class TestHelper {
       final BpmnModelInstance processDefinition,
       final String resourceName) {
     final var event =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(processDefinition, resourceName)
-            .execute()
+        deployResource(client, processDefinition, resourceName).getProcesses().getFirst();
+
+    // sync with secondary database
+    waitForProcessesToBeDeployed(
+        client, f -> f.processDefinitionKey(event.getProcessDefinitionKey()), 1);
+
+    return event;
+  }
+
+  /**
+   * Deploys a process for a tenant and waits for it to be available in the secondary database.
+   *
+   * @param client ... CamundaClient
+   * @param processDefinition ... BpmnModelInstance of the process definition
+   * @param tenantId the tenant to deploy the process for
+   * @return the deployed process
+   */
+  public static Process deployProcessForTenantAndWaitForIt(
+      final CamundaClient client,
+      final BpmnModelInstance processDefinition,
+      final String resourceName,
+      final String tenantId) {
+    final var event =
+        deployResourceForTenant(client, processDefinition, resourceName, tenantId)
             .getProcesses()
             .getFirst();
 
@@ -274,6 +294,16 @@ public final class TestHelper {
         .execute();
   }
 
+  public static CorrelateMessageResponse startProcessInstanceWithMessageForTenant(
+      final CamundaClient camundaClient, final String messageName, final String tenantId) {
+    return camundaClient
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .withoutCorrelationKey()
+        .tenantId(tenantId)
+        .execute();
+  }
+
   public static ProcessInstanceEvent startProcessInstanceWithTags(
       final CamundaClient camundaClient, final String bpmnProcessId, final Set<String> tags) {
     return camundaClient
@@ -396,6 +426,18 @@ public final class TestHelper {
         expectedProcessInstances,
         page ->
             camundaClient.newProcessInstanceSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static void waitForVariablesBeingExported(
+      final CamundaClient camundaClient, final int expectedSize) {
+    Awaitility.await("should receive variables from secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+                  .hasSize(expectedSize);
+            });
   }
 
   /**
@@ -1186,11 +1228,11 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForProcessInstances(
+  public static List<ProcessInstance> waitForProcessInstances(
       final CamundaClient camundaClient,
       final Consumer<ProcessInstanceFilter> fn,
       final int expectedProcessInstances) {
-    waitForItemsPaginated(
+    return waitForItemsPaginated(
         "should wait until process instances are available",
         expectedProcessInstances,
         page -> camundaClient.newProcessInstanceSearchRequest().filter(fn).page(page).execute());
@@ -1845,6 +1887,24 @@ public final class TestHelper {
                 assertThat(response.items())
                     .anySatisfy(item -> assertThat(item.getName()).isEqualTo(expectedName));
               }
+            });
+  }
+
+  /**
+   * Waits for a form to be indexed in Elasticsearch/OpenSearch after deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param formKey the key of the form to retrieve
+   */
+  public static void waitForFormToBeIndexed(final CamundaClient camundaClient, final long formKey) {
+    Awaitility.await("should index form")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var form = camundaClient.newFormGetRequest(formKey).execute();
+              assertThat(form).isNotNull();
+              assertThat(form.getFormKey()).isEqualTo(formKey);
             });
   }
 

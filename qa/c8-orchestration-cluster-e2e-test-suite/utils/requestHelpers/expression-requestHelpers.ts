@@ -7,10 +7,7 @@
  */
 
 import {APIRequestContext} from '@playwright/test';
-import {
-  buildUrl,
-  jsonHeaders,
-} from '../http';
+import {buildUrl, jsonHeaders} from '../http';
 
 export const EXPRESSION_URL = '/expression/evaluation';
 

@@ -200,6 +200,24 @@ public class SearchJobTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchJobFilterByBeforeAllListenerEventType() {
+    // when
+    client
+        .newJobSearchRequest()
+        .filter(filter -> filter.listenerEventType(f -> f.eq(ListenerEventType.BEFORE_ALL)))
+        .send()
+        .join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter())
+        .extracting(JobFilter::getListenerEventType)
+        .extracting(JobListenerEventTypeFilterProperty::get$Eq)
+        .isEqualTo(JobListenerEventTypeEnum.BEFORE_ALL);
+  }
+
+  @Test
   void shouldSearchJobWithFullSorting() {
     // when
     client

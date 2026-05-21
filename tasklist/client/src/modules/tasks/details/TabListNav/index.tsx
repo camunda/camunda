@@ -41,7 +41,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
               aria-label={label}
               aria-current={selected ? 'page' : undefined}
               className={cn(
-                {[styles.hidden]: isHidden},
+                {[styles.hidden!]: isHidden},
                 'cds--tabs__nav-item',
                 'cds--tabs__nav-link',
                 {

@@ -7,7 +7,8 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 
 public class SecurityConfigurations {
   public static SecurityConfiguration unauthenticatedAndUnauthorized() {

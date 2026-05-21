@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "1ff50fc22791ae07c6353bfc72e62e0f4775f1df",
-    "generatedAt": "2026-04-01T13:31:56.835Z",
+    "commit": "304a6b608bad29c893c4597fc951ac967e9f4124",
+    "generatedAt": "2026-05-06T09:43:55.169Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "36365a7879894180284f12a90a1afaa1c73061c07dfa3f5d45c8300c9301030d"
+    "specSha256": "7b59672a1557b1183147696e37f62e5e7d56a17fceb2a30cc4ec078086b41261"
   },
   "responses": [
     {
@@ -523,8 +523,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -770,7 +769,8 @@
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "rootProcessInstanceKey",
@@ -4049,6 +4049,7 @@
                   "type": "string",
                   "enumValues": [
                     "ASSIGNING",
+                    "BEFORE_ALL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4258,6 +4259,7 @@
                   "type": "string",
                   "enumValues": [
                     "ASSIGNING",
+                    "BEFORE_ALL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4998,6 +5000,15 @@
                   "nullable": true
                 },
                 {
+                  "name": "toolProperties",
+                  "type": "object"
+                },
+                {
+                  "name": "inboundConnectorType",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "lastUpdatedDate",
                   "type": "string"
                 },
@@ -5020,12 +5031,30 @@
                   ]
                 },
                 {
+                  "name": "messageSubscriptionType",
+                  "type": "string",
+                  "enumValues": [
+                    "START_EVENT",
+                    "PROCESS_EVENT"
+                  ]
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
                 {
                   "name": "processDefinitionKey",
                   "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "processDefinitionName",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number",
                   "nullable": true
                 },
                 {
@@ -5044,6 +5073,11 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
+                },
+                {
+                  "name": "toolName",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -6195,6 +6229,77 @@
       }
     },
     {
+      "path": "/resources/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [
+                {
+                  "name": "resourceId",
+                  "type": "string"
+                },
+                {
+                  "name": "resourceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "resourceName",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "type": "number"
+                },
+                {
+                  "name": "versionTag",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/resources/{resourceKey}",
       "method": "GET",
       "status": "200",
@@ -6226,15 +6331,6 @@
             "nullable": true
           }
         ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/resources/{resourceKey}/content",
-      "method": "GET",
-      "status": "200",
-      "schema": {
-        "required": [],
         "optional": []
       }
     },

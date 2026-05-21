@@ -8,8 +8,8 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
-import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TaskEntity
-    implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
+public class TaskEntity extends AbstractExporterEntity<TaskEntity>
+    implements PartitionedEntity<TaskEntity>, TenantOwned {
 
   @BeforeVersion880 private String id;
 
@@ -148,17 +148,6 @@ public class TaskEntity
   private Long rootProcessInstanceKey;
 
   public TaskEntity() {}
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public TaskEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
 
   public long getKey() {
     return key;

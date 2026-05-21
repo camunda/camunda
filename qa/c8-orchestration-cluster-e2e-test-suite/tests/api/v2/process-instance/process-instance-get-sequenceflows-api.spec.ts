@@ -70,7 +70,7 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
         );
         const json = await getResponse.json();
         expect(json).toBeDefined();
-        expect(json.items.length).toBe(1);
+        expect(json.items).toHaveLength(1);
         expect(json.items[0].processInstanceKey).toBe(
           localState['processInstanceKey'],
         );
@@ -113,7 +113,7 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
       res,
     );
     const json = await res.json();
-    expect(json.items.length).toBe(0);
+    expect(json.items).toHaveLength(0);
   });
 
   test('Get Process Instance Sequence Flows - Bad Request', async ({

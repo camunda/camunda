@@ -171,6 +171,7 @@ public class BrokerBasedPropertiesOverride {
 
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
+    override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
     override.getProcessing().setEnableAsyncScheduledTasks(processing.isEnableAsyncScheduledTasks());
     override
         .getProcessing()
@@ -410,6 +411,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
     override.getCluster().setClusterId(cluster.getClusterId());
+    override.getCluster().setZone(cluster.getZone());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
@@ -737,6 +739,7 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setHost(gcs.getHost());
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
     gcsBackupStoreConfig.setMaxConcurrentTransfers(gcs.getMaxConcurrentTransfers());
+    gcsBackupStoreConfig.setBufferSize(gcs.getBufferSize());
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
@@ -869,6 +872,8 @@ public class BrokerBasedPropertiesOverride {
                   CamundaExporterConfigurationApplier.applyIncidentNotifier(
                       config, unifiedConfiguration);
                   CamundaExporterConfigurationApplier.applyMisc(config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyExtensionProperties(
+                      config, unifiedConfiguration);
                 })
             .toArgs());
   }
@@ -963,8 +968,36 @@ public class BrokerBasedPropertiesOverride {
                         .setMaxFlowNodeInsertBatchSize(
                             database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
                   }
+
+                  if (database.getAsyncReplication() != null) {
+                    final var asyncReplication = database.getAsyncReplication();
+                    config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+                    config
+                        .getAsyncReplication()
+                        .setPollingInterval(asyncReplication.getPollingInterval());
+                    config
+                        .getAsyncReplication()
+                        .setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
+                    config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
+                    config
+                        .getAsyncReplication()
+                        .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
+                  }
+
+                  applyRdbmsExtensionPropertyConfiguration(
+                      config.getExtensionProperties(),
+                      unifiedConfiguration.getCamunda().getData().getExtensionProperties());
                 })
             .toArgs());
+  }
+
+  private void applyRdbmsExtensionPropertyConfiguration(
+      final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
+          extensionProperties,
+      final io.camunda.configuration.ExtensionProperties source) {
+    extensionProperties.setToolNameProperty(source.getToolNameProperty());
+    extensionProperties.setInboundConnectorTypeProperty(source.getInboundConnectorTypeProperty());
+    extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
   private void applyRdbmsHistoryExporterConfiguration(

@@ -41,10 +41,11 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /resources/{resourceKey}:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResource
@@ -52,7 +53,9 @@ paths:
       description: |
         Returns a deployed resource.
         :::info
-        Currently, this endpoint only supports RPA resources.
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective APIs.
         :::
       parameters:
         - name: resourceKey
@@ -76,18 +79,69 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
 
   /resources/{resourceKey}/content:
     get:
-      x-eventually-consistent: false
+      deprecated: true
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResourceContent
-      summary: Get resource content
+      summary: Get RPA resource content (deprecated)
       description: |
-        Returns the content of a deployed resource.
+        **Deprecated** — use `/resources/{resourceKey}/content/binary` instead, which supports all
+        resource types and returns content as binary (octet-stream).
+
+        Returns the content of a deployed RPA resource as JSON.
         :::info
-        Currently, this endpoint only supports RPA resources.
+        This endpoint only supports RPA resources. For generic resource content in binary format,
+        use the `/resources/{resourceKey}/content/binary` endpoint.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the RPA resource.
+          schema:
+            $ref: '#/components/schemas/ResourceKey'
+      responses:
+        "200":
+          description: The resource content is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "404":
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "406":
+          description: The resource exists but is not an RPA resource.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
+
+  /resources/{resourceKey}/content/binary:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Resource
+      operationId: getResourceContentBinary
+      summary: Get resource content as binary
+      description: |
+        Returns the content of a deployed resource in binary format (octet-stream).
+        :::info
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective APIs.
         :::
       parameters:
         - name: resourceKey
@@ -100,9 +154,10 @@ paths:
         "200":
           description: The resource content is successfully returned.
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 type: string
+                format: binary
         "404":
           description: A resource with the given key was not found.
           content:
@@ -111,6 +166,44 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+  /resources/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Resource
+      operationId: searchResources
+      summary: Search resources
+      description: |
+        Search for deployed resources based on given criteria.
+        :::info
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective search APIs.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceSearchQuery'
+      responses:
+        "200":
+          description: The resource search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
 
   /resources/{resourceKey}/deletion:
     post:
@@ -168,6 +261,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
 ## Schema definitions
 
@@ -179,6 +273,8 @@ components:
         - deploymentKey
         - tenantId
         - deployments
+      x-semantic-provider:
+        - deploymentKey
       properties:
         deploymentKey:
           allOf:
@@ -228,6 +324,9 @@ components:
           description: Deployed resource.
           allOf:
             - $ref: '#/components/schemas/DeploymentResourceResult'
+      x-properties-added-in-version:
+        - propertyName: resource
+          addedInVersion: "8.7"
 
     DeploymentProcessResult:
       description: A deployed process.
@@ -270,6 +369,10 @@ components:
       x-semantic-provider:
         - decisionDefinitionKey
         - decisionRequirementsKey
+        - decisionDefinitionId
+        - decisionRequirementsId
+        - name
+        - version
       required:
         - decisionDefinitionId
         - decisionDefinitionKey
@@ -426,6 +529,9 @@ components:
             will not be populated.
           type: boolean
           default: false
+      x-properties-added-in-version:
+        - propertyName: deleteHistory
+          addedInVersion: "8.9"
 
     DeleteResourceResponse:
       type: object
@@ -447,6 +553,11 @@ components:
             This field is only populated when the request `deleteHistory` is set to `true` and the resource
             is a process definition. For other resource types (decisions, forms, generic resources),
             this field will be `null`.
+      x-properties-added-in-version:
+        - propertyName: resourceKey
+          addedInVersion: "8.9"
+        - propertyName: batchOperation
+          addedInVersion: "8.9"
 
     ResourceResult:
       type: object
@@ -480,6 +591,19 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
+      x-properties-added-in-version:
+        - propertyName: resourceName
+          addedInVersion: "8.7"
+        - propertyName: version
+          addedInVersion: "8.7"
+        - propertyName: versionTag
+          addedInVersion: "8.7"
+        - propertyName: resourceId
+          addedInVersion: "8.7"
+        - propertyName: tenantId
+          addedInVersion: "8.7"
+        - propertyName: resourceKey
+          addedInVersion: "8.7"
 
     ## Keys
 
@@ -539,6 +663,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeploymentKey'
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     ResourceKeyFilterProperty:
       description: ResourceKey property with full advanced search capabilities.
@@ -576,3 +711,97 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
+      x-properties-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
+
+    ## Resource Search
+
+    ResourceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - resourceKey
+            - resourceName
+            - resourceId
+            - version
+            - versionTag
+            - deploymentKey
+            - tenantId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ResourceSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/ResourceFilter'
+          description: The resource search filters.
+
+    ResourceFilter:
+      description: Resource search filter.
+      type: object
+      properties:
+        resourceKey:
+          allOf:
+            - $ref: '#/components/schemas/ResourceKeyFilterProperty'
+          description: The key for this resource.
+        resourceName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Resource name of this resource.
+        resourceId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Resource ID of this resource.
+        version:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: Version of this resource.
+        versionTag:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Version tag of this resource.
+        deploymentKey:
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKeyFilterProperty'
+          description: Deployment key of this resource.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this resource.
+
+    ResourceSearchQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching resources.
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceResult'

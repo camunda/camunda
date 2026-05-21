@@ -13,7 +13,7 @@ import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse, http} from 'msw';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {getStateLocally, storeStateLocally} from 'modules/local-storage';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
@@ -50,7 +50,7 @@ describe('<CollapsiblePanel />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),

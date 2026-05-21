@@ -18,7 +18,7 @@ inputs:
     description: Vault Secret ID to use
     required: true
   opensearch-version:
-    description: OpenSearch version to configure (2.19 or 3.3)
+    description: OpenSearch version to configure (2.19 or 3.5)
     required: true
 
 outputs:
@@ -39,7 +39,7 @@ runs:
         secretId: ${{ inputs.vault-secret-id }}
         secrets: |
           secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
-          secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
+          secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_5_URL;
 
     - name: Resolve OpenSearch URL and export env
       id: resolve-os-url
@@ -57,12 +57,12 @@ runs:
         then
           echo "Using OS 2.19"
           OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }}"
-        elif [[ "${{ inputs.opensearch-version }}" = "3.3" ]]
+        elif [[ "${{ inputs.opensearch-version }}" = "3.5" ]]
         then
-          echo "Using OS 3.3"
-          OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }}"
+          echo "Using OS 3.5"
+          OS_URL="https://${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_5_URL }}"
         else
-          echo "Unsupported OpenSearch version"
+          echo "Unsupported OpenSearch version: '${{ inputs.opensearch-version }}'. Supported versions: 2.19, 3.5."
           exit 1
         fi
 
@@ -70,7 +70,7 @@ runs:
         echo "opensearch-url=$OS_URL" >> "$GITHUB_OUTPUT"
 
     - name: Pre-login to AWS
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
       with:
         aws-region: ${{ env.AWS_REGION }}
         web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}

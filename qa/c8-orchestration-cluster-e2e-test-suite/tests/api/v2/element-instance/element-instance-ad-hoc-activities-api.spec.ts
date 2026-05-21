@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -15,6 +15,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   cancelProcessInstance,
   createInstances,
@@ -86,8 +87,11 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
       ],
     };
 
-    const res = await test.step('Call activation endpoint', async () => {
-      return await request.post(
+    // Retry to absorb engine read-after-write lag: the ad-hoc subprocess
+    // instance can be visible via search before the activation command can
+    // resolve it (404 → 204).
+    await expect(async () => {
+      const res = await request.post(
         buildUrl(
           '/element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation',
           {adHocSubProcessInstanceKey: adHocKey},
@@ -97,11 +101,8 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
           data: body,
         },
       );
-    });
-
-    await test.step('Assert successful response', async () => {
       await assertStatusCode(res, 204);
-    });
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Activate AdHoc Activities SucceedsWithVariablesAndCancel', async ({
@@ -121,8 +122,11 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
       cancelRemainingInstances: true,
     };
 
-    const res = await test.step('Call activation endpoint', async () => {
-      return await request.post(
+    // Retry to absorb engine read-after-write lag: the ad-hoc subprocess
+    // instance can be visible via search before the activation command can
+    // resolve it (404 → 204). Same pattern as SucceedsWithValidElements.
+    await expect(async () => {
+      const res = await request.post(
         buildUrl(
           '/element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation',
           {adHocSubProcessInstanceKey: adHocKey},
@@ -132,11 +136,8 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
           data: body,
         },
       );
-    });
-
-    await test.step('Assert successful response', async () => {
       await assertStatusCode(res, 204);
-    });
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Activate AdHoc Activities FailsWithMissingElements', async ({

@@ -6,8 +6,17 @@ name: Rdbms Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      notify-slack-on-failure:
+        description: "Whether workflow_dispatch runs should send Slack notifications on failure/cancellation"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
   pull_request:
     paths:
+      - ".ci/db-versions.yml"
+      - ".github/actions/read-db-versions/**"
       - ".github/workflows/zeebe-rdbms-integration-tests.yml"
   schedule:
     - cron: "0 5 * * Mon-Fri"
@@ -22,76 +31,54 @@ defaults:
     shell: bash
 
 jobs:
+  trigger-stable-8-9-nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Trigger stable/8.9 nightly run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref stable/8.9 zeebe-rdbms-integration-tests.yml -f notify-slack-on-failure=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Reads all supported RDBMS versions from .ci/db-versions.yml and generates
+  # the test matrix. Add or remove versions there — this workflow updates automatically.
+  generate-matrix:
+    name: "Generate RDBMS matrix"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read-versions.outputs.rdbms-matrix }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read DB versions
+        id: read-versions
+        uses: ./.github/actions/read-db-versions
+
   rdbms-integration-tests:
     name: "RDBMS ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: &database-matrix
-        include:
-          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
-          - database-name: "Postgres 14"
-            database-type: "postgres"
-            database-image-version: "14-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 15"
-            database-type: "postgres"
-            database-image-version: "15-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 16"
-            database-type: "postgres"
-            database-image-version: "16-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 17"
-            database-type: "postgres"
-            database-image-version: "17-alpine"
-            it-database-type: "rdbms_postgres"
-          - database-name: "Postgres 18"
-            database-type: "postgres"
-            database-image-version: "18-alpine"
-            it-database-type: "rdbms_postgres"
-          # MySQL - Supported version: 8.4
-          - database-name: "MySQL 8.4"
-            database-type: "mysql"
-            database-image-version: "8.4"
-            it-database-type: "rdbms_mysql"
-          # MariaDB - Supported versions: 10.11, 11.4, 11.8
-          - database-name: "MariaDB 10.11"
-            database-type: "mariadb"
-            database-image-version: "10.11"
-            it-database-type: "rdbms_mariadb"
-          - database-name: "MariaDB 11.4"
-            database-type: "mariadb"
-            database-image-version: "11.4"
-            it-database-type: "rdbms_mariadb"
-          - database-name: "MariaDB 11.8"
-            database-type: "mariadb"
-            database-image-version: "11.8"
-            it-database-type: "rdbms_mariadb"
-          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
-          - database-name: "MSSQL 2019"
-            database-type: "mssql"
-            database-image-version: "2019-latest"
-            it-database-type: "rdbms_mssql"
-          - database-name: "MSSQL 2022"
-            database-type: "mssql"
-            database-image-version: "2022-latest"
-            it-database-type: "rdbms_mssql"
-          - database-name: "MSSQL 2025"
-            database-type: "mssql"
-            database-image-version: "2025-latest"
-            it-database-type: "rdbms_mssql"
-          # Oracle - Supported version: 21c, 23ai (19c not available as Docker image)
-          - database-name: "Oracle 23ai"
-            database-type: "oracle"
-            database-image-version: "23-slim-faststart"
-            it-database-type: "rdbms_oracle"
-          - database-name: "Oracle 21c"
-            database-type: "oracle-21"
-            database-image-version: "21-slim-faststart"
-            it-database-type: "rdbms_oracle"
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -99,16 +86,17 @@ jobs:
       database-image-version: ${{ matrix.database-image-version }}
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
 
   rdbms-history-tests:
     name: "RDBMS History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -120,16 +108,17 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}
 
   rdbms-identity-tests:
     name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -140,4 +129,4 @@ jobs:
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
-      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify-slack-on-failure) }}

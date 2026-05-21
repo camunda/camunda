@@ -4,7 +4,7 @@ This document will become a knowledge base around the [C8 monorepo](https://gith
 
 ## Scope & Goal
 
-The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test). Optimize is released separately for 8.6 to 8.8 (at least).
+The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test) for 8.7-8.9.  Optimize is released separately for 8.7.
 
 It also involves automated and manual QA activities on release candidate builds to ensure bug-free artifacts on the final artifacts, e.g. certain benchmarks for Zeebe and interactive tests for C8 webapps.
 
@@ -58,7 +58,7 @@ Components that depend on the C8 monorepo releases:
 
 ### Artifacts
 
-* [Maven Central](https://mvnrepository.com/artifact/io.camunda)
+* [Maven Central](https://central.sonatype.com/search?q=camunda&sort=published)
 * DockerHub:
   * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
   * [Operate](https://hub.docker.com/r/camunda/operate/)
@@ -257,8 +257,6 @@ For CI-related issues in the release process, also see our [CI & Automation docu
 
 ## DRIs
 
-_This section is subject to change in_ [_#28528_](https://github.com/camunda/camunda/issues/28528)_._
-
 ### Release Manager
 
 There is one DRI called the “monorepo release manager” who oversees all running and newly launched release process instances end-to-end and is responsible for successfully finishing the releases (8.6+) according to their timelines. This DRI rotates every month (Slack groups etc. are manually updated) at the start of the month. Handover notes are [documented in tabs here](https://docs.google.com/document/d/1PYOMGEW5vcIhgDBY_BIe62s4sE26C2EbDqjgSM30URE/edit?tab=t.7bl3xug6y4a3).
@@ -279,7 +277,9 @@ QA Release Manager: can help with questions around steps the QA team performs.
 
 _Caveat: Not all steps with "QA" in the name mean that the QA team is actually involved, so check twice_
 
-Zeebe Release Manager: can help with Zeebe-specific questions and tasks.
+Zeebe Medic: can help with Zeebe-specific questions and tasks.
+
+Core Features Medic: can help with questions and tasks related to Operate, Tasklist, and other core features.
 
 ## Backporting Guidelines
 

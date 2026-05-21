@@ -33,7 +33,9 @@ public final class AuthorizationRequestValidator {
                 request.getResourceType(),
                 request.getResourceId(),
                 null,
-                Set.copyOf(request.getPermissionTypes())));
+                request.getPermissionTypes() == null
+                    ? Set.of()
+                    : Set.copyOf(request.getPermissionTypes())));
   }
 
   public Optional<ProblemDetail> validatePropertyBasedRequest(
@@ -46,6 +48,8 @@ public final class AuthorizationRequestValidator {
                 request.getResourceType(),
                 null,
                 request.getResourcePropertyName(),
-                Set.copyOf(request.getPermissionTypes())));
+                request.getPermissionTypes() == null
+                    ? Set.of()
+                    : Set.copyOf(request.getPermissionTypes())));
   }
 }

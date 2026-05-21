@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
-import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ResolvedInstance;
+import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -51,32 +52,87 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
 
   @Override
   public void processRecord(final TypedRecord<ExpressionRecord> command) {
-    final var record = command.getValue();
     validator
-        .ensureNotBlank(command)
-        .flatMap(validator::isValid)
-        .flatMap(expression -> isAuthorized(command, expression))
-        .flatMap(expression -> expressionBehavior.resolveExpression(expression, record))
+        .validate(command)
+        .map(this::applyResolvedTenant)
+        .flatMap(validated -> authorize(command, validated))
+        .flatMap(this::evaluate)
         .ifRightOrLeft(
             resolvedRecord -> acceptCommand(command, resolvedRecord),
             rejection -> rejectCommand(command, rejection));
   }
 
-  private Either<Rejection, Expression> isAuthorized(
-      final TypedRecord<ExpressionRecord> command, final Expression expression) {
-    final var tenantId = command.getValue().getTenantId();
-    final var authRequestBuilder =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.EXPRESSION)
-            .permissionType(PermissionType.EVALUATE);
+  private ValidatedCommand applyResolvedTenant(final ValidatedCommand validated) {
+    // Infer the tenant from the resolved instance so downstream auth and variable
+    // resolution always operate against the instance's owning tenant. Done here
+    // (in the processor) rather than in the validator to keep validation side effect free.
+    validated
+        .resolvedInstance()
+        .map(ResolvedInstance::tenantId)
+        .ifPresent(validated.record()::setTenantId);
+    return validated;
+  }
 
+  private Either<Rejection, ExpressionRecord> evaluate(final ValidatedCommand validated) {
+    return expressionBehavior.resolveExpression(validated.expression(), validated.record());
+  }
+
+  private Either<Rejection, ValidatedCommand> authorize(
+      final TypedRecord<ExpressionRecord> command, final ValidatedCommand validated) {
+    final var tenantId = validated.record().getTenantId();
+
+    return checkCanEvaluateExpression(command, tenantId)
+        .flatMap(__ -> checkCanReadInstanceIfScoped(command, validated, tenantId))
+        .map(__ -> validated);
+  }
+
+  private Either<Rejection, Void> checkCanEvaluateExpression(
+      final TypedRecord<ExpressionRecord> command, final String tenantId) {
+    return checkAuthorized(
+        withTenantIfPresent(
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(AuthorizationResourceType.EXPRESSION)
+                    .permissionType(PermissionType.EVALUATE),
+                tenantId)
+            .build());
+  }
+
+  private Either<Rejection, Void> checkCanReadInstanceIfScoped(
+      final TypedRecord<ExpressionRecord> command,
+      final ValidatedCommand validated,
+      final String tenantId) {
+    return validated
+        .resolvedInstance()
+        .map(instance -> checkCanReadProcessInstance(command, tenantId, instance.bpmnProcessId()))
+        .orElseGet(() -> Either.right(null));
+  }
+
+  private Either<Rejection, Void> checkCanReadProcessInstance(
+      final TypedRecord<ExpressionRecord> command,
+      final String tenantId,
+      final String bpmnProcessId) {
+    return checkAuthorized(
+        withTenantIfPresent(
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.READ_PROCESS_INSTANCE)
+                    .addResourceId(bpmnProcessId),
+                tenantId)
+            .build());
+  }
+
+  private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
+    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(__ -> null);
+  }
+
+  private static AuthorizationRequest.Builder withTenantIfPresent(
+      final AuthorizationRequest.Builder builder, final String tenantId) {
     if (tenantId != null && !tenantId.isEmpty()) {
-      authRequestBuilder.tenantId(tenantId);
+      builder.tenantId(tenantId);
     }
-
-    final var authRequest = authRequestBuilder.build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> expression);
+    return builder;
   }
 
   private void rejectCommand(

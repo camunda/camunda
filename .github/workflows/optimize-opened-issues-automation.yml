@@ -48,7 +48,7 @@ jobs:
           gh issue edit ${{ github.event.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
 
       - name: Update Status field - On Hold
-        uses: github/update-project-action@main
+        uses: github/update-project-action@af4f6083118f5080c89828b421ef598d1906fb60 # main
         if: contains(github.event.issue.labels.*.name, 'kind/bug')
         with:
           github_token: ${{ steps.github-token.outputs.token }}

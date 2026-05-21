@@ -63,17 +63,17 @@ class ListViewFromChunkItemHandlerTest {
     final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(numItems);
     factory.generateRecordWithIntent(
         ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
-    final var itemPIKeys =
+    final var batchOpKey = record.getValue().getBatchOperationKey();
+    final var expectedIds =
         record.getValue().getItems().stream()
-            .map(BatchOperationItemValue::getProcessInstanceKey)
-            .map(String::valueOf)
+            .map(item -> item.getProcessInstanceKey() + ":" + batchOpKey)
             .toList();
     // when
     final var ids = underTest.generateIds(record);
 
     // then
     assertThat(ids).hasSize(numItems);
-    assertThat(ids).containsExactlyInAnyOrderElementsOf(itemPIKeys);
+    assertThat(ids).containsExactlyInAnyOrderElementsOf(expectedIds);
   }
 
   @Test
@@ -99,30 +99,29 @@ class ListViewFromChunkItemHandlerTest {
 
     // then
     assertThat(entity.getBatchOperationIds())
-        .containsExactly(String.valueOf(record.getBatchOperationReference()));
+        .containsExactly(String.valueOf(record.getValue().getBatchOperationKey()));
   }
 
   @Test
   void shouldFlushEntity() {
     // given
-    final Record<BatchOperationChunkRecordValue> record =
-        factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
-    final var entity = underTest.createNewEntity("id");
-    final String batchOpKey = String.valueOf(record.getBatchOperationReference());
-    entity.setBatchOperationIds(List.of(batchOpKey));
+    final String batchOperationKey = "batch-op-1";
+    final String processInstanceKey = "42";
+    // entity uses composite cache ID (processInstanceKey:batchOperationKey)
+    final var entity = underTest.createNewEntity(processInstanceKey + ":" + batchOperationKey);
+    entity.setBatchOperationIds(List.of(batchOperationKey));
 
     // when
     final var batchRequest = mock(BatchRequest.class);
     underTest.flush(entity, batchRequest);
 
-    // then
+    // then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)
         .updateWithScript(
             eq(underTest.getIndexName()),
-            eq(entity.getId()),
+            eq(processInstanceKey),
             anyString(),
-            eq(Map.of("batchOperationId", batchOpKey)));
+            eq(Map.of("batchOperationId", batchOperationKey)));
   }
 
   private Record<BatchOperationChunkRecordValue> aChunkRecordWithMultipleItems(final int numItems) {

@@ -14,7 +14,7 @@ import {
   availableErrorTypes,
   getIncidentErrorName,
 } from 'modules/utils/incidents';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 
 const IncidentsFilter: React.FC = observer(() => {
   return (
@@ -25,25 +25,27 @@ const IncidentsFilter: React.FC = observer(() => {
             id="incidents-by-errorType"
             data-testid="incidents-by-errorType"
             items={availableErrorTypes}
-            selectedItems={incidentsPanelStore.state.selectedErrorTypes}
+            selectedItems={incidentsPanelFiltersStore.state.selectedErrorTypes}
             itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
             label="Filter by Incident Type"
             titleText="Filter by Incident Type"
             hideLabel
             onChange={({selectedItems}) => {
-              incidentsPanelStore.setErrorTypeSelection(selectedItems ?? []);
+              incidentsPanelFiltersStore.setErrorTypeSelection(
+                selectedItems ?? [],
+              );
             }}
             size="sm"
           />
           <Button
             kind="ghost"
             onClick={() => {
-              incidentsPanelStore.clearSelection();
+              incidentsPanelFiltersStore.clearSelection();
               tracking.track({
                 eventName: 'incident-filters-cleared',
               });
             }}
-            disabled={!incidentsPanelStore.hasActiveFilters}
+            disabled={!incidentsPanelFiltersStore.hasActiveFilters}
             title="Reset Filters"
             size="sm"
           >

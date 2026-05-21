@@ -60,7 +60,11 @@ public class BatchOperationChunkCreatedHandler
 
   @Override
   public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getBatchOperationKey()));
+    // Use a composite ID with a static suffix (batchOperationKey:chunk) so that all chunks for the
+    // same batch operation share a single cached entity in the ExporterBatchWriter, while still
+    // being separate from BatchOperationCreatedHandler (which uses just the batchOperationKey).
+    // This avoids double-counting of operationsTotalCount without inflating the batch size.
+    return List.of(record.getValue().getBatchOperationKey() + ":chunk");
   }
 
   @Override
@@ -79,15 +83,13 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // Use upsertWithScript to be resilient against cross-partition ordering: if the batch operation
-    // document has not been created yet (e.g., a slow partition's CREATED event export), the upsert
-    // creates a minimal document from the entity. When the document already exists, the script
-    // atomically increments the total count and resets endDate to null so that the
-    // BatchOperationUpdateTask will re-process this batch operation to update all counts.
-    batchRequest.upsertWithScript(
+    // Atomically increment the total and reset endDate so the BatchOperationUpdateTask
+    // re-processes the counts. Extract the batchKey from the composite cache ID (batchKey:chunk).
+    final String batchOperationKey = entity.getId().split(":")[0];
+
+    batchRequest.updateWithScript(
         indexName,
-        entity.getId(),
-        entity,
+        batchOperationKey,
         """
             ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
             ctx._source.endDate = null;

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -78,6 +80,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -139,6 +142,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
@@ -264,6 +268,9 @@ public final class ValueTypeMapping {
         ValueType.RESOURCE_DELETION,
         new Mapping<>(ResourceDeletionRecordValue.class, ResourceDeletionIntent.class));
     mapping.put(
+        ValueType.RESOURCE_REEXPORT,
+        new Mapping<>(ResourceReexportRecordValue.class, ResourceReexportIntent.class));
+    mapping.put(
         ValueType.COMMAND_DISTRIBUTION,
         new Mapping<>(CommandDistributionRecordValue.class, CommandDistributionIntent.class));
     mapping.put(
@@ -360,6 +367,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.GLOBAL_LISTENER,
         new Mapping<>(GlobalListenerRecordValue.class, GlobalListenerIntent.class));
+    mapping.put(
+        ValueType.AGENT_INSTANCE,
+        new Mapping<>(AgentInstanceRecordValue.class, AgentInstanceIntent.class));
     return mapping;
   }
 

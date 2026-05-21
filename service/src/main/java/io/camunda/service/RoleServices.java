@@ -16,8 +16,10 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,8 +28,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,7 +141,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
             .setRoleId(request.roleId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
   }
 
@@ -149,7 +150,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
             .setRoleId(request.roleId())
-            .setEntity(request.entityType(), request.entityId()),
+            .setEntity(AuthzModelMapper.toProtocol(request.entityType()), request.entityId()),
         authentication);
   }
 

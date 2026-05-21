@@ -81,6 +81,70 @@ final class ProcessingCfgTest {
   }
 
   @Test
+  void shouldUseDefaultMaxRecoverableRetries() {
+    // given
+    final var cfg = new ProcessingCfg();
+
+    // when
+    final int limit = cfg.getMaxRecoverableRetries();
+
+    // then
+    assertThat(limit).isEqualTo(1000);
+  }
+
+  @Test
+  void shouldSetMaxRecoverableRetries() {
+    // given
+    final var cfg = new ProcessingCfg();
+    cfg.setMaxRecoverableRetries(50);
+
+    // when
+    final int limit = cfg.getMaxRecoverableRetries();
+
+    // then
+    assertThat(limit).isEqualTo(50);
+  }
+
+  @Test
+  void shouldSetMaxRecoverableRetriesFromConfig() {
+    // given
+    final var cfg =
+        TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
+
+    // when
+    final int limit = cfg.getMaxRecoverableRetries();
+
+    // then
+    assertThat(limit).isEqualTo(200);
+  }
+
+  @Test
+  void shouldSetMaxRecoverableRetriesFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxRecoverableRetries", "75");
+    final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
+
+    // when
+    final var limit = cfg.getMaxRecoverableRetries();
+
+    // then
+    assertThat(limit).isEqualTo(75);
+  }
+
+  @Test
+  void shouldRejectInvalidMaxRecoverableRetries() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.maxRecoverableRetries", "-1");
+
+    // then
+    assertThatThrownBy(() -> TestConfigReader.readConfig("processing-cfg", environment))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxRecoverableRetries must be >= 1");
+  }
+
+  @Test
   void shouldEnableAsyncScheduledTasksByDefault() {
     // given
     final var cfg = new ProcessingCfg();

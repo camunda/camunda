@@ -12,7 +12,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser, currentUserWithGroups} from '@camunda/c8-mocks';
 import {getStateLocally, storeStateLocally} from 'modules/local-storage';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
@@ -43,7 +43,7 @@ describe('<CustomFiltersModal />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -310,7 +310,7 @@ describe('<CustomFiltersModal />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUserWithGroups);
+          return HttpResponse.json(currentUserWithGroups);
         },
         {once: true},
       ),

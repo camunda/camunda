@@ -15,7 +15,7 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
 } from '@carbon/react';
-import {useId} from '@camunda/camunda-optimize-composite-components';
+import {useId} from 'hooks';
 
 import {Table, TableBody, TableHead, NoDataNotice} from 'components';
 import {t} from 'translation';

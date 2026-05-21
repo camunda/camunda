@@ -44,3 +44,5 @@ zeebe:
           timeout: 2s
         processInstanceCreation:
           businessIdUniquenessEnabled: true
+        startup:
+          rpaReexportMigrationEnabled: false

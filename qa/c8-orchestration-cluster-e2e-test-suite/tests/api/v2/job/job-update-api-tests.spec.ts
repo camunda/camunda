@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import {
   assertBadRequest,
@@ -19,6 +19,7 @@ import {
   activateJobToObtainAValidJobKey,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {defaultAssertionOptions} from 'utils/constants';
 
 const runSuffix = randomUUID().slice(0, 8);
 const processId = `jobApiProcess-update-${runSuffix}`;
@@ -44,13 +45,15 @@ test.describe('Job Update API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     await test.step('PATCH update the job', async () => {
-      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {retries: 1, timeout: 9000},
-        },
-      });
-      await assertStatusCode(updateRes, 204);
+      await expect(async () => {
+        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
+          headers: jsonHeaders(),
+          data: {
+            changeset: {retries: 1, timeout: 9000},
+          },
+        });
+        await assertStatusCode(updateRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
   });
 

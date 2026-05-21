@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
+import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.MappingRuleEntity;

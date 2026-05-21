@@ -79,7 +79,7 @@ describe('Selection', () => {
     });
 
     expect(firstRow).toBeInTheDocument();
-    await user.click(firstRow);
+    await user.click(firstRow!);
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(

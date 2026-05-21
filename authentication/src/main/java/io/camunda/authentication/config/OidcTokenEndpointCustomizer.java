@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
@@ -25,8 +24,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+// The library's SPI interface has the same simple name as this host implementation, so the
+// implements clause stays fully qualified.
 public class OidcTokenEndpointCustomizer
-    implements Customizer<OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig> {
+    implements io.camunda.security.spring.oidc.OidcTokenEndpointCustomizer {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcTokenEndpointCustomizer.class);
   private final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository;

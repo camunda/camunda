@@ -8,7 +8,19 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserEntity(
-    Long userKey, String username, String name, String email, String password) {}
+    Long userKey,
+    String username,
+    @Nullable String name,
+    @Nullable String email,
+    @Nullable String password) {
+
+  public UserEntity {
+    Objects.requireNonNull(userKey, "userKey");
+    Objects.requireNonNull(username, "username");
+  }
+}

@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const MigrationDetails: React.FC = observer(() => {

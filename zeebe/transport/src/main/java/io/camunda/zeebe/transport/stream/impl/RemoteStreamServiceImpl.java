@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 public class RemoteStreamServiceImpl<M, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
@@ -58,8 +59,8 @@ public class RemoteStreamServiceImpl<M, P extends BufferWriter>
   }
 
   @Override
-  public ActorFuture<Void> closeAsync(final ConcurrencyControl executor) {
-    final CompletableActorFuture<Void> closed = new CompletableActorFuture<>();
+  public ActorFuture<@Nullable Void> closeAsync(final ConcurrencyControl executor) {
+    final CompletableActorFuture<@Nullable Void> closed = new CompletableActorFuture<>();
     final var streamerClosed = streamer.closeAsync();
     final var serverClosed = apiServer.closeAsync();
     final var combined =

@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import org.jspecify.annotations.Nullable;
 
 public class ProcessInstanceStateConverter implements CustomConverter<String> {
 
@@ -18,10 +19,7 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
   }
 
   @Override
-  public String convertValue(final Object value) {
-    if (value == null) {
-      return null;
-    }
+  public @Nullable String convertValue(final Object value) {
     if (value instanceof final ProcessInstanceStateEnum processInstanceStateEnum) {
       return toInternalStateAsString(processInstanceStateEnum);
     }
@@ -33,15 +31,15 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
                 ProcessInstanceStateEnum.class.getSimpleName()));
   }
 
-  public static String toInternalStateAsString(
-      final ProcessInstanceStateEnum processInstanceStateEnum) {
+  public static @Nullable String toInternalStateAsString(
+      final @Nullable ProcessInstanceStateEnum processInstanceStateEnum) {
     final ProcessInstanceEntity.ProcessInstanceState internalState =
         toInternalState(processInstanceStateEnum);
     return (internalState == null) ? null : internalState.name();
   }
 
-  public static ProcessInstanceEntity.ProcessInstanceState toInternalState(
-      final ProcessInstanceStateEnum processInstanceStateEnum) {
+  public static ProcessInstanceEntity.@Nullable ProcessInstanceState toInternalState(
+      final @Nullable ProcessInstanceStateEnum processInstanceStateEnum) {
     if (processInstanceStateEnum == null) {
       return null;
     }

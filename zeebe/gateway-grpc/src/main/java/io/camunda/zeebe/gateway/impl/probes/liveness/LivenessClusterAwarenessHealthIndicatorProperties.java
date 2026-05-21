@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.liveness;
 
-import io.camunda.zeebe.util.health.AbstractDelayedHealthIndicatorProperties;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

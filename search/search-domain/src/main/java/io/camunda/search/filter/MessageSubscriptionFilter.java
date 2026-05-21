@@ -25,10 +25,15 @@ public record MessageSubscriptionFilter(
     List<Operation<String>> flowNodeIdOperations,
     List<Operation<Long>> flowNodeInstanceKeyOperations,
     List<Operation<String>> messageSubscriptionStateOperations,
+    List<Operation<String>> messageSubscriptionTypeOperations,
     List<Operation<OffsetDateTime>> dateTimeOperations,
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
-    List<Operation<String>> tenantIdOperations)
+    List<Operation<String>> tenantIdOperations,
+    List<Operation<String>> processDefinitionNameOperations,
+    List<Operation<Integer>> processDefinitionVersionOperations,
+    List<Operation<String>> toolNameOperations,
+    List<Operation<String>> inboundConnectorTypeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -40,10 +45,15 @@ public record MessageSubscriptionFilter(
     private List<Operation<String>> flowNodeIdOperations;
     private List<Operation<Long>> flowNodeInstanceKeyOperations;
     private List<Operation<String>> messageSubscriptionStateOperations;
+    private List<Operation<String>> messageSubscriptionTypeOperations;
     private List<Operation<OffsetDateTime>> dateTimeOperations;
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<String>> tenantIdOperations;
+    private List<Operation<String>> processDefinitionNameOperations;
+    private List<Operation<Integer>> processDefinitionVersionOperations;
+    private List<Operation<String>> toolNameOperations;
+    private List<Operation<String>> inboundConnectorTypeOperations;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -151,6 +161,54 @@ public record MessageSubscriptionFilter(
       return this;
     }
 
+    public Builder messageSubscriptionTypes(final String value, final String... values) {
+      return messageSubscriptionTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder messageSubscriptionTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return messageSubscriptionTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder messageSubscriptionTypeOperations(final List<Operation<String>> operations) {
+      messageSubscriptionTypeOperations =
+          addValuesToList(messageSubscriptionTypeOperations, operations);
+      return this;
+    }
+
+    public Builder processDefinitionNames(final String value, final String... values) {
+      return processDefinitionNameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionNameOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionNameOperations(final List<Operation<String>> operations) {
+      processDefinitionNameOperations =
+          addValuesToList(processDefinitionNameOperations, operations);
+      return this;
+    }
+
+    public Builder processDefinitionVersions(final Integer value, final Integer... values) {
+      return processDefinitionVersionOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionVersionOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return processDefinitionVersionOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionVersionOperations(final List<Operation<Integer>> operations) {
+      processDefinitionVersionOperations =
+          addValuesToList(processDefinitionVersionOperations, operations);
+      return this;
+    }
+
     public Builder dateTimes(final OffsetDateTime value, final OffsetDateTime... values) {
       return dateTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
@@ -211,6 +269,36 @@ public record MessageSubscriptionFilter(
       return correlationKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder toolNames(final String value, final String... values) {
+      return toolNameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder toolNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return toolNameOperations(collectValues(operation, operations));
+    }
+
+    public Builder toolNameOperations(final List<Operation<String>> operations) {
+      toolNameOperations = addValuesToList(toolNameOperations, operations);
+      return this;
+    }
+
+    public Builder inboundConnectorTypes(final String value, final String... values) {
+      return inboundConnectorTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder inboundConnectorTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return inboundConnectorTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder inboundConnectorTypeOperations(final List<Operation<String>> operations) {
+      inboundConnectorTypeOperations = addValuesToList(inboundConnectorTypeOperations, operations);
+      return this;
+    }
+
     @Override
     public MessageSubscriptionFilter build() {
       return new MessageSubscriptionFilter(
@@ -221,10 +309,15 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageSubscriptionStateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(messageSubscriptionTypeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dateTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionNameOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(toolNameOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()));
     }
   }
 }

@@ -21,9 +21,11 @@ import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestPro
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,11 +43,18 @@ public class ConditionalBehaviorBeforeEachIT {
   private static final Map<String, Object> EXPORT_VARS =
       Collections.singletonMap("exportSuccess", true);
 
+  @SuppressWarnings("unused")
   private CamundaProcessTestContext processTestContext;
+
+  @SuppressWarnings("unused")
   private CamundaClient client;
 
   @BeforeEach
   void setupBehaviors() {
+    // increase assertion timeout because the immediate loop-back occasionally activates the reset
+    // gate timeout of 5 seconds
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+
     // Deploy the process model
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 

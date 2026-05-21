@@ -16,7 +16,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/local-storage';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -47,7 +47,7 @@ describe('<NoTaskSelected />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -76,7 +76,7 @@ describe('<NoTaskSelected />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -117,7 +117,7 @@ describe('<NoTaskSelected />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -144,7 +144,7 @@ describe('<NoTaskSelected />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),

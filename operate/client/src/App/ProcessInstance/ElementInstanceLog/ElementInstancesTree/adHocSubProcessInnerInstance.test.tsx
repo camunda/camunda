@@ -11,9 +11,10 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {adHocSubProcessInnerInstance, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
-  Wrapper,
+  getWrapper,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
+  parseBusinessObjects,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -21,17 +22,12 @@ import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementI
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import {
   endpoints,
   queryElementInstancesRequestBodySchema,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-
-const diagramModel = await parseDiagramXML(adHocSubProcessInnerInstance);
-const businessObjects = businessObjectsParser({diagramModel});
 
 describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   beforeEach(async () => {
@@ -54,13 +50,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should select inner instance with first child as anchor when node is expanded and has children', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -98,13 +97,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should fetch first child and select with anchor when clicking collapsed inner instance', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -157,13 +159,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should display warning notification when inner instance has no children', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;
@@ -196,13 +201,16 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
   });
 
   it('should display warning notification when fetching first child fails', async () => {
+    const {businessObjects} = await parseBusinessObjects(
+      adHocSubProcessInnerInstance,
+    );
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;

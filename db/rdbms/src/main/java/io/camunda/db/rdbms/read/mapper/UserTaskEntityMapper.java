@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.read.mapper;
 import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
-import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 
@@ -39,7 +39,7 @@ public class UserTaskEntityMapper {
         dbModel.candidateUsers(),
         dbModel.externalFormReference(),
         dbModel.processDefinitionVersion(),
-        CustomHeaderSerializer.deserialize(dbModel.serializedCustomHeaders()),
+        MapSerializer.deserialize(dbModel.serializedCustomHeaders()),
         dbModel.priority(),
         dbModel.tags());
   }

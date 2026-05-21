@@ -7,11 +7,13 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
@@ -20,6 +22,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
+import io.camunda.db.rdbms.sql.DeployedResourceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
@@ -35,6 +38,7 @@ import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
@@ -44,6 +48,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -61,12 +66,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Import(DataSourceAutoConfiguration.class)
+@Import(DataSourceTransactionManagerAutoConfiguration.class)
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
@@ -104,6 +109,10 @@ public class MyBatisConfiguration {
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
     moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
+    // Inject the current application version for schema upgrade-path validation.
+    // When the version is not a valid semantic version (e.g. during local development),
+    // the version check is skipped inside LiquibaseSchemaManager.
+    moduleConfig.setApplicationVersion(VersionUtil.getVersion());
 
     return moduleConfig;
   }
@@ -121,13 +130,29 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public VendorDatabaseProperties databaseProperties(
-      final DataSource dataSource, final RdbmsDatabaseIdProvider databaseIdProvider)
+  public RdbmsDataSources rdbmsDataSources(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final RdbmsDatabaseIdProvider databaseIdProvider)
       throws IOException {
-    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
-    LOGGER.info("Detected databaseId: {}", databaseId);
+    return RdbmsDataSources.of(
+        physicalTenantResolver.mapValues(
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        databaseIdProvider);
+  }
 
-    return VendorDatabasePropertiesLoader.load(databaseId);
+  // The following 2 beans expose the default physical tenant's DataSource and
+  // VendorDatabaseProperties so that downstream consumers (sqlSessionFactory,
+  // rdbmsExporterLiquibase, rdbmsWriterFactory, rdbmsExporterFactory)
+  // can keep injecting them as singletons. They will be removed in future PRs.
+
+  @Bean
+  public DataSource dataSource(final RdbmsDataSources rdbmsDataSources) {
+    return rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public VendorDatabaseProperties databaseProperties(final RdbmsDataSources rdbmsDataSources) {
+    return rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
@@ -331,6 +356,12 @@ public class MyBatisConfiguration {
   }
 
   @Bean
+  MapperFactoryBean<ReplicationStatusMapper> replicationStatusMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, ReplicationStatusMapper.class);
+  }
+
+  @Bean
   MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
@@ -340,6 +371,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<DeployedResourceMapper> resourceMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DeployedResourceMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

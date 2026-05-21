@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import pluralSuffix from './index';
+import {pluralSuffix} from './index';
 
 describe('pluralSuffix', () => {
   it('should append suffix when count === 0', () => {

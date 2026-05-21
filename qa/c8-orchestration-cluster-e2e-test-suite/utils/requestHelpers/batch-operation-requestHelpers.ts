@@ -15,14 +15,32 @@ import {validateResponse} from 'json-body-assertions';
 export async function cancelBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
+  expectedStatusCode = 204,
 ) {
-  return request.post(
-    buildUrl(`/batch-operations/${batchOperationKey}/cancellation`),
-    {
-      headers: jsonHeaders(),
-    },
-  );
+  const result: Record<string, APIResponse> = {};
+  await expect(async () => {
+    const res = await request.post(
+      buildUrl(`/batch-operations/${batchOperationKey}/cancellation`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    result.response = res;
+    await assertStatusCode(res, expectedStatusCode);
+  }).toPass(batchOperationLifecycleOptions);
+  return result.response as APIResponse;
 }
+
+// A freshly created batch operation can take longer than the default 30s
+// to be visible to the suspend/resume commands on a loaded shared cluster
+// (404 → 204). Use a more generous budget here for batch operation lifecycle
+// actions while the engine catches up. The 180s budget proved tight when
+// multiple cancellation batches (30 instances each) accumulate within a
+// single spec file, so allow up to 240s with a longer tail interval.
+const batchOperationLifecycleOptions = {
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000, 45_000],
+  timeout: 240_000,
+};
 
 export async function suspendBatchOperation(
   request: APIRequestContext,
@@ -39,7 +57,7 @@ export async function suspendBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 
@@ -58,7 +76,7 @@ export async function resumeBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 
@@ -119,5 +137,52 @@ export async function expectBatchState(
   });
 }
 
+// Post-migration user-task search has to wait for the secondary-storage
+// indexer to reflect the migrated elementId. On a loaded shared cluster the
+// 180s budget proved tight (seen as flake on nightly runs), so allow up to
+// 240s with a longer tail interval.
+export const postMigrationAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000, 60_000],
+  timeout: 240_000,
+};
+
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
+
+export async function findCompletedBatchKey(
+  request: APIRequestContext,
+): Promise<string> {
+  const result: {batchKey?: string} = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/batch-operations/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          state: 'COMPLETED',
+          operationType: 'CANCEL_PROCESS_INSTANCE',
+        },
+        sort: [{field: 'startDate', order: 'DESC'}],
+        page: {from: 0, limit: 1},
+      },
+    });
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const body = await res.json();
+    expect(body.items?.length).toBeGreaterThanOrEqual(1);
+    expect(body.items[0].batchOperationKey).toBeDefined();
+    result.batchKey = String(body.items[0].batchOperationKey);
+  }).toPass(defaultAssertionOptions);
+  if (result.batchKey === undefined) {
+    throw new Error(
+      'Expected to find a completed batch operation key, but none was returned.',
+    );
+  }
+  return result.batchKey;
+}

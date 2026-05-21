@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import static java.util.Objects.requireNonNullElse;
+
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
@@ -129,7 +131,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
-            .engineName(brokerCfg.getExperimental().getDefaultEngineName())
+            .clusterId(requireNonNullElse(brokerCfg.getCluster().getClusterId(), ""))
+            .tenantName(brokerCfg.getExperimental().getDefaultTenantName())
             .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
             .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());
 

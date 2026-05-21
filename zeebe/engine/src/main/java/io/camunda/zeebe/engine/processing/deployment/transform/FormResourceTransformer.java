@@ -52,41 +52,38 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public boolean canTransform(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".form");
+  }
+
+  @Override
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
     return parseForm(resource)
         .flatMap(
             form ->
-                checkForDuplicateFormId(form.id, resource, deployment)
-                    .flatMap(valid -> checkForFormIdLength(form.id, resource))
+                checkForFormIdLength(form.id, resource)
                     .map(
                         valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(formRecord, form, resource, deployment);
-                          return null;
+                          return DeploymentResourceContext.NONE;
                         }));
   }
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.formMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
         .findFirst()
         .ifPresent(
             metadata -> {
-              var key = metadata.getFormKey();
               if (metadata.isDuplicate()) {
                 // create new version as the deployment contains at least one other non-duplicate
                 // resource and all resources in a deployment should be versioned together
-                key = keyGenerator.nextKey();
                 metadata
-                    .setFormKey(key)
+                    .setFormKey(keyGenerator.nextKey())
                     .setVersion(
                         formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
                     .setDuplicate(false)
@@ -117,23 +114,6 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     return Optional.ofNullable(exception.getCause())
         .map(Throwable::getMessage)
         .orElse(exception.getMessage());
-  }
-
-  private Either<Failure, ?> checkForDuplicateFormId(
-      final String formId, final DeploymentResource resource, final DeploymentRecord record) {
-    return record.getFormMetadata().stream()
-        .filter(metadata -> metadata.getFormId().equals(formId))
-        .findFirst()
-        .map(
-            duplicatedForm -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the form ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      formId, duplicatedForm.getResourceName(), resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(NO_VALIDATION_ERROR);
   }
 
   private Either<Failure, ?> checkForFormIdLength(
@@ -169,15 +149,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              final boolean isDuplicate =
-                  latestForm.getChecksum().equals(formRecord.getChecksumBuffer())
-                      && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
-
-              if (isDuplicate) {
-                final int latestVersion = latestForm.getVersion();
+              if (latestForm.isDuplicateOf(
+                  formRecord.getResourceNameBuffer(), formRecord.getChecksumBuffer())) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
-                    .setVersion(latestVersion)
+                    .setVersion(latestForm.getVersion())
                     .setDeploymentKey(latestForm.getDeploymentKey())
                     .setDuplicate(true);
               } else {

@@ -1,0 +1,33 @@
+{
+  "type": "default",
+  "id": "signup_form",
+  "components": [
+    {
+      "key": "username",
+      "label": "Username",
+      "type": "textfield",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "key": "email",
+      "label": "Email",
+      "type": "textfield",
+      "validate": {
+        "required": true,
+        "validationType": "email"
+      }
+    },
+    {
+      "key": "age",
+      "label": "Age",
+      "type": "number",
+      "increment": "1",
+      "validate": {
+        "min": "18",
+        "required": true
+      }
+    }
+  ]
+}

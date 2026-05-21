@@ -9,6 +9,16 @@ zeebe:
     backpressure:
       enabled: false
     exporters:
+      camundaexporter:
+        className: io.camunda.exporter.CamundaExporter
+        args:
+          connect:
+            url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
+            # Parameterized so the same file works for both ES and OS profiles.
+            type: ${DATABASE_TYPE:elasticsearch}
+          bulk:
+            size: 10
+            delay: 1
       optimize:
         className: ${ZEEBE_EXPORTER_CLASS_NAME:io.camunda.zeebe.exporter.ElasticsearchExporter}
         args:
@@ -43,7 +53,6 @@ zeebe:
             processInstanceCreation: false
             processMessageSubscription: true
             processInstanceModification: false
-            bulkSize: 1
 camunda:
   data:
     secondary-storage:

@@ -86,9 +86,6 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final Duration REMOTE_RUNTIME_CONNECTION_TIMEOUT =
       PROPERTIES_UTIL.getRemoteRuntimeConnectionTimeout();
 
-  public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
-  public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
-
   public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 
@@ -98,6 +95,8 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
   public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
+  public static final List<String> COVERAGE_EXCLUDED_DECISIONS =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedDecisions();
 
   public static final AssertionProperties ASSERTION_PROPERTIES =
       PROPERTIES_UTIL.getAssertionProperties();

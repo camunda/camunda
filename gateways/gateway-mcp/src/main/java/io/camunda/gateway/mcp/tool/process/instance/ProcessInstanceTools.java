@@ -20,8 +20,8 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
@@ -71,7 +71,8 @@ public class ProcessInstanceTools {
 
   @CamundaMcpTool(
       description = "Get process instance by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult getProcessInstance(
       @McpToolParam(
               description =

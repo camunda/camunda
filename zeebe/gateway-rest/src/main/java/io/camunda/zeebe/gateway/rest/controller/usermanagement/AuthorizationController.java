@@ -18,7 +18,7 @@ import io.camunda.gateway.protocol.model.AuthorizationRequest;
 import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.AuthorizationServices;

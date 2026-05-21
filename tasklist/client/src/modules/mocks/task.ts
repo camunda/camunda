@@ -7,7 +7,7 @@
  */
 
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {DEFAULT_TENANT_ID} from 'modules/multitenancy/constants';
 import {uniqueId} from './utils';
 

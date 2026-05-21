@@ -16,7 +16,10 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
+import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.DecisionCoverage;
+import io.camunda.process.test.impl.coverage.model.DecisionModel;
 import io.camunda.process.test.impl.coverage.model.Model;
 import io.camunda.process.test.impl.coverage.model.Suite;
 import java.util.Collection;
@@ -31,14 +34,20 @@ public class CoverageReportCreator {
    *
    * @param suite The test suite containing coverage information
    * @param models Collection of process models with structure information
+   * @param decisionModels Collection of decision models with rule information
    * @return A CoverageReport containing the suite, models and aggregated coverage data
    */
   public static SuiteCoverageReport createSuiteCoverageReport(
-      final Suite suite, final Collection<Model> models) {
+      final Suite suite,
+      final Collection<Model> models,
+      final Collection<DecisionModel> decisionModels) {
     final Collection<Coverage> coverages =
         CoverageCreator.aggregateCoverages(allCoverages(Collections.singletonList(suite)), models);
+    final Collection<DecisionCoverage> decisionCoverages =
+        DecisionCoverageCreator.aggregateCoverages(
+            allDecisionCoverages(Collections.singletonList(suite)), decisionModels);
     return new SuiteCoverageReport(
-        suite.getId(), suite.getName(), suite.getRuns(), models, coverages);
+        suite.getId(), suite.getName(), suite.getRuns(), models, coverages, decisionCoverages);
   }
 
   /**
@@ -46,12 +55,17 @@ public class CoverageReportCreator {
    *
    * @param suites Collection of test suites containing coverage information
    * @param models Collection of process models with structure information
+   * @param decisionModels Collection of decision models with rule information
    * @return A CoverageReport containing all suites, models and aggregated coverage data
    */
   public static AggregatedCoverageReport createAggregatedCoverageReport(
-      final Collection<Suite> suites, final Collection<Model> models) {
+      final Collection<Suite> suites,
+      final Collection<Model> models,
+      final Collection<DecisionModel> decisionModels) {
     final Collection<Coverage> coverages =
         CoverageCreator.aggregateCoverages(allCoverages(suites), models);
+    final Collection<DecisionCoverage> decisionCoverages =
+        DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
     final Collection<AggregatedSuiteInfo> suiteInfos =
         suites.stream()
             .map(
@@ -60,9 +74,12 @@ public class CoverageReportCreator {
                         suite.getId(),
                         suite.getName(),
                         CoverageCreator.aggregateCoverages(
-                            allCoverages(Collections.singletonList(suite)), models)))
+                            allCoverages(Collections.singletonList(suite)), models),
+                        DecisionCoverageCreator.aggregateCoverages(
+                            allDecisionCoverages(Collections.singletonList(suite)),
+                            decisionModels)))
             .collect(Collectors.toList());
-    return new AggregatedCoverageReport(suiteInfos, models, coverages);
+    return new AggregatedCoverageReport(suiteInfos, models, coverages, decisionCoverages);
   }
 
   /**
@@ -74,21 +91,32 @@ public class CoverageReportCreator {
    *
    * @param suites Collection of test suites containing execution data and coverage information
    * @param models Collection of process models with structure information for coverage calculation
+   * @param decisionModels Collection of decision models with rule information
    * @return A complete HTML coverage report object containing suite reports, aggregated coverage
    *     data, and process definitions
    */
   public static HtmlCoverageReport createHtmlCoverageReport(
-      final Collection<Suite> suites, final Collection<Model> models) {
+      final Collection<Suite> suites,
+      final Collection<Model> models,
+      final Collection<DecisionModel> decisionModels) {
     final Collection<SuiteCoverageReport> suiteReports =
         suites.stream()
-            .map(suite -> createSuiteCoverageReport(suite, models))
+            .map(suite -> createSuiteCoverageReport(suite, models, decisionModels))
             .collect(Collectors.toList());
     final Collection<Coverage> coverages =
         CoverageCreator.aggregateCoverages(allCoverages(suites), models);
+    final Collection<DecisionCoverage> decisionCoverages =
+        DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
     final Map<String, String> definitions =
         models.stream()
             .collect(Collectors.toMap(Model::getProcessDefinitionId, Model::xml, (a, b) -> a));
-    return new HtmlCoverageReport(suiteReports, coverages, definitions);
+    final Map<String, String> decisionDefinitions =
+        decisionModels.stream()
+            .collect(
+                Collectors.toMap(
+                    DecisionModel::getDecisionDefinitionId, DecisionModel::xml, (a, b) -> a));
+    return new HtmlCoverageReport(
+        suiteReports, coverages, decisionCoverages, definitions, decisionDefinitions);
   }
 
   /**
@@ -100,6 +128,18 @@ public class CoverageReportCreator {
   private static Collection<Coverage> allCoverages(final Collection<Suite> suites) {
     return suites.stream()
         .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getCoverages().stream()))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Extracts and flattens all decision coverage entries from a collection of test suites.
+   *
+   * @param suites Collection of test suites to extract decision coverage data from
+   * @return A flat collection of all DecisionCoverage objects from all test runs
+   */
+  private static Collection<DecisionCoverage> allDecisionCoverages(final Collection<Suite> suites) {
+    return suites.stream()
+        .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getDecisionCoverages().stream()))
         .collect(Collectors.toList());
   }
 }

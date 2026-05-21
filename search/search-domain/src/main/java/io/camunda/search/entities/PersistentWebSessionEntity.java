@@ -10,6 +10,7 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PersistentWebSessionEntity(
@@ -20,6 +21,10 @@ public record PersistentWebSessionEntity(
     Map<String, byte[]> attributes) {
 
   public PersistentWebSessionEntity {
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(creationTime, "creationTime");
+    Objects.requireNonNull(lastAccessedTime, "lastAccessedTime");
+    Objects.requireNonNull(maxInactiveIntervalInSeconds, "maxInactiveIntervalInSeconds");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.

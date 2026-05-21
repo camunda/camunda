@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -30,21 +30,21 @@ public class AdminApiRequestHandler
   private final PartitionAdminAccess adminAccess;
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
-  private final int nodeId;
+  private final BrokerMemberId memberId;
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport,
       final PartitionAdminAccess adminAccess,
       final RaftPartition raftPartition,
       final ClusterConfigurationService clusterConfigurationService,
-      final int nodeId) {
+      final BrokerMemberId memberId) {
     super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
 
     this.raftPartition = raftPartition;
     this.clusterConfigurationService = clusterConfigurationService;
-    this.nodeId = nodeId;
+    this.memberId = memberId;
   }
 
   @Override
@@ -282,7 +282,6 @@ public class AdminApiRequestHandler
     // Fire-and-forget: return success immediately, then process asynchronously
     actor.run(
         () -> {
-          final MemberId currentMemberId = MemberId.from(String.valueOf(nodeId));
           clusterConfigurationService
               .getLatestClusterConfiguration()
               .onComplete(
@@ -303,17 +302,17 @@ public class AdminApiRequestHandler
                       return;
                     }
 
-                    if (!primaryMember.get().equals(currentMemberId)) {
+                    if (!primaryMember.get().equals(memberId.memberId())) {
                       LOG.info(
                           "Node {} is not primary for partition {} (primary is {}), initiating step-down",
-                          currentMemberId,
+                          memberId,
                           partitionId,
                           primaryMember.get());
                       raftPartition.stepDownForLeaderBalancing();
                     } else {
                       LOG.debug(
                           "Node {} is primary for partition {}, not stepping down",
-                          currentMemberId,
+                          memberId,
                           partitionId);
                     }
                   });

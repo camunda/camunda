@@ -124,7 +124,7 @@ describe('useDeleteResource', () => {
     });
 
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0].response?.statusText).toBe('Forbidden');
+    expect(onError.mock.calls[0]?.[0].response?.statusText).toBe('Forbidden');
   });
 
   it('should show pending state during deletion', async () => {

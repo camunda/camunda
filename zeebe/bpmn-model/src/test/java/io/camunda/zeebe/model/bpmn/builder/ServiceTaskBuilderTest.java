@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.beforeAll;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.end;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.start;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -123,11 +125,104 @@ public class ServiceTaskBuilderTest {
                     .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue")));
   }
 
+  @Test
+  void shouldDefineBeforeAllExecutionListenerWithCustomRetries() {
+    // given
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType("service_task_type")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener("el_before_all_type", "5"))
+            .done();
+
+    // then
+    assertThat(getExecutionListeners(instance.getModelElementById("task")))
+        .singleElement()
+        .extracting(
+            ZeebeExecutionListener::getEventType,
+            ZeebeExecutionListener::getType,
+            ZeebeExecutionListener::getRetries)
+        .containsExactly(beforeAll, "el_before_all_type", "5");
+  }
+
+  @Test
+  void shouldDefineBeforeAllStartAndEndExecutionListenersTogether() {
+    // given
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType("service_task_type")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener("el_before_all")
+                        .zeebeStartExecutionListener("el_start")
+                        .zeebeEndExecutionListener("el_end"))
+            .done();
+
+    // then
+    assertThat(getExecutionListeners(instance.getModelElementById("task")))
+        .hasSize(3)
+        .extracting(
+            ZeebeExecutionListener::getEventType,
+            ZeebeExecutionListener::getType,
+            ZeebeExecutionListener::getRetries)
+        .containsExactly(
+            tuple(beforeAll, "el_before_all", ZeebeExecutionListener.DEFAULT_RETRIES),
+            tuple(start, "el_start", ZeebeExecutionListener.DEFAULT_RETRIES),
+            tuple(end, "el_end", ZeebeExecutionListener.DEFAULT_RETRIES));
+  }
+
   private Collection<ZeebeExecutionListener> getExecutionListeners(
       final ModelElementInstance elementInstance) {
     return elementInstance
         .getUniqueChildElementByType(ExtensionElements.class)
         .getUniqueChildElementByType(ZeebeExecutionListeners.class)
         .getChildElementsByType(ZeebeExecutionListener.class);
+  }
+
+  @Test
+  void shouldSetJobPriorityAsLiteralOnServiceTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance serviceTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) serviceTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("42");
+  }
+
+  @Test
+  void shouldSetJobPriorityAsExpressionOnServiceTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type").zeebeJobPriorityExpression("priority"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance serviceTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) serviceTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("=priority");
   }
 }

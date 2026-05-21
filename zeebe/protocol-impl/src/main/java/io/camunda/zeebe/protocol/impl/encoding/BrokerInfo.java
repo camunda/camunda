@@ -9,11 +9,14 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionGroupHeaderLength;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -40,6 +44,7 @@ import java.util.Base64.Encoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
@@ -47,12 +52,18 @@ import java.util.function.ObjLongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class BrokerInfo implements BufferReader, BufferWriter {
+
+  public static final String DEFAULT_PARTITION_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
+  private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
   private static final Logger LOG = Loggers.PROTOCOL_LOGGER;
 
@@ -75,14 +86,17 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
+  private @Nullable String zone;
+  private @Nullable String partitionGroup;
 
   public BrokerInfo() {
     reset();
   }
 
-  public BrokerInfo(final int nodeId, final String commandApiAddress) {
+  public BrokerInfo(final int nodeId, @Nullable final String zone, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
+    this.zone = zone;
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
   }
 
@@ -93,6 +107,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
+    zone = null;
+    partitionGroup = null;
     clearPartitions();
 
     return this;
@@ -110,6 +126,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     partitionHealthStatuses.remove(partitionId);
   }
 
+  @Deprecated
   public int getNodeId() {
     if (nodeIdNullValue() == nodeId) {
       throw new IllegalStateException("nodeId is not set");
@@ -117,9 +134,14 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(final int nodeId) {
+  public BrokerInfo setBrokerId(final int nodeId, @Nullable final String zone) {
     this.nodeId = nodeId;
+    this.zone = zone;
     return this;
+  }
+
+  public String brokerIdStr() {
+    return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
   public int getPartitionsCount() {
@@ -181,6 +203,26 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     version.wrap(buffer, offset, length);
   }
 
+  public @Nullable String getZone() {
+    return zone;
+  }
+
+  public String getPartitionGroup() {
+    // can be null for older versions that are received via gossip, but in that case we want to
+    // treat is as the default partition group.
+    return partitionGroup != null ? partitionGroup : DEFAULT_PARTITION_GROUP;
+  }
+
+  public BrokerInfo setPartitionGroup(final String partitionGroup) {
+    // partitionGroup can only be null in older versions that are received via gossip.
+    Objects.requireNonNull(partitionGroup);
+    if (partitionGroup.isBlank()) {
+      throw new IllegalArgumentException("partitionGroup must not be blank");
+    }
+    this.partitionGroup = partitionGroup.isBlank() ? null : partitionGroup;
+    return this;
+  }
+
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
     return addresses;
   }
@@ -190,7 +232,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
-  public String getCommandApiAddress() {
+  public @Nullable String getCommandApiAddress() {
     final DirectBuffer buffer = addresses.get(COMMAND_API_NAME);
     if (buffer != null) {
       return BufferUtil.bufferAsString(buffer);
@@ -306,9 +348,12 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionLeaderTermsDecoder.partitionId(), partitionLeaderTermsDecoder.term());
     }
 
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, before
+    // partitionHealthCount
     if (bodyDecoder.versionLength() > 0) {
       bodyDecoder.wrapVersion(version);
     } else {
+      version.wrap(EMPTY_BYTE_ARRAY);
       bodyDecoder.skipVersion();
     }
 
@@ -317,6 +362,22 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       partitionHealthDecoder.next();
       partitionHealthStatuses.put(
           partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
+    }
+
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, after
+    // partitionHealthCount
+    if (bodyDecoder.zoneLength() > 0) {
+      zone = bodyDecoder.zone();
+    } else {
+      zone = null;
+      bodyDecoder.skipZone();
+    }
+
+    if (bodyDecoder.partitionGroupLength() > 0) {
+      partitionGroup = bodyDecoder.partitionGroup();
+    } else {
+      partitionGroup = null;
+      bodyDecoder.skipPartitionGroup();
     }
 
     assert bodyDecoder.limit() == frameEnd
@@ -337,7 +398,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + PartitionLeaderTermsEncoder.sbeHeaderSize()
             + PartitionHealthEncoder.sbeHeaderSize()
             + versionHeaderLength()
-            + version.capacity();
+            + version.capacity()
+            + zoneHeaderLength()
+            + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0)
+            + partitionGroupHeaderLength()
+            + (partitionGroup != null ? partitionGroup.getBytes(StandardCharsets.UTF_8).length : 0);
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -399,6 +464,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       }
     }
 
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, before
+    // partitionHealthCount
     bodyEncoder.putVersion(version, 0, version.capacity());
 
     final int partitionHealthCount = partitionHealthStatuses.size();
@@ -410,10 +477,25 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
     }
+
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, after
+    // partitionHealthCount
+    if (zone != null) {
+      bodyEncoder.zone(zone);
+    } else {
+      bodyEncoder.putZone(EMPTY_BYTE_ARRAY, 0, 0);
+    }
+
+    if (partitionGroup != null) {
+      bodyEncoder.partitionGroup(partitionGroup);
+    } else {
+      bodyEncoder.putPartitionGroup(EMPTY_BYTE_ARRAY, 0, 0);
+    }
+
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
-  public static BrokerInfo fromProperties(final Properties properties) {
+  public static @Nullable BrokerInfo fromProperties(final Properties properties) {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
       return readFromString(property);
@@ -460,7 +542,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionConsumer.accept(partition);
           switch (role) {
             case LEADER:
-              leaderPartitionConsumer.accept(partition, partitionLeaderTerms.get(partition));
+              final var term =
+                  Objects.requireNonNull(
+                      partitionLeaderTerms.get(partition),
+                      "missing term for partition " + partition);
+              leaderPartitionConsumer.accept(partition, term);
               break;
             case FOLLOWER:
               followerPartitionsConsumer.accept(partition);
@@ -474,10 +560,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         });
   }
 
-  public BrokerInfo consumePartitionsHealth(
+  public void consumePartitionsHealth(
       final BiConsumer<Integer, PartitionHealthStatus> partitionConsumer) {
     partitionHealthStatuses.forEach(partitionConsumer);
-    return this;
   }
 
   @Override
@@ -499,6 +584,10 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
+        + ", zone="
+        + zone
+        + ", partitionGroup="
+        + partitionGroup
         + '}';
   }
 }

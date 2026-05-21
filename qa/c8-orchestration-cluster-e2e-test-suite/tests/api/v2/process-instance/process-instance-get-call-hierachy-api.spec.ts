@@ -95,7 +95,7 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
           res,
         );
         const json = await res.json();
-        expect(json.length).toBe(2);
+        expect(json).toHaveLength(2);
         expect(json[0].processInstanceKey).toBe(
           localState['processInstanceKey'],
         );

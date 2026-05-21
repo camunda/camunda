@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,7 +38,8 @@ public final class ExecutionListenerTransformer {
       return;
     }
 
-    final var taskHeaders = transformTaskHeaders(element);
+    final var taskHeaders =
+        transformTaskHeaders(element.getSingleExtensionElement(ZeebeTaskHeaders.class));
 
     executionListeners.forEach(
         listener -> {
@@ -57,8 +59,7 @@ public final class ExecutionListenerTransformer {
         });
   }
 
-  private Map<String, String> transformTaskHeaders(final BaseElement element) {
-    final var zeebeTaskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+  private Map<String, String> transformTaskHeaders(final ZeebeTaskHeaders zeebeTaskHeaders) {
     if (zeebeTaskHeaders == null) {
       return Map.of();
     }
@@ -72,24 +73,43 @@ public final class ExecutionListenerTransformer {
       final ExecutableFlowNode flowNode,
       final ExpressionLanguage expressionLanguage,
       final Map<String, String> taskHeaders) {
+    final Map<String, String> mergedTaskHeaders =
+        mergeTaskHeaders(
+            taskHeaders, transformTaskHeaders(listener == null ? null : listener.getTaskHeaders()));
     Either.<Error, ZeebeExecutionListener>right(listener)
         .flatMap(l -> requireNotNull(l, () -> l, "listener"))
         .flatMap(l -> requireNotNull(l, l::getEventType, "eventType"))
         .flatMap(l -> requireNotNull(l, l::getType, "type"))
         .flatMap(l -> requireNotNull(l, l::getRetries, "retries"))
         .ifRightOrLeft(
-            ok ->
-                flowNode.addListener(
-                    listener.getEventType(),
-                    expressionLanguage.parseExpression(listener.getType()),
-                    expressionLanguage.parseExpression(listener.getRetries()),
-                    taskHeaders),
+            ok -> {
+              flowNode.addExecutionListener(
+                  ok.getEventType(),
+                  expressionLanguage.parseExpression(ok.getType()),
+                  expressionLanguage.parseExpression(ok.getRetries()),
+                  mergedTaskHeaders);
+            },
             error ->
                 LOGGER.debug(
                     """
                     Failed to transform execution listener for flow node '%s', \
                     because %s. Ignoring this listener definition."""
                         .formatted(BufferUtil.bufferAsString(flowNode.getId()), error.reason())));
+  }
+
+  private Map<String, String> mergeTaskHeaders(
+      final Map<String, String> elementTaskHeaders, final Map<String, String> listenerTaskHeaders) {
+    if (elementTaskHeaders.isEmpty()) {
+      return listenerTaskHeaders;
+    }
+
+    if (listenerTaskHeaders.isEmpty()) {
+      return elementTaskHeaders;
+    }
+
+    final Map<String, String> mergedTaskHeaders = new HashMap<>(elementTaskHeaders);
+    mergedTaskHeaders.putAll(listenerTaskHeaders);
+    return Map.copyOf(mergedTaskHeaders);
   }
 
   private Either<Error, ZeebeExecutionListener> requireNotNull(

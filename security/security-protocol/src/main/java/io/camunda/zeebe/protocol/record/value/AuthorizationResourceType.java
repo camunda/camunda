@@ -8,7 +8,11 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -98,5 +102,26 @@ public enum AuthorizationResourceType {
    */
   public static Set<AuthorizationResourceType> getUserProvidedResourceTypes() {
     return Arrays.stream(values()).filter(type -> type != UNSPECIFIED).collect(Collectors.toSet());
+  }
+
+  /**
+   * Builds a map with the key as the name of the resource type and the value is a list of
+   * permission types allowed for that resource type.
+   *
+   * @return
+   */
+  public static Map<String, List<String>> buildResourcePermissionsMap() {
+    return AuthorizationResourceType.getUserProvidedResourceTypes().stream()
+        .sorted(Comparator.comparing(Enum::name))
+        .collect(
+            Collectors.toMap(
+                Enum::name,
+                resourceType ->
+                    resourceType.getSupportedPermissionTypes().stream()
+                        .map(PermissionType::name)
+                        .sorted()
+                        .collect(Collectors.toList()),
+                (e1, e2) -> e1,
+                LinkedHashMap::new));
   }
 }

@@ -45,11 +45,12 @@ class TaskPanelPage {
     });
   }
 
-  async openTask(name: string) {
+  async openTask(name: string, options: {timeout?: number} = {}) {
+    const timeout = options.timeout ?? 10000;
     await this.availableTasks
       .getByText(name, {exact: true})
       .nth(0)
-      .click({timeout: 10000});
+      .click({timeout});
   }
 
   async filterBy(

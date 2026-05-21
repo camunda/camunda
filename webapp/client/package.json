@@ -1,0 +1,36 @@
+{
+	"name": "@camunda/webapp-client",
+	"description": "Camunda JS/TS monorepo",
+	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
+	"type": "module",
+	"private": true,
+	"license": "LicenseRef-Camunda-1.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/camunda/camunda.git"
+	},
+	"workspaces": [
+		"packages/*",
+		"apps/*"
+	],
+	"scripts": {
+		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
+		"lint:eslint": "eslint .",
+		"lint:prettier": "prettier -c .",
+		"lint": "npm run lint:eslint && npm run lint:prettier",
+		"typecheck": "npm run typecheck --workspaces --if-present",
+		"format": "prettier --write .",
+		"build": "npm run build --workspaces --if-present",
+		"prepublishOnly": "node scripts/prepublishOnly.js",
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
+	},
+	"packageManager": "npm@11.14.1",
+	"devDependencies": {
+		"@eslint/js": "9.39.4",
+		"eslint": "9.39.4",
+		"eslint-plugin-license-header": "0.9.0",
+		"globals": "17.6.0",
+		"prettier": "3.8.3",
+		"typescript-eslint": "8.59.0"
+	}
+}

@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from '../../utils/sleep';
 
@@ -68,9 +68,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instances Filters', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -288,7 +287,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateProcessesPage.parentProcessInstanceKeyCell,
       ).toHaveText(`${callActivityProcessInstanceKey}`);
-      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
+      await expect(operateProcessesPage.processInstancesTable).toHaveCount(1);
     });
 
     await test.step('Reset filter', async () => {
@@ -582,7 +581,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
     });
 
-    await test.step('Filter by variable and operation id and assert results', async () => {
+    await test.step('Filter by variable and batch operation key and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
           (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
@@ -630,7 +629,8 @@ test.describe('Process Instances Filters', () => {
       await expect(operateOperationsDetailsPage.state).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
-          const batchOperationStatus = await operateOperationsDetailsPage.getBatchOperationStatus();
+          const batchOperationStatus =
+            await operateOperationsDetailsPage.getBatchOperationStatus();
           expect(batchOperationStatus).toBe('Completed');
         },
         onFailure: async () => {
@@ -638,8 +638,8 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      const operationId =
-        await operateOperationsDetailsPage.getBatchOperationId();
+      const batchOperationKey =
+        await operateOperationsDetailsPage.getBatchOperationKey();
 
       await page.goto(`operate/processes`);
 
@@ -656,8 +656,12 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Batch Operation Key',
+      );
+      await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+        batchOperationKey,
+      );
 
       await waitForAssertion({
         assertion: async () => {
@@ -665,8 +669,12 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-          await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Batch Operation Key',
+          );
+          await operateFiltersPanelPage.fillBatchOperationKeyFilter(
+            batchOperationKey,
+          );
         },
       });
 

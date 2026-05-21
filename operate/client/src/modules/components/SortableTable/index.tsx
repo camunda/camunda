@@ -56,7 +56,7 @@ interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
-  batchOperationId?: string;
+  batchOperationKey?: string;
   isExpandable?: boolean;
   expandedContent?: Record<string, React.ReactNode>;
   size?: React.ComponentProps<typeof Table>['size'];
@@ -88,7 +88,7 @@ const SortableTable = <
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
-  batchOperationId,
+  batchOperationKey,
   isExpandable = false,
   expandedContent,
   stickyHeader = false,
@@ -144,12 +144,12 @@ const SortableTable = <
           getTableProps,
           getExpandHeaderProps,
         }) => (
-          <TableContainer $hasError={!!batchOperationId}>
+          <TableContainer $hasError={!!batchOperationKey}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
               <TableHead $stickyHeader={stickyHeader}>
                 <TableHeadRow>
-                  {(batchOperationId || isExpandable) && (
+                  {(batchOperationKey || isExpandable) && (
                     <TableExpandHeader
                       {...getExpandHeaderProps()}
                       aria-label="expand row"
@@ -177,9 +177,9 @@ const SortableTable = <
                         {...props}
                         key={key}
                         label={header.header}
-                        sortKey={headerColumns[index].sortKey ?? header.key}
-                        isDefault={headerColumns[index].isDefault}
-                        isDisabled={headerColumns[index].isDisabled}
+                        sortKey={headerColumns[index]?.sortKey ?? header.key}
+                        isDefault={headerColumns[index]?.isDefault}
+                        isDisabled={headerColumns[index]?.isDisabled}
                         onSort={onSort}
                       />
                     );
@@ -202,7 +202,7 @@ const SortableTable = <
                         if (isExpandable) {
                           return 'expandableRow';
                         }
-                        if (batchOperationId) {
+                        if (batchOperationKey) {
                           return errorMessage ? 'errorRow' : 'successRow';
                         }
 

@@ -507,7 +507,7 @@ describe('elementInstancesTreeStore', () => {
       mockProcessInstanceKey,
     );
     expect(firstItems.length).toBe(100);
-    expect(firstItems[0].elementId).toBe('task_0');
+    expect(firstItems[0]?.elementId).toBe('task_0');
 
     mockSearchElementInstances().withSuccess(mockSecondPageResponse);
 
@@ -517,7 +517,7 @@ describe('elementInstancesTreeStore', () => {
       mockProcessInstanceKey,
     );
     expect(secondItems.length).toBe(100);
-    expect(secondItems[0].elementId).toBe('task_100');
+    expect(secondItems[0]?.elementId).toBe('task_100');
   });
 
   it('should return 0 when reaching end of list', async () => {
@@ -1032,7 +1032,7 @@ describe('elementInstancesTreeStore', () => {
     );
     expect(updatedNodeData?.pageMetadata.totalItems).toBe(151);
     expect(updatedNodeData?.items).toHaveLength(101);
-    expect(updatedNodeData?.items[100].elementId).toBe('new_task');
+    expect(updatedNodeData?.items[100]?.elementId).toBe('new_task');
 
     vi.useRealTimers();
   });

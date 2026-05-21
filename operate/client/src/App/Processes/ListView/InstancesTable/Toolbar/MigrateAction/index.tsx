@@ -9,7 +9,7 @@
 import {observer} from 'mobx-react';
 import {TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
@@ -22,9 +22,9 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const MigrateAction: React.FC = observer(() => {
   const {
-    selectedProcessInstanceIds,
+    selectedIds,
     hasSelectedRunningInstances,
-    excludedProcessInstanceIds,
+    excludedIds,
     state: {selectionMode},
   } = processInstancesSelectionStore;
 
@@ -52,6 +52,7 @@ const MigrateAction: React.FC = observer(() => {
     if (!hasSelectedRunningInstances) {
       return 'You can only migrate instances in active or incident state.';
     }
+    return undefined;
   };
 
   const handleSubmit = () => {
@@ -64,12 +65,12 @@ const MigrateAction: React.FC = observer(() => {
     );
 
     processInstanceMigrationStore.setSelectedInstancesCount(
-      processInstancesSelectionStore.selectedProcessInstanceCount,
+      processInstancesSelectionStore.selectedCount,
     );
     processInstanceMigrationStore.setBatchOperationQuery({
       variable: variableFilterStore.variableWithValidatedValues,
-      ids: selectionMode === 'INCLUDE' ? selectedProcessInstanceIds : [],
-      excludeIds: selectionMode === 'EXCLUDE' ? excludedProcessInstanceIds : [],
+      ids: selectionMode === 'INCLUDE' ? selectedIds : [],
+      excludeIds: selectionMode === 'EXCLUDE' ? excludedIds : [],
     });
     processInstanceMigrationStore.enable();
 

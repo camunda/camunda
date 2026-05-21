@@ -11,12 +11,14 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,12 +92,16 @@ public final class ProcessCacheUtil {
    * Returns relevant data from process diagram
    *
    * @param processDefinitionEntity
+   * @param extensionPropertiesConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
   public static ProcessDiagramData extractProcessDiagramData(
-      final ProcessDefinitionEntity processDefinitionEntity) {
+      final ProcessDefinitionEntity processDefinitionEntity,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     return extractProcessDiagramData(
-        processDefinitionEntity.bpmnXml(), processDefinitionEntity.processDefinitionId());
+        processDefinitionEntity.bpmnXml(),
+        processDefinitionEntity.processDefinitionId(),
+        extensionPropertiesConfiguration);
   }
 
   /**
@@ -103,9 +109,13 @@ public final class ProcessCacheUtil {
    *
    * @param bpmnXml
    * @param bpmnProcessId
+   * @param extensionPropertiesConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
-  public static ProcessDiagramData extractProcessDiagramData(String bpmnXml, String bpmnProcessId) {
+  public static ProcessDiagramData extractProcessDiagramData(
+      final String bpmnXml,
+      final String bpmnProcessId,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
@@ -115,10 +125,14 @@ public final class ProcessCacheUtil {
       final Collection<FlowNode> flowNodes = reader.extractFlowNodes();
       final Map<String, String> flowNodesMap = getFlowNodesMap(flowNodes);
       final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      return new ProcessDiagramData(callActivityIds, flowNodesMap, hasUserTasks);
+      final Map<String, Map<String, String>> elementExtensionProperties =
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
+      return new ProcessDiagramData(
+          callActivityIds, flowNodesMap, hasUserTasks, elementExtensionProperties);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of(), true);
+    return new ProcessDiagramData(List.of(), Map.of(), true, Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
@@ -148,8 +162,38 @@ public final class ProcessCacheUtil {
         .map(map -> map.get(flowNodeId));
   }
 
-  public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
+  public static Map<String, String> getFlowNodesMap(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
+  }
+
+  public static String getToolName(
+      final Map<String, String> extensionProperties, final String toolNameProperty) {
+    if (extensionProperties == null || toolNameProperty == null) {
+      return null;
+    }
+    return extensionProperties.get(toolNameProperty);
+  }
+
+  public static String getInboundConnectorType(
+      final Map<String, String> extensionProperties, final String inboundTypeProperty) {
+    if (extensionProperties == null || inboundTypeProperty == null) {
+      return null;
+    }
+    return extensionProperties.get(inboundTypeProperty);
+  }
+
+  /**
+   * Returns a map of extension properties whose keys start with the given prefix. Returns an empty
+   * map if {@code extensionProperties} is null or the prefix is null/blank.
+   */
+  public static Map<String, String> getToolProperties(
+      final Map<String, String> extensionProperties, final String prefix) {
+    if (extensionProperties == null || prefix == null || prefix.isBlank()) {
+      return Map.of();
+    }
+    return extensionProperties.entrySet().stream()
+        .filter(e -> e.getKey().startsWith(prefix))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }

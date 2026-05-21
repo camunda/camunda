@@ -36,7 +36,7 @@ public class Bulk {
   public Duration getDelay() {
     final var delayInt = Math.toIntExact(delay.toSeconds());
     final var result =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix + ".delay",
             delayInt,
             Integer.class,
@@ -50,7 +50,7 @@ public class Bulk {
   }
 
   public int getSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".size",
         size,
         Integer.class,
@@ -65,7 +65,7 @@ public class Bulk {
   public DataSize getMemoryLimit() {
     final var memoryLimitInt = Math.toIntExact(memoryLimit.toMegabytes());
     final var result =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix + ".memory-limit",
             memoryLimitInt,
             Integer.class,

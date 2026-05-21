@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a single row in the {@code JOB_METRICS_BATCH} table.
@@ -40,31 +42,44 @@ public record JobMetricsBatchEntity(
     Boolean incompleteBatch,
     String tenantId,
     Integer failedCount,
-    OffsetDateTime lastFailedAt,
+    @Nullable OffsetDateTime lastFailedAt,
     Integer completedCount,
-    OffsetDateTime lastCompletedAt,
+    @Nullable OffsetDateTime lastCompletedAt,
     Integer createdCount,
-    OffsetDateTime lastCreatedAt,
+    @Nullable OffsetDateTime lastCreatedAt,
     String jobType,
-    String worker)
+    @Nullable String worker)
     implements TenantOwnedEntity {
+
+  public JobMetricsBatchEntity {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(partitionId, "partitionId");
+    Objects.requireNonNull(startTime, "startTime");
+    Objects.requireNonNull(endTime, "endTime");
+    Objects.requireNonNull(incompleteBatch, "incompleteBatch");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(failedCount, "failedCount");
+    Objects.requireNonNull(completedCount, "completedCount");
+    Objects.requireNonNull(createdCount, "createdCount");
+    Objects.requireNonNull(jobType, "jobType");
+  }
 
   public static class Builder implements ObjectBuilder<JobMetricsBatchEntity> {
 
-    private String key;
-    private Integer partitionId;
-    private OffsetDateTime startTime;
-    private OffsetDateTime endTime;
-    private Boolean incompleteBatch;
-    private String tenantId;
-    private Integer failedCount;
-    private OffsetDateTime lastFailedAt;
-    private Integer completedCount;
-    private OffsetDateTime lastCompletedAt;
-    private Integer createdCount;
-    private OffsetDateTime lastCreatedAt;
-    private String jobType;
-    private String worker;
+    private @Nullable String key;
+    private @Nullable Integer partitionId;
+    private @Nullable OffsetDateTime startTime;
+    private @Nullable OffsetDateTime endTime;
+    private @Nullable Boolean incompleteBatch;
+    private @Nullable String tenantId;
+    private @Nullable Integer failedCount;
+    private @Nullable OffsetDateTime lastFailedAt;
+    private @Nullable Integer completedCount;
+    private @Nullable OffsetDateTime lastCompletedAt;
+    private @Nullable Integer createdCount;
+    private @Nullable OffsetDateTime lastCreatedAt;
+    private @Nullable String jobType;
+    private @Nullable String worker;
 
     public Builder key(final String key) {
       this.key = key;
@@ -136,6 +151,7 @@ public record JobMetricsBatchEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public JobMetricsBatchEntity build() {
       return new JobMetricsBatchEntity(

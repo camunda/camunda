@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -17,6 +17,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
+    './resources/usertask_for_assign_unassign.bpmn',
     './resources/user_task_with_form.bpmn',
     './resources/user_task_form.form',
     './resources/user_task_with_form_and_vars.bpmn',
@@ -29,6 +30,8 @@ test.beforeAll(async () => {
     './resources/date_and_time_task_with_form.bpmn',
     './resources/form_with_date_and_time.form',
     './resources/number_task_with_form.bpmn',
+    './resources/number_task_input_form.bpmn',
+    './resources/number_task_buttons_form.bpmn',
     './resources/form_with_number.form',
     './resources/radio_button_task_with_form.bpmn',
     './resources/form_with_radio_button.form',
@@ -43,12 +46,15 @@ test.beforeAll(async () => {
     './resources/zeebe_and_job_worker_process.bpmn',
     './resources/bigVariableProcessWithForm.bpmn',
     './resources/bigVariableForm.form',
+    './resources/user_task_with_form_assigned_filter.bpmn',
   ]);
   await sleep(1000);
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
-    createInstances('user_registration', 1, 3),
+    createInstances('usertask_for_assign_unassign', 1, 1),
+    createInstances('user_registration', 1, 2),
+    createInstances('user_registration_assigned_filter', 1, 1),
     createInstances('user_registration_with_vars', 1, 2, {
       name: 'Jane',
       age: '50',
@@ -64,7 +70,8 @@ test.beforeAll(async () => {
     createInstances('Checkbox_User_Task', 1, 1),
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
-    createInstances('Number_Task', 1, 2),
+    createInstances('Number_Task_Input', 1, 1),
+    createInstances('Number_Task_Buttons', 1, 1),
     createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
@@ -125,12 +132,8 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({
-    page,
-    taskPanelPage,
-    taskDetailsPage,
-  }) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
+    await taskPanelPage.openTask('usertask_for_assign_unassign');
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
@@ -158,6 +161,11 @@ test.describe('task details page', () => {
 
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
+
+    // Wait for the details panel to finish loading before interacting.
+    // openTask only clicks the row — without this, the Assign button query
+    // can race the panel render on slow runners and time out at 60s.
+    await expect(taskDetailsPage.detailsHeader).toBeVisible({timeout: 30000});
 
     const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
@@ -191,6 +199,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('User registration');
 
+    await expect(taskDetailsPage.form).toBeVisible({timeout: 30000});
     await taskDetailsPage.assertFieldValue('Name*', 'Jon');
     await taskDetailsPage.assertFieldValue('Address*', 'Earth');
     await taskDetailsPage.assertFieldValue('Age', '21');
@@ -233,8 +242,10 @@ test.describe('task details page', () => {
     await sleep(500);
     await taskDetailsPage.completeTaskButton.click();
 
+    // 60s was hit by the May 20 nightly — give completion more headroom on
+    // a loaded shared cluster.
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 60000,
+      timeout: 90000,
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -285,14 +296,14 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
 
     await taskPanelPage.filterBy('Assigned to me');
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.fillTextInput('Name*', 'Gaius Julius Caesar');
@@ -304,7 +315,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
     await taskDetailsPage.assertFieldValue('Address*', 'Rome');
@@ -356,7 +367,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Input');
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.fillTextInput('Number', '4');
@@ -365,7 +376,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Input');
 
     await taskDetailsPage.assertFieldValue('Number', '4');
   });
@@ -375,21 +386,30 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
-    await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
-    await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '2');
-    await taskDetailsPage.clickDecrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
+    // Form-js number-button clicks can occasionally register twice on
+    // slow runners (mousedown + mouseup as separate increments), making
+    // the value race the assertion. Drive each step toward its target
+    // value instead of asserting after a single click.
+    await taskDetailsPage.incrementUntilValue('1');
+    await taskDetailsPage.incrementUntilValue('2');
+    await taskDetailsPage.decrementUntilValue('1');
+    await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    // 30s was hit by the May 21 nightly — bump to the 60s budget the
+    // other completion tests use.
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+      timeout: 15000,
+    });
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
 
@@ -472,6 +492,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with checklist form', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -485,10 +506,22 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Checklist User Task');
 
-    await taskDetailsPage.assertItemChecked('Value1');
-    await taskDetailsPage.assertItemChecked('Value2');
+    // The completed task can briefly render with stale state before the
+    // form's stored values rehydrate; the May 21 nightly hit this with
+    // Value1 unchecked at the 60s assertion timeout. Re-open + reassert on
+    // reload until both items show as checked.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('Checklist User Task');
+        await taskDetailsPage.assertItemChecked('Value1');
+        await taskDetailsPage.assertItemChecked('Value2');
+      },
+      onFailure: async () => {
+        await page.reload();
+        await taskPanelPage.assertCompletedHeadingVisible();
+      },
+    });
   });
 
   // TODO issue #3719

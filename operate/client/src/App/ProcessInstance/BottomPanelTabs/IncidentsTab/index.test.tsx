@@ -25,7 +25,7 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {createIncident, searchResult} from 'modules/testUtils';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
 const PROCESS_INSTANCE_ID = mockProcessInstance.processInstanceKey;
@@ -69,7 +69,7 @@ describe('IncidentsTab', () => {
   });
 
   afterEach(() => {
-    incidentsPanelStore.clearSelection();
+    incidentsPanelFiltersStore.clearSelection();
   });
 
   it('should render the incidents table with correct columns', async () => {

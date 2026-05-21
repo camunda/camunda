@@ -3,8 +3,8 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:c28de0ca6d34d1017166c2c16e2ed7757ee2f7ad20f7ac5bea8bbf9989cc9bc2"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
+ARG BASE_DIGEST="sha256:27a2f1cad596d750ccc316b832799e5bd70eb76eed844301a7ac45b806b534eb"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:be00aca3f4747fa3f4b936fc35dc64eb5862349e262b2ad8d3299cb96a305780"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.3_9-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:5742cdb98ef117621ad75f57475ab127db04f344d9c523307cc60b9955bdd676"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -71,11 +71,45 @@ FROM ubuntu:noble AS distball
 # hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install tools before COPY so this layer is cached independently of the distball
+# hadolint ignore=DL3008
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends unzip zip && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
 
 RUN mkdir camunda-zeebe && \
     tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
+
+ARG TARGETARCH
+# Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+# hadolint ignore=DL3003
+RUN \
+    # Map Docker TARGETARCH to the RocksDB native lib filename suffix
+    if [ "$TARGETARCH" = "amd64" ]; then \
+      ROCKSDB_ARCH="linux64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      ROCKSDB_ARCH="linux-aarch64"; \
+    else \
+      echo "Unsupported architecture: $TARGETARCH" >&2 && exit 1; \
+    fi && \
+    # Locate the jar (version-agnostic)
+    ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    UNPACK=$(mktemp -d) && \
+    # Unpack, remove all native libs except the one we need, validate, repack
+    unzip -q "$ROCKSDB_JAR" -d "$UNPACK" && \
+    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
+      ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
+    # Verify only shared lib is left
+    count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
+    [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    rm "$ROCKSDB_JAR" && \
+    ( cd "$UNPACK" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    rm -rf "$UNPACK"
 
 
 ### Image containing the camunda distribution ###
@@ -127,11 +161,6 @@ ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
-VOLUME /tmp
-VOLUME ${CAMUNDA_HOME}/data
-VOLUME ${CAMUNDA_HOME}/logs
-VOLUME ${CAMUNDA_HOME}/documents
-VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
 USER root
@@ -146,7 +175,14 @@ RUN addgroup --gid 1001 camunda && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
 
+VOLUME /tmp
+VOLUME ${CAMUNDA_HOME}/data
+VOLUME ${CAMUNDA_HOME}/logs
+VOLUME ${CAMUNDA_HOME}/documents
+VOLUME /driver-lib
+
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
+COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib

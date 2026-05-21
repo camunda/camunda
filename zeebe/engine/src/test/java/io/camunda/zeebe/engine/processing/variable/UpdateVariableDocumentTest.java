@@ -14,7 +14,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -137,5 +139,41 @@ public final class UpdateVariableDocumentTest {
         .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withElementType(BpmnElementType.SERVICE_TASK)
         .getFirst();
+  }
+
+  @Test
+  public void shouldRejectVariableDocumentUpdateForBannedProcessInstance() {
+    // given
+    final String processId = "process";
+    final String taskId = "task";
+    final String type = UUID.randomUUID().toString();
+    final BpmnModelInstance process = newProcess(processId, taskId, type);
+    final Map<String, Object> document = Maps.of(entry("x", 2), entry("foo", "bar"));
+
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(processId).withVariables("{'x': 1}").create();
+    final Record<ProcessInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
+
+    // ban the process instance
+    ENGINE_RULE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<VariableDocumentRecordValue> rejectedRecord =
+        ENGINE_RULE
+            .variables()
+            .ofScope(activatedEvent.getKey())
+            .withDocument(document)
+            .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejectedRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 }

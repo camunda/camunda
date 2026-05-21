@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_DELETE_BATCH_OPERATION_ENABLED = false;
+const MULTI_VARIABLE_FILTER = false;
+const IS_AI_AGENT_ENABLED = false;
 
-export {IS_DELETE_BATCH_OPERATION_ENABLED};
+export {IS_AI_AGENT_ENABLED, MULTI_VARIABLE_FILTER};

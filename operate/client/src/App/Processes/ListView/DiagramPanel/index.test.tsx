@@ -30,7 +30,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 
@@ -59,11 +59,7 @@ function getWrapper(queryParams?: Record<string, string>) {
             <button onClick={batchModificationStore.enable}>
               Enable batch modification mode
             </button>
-            <button
-              onClick={() =>
-                processInstancesSelectionStore.selectProcessInstance('0')
-              }
-            >
+            <button onClick={() => processInstancesSelectionStore.select('0')}>
               Select process instance
             </button>
           </MemoryRouter>

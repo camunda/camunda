@@ -30,10 +30,10 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.api.model.config.headers.PermissionsPolicyConfig;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -103,15 +103,14 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                       .getSecondaryStorage()
                       .getElasticsearch()
                       .setUrl("http://" + CONTAINER.getHttpHostAddress()))
+          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
+          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
+          .withProperty("camunda.security.authentication.oidc.issuer-uri", buildKeycloakIssuerUri())
+          .withProperty("camunda.security.authentication.oidc.client-id", EXAMPLE_CLIENT_ID)
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", EXAMPLE_REDIRECT_URI)
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(buildKeycloakIssuerUri());
-                oidcConfig.setClientId(EXAMPLE_CLIENT_ID);
-                oidcConfig.setRedirectUri(EXAMPLE_REDIRECT_URI);
-
                 c.getInitialization()
                     .setMappingRules(
                         List.of(new ConfiguredMappingRule(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));

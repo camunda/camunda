@@ -114,7 +114,11 @@ const FieldsModal: React.FC<Props> = ({
                   return message;
                 }
 
-                return set({}, path[path.length - 1], message);
+                const lastPathSegment = path.at(-1);
+
+                return lastPathSegment === undefined
+                  ? message
+                  : set({}, lastPathSegment, message);
               }).fieldErrors;
             }
 

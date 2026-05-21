@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -116,7 +117,7 @@ public final class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
-    if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
+    if (brokerInfo != null && !memberIdOf(brokerInfo).equals(memberIdOf(localBroker))) {
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
@@ -134,7 +135,7 @@ public final class TopologyManagerImpl extends Actor
                 LOG.debug(
                     "Received {} from member {}, was not handled.",
                     clusterMembershipEvent.type(),
-                    brokerInfo.getNodeId());
+                    memberIdOf(brokerInfo));
                 break;
             }
           });
@@ -153,7 +154,7 @@ public final class TopologyManagerImpl extends Actor
 
   private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
     final BrokerInfo currentLeader = partitionLeaders.get(partition);
-    if (currentLeader != null && currentLeader.getNodeId() == brokerInfo.getNodeId()) {
+    if (currentLeader != null && memberIdOf(currentLeader).equals(memberIdOf(brokerInfo))) {
       partitionLeaders.remove(partition);
     }
   }
@@ -162,7 +163,7 @@ public final class TopologyManagerImpl extends Actor
   private void onMetadataChanged(final BrokerInfo brokerInfo) {
     LOG.debug(
         "Received metadata change for {}, partitions {} terms {}",
-        brokerInfo.getNodeId(),
+        memberIdOf(brokerInfo),
         brokerInfo.getPartitionRoles(),
         brokerInfo.getPartitionLeaderTerms());
     brokerInfo.consumePartitions(
@@ -179,7 +180,7 @@ public final class TopologyManagerImpl extends Actor
             .filter(
                 entry -> {
                   final var broker = entry.getValue();
-                  return broker.getNodeId() == brokerInfo.getNodeId();
+                  return memberIdOf(broker).equals(memberIdOf(brokerInfo));
                 })
             .map(Entry::getKey)
             .toList();
@@ -198,7 +199,7 @@ public final class TopologyManagerImpl extends Actor
         LOG.debug(
             "Expected to have a non-null value for current leader term, but found null. Partition {} is likely removed from broker {}. Updating the leader anyway.",
             leaderPartitionId,
-            currentLeader.getNodeId());
+            memberIdOf(currentLeader));
       } else if (currentLeaderTerm >= term) {
         return false;
       }
@@ -228,7 +229,8 @@ public final class TopologyManagerImpl extends Actor
           partitionLeaders.forEach(
               (partitionId, leader) ->
                   LogUtil.catchAndLog(
-                      LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leader)));
+                      LOG,
+                      () -> listener.onPartitionLeaderUpdated(partitionId, memberIdOf(leader))));
         });
   }
 
@@ -257,8 +259,13 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    final var leaderId = memberIdOf(member);
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
-      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
+      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
+  }
+
+  private static BrokerMemberId memberIdOf(final BrokerInfo brokerInfo) {
+    return BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
   }
 }

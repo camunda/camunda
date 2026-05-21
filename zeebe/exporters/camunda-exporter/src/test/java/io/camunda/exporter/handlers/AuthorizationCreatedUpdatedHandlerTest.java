@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -120,7 +121,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
             .setOwnerType(AuthorizationOwnerType.GROUP.name())
             .setResourceMatcher(AuthorizationResourceMatcher.ID.value())
             .setResourceId("resourceId")
-            .setPermissionTypes(Set.of(PermissionType.UPDATE));
+            .setPermissionTypes(Set.of(io.camunda.security.api.model.authz.PermissionType.UPDATE));
     underTest.updateEntity(authorizationRecord, authorizationEntity);
 
     // then
@@ -136,7 +137,9 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     assertThat(authorizationEntity.getResourcePropertyName())
         .isEqualTo(authorizationRecordValue.getResourcePropertyName());
     assertThat(authorizationEntity.getPermissionTypes())
-        .isEqualTo(authorizationRecordValue.getPermissionTypes());
+        .isEqualTo(
+            AuthzModelMapper.fromProtocolPermissionTypes(
+                authorizationRecordValue.getPermissionTypes()));
   }
 
   @Test

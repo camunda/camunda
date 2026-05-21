@@ -19,6 +19,7 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -62,6 +63,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -365,6 +367,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    return null;
+  }
+
+  @Override
   public AuditLogEntity getAuditLog(final String id) {
     return null;
   }
@@ -388,6 +395,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
       final ClusterVariableQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return this;
   }
 
   @Override
@@ -448,6 +460,22 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
       final GlobalListenerQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResource(final long key) {
+    return null;
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final DeployedResourceQuery query) {
     return SearchQueryResult.empty();
   }
 }

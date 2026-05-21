@@ -30,7 +30,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -521,6 +521,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                     String.valueOf(ElementInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
+    stringOperationTestCases(
+        streamBuilder,
+        "elementId",
+        ops -> new FlowNodeInstanceFilter.Builder().flowNodeIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "elementName",
+        ops -> new FlowNodeInstanceFilter.Builder().flowNodeNameOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "startDate",

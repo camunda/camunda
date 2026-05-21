@@ -208,11 +208,80 @@ class TaskDetailsPage {
     await this.decrementButton.click({timeout: 60000});
   }
 
+  /**
+   * Repeatedly press increment until the input shows the target value.
+   * Tolerates the form-js number button registering a click as two
+   * increments on slow runners.
+   */
+  async incrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'increment');
+  }
+
+  /**
+   * Repeatedly press decrement until the input shows the target value.
+   */
+  async decrementUntilValue(target: string): Promise<void> {
+    await this.driveNumberInputToValue(target, 'decrement');
+  }
+
+  private async driveNumberInputToValue(
+    target: string,
+    direction: 'increment' | 'decrement',
+  ): Promise<void> {
+    const button =
+      direction === 'increment' ? this.incrementButton : this.decrementButton;
+    const targetNum = Number(target);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const currentValue = (await this.numberInput.inputValue()) || '0';
+      const currentNum = Number(currentValue);
+      if (currentNum === targetNum) {
+        return;
+      }
+      const wrongDirection =
+        (direction === 'increment' && currentNum > targetNum) ||
+        (direction === 'decrement' && currentNum < targetNum);
+      const correctButton = wrongDirection
+        ? direction === 'increment'
+          ? this.decrementButton
+          : this.incrementButton
+        : button;
+      await correctButton.click({timeout: 60000});
+      try {
+        await expect(this.numberInput).not.toHaveValue(currentValue, {
+          timeout: 5000,
+        });
+      } catch {
+        // If the input value didn't change in 5s the next iteration will
+        // re-read it and decide whether another click is needed.
+      }
+    }
+    await expect(this.numberInput).toHaveValue(target);
+  }
+
   async fillDatetimeField(label: string, value: string) {
     const input = this.page.getByRole('textbox', {name: label});
     await expect(input).toBeVisible();
     await input.click();
-    await input.fill(value);
+    // Form-js datetime sub-fields (e.g. the Time sub-field of a combined
+    // datetime component) render the underlying <input> as readonly and
+    // route keystrokes through flatpickr — so .fill() throws "element is
+    // not editable". The readonly attribute also flips on/off during the
+    // component's re-renders, so a one-shot isEditable() check is racy.
+    // Try fill() first and only fall back to keyboard typing when the
+    // failure is the specific not-editable error; rethrow anything else
+    // so we don't mask detached-element / locator-mismatch bugs.
+    try {
+      await input.fill(value);
+    } catch (error) {
+      const message = (error as Error)?.message ?? '';
+      if (!message.includes('not editable')) {
+        throw error;
+      }
+      // ControlOrMeta+A is cross-platform (Cmd on macOS, Ctrl elsewhere).
+      await this.page.keyboard.press('ControlOrMeta+A');
+      await this.page.keyboard.press('Backspace');
+      await this.page.keyboard.type(value, {delay: 30});
+    }
     await this.page.keyboard.press('Enter');
     await expect(input).toHaveValue(value);
   }
@@ -223,7 +292,15 @@ class TaskDetailsPage {
 
   async selectDropdownValue(value: string): Promise<void> {
     await this.selectDropdown.click();
-    await this.page.getByText(value).click();
+    // Prefer the explicit option role so the click doesn't land on a
+    // substring match elsewhere on the page (e.g. the dropdown's own
+    // label or the placeholder when the menu hasn't opened yet).
+    const option = this.page.getByRole('option', {name: value, exact: true});
+    try {
+      await option.click({timeout: 5000});
+    } catch {
+      await this.page.getByText(value).click();
+    }
   }
 
   async selectDropdownOption(label: string, value: string) {
@@ -377,17 +454,23 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        await expect(input).toHaveValue(expectedValue);
       },
       onFailure: async () => {
-        console.log(`Retrying assertion for field "${label}"...`);
+        console.log(
+          `Assertion for field "${label}" failed, reloading page and retrying...`,
+        );
+        await this.page.reload();
+        await expect(this.form).toBeVisible({timeout: 30000});
       },
     });
   }
 
-  async assertItemChecked(label: string): Promise<void> {
-    await expect(this.page.getByLabel(label)).toBeChecked();
+  async assertItemChecked(
+    label: string,
+    timeout: number = 60000,
+  ): Promise<void> {
+    await expect(this.page.getByLabel(label)).toBeChecked({timeout});
   }
 
   async selectTaglistValues(values: string[]) {

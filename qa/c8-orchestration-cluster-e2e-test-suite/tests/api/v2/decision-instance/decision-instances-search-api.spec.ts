@@ -164,7 +164,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      expect(body.items.length).toEqual(3);
+      expect(body.items).toHaveLength(3);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processInstanceKey).toBe(processInstanceKey);
       });
@@ -276,7 +276,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
       expect(body.page.totalItems).toEqual(0);
     }).toPass(defaultAssertionOptions);
   });

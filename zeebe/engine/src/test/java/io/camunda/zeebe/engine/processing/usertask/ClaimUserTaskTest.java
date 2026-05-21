@@ -287,4 +287,31 @@ public class ClaimUserTaskTest {
     // then
     Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
+
+  @Test
+  public void shouldRejectUserTaskClaimForBannedProcessInstance() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final var claimingRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").expectRejection().claim();
+
+    // then
+    Assertions.assertThat(claimingRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
+  }
 }

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -32,8 +33,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(120)
 final class PartitionLeaveTest {
   private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
@@ -145,11 +148,11 @@ final class PartitionLeaveTest {
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
 
       // then -- partition-1's data is removed
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/1")).doesNotExist();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).doesNotExist();
       // then -- all other data is still there
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/2")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
     } finally {
       broker0.close();
       broker1.close();
@@ -206,10 +209,10 @@ final class PartitionLeaveTest {
                   .join());
 
       // then -- all data remains
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-1/data/raft-partition/partitions/2")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/1")).isNotEmptyDirectory();
-      assertThat(tmp.resolve("broker-0/data/raft-partition/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-1/data/default/partitions/2")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/1")).isNotEmptyDirectory();
+      assertThat(tmp.resolve("broker-0/data/default/partitions/2")).isNotEmptyDirectory();
     } finally {
       broker0.close();
       broker1.close();
@@ -227,17 +230,22 @@ final class PartitionLeaveTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
         new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
+            new SimpleMeterRegistry(),
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null,
+            new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

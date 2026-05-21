@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
@@ -208,6 +209,12 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
       Taken sequence flows must be mapped to a sequence flow in the target process definition.""";
+
+  private static final String ERROR_JOB_WORKER_USER_TASK_CONVERSION_WITH_INCIDENT =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is a job worker user task with an active incident. \
+      Please resolve the incident before migrating the user task to a Camunda user task.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -570,16 +577,42 @@ public final class ProcessInstanceMigrationPreconditions {
 
   /**
    * Checks whether the given user task implementations are supported for migration. Throws an
-   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type, or when
+   * it is an implementation migration with an incident on the job worker.
    *
    * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
-   * @return whether the migration is to a different user task implementation
+   * @param incidentState incident state to check for active incidents on the job
    */
-  public static boolean requireSupportedUserTaskImplementation(
+  public static void requireSupportedUserTaskMigration(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance,
+      final long processInstanceKey,
+      final IncidentState incidentState) {
+    requireSupportedUserTaskImplementation(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey);
+
+    if (ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+        sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance)) {
+      requireNoIncidentForJobWorkerUserTaskConversion(
+          incidentState, elementInstance, processInstanceKey);
+    }
+  }
+
+  /**
+   * Checks whether the given user task implementations are supported for migration. Throws an
+   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   */
+  public static void requireSupportedUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -587,7 +620,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return false;
+      return;
     }
 
     final AbstractFlowElement targetElement =
@@ -597,42 +630,62 @@ public final class ProcessInstanceMigrationPreconditions {
     if (targetElementType != BpmnElementType.USER_TASK
         && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
             && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
-      return false;
+      return;
     }
 
     final ExecutableUserTask targetUserTask =
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableUserTask.class);
-    final String targetUserTaskType =
-        targetUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
-
     final ExecutableUserTask sourceUserTask =
         sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
-    final String sourceUserTaskType =
-        sourceUserTask.getUserTaskProperties() != null
-            ? ZEEBE_USER_TASK_IMPLEMENTATION
-            : JOB_WORKER_IMPLEMENTATION;
 
-    if (!sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)) {
+    final boolean sourceIsZeebeUserTask = sourceUserTask.getUserTaskProperties() != null;
+    final boolean targetIsJobWorker = targetUserTask.getUserTaskProperties() == null;
+
+    if (sourceIsZeebeUserTask && targetIsJobWorker) {
       final String reason =
           String.format(
               ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
-              sourceUserTaskType,
+              ZEEBE_USER_TASK_IMPLEMENTATION,
               targetElementId,
-              targetUserTaskType);
+              JOB_WORKER_IMPLEMENTATION);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
-    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
+  }
+
+  /**
+   * Checks that there is no active incident on the job of a job worker user task that is being
+   * converted to a Camunda user task. Throws an exception if an incident exists, because the
+   * incident cannot be properly migrated when the job is cancelled during conversion.
+   *
+   * @param incidentState incident state to look up job incidents
+   * @param elementInstance element instance of the job worker user task
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNoIncidentForJobWorkerUserTaskConversion(
+      final IncidentState incidentState,
+      final ElementInstance elementInstance,
+      final long processInstanceKey) {
+    final long jobKey = elementInstance.getJobKey();
+    if (jobKey <= 0) {
+      return;
+    }
+    final long jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
+    if (jobIncidentKey != IncidentState.MISSING_INCIDENT) {
+      final String reason =
+          String.format(
+              ERROR_JOB_WORKER_USER_TASK_CONVERSION_WITH_INCIDENT,
+              processInstanceKey,
+              elementInstance.getValue().getElementId());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
   }
 
   /**
@@ -801,10 +854,13 @@ public final class ProcessInstanceMigrationPreconditions {
       }
 
       final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+      // a generic lookup traverses to the inner activity, which has no boundary events
+      final Class<? extends ExecutableCatchEventSupplier> expectedType =
+          sourceCatchEventSupplier instanceof ExecutableMultiInstanceBody
+              ? ExecutableMultiInstanceBody.class
+              : ExecutableCatchEventSupplier.class;
       final var targetElement =
-          targetProcessDefinition
-              .getProcess()
-              .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+          targetProcessDefinition.getProcess().getElementById(targetElementId, expectedType);
       if (targetElement.getEvents().stream()
           .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
           .noneMatch(targetCatchEventId::equals)) {

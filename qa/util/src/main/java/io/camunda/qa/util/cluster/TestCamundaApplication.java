@@ -18,27 +18,16 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -78,19 +67,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestCamundaApplication() {
     super(
-        // Unified Configuration classes
-        UnifiedConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        TasklistPropertiesOverride.class,
-        OperatePropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        BrokerBasedPropertiesOverride.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,
@@ -167,11 +143,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 List.of(DEFAULT_MAPPING_RULE_ID)));
 
     //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class)
-        .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
+    withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
-            securityConfig.getAuthentication().getUnprotectedApi())
+            securityConfig.getAuthentication().isUnprotectedApi())
         .withProperty(
             "camunda.security.authorizations.enabled",
             securityConfig.getAuthorizations().isEnabled())
@@ -217,6 +192,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withProperty(
         "zeebe.broker.gateway.enable",
         property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
+    // Refreshable so that fields cleared between stop/start don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -335,7 +313,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public TestCamundaApplication withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 
@@ -380,26 +357,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
       }
     }
     return copy;
-  }
-
-  public TestRestOperateClient newOperateClient() {
-    return new TestRestOperateClient(restAddress());
-  }
-
-  public TestRestOperateClient newOperateClient(final String username, final String password) {
-    return new TestRestOperateClient(restAddress(), username, password);
-  }
-
-  public TestRestOperateClient newOperateClient(final CredentialsProvider credentialsProvider) {
-    return new TestRestOperateClient(restAddress(), credentialsProvider);
-  }
-
-  public TestRestTasklistClient newTasklistClient() {
-    return new TestRestTasklistClient(restAddress());
-  }
-
-  public TestRestTasklistClient newTasklistClient(final CredentialsProvider credentialsProvider) {
-    return new TestRestTasklistClient(restAddress(), credentialsProvider);
   }
 
   public TestWebappClient newWebappClient() {

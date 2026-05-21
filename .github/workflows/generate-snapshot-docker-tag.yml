@@ -1,4 +1,26 @@
 # description: Generate Docker snapshot tags based on branch and project version.
+#
+# Produces two Docker tag outputs so that images built from `main` are
+# discoverable in two complementary ways:
+#
+#   version_tag  – A versioned snapshot tag derived from the project's
+#                  major.minor version (e.g. "8.10-SNAPSHOT").  Always set
+#                  for both `main` and `stable/*` branches.
+#
+#   snapshot_tag – A generic, un-versioned "SNAPSHOT" tag.  Only set when
+#                  building from `main`; empty for stable branches.
+#
+# Why dual tagging on main?
+#   • `SNAPSHOT` (snapshot_tag) provides a stable, version-agnostic pointer
+#     so consumers that always want "the latest development build" never need
+#     to update references when the project bumps its minor version.
+#   • `8.10-SNAPSHOT` (version_tag) lets consumers pin to a specific version
+#     stream, which matters when main and a recent stable branch coexist and
+#     images for each must be independently addressable.
+#
+# On stable branches only version_tag is produced (e.g. "8.8-SNAPSHOT")
+# because each stable branch maps to exactly one version.
+#
 # type: CI
 # owner: @camunda/monorepo-devops-team
 name: Generate Docker Snapshot Tag
@@ -16,10 +38,15 @@ on:
         type: string
     outputs:
       version_tag:
-        description: "Generated Docker version tag"
+        description: >-
+          Versioned snapshot tag (e.g. "8.10-SNAPSHOT" on main, "8.8-SNAPSHOT"
+          on stable/8.8). Always set when the job runs.
         value: ${{ jobs.get-snapshot-docker-version-tag.outputs.tag }}
       snapshot_tag:
-        description: "Generated Docker SNAPSHOT tag for main branch"
+        description: >-
+          Generic un-versioned "SNAPSHOT" tag. Only set on main so that
+          consumers can reference the latest development build without
+          hard-coding a version number. Empty on stable branches.
         value: ${{ jobs.get-snapshot-docker-version-tag.outputs.snapshot_tag }}
 
 env:

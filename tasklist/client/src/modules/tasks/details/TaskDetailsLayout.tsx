@@ -36,7 +36,7 @@ const TaskDetailsRow: React.FC<
   <Element
     {...rest}
     className={cn(className, styles.row, {
-      [styles.sidePadding]: !$disabledSidePadding,
+      [styles.sidePadding!]: !$disabledSidePadding,
     })}
   >
     {children}

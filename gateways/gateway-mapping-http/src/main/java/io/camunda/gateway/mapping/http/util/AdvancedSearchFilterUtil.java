@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,7 @@ public class AdvancedSearchFilterUtil {
   }
 
   private static <T> List<Operation<T>> mapToTypedOperations(
-      final Object filter, final Function<Object, T> converter) {
+      final Object filter, final NullableConverter<T> converter) {
     final var fClass = filter.getClass();
     final var operations = new ArrayList<Operation<T>>();
     for (final Operator operator : Operator.values()) {
@@ -142,7 +143,7 @@ public class AdvancedSearchFilterUtil {
       final List<Operation<T>> operations,
       final Operator operator,
       final Object value,
-      final Function<Object, T> converter) {
+      final NullableConverter<T> converter) {
     if (value instanceof final Boolean booleanValue) {
       operations.add(Operation.exists(booleanValue));
     } else if (value instanceof final List<?> values) {
@@ -159,7 +160,7 @@ public class AdvancedSearchFilterUtil {
       final List<Operation<T>> operations,
       final Operator operator,
       final List<?> values,
-      final Function<Object, T> converter) {
+      final NullableConverter<T> converter) {
     if (values.isEmpty()) {
       return;
     }
@@ -180,5 +181,14 @@ public class AdvancedSearchFilterUtil {
     if (!hasNull && !tValues.isEmpty()) {
       operations.add(new Operation<>(operator, tValues));
     }
+  }
+
+  /**
+   * Function variant that tolerates {@code null} results to signal "could not convert this value".
+   * Used by the filter-operation mappers which aggregate validation errors instead of throwing.
+   */
+  @FunctionalInterface
+  private interface NullableConverter<T> {
+    @Nullable T apply(Object value);
   }
 }

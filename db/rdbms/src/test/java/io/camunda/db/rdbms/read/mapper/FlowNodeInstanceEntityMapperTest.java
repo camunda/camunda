@@ -74,7 +74,7 @@ public class FlowNodeInstanceEntityMapperTest {
             .processDefinitionKey(3L)
             .processDefinitionId(null)
             .flowNodeScopeKey(4L)
-            .startDate(null)
+            .startDate(OffsetDateTime.now())
             .endDate(null)
             .flowNodeId(null)
             .flowNodeName(null)
@@ -98,7 +98,7 @@ public class FlowNodeInstanceEntityMapperTest {
     assertThat(entity.processDefinitionKey()).isNotNull();
     assertThat(entity.processDefinitionId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
-    assertThat(entity.startDate()).isNull();
+    assertThat(entity.startDate()).isNotNull();
     assertThat(entity.endDate()).isNull();
     assertThat(entity.flowNodeId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""

@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.mapper;
+
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
+import io.camunda.gateway.protocol.model.AgentInstanceLimits;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.util.Either;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.http.ProblemDetail;
+
+@NullMarked
+public class AgentInstanceMapper {
+
+  private final AgentInstanceRequestValidator requestValidator;
+
+  public AgentInstanceMapper(final AgentInstanceRequestValidator requestValidator) {
+    this.requestValidator = requestValidator;
+  }
+
+  public Either<ProblemDetail, AgentInstanceRecord> toCreateAgentInstanceRecord(
+      final AgentInstanceCreationRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateCreateRequest(request),
+        () -> {
+          final var record = new AgentInstanceRecord();
+
+          record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
+
+          final var def = request.getDefinition();
+          record
+              .getDefinition()
+              .setModel(def.getModel())
+              .setProvider(def.getProvider())
+              .setSystemPrompt(def.getSystemPrompt());
+
+          if (request.getLimits() != null) {
+            fillLimits(request.getLimits(), record.getLimits());
+          }
+
+          return record;
+        });
+  }
+
+  public AgentInstanceCreationResult toAgentInstanceCreationResult(
+      final AgentInstanceRecord record) {
+    return AgentInstanceCreationResult.Builder.create()
+        .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
+        .build();
+  }
+
+  // Note: even if limits are marked @NotNull in AgentInstanceCreationRequest,
+  // nothing is actually preventing them from being null
+  @SuppressWarnings("ConstantValue")
+  private void fillLimits(
+      final AgentInstanceLimits requestLimits,
+      final io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceLimits
+          recordLimits) {
+    if (requestLimits.getMaxTokens() != null) {
+      recordLimits.setMaxTokens(requestLimits.getMaxTokens());
+    }
+    if (requestLimits.getMaxModelCalls() != null) {
+      recordLimits.setMaxModelCalls(requestLimits.getMaxModelCalls());
+    }
+    if (requestLimits.getMaxToolCalls() != null) {
+      recordLimits.setMaxToolCalls(requestLimits.getMaxToolCalls());
+    }
+  }
+}

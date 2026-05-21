@@ -118,6 +118,7 @@ public class ZeebeConstants {
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 
   public static final String ELEMENT_PRIORITY_DEFINITION = "priorityDefinition";
+  public static final String ELEMENT_JOB_PRIORITY_DEFINITION = "jobPriorityDefinition";
 
   public static final String ELEMENT_AD_HOC = "adHoc";
 

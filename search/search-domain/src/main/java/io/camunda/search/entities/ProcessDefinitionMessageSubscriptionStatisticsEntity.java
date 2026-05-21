@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
@@ -18,14 +20,23 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
     Long processInstancesWithActiveSubscriptions,
     Long activeSubscriptions) {
 
+  public ProcessDefinitionMessageSubscriptionStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(
+        processInstancesWithActiveSubscriptions, "processInstancesWithActiveSubscriptions");
+    Objects.requireNonNull(activeSubscriptions, "activeSubscriptions");
+  }
+
   public static class Builder
       implements ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsEntity> {
 
-    private String processDefinitionId;
-    private String tenantId;
-    private Long processDefinitionKey;
-    private Long processInstancesWithActiveSubscriptions;
-    private Long activeSubscriptions;
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstancesWithActiveSubscriptions;
+    private @Nullable Long activeSubscriptions;
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
@@ -53,6 +64,7 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public ProcessDefinitionMessageSubscriptionStatisticsEntity build() {
       return new ProcessDefinitionMessageSubscriptionStatisticsEntity(

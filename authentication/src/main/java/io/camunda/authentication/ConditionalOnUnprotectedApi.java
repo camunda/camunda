@@ -9,7 +9,7 @@ package io.camunda.authentication;
 
 import io.camunda.authentication.ConditionalOnUnprotectedApi.ApiUnprotectedCondition;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

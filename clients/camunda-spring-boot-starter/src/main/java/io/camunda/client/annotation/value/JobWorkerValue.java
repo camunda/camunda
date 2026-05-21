@@ -38,6 +38,7 @@ public class JobWorkerValue {
   private SourceAware<Boolean> forceFetchAllVariables = new Empty<>();
   private SourceAware<Boolean> streamEnabled = new Empty<>();
   private SourceAware<Duration> streamTimeout = new Empty<>();
+  private SourceAware<Duration> streamInactivityTimeout = new Empty<>();
   private SourceAware<Integer> maxRetries = new Empty<>();
   private SourceAware<Duration> retryBackoff = new Empty<>();
   private SourceAware<TenantFilter> tenantFilter = new Empty<>();
@@ -64,6 +65,7 @@ public class JobWorkerValue {
       final SourceAware<Boolean> forceFetchAllVariables,
       final SourceAware<Boolean> streamEnabled,
       final SourceAware<Duration> streamTimeout,
+      final SourceAware<Duration> streamInactivityTimeout,
       final SourceAware<Integer> maxRetries,
       final SourceAware<Duration> retryBackoff,
       final SourceAware<TenantFilter> tenantFilter) {
@@ -80,6 +82,7 @@ public class JobWorkerValue {
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
+    this.streamInactivityTimeout = streamInactivityTimeout;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
     this.tenantFilter = tenantFilter;
@@ -181,6 +184,14 @@ public class JobWorkerValue {
     this.streamTimeout = streamTimeout;
   }
 
+  public SourceAware<Duration> getStreamInactivityTimeout() {
+    return streamInactivityTimeout;
+  }
+
+  public void setStreamInactivityTimeout(final SourceAware<Duration> streamInactivityTimeout) {
+    this.streamInactivityTimeout = streamInactivityTimeout;
+  }
+
   public SourceAware<Integer> getMaxRetries() {
     return maxRetries;
   }
@@ -238,6 +249,7 @@ public class JobWorkerValue {
         forceFetchAllVariables,
         streamEnabled,
         streamTimeout,
+        streamInactivityTimeout,
         maxRetries,
         retryBackoff,
         tenantFilter,
@@ -262,6 +274,7 @@ public class JobWorkerValue {
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
         && Objects.equals(streamTimeout, that.streamTimeout)
+        && Objects.equals(streamInactivityTimeout, that.streamInactivityTimeout)
         && Objects.equals(maxRetries, that.maxRetries)
         && Objects.equals(retryBackoff, that.retryBackoff)
         && Objects.equals(tenantFilter, that.tenantFilter)
@@ -279,6 +292,8 @@ public class JobWorkerValue {
         + retryBackoff
         + ", maxRetries="
         + maxRetries
+        + ", streamInactivityTimeout="
+        + streamInactivityTimeout
         + ", streamTimeout="
         + streamTimeout
         + ", streamEnabled="

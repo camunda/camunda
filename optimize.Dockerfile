@@ -1,12 +1,12 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:c28de0ca6d34d1017166c2c16e2ed7757ee2f7ad20f7ac5bea8bbf9989cc9bc2"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
+ARG BASE_DIGEST="sha256:27a2f1cad596d750ccc316b832799e5bd70eb76eed844301a7ac45b806b534eb"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:be00aca3f4747fa3f4b936fc35dc64eb5862349e262b2ad8d3299cb96a305780"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.3_9-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:5742cdb98ef117621ad75f57475ab127db04f344d9c523307cc60b9955bdd676"
 ARG BASE="hardened"
 
 ### Base Application Image ###
@@ -98,4 +98,5 @@ USER 1001:1001
 
 CMD ["./optimize.sh"]
 
+COPY --link --chown=1001:1001 zeebe/docker/utils/jvm.options config/jvm.options
 COPY --chown=1001:1001 --from=base /tmp/build .

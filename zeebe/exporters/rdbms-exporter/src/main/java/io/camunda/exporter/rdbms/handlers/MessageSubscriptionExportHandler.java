@@ -13,11 +13,18 @@ import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class MessageSubscriptionExportHandler
@@ -30,10 +37,16 @@ public class MessageSubscriptionExportHandler
           ProcessMessageSubscriptionIntent.DELETED,
           ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ExtensionPropertyConfiguration extensionPropertyConfig;
 
   public MessageSubscriptionExportHandler(
-      final MessageSubscriptionWriter messageSubscriptionWriter) {
+      final MessageSubscriptionWriter messageSubscriptionWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExtensionPropertyConfiguration extensionPropertyConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
+    this.processCache = processCache;
+    this.extensionPropertyConfig = extensionPropertyConfig;
   }
 
   @Override
@@ -60,6 +73,13 @@ public class MessageSubscriptionExportHandler
   private MessageSubscriptionDbModel map(
       final Record<ProcessMessageSubscriptionRecordValue> record) {
     final ProcessMessageSubscriptionRecordValue value = record.getValue();
+    final long pdKey = value.getProcessDefinitionKey();
+    final Optional<CachedProcessEntity> cached = processCache.get(pdKey);
+    final var ext =
+        cached
+            .map(CachedProcessEntity::elementExtensionProperties)
+            .map(p -> p.get(value.getElementId()))
+            .orElse(Map.of());
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -69,11 +89,22 @@ public class MessageSubscriptionExportHandler
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .messageSubscriptionState(MessageSubscriptionState.valueOf(record.getIntent().name()))
+        .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())
         .correlationKey(value.getCorrelationKey())
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
+        .processDefinitionName(
+            cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
+        .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
+        .toolProperties(
+            ProcessCacheUtil.getToolProperties(
+                ext, extensionPropertyConfig.getToolPropertiesPrefix()))
+        .toolName(ProcessCacheUtil.getToolName(ext, extensionPropertyConfig.getToolNameProperty()))
+        .inboundConnectorType(
+            ProcessCacheUtil.getInboundConnectorType(
+                ext, extensionPropertyConfig.getInboundConnectorTypeProperty()))
         .build();
   }
 }

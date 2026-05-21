@@ -8,7 +8,8 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, useMatch, type Location} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
 import {type FieldValidator} from 'final-form';
 import {Close} from '@carbon/react/icons';
 import intersection from 'lodash/intersection';
@@ -17,8 +18,8 @@ import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstance
 import {
   validateIdsCharacters,
   validateIdsLength,
-  validateOperationIdCharacters,
-  validateOperationIdComplete,
+  validateBatchOperationKeyCharacters,
+  validateBatchOperationKeyComplete,
   validateParentInstanceIdCharacters,
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
@@ -37,12 +38,16 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
+import {VariableFilter} from './VariablesFilter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
   | 'processInstanceKey'
   | 'parentProcessInstanceKey'
-  | 'batchOperationId'
+  | 'businessId'
+  | 'batchOperationKey'
   | 'errorMessage'
   | 'hasRetriesLeft'
   | 'startDateRange'
@@ -51,7 +56,8 @@ type OptionalFilter =
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
   'processInstanceKey',
-  'batchOperationId',
+  'businessId',
+  'batchOperationKey',
   'parentProcessInstanceKey',
   'errorMessage',
   'hasRetriesLeft',
@@ -70,8 +76,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValues'],
-    label: 'Variable',
+    keys: MULTI_VARIABLE_FILTER ? [] : ['variableName', 'variableValues'],
+    label: MULTI_VARIABLE_FILTER ? 'Variables' : 'Variable',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],
@@ -85,13 +91,18 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validatesIdsComplete,
     ),
   },
-  batchOperationId: {
-    keys: ['batchOperationId'],
-    label: 'Operation Id',
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
+    type: 'text',
+  },
+  batchOperationKey: {
+    keys: ['batchOperationKey'],
+    label: 'Batch Operation Key',
     type: 'text',
     validate: mergeValidators(
-      validateOperationIdCharacters,
-      validateOperationIdComplete,
+      validateBatchOperationKeyCharacters,
+      validateBatchOperationKeyComplete,
     ),
   },
   parentProcessInstanceKey: {
@@ -137,6 +148,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
   ({visibleFilters, onVisibleFilterChange}) => {
     const location = useLocation() as LocationType;
     const form = useForm();
+    const isOnVariablesRoute = useMatch(Paths.processesVariables()) !== null;
+    const hasActiveVariableFilters =
+      MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters;
 
     useEffect(() => {
       const filters = getProcessInstanceFilters(location.search);
@@ -155,11 +169,20 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateFrom' in filters && 'endDateTo' in filters
                 ? ['endDateRange']
                 : []),
+              ...(hasActiveVariableFilters || isOnVariablesRoute
+                ? ['variable']
+                : []),
             ] as OptionalFilter[]),
           ]),
         );
       });
-    }, [location.state, location.search, onVisibleFilterChange]);
+    }, [
+      location.state,
+      location.search,
+      onVisibleFilterChange,
+      hasActiveVariableFilters,
+      isOnVariablesRoute,
+    ]);
 
     const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] =
       useState<boolean>(false);
@@ -196,6 +219,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
+                    if (MULTI_VARIABLE_FILTER) {
+                      return <VariableFilter />;
+                    }
                     return <Variable />;
                   case 'startDateRange':
                     return (
@@ -278,6 +304,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                               />
                             );
                           }
+                          return null;
                         }}
                       </Field>
                     );
@@ -303,6 +330,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         form.change('incidentErrorHashCode', undefined);
                       }
                     });
+
+                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
+                      variableFilterStore.setConditions([]);
+                    }
+
                     form.submit();
                   }}
                 >

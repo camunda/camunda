@@ -92,7 +92,7 @@ test.describe.parallel('Job API Tests', () => {
       res,
     );
     const json = await res.json();
-    expect(json.jobs.length).toBe(1);
+    expect(json.jobs).toHaveLength(1);
     const filteredFields = filterOutDynamicFields(jobResponseFields);
     assertEqualsForKeys(json.jobs[0], expectedJobFields, filteredFields);
   });

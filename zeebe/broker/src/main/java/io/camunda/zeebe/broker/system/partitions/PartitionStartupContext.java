@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,7 +20,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 public interface PartitionStartupContext {
 
   // provided by application-wide dependencies
-  int getNodeId();
+  BrokerMemberId getMemberId();
 
   RaftPartition getRaftPartition();
 

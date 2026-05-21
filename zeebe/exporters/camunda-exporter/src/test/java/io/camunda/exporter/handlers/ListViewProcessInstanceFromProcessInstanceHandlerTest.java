@@ -253,7 +253,13 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     processCache.put(
         processInstanceRecordValue.getProcessDefinitionKey(),
         new CachedProcessEntity(
-            "test-process-name", 1, "test-version-tag", new ArrayList<>(), Map.of(), false));
+            "test-process-name",
+            1,
+            "test-version-tag",
+            new ArrayList<>(),
+            Map.of(),
+            false,
+            Map.of()));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -357,11 +363,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of(), false));
+            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of(), false, Map.of()));
 
     processCache.put(
         processDefinitionKey2,
-        new CachedProcessEntity(null, 1, null, List.of("0", callActivityId2), Map.of(), false));
+        new CachedProcessEntity(
+            null, 1, null, List.of("0", callActivityId2), Map.of(), false, Map.of()));
 
     // when called process 3rd level
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =

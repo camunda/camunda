@@ -16,7 +16,7 @@ runs:
   steps:
     - name: Restore cached codeowners-cli
       id: cache
-      uses: actions/cache@v5
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ runner.temp }}/codeowners-cli/${{ inputs.version }}
         key: codeowners-cli-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}

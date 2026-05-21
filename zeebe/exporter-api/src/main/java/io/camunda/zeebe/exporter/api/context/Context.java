@@ -58,6 +58,18 @@ public interface Context {
   int getPartitionId();
 
   /**
+   * Returns the cluster ID of the broker this exporter runs on. Falls back to the {@code
+   * ZEEBE_BROKER_CLUSTER_CLUSTERID} environment variable for older brokers that don't provide it
+   * natively.
+   *
+   * @return the cluster ID, or an empty string if not configured.
+   */
+  default String getClusterId() {
+    final var fromEnv = System.getenv("ZEEBE_BROKER_CLUSTER_CLUSTERID");
+    return fromEnv != null ? fromEnv : "";
+  }
+
+  /**
    * Apply the given filter to limit the records which are exported.
    *
    * @param filter the filter to apply.

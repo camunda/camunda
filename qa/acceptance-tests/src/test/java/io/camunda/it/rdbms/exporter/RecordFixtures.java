@@ -11,6 +11,10 @@ import static java.util.Collections.emptyList;
 import static org.jeasy.random.FieldPredicates.inClass;
 import static org.jeasy.random.FieldPredicates.named;
 
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -37,14 +41,12 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -70,7 +72,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -105,6 +106,14 @@ public class RecordFixtures {
 
   public long nextPosition() {
     return POSITION.incrementAndGet();
+  }
+
+  public long currentPosition() {
+    return POSITION.get();
+  }
+
+  public void resetPosition(final long position) {
+    POSITION.set(position);
   }
 
   public ImmutableRecord<RecordValue> getProcessInstanceStartedRecord() {
@@ -383,7 +392,7 @@ public class RecordFixtures {
                 .from((TenantRecordValue) recordValueRecord.getValue())
                 .withTenantId(tenantId)
                 .withTenantKey(tenantKey)
-                .withEntityType(EntityType.USER)
+                .withEntityType(AuthzModelMapper.toProtocol(EntityType.USER))
                 .build())
         .build();
   }
@@ -508,7 +517,8 @@ public class RecordFixtures {
                 .withRoleKey(roleKey)
                 .withRoleId(roleId)
                 .withEntityId(entityId)
-                .withEntityType(entityId != null ? EntityType.USER : null)
+                .withEntityType(
+                    entityId != null ? AuthzModelMapper.toProtocol(EntityType.USER) : null)
                 .build())
         .build();
   }
@@ -535,7 +545,8 @@ public class RecordFixtures {
                 .withGroupKey(groupKey)
                 .withGroupId(groupId)
                 .withEntityId(entityId != null ? entityId : "0")
-                .withEntityType(entityId != null ? EntityType.USER : null)
+                .withEntityType(
+                    entityId != null ? AuthzModelMapper.toProtocol(EntityType.USER) : null)
                 .build())
         .build();
   }
@@ -608,10 +619,10 @@ public class RecordFixtures {
                 .from((AuthorizationRecordValue) recordValueRecord.getValue())
                 .withAuthorizationKey(authorizationKey)
                 .withOwnerId(ownerId)
-                .withOwnerType(ownerType)
-                .withResourceType(resourceType)
+                .withOwnerType(AuthzModelMapper.toProtocol(ownerType))
+                .withResourceType(AuthzModelMapper.toProtocol(resourceType))
                 .withResourceId(resourceId)
-                .withPermissionTypes(permissionTypes)
+                .withPermissionTypes(AuthzModelMapper.toProtocolPermissionTypes(permissionTypes))
                 .build())
         .build();
   }

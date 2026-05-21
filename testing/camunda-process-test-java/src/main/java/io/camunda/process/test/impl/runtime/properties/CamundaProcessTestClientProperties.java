@@ -15,162 +15,77 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
-import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.ClientProperties;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
-import java.time.Duration;
+import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
+/**
+ * Resolves the backwards-compatible remote client address properties ({@code
+ * remote.client.grpcAddress} and {@code remote.client.restAddress}) and creates a {@link
+ * CamundaClientBuilderFactory} that applies all standard {@link ClientProperties} from the
+ * properties passed to the constructor.
+ *
+ * <p>The remote address properties are applied as overrides on top of all other properties to
+ * preserve backwards compatibility.
+ */
 public class CamundaProcessTestClientProperties {
-  public static final String PROPERTY_NAME_REST_ADDRESS = "client.restAddress";
-  public static final String PROPERTY_NAME_GRPC_ADDRESS = "client.grpcAddress";
-  public static final String PROPERTY_NAME_REQUEST_TIMEOUT = "client.requestTimeout";
-  public static final String PROPERTY_NAME_REQUEST_TIMEOUT_OFFSET = "client.requestTimeoutOffset";
-  public static final String PROPERTY_NAME_TENANT_ID = "client.tenantId";
-  public static final String PROPERTY_NAME_MESSAGE_TIME_TO_LIVE = "client.messageTimeToLive";
-  public static final String PROPERTY_NAME_MAX_MESSAGE_SIZE = "client.maxMessageSize";
-  public static final String PROPERTY_NAME_MAX_METADATA_SIZE = "client.maxMetadataSize";
-  public static final String PROPERTY_NAME_EXECUTION_THREADS = "client.executionThreads";
-  public static final String PROPERTY_NAME_CA_CERTIFICATE_PATH = "client.caCertificatePath";
-  public static final String PROPERTY_NAME_KEEP_ALIVE = "client.keepAlive";
-  public static final String PROPERTY_NAME_OVERRIDE_AUTHORITY = "client.overrideAuthority";
-  public static final String PROPERTY_NAME_PREFER_REST_OVER_GRPC = "client.preferRestOverGrpc";
 
-  private final CamundaClientWorkerProperties clientWorkerProps;
+  /** Backwards-compatible property for the remote gRPC address. */
+  public static final String PROPERTY_NAME_REMOTE_GRPC_ADDRESS = "remote.client.grpcAddress";
 
-  private final URI restAddress;
-  private final URI grpcAddress;
-  private final Duration requestTimeout;
-  private final Duration requestTimeoutOffset;
-  private final String tenantId;
-  private final Duration messageTimeToLive;
-  private final Integer maxMessageSize;
-  private final Integer maxMetadataSize;
-  private final Integer executionThreads;
-  private final String caCertificatePath;
-  private final Duration keepAlive;
-  private final String overrideAuthority;
-  private final Boolean preferRestOverGrpc;
+  /** Backwards-compatible property for the remote REST address. */
+  public static final String PROPERTY_NAME_REMOTE_REST_ADDRESS = "remote.client.restAddress";
+
+  private final Properties properties;
+  private final URI remoteGrpcAddress;
+  private final URI remoteRestAddress;
 
   public CamundaProcessTestClientProperties(final Properties properties) {
-    clientWorkerProps = new CamundaClientWorkerProperties(properties);
-
-    restAddress = getPropertyOrNull(properties, PROPERTY_NAME_REST_ADDRESS, URI::create);
-    grpcAddress = getPropertyOrNull(properties, PROPERTY_NAME_GRPC_ADDRESS, URI::create);
-    requestTimeout = getPropertyOrNull(properties, PROPERTY_NAME_REQUEST_TIMEOUT, Duration::parse);
-    requestTimeoutOffset =
-        getPropertyOrNull(properties, PROPERTY_NAME_REQUEST_TIMEOUT_OFFSET, Duration::parse);
-    messageTimeToLive =
-        getPropertyOrNull(properties, PROPERTY_NAME_MESSAGE_TIME_TO_LIVE, Duration::parse);
-    tenantId = getPropertyOrNull(properties, PROPERTY_NAME_TENANT_ID);
-    maxMessageSize =
-        getPropertyOrNull(properties, PROPERTY_NAME_MAX_MESSAGE_SIZE, Integer::parseInt);
-    maxMetadataSize =
-        getPropertyOrNull(properties, PROPERTY_NAME_MAX_METADATA_SIZE, Integer::parseInt);
-    executionThreads =
-        getPropertyOrNull(properties, PROPERTY_NAME_EXECUTION_THREADS, Integer::parseInt);
-    caCertificatePath = getPropertyOrNull(properties, PROPERTY_NAME_CA_CERTIFICATE_PATH);
-    keepAlive = getPropertyOrNull(properties, PROPERTY_NAME_KEEP_ALIVE, Duration::parse);
-    overrideAuthority = getPropertyOrNull(properties, PROPERTY_NAME_OVERRIDE_AUTHORITY);
-    preferRestOverGrpc =
-        getPropertyOrDefault(
-            properties, PROPERTY_NAME_PREFER_REST_OVER_GRPC, Boolean::parseBoolean, true);
+    this.properties = properties;
+    remoteGrpcAddress =
+        getPropertyOrNull(properties, PROPERTY_NAME_REMOTE_GRPC_ADDRESS, URI::create);
+    remoteRestAddress =
+        getPropertyOrNull(properties, PROPERTY_NAME_REMOTE_REST_ADDRESS, URI::create);
   }
 
-  public URI getRestAddress() {
-    return restAddress;
+  /**
+   * Creates a {@link CamundaClientBuilderFactory} that applies all standard {@link
+   * ClientProperties} from the properties passed to the constructor, plus backwards-compatible
+   * remote address overrides.
+   *
+   * <p>If {@code camunda.client.cloud.clusterId} is set, a cloud client builder is used; otherwise
+   * a self-managed builder is used.
+   *
+   * @return a factory that creates pre-configured {@link CamundaClientBuilder} instances
+   */
+  public CamundaClientBuilderFactory createCamundaClientBuilderFactory() {
+    // Pre-compute the remote address overrides once so every factory invocation is lightweight.
+    final URI grpcOverride = remoteGrpcAddress;
+    final URI restOverride = remoteRestAddress;
+    return () -> {
+      final CamundaClientBuilder builder = createBaseBuilder(properties);
+      builder.withProperties(properties);
+      Optional.ofNullable(grpcOverride).ifPresent(builder::grpcAddress);
+      Optional.ofNullable(restOverride).ifPresent(builder::restAddress);
+      return builder;
+    };
   }
 
-  public URI getGrpcAddress() {
-    return grpcAddress;
-  }
-
-  public Duration getRequestTimeout() {
-    return requestTimeout;
-  }
-
-  public Duration getRequestTimeoutOffset() {
-    return requestTimeoutOffset;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public Duration getMessageTimeToLive() {
-    return messageTimeToLive;
-  }
-
-  public int getMaxMessageSize() {
-    return maxMessageSize;
-  }
-
-  public int getMaxMetadataSize() {
-    return maxMetadataSize;
-  }
-
-  public int getExecutionThreads() {
-    return executionThreads;
-  }
-
-  public String getCaCertificatePath() {
-    return caCertificatePath;
-  }
-
-  public Duration getKeepAlive() {
-    return keepAlive;
-  }
-
-  public String getOverrideAuthority() {
-    return overrideAuthority;
-  }
-
-  public Boolean getPreferRestOverGrpc() {
-    return preferRestOverGrpc;
-  }
-
-  public CamundaClientWorkerProperties getClientWorkerProps() {
-    return clientWorkerProps;
-  }
-
-  public CamundaClientBuilder configureClientBuilder(final CamundaClientBuilder clientBuilder) {
-    setIfExists(restAddress, clientBuilder::restAddress);
-    setIfExists(grpcAddress, clientBuilder::grpcAddress);
-    setIfExists(requestTimeout, clientBuilder::defaultRequestTimeout);
-    setIfExists(requestTimeoutOffset, clientBuilder::defaultRequestTimeoutOffset);
-    setIfExists(tenantId, clientBuilder::defaultTenantId);
-    setIfExists(messageTimeToLive, clientBuilder::defaultMessageTimeToLive);
-    setIfExists(maxMessageSize, clientBuilder::maxMessageSize);
-    setIfExists(maxMetadataSize, clientBuilder::maxMetadataSize);
-    setIfExists(executionThreads, clientBuilder::numJobWorkerExecutionThreads);
-    setIfExists(caCertificatePath, clientBuilder::caCertificatePath);
-    setIfExists(keepAlive, clientBuilder::keepAlive);
-    setIfExists(overrideAuthority, clientBuilder::overrideAuthority);
-    setIfExists(preferRestOverGrpc, clientBuilder::preferRestOverGrpc);
-
-    setIfExists(clientWorkerProps.getPollInterval(), clientBuilder::defaultJobPollInterval);
-    setIfExists(clientWorkerProps.getTimeout(), clientBuilder::defaultJobTimeout);
-    setIfExists(clientWorkerProps.getMaxJobsActive(), clientBuilder::defaultJobWorkerMaxJobsActive);
-    setIfExists(clientWorkerProps.getName(), clientBuilder::defaultJobWorkerName);
-    setIfExists(clientWorkerProps.getTenantIds(), clientBuilder::defaultJobWorkerTenantIds);
-    setIfExists(clientWorkerProps.getStreamEnabled(), clientBuilder::defaultJobWorkerStreamEnabled);
-
-    return clientBuilder;
-  }
-
-  private static <T> void setIfExists(final T property, final Consumer<T> setter) {
-    setIfExists(property, setter, Function.identity());
-  }
-
-  private static <T, U> void setIfExists(
-      final T property, final Consumer<U> setter, final Function<T, U> transformer) {
-
-    if (property != null) {
-      setter.accept(transformer.apply(property));
+  private static CamundaClientBuilder createBaseBuilder(final Properties properties) {
+    final String clusterId = properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID);
+    if (clusterId != null && !clusterId.isEmpty()) {
+      return CamundaClient.newCloudClientBuilder()
+          .withClusterId(clusterId)
+          .withClientId(properties.getProperty(ClientProperties.CLOUD_CLIENT_ID))
+          .withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET))
+          .withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
     }
+    return CamundaClient.newClientBuilder();
   }
 }

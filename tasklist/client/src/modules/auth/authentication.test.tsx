@@ -11,7 +11,7 @@ import {authenticationStore} from './authentication';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {getStateLocally} from 'modules/local-storage';
 import * as clientConfig from 'modules/config/getClientConfig';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 
 const unchangedHref = window.location.href;
 

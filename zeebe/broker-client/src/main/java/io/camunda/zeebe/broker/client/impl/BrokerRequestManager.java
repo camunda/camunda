@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -32,9 +33,11 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
 
@@ -253,9 +256,8 @@ final class BrokerRequestManager extends Actor {
     }
 
     final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
-    final var someNodesInactive = inactiveNodes != null && !inactiveNodes.isEmpty();
-    final var noPartitionLeader =
-        topology.getLeaderForPartition(partitionId) == BrokerClusterState.NODE_ID_NULL;
+    final var someNodesInactive = !inactiveNodes.isEmpty();
+    final var noPartitionLeader = topology.getLeaderForPartition(partitionId) == null;
     if (someNodesInactive && noPartitionLeader) {
       throw new PartitionInactiveException(partitionId);
     }
@@ -296,9 +298,10 @@ final class BrokerRequestManager extends Actor {
         Duration timeout);
   }
 
-  private class BrokerAddressProvider implements Supplier<String> {
+  @NullMarked
+  private class BrokerAddressProvider implements Supplier<@Nullable String> {
 
-    private final ToIntFunction<BrokerClusterState> nodeIdSelector;
+    private final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector;
 
     BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -308,18 +311,21 @@ final class BrokerRequestManager extends Actor {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerAddressProvider(final ToIntFunction<BrokerClusterState> nodeIdSelector) {
+    BrokerAddressProvider(
+        final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 
     @Override
-    public String get() {
+    public @Nullable String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
-        return topology.getBrokerAddress(nodeIdSelector.applyAsInt(topology));
-      } else {
-        return null;
+        final var brokerId = nodeIdSelector.apply(topology);
+        if (brokerId != null) {
+          return topology.getBrokerAddress(brokerId);
+        }
       }
+      return null;
     }
   }
 }

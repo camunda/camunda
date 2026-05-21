@@ -330,7 +330,7 @@ test.describe('Tasklist snapshots', () => {
     await mockTask(
       page,
       '1',
-      MOCK_TASKLIST[1],
+      MOCK_TASKLIST[1]!,
       [
         {
           name: 'passengerName',
@@ -353,16 +353,17 @@ test.describe('Tasklist snapshots', () => {
   });
 
   test('claimed a task', async ({page, tasksPage}) => {
+    const claimedTask = {...MOCK_TASKLIST[1]!, assignee: 'demo'};
     const alteredTaskList = [
       ...MOCK_TASKLIST.slice(0, 1),
-      {...MOCK_TASKLIST[1], assignee: 'demo'},
+      claimedTask,
       ...MOCK_TASKLIST.slice(2),
     ];
     await mockTaskSearch(page, alteredTaskList);
     await mockTask(
       page,
       '1',
-      {...alteredTaskList[1], assignee: 'demo'},
+      claimedTask,
       [
         {
           name: 'passengerName',
@@ -387,19 +388,18 @@ test.describe('Tasklist snapshots', () => {
   });
 
   test('completed a task', async ({page, tasksPage}) => {
-    const completedTaskList = [
-      {
-        ...MOCK_TASKLIST[1],
-        assignee: 'demo',
-        taskState: 'COMPLETE',
-        completionDate: now,
-      },
-    ];
+    const completedTask = {
+      ...MOCK_TASKLIST[1]!,
+      assignee: 'demo',
+      taskState: 'COMPLETE',
+      completionDate: now,
+    };
+    const completedTaskList = [completedTask];
     await mockTaskSearch(page, completedTaskList);
     await mockTask(
       page,
       '1',
-      {...completedTaskList[0], assignee: 'demo'},
+      completedTask,
       [
         {
           name: 'passengerName',
@@ -414,7 +414,7 @@ test.describe('Tasklist snapshots', () => {
 
     await tasksPage.goto({filter: 'completed', sortBy: 'completion'});
 
-    await tasksPage.openTask(completedTaskList[0].name);
+    await tasksPage.openTask(completedTask.name);
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();

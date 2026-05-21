@@ -371,4 +371,13 @@ public final class SortOptionBuilders {
       final Function<JobErrorStatisticsSort.Builder, ObjectBuilder<JobErrorStatisticsSort>> fn) {
     return fn.apply(jobErrorStatistics()).build();
   }
+
+  public static DeployedResourceSort.Builder deployedResource() {
+    return new DeployedResourceSort.Builder();
+  }
+
+  public static DeployedResourceSort deployedResource(
+      final Function<DeployedResourceSort.Builder, ObjectBuilder<DeployedResourceSort>> fn) {
+    return fn.apply(deployedResource()).build();
+  }
 }

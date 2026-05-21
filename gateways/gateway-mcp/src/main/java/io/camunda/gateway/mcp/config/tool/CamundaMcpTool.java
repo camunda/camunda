@@ -61,4 +61,12 @@ public @interface CamundaMcpTool {
    * @return true if output schema should be generated
    */
   boolean generateOutputSchema() default false;
+
+  /**
+   * Whether this tool should also be exposed in the processes MCP server ({@code /mcp/processes})
+   * as a static tool alongside the dynamic process tools.
+   *
+   * @return true if this tool should be available in the processes MCP server
+   */
+  boolean processesServer() default false;
 }

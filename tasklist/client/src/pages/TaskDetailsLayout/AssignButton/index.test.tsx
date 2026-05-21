@@ -9,11 +9,11 @@
 import {render, screen, waitFor} from 'modules/testing/testing-library';
 import {AssignButton} from './index';
 import {assignedTask, unassignedTask} from 'modules/mocks/task';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
-import {http, HttpResponse} from 'msw';
+import {delay, http, HttpResponse} from 'msw';
 import {notificationsStore} from 'modules/notifications/notifications.store';
 
 vi.mock('modules/notifications/notifications.store', () => ({
@@ -35,6 +35,47 @@ const getWrapper = () => {
 };
 
 describe('AssignButton', () => {
+  it('should not show loading state when mounted for a new task while another task assignment is in progress', async () => {
+    const mockUnassignedTask1 = unassignedTask();
+    const mockUnassignedTask2 = unassignedTask();
+
+    nodeMockServer.use(
+      http.post('/v2/user-tasks/:userTaskKey/assignment', async () => {
+        await delay('infinite');
+        return HttpResponse.json();
+      }),
+    );
+
+    const wrapper = getWrapper();
+
+    const {user, rerender} = render(
+      <AssignButton
+        key={mockUnassignedTask1.userTaskKey}
+        id={mockUnassignedTask1.userTaskKey}
+        assignee={null}
+        taskState={mockUnassignedTask1.state}
+        currentUser={currentUser.username}
+      />,
+      {wrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Assign to me'}));
+
+    expect(screen.getByText('Assigning...')).toBeVisible();
+
+    rerender(
+      <AssignButton
+        key={mockUnassignedTask2.userTaskKey}
+        id={mockUnassignedTask2.userTaskKey}
+        assignee={null}
+        taskState={mockUnassignedTask2.state}
+        currentUser={currentUser.username}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: 'Assign to me'})).toBeEnabled();
+  });
+
   it('should assign a task', async () => {
     const mockUnassignedTask = unassignedTask();
     const mockAssignedTask = assignedTask();

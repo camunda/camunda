@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -169,8 +170,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
-            .flatMap(ok -> processor.onActivate(element, activatingContext))
-            .flatMap(ok -> afterActivating(element, processor, activatingContext))
+            .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:
@@ -184,18 +184,25 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
-          processor.finalizeTermination(element, terminatingContext);
+          afterTerminating(element, processor, terminatingContext)
+              .ifLeft(failure -> incidentBehavior.createIncident(failure, terminatingContext));
         }
         break;
       case COMPLETE_EXECUTION_LISTENER:
         final ProcessInstanceIntent elementState =
             stateBehavior.getElementInstance(context).getState();
+        final var node = (ExecutableFlowNode) element;
         switch (elementState) {
           case ELEMENT_ACTIVATING ->
-              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
+              (node instanceof ExecutableMultiInstanceBody
+                      ? onBeforeAllExecutionListenerComplete(node, processor, context)
+                      : onStartExecutionListenerComplete(node, processor, context))
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
           case ELEMENT_COMPLETING ->
               onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
+                  .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+          case ELEMENT_TERMINATING ->
+              onCancelExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
           default ->
               throw new BpmnProcessingException(
@@ -203,7 +210,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         }
         break;
       case CONTINUE_TERMINATING_ELEMENT:
-        processor.finalizeTermination(element, context);
+        afterTerminating(element, processor, context)
+            .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
         break;
       default:
         throw new BpmnProcessingException(
@@ -225,6 +233,37 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         processor::finalizeActivation);
   }
 
+  /**
+   * In {@code MultiInstanceActivityTransformer#moveBeforeAllExecutionListenersToMultiInstanceBody}
+   * we move {@code beforeAll} execution listeners to multi instance body. That means we shouldn't
+   * have a flow node with both {@code beforeAll} and {@code start} event types.
+   */
+  private Either<Failure, ?> beforeActivating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    if (element instanceof final ExecutableMultiInstanceBody multiInstanceBody) {
+      final List<ExecutionListener> beforeAllListeners =
+          multiInstanceBody.getBeforeAllExecutionListeners();
+      if (!beforeAllListeners.isEmpty()) {
+        return createExecutionListenerJob(context, beforeAllListeners.getFirst());
+      }
+    }
+
+    // No beforeAll listeners — proceed with normal activation.
+    return runActivationChain(element, processor, context);
+  }
+
+  private Either<Failure, ?> runActivationChain(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    return processor
+        .onActivate(element, context)
+        .flatMap(ok -> afterActivating(element, processor, context));
+  }
+
   private Either<Failure, ?> afterCompleting(
       final ExecutableFlowElement element,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
@@ -234,6 +273,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  private Either<Failure, ?> afterTerminating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    return processElementWithListeners(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> doFinalizeTermination(processor, e, c));
   }
 
   private Either<Failure, ?> processElementWithListeners(
@@ -265,6 +315,25 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                 jobBehavior.createNewExecutionListenerJob(context, elJobProperties, listener));
   }
 
+  /**
+   * Continues the {@code beforeAll} listener chain after one job completes. Variables produced by
+   * the listener are merged into the multi-instance body's local scope so the {@code
+   * inputCollection} expression can read them. When all {@code beforeAll} listeners have completed,
+   * the activation chain runs (see {@link #runActivationChain}), which evaluates the input
+   * collection and activates the inner instances.
+   */
+  public Either<Failure, ?> onBeforeAllExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    mergeVariablesOfExecutionListener(context, true);
+    return onExecutionListenerComplete(
+        element,
+        context,
+        ExecutableFlowNode::getBeforeAllExecutionListeners,
+        (el, ctx) -> runActivationChain(el, processor, ctx));
+  }
+
   public Either<Failure, ?> onStartExecutionListenerComplete(
       final ExecutableFlowNode element,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
@@ -287,6 +356,18 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  public Either<Failure, ?> onCancelExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    mergeVariablesOfExecutionListener(context, false);
+    return onExecutionListenerComplete(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> doFinalizeTermination(processor, e, c));
   }
 
   private Either<Failure, ?> onExecutionListenerComplete(
@@ -350,5 +431,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         recordValue.getTenantId(),
         recordValue.getElementIdBuffer(),
         processor.getType());
+  }
+
+  private Either<Failure, ?> doFinalizeTermination(
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final ExecutableFlowElement element,
+      final BpmnElementContext context) {
+    processor.finalizeTermination(element, context);
+    return BpmnElementProcessor.SUCCESS;
   }
 }

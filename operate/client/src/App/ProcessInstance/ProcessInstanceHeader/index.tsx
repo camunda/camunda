@@ -33,6 +33,7 @@ const headerColumns = [
   'Process Instance Key',
   'Version',
   'Version Tag',
+  'Business ID',
   'Tenant',
   'Start Date',
   'End Date',
@@ -70,6 +71,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     processInstanceKey,
     processDefinitionVersion,
     processDefinitionVersionTag,
+    businessId,
     tenantId,
     startDate,
     endDate,
@@ -104,6 +106,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
+  const hasBusinessId = !isNil(businessId);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
 
   return (
@@ -117,6 +120,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         }
         if (name === 'Version Tag') {
           return hasVersionTag;
+        }
+        if (name === 'Business ID') {
+          return hasBusinessId;
         }
         if (name === 'End Date') {
           return endDate !== null && !showReducedContent;
@@ -164,6 +170,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               {processDefinitionVersionTag}
             </VersionTag>
           ),
+        },
+        {
+          hidden: !hasBusinessId,
+          title: businessId ?? undefined,
+          content: businessId,
         },
         {
           hidden: !isMultiTenancyEnabled,

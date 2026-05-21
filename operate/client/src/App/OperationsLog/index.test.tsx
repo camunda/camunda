@@ -11,9 +11,10 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
 import {
   createProcessDefinition,
@@ -42,6 +43,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('OperationsLog', () => {
   beforeEach(() => {
     mockMe().withSuccess(createUser());
+    mockSearchDecisionDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         createProcessDefinition({name: 'Test Process', version: 1}),
@@ -52,15 +54,7 @@ describe('OperationsLog', () => {
         createProcessDefinition({name: 'Test Process', version: 1}),
       ]),
     );
-    mockQueryAuditLogs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withSuccess(searchResult([]));
   });
 
   afterEach(() => {

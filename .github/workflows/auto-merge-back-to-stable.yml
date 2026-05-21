@@ -28,12 +28,12 @@ jobs:
         shell: bash
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'true' }}
+      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'false' }}
       MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '180' }}
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
@@ -222,6 +222,7 @@ jobs:
           repository-name: ${{ github.event.repository.name }}
       
       - name: Import Secrets
+        if: always() && env.DRY_RUN != 'true'
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -235,7 +236,7 @@ jobs:
       - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true'
         continue-on-error: true
-        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
           clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage

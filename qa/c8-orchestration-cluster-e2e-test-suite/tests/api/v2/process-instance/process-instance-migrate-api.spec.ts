@@ -108,7 +108,7 @@ test.describe.serial('Test process instance migrate API', () => {
         );
         const body = await res.json();
         expect(body).toHaveProperty('items');
-        expect(body.items.length).toBe(1);
+        expect(body.items).toHaveLength(1);
         expect(body.items[0].elementId).toBe('do_something_else');
       }).toPass(defaultAssertionOptions);
     });

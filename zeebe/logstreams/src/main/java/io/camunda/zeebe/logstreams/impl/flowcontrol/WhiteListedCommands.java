@@ -15,10 +15,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Set;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public class WhiteListedCommands {
 
   private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =

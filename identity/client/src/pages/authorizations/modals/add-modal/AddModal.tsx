@@ -11,7 +11,11 @@ import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import { isOIDC, isTenantsApiEnabled } from "src/configuration";
+import {
+  isOIDC,
+  isTenantsApiEnabled,
+  resourcePermissions,
+} from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   ALL_RESOURCE_TYPES,
@@ -36,73 +40,8 @@ import {
 } from "src/utility/validate";
 import type {
   OwnerType,
-  PermissionType,
   ResourceType,
 } from "@camunda/camunda-api-zod-schemas/8.10";
-
-const resourcePermissions: Record<ResourceType, PermissionType[]> = {
-  AUDIT_LOG: ["READ"],
-  AUTHORIZATION: ["CREATE", "DELETE", "READ", "UPDATE"],
-  BATCH: [
-    "CREATE",
-    "CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION",
-    "CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE",
-    "CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION",
-    "CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE",
-    "CREATE_BATCH_OPERATION_RESOLVE_INCIDENT",
-    "READ",
-    "UPDATE",
-  ],
-  COMPONENT: ["ACCESS"],
-  DECISION_DEFINITION: [
-    "CREATE_DECISION_INSTANCE",
-    "DELETE_DECISION_INSTANCE",
-    "READ_DECISION_DEFINITION",
-    "READ_DECISION_INSTANCE",
-  ],
-  DECISION_REQUIREMENTS_DEFINITION: ["READ"],
-  EXPRESSION: ["EVALUATE"],
-  RESOURCE: [
-    "CREATE",
-    "READ",
-    "DELETE_DRD",
-    "DELETE_FORM",
-    "DELETE_PROCESS",
-    "DELETE_RESOURCE",
-  ],
-  GROUP: ["CREATE", "DELETE", "READ", "UPDATE"],
-  MAPPING_RULE: ["CREATE", "DELETE", "READ", "UPDATE"],
-  MESSAGE: ["CREATE", "READ"],
-  PROCESS_DEFINITION: [
-    "CANCEL_PROCESS_INSTANCE",
-    "CLAIM_USER_TASK",
-    "COMPLETE_USER_TASK",
-    "CREATE_PROCESS_INSTANCE",
-    "DELETE_PROCESS_INSTANCE",
-    "MODIFY_PROCESS_INSTANCE",
-    "READ_PROCESS_DEFINITION",
-    "READ_PROCESS_INSTANCE",
-    "READ_USER_TASK",
-    "UPDATE_PROCESS_INSTANCE",
-    "UPDATE_USER_TASK",
-  ],
-  USER_TASK: ["READ", "UPDATE", "CLAIM", "COMPLETE"],
-  ROLE: ["CREATE", "DELETE", "READ", "UPDATE"],
-  SYSTEM: ["READ", "READ_JOB_METRIC", "READ_USAGE_METRIC", "UPDATE"],
-  TENANT: ["CREATE", "DELETE", "READ", "UPDATE"],
-  USER: ["CREATE", "DELETE", "READ", "UPDATE"],
-  CLUSTER_VARIABLE: ["CREATE", "UPDATE", "DELETE", "READ"],
-  DOCUMENT: ["CREATE", "READ", "DELETE"],
-  GLOBAL_LISTENER: [
-    "CREATE_TASK_LISTENER",
-    "DELETE_TASK_LISTENER",
-    "READ_TASK_LISTENER",
-    "UPDATE_TASK_LISTENER",
-  ],
-};
 
 export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   open,
@@ -132,6 +71,8 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   const watchedOwnerType = watch("ownerType");
   const watchedResourceType = watch("resourceType");
+  const permissionsForType = resourcePermissions[watchedResourceType] ?? [];
+  const hasPermissions = permissionsForType.length > 0;
 
   const onSubmit = async (data: NewAuthorization) => {
     const { success } = await apiCall(data);
@@ -164,7 +105,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       onClose={onClose}
       loading={loading}
       error={error}
-      submitDisabled={loading}
+      submitDisabled={loading || !hasPermissions}
       confirmLabel={t("createAuthorization")}
       onSubmit={handleSubmit(onSubmit)}
     >
@@ -317,10 +258,14 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 </Translate>
               </Caption>
             }
-            invalid={!!fieldState.error}
-            invalidText={fieldState.error?.message}
+            invalid={!hasPermissions || !!fieldState.error}
+            invalidText={
+              !hasPermissions
+                ? t("permissionsUnavailable")
+                : fieldState.error?.message
+            }
           >
-            {resourcePermissions[watchedResourceType].map((permission) => (
+            {permissionsForType.map((permission) => (
               <Checkbox
                 key={permission}
                 labelText={permission}

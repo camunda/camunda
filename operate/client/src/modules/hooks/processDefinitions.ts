@@ -138,6 +138,7 @@ function useSelectedProcessDefinition() {
       if (definitions.length === 1) {
         return definitions[0];
       }
+      return undefined;
     },
   });
 }

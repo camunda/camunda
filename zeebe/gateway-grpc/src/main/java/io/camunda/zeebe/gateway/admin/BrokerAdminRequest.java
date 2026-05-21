@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
@@ -62,10 +63,10 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
   }
 
   @Override
-  public Optional<Integer> getBrokerId() {
+  public Optional<BrokerMemberId> getBrokerId() {
     final var brokerId = request.getBrokerId();
     if (brokerId != AdminRequestEncoder.brokerIdNullValue()) {
-      return Optional.of(brokerId);
+      return Optional.of(BrokerMemberId.from(null, brokerId));
     } else {
       return Optional.empty();
     }

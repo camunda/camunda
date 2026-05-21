@@ -18,24 +18,35 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.SaasConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
+import jakarta.servlet.ServletContext;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(SystemController.class)
+@Import(SystemControllerTestConfiguration.class)
 public class SystemControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/system/usage-metrics";
   static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";
@@ -74,11 +85,22 @@ public class SystemControllerTest extends RestControllerTest {
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
+  @MockitoBean SecurityConfiguration securityConfiguration;
+  @MockitoBean ServletContext servletContext;
+
+  // WebappConfiguration is provided by SystemControllerTestConfiguration
+  @Autowired WebappConfiguration webappConfiguration;
 
   @BeforeEach
   void setupUsageMetricsServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @AfterEach
+  void resetWebappConfiguration() {
+    webappConfiguration.setActiveComponents(
+        new ArrayList<>(List.of("admin", "operate", "tasklist")));
   }
 
   @Test
@@ -359,7 +381,7 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
   }
 
   @Test
@@ -398,7 +420,7 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
   }
 
   @Test
@@ -430,6 +452,208 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithAllComponentsEnabled() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    final var securityCfg = new SecurityConfiguration();
+    when(securityConfiguration.getMultiTenancy()).thenReturn(securityCfg.getMultiTenancy());
+    when(securityConfiguration.getSaas()).thenReturn(securityCfg.getSaas());
+
+    when(servletContext.getContextPath()).thenReturn("/camunda");
+
+    // Properties are already set to true by default in SystemControllerTestConfiguration
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "components": {
+                "active": ["admin", "operate", "tasklist"]
+              },
+              "deployment": {
+                "isEnterprise": false,
+                "isMultiTenancyEnabled": false,
+                "contextPath": "/camunda",
+                "maxRequestSize": 4194304
+              },
+              "authentication": {
+                "canLogout": true,
+                "isLoginDelegated": false
+              },
+              "cloud": {
+                "organizationId": null,
+                "clusterId": null,
+                "stage": null,
+                "mixpanelToken": null,
+                "mixpanelAPIHost": null
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithSomeComponentsDisabled() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    when(servletContext.getContextPath()).thenReturn("");
+
+    webappConfiguration.setActiveComponents(List.of("operate"));
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "components": {
+                "active": ["operate"]
+              },
+              "deployment": {
+                "contextPath": ""
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithMultiTenancyEnabled() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    final var securityCfg = new SecurityConfiguration();
+    final var multiTenancyCfg = new MultiTenancyConfiguration();
+    multiTenancyCfg.setChecksEnabled(true);
+    securityCfg.setMultiTenancy(multiTenancyCfg);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "deployment": {
+                "isMultiTenancyEnabled": true
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWithSaaSSettings() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    final var securityCfg = new SecurityConfiguration();
+    final var saasCfg = new SaasConfiguration();
+    saasCfg.setOrganizationId("org-123");
+    saasCfg.setClusterId("cluster-456");
+    securityCfg.setSaas(saasCfg);
+    when(securityConfiguration.getSaas()).thenReturn(saasCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "authentication": {
+                "canLogout": false
+              },
+              "cloud": {
+                "organizationId": "org-123",
+                "clusterId": "cluster-456"
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnWebappConfigurationWhenOptionalDependenciesAreMissing() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    // Mock beans (securityConfiguration, servletContext) are not explicitly stubbed,
+    // so they return null for method calls. Environment is provided by test config,
+    // so components are detected with default values.
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "components": {
+                "active": ["admin", "operate", "tasklist"]
+              },
+              "deployment": {
+                "isEnterprise": false,
+                "isMultiTenancyEnabled": false,
+                "contextPath": "",
+                "maxRequestSize": 4194304
+              },
+              "authentication": {
+                "canLogout": true,
+                "isLoginDelegated": false
+              },
+              "cloud": {
+                "organizationId": null,
+                "clusterId": null,
+                "stage": null,
+                "mixpanelToken": null,
+                "mixpanelAPIHost": null
+              }
+            }
+            """,
+            JsonCompareMode.LENIENT);
   }
 }

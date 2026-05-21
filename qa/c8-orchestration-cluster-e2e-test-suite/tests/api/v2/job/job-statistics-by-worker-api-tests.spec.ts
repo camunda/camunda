@@ -81,14 +81,17 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
       const body = await res.json();
       expect(body.items.length).toBeGreaterThanOrEqual(1);
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      const item = body.items[0];
+      const item = body.items.find(
+        (i: {failed: {count: number}}) => i.failed.count >= 1,
+      );
+      expect(item).toBeDefined();
       expect(item.worker).toBeDefined();
       expect(item.created.count).toBeGreaterThanOrEqual(0);
       expect(item.completed.count).toBeGreaterThanOrEqual(0);
       expect(item.failed.count).toBeGreaterThanOrEqual(1);
     }).toPass({
-      intervals: [5_000, 10_000, 15_000],
-      timeout: 90_000,
+      intervals: [5_000, 10_000, 15_000, 20_000, 30_000],
+      timeout: 180_000,
     });
   });
 
@@ -116,7 +119,7 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
     );
 
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
     expect(body.page.hasMoreTotalItems).toBe(false);
   });
@@ -176,7 +179,7 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
       res,
     );
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
     expect(body.page.hasMoreTotalItems).toBe(false);
   });

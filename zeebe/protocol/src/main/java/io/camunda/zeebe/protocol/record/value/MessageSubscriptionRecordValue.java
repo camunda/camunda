@@ -71,4 +71,20 @@ public interface MessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
+
+  /**
+   * The business id captured from the subscribing process instance at the time the subscription was
+   * opened. Used as an additional, post-routing local filter on the message partition: when a
+   * published message carries a business id, only subscriptions whose stored business id matches
+   * will correlate. A subscription opened from a process instance without a business id stores an
+   * empty string.
+   *
+   * <p>This value is captured at OPEN time on the process instance partition and shipped to the
+   * message partition with the subscription. It is not retroactively updated if the process
+   * instance's business id is assigned later.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.10
+   */
+  String getBusinessId();
 }

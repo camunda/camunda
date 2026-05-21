@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import static io.camunda.zeebe.broker.client.BrokerMemberIds.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -39,10 +40,7 @@ final class RoundRobinDispatchStrategyTest {
     // given
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
-    topologyManager
-        .addPartition(1, BrokerClusterState.NODE_ID_NULL)
-        .addPartition(2, 0)
-        .addPartition(3, 0);
+    topologyManager.addPartition(1, null).addPartition(2, ZERO).addPartition(3, ZERO);
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
@@ -55,9 +53,9 @@ final class RoundRobinDispatchStrategyTest {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
     topologyManager
-        .addPartition(1, 0)
-        .addPartition(2, 1)
-        .addPartition(3, 2)
+        .addPartition(1, ZERO)
+        .addPartition(2, ONE)
+        .addPartition(3, TWO)
         .withClusterConfiguration(
             ClusterConfiguration.builder()
                 .version(1)
@@ -80,9 +78,9 @@ final class RoundRobinDispatchStrategyTest {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
     topologyManager
-        .addPartition(1, 0)
-        .addPartition(2, 1)
-        .addPartition(3, 2)
+        .addPartition(1, ZERO)
+        .addPartition(2, ONE)
+        .addPartition(3, TWO)
         .withClusterConfiguration(
             ClusterConfiguration.builder()
                 .version(1)
@@ -105,7 +103,7 @@ final class RoundRobinDispatchStrategyTest {
   void shouldUpdateFromClusterConfiguration() {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
-    topologyManager.addPartition(1, 0).addPartition(2, 1).addPartition(3, 2);
+    topologyManager.addPartition(1, ZERO).addPartition(2, ONE).addPartition(3, TWO);
 
     // when -- starting with routing state version 1, with active partitions 1 and 3
     topologyManager.withClusterConfiguration(

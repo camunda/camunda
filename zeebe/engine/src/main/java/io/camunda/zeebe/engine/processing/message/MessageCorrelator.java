@@ -12,8 +12,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import org.agrona.collections.MutableBoolean;
 
@@ -71,7 +73,8 @@ public final class MessageCorrelator {
     final boolean correlateMessage =
         message.getDeadline() > clock.millis()
             && !messageState.existMessageCorrelation(
-                messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
+                messageKey, subscriptionRecord.getBpmnProcessIdBuffer())
+            && businessIdMatches(message, subscriptionRecord);
 
     if (correlateMessage) {
       subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
@@ -83,6 +86,22 @@ public final class MessageCorrelator {
     }
 
     return correlateMessage;
+  }
+
+  /**
+   * Asymmetric business-id matching rule from the design: a buffered message without a business id
+   * correlates regardless of the subscription's stored business id; a buffered message with a
+   * business id only correlates to subscriptions whose stored business id matches exactly. The
+   * subscription's business id was captured at OPEN time from the process instance, so this stays a
+   * local, on-partition check.
+   */
+  private static boolean businessIdMatches(
+      final MessageRecord message, final MessageSubscriptionRecord subscription) {
+    final var messageBusinessId = message.getBusinessIdBuffer();
+    if (messageBusinessId.capacity() == 0) {
+      return true;
+    }
+    return BufferUtil.equals(messageBusinessId, subscription.getBusinessIdBuffer());
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {

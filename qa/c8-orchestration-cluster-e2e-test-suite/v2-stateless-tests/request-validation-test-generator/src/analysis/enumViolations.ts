@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {OperationModel, ValidationScenario} from '../model/types.js';
 import {buildWalk} from '../schema/walker.js';
 import {buildBaselineBody} from '../schema/baseline.js';
@@ -175,18 +183,6 @@ function findPath(root: any, node: any): string[] | undefined {
   return found;
 }
 
-function applyAtPath(obj: any, path: string[], value: any): boolean {
-  let t = obj;
-  for (let i = 0; i < path.length - 1; i++) {
-    const s = path[i];
-    if (!(s in t)) return false;
-    t = t[s];
-  }
-  const last = path[path.length - 1];
-  if (!(last in t)) return false;
-  t[last] = value;
-  return true;
-}
 function applyOrCreatePath(obj: any, path: string[], value: any): boolean {
   let t = obj;
   for (let i = 0; i < path.length - 1; i++) {

@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +24,19 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
+  private final int maxRetries;
+  private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
+  private int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
+    this(actor, Integer.MAX_VALUE);
+  }
+
+  public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
+    this.maxRetries = maxRetries;
     retryMechanism = new ActorRetryMechanism();
   }
 
@@ -40,6 +50,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
+    retryCount = 0;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -51,14 +62,23 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.run(this::run);
-        actor.yieldThread();
+        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
+          actor.run(this::run);
+          actor.yieldThread();
+        }
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        LOG.debug("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
-        actor.run(this::run);
-        actor.yieldThread();
+        if (!retryLimitExceeded(++retryCount, maxRetries, ex, LOG, currentFuture)) {
+          throttledLog.warn(
+              "Caught recoverable exception (retry {}/{}), will retry: {}",
+              retryCount,
+              maxRetries,
+              ex.getMessage(),
+              ex);
+          actor.run(this::run);
+          actor.yieldThread();
+        }
       }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);

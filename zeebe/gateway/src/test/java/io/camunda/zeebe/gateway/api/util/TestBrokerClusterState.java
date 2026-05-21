@@ -9,26 +9,30 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class TestBrokerClusterState implements BrokerClusterState {
 
-  private final Map<Integer, String> brokerAddresses = new HashMap<>();
-  private final Map<Integer, Tuple<Integer, Long>> partitionLeaders = new HashMap<>();
-  private final Set<Integer> partitions = new HashSet<>();
-  private final Map<Tuple<Integer, Integer>, PartitionHealthStatus> brokerPartitionHealthStatus =
+  private final Map<BrokerMemberId, String> brokerAddresses = new HashMap<>();
+  private final Map<Integer, Tuple<@Nullable BrokerMemberId, Long>> partitionLeaders =
       new HashMap<>();
-  private final Map<Integer, Set<Integer>> inactivePartitionsToNodeIds = new HashMap<>();
-  private final Map<Integer, Set<Integer>> followerPartitionToNodeIds = new HashMap<>();
+  private final Set<Integer> partitions = new HashSet<>();
+  private final Map<Tuple<BrokerMemberId, Integer>, PartitionHealthStatus>
+      brokerPartitionHealthStatus = new HashMap<>();
+  private final Map<Integer, Set<BrokerMemberId>> inactivePartitionsToNodeIds = new HashMap<>();
+  private final Map<Integer, Set<BrokerMemberId>> followerPartitionToNodeIds = new HashMap<>();
   private String clusterId = "";
 
   public TestBrokerClusterState() {
@@ -40,7 +44,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
         .forEach(
             pId -> {
               partitions.add(pId);
-              partitionLeaders.put(pId, Tuple.of(NODE_ID_NULL, 0L));
+              partitionLeaders.put(pId, Tuple.of(null, 0L));
               inactivePartitionsToNodeIds.put(pId, new HashSet<>());
               followerPartitionToNodeIds.put(pId, new HashSet<>());
             });
@@ -67,25 +71,25 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
+  public @Nullable BrokerMemberId getLeaderForPartition(final int partition) {
     if (!partitionLeaders.containsKey(partition)) {
-      return NODE_ID_NULL;
+      return null;
     }
     return partitionLeaders.get(partition).getLeft();
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
-    return followerPartitionToNodeIds.getOrDefault(partition, Set.of());
+  public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
+    return new HashSet<>(followerPartitionToNodeIds.getOrDefault(partition, Set.of()));
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
-    return inactivePartitionsToNodeIds.getOrDefault(partition, Set.of());
+  public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
+    return new HashSet<>(inactivePartitionsToNodeIds.getOrDefault(partition, Set.of()));
   }
 
   @Override
-  public int getRandomBroker() {
+  public @Nullable BrokerMemberId getRandomBroker() {
     throw new UnsupportedOperationException();
   }
 
@@ -95,22 +99,23 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public List<Integer> getBrokers() {
-    return new ArrayList<>(brokerAddresses.keySet());
+  public List<BrokerMemberId> getBrokers() {
+    return brokerAddresses.keySet().stream().toList();
   }
 
   @Override
-  public String getBrokerAddress(final int brokerId) {
+  public String getBrokerAddress(final BrokerMemberId brokerId) {
     return brokerAddresses.get(brokerId);
   }
 
   @Override
-  public String getBrokerVersion(final int brokerId) {
+  public String getBrokerVersion(final BrokerMemberId brokerId) {
     return "1.0.0"; // Default version for testing purposes;
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+  public PartitionHealthStatus getPartitionHealth(
+      final BrokerMemberId brokerId, final int partition) {
     return brokerPartitionHealthStatus.getOrDefault(
         Tuple.of(brokerId, partition), PartitionHealthStatus.UNHEALTHY);
   }
@@ -129,11 +134,12 @@ public final class TestBrokerClusterState implements BrokerClusterState {
     this.clusterId = clusterId;
   }
 
-  public void addBroker(final int nodeId, final String address) {
+  public void addBroker(final BrokerMemberId nodeId, final String address) {
     brokerAddresses.put(nodeId, address);
   }
 
-  public void setPartitionLeader(final int partitionId, final int leaderId, final long term) {
+  public void setPartitionLeader(
+      final int partitionId, final BrokerMemberId leaderId, final long term) {
     partitionLeaders.put(partitionId, Tuple.of(leaderId, term));
   }
 
@@ -142,11 +148,13 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   public void setPartitionHealthStatus(
-      final int nodeId, final int partitionId, final PartitionHealthStatus partitionHealthStatus) {
+      final BrokerMemberId nodeId,
+      final int partitionId,
+      final PartitionHealthStatus partitionHealthStatus) {
     brokerPartitionHealthStatus.put(Tuple.of(nodeId, partitionId), partitionHealthStatus);
   }
 
-  public void addPartitionInactive(final int partitionId, final int nodeId) {
+  public void addPartitionInactive(final int partitionId, final BrokerMemberId nodeId) {
     addPartition(partitionId);
     inactivePartitionsToNodeIds.compute(
         partitionId,
@@ -172,7 +180,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
     }
   }
 
-  public void addFollowerPartition(final int partitionId, final int nodeId) {
+  public void addFollowerPartition(final int partitionId, final BrokerMemberId nodeId) {
     followerPartitionToNodeIds.compute(
         partitionId,
         (key, value) -> {

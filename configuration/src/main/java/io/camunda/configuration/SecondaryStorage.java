@@ -9,6 +9,8 @@ package io.camunda.configuration;
 
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -35,7 +37,7 @@ public class SecondaryStorage {
   private Retention retention = new Retention();
 
   /** Determines the type of the secondary storage database. */
-  private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
+  private SecondaryStorageType type = SecondaryStorageType.elasticsearch;
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   @NestedConfigurationProperty private Elasticsearch elasticsearch = new Elasticsearch();
@@ -63,7 +65,7 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".type",
         type,
         SecondaryStorageType.class,
@@ -91,6 +93,14 @@ public class SecondaryStorage {
     this.opensearch = opensearch;
   }
 
+  public Optional<DocumentBasedSecondaryStorageDatabase> getElasticsearchOrOpensearch() {
+    return switch (getType()) {
+      case elasticsearch -> Optional.of(elasticsearch);
+      case opensearch -> Optional.of(opensearch);
+      default -> Optional.empty();
+    };
+  }
+
   public Rdbms getRdbms() {
     return rdbms;
   }
@@ -99,6 +109,7 @@ public class SecondaryStorage {
     this.rdbms = rdbms;
   }
 
+  @JsonIgnore
   public DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase() {
     switch (getType()) {
       case elasticsearch -> {

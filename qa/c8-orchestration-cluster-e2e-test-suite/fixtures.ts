@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import {test as base, type Cookie} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
@@ -34,10 +34,12 @@ import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
+import {IdentityGlobalTaskListenersPage} from '@pages/IdentityGlobalTaskListenersPage';
+import {IdentityMcpProcessesPage} from '@pages/IdentityMcpProcessesPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
-
-import {sleep} from 'utils/sleep';
+import {SwaggerPage} from '@pages/SwaggerPage';
+import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -56,6 +58,7 @@ type PlaywrightFixtures = {
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
   operateOperationsLogPage: OperateOperationsLogPage;
+  operateBatchOperationsPage: OperateBatchOperationsPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -70,10 +73,13 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  identityMcpProcessesPage: IdentityMcpProcessesPage;
+  swaggerPage: SwaggerPage;
+  identityGlobalTaskListenersPage: IdentityGlobalTaskListenersPage;
   suppressHelperModals: void;
 };
 
-const test = base.extend<PlaywrightFixtures>({
+const publicTest = base.extend<PlaywrightFixtures>({
   suppressHelperModals: [
     async ({page}, use) => {
       await page.addInitScript(() => {
@@ -119,6 +125,9 @@ const test = base.extend<PlaywrightFixtures>({
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
+  },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
   },
@@ -146,6 +155,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateOperationsLogPage: async ({page}, use) => {
     await use(new OperateOperationsLogPage(page));
   },
+  operateBatchOperationsPage: async ({page}, use) => {
+    await use(new OperateBatchOperationsPage(page));
+  },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
   },
@@ -154,30 +166,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
-  },
-  resetData: async ({baseURL}, use) => {
-    await use(async () => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
-          `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
-        ).toString('base64')}`,
-      };
-
-      const response = await fetch(
-        `${baseURL}/v1/external/devUtil/recreateData`,
-        {
-          method: 'POST',
-          headers,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to reset data: ${response.statusText}`);
-      }
-
-      await sleep(1000);
-    });
   },
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
@@ -216,6 +204,50 @@ const test = base.extend<PlaywrightFixtures>({
   identityAuditLogPage: async ({page}, use) => {
     await use(new IdentityAuditLogPage(page));
   },
+  identityGlobalTaskListenersPage: async ({page}, use) => {
+    await use(new IdentityGlobalTaskListenersPage(page));
+  },
+  identityMcpProcessesPage: async ({page}, use) => {
+    await use(new IdentityMcpProcessesPage(page));
+  },
 });
 
-export {test};
+type AuthWorkerFixtures = {
+  loginUser: {username: string; password: string};
+  loginState: {cookies: Cookie[]; csrfToken: string};
+};
+
+const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
+  loginUser: [
+    {
+      username: process.env.TEST_USERNAME ?? 'demo',
+      password: process.env.TEST_PASSWORD ?? 'demo',
+    },
+    {scope: 'worker'},
+  ],
+  loginState: [
+    async ({browser, loginUser}, use) => {
+      const baseURL =
+        process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+      const context = await browser.newContext();
+      const response = await context.request.post(`${baseURL}/login`, {
+        form: loginUser,
+      });
+      const csrfToken = response.headers()['x-csrf-token'] ?? '';
+      const cookies = await context.cookies();
+      await context.close();
+      await use({cookies, csrfToken});
+    },
+    {scope: 'worker'},
+  ],
+  page: async ({context, loginState}, use) => {
+    await context.addCookies(loginState.cookies);
+    await context.addInitScript((csrfToken) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+    }, loginState.csrfToken);
+    const page = await context.newPage();
+    await use(page);
+  },
+});
+
+export {test, publicTest};

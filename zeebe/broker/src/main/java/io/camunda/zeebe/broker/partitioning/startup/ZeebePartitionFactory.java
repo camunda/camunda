@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -55,8 +56,8 @@ import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -80,10 +81,13 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ZeebePartitionFactory {
 
   public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebePartitionFactory.class);
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS = List.of();
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -102,8 +106,8 @@ public final class ZeebePartitionFactory {
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
-  private final SharedRocksDbResources sharedRocksDbResources;
   private final ClusterConfigurationService clusterConfigurationService;
+  private final RocksDbResources rocksDbResources;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -123,8 +127,8 @@ public final class ZeebePartitionFactory {
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final SharedRocksDbResources sharedRocksDbResources,
-      final ClusterConfigurationService clusterConfigurationService) {
+      final ClusterConfigurationService clusterConfigurationService,
+      final RocksDbResources rocksDbResources) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -142,8 +146,8 @@ public final class ZeebePartitionFactory {
     this.securityConfig = securityConfig;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-    this.sharedRocksDbResources = sharedRocksDbResources;
     this.clusterConfigurationService = clusterConfigurationService;
+    this.rocksDbResources = rocksDbResources;
   }
 
   public ZeebePartition constructPartition(
@@ -152,6 +156,7 @@ public final class ZeebePartitionFactory {
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
       final MeterRegistry partitionMeterRegistry) {
+
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
@@ -159,21 +164,22 @@ public final class ZeebePartitionFactory {
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     final var partitionId = raftPartition.id().id();
+    final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
+
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
-            databaseCfg.createRocksDbConfiguration(),
+            rocksDbConfiguration,
             consistencyChecks.getSettings(),
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
-            sharedRocksDbResources,
-            brokerCfg.getCluster().getPartitionsCount());
+            rocksDbResources);
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
         new PartitionStartupAndTransitionContextImpl(
-            localBroker.getNodeId(),
+            BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId()),
             localBroker.getPartitionsCount(),
             communicationService,
             raftPartition,

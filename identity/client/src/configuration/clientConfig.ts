@@ -17,7 +17,7 @@ const getClientConfigValue = <R>(
   parser: (value: string) => R,
 ): R => {
   const clientValue = window.clientConfig?.[key];
-  if (clientValue !== undefined) {
+  if (typeof clientValue === "string") {
     return parser(clientValue);
   }
   return defaultValue;
@@ -37,4 +37,15 @@ export const getClientConfigString: GetClientConfig<string | undefined> = (
     defaultValue,
     (value) => value,
   );
+};
+
+export const getClientConfigObject = <T extends object>(
+  key: keyof ClientConfig,
+  defaultValue: T,
+): T => {
+  const clientValue = window.clientConfig?.[key];
+  if (clientValue !== undefined && typeof clientValue === "object") {
+    return clientValue as T;
+  }
+  return defaultValue;
 };

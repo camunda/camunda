@@ -183,7 +183,7 @@ const FormJSRenderer: React.FC<Props> = ({
               labels: getFieldLabels(formManager, fieldIds),
             });
 
-            if (fieldIds.length > 0) {
+            if (fieldIds.length > 0 && fieldIds[0] !== undefined) {
               scrollToError(fieldIds[0]);
             }
           }

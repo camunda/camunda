@@ -53,7 +53,8 @@ public class ClusterBrokerPropertiesTest {
         "camunda.cluster.compression-algorithm=gzip",
         "camunda.cluster.name=zeebeClusterNew",
         "camunda.cluster.initial-contact-points=1new,2new",
-        "camunda.cluster.cluster-id=clusterIdNew"
+        "camunda.cluster.cluster-id=clusterIdNew",
+        "camunda.cluster.zone=us-east-1a"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -72,7 +73,8 @@ public class ClusterBrokerPropertiesTest {
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterNew", ClusterCfg::getClusterName)
           .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints)
-          .returns("clusterIdNew", ClusterCfg::getClusterId);
+          .returns("clusterIdNew", ClusterCfg::getClusterId)
+          .returns("us-east-1a", ClusterCfg::getZone);
     }
   }
 
@@ -95,7 +97,8 @@ public class ClusterBrokerPropertiesTest {
       assertThat(brokerCfg.getCluster())
           .returns(CompressionAlgorithm.NONE, ClusterCfg::getMessageCompression)
           .returns("zeebe-cluster", ClusterCfg::getClusterName)
-          .returns(Collections.emptyList(), ClusterCfg::getInitialContactPoints);
+          .returns(Collections.emptyList(), ClusterCfg::getInitialContactPoints)
+          .returns(null, ClusterCfg::getZone);
     }
   }
 

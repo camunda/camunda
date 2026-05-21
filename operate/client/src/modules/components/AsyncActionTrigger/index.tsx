@@ -41,6 +41,7 @@ const AsyncActionTrigger: React.FC<AsyncActionTriggerProps> = (props) => {
       const timeoutId = setTimeout(props.onReset, props.resetDelay ?? 2000);
       return () => clearTimeout(timeoutId);
     }
+    return undefined;
   }, [props.status, props.onReset, props.resetDelay]);
 
   if (props.status === 'idle') {

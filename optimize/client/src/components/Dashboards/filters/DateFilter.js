@@ -11,10 +11,9 @@ import classnames from 'classnames';
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
 import {Button, MenuItem, MenuItemSelectable, MenuItemDivider} from '@carbon/react';
 import {Filter} from '@carbon/icons-react';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
-import {Popover, DatePicker} from 'components';
+import {Popover, DatePicker, MenuDropdown} from 'components';
 import {t} from 'translation';
 
 import RollingFilter from './RollingFilter';

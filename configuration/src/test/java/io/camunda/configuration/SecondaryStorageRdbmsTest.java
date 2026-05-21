@@ -10,15 +10,15 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
+import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
@@ -63,6 +63,8 @@ public class SecondaryStorageRdbmsTest {
   private static final int HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE = 1000;
   private static final String HISTORY_USAGE_METRICS_CLEANUP_INTERVAL = "PT48H";
   private static final String HISTORY_USAGE_METRICS_TTL = "PT1H";
+  private static final String ASYNC_REPLICATION_POLLING_INTERVAL = "PT30S";
+  private static final String ASYNC_REPLICATION_MAX_LAG = "PT5M";
 
   private static final int MAX_PROCESS_CACHE_SIZE = 4711;
   private static final int MAX_BATCH_OPERATIONS_CACHE_SIZE = 4711;
@@ -105,6 +107,13 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
         "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
+        "camunda.data.secondary-storage.rdbms.async-replication.enabled=true",
+        "camunda.data.secondary-storage.rdbms.async-replication.polling-interval="
+            + ASYNC_REPLICATION_POLLING_INTERVAL,
+        "camunda.data.secondary-storage.rdbms.async-replication.min-sync-replicas=2",
+        "camunda.data.secondary-storage.rdbms.async-replication.max-lag="
+            + ASYNC_REPLICATION_MAX_LAG,
+        "camunda.data.secondary-storage.rdbms.async-replication.pause-on-max-lag-exceeded=true",
         "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
       })
   class WithOnlyUnifiedConfigSet {
@@ -184,6 +193,13 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
       assertThat(exporterConfiguration.getInsertBatching().getMaxAuditLogInsertBatchSize())
           .isEqualTo(50);
+      assertThat(exporterConfiguration.getAsyncReplication().isEnabled()).isTrue();
+      assertThat(exporterConfiguration.getAsyncReplication().getPollingInterval())
+          .isEqualTo(Duration.parse(ASYNC_REPLICATION_POLLING_INTERVAL));
+      assertThat(exporterConfiguration.getAsyncReplication().getMinSyncReplicas()).isEqualTo(2);
+      assertThat(exporterConfiguration.getAsyncReplication().getMaxLag())
+          .isEqualTo(Duration.parse(ASYNC_REPLICATION_MAX_LAG));
+      assertThat(exporterConfiguration.getAsyncReplication().isPauseOnMaxLagExceeded()).isTrue();
     }
 
     @Test

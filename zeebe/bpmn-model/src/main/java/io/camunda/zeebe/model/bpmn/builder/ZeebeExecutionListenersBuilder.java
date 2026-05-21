@@ -20,6 +20,14 @@ import java.util.function.Consumer;
 /** A fluent builder for elements with execution listeners. */
 public interface ZeebeExecutionListenersBuilder<B> {
 
+  default B zeebeBeforeAllExecutionListener(final String type, final String retries) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
+
+  default B zeebeBeforeAllExecutionListener(final String type) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
+
   B zeebeStartExecutionListener(String type, String retries);
 
   B zeebeStartExecutionListener(String type);
@@ -27,6 +35,14 @@ public interface ZeebeExecutionListenersBuilder<B> {
   B zeebeEndExecutionListener(String type, String retries);
 
   B zeebeEndExecutionListener(String type);
+
+  default B zeebeCancelExecutionListener(final String type, final String retries) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
+
+  default B zeebeCancelExecutionListener(final String type) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
 
   B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer);

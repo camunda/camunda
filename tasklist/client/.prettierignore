@@ -1,5 +1,6 @@
 node_modules/
 build/
+dist/
 target/
 coverage/
 **/*.bpmn
@@ -12,6 +13,7 @@ playwright-report/
 playwright/.cache/
 .eslintcache
 .env
+package-lock.json
 .prettierignore
 .eslintignore
 public/mockServiceWorker.js

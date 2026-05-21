@@ -473,6 +473,99 @@ public final class OAuthCredentialsCacheTest {
   }
 
   @Test
+  public void shouldConstructWithNullCacheFile() {
+    // given / when
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+
+    // then — no eager disk access at construction time
+    assertThat(cache.size()).isZero();
+  }
+
+  @Test
+  public void shouldReadCacheAsNoOpWhenCacheFileIsNull() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+    cache.put(WOMBAT_CLIENT_ID, WOMBAT);
+
+    // when — readCache must not touch disk, and must not clobber the in-memory state
+    cache.readCache();
+
+    // then
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).contains(WOMBAT);
+  }
+
+  @Test
+  public void shouldWriteCacheAsNoOpWhenCacheFileIsNull() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+    cache.put(WOMBAT_CLIENT_ID, WOMBAT);
+
+    // when — writeCache must not throw when no file is configured
+    cache.writeCache();
+
+    // then — in-memory state is preserved
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).contains(WOMBAT);
+  }
+
+  @Test
+  public void shouldComputeIfMissingOrInvalidWithoutTouchingDiskWhenCacheFileIsNull()
+      throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+    final AtomicInteger fetchCount = new AtomicInteger(0);
+
+    // when — first call triggers the supplier, second call serves from in-memory
+    final CamundaClientCredentials first =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID,
+            () -> {
+              fetchCount.incrementAndGet();
+              return WOMBAT;
+            });
+    final CamundaClientCredentials second =
+        cache.computeIfMissingOrInvalid(
+            WOMBAT_CLIENT_ID,
+            () -> {
+              fetchCount.incrementAndGet();
+              return WOMBAT;
+            });
+
+    // then
+    assertThat(first).isEqualTo(WOMBAT);
+    assertThat(second).isEqualTo(WOMBAT);
+    assertThat(fetchCount.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldForceRefreshIfChangedWithoutTouchingDiskWhenCacheFileIsNull()
+      throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+    cache.put(WOMBAT_CLIENT_ID, WOMBAT);
+    final CamundaClientCredentials refreshed =
+        new CamundaClientCredentials("refreshed", EXPIRY, "Bearer");
+
+    // when
+    final boolean changed = cache.forceRefreshIfChanged(WOMBAT_CLIENT_ID, () -> refreshed);
+
+    // then
+    assertThat(changed).isTrue();
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).contains(refreshed);
+  }
+
+  @Test
+  public void shouldPutAndWriteWithoutTouchingDiskWhenCacheFileIsNull() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache();
+
+    // when
+    cache.putAndWrite(WOMBAT_CLIENT_ID, WOMBAT);
+
+    // then
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).contains(WOMBAT);
+  }
+
+  @Test
   public void shouldBeThreadSafe() throws InterruptedException {
     // given
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);

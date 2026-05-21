@@ -324,6 +324,60 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of unique deployed process definitions (distinct BPMN process IDs) */
+  DEPLOYED_PROCESS_DEFINITIONS {
+    @Override
+    public String getDescription() {
+      return "Number of unique deployed process definitions (distinct BPMN process IDs)";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definitions.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Total size in bytes of all deployed versions of each process definition */
+  PROCESS_DEFINITION_RESOURCE_SIZE {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {ProcessDefinitionKeyNames.BPMN_PROCESS_ID};
+
+    @Override
+    public String getDescription() {
+      return "Total size in bytes of all deployed versions of each process definition";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.definition.resource.size.bytes";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
@@ -459,6 +513,16 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String toString() {
       return name().toLowerCase();
+    }
+  }
+
+  public enum ProcessDefinitionKeyNames implements KeyName {
+    /** The BPMN process ID of the process definition */
+    BPMN_PROCESS_ID {
+      @Override
+      public String asString() {
+        return "bpmnProcessId";
+      }
     }
   }
 

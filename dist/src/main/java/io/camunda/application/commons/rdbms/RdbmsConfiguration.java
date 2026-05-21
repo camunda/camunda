@@ -13,6 +13,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
@@ -22,6 +23,7 @@ import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
+import io.camunda.db.rdbms.read.service.DeployedResourceDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
@@ -62,6 +64,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
+import io.camunda.db.rdbms.sql.DeployedResourceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
@@ -77,6 +80,7 @@ import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
@@ -87,6 +91,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -96,12 +101,14 @@ import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
@@ -383,9 +390,36 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory(
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final ReplicationStatusMapper replicationStatusMapper) {
+    return new ReplicationLogStatusProviderFactory(
+        vendorDatabaseProperties, replicationStatusMapper);
+  }
+
+  @Bean
   public GlobalListenerDbReader globalListenerRdbmsReader(
       final GlobalListenerMapper globalListenerMapper, final RdbmsReaderConfig readerConfig) {
     return new GlobalListenerDbReader(globalListenerMapper, readerConfig);
+  }
+
+  @Bean
+  public DeployedResourceDbReader resourceRdbmsReader(
+      final DeployedResourceMapper deployedResourceMapper, final RdbmsReaderConfig readerConfig) {
+    return new DeployedResourceDbReader(deployedResourceMapper, readerConfig);
+  }
+
+  @Bean
+  public TransactionRunner transactionRunner(
+      final ObjectProvider<PlatformTransactionManager> transactionManagerProvider) {
+    final var transactionManager = transactionManagerProvider.getIfAvailable();
+    if (transactionManager == null) {
+      LOG.warn(
+          "No PlatformTransactionManager bean available — falling back to a noop TransactionRunner. "
+              + "Batched RDBMS writes will not be transactional and will not roll back on failure.");
+      return TransactionRunner.noop();
+    }
+    return new SpringTransactionRunner(transactionManager);
   }
 
   @Bean
@@ -405,7 +439,6 @@ public class RdbmsConfiguration {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final MeterRegistry meterRegistry,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -415,7 +448,8 @@ public class RdbmsConfiguration {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final TransactionRunner transactionRunner) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -432,7 +466,6 @@ public class RdbmsConfiguration {
         userTaskMapper,
         variableMapper,
         meterRegistry,
-        batchOperationReader,
         jobMapper,
         jobMetricsBatchMapper,
         sequenceFlowMapper,
@@ -442,7 +475,8 @@ public class RdbmsConfiguration {
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
-        historyDeletionMapper);
+        historyDeletionMapper,
+        transactionRunner);
   }
 
   @Bean
@@ -488,7 +522,9 @@ public class RdbmsConfiguration {
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionReader,
-      final GlobalListenerDbReader globalListenerDbReader) {
+      final GlobalListenerDbReader globalListenerDbReader,
+      final DeployedResourceDbReader deployedResourceDbReader,
+      final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -527,7 +563,9 @@ public class RdbmsConfiguration {
         historyDeletionDbReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
-        globalListenerDbReader);
+        globalListenerDbReader,
+        deployedResourceDbReader,
+        replicationLogStatusProviderFactory);
   }
 
   @Bean

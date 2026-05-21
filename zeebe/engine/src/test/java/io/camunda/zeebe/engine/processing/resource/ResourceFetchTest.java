@@ -89,6 +89,39 @@ public class ResourceFetchTest {
   }
 
   @Test
+  public void shouldFetchGenericResource() throws Exception {
+    // Generic resources use the filename as their resource ID (no structured content to parse).
+    // The resource can be fetched by key via GET /v2/resources/{key}/content once deployed.
+    final var resourceContent = "Hello, generic resource!".getBytes();
+    final var resourceName = "my-script.txt";
+    final var deployment =
+        engine.deployment().withJsonResource(resourceContent, resourceName).deploy();
+    final var resourceMetadata = deployment.getValue().getResourceMetadata().getFirst();
+    final var resourceKey = resourceMetadata.getResourceKey();
+
+    // when
+    final var record =
+        engine
+            .resourceFetch()
+            .withResourceKey(resourceKey)
+            .withRequestStreamId(10)
+            .withRequestId(123456789L)
+            .fetch();
+
+    // then - resourceId equals the filename for generic resources
+    ResourceAssert.assertThat(record.getValue())
+        .isNotNull()
+        .hasResourceProp(new String(resourceContent))
+        .hasResourceKey(resourceKey)
+        .hasResourceId(resourceName)
+        .hasResourceName(resourceName)
+        .hasVersion(1)
+        .hasVersionTag("")
+        .hasDeploymentKey(deployment.getKey())
+        .hasChecksum(resourceMetadata.getChecksum());
+  }
+
+  @Test
   public void shouldRejectIfResourceNotFound() {
     // given
     final var unknownResourceKey = 123456789L;

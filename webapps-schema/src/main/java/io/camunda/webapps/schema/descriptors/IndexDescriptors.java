@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -23,6 +24,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -90,7 +92,9 @@ public class IndexDescriptors {
                 new HistoryDeletionIndex(indexPrefix, isElasticsearch),
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
-                new GlobalListenerIndex(indexPrefix, isElasticsearch))
+                new GlobalListenerIndex(indexPrefix, isElasticsearch),
+                new DeployedResourceIndex(indexPrefix, isElasticsearch),
+                new AgentInstanceTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

@@ -1,0 +1,158 @@
+# Nightly workflow that runs the Data Layer Nightly Tests against configurable branches.
+# test location: qa/acceptance-tests
+# owner: @camunda/data-layer
+name: Data Layer Nightly Tests
+
+on:
+  schedule:
+    # Run at 02:00 every night
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+  pull_request:
+    types: [labeled, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nightly-tests:
+    name: "Data Layer Nightly Tests (${{ matrix.branch }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [stable/8.9, main]
+    # Run on schedule, manual dispatch, or PR with 'run-dl-nightly-tests' label
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       (github.event.action == 'labeled' && github.event.label.name == 'run-dl-nightly-tests' ||
+        github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-dl-nightly-tests')))
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: refs/heads/${{ matrix.branch }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: "-Dskip.fe.build=true -DskipOptimize=true"
+
+      - name: Run Nightly Tests
+        env:
+          FLAKY_TEST_RERUN_COUNT: 3
+        run: |
+          ./mvnw -B --no-snapshot-updates \
+          -D skipUTs -D skipChecks \
+          -D maven.javadoc.skip=true \
+          -D "failsafe.rerunFailingTestsCount=${FLAKY_TEST_RERUN_COUNT:-3}" \
+          -D flaky.test.reportDir=failsafe-reports \
+          -D junit.jupiter.extensions.autodetection.enabled=true \
+          -D "argLine=--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" \
+          -pl qa/acceptance-tests \
+          -D groups="dl-nightly" \
+          -D failsafe.excludedGroups="" \
+          -P dl-nightly \
+          verify
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: data-layer-nightly-test-failures-${{ matrix.branch }}
+          path: qa/acceptance-tests/target/failsafe-reports/
+          retention-days: 7
+
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [nightly-tests]
+    if: |
+      failure() &&
+      github.event_name == 'schedule'
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Data Layer Nightly Tests failed:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@camunda/data-layer Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }

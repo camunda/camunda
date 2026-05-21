@@ -71,7 +71,7 @@ test.describe.parallel('Complete User Task Tests', () => {
           verifyJson,
         );
         expect(verifyJson.page.totalItems).toBe(1);
-        expect(verifyJson.items.length).toBe(1);
+        expect(verifyJson.items).toHaveLength(1);
         expect(verifyJson.items[0].state).toBe('COMPLETED');
       }).toPass(defaultAssertionOptions);
     });

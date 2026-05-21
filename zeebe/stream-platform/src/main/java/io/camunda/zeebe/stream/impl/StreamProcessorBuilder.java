@@ -30,7 +30,6 @@ public final class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
-  private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
   private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
@@ -47,11 +46,6 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder actorSchedulingService(
       final ActorSchedulingService actorSchedulingService) {
     this.actorSchedulingService = actorSchedulingService;
-    return this;
-  }
-
-  public StreamProcessorBuilder nodeId(final int nodeId) {
-    this.nodeId = nodeId;
     return this;
   }
 
@@ -109,10 +103,6 @@ public final class StreamProcessorBuilder {
     return zeebeDb;
   }
 
-  public int getNodeId() {
-    return nodeId;
-  }
-
   public List<RecordProcessor> getRecordProcessors() {
     return recordProcessors;
   }
@@ -147,10 +137,20 @@ public final class StreamProcessorBuilder {
           "Batch processing limit must be >= 1 but was %s"
               .formatted(streamProcessorContext.getMaxCommandsInBatch()));
     }
+    if (streamProcessorContext.getMaxRecoverableRetries() < 1) {
+      throw new IllegalArgumentException(
+          "maxRecoverableRetries must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getMaxRecoverableRetries()));
+    }
   }
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxRecoverableRetries(final int maxRecoverableRetries) {
+    streamProcessorContext.maxRecoverableRetries(maxRecoverableRetries);
     return this;
   }
 

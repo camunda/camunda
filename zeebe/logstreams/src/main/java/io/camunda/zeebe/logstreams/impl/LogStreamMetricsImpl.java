@@ -45,9 +45,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.atomic.AtomicLong;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 public final class LogStreamMetricsImpl implements LogStreamMetrics {
   private final AtomicLong inflightAppends = new AtomicLong();
   private final AtomicLong inflightRequests = new AtomicLong();

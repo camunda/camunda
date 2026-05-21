@@ -556,6 +556,73 @@ public final class EngineErrorHandlingTest {
   }
 
   @Test
+  public void shouldRejectCommandForBannedProcessInstance() {
+    // given
+    final ErrorProneProcessor processor = new ErrorProneProcessor();
+
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingContext.getProcessingState().getKeyGenerator();
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.COMPLETE_ELEMENT,
+                      new DumpProcessor(processingContext.getWriters()));
+            });
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // wait for error event to be written
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // when - send another command for the same banned instance
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+        .requestId(100L)
+        .requestStreamId(1)
+        .write();
+
+    // wait for rejection to be written
+    waitForRecordWhichSatisfies(
+        e ->
+            Records.isRejection(
+                e, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.COMPLETE_ELEMENT));
+
+    // then - verify the second command was rejected
+    final Record<ProcessInstanceRecord> rejection =
+        new RecordStream(streams.events(STREAM_NAME))
+            .onlyProcessInstanceRecords()
+            .onlyRejections()
+            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .getFirst();
+
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance is banned due to previous errors");
+    assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
+
+    // verify response was sent to client
+    verify(mockCommandResponseWriter).tryWriteResponse(eq(1), eq(100L));
+
+    // verify the processor was called only once (for the first command that failed)
+    assertThat(processor.getProcessCount()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldNotBanInstanceAndIgnoreTimerStartEvents() {
     // given
     final List<Long> processedInstances = new ArrayList<>();

@@ -9,25 +9,28 @@ package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
 import io.camunda.zeebe.shared.management.FlowControlEndpoint.FlowControlService;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.agrona.collections.IntHashSet;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@NullMarked
 public class FlowControlServiceImpl implements FlowControlService {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControlServiceImpl.class);
   private final BrokerClient client;
@@ -90,7 +93,8 @@ public class FlowControlServiceImpl implements FlowControlService {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
-                  request.setBrokerId(brokerId);
+                  // TODO: https://github.com/camunda/camunda/issues/52807
+                  request.setBrokerId(brokerId.nodeIdx());
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return client.sendRequest(request);
@@ -102,8 +106,13 @@ public class FlowControlServiceImpl implements FlowControlService {
   private CompletableFuture<FlowControlStatus> fetchFlowConfigOnPartition(
       final BrokerClusterState topology, final Integer partitionId) {
     final var brokerId = topology.getLeaderForPartition(partitionId);
+    if (brokerId == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("No leader for partition " + partitionId));
+    }
     final var request = new BrokerAdminRequest();
-    request.setBrokerId(brokerId);
+    // TODO: https://github.com/camunda/camunda/issues/52807
+    request.setBrokerId(brokerId.nodeIdx());
     request.setPartitionId(partitionId);
     request.getFLowControlConfiguration();
 
@@ -115,15 +124,17 @@ public class FlowControlServiceImpl implements FlowControlService {
                     partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
   }
 
-  private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
-    final var leader = topology.getLeaderForPartition(partitionId);
+  private HashSet<BrokerMemberId> getMembers(
+      final BrokerClusterState topology, final Integer partitionId) {
+    final var leader = Optional.ofNullable(topology.getLeaderForPartition(partitionId));
     final var followers =
         Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new IntHashSet(topology.getReplicationFactor());
-    members.add(leader);
+    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
+    leader.ifPresent(members::add);
+
     members.addAll(followers);
     members.addAll(inactive);
     return members;

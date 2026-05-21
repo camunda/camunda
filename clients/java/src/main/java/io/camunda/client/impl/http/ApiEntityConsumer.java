@@ -49,7 +49,11 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
   private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
-      Arrays.asList(ContentType.TEXT_XML, ContentType.TEXT_HTML, ContentType.TEXT_PLAIN);
+      Arrays.asList(
+          ContentType.TEXT_XML,
+          ContentType.TEXT_HTML,
+          ContentType.TEXT_PLAIN,
+          ContentType.APPLICATION_OCTET_STREAM);
   private final ObjectMapper json;
   private final Class<T> type;
   private final int chunkSize;
@@ -68,8 +72,14 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
     } else if (Void.class.equals(type)) {
       entityConsumer = new RawApiEntityConsumer<>(true, chunkSize);
-    } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
+    } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)
+        && !String.class.equals(type)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
+    } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)
+        && String.class.equals(type)) {
+      // When the expected type is String and the content type is application/json, the response
+      // body is returned as raw bytes.
+      entityConsumer = new RawApiEntityConsumer<>(true, chunkSize);
     } else {
       final boolean isResponse =
           String.class.equals(type)

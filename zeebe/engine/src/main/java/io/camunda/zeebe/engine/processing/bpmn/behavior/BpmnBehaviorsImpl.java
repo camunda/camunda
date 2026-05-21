@@ -127,7 +127,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new ExpressionBehavior(
             namespaceFullClusterContext,
             expressionLanguage,
-            config.getExpressionEvaluationTimeout());
+            config.getExpressionEvaluationTimeout(),
+            processingState.getVariableState());
 
     conditionalBehavior =
         new BpmnConditionalBehavior(
@@ -206,7 +207,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             writers,
-            clock);
+            clock,
+            config.isBusinessIdUniquenessEnabled());
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -260,6 +262,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionProcessor,
             stateBehavior,
             processingState.getResourceState(),
+            processingState.getFormState(),
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
@@ -269,8 +272,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
-    jobUpdateBehaviour =
-        new JobUpdateBehaviour(processingState.getJobState(), clock, authCheckBehavior, writers);
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, authCheckBehavior, writers);
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(

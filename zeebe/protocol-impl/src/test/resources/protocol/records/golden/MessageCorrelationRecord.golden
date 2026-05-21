@@ -36,6 +36,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
+  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -51,9 +52,10 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
+  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
   public MessageCorrelationRecord() {
-    super(8);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
@@ -62,7 +64,8 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(requestIdProp)
         .declareProperty(requestStreamIdProp)
         .declareProperty(processInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp);
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(businessIdProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -71,6 +74,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
     setProcessInstanceKey(record.getProcessInstanceKey());
+    setBusinessId(record.getBusinessIdBuffer());
   }
 
   @Override
@@ -175,6 +179,26 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   public MessageCorrelationRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
+  }
+
+  public MessageCorrelationRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
     return this;
   }
 }

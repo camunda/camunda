@@ -14,7 +14,7 @@ import {
   // searchByProcessInstanceKey,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {processInstanceKey: number};
@@ -60,9 +60,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance History', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
@@ -97,20 +96,17 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(async () => {
-            await operateFiltersPanelPage.selectProcess('IncidentProcess');
-          }).toPass({intervals: [5_000], timeout: 60_000});
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
         },
         onFailure: async () => {
           await page.reload();
         },
       });
-      await operateFiltersPanelPage.selectVersion('1');
     });
 
     await test.step('Wait for incident to appear', async () => {
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
-      await page.waitForTimeout(5000);
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
@@ -128,6 +124,9 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
+          await operateFiltersPanelPage.clickActiveInstancesCheckbox();
           await operateFiltersPanelPage.displayOptionalFilter(
             'Process Instance Key(s)',
           );
@@ -152,9 +151,6 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('wuf');
-          await operateFiltersPanelPage.fillVariableValueFilter('1');
         },
       });
 
@@ -183,24 +179,27 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify incident is resolved in Instance History', async () => {
-      await page.waitForTimeout(12000);
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
+          await expect(
+            operateProcessInstancePage.instanceHistory
+              .getByRole('treeitem')
+              .first(),
+          ).toBeVisible();
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            mainProcessName,
+            ['ACTIVE'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            incidentItemName,
+            ['COMPLETED'],
+          );
         },
         onFailure: async () => {
           await page.reload();
         },
       });
-
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        mainProcessName,
-        ['ACTIVE'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        incidentItemName,
-        ['COMPLETED'],
-      );
     });
   });
 
@@ -410,9 +409,9 @@ test.describe('Process Instance History', () => {
           nestedParentName,
         );
       await expect(nestedParentGroupLocator).toBeVisible();
-      expect(
-        await nestedParentGroupLocator.getByLabel(activityCollectMoney).count(),
-      ).toBe(2);
+      await expect(
+        nestedParentGroupLocator.getByLabel(activityCollectMoney),
+      ).toHaveCount(2);
     });
 
     await test.step('Verify First Subprocess has state overlay 1', async () => {
@@ -456,9 +455,9 @@ test.describe('Process Instance History', () => {
           nestedParentName,
         );
       await expect(nestedParentGroupLocator).toBeVisible();
-      expect(
-        await nestedParentGroupLocator.getByLabel(activitySendItems).count(),
-      ).toBe(1);
+      await expect(
+        nestedParentGroupLocator.getByLabel(activitySendItems),
+      ).toHaveCount(1);
     });
 
     await test.step('Enter modification mode and assert results', async () => {

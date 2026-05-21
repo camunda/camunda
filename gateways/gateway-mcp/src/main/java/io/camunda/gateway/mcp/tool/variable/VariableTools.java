@@ -24,7 +24,7 @@ import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.NotNull;
@@ -52,7 +52,8 @@ public class VariableTools {
   @CamundaMcpTool(
       description =
           "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult searchVariables(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false) final VariableFilter filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)

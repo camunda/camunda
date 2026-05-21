@@ -63,11 +63,11 @@ npm run dev
 To have a demo user created by default, add the following env variables when running the application:
 
 ```
-CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
+export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
 CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
 CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
 CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
-CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
 ```
 
 To have authorizations enabled by default, add the following env variable when running the application:

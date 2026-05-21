@@ -25,6 +25,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
@@ -34,6 +35,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -110,7 +112,13 @@ class ProcessCacheImplIT {
     expectedFlowNodesMap.put(startEventId, null);
     final var expectedCachedProcessEntity =
         new CachedProcessEntity(
-            "test", 1, "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap, false);
+            "test",
+            1,
+            "v1",
+            List.of("Banana", "Cherry", "apple"),
+            expectedFlowNodesMap,
+            false,
+            Map.of());
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 
@@ -168,7 +176,8 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
+            new ElasticSearchProcessCacheLoader(
+                SEARCH_DB.esClient(), indexName, new ExtensionPropertyConfiguration()),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
@@ -178,7 +187,8 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
+            new OpenSearchProcessCacheLoader(
+                SEARCH_DB.osClient(), indexName, new ExtensionPropertyConfiguration()),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);

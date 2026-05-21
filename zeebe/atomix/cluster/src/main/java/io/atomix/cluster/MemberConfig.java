@@ -19,13 +19,14 @@ package io.atomix.cluster;
 import io.atomix.utils.net.Address;
 import java.util.Map;
 import java.util.Properties;
+import org.jspecify.annotations.Nullable;
 
 /** Member configuration. */
 public class MemberConfig extends NodeConfig {
   private MemberId id = MemberId.anonymous();
-  private String zoneId;
-  private String rackId;
-  private String hostId;
+  private @Nullable String zoneId;
+  private @Nullable String rackId;
+  private @Nullable String hostId;
   private Properties properties = new Properties();
 
   /**
@@ -94,7 +95,7 @@ public class MemberConfig extends NodeConfig {
    *
    * @return the member zone
    */
-  public String getZoneId() {
+  public @Nullable String getZoneId() {
     return zoneId;
   }
 
@@ -114,7 +115,7 @@ public class MemberConfig extends NodeConfig {
    *
    * @return the member rack
    */
-  public String getRackId() {
+  public @Nullable String getRackId() {
     return rackId;
   }
 
@@ -134,7 +135,7 @@ public class MemberConfig extends NodeConfig {
    *
    * @return the member host
    */
-  public String getHostId() {
+  public @Nullable String getHostId() {
     return hostId;
   }
 

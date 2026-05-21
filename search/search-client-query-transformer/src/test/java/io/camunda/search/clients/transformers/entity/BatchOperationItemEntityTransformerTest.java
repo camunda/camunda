@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ class BatchOperationItemEntityTransformerTest {
     // given
     final OperationEntity entity = new OperationEntity();
     entity.setBatchOperationId("1");
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
     entity.setState(OperationState.SCHEDULED);
     entity.setItemKey(123L);
     entity.setProcessInstanceKey(456L);
@@ -51,6 +53,7 @@ class BatchOperationItemEntityTransformerTest {
 
     final OperationEntity entity = new OperationEntity();
     entity.setBatchOperationId(uuid);
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
     entity.setState(OperationState.SCHEDULED);
     entity.setIncidentKey(123L);
     entity.setProcessInstanceKey(456L);

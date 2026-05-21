@@ -9,7 +9,6 @@
 #   VERSION - required; the semantic version, e.g. 8.6.0 or 8.6.0-alpha1
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
-#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.23.0)
 # Arguments:
 #   1 - Docker image names to be checked (no limit on number of images, each is checked separately)
 # Outputs:
@@ -43,29 +42,37 @@ if [ -z "${DATE}" ]; then
 fi
 echo "[INFO] DATE=${DATE}"
 
-if [ -z "${BASE_IMAGE}" ]; then
-  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.23.0"
-  exit 1
-fi
-echo "[INFO] BASE_IMAGE=${BASE_IMAGE}"
-
-# Check that the base image exists
-if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
-  echo >&2 "No known Docker base image ${BASE_IMAGE} exists; did you pass the right name?"
-  exit 1
-fi
-echo "[INFO] Base image ${BASE_IMAGE} exists and is accessible"
-
 SCRIPT_DIR=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
 DOCKERFILE_PATH="${SCRIPT_DIR}/../../../optimize.Dockerfile"
+DOCKERFILE=$(<"${DOCKERFILE_PATH}")
 
 echo "[INFO] Looking for digest in Dockerfile: ${DOCKERFILE_PATH}"
-DIGEST=$(cat "$DOCKERFILE_PATH" | grep -o 'sha256:[a-f0-9]\{64\}' | head -n 1)
+DIGEST=$(echo "${DOCKERFILE}" | grep -o 'sha256:[a-f0-9]\{64\}' | head -n 1)
 if [[ -z "$DIGEST" ]]; then
     echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE_PATH)"
     exit 1
 fi
 echo "Digest found: $DIGEST"
+
+BASE_IMAGE_REGEX='ARG BASE_IMAGE="([^"]+)"'
+if [[ $DOCKERFILE =~ $BASE_IMAGE_REGEX ]]; then
+    BASE_IMAGE="${BASH_REMATCH[1]}"
+else
+    echo >&2 "Base image cannot be found in the Dockerfile (with name $DOCKERFILE_PATH)"
+    exit 1
+fi
+# If the base image is not fully qualified, add the default registry prefix
+if [[ ! $BASE_IMAGE =~ ^(.+[\.|:].+)?/.*$ ]]; then
+  BASE_IMAGE="docker.io/library/${BASE_IMAGE}"
+fi
+echo "[INFO] BASE_IMAGE=${BASE_IMAGE}"
+
+# Check that the base image exists
+if ! docker manifest inspect "${BASE_IMAGE}" > /dev/null; then
+  echo >&2 "No known Docker base image ${BASE_IMAGE} exists; did you pass the right name?"
+  exit 1
+fi
+echo "[INFO] Base image ${BASE_IMAGE} exists and is accessible"
 
 imageName="${1}"
 # Iterate through all the images passed as parameter

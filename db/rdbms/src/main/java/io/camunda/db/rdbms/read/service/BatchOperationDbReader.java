@@ -9,7 +9,6 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
-import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
@@ -17,8 +16,8 @@ import io.camunda.search.clients.reader.BatchOperationReader;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -35,16 +34,6 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
       final BatchOperationMapper batchOperationMapper, final RdbmsReaderConfig readerConfig) {
     super(BatchOperationSearchColumn.values(), readerConfig);
     this.batchOperationMapper = batchOperationMapper;
-  }
-
-  public boolean exists(final String batchOperationKey) {
-    final var query =
-        new BatchOperationDbQuery.Builder()
-            .filter(b -> b.batchOperationKeys(batchOperationKey))
-            .page(new DbQueryPage(1, 0, 1, List.of()))
-            .build();
-
-    return batchOperationMapper.count(query) == 1;
   }
 
   @Override

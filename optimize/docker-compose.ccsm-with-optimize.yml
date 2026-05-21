@@ -10,25 +10,25 @@ services:
       - "8090:8090"
       - "8092:8092"
     environment:
-      - SPRING_PROFILES_ACTIVE=ccsm
-      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
-      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
-      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
-      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
-      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
-      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
-      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
-      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
-      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
-      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
-      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+      SPRING_PROFILES_ACTIVE: ccsm
+      CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: http://localhost:18080/auth/realms/camunda-platform
+      CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL: http://identity:8081/
+      CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID: optimize
+      CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE: optimize-api
+      CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED: "false"
+      CAMUNDA_OPTIMIZE_ENTERPRISE: "false"
+      CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: "true"
+      CAMUNDA_OPTIMIZE_ZEEBE_NAME: zeebe-record
+      CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT: "2"
+      CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: "true"
       # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - OPTIMIZE_LOG_LEVEL=DEBUG
-      - JAVA_TOOL_OPTIONS=-XX:UseSVE=0
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      OPTIMIZE_LOG_LEVEL: DEBUG
+      OPTIMIZE_ELASTICSEARCH_HOST: elasticsearch
+      OPTIMIZE_ELASTICSEARCH_HTTP_PORT: "9200"
+      JAVA_TOOL_OPTIONS: "-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0"
     networks:
       - optimize
       - identity-network
@@ -38,35 +38,36 @@ services:
     image: camunda/optimize:8-latest
     depends_on:
       - identity
+      - opensearch
     ports:
       - "8090:8090"
       - "8092:8092"
     environment:
-      - SPRING_PROFILES_ACTIVE=ccsm
-      - CAMUNDA_OPTIMIZE_DATABASE=opensearch
-      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
-      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
-      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
-      - CAMUNDA_OPTIMIZE_OPENSEARCH_HOST=opensearch
-      - CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT=9200
-      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
-      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
-      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
-      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
-      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
-      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+      SPRING_PROFILES_ACTIVE: ccsm
+      CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: http://localhost:18080/auth/realms/camunda-platform
+      CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL: http://identity:8081/
+      CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID: optimize
+      CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE: optimize-api
+      CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED: "false"
+      CAMUNDA_OPTIMIZE_ENTERPRISE: "false"
+      CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: "true"
+      CAMUNDA_OPTIMIZE_ZEEBE_NAME: zeebe-record
+      CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT: "2"
+      CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: "true"
       # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - OPTIMIZE_LOG_LEVEL=DEBUG
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      OPTIMIZE_LOG_LEVEL: DEBUG
+      CAMUNDA_OPTIMIZE_DATABASE: opensearch
+      CAMUNDA_OPTIMIZE_OPENSEARCH_HOST: opensearch
+      CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT: "9200"
     networks:
       - optimize
       - identity-network
   keycloak:
     container_name: keycloak
-    image: camunda/keycloak:quay-26@sha256:72f3630dfb4cee43107327ab4ce6fe812be06fea7f5f4b047c3aba09c7017390
+    image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
     command: [ start ]
     ports:
       - "18080:8080"
@@ -81,6 +82,12 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
+      # The camunda/keycloak:quay-26 image ships an HTTP/2 codec that throws
+      # NoSuchMethodError on h2c upgrade (Netty version mismatch). The JDK 21
+      # HttpClient used by the Identity SDK negotiates HTTP/2 by default, hits
+      # the bug, and the token-exchange request hangs forever. Forcing HTTP/1.1
+      # on the inbound side avoids the broken code path.
+      JAVA_OPTS_APPEND: "-Dquarkus.http.http2=false"
     healthcheck:
       test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
       interval: 30s
@@ -105,7 +112,7 @@ services:
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
-      KEYCLOAK_USERS_0_ROLES_0: "Identity"
+      KEYCLOAK_USERS_0_ROLES_0: "ManagementIdentity"
       KEYCLOAK_USERS_0_ROLES_1: "Optimize"
     networks:
       - identity-network
@@ -119,8 +126,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - action.destructive_requires_name=false
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g -XX:UseSVE=0
-      - CLI_JAVA_OPTS=-XX:UseSVE=0
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g -XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+      - CLI_JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
     ulimits:
       memlock:
         soft: -1
@@ -138,69 +145,37 @@ services:
       retries: 3
     networks:
       - optimize
-  zeebe:
+  camunda:
+    image: camunda/camunda:latest
+    container_name: camunda
     profiles: ["", "elasticsearch"]
-    image: camunda/zeebe:latest
-    container_name: zeebe
+    depends_on:
+      - elasticsearch
     environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - "JAVA_OPTS=-XX:UseSVE=0"
+      SPRING_PROFILES_ACTIVE: broker,operate,tasklist,consolidated-auth,dev-data
+      CAMUNDA_SECURITY_AUTHENTICATION_METHOD: basic
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: "false"
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: "true"
+      CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED: "false"
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
+      CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+      JAVA_TOOL_OPTIONS: "-Xms1g -Xmx2g"
+      # --- Secondary storage (Elasticsearch) ---
+      CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: elasticsearch
+      CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL: http://elasticsearch:9200
+      JAVA_OPTS: "-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0"
     ports:
-      - "26500:26500"
-      - "9600:9600"
+      - "26500:26500"  # gRPC gateway
+      - "9600:9600"    # broker monitoring
+      - "8080:8080"    # webapps + REST API
     restart: always
     volumes:
-      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
-    depends_on:
-      - elasticsearch
+      - ./zeebe-application.yml:/usr/local/camunda/config/application.yaml
     networks:
       - optimize
-  tasklist:
-    profiles: ["", "elasticsearch"]
-    container_name: tasklist
-    image: camunda/tasklist:latest
-    ports:
-      - "8082:8080"
-    environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
-      - spring.profiles.active=dev,dev-data,auth
-      - JAVA_OPTS=-XX:UseSVE=0
-    depends_on:
-      - elasticsearch
-      - zeebe
-    networks:
-      - optimize
-    restart: always
-  # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
-  operate:
-    profiles: ["", "elasticsearch"]
-    image: camunda/operate:latest
-    container_name: operate
-    environment:
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
-      - JAVA_OPTS=-XX:UseSVE=0
-    ports:
-      - "8080:8080"
-    depends_on:
-      - elasticsearch
-      - zeebe
-    networks:
-      - optimize
-    restart: always
   opensearch:
     image: opensearchproject/opensearch:${OS_VERSION:-2.19.4}
     profiles: [ "opensearch" ]
@@ -222,8 +197,8 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9200:9200
-      - 9305:9300
+      - "9200:9200"
+      - "9300:9300"
     restart: always
     cpu_count: 4
     mem_limit: 2g
@@ -234,71 +209,42 @@ services:
       retries: 5
     networks:
       - optimize
-  zeebe-opensearch:
+  camunda-opensearch:
+    image: camunda/camunda:latest
+    container_name: camunda-opensearch
     profiles: [ "opensearch" ]
-    container_name: zeebe-opensearch
-    image: camunda/zeebe:latest
+    depends_on:
+      - opensearch
     environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-      - DATABASE_URL=http://opensearch
-      - DATABASE_PORT=9200
+      SPRING_PROFILES_ACTIVE: broker,operate,tasklist,consolidated-auth,dev-data
+      CAMUNDA_SECURITY_AUTHENTICATION_METHOD: basic
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: "false"
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: "true"
+      CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED: "false"
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
+      CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+      JAVA_TOOL_OPTIONS: "-Xms1g -Xmx2g"
+      # --- Secondary storage (OpenSearch) ---
+      CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: opensearch
+      CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL: http://opensearch:9200
+      # Vars consumed by the mounted application.yaml so the legacy Optimize
+      # exporter targets OpenSearch (zeebe-record-* indices for Optimize import).
+      DATABASE_URL: http://opensearch
+      DATABASE_PORT: "9200"
+      DATABASE_TYPE: opensearch
+      ZEEBE_EXPORTER_CLASS_NAME: io.camunda.zeebe.exporter.opensearch.OpensearchExporter
     ports:
-      - 26500:26500
-      - 8000:8000
+      - "26500:26500"
+      - "9600:9600"
+      - "8080:8080"
     restart: always
     volumes:
-      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
-    depends_on:
-      - opensearch
+      - ./zeebe-application.yml:/usr/local/camunda/config/application.yaml
     networks:
       - optimize
-  operate-opensearch:
-    profiles: [ "opensearch" ]
-    image: camunda/operate:latest
-    container_name: operate-opensearch
-    environment:
-      - SERVER_PORT=8080
-      - LOGGING_LEVEL_IO_CAMUNDA_OPERATE=INFO
-      - CAMUNDA_OPERATE_DATABASE=opensearch
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
-      - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
-    ports:
-      - 8080:8080
-    depends_on:
-      - opensearch
-      - zeebe-opensearch
-    networks:
-      - optimize
-    restart: always
-  tasklist-opensearch:
-    profiles: [ "opensearch" ]
-    container_name: tasklist-opensearch
-    image: camunda/tasklist:latest
-    ports:
-      - "8082:8080"
-    environment:
-      - camunda.tasklist.opensearch.url=http://opensearch:9200
-      - camunda.tasklist.zeebeOpensearch.url=http://opensearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe-opensearch:26500
-      - spring.profiles.active=dev,dev-data,auth
-      - camunda.tasklist.database=opensearch
-    depends_on:
-      - opensearch
-      - zeebe-opensearch
-    networks:
-      - optimize
-    restart: always
 networks:
   optimize: { }
   identity-network: { }

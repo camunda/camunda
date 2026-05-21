@@ -7,6 +7,9 @@
  */
 
 import '@testing-library/jest-dom';
+// We had issues with the Mobx store resets executing before the React component unmounts
+// eslint-disable-next-line testing-library/no-manual-cleanup
+import {cleanup} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from 'modules/testing-library';
 import MockDmnJsSharedManager from '__mocks__/dmn-js-shared/lib/base/Manager';
@@ -21,6 +24,8 @@ import MockBpmnJs from '__mocks__/bpmn-js';
 import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
 import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
+
+import {resetAllStores} from 'modules/testUtils/resetAllStores';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -154,6 +159,7 @@ vi.mock('modules/stores/licenseTag', () => ({
   licenseTagStore: {
     fetchLicense: vi.fn(),
     state: {isTagVisible: false},
+    reset: vi.fn(),
   },
 }));
 
@@ -205,8 +211,17 @@ beforeAll(() => {
 
   // temporary fix while jsdom doesn't implement this: https://github.com/jsdom/jsdom/issues/1695
   window.HTMLElement.prototype.scrollIntoView = function () {};
+
+  // jsdom doesn't implement window.prompt, needed by copy-to-clipboard (used by Carbon CodeSnippet)
+  window.prompt = vi.fn();
 });
-afterEach(() => mockServer.resetHandlers());
+afterEach(async () => {
+  cleanup();
+
+  mockServer.resetHandlers();
+
+  resetAllStores();
+});
 afterAll(() => mockServer.close());
 beforeEach(async () => {
   vi.stubEnv('TZ', 'UTC');

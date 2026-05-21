@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -28,14 +29,12 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -64,9 +63,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -136,9 +133,11 @@ public final class SystemContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final NodeIdProvider nodeIdProvider;
+  private final List<String> physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
@@ -153,9 +152,11 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final NodeIdProvider nodeIdProvider,
+      final List<String> physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -167,41 +168,14 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider =
+        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.nodeIdProvider = nodeIdProvider;
+    this.physicalTenantIds = List.copyOf(physicalTenantIds);
     globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
-  }
-
-  @VisibleForTesting
-  public SystemContext(
-      final BrokerCfg brokerCfg,
-      final ActorScheduler scheduler,
-      final AtomixCluster cluster,
-      final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        brokerCfg,
-        null,
-        scheduler,
-        cluster,
-        brokerClient,
-        new SimpleMeterRegistry(),
-        securityConfiguration,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        searchClientsProxy,
-        brokerRequestAuthorizationConverter,
-        nodeIdProvider);
   }
 
   private void initSystemContext() {
@@ -304,10 +278,6 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
         .ifPresent(this::validateListenersConfig);
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -684,10 +654,6 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
   }
 
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
-  }
-
   private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
     if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
       return;
@@ -750,6 +716,10 @@ public final class SystemContext {
     return passwordEncoder;
   }
 
+  public OidcClaimsProvider getOidcClaimsProvider() {
+    return oidcClaimsProvider;
+  }
+
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
   }
@@ -764,5 +734,9 @@ public final class SystemContext {
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

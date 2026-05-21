@@ -10,15 +10,13 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -34,21 +32,14 @@ public class TestStandaloneBackupManager
 
   public TestStandaloneBackupManager() {
     super(
-        // Unified Configuration classes
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class,
-        // ---
+        UnifiedConfigurationModule.class,
         BackupManagerConfiguration.class,
         StandaloneBackupManager.class,
-        NativeSearchClientsConfiguration.class);
+        NativeSearchClientsConfiguration.class,
+        PhysicalTenantSearchClientReadersConfiguration.class,
+        SearchClientReaderConfiguration.class);
 
     unifiedConfig = new Camunda();
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class);
   }
 
   @Override
@@ -90,6 +81,9 @@ public class TestStandaloneBackupManager
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
+    // Refreshable so that fields cleared between stop/start don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
@@ -100,15 +94,12 @@ public class TestStandaloneBackupManager
 
   /**
    * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the property camunda.data.secondary-storage.type is set to ensure that
-   * ConditionalOnSecondaryStorageType behaves as expected
    *
    * @param type the secondary storage type
    * @return itself for chaining
    */
   public TestStandaloneBackupManager withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 }

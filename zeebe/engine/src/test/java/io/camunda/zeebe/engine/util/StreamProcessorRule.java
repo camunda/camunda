@@ -34,7 +34,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -459,13 +458,6 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       try {
         LOG.debug("Clean up test files on path {}", root);
         FileUtil.deleteFolder(root.toPath());
-
-        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
-        if (allocatedMemoryInKb > 0) {
-          LOG.warn(
-              "There are still allocated direct buffers of a total size of {}kB.",
-              allocatedMemoryInKb);
-        }
       } catch (final IOException e) {
         LOG.error("Error on deleting root test folder", e);
       }

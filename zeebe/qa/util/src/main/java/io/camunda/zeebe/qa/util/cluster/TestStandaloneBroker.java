@@ -17,24 +17,15 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
-import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.container.ExtendedConfigurationBuilder;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -72,28 +63,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     super(
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        NodeIdProviderConfiguration.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class);
+        NodeIdProviderConfiguration.class);
 
     unifiedConfig = new Camunda();
 
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
 
-    StandaloneCamunda.getDefaultProperties(false)
-        .forEach(
-            (key, value) -> {
-              withProperty(key, value);
-            });
+    StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
     // this is required to prevent default spring boot 4.0 security setup to kick in
     withProperty(
@@ -101,8 +78,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
             + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
 
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
+    withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -138,7 +114,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(
         AuthenticationProperties.API_UNPROTECTED,
-        securityConfig.getAuthentication().getUnprotectedApi());
+        securityConfig.getAuthentication().isUnprotectedApi());
     withProperty(
         "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
@@ -184,6 +160,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty(
         "zeebe.broker.gateway.enable",
         property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
+    // so every withClusterConfig/withDataConfig/... call made up to now is captured. Refreshable
+    // so that fields cleared between stop/start (e.g. an exporter removed) don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -359,8 +339,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /**
    * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the environment variable camunda.data.secondary-storage.type is set to ensure
-   * that ConditionalOnSecondaryStorageType behaves as expected
    *
    * @param type the secondary storage type
    * @return itself for chaining
@@ -368,7 +346,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public TestStandaloneBroker withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 

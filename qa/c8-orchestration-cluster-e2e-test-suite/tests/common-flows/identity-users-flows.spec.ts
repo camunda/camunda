@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
@@ -157,11 +157,18 @@ test.describe('Identity User Flows', () => {
 
     await test.step(`Grant Authorizations to user for all applications`, async () => {
       await identityAuthorizationsPage.navigateToAuthorizations();
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      // /admin/authorizations auto-redirects to the default tab (e.g.
+      // /admin/authorizations/AUDIT_LOG), so match the base path.
+      await expect(page).toHaveURL(
+        new RegExp(`${relativizePath(Paths.authorizations())}(/|$)`),
+      );
 
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: testUser.name,
+        // The owner search dropdown (#51442) filters by `username` and
+        // displays the username as the option title; passing `testUser.name`
+        // returned no matches.
+        ownerId: testUser.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
@@ -197,9 +204,21 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step(`Logout, login with demo and delete the created authorization`, async () => {
+      // The previous step's `page.goto(/tasklist)` doesn't share the testUser
+      // session with the /admin app, so by the time we get here the page is
+      // actually on /tasklist/login (verifyAccess passes because it only
+      // checks that the URL contains "tasklist"). That means there's no
+      // Settings/Log out header to click — `identityHeader.logout()` would
+      // time out. Clearing cookies reaches the logged-out state regardless of
+      // whether the prior step left us authenticated.
+      await page.context().clearCookies();
       await identityAuthorizationsPage.navigateToAuthorizations();
       await loginPage.login('demo', 'demo');
-      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      // /admin/authorizations auto-redirects to the default tab (e.g.
+      // /admin/authorizations/AUDIT_LOG), so match the base path.
+      await expect(page).toHaveURL(
+        new RegExp(`${relativizePath(Paths.authorizations())}(/|$)`),
+      );
 
       await identityAuthorizationsPage.selectResourceTypeTab('Component');
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
@@ -386,8 +405,10 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view process instances in Operate', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
       await operateHomePage.clickProcessesTab();
+      // Newly-assigned group permissions take time to propagate to the
+      // user's visible instance list; 30s was tight on the May 20 nightly.
       await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -395,7 +416,7 @@ test.describe('Identity User Flows', () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await expect(page.getByText('identityProcess').first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
   });

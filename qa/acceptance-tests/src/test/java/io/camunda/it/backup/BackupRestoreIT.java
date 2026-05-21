@@ -8,121 +8,75 @@
 package io.camunda.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import feign.FeignException.NotFound;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.it.document.DocumentClient;
-import io.camunda.management.backups.StateCode;
-import io.camunda.management.backups.TakeBackupHistoryResponse;
-import io.camunda.qa.util.cluster.HistoryBackupClient;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.multidb.MultiDbConfigurator;
+import io.camunda.it.backup.data.DataGenerator;
+import io.camunda.it.backup.data.OperateDataGenerator;
+import io.camunda.it.backup.data.TasklistDataGenerator;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.webapps.backup.BackupService.SnapshotRequest;
-import io.camunda.webapps.backup.BackupStateDto;
-import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.repository.SnapshotNameProvider;
-import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
-import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
-import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 import org.agrona.CloseHelper;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * This test is on purpose no {@link io.camunda.qa.util.multidb.MultiDbTest}, as we have special
+ * End-to-end backup and restore test covering Zeebe, Operate, and Tasklist data in a single
+ * backup/restore cycle. Runs against all supported search backends (Elasticsearch and OpenSearch).
+ *
+ * <p>This test is on purpose no {@link io.camunda.qa.util.multidb.MultiDbTest}, as we have special
  * requirements on ES and OS, and need direct access.
  *
  * <ul>
  *   <li>We need to configure ES/OS to allow local repositories.
  *   <li>We need to create snapshot repositories with specific ES/OS clients.
- *   <li>We need to create snapshots of the Zeebe exporter indices
+ *   <li>We need to create snapshots of the Zeebe exporter indices.
  * </ul>
  *
  * Furthermore, this test will not apply to RDBMS.
  */
 @Testcontainers
 @ZeebeIntegration
-public class BackupRestoreIT {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreIT.class);
+public class BackupRestoreIT extends AbstractBackupRestoreIT {
+
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
   private static final String PROCESS_ID = "backup-process";
-  private static final long BACKUP_ID = 3L;
-  private static final int PROCESS_INSTANCE_NUMBER = 10;
+  private static final long BACKUP_ID = 1L;
+  private static final Duration CLIENT_TIMEOUT = Duration.ofSeconds(60);
+  private static final Duration GENERATOR_TIMEOUT = Duration.ofSeconds(500);
 
-  private static final Duration TIMEOUT = Duration.ofSeconds(500);
-  private static final SnapshotNameProvider SNAPSHOT_NAME_PROVIDER =
-      new ZeebeSnapshotNameProvider();
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   @AutoClose private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
-  protected CamundaClient camundaClient;
-  protected ExportingActuator exportingActuator;
-  protected BackupActuator backupActuator;
 
   @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
-
-  protected DocumentClient webappsDBClient;
 
   @RegisterExtension
   @SuppressWarnings("unused")
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("azurite", AZURITE_CONTAINER));
 
-  private AzureBackupStore store;
-  private final String containerName =
-      RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
-  // cannot be a @Container because it's initialized in setup()
-  private GenericContainer<?> searchContainer;
-  private DataGenerator generator;
-  private HistoryBackupClient historyBackupClient;
-  private MultiDbConfigurator configurator;
-  private WorkingDirectory workingDirectory;
-
   @BeforeAll
   public static void beforeAll() {
     // Non-snapshot version
-    VersionUtil.overrideVersionForTesting("8.10.0");
+    VersionUtil.overridePrerelease();
   }
 
   @AfterAll
@@ -130,267 +84,90 @@ public class BackupRestoreIT {
     VersionUtil.resetVersionForTesting();
   }
 
-  @AfterEach
-  public void tearDown() {
-    CloseHelper.quietCloseAll(webappsDBClient, camundaClient, generator, searchContainer);
-  }
-
-  private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneApplication =
-        new TestCamundaApplication()
-            .withAuthenticationMethod(AuthenticationMethod.BASIC)
-            .withUnauthenticatedAccess();
-    configurator = new MultiDbConfigurator(testStandaloneApplication);
-    testStandaloneApplication.withUnifiedConfig(
-        cfg -> configureZeebeBackupStore(cfg, config.databaseType));
-    final String dbUrl;
-    searchContainer =
-        switch (config.databaseType) {
-          case ELASTICSEARCH -> {
-            final var container =
-                TestSearchContainers.createDefeaultElasticsearchContainer()
-                    .withStartupTimeout(Duration.ofMinutes(5))
-                    // location of the repository that will be used for snapshots
-                    .withEnv("path.repo", "~/");
-            container.start();
-            dbUrl = "http://" + container.getHttpHostAddress();
-
-            // configure the app
-            configurator.configureElasticsearchSupportIncludingOldExporter(dbUrl, INDEX_PREFIX);
-            yield container;
-          }
-          case OPENSEARCH -> {
-            final var container =
-                TestSearchContainers.createDefaultOpensearchContainer()
-                    .withStartupTimeout(Duration.ofMinutes(5))
-                    // location of the repository that will be used for snapshots
-                    .withEnv("path.repo", "~/");
-            container.start();
-            dbUrl = container.getHttpHostAddress();
-            configurator.configureOpenSearchSupportIncludingOldExporter(
-                dbUrl, INDEX_PREFIX, "admin", "admin");
-            yield container;
-          }
-
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported database type: " + config.databaseType);
-        };
-
-    testStandaloneApplication.start().awaitCompleteTopology();
-
-    camundaClient =
-        testStandaloneApplication
-            .newClientBuilder()
-            .defaultRequestTimeout(Duration.ofSeconds(1))
-            .build();
-    exportingActuator = ExportingActuator.of(testStandaloneApplication);
-    backupActuator = BackupActuator.of(testStandaloneApplication);
-
-    historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
-    webappsDBClient = DocumentClient.create(dbUrl, config.databaseType, EXECUTOR);
-    webappsDBClient.createRepository(REPOSITORY_NAME);
-    generator = new DataGenerator(camundaClient, PROCESS_ID, TIMEOUT);
-    workingDirectory = testStandaloneApplication.bean(WorkingDirectory.class);
-  }
-
-  public static Stream<BackupRestoreTestConfig> sources() {
-    final var backupRestoreConfigs = new ArrayList<BackupRestoreTestConfig>();
-    for (final var db : List.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH)) {
-      backupRestoreConfigs.add(new BackupRestoreTestConfig(db, "bucket"));
-    }
-    return backupRestoreConfigs.stream();
-  }
-
   @ParameterizedTest
-  @MethodSource(value = {"sources"})
-  public void shouldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
-      throws Exception {
-    // given
-    setup(config);
-
-    testStandaloneApplication.awaitCompleteTopology();
-    // generate completed processes
-    generator.generateCompletedProcesses(PROCESS_INSTANCE_NUMBER);
-
-    // generate some processes, but do not complete them,
-    // we will complete them after the restore
-    generator.generateUncompletedProcesses(PROCESS_INSTANCE_NUMBER);
-
-    // BACKUP PROCEDURE
-    // Zeebe is soft-paused
-    exportingActuator.softPause();
-
-    final var snapshots = takeHistoryBackup();
-    takeZeebeBackup();
-    exportingActuator.resume();
-
-    // when
-    // if we stop all apps and restart elasticsearch
-    testStandaloneApplication.stop();
-    // Zeebe's folder is deleted by ZeebeIntegration automatically when the application is stop()
-
-    webappsDBClient.deleteAllIndices(INDEX_PREFIX);
-    // also delete index templates, to test the case restore is done in an empty ES/OS cluster
-    webappsDBClient.deleteAllIndexTemplates(INDEX_PREFIX);
-
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty();
-              assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isEmpty();
-            });
-
-    // RESTORE PROCEDURE
-    webappsDBClient.restore(REPOSITORY_NAME, snapshots);
-    restoreZeebe();
-
-    // Since the unified configuration does not contain the full data directory path, we set the
-    // working directory so that the path can be properly constructed during application startup.
-    testStandaloneApplication.withBean(
-        "workingDirectory", workingDirectory, WorkingDirectory.class);
-
-    testStandaloneApplication.start();
-
-    generator.verifyAllExported(ProcessInstanceState.ACTIVE);
-    // complete the processes that were not terminated before stopping the apps
-    generator.completeProcesses();
-
-    // then
-    generator.verifyAllExported(ProcessInstanceState.COMPLETED);
-    assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isNotEmpty();
+  @MethodSource("supportedDatabases")
+  void shouldBackupAndRestoreAllData(final DatabaseType databaseType) throws Exception {
+    runBackupRestoreForDatabase(databaseType);
   }
 
-  private void configureZeebeBackupStore(final Camunda cfg, final DatabaseType databaseType) {
-    final var backup = cfg.getData().getPrimaryStorage().getBackup();
-    final var azure = backup.getAzure();
-
-    backup.setStore(BackupStoreType.AZURE);
-    azure.setBasePath(containerName);
-    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
-
-    if (databaseType.isElasticSearch()) {
-      cfg.getData()
-          .getSecondaryStorage()
-          .getElasticsearch()
-          .getBackup()
-          .setRepositoryName(REPOSITORY_NAME);
-    } else {
-      cfg.getData()
-          .getSecondaryStorage()
-          .getOpensearch()
-          .getBackup()
-          .setRepositoryName(REPOSITORY_NAME);
-    }
-  }
-
-  private void restoreZeebe() {
-    final var unifiedRestoreConfig = new Camunda();
-    final var backup = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
-
-    backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE); // We are configuring Azure always
-    backup.getAzure().setBasePath(containerName);
-    backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
-
-    final var brokerCfg = testStandaloneApplication.unifiedConfig();
-    unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
-    unifiedRestoreConfig.getCluster().setPartitionCount(brokerCfg.getCluster().getPartitionCount());
-    // The directory is constructed using the broker’s working directory because the unified
-    // configuration does not contain the full path
-    unifiedRestoreConfig
-        .getData()
-        .getPrimaryStorage()
-        .setDirectory(
-            ConfigurationUtil.toAbsolutePath(
-                brokerCfg.getData().getPrimaryStorage().getDirectory(),
-                workingDirectory.path().toString()));
-    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getSize());
-
-    try (final var restoreApp = new TestRestoreApp(unifiedRestoreConfig).withBackupId(BACKUP_ID)) {
-      assertThatNoException().isThrownBy(restoreApp::start);
-    }
-  }
-
-  private List<String> takeHistoryBackup() {
-    final var takeResponse = historyBackupClient.takeBackup(BACKUP_ID);
-    assertThat(takeResponse)
-        .extracting(TakeBackupHistoryResponse::getScheduledSnapshots)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .isNotEmpty();
-    final var snapshots = takeResponse.getScheduledSnapshots();
-
-    Awaitility.await("Webapps Backup completed")
-        .atMost(Duration.ofSeconds(60))
-        .untilAsserted(
-            () -> {
-              try {
-                final var backupResponse = historyBackupClient.getBackup(BACKUP_ID);
-                assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.COMPLETED);
-                assertThat(backupResponse.getDetails())
-                    .allMatch(d -> d.getState().equals("SUCCESS"));
-              } catch (final NotFound e) {
-                throw new AssertionError("Backup not found:", e);
-              }
-            });
-    // verify that getBackups API returns correctly with all flags
-    final var flags = List.of(true, false);
-    for (final var verbose : flags) {
-      assertThat(historyBackupClient.getBackups(verbose, BACKUP_ID + "*"))
-          .allSatisfy(
-              state -> {
-                assertThat(state.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              });
-    }
-    return snapshots;
-  }
-
-  private void takeZeebeBackup() {
-    final var metadata = new Metadata(BACKUP_ID, "current", 1, 1);
-    final List<String> indices;
-    try {
-      indices = webappsDBClient.cat(configurator.zeebeIndexPrefix());
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    assertThat(indices).isNotEmpty();
-
-    final var zeebeIndicesBackupStatus = new AtomicReference<String>();
-
-    final var backupRepository =
-        webappsDBClient.zeebeBackupRepository(REPOSITORY_NAME, SNAPSHOT_NAME_PROVIDER);
-
-    backupRepository.executeSnapshotting(
-        new SnapshotRequest(
+  private void runBackupRestoreForDatabase(final DatabaseType databaseType) throws Exception {
+    testStandaloneApplication =
+        super.setup(
+            databaseType,
             REPOSITORY_NAME,
-            SNAPSHOT_NAME_PROVIDER.getSnapshotName(metadata),
-            new SnapshotIndexCollection(indices, List.of()),
-            metadata),
-        () -> {
-          zeebeIndicesBackupStatus.set("COMPLETED");
-          LOGGER.info("Backup of zeebe ES/OS records completed");
-        },
-        () -> {
-          zeebeIndicesBackupStatus.set("FAILURE");
-          LOGGER.error("Failed to take backup of zeeebe ES/OS records");
-        });
-    Awaitility.await("zeebe indices have been backed up")
-        .untilAsserted(() -> assertThat(zeebeIndicesBackupStatus.get()).isNotNull());
-    assertThat(zeebeIndicesBackupStatus.get()).isEqualTo("COMPLETED");
+            INDEX_PREFIX,
+            CLIENT_TIMEOUT,
+            AZURITE_CONTAINER,
+            EXECUTOR);
 
-    backupActuator.take(BACKUP_ID);
-    Awaitility.await("Zeebe backup completed")
-        .untilAsserted(
-            () -> {
-              try {
-                final var status = backupActuator.status(BACKUP_ID);
-                assertThat(status.getState()).isEqualTo(StateCode.COMPLETED);
-                assertThat(status.getDetails())
-                    .allSatisfy(d -> assertThat(d.getState()).isEqualTo(StateCode.COMPLETED));
-              } catch (final Exception e) {
-                throw new AssertionError("Backup not found", e);
-              }
-            });
+    final var operateGenerator = new OperateDataGenerator(camundaClient);
+    final var tasklistGenerator = new TasklistDataGenerator(camundaClient);
+    final var dataGenerator = new DataGenerator(camundaClient, PROCESS_ID, GENERATOR_TIMEOUT);
+
+    try {
+      testStandaloneApplication.awaitCompleteTopology();
+
+      // given: create initial data for all components
+      operateGenerator.createData();
+      operateGenerator.assertData();
+      tasklistGenerator.createData();
+      tasklistGenerator.assertData();
+      dataGenerator.createData();
+      dataGenerator.assertData();
+
+      // backup
+      exportingActuator.softPause();
+      final List<String> snapshots =
+          takeHistoryBackup(BACKUP_ID, "All components backup completed");
+      takeZeebeBackup(BACKUP_ID, REPOSITORY_NAME);
+      exportingActuator.resume();
+
+      // when: mutate state after the backup to prove restore reverts it
+      operateGenerator.changeData();
+      operateGenerator.assertDataAfterChange();
+      tasklistGenerator.changeData();
+      tasklistGenerator.assertDataAfterChange();
+
+      testStandaloneApplication.stop();
+      webappsDBClient.deleteAllIndices(INDEX_PREFIX);
+      webappsDBClient.deleteAllIndexTemplates(INDEX_PREFIX);
+
+      Awaitility.await("indices and templates deleted")
+          .untilAsserted(
+              () -> {
+                assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty();
+                assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isEmpty();
+              });
+
+      webappsDBClient.restore(REPOSITORY_NAME, snapshots);
+      restoreZeebe(BACKUP_ID, AZURITE_CONTAINER);
+
+      testStandaloneApplication.withBean(
+          "workingDirectory", workingDirectory, WorkingDirectory.class);
+      testStandaloneApplication.start();
+      refreshCamundaClient(
+          CLIENT_TIMEOUT,
+          client -> {
+            operateGenerator.setCamundaClient(client);
+            tasklistGenerator.setCamundaClient(client);
+            dataGenerator.setCamundaClient(client);
+          });
+
+      // then: all components are restored to their pre-backup state
+      operateGenerator.assertData();
+      tasklistGenerator.assertData();
+      dataGenerator.assertData();
+      assertThat(webappsDBClient.getIndexTemplates(INDEX_PREFIX)).isNotEmpty();
+
+    } finally {
+      CloseHelper.quietCloseAll(
+          webappsDBClient,
+          camundaClient,
+          operateGenerator,
+          tasklistGenerator,
+          dataGenerator,
+          searchContainer,
+          testStandaloneApplication);
+    }
   }
-
-  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {}
 }

@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 public class MessageSubscriptionEntity
@@ -52,6 +53,24 @@ public class MessageSubscriptionEntity
    * @deprecated since 8.9
    */
   @BeforeVersion880 @Deprecated private EventSourceType eventSourceType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String processDefinitionName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer processDefinitionVersion;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Map<String, String> toolProperties;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String messageSubscriptionType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String toolName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String inboundConnectorType;
 
   /**
    * @deprecated since 8.9
@@ -200,6 +219,62 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+    return this;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
+  }
+
+  public MessageSubscriptionEntity setToolProperties(final Map<String, String> toolProperties) {
+    this.toolProperties = toolProperties;
+    return this;
+  }
+
+  public String getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  public MessageSubscriptionEntity setMessageSubscriptionType(
+      final String messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
+    return this;
+  }
+
+  public String getToolName() {
+    return toolName;
+  }
+
+  public MessageSubscriptionEntity setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public MessageSubscriptionEntity setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -288,7 +363,13 @@ public class MessageSubscriptionEntity
         positionIncident,
         positionProcessMessageSubscription,
         positionJob,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        processDefinitionName,
+        processDefinitionVersion,
+        toolProperties,
+        messageSubscriptionType,
+        toolName,
+        inboundConnectorType);
   }
 
   @Override
@@ -318,6 +399,12 @@ public class MessageSubscriptionEntity
         && Objects.equals(
             positionProcessMessageSubscription, that.positionProcessMessageSubscription)
         && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(processDefinitionName, that.processDefinitionName)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(toolProperties, that.toolProperties)
+        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
+        && Objects.equals(toolName, that.toolName)
+        && Objects.equals(inboundConnectorType, that.inboundConnectorType);
   }
 }

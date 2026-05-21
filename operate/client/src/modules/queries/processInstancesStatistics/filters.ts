@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const getSelectedProcessInstancesFilter = () => {
-  return processInstancesSelectionStore.checkedProcessInstanceIds.length > 0
+  return processInstancesSelectionStore.checkedIds.length > 0
     ? {
-        $in: processInstancesSelectionStore.checkedProcessInstanceIds,
+        $in: processInstancesSelectionStore.checkedIds,
       }
     : undefined;
 };

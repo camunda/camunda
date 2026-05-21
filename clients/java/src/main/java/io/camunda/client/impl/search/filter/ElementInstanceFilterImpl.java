@@ -20,8 +20,10 @@ import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
@@ -65,13 +67,27 @@ public class ElementInstanceFilterImpl
 
   @Override
   public ElementInstanceFilter elementId(final String value) {
-    filter.setElementId(value);
+    return elementId(b -> b.eq(value));
+  }
+
+  @Override
+  public ElementInstanceFilter elementId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setElementId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public ElementInstanceFilter elementName(final String value) {
-    filter.setElementName(value);
+    return elementName(b -> b.eq(value));
+  }
+
+  @Override
+  public ElementInstanceFilter elementName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setElementName(provideSearchRequestProperty(property));
     return this;
   }
 

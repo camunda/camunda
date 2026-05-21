@@ -146,11 +146,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-validation</artifactId>
     </dependency>
 
@@ -206,6 +201,11 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-exporter</artifactId>
     </dependency>
 
     <dependency>
@@ -317,6 +317,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
     </dependency>
     <dependency>
@@ -404,6 +409,21 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
     </dependency>
 
     <dependency>
@@ -558,6 +578,11 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
     </dependency>
 
     <!-- Micrometer backend/implementations -->
@@ -722,6 +747,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
     </dependency>
 
     <dependency>
@@ -910,6 +940,9 @@
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8 -Xshare:auto
             ${jvm.module.opens}</extraJvmArguments>
+          <!-- Custom templates add optional @argfile support via config/jvm.options -->
+          <unixScriptTemplate>${project.basedir}/src/main/scripts/unixBinTemplate</unixScriptTemplate>
+          <windowsScriptTemplate>${project.basedir}/src/main/scripts/windowsBinTemplate</windowsScriptTemplate>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
@@ -1040,6 +1073,12 @@
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
+            <!-- Reach dist transitively (compile) via camunda-authentication and operate-webapp;
+                 only EncodedSlashIntegrationIT references them directly. Declaring them here as
+                 test-scope would shadow that transitive compile scope and break spring-boot:start
+                 at runtime (see PR #52064). -->
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1071,12 +1110,23 @@
 
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
+
+            <!-- Analytics Exporter -->
+            <dependency>io.camunda:analytics-exporter</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
+          <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
+               transitively at compile scope via camunda-authentication / operate-webapp. We
+               cannot declare them as test-scope: that would shadow the transitive compile
+               scope and break spring-boot:start at runtime (PR #52064). -->
+          <ignoredUsedUndeclaredDependencies>
+            <dep>org.springframework.security:spring-security-web</dep>
+            <dep>org.springframework.security:spring-security-config</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 
@@ -1133,7 +1183,7 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>9.2.0</version>
+        <version>10.0.0</version>
         <configuration>
           <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>

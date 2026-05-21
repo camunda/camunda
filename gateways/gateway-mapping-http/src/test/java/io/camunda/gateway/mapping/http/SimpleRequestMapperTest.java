@@ -115,8 +115,8 @@ class SimpleRequestMapperTest {
               .runtimeInstructions(
                   List.of(
                       new ProcessInstanceCreationTerminateInstruction()
-                          .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .afterElementId("after-element")
+                          .type("TERMINATE_PROCESS_INSTANCE")));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
@@ -142,8 +142,8 @@ class SimpleRequestMapperTest {
               .runtimeInstructions(
                   List.of(
                       new ProcessInstanceCreationTerminateInstruction()
-                          .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .afterElementId("after-element")
+                          .type("TERMINATE_PROCESS_INSTANCE")));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
@@ -189,8 +189,8 @@ class SimpleRequestMapperTest {
               .runtimeInstructions(
                   List.of(
                       new ProcessInstanceCreationTerminateInstruction()
-                          .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .afterElementId("after-element")
+                          .type("TERMINATE_PROCESS_INSTANCE")));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =

@@ -34,10 +34,13 @@ function beautifyTruncatedJSON(value: string) {
     // when closing brackets appear inline (e.g. `"a": []`).
     let pos = pretty.length;
     for (let i = 0; i < collectionDepth; i++) {
-      while (pos > 0 && /\s/.test(pretty[pos - 1])) {
+      while (pos > 0 && /\s/.test(pretty[pos - 1] ?? '')) {
         pos--;
       }
-      if (pos > 0 && (pretty[pos - 1] === ']' || pretty[pos - 1] === '}')) {
+      if (
+        pos > 0 &&
+        ((pretty[pos - 1] ?? '') === ']' || (pretty[pos - 1] ?? '') === '}')
+      ) {
         pos--;
       } else {
         break;

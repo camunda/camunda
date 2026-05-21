@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeVersionTag;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -31,9 +31,12 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
@@ -50,6 +53,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
+  private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -60,7 +66,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final boolean enableStraightThroughProcessingLoopDetector,
       final ValidationConfig config,
       final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     bpmnTransformer =
         BpmnFactory.createTransformer(
             clock, expressionLanguageMetrics, config.maxNameFieldLength());
@@ -71,56 +78,85 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     validator =
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+    elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
+    this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public boolean canTransform(final DeploymentResource resource) {
+    final var resourceName = resource.getResourceName();
+    // .bpmn files must always be handled by this transformer (even if invalid)
+    if (resourceName.endsWith(".bpmn")) {
+      return true;
+    }
+    // .xml files: try to parse as BPMN and only handle if it's valid BPMN.
+    // Non-BPMN .xml files fall through to the default transformer (generic resource).
+    if (resourceName.endsWith(".xml")) {
+      final var parsed = readProcessDefinition(resource);
+      final var isValid = parsed.isRight();
+      if (isValid) {
+        parsedModels.put(resource, parsed.get());
+      }
+      return isValid;
+    }
+    return false;
+  }
 
-    return readProcessDefinition(resource)
-        .flatMap(
-            definition -> {
-              final String validationError = validator.validate(definition);
+  @Override
+  public void reset() {
+    parsedModels.clear();
+  }
 
-              if (validationError == null) {
-                // transform the model to avoid unexpected failures that are not covered by the
-                // validator
-                final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+  @VisibleForTesting
+  boolean hasParsedModelFor(final DeploymentResource resource) {
+    return parsedModels.containsKey(resource);
+  }
 
-                return checkForDuplicateBpmnId(definition, resource, deployment)
-                    .flatMap(
-                        ok ->
-                            UnsupportedMultiTenantFeaturesValidator.validate(
-                                resource, executableProcesses, deployment.getTenantId()))
-                    .flatMap(
-                        ok -> {
-                          if (enableStraightThroughProcessingLoopDetector) {
-                            return StraightThroughProcessingLoopValidator.validate(
-                                resource, executableProcesses);
-                          }
-                          return Either.right(null);
-                        })
-                    .map(
-                        ok -> {
-                          createProcessMetadata(deployment, resource, definition, context);
-                          return null;
-                        });
+  @Override
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
 
-              } else {
-                final var failureMessage =
-                    String.format("'%s': %s", resource.getResourceName(), validationError);
-                return Either.left(new Failure(failureMessage));
-              }
-            });
+    final var parsedModel = parsedModels.remove(resource);
+    final Either<Failure, BpmnModelInstance> definitionResult =
+        parsedModel != null ? Either.right(parsedModel) : readProcessDefinition(resource);
+
+    return definitionResult.flatMap(
+        definition -> {
+          final String validationError = validator.validate(definition);
+
+          if (validationError == null) {
+            // transform the model to avoid unexpected failures that are not covered by the
+            // validator
+            final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+
+            return UnsupportedMultiTenantFeaturesValidator.validate(
+                    resource, executableProcesses, deployment.getTenantId())
+                .flatMap(
+                    ok -> {
+                      if (enableStraightThroughProcessingLoopDetector) {
+                        return StraightThroughProcessingLoopValidator.validate(
+                            resource, executableProcesses);
+                      }
+                      return Either.right(null);
+                    })
+                .map(
+                    ok -> {
+                      final var elements =
+                          new BpmnElementsWithDeploymentBinding(resource.getResourceName());
+                      createProcessMetadata(deployment, resource, definition, elements);
+                      return (DeploymentResourceContext) elements;
+                    });
+
+          } else {
+            final var failureMessage =
+                String.format("'%s': %s", resource.getResourceName(), validationError);
+            return Either.left(new Failure(failureMessage));
+          }
+        });
   }
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.processesMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
@@ -139,10 +175,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .setDuplicate(false)
                     .setDeploymentKey(deployment.getDeploymentKey());
               }
-              stateWriter.appendFollowUpEvent(
-                  key,
-                  ProcessIntent.CREATED,
-                  new ProcessRecord().wrap(metadata, resource.getResource()));
+              final var processRecord = new ProcessRecord().wrap(metadata, resource.getResource());
+              stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
+              processDefinitionMetrics.processDefinitionDeployed(
+                  key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
   }
 
@@ -153,42 +189,18 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
       return Either.right(Bpmn.readModelFromStream(resourceStream));
     } catch (final ModelParseException e) {
+      final var improvedMessage = elementOrderErrorTransformer.transform(e);
       final var failureMessage =
-          String.format(
-              "'%s': %s", deploymentResource.getResourceName(), e.getCause().getMessage());
+          String.format("'%s': %s", deploymentResource.getResourceName(), improvedMessage);
       return Either.left(new Failure(failureMessage));
     }
-  }
-
-  private Either<Failure, ?> checkForDuplicateBpmnId(
-      final BpmnModelInstance process,
-      final DeploymentResource resource,
-      final DeploymentRecord record) {
-
-    final var bpmnProcessIds =
-        process.getDefinitions().getChildElementsByType(Process.class).stream()
-            .map(BaseElement::getId)
-            .toList();
-
-    return record.getProcessesMetadata().stream()
-        .filter(metadata -> bpmnProcessIds.contains(metadata.getBpmnProcessId()))
-        .findFirst()
-        .map(
-            previousResource -> {
-              final var failureMessage =
-                  String.format(
-                      "Duplicated process id in resources '%s' and '%s'",
-                      previousResource.getResourceName(), resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(Either.right(null));
   }
 
   private void createProcessMetadata(
       final DeploymentRecord deploymentEvent,
       final DeploymentResource deploymentResource,
       final BpmnModelInstance definition,
-      final DeploymentResourceContext context) {
+      final BpmnElementsWithDeploymentBinding elements) {
     for (final Process process : getExecutableProcesses(definition)) {
       final String bpmnProcessId = process.getId();
       final String tenantId = deploymentEvent.getTenantId();
@@ -225,9 +237,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             .setDeploymentKey(deploymentEvent.getDeploymentKey());
       }
 
-      if (context instanceof final BpmnElementsWithDeploymentBinding elements) {
-        elements.addFromProcess(process);
-      }
+      elements.addFromProcess(process);
     }
   }
 

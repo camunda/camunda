@@ -16,6 +16,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
@@ -37,6 +39,7 @@ const mockMultiInstanceProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 const mockEventSubprocessInstance: ProcessInstance = {
@@ -55,6 +58,7 @@ const mockEventSubprocessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 const mockNestedSubProcessesInstance: ProcessInstance = {
@@ -73,6 +77,7 @@ const mockNestedSubProcessesInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 const mockAdHocSubProcessesInstance: ProcessInstance = {
@@ -91,6 +96,7 @@ const mockAdHocSubProcessesInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 const mockNestedSubProcessInstance: ProcessInstance = {
@@ -109,12 +115,10 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
-const multipleSubprocessesWithOneRunningScopeMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithOneRunningScopeMock = {
   firstLevel: {
     items: [
       {
@@ -357,12 +361,9 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const multipleSubprocessesWithNoRunningScopeMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithNoRunningScopeMock = {
   firstLevel: {
     items: [
       {
@@ -637,12 +638,9 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const adHocNodeElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const adHocNodeElementInstances = {
   level1: {
     items: [
       {
@@ -727,12 +725,9 @@ const adHocNodeElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const eventSubProcessElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const eventSubProcessElementInstances = {
   level1: {
     items: [
       {
@@ -833,12 +828,9 @@ const eventSubProcessElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const multipleSubprocessesWithTwoRunningScopesMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithTwoRunningScopesMock = {
   firstLevel: {
     items: [
       {
@@ -1113,7 +1105,7 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
 const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '111111111111111',
@@ -1131,12 +1123,10 @@ const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
-const adHocSubProcessInnerInstanceElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const adHocSubProcessInnerInstanceElementInstances = {
   level1: {
     items: [
       {
@@ -1214,38 +1204,52 @@ const adHocSubProcessInnerInstanceElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
+} satisfies Record<string, QueryElementInstancesResponseBody>;
+
+const getWrapper = () => {
+  const queryClient = getMockQueryClient();
+
+  const Wrapper = ({children}: {children?: React.ReactNode}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+        instanceHistoryModificationStore.reset();
+      };
+    }, []);
+
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TreeView label={'instance history'} hideLabel>
+                      {children}
+                    </TreeView>
+                    <LocationLog />
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+
+  return Wrapper;
 };
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      modificationsStore.reset();
-      instanceHistoryModificationStore.reset();
-    };
-  });
-
-  return (
-    <ProcessDefinitionKeyContext.Provider value="123">
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-          <Routes>
-            <Route
-              path={Paths.processInstance()}
-              element={
-                <>
-                  <TreeView label={'instance history'} hideLabel>
-                    {children}
-                  </TreeView>
-                  <LocationLog />
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
-    </ProcessDefinitionKeyContext.Provider>
-  );
-};
+async function parseBusinessObjects(xml: string) {
+  const diagramModel = await parseDiagramXML(xml);
+  return {
+    businessObjects: businessObjectsParser({diagramModel}),
+    diagramModel,
+  };
+}
 
 export {
   mockEventSubprocessInstance,
@@ -1260,5 +1264,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
-  Wrapper,
+  parseBusinessObjects,
+  getWrapper,
 };

@@ -11,6 +11,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 
 public class ExporterConfiguration {
@@ -30,6 +31,7 @@ public class ExporterConfiguration {
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
   private boolean skipVariableWriteWithoutUserTasks = false;
+  private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -152,6 +154,14 @@ public class ExporterConfiguration {
     this.batchOperation = batchOperation;
   }
 
+  public ExtensionPropertyConfiguration getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public void setExtensionProperties(final ExtensionPropertyConfiguration extensionProperties) {
+    this.extensionProperties = extensionProperties;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -235,10 +245,14 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
+    private boolean archiveByIdEnabled = false;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
+    private int reindexBatchSize = 2500;
+    private int archiveByIdMaxRetryAttempts = 3;
+    private int archiveByIdRetryDelayMs = 1000;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -251,6 +265,23 @@ public class ExporterConfiguration {
 
     public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
       this.processInstanceEnabled = processInstanceEnabled;
+    }
+
+    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
+      return processInstanceRetentionMode;
+    }
+
+    public void setProcessInstanceRetentionMode(
+        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
+      this.processInstanceRetentionMode = processInstanceRetentionMode;
+    }
+
+    public boolean isArchiveByIdEnabled() {
+      return archiveByIdEnabled;
+    }
+
+    public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
+      this.archiveByIdEnabled = archiveByIdEnabled;
     }
 
     public String getElsRolloverDateFormat() {
@@ -289,6 +320,30 @@ public class ExporterConfiguration {
       this.rolloverBatchSize = rolloverBatchSize;
     }
 
+    public int getReindexBatchSize() {
+      return reindexBatchSize;
+    }
+
+    public void setReindexBatchSize(final int reindexBatchSize) {
+      this.reindexBatchSize = reindexBatchSize;
+    }
+
+    public int getArchiveByIdMaxRetryAttempts() {
+      return archiveByIdMaxRetryAttempts;
+    }
+
+    public void setArchiveByIdMaxRetryAttempts(final int archiveByIdMaxRetryAttempts) {
+      this.archiveByIdMaxRetryAttempts = archiveByIdMaxRetryAttempts;
+    }
+
+    public int getArchiveByIdRetryDelayMs() {
+      return archiveByIdRetryDelayMs;
+    }
+
+    public void setArchiveByIdRetryDelayMs(final int archiveByIdRetryDelayMs) {
+      this.archiveByIdRetryDelayMs = archiveByIdRetryDelayMs;
+    }
+
     public RetentionConfiguration getRetention() {
       return retention;
     }
@@ -321,17 +376,41 @@ public class ExporterConfiguration {
       this.maxDelayBetweenRuns = maxDelayBetweenRuns;
     }
 
+    public boolean isTrackArchivalMetricsForProcessInstance() {
+      return trackArchivalMetricsForProcessInstance;
+    }
+
+    public void setTrackArchivalMetricsForProcessInstance(
+        final boolean trackArchivalMetricsForProcessInstance) {
+      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
+    }
+
     @Override
     public String toString() {
       return "ArchiverConfiguration{"
+          + "processInstanceEnabled="
+          + processInstanceEnabled
+          + ", processInstanceRetentionMode="
+          + processInstanceRetentionMode
+          + ", archiveByIdEnabled="
+          + archiveByIdEnabled
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''
           + ", rolloverInterval='"
           + rolloverInterval
           + '\''
+          + ", usageMetricsRolloverInterval='"
+          + usageMetricsRolloverInterval
+          + '\''
           + ", rolloverBatchSize="
           + rolloverBatchSize
+          + ", reindexBatchSize="
+          + reindexBatchSize
+          + ", archiveByIdMaxRetryAttempts="
+          + archiveByIdMaxRetryAttempts
+          + ", archiveByIdMaxRetryDelayMs="
+          + archiveByIdRetryDelayMs
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
           + '\''
@@ -343,27 +422,7 @@ public class ExporterConfiguration {
           + retention
           + ", trackArchivalMetricsForProcessInstance="
           + trackArchivalMetricsForProcessInstance
-          + ", retentionMode="
-          + processInstanceRetentionMode
           + '}';
-    }
-
-    public boolean isTrackArchivalMetricsForProcessInstance() {
-      return trackArchivalMetricsForProcessInstance;
-    }
-
-    public void setTrackArchivalMetricsForProcessInstance(
-        final boolean trackArchivalMetricsForProcessInstance) {
-      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
-    }
-
-    public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
-      return processInstanceRetentionMode;
-    }
-
-    public void setProcessInstanceRetentionMode(
-        final ProcessInstanceRetentionMode processInstanceRetentionMode) {
-      this.processInstanceRetentionMode = processInstanceRetentionMode;
     }
 
     public enum ProcessInstanceRetentionMode {

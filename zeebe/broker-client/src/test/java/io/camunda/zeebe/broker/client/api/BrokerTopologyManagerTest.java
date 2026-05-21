@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
-import static io.camunda.zeebe.broker.client.api.BrokerClusterState.NODE_ID_NULL;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -67,7 +68,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldUpdateTopologyOnBrokerAdd() {
     // given
-    final int brokerId = 1;
+    final var brokerId = BrokerMemberId.from(1);
     final int partition = 1;
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
@@ -91,7 +92,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldUpdateTopologyOnBrokerRemove() {
     // given
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final int partition = 1;
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
@@ -115,66 +116,68 @@ final class BrokerTopologyManagerTest {
 
     assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
         .doesNotContain(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
-        .isEqualTo(NODE_ID_NULL);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isNull();
   }
 
   @Test
   void shouldUpdateLeaderWithNewTerm() {
     // given
     final int partition = 1;
-    final int oldLeaderId = 0;
+    final var oldLeaderId = BrokerMemberId.from(0);
     final BrokerInfo oldLeader = createBroker(oldLeaderId);
     oldLeader.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(oldLeader));
 
     assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
         .describedAs("Topology has the old leader")
-        .isZero();
+        .isEqualTo(oldLeaderId);
 
     // when
-    final int newLeaderId = 1;
+    final var newLeaderId = BrokerMemberId.from(1);
     final BrokerInfo newLeader = createBroker(newLeaderId);
     newLeader.setLeaderForPartition(partition, 2);
     notifyEvent(createMemberAddedEvent(newLeader));
 
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(newLeaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderId);
   }
 
   @Test
   void shouldNotUpdateLeaderWhenFromPreviousTerm() {
     // given
     final int partition = 1;
-    final int newLeaderId = 1;
+    final var newLeaderId = BrokerMemberId.from(1);
     final BrokerInfo newLeader = createBroker(newLeaderId);
     newLeader.setLeaderForPartition(partition, 2);
     notifyEvent(createMemberAddedEvent(newLeader));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderId);
 
     // when
-    final int oldLeaderId = 0;
+    final var oldLeaderId = BrokerMemberId.from(0);
     final BrokerInfo oldLeader = createBroker(oldLeaderId);
     oldLeader.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(oldLeader));
 
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(oldLeaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderId);
   }
 
   @Test
   void shouldUpdateLeaderWhenPartitionReBootstrapWithLowerTerm() {
     // given
     final int partition = 1;
-    final int leaderId = 1;
+    final var leaderId = BrokerMemberId.from(1);
     final BrokerInfo leader = createBroker(leaderId);
     leader.setLeaderForPartition(partition, 2);
     notifyEvent(createMemberAddedEvent(leader));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isEqualTo(leaderId);
 
     // when
     // partition shutdown/purge
@@ -182,7 +185,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberUpdateEvent(leader));
 
     // new leader starts with a lower term
-    final int newLeaderAfterRebootstrapId = 0;
+    final var newLeaderAfterRebootstrapId = BrokerMemberId.from(0);
     final BrokerInfo newLeaderAfterRebootstrap = createBroker(newLeaderAfterRebootstrapId);
     newLeaderAfterRebootstrap.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(newLeaderAfterRebootstrap));
@@ -197,7 +200,7 @@ final class BrokerTopologyManagerTest {
   void shouldUpdateTopologyOnBrokerRemoveAndDirectlyRejoin() {
     // given
     final int partition = 1;
-    final int leaderId = 1;
+    final var leaderId = BrokerMemberId.from(1);
     final BrokerInfo leader = createBroker(leaderId);
     leader.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(leader));
@@ -214,37 +217,37 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology().getBrokers())
         .describedAs("the broker has rejoined the cluster")
         .containsExactly(leaderId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isEqualTo(leaderId);
   }
 
   @Test
   void shouldUpdateTopologyOnPartitionHealth() {
     // given
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final int partition = 0;
     final BrokerInfo broker = createBroker(brokerId);
     broker.setPartitionHealthy(partition);
     notifyEvent(createMemberAddedEvent(broker));
 
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is healthy on broker %d", partition, brokerId)
+        .as("partition %d is healthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
 
     // when
-    final BrokerInfo updatedBroker = createBroker(0);
+    final BrokerInfo updatedBroker = createBroker(brokerId);
     updatedBroker.setPartitionUnhealthy(partition);
     notifyEvent(createMemberUpdateEvent(updatedBroker));
 
     // then
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is unhealthy on broker %d", partition, brokerId)
+        .as("partition %d is unhealthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
   }
 
   @Test
   void shouldUpdateTopologyMetadataWhileNotDuplicatingFollower() {
     // given
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final int partition = 0;
     final BrokerInfo broker = createBroker(brokerId);
     broker.setPartitionHealthy(partition);
@@ -253,7 +256,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberAddedEvent(broker));
 
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is healthy on broker %d", partition, brokerId)
+        .as("partition %d is healthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
     assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
         .containsExactly(brokerId);
@@ -263,7 +266,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberUpdateEvent(broker));
 
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is unhealthy on broker %d", partition, brokerId)
+        .as("partition %d is unhealthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
 
     // then
@@ -274,7 +277,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldUpdateTopologyMetadataWhileNotDuplicatingInactiveNodes() {
     // given
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final int partition = 0;
     final BrokerInfo broker = createBroker(brokerId);
     broker.setPartitionHealthy(partition);
@@ -282,7 +285,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberAddedEvent(broker));
 
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is healthy on broker %d", partition, brokerId)
+        .as("partition %d is healthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.HEALTHY);
     assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
         .containsExactly(brokerId);
@@ -292,7 +295,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberUpdateEvent(broker));
 
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .as("partition %d is unhealthy on broker %d", partition, brokerId)
+        .as("partition %d is unhealthy on broker %s", partition, brokerId)
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
 
     // then
@@ -304,13 +307,13 @@ final class BrokerTopologyManagerTest {
   void shouldUpdateTopologyOnLeaderRemoval() {
     // given
     final int partition = 1;
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final BrokerInfo broker = createBroker(brokerId).setLeaderForPartition(partition, partition);
 
     // when
     notifyEvent(createMemberUpdateEvent(broker));
 
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isZero();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isEqualTo(brokerId);
 
     broker.setFollowerForPartition(partition);
     notifyEvent(createMemberUpdateEvent(broker));
@@ -319,15 +322,14 @@ final class BrokerTopologyManagerTest {
 
     assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
         .containsExactlyInAnyOrder(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
-        .isEqualTo(NODE_ID_NULL);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isNull();
   }
 
   @Test
   void shouldUpdateTopologyOnBrokerInactive() {
     // given
     final int partition = 0;
-    final int brokerId = 0;
+    final var brokerId = BrokerMemberId.from(0);
     final BrokerInfo broker = createBroker(brokerId);
     broker.setLeaderForPartition(partition, 1);
     notifyEvent(createMemberAddedEvent(broker));
@@ -336,7 +338,7 @@ final class BrokerTopologyManagerTest {
 
     assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
         .isNullOrEmpty();
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isZero();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isEqualTo(brokerId);
 
     broker.setInactiveForPartition(partition);
     notifyEvent(createMemberUpdateEvent(broker));
@@ -345,7 +347,7 @@ final class BrokerTopologyManagerTest {
 
     assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
         .contains(brokerId);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isNotZero();
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isNull();
   }
 
   @Test
@@ -354,7 +356,7 @@ final class BrokerTopologyManagerTest {
     final RecordingTopologyListener topology = new RecordingTopologyListener();
     addTopologyListener(topology);
 
-    final int brokerId = 1;
+    final var brokerId = BrokerMemberId.from(1);
     final BrokerInfo broker = createBroker(brokerId);
 
     // when
@@ -367,7 +369,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldNotifyListenerWithInitialState() {
     // given
-    final int brokerId = 1;
+    final var brokerId = BrokerMemberId.from(1);
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
 
@@ -385,7 +387,7 @@ final class BrokerTopologyManagerTest {
     final RecordingTopologyListener topology = new RecordingTopologyListener();
     addTopologyListener(topology);
 
-    final int brokerId = 1;
+    final var brokerId = BrokerMemberId.from(1);
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
 
@@ -423,7 +425,7 @@ final class BrokerTopologyManagerTest {
     final RecordingTopologyListener topology = new RecordingTopologyListener();
     addTopologyListener(topology);
 
-    final int brokerId = 1;
+    final var brokerId = BrokerMemberId.from(1);
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
 
@@ -442,7 +444,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldUpdateClusterSizeFromClusterTopology() {
     // given
-    final BrokerInfo broker = createBroker(1);
+    final BrokerInfo broker = createBroker(BrokerMemberId.from(1));
     notifyEvent(createMemberAddedEvent(broker));
 
     // when
@@ -470,7 +472,7 @@ final class BrokerTopologyManagerTest {
     actorSchedulerRule.workUntilDone();
 
     // when
-    final BrokerInfo broker = createBroker(1);
+    final BrokerInfo broker = createBroker(BrokerMemberId.from(1));
     notifyEvent(createMemberAddedEvent(broker));
 
     // then
@@ -480,7 +482,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldUpdatePartitionsFromClusterTopology() {
     // given
-    final var broker = createBroker(1);
+    final var broker = createBroker(BrokerMemberId.from(1));
     notifyEvent(createMemberAddedEvent(broker));
 
     // when
@@ -538,11 +540,37 @@ final class BrokerTopologyManagerTest {
     actorSchedulerRule.workUntilDone();
 
     // when
-    final var broker = createBroker(1);
+    final var broker = createBroker(BrokerMemberId.from(1));
     notifyEvent(createMemberAddedEvent(broker));
 
     // then
     assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldBackfillNewListenerWithCanonicalZoneAwareMemberId() {
+    // given — broker 0 joined with a zone-aware id
+    final var zonedMemberId = BrokerMemberId.from("eu-west/0");
+    final var broker = createBroker(zonedMemberId);
+    final var member =
+        new Member(new MemberConfig().setId(zonedMemberId.memberId()).setZoneId("eu-west"));
+    broker.writeIntoProperties(member.properties());
+    members.add(member);
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
+
+    // when — a new listener is added after the broker is already known
+    final var capturedIds = new CopyOnWriteArrayList<BrokerMemberId>();
+    topologyManager.addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerAdded(final BrokerMemberId memberId) {
+            capturedIds.add(memberId);
+          }
+        });
+    actorSchedulerRule.workUntilDone();
+
+    // then — the listener is backfilled with the zone-aware id, not the bare int "0"
+    assertThat(capturedIds).containsExactly(zonedMemberId);
   }
 
   private void addTopologyListener(final BrokerTopologyListener listener) {
@@ -550,10 +578,10 @@ final class BrokerTopologyManagerTest {
     actorSchedulerRule.workUntilDone();
   }
 
-  private BrokerInfo createBroker(final int brokerId) {
+  private BrokerInfo createBroker(final BrokerMemberId brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()
-            .setNodeId(brokerId)
+            .setBrokerId(brokerId.nodeIdx(), brokerId.zone())
             .setPartitionsCount(1)
             .setClusterSize(3)
             .setReplicationFactor(3);
@@ -573,15 +601,14 @@ final class BrokerTopologyManagerTest {
   }
 
   private Member createMemberFromBrokerInfo(final BrokerInfo broker) {
-    final Member member =
-        new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
+    final Member member = new Member(new MemberConfig().setId(broker.brokerIdStr()));
     broker.writeIntoProperties(member.properties());
     members.add(member);
     return member;
   }
 
   private ClusterMembershipEvent createMemberRemoveEvent(final BrokerInfo broker) {
-    final Member member = new Member(new MemberConfig().setId(String.valueOf(broker.getNodeId())));
+    final Member member = new Member(new MemberConfig().setId(broker.brokerIdStr()));
     broker.writeIntoProperties(member.properties());
     return new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
   }
@@ -593,19 +620,19 @@ final class BrokerTopologyManagerTest {
 
   private static final class RecordingTopologyListener implements BrokerTopologyListener {
 
-    private final Set<Integer> brokers = new CopyOnWriteArraySet<>();
+    private final Set<BrokerMemberId> brokers = new CopyOnWriteArraySet<>();
 
     @Override
-    public void brokerAdded(final MemberId memberId) {
-      brokers.add(Integer.parseInt(memberId.id()));
+    public void brokerAdded(final BrokerMemberId memberId) {
+      brokers.add(memberId);
     }
 
     @Override
-    public void brokerRemoved(final MemberId memberId) {
-      brokers.remove(Integer.parseInt(memberId.id()));
+    public void brokerRemoved(final BrokerMemberId memberId) {
+      brokers.remove(memberId);
     }
 
-    Set<Integer> getBrokers() {
+    Set<BrokerMemberId> getBrokers() {
       return brokers;
     }
   }

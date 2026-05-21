@@ -23,7 +23,7 @@ function getReporters(): Pick<
   NonNullable<UserConfig['test']>,
   'reporters' | 'outputFile'
 > {
-  if (process.env.CI) {
+  if (process.env['CI']) {
     return {
       reporters: ['default', 'junit', 'github-actions'],
       outputFile: {
@@ -89,8 +89,7 @@ export default defineConfig(({mode}) => ({
     clearMocks: true,
     resetMocks: true,
     unstubEnvs: true,
-    retry: process.env.CI ? 3 : 0,
-    dangerouslyIgnoreUnhandledErrors: Boolean(process.env.CI),
+    retry: process.env['CI'] ? 3 : 0,
     ...getReporters(),
     server: {
       deps: {

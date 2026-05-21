@@ -7,17 +7,20 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLong;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToStringOrNull;
 import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
@@ -68,6 +71,7 @@ import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -117,8 +121,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -162,6 +168,10 @@ public final class ResponseMapper {
           .toFormatter();
 
   public static String formatDate(final OffsetDateTime date) {
+    return DATE_RESPONSE_MAPPER.format(date);
+  }
+
+  public static @Nullable String formatDateOrNull(final @Nullable OffsetDateTime date) {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
@@ -172,8 +182,6 @@ public final class ResponseMapper {
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
-    final io.camunda.gateway.protocol.model.JobActivationResult response =
-        new io.camunda.gateway.protocol.model.JobActivationResult();
 
     final List<ActivatedJobResult> sizeExceedingJobs = new ArrayList<>();
     final List<ActivatedJobResult> responseJobs = new ArrayList<>();
@@ -193,69 +201,66 @@ public final class ResponseMapper {
       }
     }
 
-    response.setJobs(responseJobs);
+    final io.camunda.gateway.protocol.model.JobActivationResult response =
+        io.camunda.gateway.protocol.model.JobActivationResult.Builder.create()
+            .jobs(responseJobs)
+            .build();
 
     return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
   private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
-    final var result =
-        new ActivatedJobResult()
-            .jobKey(KeyUtil.keyToString(jobKey))
-            .type(job.getType())
-            .processDefinitionId(job.getBpmnProcessId())
-            .elementId(job.getElementId())
-            .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
-            .processDefinitionVersion(job.getProcessDefinitionVersion())
-            .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
-            .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
-            .worker(bufferAsString(job.getWorkerBuffer()))
-            .retries(job.getRetries())
-            .deadline(job.getDeadline())
-            .variables(job.getVariables())
-            .customHeaders(job.getCustomHeadersObjectMap())
-            .userTask(toUserTaskProperties(job))
-            .tenantId(job.getTenantId())
-            .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
-            .listenerEventType(
-                EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
-            .tags(job.getTags());
-
     // rootProcessInstanceKey is only set for process instances created after version 8.9
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      result.rootProcessInstanceKey(KeyUtil.keyToString(rootProcessInstanceKey));
-    }
-
-    return result;
+    return ActivatedJobResult.Builder.create()
+        .type(job.getType())
+        .processDefinitionId(job.getBpmnProcessId())
+        .processDefinitionVersion(job.getProcessDefinitionVersion())
+        .elementId(job.getElementId())
+        .customHeaders(job.getCustomHeadersObjectMap())
+        .worker(bufferAsString(job.getWorkerBuffer()))
+        .retries(job.getRetries())
+        .deadline(job.getDeadline())
+        .variables(job.getVariables())
+        .tenantId(job.getTenantId())
+        .jobKey(keyToString(jobKey))
+        .processInstanceKey(keyToString(job.getProcessInstanceKey()))
+        .processDefinitionKey(keyToString(job.getProcessDefinitionKey()))
+        .elementInstanceKey(keyToString(job.getElementInstanceKey()))
+        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
+        .listenerEventType(
+            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
+        .rootProcessInstanceKey(
+            rootProcessInstanceKey > 0 ? keyToString(rootProcessInstanceKey) : null)
+        .tags(job.getTags())
+        .userTask(toUserTaskProperties(job))
+        .build();
   }
 
-  private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
+  private static @Nullable UserTaskProperties toUserTaskProperties(final JobRecord job) {
     if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
 
     final var headers = job.getCustomHeaders();
-    final var props = new UserTaskProperties();
-
-    props.setAction(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME));
-    props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
-    props.setCandidateGroups(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));
-    props.setCandidateUsers(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)));
-    props.setChangedAttributes(
-        mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)));
-    props.setDueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME));
-    props.setFollowUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME));
-    props.setFormKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME));
-    props.setPriority(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
-    props.setUserTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
-
-    return props;
+    return UserTaskProperties.Builder.create()
+        .candidateGroups(
+            mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)))
+        .candidateUsers(
+            mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)))
+        .changedAttributes(
+            mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)))
+        .action(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"))
+        .assignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME))
+        .dueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME))
+        .followUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME))
+        .formKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME))
+        .priority(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)))
+        .userTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME))
+        .build();
   }
 
-  public static List<String> mapStringToList(final String input) {
+  public static List<String> mapStringToList(final @Nullable String input) {
     if (input == null || input.isEmpty()) {
       return List.of();
     }
@@ -268,7 +273,7 @@ public final class ResponseMapper {
     }
   }
 
-  public static Integer toIntegerOrNull(final String value) {
+  public static @Nullable Integer toIntegerOrNull(final @Nullable String value) {
     if (value == null || value.isEmpty()) {
       return null;
     }
@@ -282,10 +287,11 @@ public final class ResponseMapper {
 
   public static MessageCorrelationResult toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return new MessageCorrelationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getMessageKey()))
+    return MessageCorrelationResult.Builder.create()
         .tenantId(brokerResponse.getTenantId())
-        .processInstanceKey(KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
+        .messageKey(keyToString(brokerResponse.getMessageKey()))
+        .processInstanceKey(keyToString(brokerResponse.getProcessInstanceKey()))
+        .build();
   }
 
   public static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
@@ -302,198 +308,253 @@ public final class ResponseMapper {
 
   public static DocumentCreationBatchResponse toDocumentReferenceBatch(
       final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> responses) {
-    final var response = new DocumentCreationBatchResponse();
+    final List<DocumentReference> createdDocuments = new ArrayList<>();
+    final List<DocumentCreationFailureDetail> failedDocuments = new ArrayList<>();
     responses.forEach(
         documentResponse ->
             documentResponse.ifRightOrLeft(
-                reference -> response.addCreatedDocumentsItem(toDocumentReference(reference)),
-                error -> response.addFailedDocumentsItem(toDocumentCreationFailure(error))));
-    return response;
+                reference -> createdDocuments.add(toDocumentReference(reference)),
+                error -> failedDocuments.add(toDocumentCreationFailure(error))));
+    return DocumentCreationBatchResponse.Builder.create()
+        .failedDocuments(failedDocuments)
+        .createdDocuments(createdDocuments)
+        .build();
   }
 
   public static DocumentReference toDocumentReference(final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
-        new DocumentMetadataResponse()
+        DocumentMetadataResponse.Builder.create()
+            .fileName(internalMetadata.fileName())
             .expiresAt(
                 Optional.ofNullable(internalMetadata.expiresAt())
                     .map(Object::toString)
                     .orElse(null))
-            .fileName(internalMetadata.fileName())
             .size(internalMetadata.size())
             .contentType(internalMetadata.contentType())
+            .customProperties(
+                Optional.ofNullable(internalMetadata.customProperties()).orElse(Map.of()))
             .processDefinitionId(internalMetadata.processDefinitionId())
-            .processInstanceKey(KeyUtil.keyToString(internalMetadata.processInstanceKey()));
-    Optional.ofNullable(internalMetadata.customProperties())
-        .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
-    return new DocumentReference()
+            .processInstanceKey(keyToStringOrNull(internalMetadata.processInstanceKey()))
+            .build();
+    return DocumentReference.Builder.create()
         .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-        .documentId(response.documentId())
         .storeId(response.storeId())
+        .documentId(response.documentId())
         .contentHash(response.contentHash())
-        .metadata(externalMetadata);
+        .metadata(externalMetadata)
+        .build();
   }
 
   private static DocumentCreationFailureDetail toDocumentCreationFailure(
       final DocumentErrorResponse error) {
-    final var detail = new DocumentCreationFailureDetail();
     final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
-    detail.setDetail(defaultProblemDetail.getDetail());
-    detail.setFileName(error.request().metadata().fileName());
-    return detail;
+    return DocumentCreationFailureDetail.Builder.create()
+        .detail(requireNonNull(defaultProblemDetail.getDetail(), "detail"))
+        .fileName(error.request().metadata().fileName())
+        .status(defaultProblemDetail.getStatus())
+        .title(requireNonNull(defaultProblemDetail.getTitle(), "title"))
+        .build();
   }
 
   private static ProblemDetail mapDocumentErrorToProblem(final ServiceException e) {
-    final String detail = e.getMessage();
+    final String detail = Objects.requireNonNullElse(e.getMessage(), "");
     final HttpStatusCode status = GatewayErrorMapper.mapStatus(e.getStatus());
     return GatewayErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
 
   public static io.camunda.gateway.protocol.model.DocumentLink toDocumentLinkResponse(
       final DocumentLink documentLink) {
-    final var externalDocumentLink = new io.camunda.gateway.protocol.model.DocumentLink();
-    externalDocumentLink.setExpiresAt(documentLink.expiresAt().toString());
-    externalDocumentLink.setUrl(documentLink.link());
-    return externalDocumentLink;
+    return io.camunda.gateway.protocol.model.DocumentLink.Builder.create()
+        .url(documentLink.link())
+        .expiresAt(documentLink.expiresAt().toString())
+        .build();
   }
 
   public static DeploymentResult toDeployResourceResponse(final DeploymentRecord brokerResponse) {
-    final var response =
-        new DeploymentResult()
-            .deploymentKey(KeyUtil.keyToString(brokerResponse.getDeploymentKey()))
-            .tenantId(brokerResponse.getTenantId());
-    addDeployedProcess(response, brokerResponse.getProcessesMetadata());
-    addDeployedDecision(response, brokerResponse.decisionsMetadata());
-    addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
-    addDeployedForm(response, brokerResponse.formMetadata());
-    addDeployedResource(response, brokerResponse.resourceMetadata());
-    return response;
+    final List<DeploymentMetadataResult> deployments = new ArrayList<>();
+    deployments.addAll(buildDeployedProcesses(brokerResponse.getProcessesMetadata()));
+    deployments.addAll(buildDeployedDecisions(brokerResponse.decisionsMetadata()));
+    deployments.addAll(
+        buildDeployedDecisionRequirements(brokerResponse.decisionRequirementsMetadata()));
+    deployments.addAll(buildDeployedForms(brokerResponse.formMetadata()));
+    deployments.addAll(buildDeployedResources(brokerResponse.resourceMetadata()));
+    return DeploymentResult.Builder.create()
+        .deploymentKey(keyToString(brokerResponse.getDeploymentKey()))
+        .tenantId(brokerResponse.getTenantId())
+        .deployments(deployments)
+        .build();
   }
 
   public static DeleteResourceResponse toDeleteResourceResponse(
       final ResourceDeletionRecord brokerResponse) {
-    final var response =
-        new DeleteResourceResponse()
-            .resourceKey(KeyUtil.keyToString(brokerResponse.getResourceKey()));
-
+    final @Nullable BatchOperationCreatedResult batchOperation;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
-      final var batchOperationCreatedResult =
-          new BatchOperationCreatedResult()
-              .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+      batchOperation =
+          BatchOperationCreatedResult.Builder.create()
+              .batchOperationKey(keyToString(brokerResponse.getBatchOperationKey()))
               .batchOperationType(
-                  BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
-      response.setBatchOperation(batchOperationCreatedResult);
+                  BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()))
+              .build();
+    } else {
+      batchOperation = null;
     }
-    return response;
+    return DeleteResourceResponse.Builder.create()
+        .resourceKey(keyToString(brokerResponse.getResourceKey()))
+        .batchOperation(batchOperation)
+        .build();
   }
 
   public static ResourceResult toGetResourceResponse(final ResourceRecord resourceRecord) {
-    return new ResourceResult()
+    return ResourceResult.Builder.create()
         .resourceName(resourceRecord.getResourceName())
         .version(resourceRecord.getVersion())
         .versionTag(emptyToNull(resourceRecord.getVersionTag()))
         .resourceId(resourceRecord.getResourceId())
         .tenantId(resourceRecord.getTenantId())
-        .resourceKey(String.valueOf(resourceRecord.getResourceKey()));
+        .resourceKey(String.valueOf(resourceRecord.getResourceKey()))
+        .build();
   }
 
-  public static String toGetResourceContentResponse(final ResourceRecord resourceRecord) {
-    return resourceRecord.getResourceProp();
+  public static ResourceResult toGetResourceResponse(
+      final DeployedResourceEntity deployedResourceEntity) {
+    return ResourceResult.Builder.create()
+        .resourceName(deployedResourceEntity.resourceName())
+        .version(deployedResourceEntity.version())
+        .versionTag(emptyToNull(deployedResourceEntity.versionTag()))
+        .resourceId(deployedResourceEntity.resourceId())
+        .tenantId(deployedResourceEntity.tenantId())
+        .resourceKey(String.valueOf(deployedResourceEntity.resourceKey()))
+        .build();
+  }
+
+  public static String toGetResourceContentResponse(
+      final DeployedResourceEntity deployedResourceEntity) {
+    return requireNonNull(deployedResourceEntity.resourceContent(), "resourceContent");
   }
 
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return new MessagePublicationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getKey()))
-        .tenantId(brokerResponse.getResponse().getTenantId());
+    return MessagePublicationResult.Builder.create()
+        .tenantId(brokerResponse.getResponse().getTenantId())
+        .messageKey(keyToString(brokerResponse.getKey()))
+        .build();
   }
 
-  private static void addDeployedForm(
-      final DeploymentResult response, final ValueArray<FormMetadataRecord> formMetadataRecords) {
-    formMetadataRecords.stream()
+  private static List<DeploymentMetadataResult> buildDeployedForms(
+      final ValueArray<FormMetadataRecord> formMetadataRecords) {
+    return formMetadataRecords.stream()
         .map(
             form ->
-                new DeploymentFormResult()
-                    .formId(form.getFormId())
-                    .version(form.getVersion())
-                    .formKey(KeyUtil.keyToString(form.getFormKey()))
-                    .resourceName(form.getResourceName())
-                    .tenantId(form.getTenantId()))
-        .map(deploymentForm -> new DeploymentMetadataResult().form(deploymentForm))
-        .forEach(response::addDeploymentsItem);
+                DeploymentMetadataResult.Builder.create()
+                    .processDefinition(null)
+                    .decisionDefinition(null)
+                    .decisionRequirements(null)
+                    .form(
+                        DeploymentFormResult.Builder.create()
+                            .formId(form.getFormId())
+                            .formKey(keyToString(form.getFormKey()))
+                            .resourceName(form.getResourceName())
+                            .tenantId(form.getTenantId())
+                            .version(form.getVersion())
+                            .build())
+                    .resource(null)
+                    .build())
+        .toList();
   }
 
-  private static void addDeployedResource(
-      final DeploymentResult response,
+  private static List<DeploymentMetadataResult> buildDeployedResources(
       final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
-    resourceMetadataRecords.stream()
+    return resourceMetadataRecords.stream()
         .map(
             resource ->
-                new DeploymentResourceResult()
-                    .resourceId(resource.getResourceId())
-                    .version(resource.getVersion())
-                    .resourceKey(KeyUtil.keyToString(resource.getResourceKey()))
-                    .resourceName(resource.getResourceName())
-                    .tenantId(resource.getTenantId()))
-        .map(deploymentForm -> new DeploymentMetadataResult().resource(deploymentForm))
-        .forEach(response::addDeploymentsItem);
+                DeploymentMetadataResult.Builder.create()
+                    .processDefinition(null)
+                    .decisionDefinition(null)
+                    .decisionRequirements(null)
+                    .form(null)
+                    .resource(
+                        DeploymentResourceResult.Builder.create()
+                            .resourceId(resource.getResourceId())
+                            .resourceKey(keyToString(resource.getResourceKey()))
+                            .resourceName(resource.getResourceName())
+                            .tenantId(resource.getTenantId())
+                            .version(resource.getVersion())
+                            .build())
+                    .build())
+        .toList();
   }
 
-  private static void addDeployedDecisionRequirements(
-      final DeploymentResult response,
+  private static List<DeploymentMetadataResult> buildDeployedDecisionRequirements(
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
-    decisionRequirementsMetadataRecords.stream()
+    return decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
-                new DeploymentDecisionRequirementsResult()
-                    .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
-                    .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
-                    .tenantId(decisionRequirement.getTenantId())
-                    .decisionRequirementsKey(
-                        KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey()))
-                    .resourceName(decisionRequirement.getResourceName()))
-        .map(
-            deploymentDecisionRequirement ->
-                new DeploymentMetadataResult().decisionRequirements(deploymentDecisionRequirement))
-        .forEach(response::addDeploymentsItem);
+                DeploymentMetadataResult.Builder.create()
+                    .processDefinition(null)
+                    .decisionDefinition(null)
+                    .decisionRequirements(
+                        DeploymentDecisionRequirementsResult.Builder.create()
+                            .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
+                            .decisionRequirementsKey(
+                                keyToString(decisionRequirement.getDecisionRequirementsKey()))
+                            .decisionRequirementsName(
+                                decisionRequirement.getDecisionRequirementsName())
+                            .resourceName(decisionRequirement.getResourceName())
+                            .tenantId(decisionRequirement.getTenantId())
+                            .version(decisionRequirement.getDecisionRequirementsVersion())
+                            .build())
+                    .form(null)
+                    .resource(null)
+                    .build())
+        .toList();
   }
 
-  private static void addDeployedDecision(
-      final DeploymentResult response, final ValueArray<DecisionRecord> decisionRecords) {
-    decisionRecords.stream()
+  private static List<DeploymentMetadataResult> buildDeployedDecisions(
+      final ValueArray<DecisionRecord> decisionRecords) {
+    return decisionRecords.stream()
         .map(
             decision ->
-                new DeploymentDecisionResult()
-                    .decisionDefinitionId(decision.getDecisionId())
-                    .version(decision.getVersion())
-                    .decisionDefinitionKey(KeyUtil.keyToString(decision.getDecisionKey()))
-                    .name(decision.getDecisionName())
-                    .tenantId(decision.getTenantId())
-                    .decisionRequirementsId(decision.getDecisionRequirementsId())
-                    .decisionRequirementsKey(
-                        KeyUtil.keyToString(decision.getDecisionRequirementsKey())))
-        .map(
-            deploymentDecision ->
-                new DeploymentMetadataResult().decisionDefinition(deploymentDecision))
-        .forEach(response::addDeploymentsItem);
+                DeploymentMetadataResult.Builder.create()
+                    .processDefinition(null)
+                    .decisionDefinition(
+                        DeploymentDecisionResult.Builder.create()
+                            .decisionDefinitionId(decision.getDecisionId())
+                            .decisionDefinitionKey(keyToString(decision.getDecisionKey()))
+                            .decisionRequirementsId(decision.getDecisionRequirementsId())
+                            .decisionRequirementsKey(
+                                keyToString(decision.getDecisionRequirementsKey()))
+                            .name(decision.getDecisionName())
+                            .tenantId(decision.getTenantId())
+                            .version(decision.getVersion())
+                            .build())
+                    .decisionRequirements(null)
+                    .form(null)
+                    .resource(null)
+                    .build())
+        .toList();
   }
 
-  private static void addDeployedProcess(
-      final DeploymentResult response, final List<ProcessMetadataValue> processesMetadata) {
-    processesMetadata.stream()
+  private static List<DeploymentMetadataResult> buildDeployedProcesses(
+      final List<ProcessMetadataValue> processesMetadata) {
+    return processesMetadata.stream()
         .map(
             process ->
-                new DeploymentProcessResult()
-                    .processDefinitionId(process.getBpmnProcessId())
-                    .processDefinitionVersion(process.getVersion())
-                    .processDefinitionKey(KeyUtil.keyToString(process.getProcessDefinitionKey()))
-                    .tenantId(process.getTenantId())
-                    .resourceName(process.getResourceName()))
-        .map(
-            deploymentProcess ->
-                new DeploymentMetadataResult().processDefinition(deploymentProcess))
-        .forEach(response::addDeploymentsItem);
+                DeploymentMetadataResult.Builder.create()
+                    .processDefinition(
+                        DeploymentProcessResult.Builder.create()
+                            .processDefinitionId(process.getBpmnProcessId())
+                            .processDefinitionVersion(process.getVersion())
+                            .resourceName(process.getResourceName())
+                            .processDefinitionKey(keyToString(process.getProcessDefinitionKey()))
+                            .tenantId(process.getTenantId())
+                            .build())
+                    .decisionDefinition(null)
+                    .decisionRequirements(null)
+                    .form(null)
+                    .resource(null)
+                    .build())
+        .toList();
   }
 
   public static CreateProcessInstanceResult toCreateProcessInstanceResponse(
@@ -528,41 +589,38 @@ public final class ResponseMapper {
       final Integer version,
       final Long processInstanceKey,
       final String tenantId,
-      final Map<String, Object> variables,
-      final Set<String> tags,
+      final @Nullable Map<String, Object> variables,
+      final @Nullable Set<String> tags,
       final String businessId) {
-    final var response =
-        new CreateProcessInstanceResult()
-            .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
-            .processDefinitionId(bpmnProcessId)
-            .processDefinitionVersion(version)
-            .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId)
-            // defaults to an empty string on the originating record
-            // the conversion to null ensures response contract compliance
-            .businessId(emptyToNull(businessId));
-    if (variables != null) {
-      response.variables(variables);
-    }
-    if (tags != null) {
-      response.setTags(tags);
-    }
-    return response;
+    return CreateProcessInstanceResult.Builder.create()
+        .processDefinitionId(bpmnProcessId)
+        .processDefinitionKey(keyToString(processDefinitionKey))
+        .processDefinitionVersion(version)
+        .tenantId(tenantId)
+        .variables(variables != null ? variables : Map.of())
+        .processInstanceKey(keyToString(processInstanceKey))
+        .tags(tags != null ? tags : Set.of())
+        // defaults to an empty string on the originating record
+        // the conversion to null ensures response contract compliance
+        .businessId(emptyToNull(businessId))
+        .build();
   }
 
   public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
-    return new BatchOperationCreatedResult()
-        .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+    return BatchOperationCreatedResult.Builder.create()
+        .batchOperationKey(keyToString(brokerResponse.getBatchOperationKey()))
         .batchOperationType(
-            BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
+            BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()))
+        .build();
   }
 
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return new SignalBroadcastResult()
-        .signalKey(KeyUtil.keyToString(brokerResponse.getKey()))
-        .tenantId(brokerResponse.getResponse().getTenantId());
+    return SignalBroadcastResult.Builder.create()
+        .tenantId(brokerResponse.getResponse().getTenantId())
+        .signalKey(keyToString(brokerResponse.getKey()))
+        .build();
   }
 
   public static EvaluateConditionalResult toConditionalEvaluationResponse(
@@ -572,142 +630,152 @@ public final class ResponseMapper {
         response.getStartedProcessInstances().stream()
             .map(
                 instance ->
-                    new ProcessInstanceReference()
-                        .processDefinitionKey(
-                            KeyUtil.keyToString(instance.getProcessDefinitionKey()))
-                        .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
+                    ProcessInstanceReference.Builder.create()
+                        .processDefinitionKey(keyToString(instance.getProcessDefinitionKey()))
+                        .processInstanceKey(keyToString(instance.getProcessInstanceKey()))
+                        .build())
             .toList();
 
-    return new EvaluateConditionalResult()
-        .conditionalEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()))
+    return EvaluateConditionalResult.Builder.create()
+        .processInstances(processInstances)
+        .conditionalEvaluationKey(keyToString(brokerResponse.getKey()))
         .tenantId(response.getTenantId())
-        .processInstances(processInstances);
+        .build();
   }
 
   public static AuthorizationCreateResult toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return new AuthorizationCreateResult()
-        .authorizationKey(KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
+    return AuthorizationCreateResult.Builder.create()
+        .authorizationKey(keyToString(authorizationRecord.getAuthorizationKey()))
+        .build();
   }
 
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
-    return new UserCreateResult()
+    return UserCreateResult.Builder.create()
         .username(userRecord.getUsername())
+        .name(userRecord.getName())
         .email(userRecord.getEmail())
-        .name(userRecord.getName());
+        .build();
   }
 
   public static UserUpdateResult toUserUpdateResponse(final UserRecord userRecord) {
-    return new UserUpdateResult()
+    return UserUpdateResult.Builder.create()
         .username(userRecord.getUsername())
+        .name(userRecord.getName())
         .email(userRecord.getEmail())
-        .name(userRecord.getName());
+        .build();
   }
 
   public static RoleCreateResult toRoleCreateResponse(final RoleRecord roleRecord) {
-    return new RoleCreateResult()
+    return RoleCreateResult.Builder.create()
         .roleId(roleRecord.getRoleId())
         .name(roleRecord.getName())
-        .description(roleRecord.getDescription());
+        .description(roleRecord.getDescription())
+        .build();
   }
 
   public static RoleUpdateResult toRoleUpdateResponse(final RoleRecord roleRecord) {
-    return new RoleUpdateResult()
+    return RoleUpdateResult.Builder.create()
         .roleId(roleRecord.getRoleId())
+        .name(roleRecord.getName())
         .description(roleRecord.getDescription())
-        .name(roleRecord.getName());
+        .build();
   }
 
   public static GroupCreateResult toGroupCreateResponse(final GroupRecord groupRecord) {
-    return new GroupCreateResult()
-        .name(groupRecord.getName())
+    return GroupCreateResult.Builder.create()
         .groupId(groupRecord.getGroupId())
-        .description(groupRecord.getDescription());
+        .name(groupRecord.getName())
+        .description(groupRecord.getDescription())
+        .build();
   }
 
   public static GroupUpdateResult toGroupUpdateResponse(final GroupRecord groupRecord) {
-    return new GroupUpdateResult()
+    return GroupUpdateResult.Builder.create()
         .groupId(groupRecord.getGroupId())
+        .name(groupRecord.getName())
         .description(groupRecord.getDescription())
-        .name(groupRecord.getName());
+        .build();
   }
 
   public static TenantCreateResult toTenantCreateResponse(final TenantRecord record) {
-    return new TenantCreateResult()
+    return TenantCreateResult.Builder.create()
         .tenantId(record.getTenantId())
         .name(record.getName())
-        .description(record.getDescription());
+        .description(record.getDescription())
+        .build();
   }
 
   public static TenantUpdateResult toTenantUpdateResponse(final TenantRecord record) {
-    return new TenantUpdateResult()
+    return TenantUpdateResult.Builder.create()
         .tenantId(record.getTenantId())
         .name(record.getName())
-        .description(record.getDescription());
+        .description(record.getDescription())
+        .build();
   }
 
   public static MappingRuleCreateResult toMappingRuleCreateResponse(
       final MappingRuleRecord record) {
-    return new MappingRuleCreateResult()
+    return MappingRuleCreateResult.Builder.create()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
+        .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
+        .build();
   }
 
   public static MappingRuleUpdateResult toMappingRuleUpdateResponse(
       final MappingRuleRecord record) {
-    return new MappingRuleUpdateResult()
+    return MappingRuleUpdateResult.Builder.create()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
+        .name(record.getName())
         .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
+        .build();
   }
 
   public static EvaluateDecisionResult toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
     final var decisionEvaluationRecord = brokerResponse.getResponse();
-    final var response =
-        new EvaluateDecisionResult()
-            .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
-            .decisionDefinitionKey(KeyUtil.keyToString(decisionEvaluationRecord.getDecisionKey()))
-            .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
-            .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
-            .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
-            .decisionRequirementsKey(
-                KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
-            .output(decisionEvaluationRecord.getDecisionOutput())
-            // these optional fields default to an empty string on the originating record
-            // the conversion to null ensures response contract compliance
-            .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
-            .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
-            .tenantId(decisionEvaluationRecord.getTenantId())
-            .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
-            .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
-
-    buildEvaluatedDecisions(decisionEvaluationRecord, response);
-    return response;
+    final var evaluatedDecisions = buildEvaluatedDecisions(decisionEvaluationRecord);
+    return EvaluateDecisionResult.Builder.create()
+        .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
+        .decisionDefinitionKey(keyToString(decisionEvaluationRecord.getDecisionKey()))
+        .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
+        .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
+        .decisionEvaluationKey(keyToString(brokerResponse.getKey()))
+        .decisionInstanceKey(keyToString(brokerResponse.getKey()))
+        .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
+        .decisionRequirementsKey(keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
+        .evaluatedDecisions(evaluatedDecisions)
+        // these optional fields default to an empty string on the originating record
+        // the conversion to null ensures response contract compliance
+        .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
+        .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
+        .output(decisionEvaluationRecord.getDecisionOutput())
+        .tenantId(decisionEvaluationRecord.getTenantId())
+        .build();
   }
 
-  private static void buildEvaluatedDecisions(
-      final DecisionEvaluationRecord decisionEvaluationRecord,
-      final EvaluateDecisionResult response) {
-    decisionEvaluationRecord.getEvaluatedDecisions().stream()
+  private static List<EvaluatedDecisionResult> buildEvaluatedDecisions(
+      final DecisionEvaluationRecord decisionEvaluationRecord) {
+    return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                new EvaluatedDecisionResult()
-                    .decisionDefinitionKey(KeyUtil.keyToString(evaluatedDecision.getDecisionKey()))
+                EvaluatedDecisionResult.Builder.create()
+                    .decisionDefinitionType(evaluatedDecision.getDecisionType())
+                    .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
+                    .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules()))
                     .decisionDefinitionId(evaluatedDecision.getDecisionId())
-                    .decisionEvaluationInstanceKey(
-                        evaluatedDecision.getDecisionEvaluationInstanceKey())
+                    .decisionDefinitionKey(keyToString(evaluatedDecision.getDecisionKey()))
                     .decisionDefinitionName(evaluatedDecision.getDecisionName())
                     .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
-                    .decisionDefinitionType(evaluatedDecision.getDecisionType())
+                    .decisionEvaluationInstanceKey(
+                        evaluatedDecision.getDecisionEvaluationInstanceKey())
                     .output(evaluatedDecision.getDecisionOutput())
                     .tenantId(evaluatedDecision.getTenantId())
-                    .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
-                    .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules())))
-        .forEach(response::addEvaluatedDecisionsItem);
+                    .build())
+        .toList();
   }
 
   private static List<MatchedDecisionRuleItem> buildMatchedRules(
@@ -715,23 +783,32 @@ public final class ResponseMapper {
     return matchedRuleValues.stream()
         .map(
             matchedRuleValue ->
-                new MatchedDecisionRuleItem()
+                MatchedDecisionRuleItem.Builder.create()
+                    .evaluatedOutputs(
+                        buildEvaluatedOutputs(
+                            matchedRuleValue.getEvaluatedOutputs(),
+                            matchedRuleValue.getRuleId(),
+                            matchedRuleValue.getRuleIndex()))
                     .ruleId(matchedRuleValue.getRuleId())
                     .ruleIndex(matchedRuleValue.getRuleIndex())
-                    .evaluatedOutputs(
-                        buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
+                    .build())
         .toList();
   }
 
   private static List<EvaluatedDecisionOutputItem> buildEvaluatedOutputs(
-      final List<EvaluatedOutputValue> evaluatedOutputs) {
+      final List<EvaluatedOutputValue> evaluatedOutputs,
+      final @Nullable String ruleId,
+      final int ruleIndex) {
     return evaluatedOutputs.stream()
         .map(
             evaluatedOutput ->
-                new EvaluatedDecisionOutputItem()
+                EvaluatedDecisionOutputItem.Builder.create()
+                    .ruleId(ruleId)
+                    .ruleIndex(ruleIndex)
                     .outputId(evaluatedOutput.getOutputId())
                     .outputName(evaluatedOutput.getOutputName())
-                    .outputValue(evaluatedOutput.getOutputValue()))
+                    .outputValue(evaluatedOutput.getOutputValue())
+                    .build())
         .toList();
   }
 
@@ -740,83 +817,82 @@ public final class ResponseMapper {
     return inputValues.stream()
         .map(
             evaluatedInputValue ->
-                new EvaluatedDecisionInputItem()
+                EvaluatedDecisionInputItem.Builder.create()
                     .inputId(evaluatedInputValue.getInputId())
                     .inputName(evaluatedInputValue.getInputName())
-                    .inputValue(evaluatedInputValue.getInputValue()))
+                    .inputValue(evaluatedInputValue.getInputValue())
+                    .build())
         .toList();
   }
 
   public static ClusterVariableResult toClusterVariableResponse(
       final ClusterVariableRecord clusterVariableRecord) {
-    final var response =
-        new ClusterVariableResult()
-            .name(clusterVariableRecord.getName())
-            .value(clusterVariableRecord.getValue());
-    if (clusterVariableRecord.isTenantScoped()) {
-      response.scope(ClusterVariableScopeEnum.TENANT).tenantId(clusterVariableRecord.getTenantId());
-    } else {
-      response.scope(ClusterVariableScopeEnum.GLOBAL);
-    }
-    return response;
+    final ClusterVariableScopeEnum scope =
+        clusterVariableRecord.isTenantScoped()
+            ? ClusterVariableScopeEnum.TENANT
+            : ClusterVariableScopeEnum.GLOBAL;
+    final @Nullable String tenantId =
+        clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null;
+    return ClusterVariableResult.Builder.create()
+        .name(clusterVariableRecord.getName())
+        .scope(scope)
+        .tenantId(tenantId)
+        .value(clusterVariableRecord.getValue())
+        .build();
   }
 
   public static ExpressionEvaluationResult toExpressionEvaluationResult(
       final ExpressionRecord expressionRecord) {
-    return new ExpressionEvaluationResult()
+    return ExpressionEvaluationResult.Builder.create()
         .expression(expressionRecord.getExpression())
         .result(expressionRecord.getResultValue())
         .warnings(
             expressionRecord.getWarnings().stream()
-                .map(warning -> new ExpressionEvaluationWarningItem().message(warning))
-                .toList());
+                .map(
+                    warning ->
+                        ExpressionEvaluationWarningItem.Builder.create().message(warning).build())
+                .toList())
+        .build();
   }
 
   public static TopologyResponse toTopologyResponse(final Topology topology) {
-    final var response = new TopologyResponse();
-    response
-        .clusterId(topology.clusterId())
+    final var brokers = topology.brokers().stream().map(ResponseMapper::toBrokerInfo).toList();
+    return TopologyResponse.Builder.create()
+        .brokers(brokers)
         .clusterSize(topology.clusterSize())
-        .gatewayVersion(topology.gatewayVersion())
         .partitionsCount(topology.partitionsCount())
         .replicationFactor(topology.replicationFactor())
-        .lastCompletedChangeId(KeyUtil.keyToString(topology.lastCompletedChangeId()));
-
-    topology
-        .brokers()
-        .forEach(
-            broker -> {
-              final var brokerInfo = new BrokerInfo();
-              addBrokerInfo(brokerInfo, broker);
-              addPartitionInfoToBrokerInfo(brokerInfo, broker.partitions());
-
-              response.addBrokersItem(brokerInfo);
-            });
-
-    return response;
+        .gatewayVersion(topology.gatewayVersion())
+        .lastCompletedChangeId(keyToString(topology.lastCompletedChangeId()))
+        .clusterId(topology.clusterId())
+        .build();
   }
 
-  private static void addBrokerInfo(final BrokerInfo brokerInfo, final Broker broker) {
-    brokerInfo.setNodeId(broker.nodeId());
-    brokerInfo.setHost(broker.host());
-    brokerInfo.setPort(broker.port());
-    brokerInfo.setVersion(broker.version());
+  private static BrokerInfo toBrokerInfo(final Broker broker) {
+    final var partitions = buildPartitions(broker.partitions());
+    return BrokerInfo.Builder.create()
+        .nodeId(broker.nodeIdx())
+        .host(broker.host())
+        .port(broker.port())
+        .partitions(partitions)
+        .version(broker.version())
+        .build();
   }
 
-  private static void addPartitionInfoToBrokerInfo(
-      final BrokerInfo brokerInfo, final List<Partition> partitions) {
-    partitions.forEach(
-        partition -> {
-          final var partitionDto = new io.camunda.gateway.protocol.model.Partition();
-
-          partitionDto.setPartitionId(partition.partitionId());
-          partitionDto.setRole(EnumUtil.convert(partition.role(), RoleEnum.class));
-          partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
-          brokerInfo.addPartitionsItem(partitionDto);
-        });
+  private static List<io.camunda.gateway.protocol.model.Partition> buildPartitions(
+      final List<Partition> partitions) {
+    return partitions.stream()
+        .map(
+            partition ->
+                io.camunda.gateway.protocol.model.Partition.Builder.create()
+                    .partitionId(partition.partitionId())
+                    .role(EnumUtil.convert(partition.role(), RoleEnum.class))
+                    .health(EnumUtil.convert(partition.health(), HealthEnum.class))
+                    .build())
+        .toList();
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final @Nullable String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 
@@ -841,7 +917,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(KeyUtil.keyToLong(j.getJobKey()), j.getRetries()))
+          .map(j -> new ActivatedJob(keyToLong(j.getJobKey()), j.getRetries()))
           .toList();
     }
 
@@ -856,7 +932,7 @@ public final class ResponseMapper {
       for (final var job : sizeExceedingJobs) {
         try {
           final var key = job.getJobKey();
-          result.add(new ActivatedJob(KeyUtil.keyToLong(key), job.getRetries()));
+          result.add(new ActivatedJob(keyToLong(key), job.getRetries()));
         } catch (final NumberFormatException ignored) {
           // could happen
           LOG.warn(

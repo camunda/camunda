@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -97,6 +98,36 @@ final class RoundRobinPartitionDistributorTest {
               {1, 2, 3, 0, 2, 1, 3, 0, 1, 2, 3, 0},
               {0, 1, 2, 3, 0, 2, 1, 3, 0, 1, 2, 3},
             }));
+  }
+
+  @Test
+  void shouldDistributePartitionsAcrossZoneAwareMembers() {
+    // given
+    final var members =
+        Set.of(MemberId.from("eu-west/0"), MemberId.from("eu-west/1"), MemberId.from("eu-west/2"));
+
+    // when
+    final var distribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, getSortedPartitionIds(3), 3);
+
+    // then — distribution completes without NumberFormatException and covers all partitions
+    assertThat(distribution).hasSize(3);
+    distribution.forEach(
+        metadata -> {
+          assertThat(metadata.members()).hasSize(3);
+          metadata
+              .members()
+              .forEach(
+                  member -> {
+                    final int nodeId = member.nodeIdx();
+                    assertThat(metadata.getPriority(member))
+                        .describedAs(
+                            "Priority should be set for nodeId %d in partition %d",
+                            nodeId, metadata.id().id())
+                        .isPositive();
+                  });
+        });
   }
 
   private Set<MemberId> getMembers(final int nodeCount) {

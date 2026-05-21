@@ -16,6 +16,9 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -406,11 +409,13 @@ public class ExecutionListenerTest {
     // given
     final String reportDirectory = "custom/report";
     final List<String> excludedProcesses = List.of("process1", "process2");
+    final List<String> excludedDecisions = List.of("decision1", "decision2");
 
     final CamundaProcessTestRuntimeConfiguration configuration =
         new CamundaProcessTestRuntimeConfiguration();
     configuration.getCoverage().setReportDirectory(reportDirectory);
     configuration.getCoverage().setExcludedProcesses(excludedProcesses);
+    configuration.getCoverage().setExcludedDecisions(excludedDecisions);
 
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(configuration);
@@ -426,6 +431,7 @@ public class ExecutionListenerTest {
     // then
     verify(processCoverageBuilder).reportDirectory(reportDirectory);
     verify(processCoverageBuilder).excludeProcessDefinitionIds(excludedProcesses);
+    verify(processCoverageBuilder).excludeDecisionDefinitionIds(excludedDecisions);
   }
 
   @Test
@@ -478,6 +484,41 @@ public class ExecutionListenerTest {
       cmcField.set(listener, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
+    }
+  }
+
+  @Nested
+  class BeforeEachTests {
+
+    @Test
+    void shouldWaitForClusterToBeReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      verify(camundaContainerRuntime).waitUntilClusterReady(any());
+    }
+
+    @Test
+    void shouldFailIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+      doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+
+      listener.beforeTestClass(testContext);
+
+      // when/then
+      assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
     }
   }
 

@@ -29,7 +29,7 @@ type RequestFilters = {
   canceled?: boolean;
   completed?: boolean;
   activityId?: string;
-  batchOperationId?: string;
+  batchOperationKey?: string;
   endDateAfter?: string;
   endDateBefore?: string;
   errorMessage?: string;
@@ -82,6 +82,7 @@ function parseFilterTime(value: string) {
     const parsedDate = parse(value, 'HH:mm:ss', new Date());
     return isValid(parsedDate) ? parsedDate : undefined;
   }
+  return undefined;
 }
 
 function updateFiltersSearchString<Filters extends object>(

@@ -16,9 +16,12 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.MessageSubscriptionStateProperty;
+import io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
@@ -206,4 +209,85 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter tenantId(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by message subscription type.
+   *
+   * @param messageSubscriptionType the type of the message subscription
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter messageSubscriptionType(
+      MessageSubscriptionType messageSubscriptionType);
+
+  /**
+   * Filter by message subscription type using a {@link MessageSubscriptionTypeProperty} consumer.
+   *
+   * @param fn the message subscription type {@link MessageSubscriptionTypeProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter messageSubscriptionType(Consumer<MessageSubscriptionTypeProperty> fn);
+
+  /**
+   * Filter by process definition name.
+   *
+   * @param processDefinitionName the name of the process definition
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionName(String processDefinitionName);
+
+  /**
+   * Filter by process definition name using a {@link StringProperty} consumer.
+   *
+   * @param fn the process definition name {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionName(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by process definition version.
+   *
+   * @param processDefinitionVersion the version of the process definition
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionVersion(Integer processDefinitionVersion);
+
+  /**
+   * Filter by process definition version using a {@link IntegerProperty} consumer.
+   *
+   * @param fn the process definition version {@link IntegerProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionVersion(Consumer<IntegerProperty> fn);
+
+  /**
+   * Filter by tool name.
+   *
+   * @param toolName the tool name
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(String toolName);
+
+  /**
+   * Filter by tool name using a {@link StringProperty} consumer.
+   *
+   * @param fn the tool name {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by inbound connector type.
+   *
+   * @param inboundConnectorType the inbound connector type
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(String inboundConnectorType);
+
+  /**
+   * Filter by inbound connector type using a {@link StringProperty} consumer.
+   *
+   * @param fn the inbound connector type {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(Consumer<StringProperty> fn);
 }

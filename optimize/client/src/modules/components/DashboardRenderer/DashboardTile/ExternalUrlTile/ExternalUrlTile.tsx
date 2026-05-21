@@ -31,6 +31,8 @@ export default function ExternalUrlTile({tile, children}: DashboardTileProps) {
         key={reloadState}
         title="External URL"
         src={tile.configuration.external}
+        sandbox="allow-scripts"
+        referrerPolicy="no-referrer"
         frameBorder="0"
         style={{width: '100%', height: '100%'}}
       />

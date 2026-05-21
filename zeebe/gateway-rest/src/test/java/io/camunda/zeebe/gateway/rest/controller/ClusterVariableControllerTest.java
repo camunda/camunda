@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableScope;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;

@@ -55,6 +55,9 @@
             "retries": {
               "type": "long"
             },
+            "priority": {
+              "type": "integer"
+            },
             "retryBackoff": {
               "type": "long"
             },

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="${protocol.version}" semanticVersion="${project.version}"
+  id="0" version="9"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -84,6 +84,8 @@
       <validValue name="EXPRESSION">66</validValue>
       <validValue name="JOB_METRICS_BATCH">67</validValue>
       <validValue name="GLOBAL_LISTENER">68</validValue>
+      <validValue name="RESOURCE_REEXPORT">69</validValue>
+      <validValue name="AGENT_INSTANCE">70</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
@@ -212,10 +214,21 @@
       <field name="partitionId" id="12" type="int32"/>
       <field name="term" id="13" type="int64"/>
     </group>
+    <!-- partitionHealth for historical reasons is serialized after version field, even though this
+         is invalid SBE. This will make decoding this message with the OTF decoder or with generated
+         code in other languages impossible.
+         As a result the order of the fields is:
+         version
+         partitionHealth
+         zone
+         partitionGroup
+     -->
     <group name="partitionHealth" id="15" sinceVersion="3">
       <field name="partitionId" id="16" type="int32"/>
       <field name="healthStatus" id="17" type="PartitionHealthStatus"/>
     </group>
     <data name="version" id="14" type="varDataEncoding"/>
+    <data name="zone" id="18" type="varDataEncoding" sinceVersion="8"/>
+    <data name="partitionGroup" id="19" type="varDataEncoding" sinceVersion="9"/>
   </sbe:message>
 </sbe:messageSchema>

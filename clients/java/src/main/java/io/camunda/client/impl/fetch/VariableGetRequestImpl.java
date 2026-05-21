@@ -16,6 +16,7 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -31,11 +32,14 @@ public class VariableGetRequestImpl implements VariableGetRequest {
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long variableKey;
+  private final JsonMapper jsonMapper;
 
-  public VariableGetRequestImpl(final HttpClient httpClient, final long variableKey) {
+  public VariableGetRequestImpl(
+      final HttpClient httpClient, final long variableKey, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.variableKey = variableKey;
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -51,7 +55,7 @@ public class VariableGetRequestImpl implements VariableGetRequest {
         String.format("/variables/%d", variableKey),
         httpRequestConfig.build(),
         VariableResult.class,
-        VariableImpl::new,
+        v -> new VariableImpl(v, jsonMapper),
         result);
     return result;
   }

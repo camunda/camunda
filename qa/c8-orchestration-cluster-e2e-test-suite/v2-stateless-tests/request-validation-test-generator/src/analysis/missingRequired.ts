@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {OperationModel, ValidationScenario} from '../model/types.js';
 import {makeId, genPlaceholder} from './common.js';
 
@@ -26,7 +34,7 @@ export function generateMissingRequired(
     for (const prop of op.requiredProps) {
       if (opts.capPerOperation && count >= opts.capPerOperation) break;
       // build minimal body with all required except this one
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const body: Record<string, any> = {};
       for (const p of op.requiredProps) {
         if (p === prop) continue; // omit

@@ -143,8 +143,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
                           prefixLength,
                           (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
                             try {
-                              toCf.rawPut(
-                                  toTx, key, keyOffset, keyLen, value, valueOffset, valueLen);
+                              toCf.rawPut(toTx, key, keyLen, value, valueLen);
                             } catch (final Exception e) {
                               LOG.error(
                                   "Failed to copy column family '{}' on key {} and value with length {} terminating.",

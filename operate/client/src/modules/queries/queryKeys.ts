@@ -12,7 +12,9 @@ import type {
   GetIncidentProcessInstanceStatisticsByErrorRequestBody,
   GetProcessDefinitionInstanceStatisticsRequestBody,
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsRequestBody,
   ProcessInstance,
+  QueryAgentInstancesRequestBody,
   QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
@@ -22,10 +24,20 @@ import type {
   QueryJobsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
+  QueryUserTasksRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const queryKeys = {
+  agentInstance: {
+    get: (agentInstanceKey: string) => ['agentInstance', agentInstanceKey],
+  },
+  agentInstances: {
+    search: (payload?: QueryAgentInstancesRequestBody) => [
+      'agentInstancesSearch',
+      payload,
+    ],
+  },
   variables: {
     search: () => ['searchVariables'],
     searchWithFilter: (params: {
@@ -93,6 +105,10 @@ const queryKeys = {
       'processDefinitionStatistics',
       'runningInstancesCount',
     ],
+    get: (
+      processDefinitionKey: string | undefined,
+      payload: GetProcessDefinitionStatisticsRequestBody,
+    ) => ['processDefinitionStatistics', processDefinitionKey, payload],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
@@ -202,6 +218,12 @@ const queryKeys = {
   },
   currentUser: {
     get: () => ['currentUser'],
+  },
+  userTasks: {
+    queryUserTasks: (payload: QueryUserTasksRequestBody) => [
+      'userTasks',
+      payload,
+    ],
   },
   variable: {
     get: (variableKey: string) => ['variable', variableKey],

@@ -62,6 +62,15 @@ func GetJavaHome(javaBinary string) (string, error) {
 	return javaHomeOutput, nil
 }
 
+// syncEnvFile writes the resolved camundaVersion and connectorsVersion to path so that
+// the .env bundled in the distribution archive is consistent with the artifact being packaged.
+// CAMUNDA_VERSION may be overridden via the process environment (e.g. 8.10.0-SNAPSHOT on a branch)
+// while the committed .env still contains a stale released version.
+func syncEnvFile(path, camundaVersion, connectorsVersion string) error {
+	content := "# this is the version of camunda/ zeebe\nCAMUNDA_VERSION=" + camundaVersion + "\n# Look here: https://artifacts.camunda.com/ui/native/connectors/io/camunda/connector/connector-runtime-bundle/\nCONNECTORS_VERSION=" + connectorsVersion + "\n"
+	return os.WriteFile(path, []byte(content), 0644)
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -83,6 +92,14 @@ func main() {
 
 	switch baseCommand {
 	case "package":
+		if camundaVersion == "" {
+			fmt.Fprintln(os.Stderr, "error: CAMUNDA_VERSION is not set; cannot sync .env before packaging")
+			os.Exit(1)
+		}
+		if err := syncEnvFile(".env", camundaVersion, connectorsVersion); err != nil {
+			fmt.Fprintf(os.Stderr, "error: could not update .env: %v\n", err)
+			os.Exit(1)
+		}
 		err := packages.New(camundaVersion, connectorsVersion)
 		if err != nil {
 			fmt.Printf("%+v", err)

@@ -139,7 +139,7 @@ const Variable: React.FC = observer(() => {
         ? createPortal(
             <MultipleValuesModal
               isVisible={isModalVisible}
-              initialValue={formState.values?.variableValues}
+              initialValue={formState.values?.['variableValues']}
               onClose={() => {
                 setIsModalVisible(false);
                 tracking.track({
@@ -162,7 +162,7 @@ const Variable: React.FC = observer(() => {
             <JSONEditorModal
               isVisible={isModalVisible}
               title="Edit Variable Value"
-              value={formState.values?.variableValues}
+              value={formState.values?.['variableValues']}
               onClose={() => {
                 setIsModalVisible(false);
                 tracking.track({

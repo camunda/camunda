@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.clustervariable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -93,6 +93,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToUpdateTenantScopedClusterVariable() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME)
@@ -165,6 +166,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToUpdateTenantScopedClusterVariableWithSpecificPermissions() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME + "_specific")
@@ -231,6 +233,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeUnauthorizedToUpdateTenantScopedClusterVariableIfNoPermissions() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME)

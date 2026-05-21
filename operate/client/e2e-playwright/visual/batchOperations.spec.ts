@@ -85,7 +85,7 @@ test.describe('batch operation details page', () => {
       URL_API_PATTERN,
       mockResponses({
         batchOperations: {
-          items: [mockBatchOperations.items[0]],
+          items: [mockBatchOperations.items[0]!],
           page: {
             totalItems: 1,
             startCursor: null,
@@ -111,7 +111,7 @@ test.describe('batch operation details page', () => {
       URL_API_PATTERN,
       mockResponses({
         batchOperations: {
-          items: [mockBatchOperations.items[1]],
+          items: [mockBatchOperations.items[1]!],
           page: {
             totalItems: 1,
             startCursor: null,
@@ -196,7 +196,7 @@ test.describe('batch operation details page', () => {
       URL_API_PATTERN,
       mockResponses({
         batchOperations: {
-          items: [mockBatchOperations.items[0]],
+          items: [mockBatchOperations.items[0]!],
           page: {
             totalItems: 1,
             startCursor: null,

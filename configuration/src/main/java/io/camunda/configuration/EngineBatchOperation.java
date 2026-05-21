@@ -162,7 +162,7 @@ public class EngineBatchOperation {
   private int queryRetryBackoffFactor = DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
 
   public Duration getSchedulerInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".scheduler-interval",
         schedulerInterval,
         Duration.class,
@@ -175,7 +175,7 @@ public class EngineBatchOperation {
   }
 
   public int getChunkSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".chunk-size",
         chunkSize,
         Integer.class,
@@ -188,7 +188,7 @@ public class EngineBatchOperation {
   }
 
   public int getQueryPageSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-page-size",
         queryPageSize,
         Integer.class,
@@ -201,7 +201,7 @@ public class EngineBatchOperation {
   }
 
   public int getQueryInClauseSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-in-clause-size",
         queryInClauseSize,
         Integer.class,
@@ -214,7 +214,7 @@ public class EngineBatchOperation {
   }
 
   public int getQueryRetryMax() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-retry-max",
         queryRetryMax,
         Integer.class,
@@ -227,7 +227,7 @@ public class EngineBatchOperation {
   }
 
   public Duration getQueryRetryInitialDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-retry-initial-delay",
         queryRetryInitialDelay,
         Duration.class,
@@ -240,7 +240,7 @@ public class EngineBatchOperation {
   }
 
   public Duration getQueryRetryMaxDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-retry-max-delay",
         queryRetryMaxDelay,
         Duration.class,
@@ -253,7 +253,7 @@ public class EngineBatchOperation {
   }
 
   public int getQueryRetryBackoffFactor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".query-retry-backoff-factor",
         queryRetryBackoffFactor,
         Integer.class,

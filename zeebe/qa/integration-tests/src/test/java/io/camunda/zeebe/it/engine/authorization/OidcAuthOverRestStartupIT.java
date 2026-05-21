@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.engine.authorization;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Fail;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -32,22 +31,23 @@ public class OidcAuthOverRestStartupIT {
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
+  private static final String UNREACHABLE_ISSUER_URI =
+      "http://localhost:1000/realms/" + KEYCLOAK_REALM;
+
   @TestZeebe(autoStart = false, awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+          // OIDC client config goes through withProperty so CSL's CamundaSecurityLibraryProperties
+          // — bound from Spring's property sources — sees the values. See OidcAuthOverRestIT.
+          .withProperty("camunda.security.authentication.oidc.issuer-uri", UNREACHABLE_ISSUER_URI)
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                final var oidcConfig = c.getAuthentication().getOidc();
-                final String issuerUri = "http://localhost:1000" + "/realms/" + KEYCLOAK_REALM;
-                oidcConfig.setIssuerUri(issuerUri);
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
                 c.getInitialization()
                     .getDefaultRoles()
                     .put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));
@@ -55,32 +55,14 @@ public class OidcAuthOverRestStartupIT {
 
   @Test
   public void shouldFailToStartWhenNoIdpAvailable() {
-    // given
-    final String expectedMessage =
-        "Unable to connect to the Identity Provider endpoint `http://localhost:1000/realms/camunda'. "
-            + "Double check that it is configured correctly, and if the problem persists, "
-            + "contact your external Identity provider.";
-
-    // when
-    final Throwable exception = Assertions.assertThatThrownBy(broker::start).actual();
-
-    // then
-    assertHasNestedException(exception, IllegalStateException.class, expectedMessage);
-  }
-
-  private void assertHasNestedException(
-      Throwable exception, final Class<?> expectedClass, final String expectedMessage) {
-    while (exception != null) {
-      if (expectedClass.equals(exception.getClass())
-          && expectedMessage.equals(exception.getMessage())) {
-        return;
-      }
-      exception = exception.getCause();
-    }
-    Fail.fail(
-        "Exception has no cause with expectedClass: "
-            + expectedClass.getSimpleName()
-            + " and message: "
-            + expectedMessage);
+    // The startup must fail because the configured IdP is unreachable. The exact exception type
+    // and message come from Spring Security's ClientRegistrations.fromIssuerLocation(...); we
+    // assert only that the failure mentions the unreachable issuer URI, not the specific message
+    // text — OC's previous ClientRegistrationFactory wrapped the cause in a friendly diagnostic
+    // but CSL surfaces Spring's raw error, so a verbatim string match is no longer stable.
+    Assertions.assertThatThrownBy(broker::start)
+        .satisfiesAnyOf(
+            ex -> Assertions.assertThat(ex).hasStackTraceContaining(UNREACHABLE_ISSUER_URI),
+            ex -> Assertions.assertThat(ex).hasStackTraceContaining("localhost:1000"));
   }
 }

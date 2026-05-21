@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {createEndpointMock} from './mock-endpoint';
+
+const mockCurrentUserEndpoint = createEndpointMock({
+	endpoint: '/v2/authentication/me',
+	method: 'GET',
+});
+
+const mockLoginEndpoint = createEndpointMock({
+	endpoint: '/login',
+	method: 'POST',
+});
+
+const mockLogoutEndpoint = createEndpointMock({
+	endpoint: '/logout',
+	method: 'POST',
+});
+
+export {mockCurrentUserEndpoint, mockLoginEndpoint, mockLogoutEndpoint};

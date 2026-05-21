@@ -40,6 +40,7 @@ import {
 import {TenantField} from 'modules/components/TenantField';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
   getDefinitionIdentifier,
@@ -106,10 +107,17 @@ const Filters: React.FC = observer(() => {
           <FiltersPanel
             localStorageKey="isFiltersCollapsed"
             isResetButtonDisabled={
-              (isEqual(initialValues, values) && visibleFilters.length === 0) ||
+              (isEqual(initialValues, values) &&
+                visibleFilters.length === 0 &&
+                !(
+                  MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters
+                )) ||
               isBatchModificationEnabled
             }
             onResetClick={() => {
+              if (MULTI_VARIABLE_FILTER) {
+                variableFilterStore.setConditions([]);
+              }
               form.reset();
               navigate({
                 search: updateProcessInstancesFilterSearchString(

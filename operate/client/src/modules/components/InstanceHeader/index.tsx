@@ -17,7 +17,7 @@ import {
   AdditionalContent,
 } from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Column = {
   title?: string;

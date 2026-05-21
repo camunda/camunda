@@ -14,6 +14,8 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {searchResult} from 'modules/testUtils';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -41,8 +43,9 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
 
 describe('OperationsLog InstancesTable', () => {
   beforeEach(() => {
-    mockSearchProcessDefinitions().withSuccess({
-      items: [
+    mockSearchDecisionDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
         {
           processDefinitionKey: '123456',
           processDefinitionId: 'process1',
@@ -53,26 +56,12 @@ describe('OperationsLog InstancesTable', () => {
           resourceName: null,
           versionTag: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
   });
 
   it('should render operations log header', () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withSuccess(searchResult([]));
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -82,15 +71,7 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should show loading state when data is being fetched', () => {
-    mockQueryAuditLogs().withDelay({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withDelay(searchResult([]));
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -100,15 +81,7 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render empty state when no operations are found without filters', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withSuccess(searchResult([]));
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -125,15 +98,7 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render empty state when no operations are found with filters', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withSuccess(searchResult([]));
 
     const WrapperWithFilter: React.FC<{children: React.ReactNode}> = ({
       children,
@@ -166,15 +131,7 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render table headers correctly', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockQueryAuditLogs().withSuccess(searchResult([]));
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -204,8 +161,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render audit log rows when data is present', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '123',
           entityKey: '1',
@@ -272,14 +229,8 @@ describe('OperationsLog InstancesTable', () => {
           relatedEntityType: null,
           agentElementId: null,
         },
-      ],
-      page: {
-        totalItems: 2,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -298,8 +249,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render batch operation information', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '789',
           entityKey: '3',
@@ -333,14 +284,8 @@ describe('OperationsLog InstancesTable', () => {
           agentElementId: null,
           entityDescription: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -357,8 +302,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should open details modal when info button is clicked', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '123',
           entityKey: '1',
@@ -392,14 +337,8 @@ describe('OperationsLog InstancesTable', () => {
           agentElementId: null,
           entityDescription: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     const {user} = render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -431,8 +370,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should format timestamps correctly', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '123',
           entityKey: '1',
@@ -466,14 +405,8 @@ describe('OperationsLog InstancesTable', () => {
           agentElementId: null,
           entityDescription: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -483,8 +416,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render process instance link for PROCESS_INSTANCE entity type', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '123',
           entityKey: '999',
@@ -518,14 +451,8 @@ describe('OperationsLog InstancesTable', () => {
           agentElementId: null,
           entityDescription: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
@@ -541,8 +468,8 @@ describe('OperationsLog InstancesTable', () => {
   });
 
   it('should render decision instance link for DECISION entity type', async () => {
-    mockQueryAuditLogs().withSuccess({
-      items: [
+    mockQueryAuditLogs().withSuccess(
+      searchResult([
         {
           auditLogKey: '123',
           entityKey: '888',
@@ -576,14 +503,8 @@ describe('OperationsLog InstancesTable', () => {
           agentElementId: null,
           entityDescription: null,
         },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+      ]),
+    );
 
     render(<InstancesTable />, {
       wrapper: Wrapper,

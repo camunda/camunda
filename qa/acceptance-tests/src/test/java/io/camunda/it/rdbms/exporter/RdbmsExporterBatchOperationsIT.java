@@ -51,6 +51,7 @@ class RdbmsExporterBatchOperationsIT {
       new VendorDatabaseProperties(
           new Properties() {
             {
+              setProperty("databaseId", "h2");
               setProperty("variableValue.previewSize", "100");
               setProperty("userCharColumn.size", "50");
               setProperty("errorMessage.size", "500");
@@ -77,6 +78,7 @@ class RdbmsExporterBatchOperationsIT {
                 "foo",
                 Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
+            "",
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);

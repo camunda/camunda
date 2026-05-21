@@ -37,6 +37,7 @@ public class ServiceException extends RuntimeException {
     ABORTED,
     INTERNAL,
     NOT_FOUND,
+    NOT_ACCEPTABLE,
     ALREADY_EXISTS,
     INVALID_STATE,
     UNKNOWN

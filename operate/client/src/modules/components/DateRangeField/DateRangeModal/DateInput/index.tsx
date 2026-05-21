@@ -37,8 +37,8 @@ const DateInput = forwardRef<HTMLDivElement, Props>(
               }}
               ref={ref}
               placeholder="YYYY-MM-DD"
-              // @ts-expect-error - Carbon types are wrong
               pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
+              // @ts-expect-error - Carbon types are wrong
               value={input.value}
               maxLength={10}
               autoComplete="off"

@@ -104,6 +104,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Needed on the classpath for runtime classloading in AnalyticsExporterIT -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
@@ -148,6 +155,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>
@@ -155,6 +168,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -167,18 +185,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -641,6 +647,12 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -663,6 +675,7 @@
         <configuration>
           <usedDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>io.camunda:analytics-exporter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

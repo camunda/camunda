@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect, APIRequestContext} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 import {assertStatusCode, assertInvalidArgument} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {evaluateExpression, EXPRESSION_URL} from '@requestHelpers';

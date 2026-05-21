@@ -1,6 +1,6 @@
 -- Create login and user with restricted privileges for manual user testing
 -- Note: Password is hardcoded for testing purposes only
-CREATE LOGIN camunda WITH PASSWORD = 'Camunda_Pass123!';
+CREATE LOGIN camunda WITH PASSWORD = 'Strong_Pass123!';
 
 CREATE USER camunda FOR LOGIN camunda;
 

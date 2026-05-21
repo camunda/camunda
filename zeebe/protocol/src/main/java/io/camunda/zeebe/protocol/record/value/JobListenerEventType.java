@@ -26,6 +26,21 @@ public enum JobListenerEventType {
   // ---------------------------------------------------------------------------
 
   /**
+   * Represents the `beforeAll` event for an execution listener. This event type is used to indicate
+   * that the listener should be triggered before instances are created, allowing variable
+   * initialization prior to element activation, such as in multi-instance bodies.
+   */
+  BEFORE_ALL,
+
+  /**
+   * Represents the `cancel` event for an execution listener. This event type is used to indicate
+   * that the listener should be triggered when the process element reaches {@code
+   * ELEMENT_TERMINATING} state (e.g. explicit process instance cancellation). The element
+   * termination can't be denied by a listener of this type.
+   */
+  CANCEL,
+
+  /**
    * Represents the `start` event for an execution listener. This event type is used to indicate
    * that the listener should be triggered at the start of an execution, such as the beginning of a
    * process instance, sub-process or element (task, event, gateway).

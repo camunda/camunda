@@ -1172,6 +1172,52 @@ public class CreateProcessInstanceAnywhereTest {
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldActivateAtProcessInstance() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("end").done())
+        .deploy();
+
+    // When
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(PROCESS_ID)
+            .create();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .describedAs("Expected to start process instance at the root")
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT))
+        .containsSubsequence(
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst())
+        .extracting(
+            Record::getKey,
+            r -> r.getValue().getProcessInstanceKey(),
+            r -> r.getValue().getFlowScopeKey(),
+            r -> r.getValue().getBpmnElementType())
+        .containsExactly(processInstanceKey, processInstanceKey, -1L, BpmnElementType.PROCESS);
+  }
+
   private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,

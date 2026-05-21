@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.BeforeEach;

@@ -18,7 +18,7 @@ import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {handleOperationError} from 'modules/utils/notifications';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 

@@ -16,6 +16,7 @@ import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -99,6 +100,12 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   @Override
   public String osUrl() {
     return opensearch.getContainer().getHttpHostAddress();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Duration dataAvailabilityTimeout() {
+    return Duration.ofSeconds(30);
   }
 
   @Override

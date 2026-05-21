@@ -19,7 +19,9 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
@@ -56,6 +58,9 @@ import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
+import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -82,6 +87,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -137,6 +143,9 @@ public final class EngineProcessors {
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
     final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var processDefinitionMetrics =
+        new ProcessDefinitionMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -194,7 +203,8 @@ public final class EngineProcessors {
         clock,
         authCheckBehavior,
         routingInfo,
-        expressionLanguageMetrics);
+        expressionLanguageMetrics,
+        processDefinitionMetrics);
     addMessageProcessors(
         typedRecordProcessorContext.getPartitionId(),
         bpmnBehaviors,
@@ -264,7 +274,8 @@ public final class EngineProcessors {
         processingState,
         commandDistributionBehavior,
         bpmnBehaviors,
-        authCheckBehavior);
+        authCheckBehavior,
+        processDefinitionMetrics);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -354,7 +365,8 @@ public final class EngineProcessors {
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
-    addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
+    addResourceFetchProcessors(
+        typedRecordProcessors, writers, processingState, authCheckBehavior, config);
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
@@ -375,6 +387,7 @@ public final class EngineProcessors {
         keyGenerator,
         typedRecordProcessors,
         processingState.getClusterVariableState(),
+        processingState.getTenantState(),
         writers,
         commandDistributionBehavior,
         authCheckBehavior,
@@ -400,6 +413,7 @@ public final class EngineProcessors {
         writers,
         bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
+        processingState.getElementInstanceState(),
         authCheckBehavior);
 
     JobMetricsProcessors.addJobMetricsProcessors(
@@ -409,6 +423,9 @@ public final class EngineProcessors {
         writers,
         keyGenerator,
         clock);
+
+    AgentInstanceProcessors.addAgentInstanceProcessors(
+        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
 
     return typedRecordProcessors;
   }
@@ -511,7 +528,8 @@ public final class EngineProcessors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final RoutingInfo routingInfo,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -526,7 +544,8 @@ public final class EngineProcessors {
             config,
             clock,
             authCheckBehavior,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
 
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
@@ -626,7 +645,8 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
             writers,
@@ -634,7 +654,8 @@ public final class EngineProcessors {
             processingState,
             commandDistributionBehavior,
             bpmnBehaviors,
-            authCheckBehavior);
+            authCheckBehavior,
+            processDefinitionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }
@@ -643,11 +664,24 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineConfiguration config) {
     final var resourceFetchProcessor =
         new ResourceFetchProcessor(writers, processingState, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE, ResourceIntent.FETCH, resourceFetchProcessor);
+    // Migration to reexport resources to secondary storage
+    typedRecordProcessors.withListener(
+        new RpaReexportMigrator(
+            config.isEnableRpaReexportMigration(), processingState.getResourceState()));
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE_REEXPORT,
+        ResourceReexportIntent.START,
+        new ResourceReexportStartProcessor(writers));
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE_REEXPORT,
+        ResourceReexportIntent.REEXPORT,
+        new ResourceReexportReexportProcessor(writers, processingState));
   }
 
   private static void addSignalBroadcastProcessors(

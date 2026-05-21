@@ -25,12 +25,13 @@ public class ByteValueTest {
   @Parameterized.Parameters(name = "Byte value {0} -> {1}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {0, "0 B"},
-      {1024, "1.0 KB"},
-      {1500, "1.5 KB"},
-      {1048576, "1.0 MB"},
-      {3670016, "3.5 MB"},
-      {36700160, "35.0 MB"}
+      {0, "0B"},
+      {1024, "1KiB"},
+      {1500, "1.5KiB"},
+      {1048576, "1MiB"},
+      {3670016, "3.5MiB"},
+      {36700160, "35MiB"},
+      {7305000000L, "6.8GiB"}
     };
   }
 

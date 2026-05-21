@@ -8,17 +8,33 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record VariableEntity(
     Long variableKey,
     String name,
     String value,
-    String fullValue,
+    // only set when the value exceeds the preview size threshold.
+    @Nullable String fullValue,
     Boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    // ES/OS handler only writes when rootProcessInstanceKey > 0 (absent for top-level instances).
+    @Nullable Long rootProcessInstanceKey,
     String processDefinitionId,
     String tenantId)
-    implements TenantOwnedEntity {}
+    implements TenantOwnedEntity {
+
+  public VariableEntity {
+    Objects.requireNonNull(variableKey, "variableKey");
+    Objects.requireNonNull(name, "name");
+    Objects.requireNonNull(value, "value");
+    Objects.requireNonNull(isPreview, "isPreview");
+    Objects.requireNonNull(scopeKey, "scopeKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+}

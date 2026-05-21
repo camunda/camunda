@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
 import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -76,10 +76,10 @@ test.describe('HTO User Flow Tests', () => {
       });
       await expect(page.getByText('testVariable', {exact: true})).toBeVisible();
       await operateHomePage.clickEditVariableButton('testVariable');
-      await operateHomePage.clickVariableValueInput();
+      await expect(operateHomePage.variableValueEditor).toBeVisible();
       await operateHomePage.clearVariableValueInput();
       await operateHomePage.fillVariableValueInput('"updatedValue"');
-      await expect(operateHomePage.saveVariableButton).toBeVisible({
+      await expect(operateHomePage.saveVariableButton).toBeEnabled({
         timeout: 30000,
       });
       await operateHomePage.clickSaveVariableButton();
@@ -97,7 +97,17 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
 
-      await taskPanelPage.openTask('Variable_Process');
+      // After cross-app navigation + variable update, the task list can take
+      // longer than the default 10s to populate on slow runners. Wait for the
+      // task to appear before clicking it. Use .first() to match the locator
+      // strategy in openTask() and avoid strict-mode violations when more
+      // than one task with the same name is present.
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('Variable_Process', {exact: true})
+          .first(),
+      ).toBeVisible({timeout: 60000});
+      await taskPanelPage.openTask('Variable_Process', {timeout: 30000});
       await taskDetailsPage.clickAssignToMeButton();
       await expect(page.getByText('Assigning...')).not.toBeVisible({
         timeout: 90000,
@@ -138,7 +148,11 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      // 60s was hit by the May 21 nightly under load — match the 90s
+      // budget used by the deployed-form completion test.
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 90000,
+      });
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');

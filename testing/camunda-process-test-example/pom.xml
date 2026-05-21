@@ -101,6 +101,8 @@
           <excludes>
             <!-- Run tests with failsafe as integration tests -->
             <exclude>**/*Test.java</exclude>
+            <!-- Exclude nested classes of test classes (compiled as OuterClass$InnerClass.class) -->
+            <exclude>**/*Test$*.class</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -112,6 +114,7 @@
           <includes>
             <!-- Run all tests as integration tests -->
             <include>**/*Test.java</include>
+            <include>**/*Test$*.class</include>
           </includes>
         </configuration>
       </plugin>

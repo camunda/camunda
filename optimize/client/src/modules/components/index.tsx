@@ -44,7 +44,11 @@ export {EmptyState} from './EmptyState';
 export {Breadcrumbs} from './Breadcrumbs';
 export {Deleter} from './Deleter';
 export {BulkDeleter} from './BulkDeleter';
+export {MenuDropdown} from './MenuDropdown';
+export {MenuButton} from './MenuButton';
+export {MultiValueInput} from './MultiValueInput';
 
 export type {User, Identity} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
 export type {TableBody, TableHead} from './Table';
+export type {MenuDropdownProps} from './MenuDropdown';

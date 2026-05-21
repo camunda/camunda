@@ -37,7 +37,7 @@ jobs:
         PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
       run: echo "$PAYLOAD_CONTEXT"
 
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Run CI problems analysis script
       id: analyze
@@ -49,7 +49,7 @@ jobs:
         printf "result<<EOF\n%s\nEOF\n" "$(bash .ci/chatops-commands/ci-problems-analyze.sh ${{ github.event.client_payload.github.payload.issue.number }})" >> "$GITHUB_OUTPUT"
 
     - name: Print CI problems analysis results
-      uses: peter-evans/create-or-update-comment@v5
+      uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
       with:
         token: ${{ steps.github-token.outputs.token }}
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
@@ -57,7 +57,7 @@ jobs:
         body: "${{ steps.analyze.outputs.result }}"
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@v5
+      uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
       with:
         token: ${{ steps.github-token.outputs.token }}
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
@@ -67,7 +67,7 @@ jobs:
 
     - name: Update comment in case of failure
       if: failure()
-      uses: peter-evans/create-or-update-comment@v5
+      uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
       with:
         token: ${{ steps.github-token.outputs.token }}
         comment-id: ${{ github.event.client_payload.github.payload.comment.id }}

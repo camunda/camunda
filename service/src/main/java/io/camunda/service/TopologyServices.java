@@ -7,10 +7,12 @@
  */
 package io.camunda.service;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.service.TopologyServices.Topology.Builder;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -18,7 +20,10 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,40 +68,46 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         .anyMatch(
             partition -> {
               final var leader = topology.getLeaderForPartition(partition);
-              return topology.getPartitionHealth(leader, partition)
-                  == PartitionHealthStatus.HEALTHY;
+              return leader != null
+                  && topology.getPartitionHealth(leader, partition)
+                      == PartitionHealthStatus.HEALTHY;
             });
   }
 
   public CompletableFuture<Topology> getTopology() {
     try {
-      final var topology = Topology.Builder.create();
       final var clusterState = brokerClient.getTopologyManager().getTopology();
+      if (clusterState == null) {
+        return CompletableFuture.failedFuture(
+            new ServiceException(
+                "Cluster topology is not yet available. The gateway has not received cluster state from any broker.",
+                Status.UNAVAILABLE));
+      }
+
+      final var topology = Topology.Builder.create();
 
       final var gatewayVersion = VersionUtil.getVersion();
       if (gatewayVersion != null && !gatewayVersion.isBlank()) {
         topology.gatewayVersion(gatewayVersion);
       }
 
-      if (clusterState != null) {
-        topology
-            .clusterId(clusterState.getClusterId())
-            .clusterSize(clusterState.getClusterSize())
-            .partitionsCount(clusterState.getPartitionsCount())
-            .replicationFactor(clusterState.getReplicationFactor())
-            .lastCompletedChangeId(clusterState.getLastCompletedChangeId());
+      topology
+          .clusterId(clusterState.getClusterId())
+          .clusterSize(clusterState.getClusterSize())
+          .partitionsCount(clusterState.getPartitionsCount())
+          .replicationFactor(clusterState.getReplicationFactor())
+          .lastCompletedChangeId(clusterState.getLastCompletedChangeId());
 
-        clusterState
-            .getBrokers()
-            .forEach(
-                brokerId -> {
-                  final var broker = Broker.Builder.create();
-                  addBrokerInfo(broker, brokerId, clusterState);
-                  addPartitionInfoToBrokerInfo(broker, brokerId, clusterState);
+      clusterState
+          .getBrokers()
+          .forEach(
+              brokerId -> {
+                final var broker = Broker.Builder.create();
+                addBrokerInfo(broker, brokerId, clusterState);
+                addPartitionInfoToBrokerInfo(broker, brokerId, clusterState);
 
-                  topology.addBroker(broker.build());
-                });
-      }
+                topology.addBroker(broker.build());
+              });
 
       return CompletableFuture.completedFuture(topology.build());
     } catch (final Exception ex) {
@@ -105,19 +116,23 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private void addBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker,
+      final BrokerMemberId brokerId,
+      final BrokerClusterState topology) {
     final var brokerAddress = topology.getBrokerAddress(brokerId);
     final var address = Address.from(brokerAddress);
 
     broker
-        .nodeId(brokerId)
+        .brokerId(brokerId)
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker,
+      final BrokerMemberId brokerId,
+      final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -131,19 +146,24 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
               }
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
+
               switch (status) {
                 case HEALTHY -> partition.health(Health.HEALTHY);
                 case UNHEALTHY -> partition.health(Health.UNHEALTHY);
                 case DEAD -> partition.health(Health.DEAD);
-                default ->
-                    LOGGER.debug("Unsupported partition broker health status '{}'", status.name());
+                case null, default ->
+                    LOGGER.debug(
+                        "Unsupported partition broker health status '{}'",
+                        Optional.ofNullable(status)
+                            .map(PartitionHealthStatus::name)
+                            .orElse("null"));
               }
               broker.addPartition(partition.build());
             });
   }
 
   private boolean setRole(
-      final Integer brokerId,
+      final BrokerMemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partition) {
@@ -151,7 +171,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var partitionFollowers = topology.getFollowersForPartition(partitionId);
     final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (brokerId.equals(partitionLeader)) {
       partition.role(Role.LEADER);
     } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
       partition.role(Role.FOLLOWER);
@@ -235,10 +255,40 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId, String host, Integer port, List<Partition> partitions, String version) {
+      BrokerMemberId brokerId,
+      String host,
+      Integer port,
+      List<Partition> partitions,
+      String version) {
+
+    public Broker(
+        @Nullable final String zone,
+        final int nodeId,
+        final String host,
+        final Integer port,
+        final List<Partition> partitions,
+        final String version) {
+      this(BrokerMemberId.from(zone, nodeId), host, port, partitions, version);
+    }
+
+    public Broker {
+      Objects.requireNonNull(brokerId, "Expected brokerId to not be null");
+    }
+
+    public int nodeIdx() {
+      return brokerId.nodeIdx();
+    }
+
+    public @Nullable String zone() {
+      return brokerId.zone();
+    }
+
+    public String brokerIdStr() {
+      return brokerId.id();
+    }
 
     static class Builder {
-      Integer nodeId;
+      BrokerMemberId brokerId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -248,8 +298,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         return new Builder();
       }
 
-      public Builder nodeId(final Integer nodeId) {
-        this.nodeId = nodeId;
+      public Builder brokerId(final BrokerMemberId brokerId) {
+        this.brokerId = brokerId;
         return this;
       }
 
@@ -274,7 +324,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(nodeId, host, port, partitions, version);
+        return new Broker(brokerId, host, port, partitions, version);
       }
     }
   }

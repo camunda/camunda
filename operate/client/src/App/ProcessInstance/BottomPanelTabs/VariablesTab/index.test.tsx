@@ -50,6 +50,7 @@ describe('VariablesTab', () => {
       parentElementInstanceKey: null,
       rootProcessInstanceKey: null,
       tags: [],
+      businessId: null,
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],

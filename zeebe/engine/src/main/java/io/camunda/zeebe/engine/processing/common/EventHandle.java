@@ -19,10 +19,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -34,6 +36,8 @@ public final class EventHandle {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
+  private final ProcessInstanceCreationRecord recordForPICreationEvent =
+      new ProcessInstanceCreationRecord();
   private final MessageStartEventSubscriptionRecord startEventSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
@@ -189,7 +193,8 @@ public final class EventHandle {
       final long messageKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final DirectBuffer businessId) {
 
     final var newProcessInstanceKey = keyGenerator.nextKey();
     startEventSubscriptionRecord
@@ -213,7 +218,8 @@ public final class EventHandle {
         newProcessInstanceKey,
         startEventSubscriptionRecord.getStartEventIdBuffer(),
         variables,
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        businessId);
 
     return newProcessInstanceKey;
   }
@@ -224,6 +230,17 @@ public final class EventHandle {
       final DirectBuffer targetElementId,
       final DirectBuffer variablesBuffer,
       final String tenantId) {
+    activateProcessInstanceForStartEvent(
+        processDefinitionKey, processInstanceKey, targetElementId, variablesBuffer, tenantId, null);
+  }
+
+  public void activateProcessInstanceForStartEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer,
+      final String tenantId,
+      final DirectBuffer businessId) {
 
     triggeringProcessEvent(
         processDefinitionKey,
@@ -245,7 +262,40 @@ public final class EventHandle {
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(tenantId);
 
+    // Set the businessId from the message-start path on the new PI's creation record so that
+    // subsequent uniqueness checks (and exporters) see the PI as carrying the businessId, mirroring
+    // how a PI created via PROCESS_INSTANCE_CREATION already does. Reset to "" when absent so a
+    // stale value from a previous invocation of this reused record cannot leak through.
+    if (businessId != null && businessId.capacity() > 0) {
+      recordForPICreation.setBusinessId(businessId);
+    } else {
+      recordForPICreation.setBusinessId("");
+    }
+
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+
+    // emit CREATED event to indicate instance creation by an event trigger
+    // picked up by appliers and exporters accordingly, e.g., for metrics and audit logs
+    recordForPICreationEvent
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setProcessDefinitionKey(process.getKey())
+        .setVersion(process.getVersion())
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
+
+    // Mirror the businessId stamping onto the PROCESS_INSTANCE_CREATION:CREATED event so that
+    // consumers reading ProcessInstanceCreationRecordValue.getBusinessId() see the same value as
+    // PIs created via the PROCESS_INSTANCE_CREATION command path. Reset to "" when absent so a
+    // stale value from a previous invocation of this reused record cannot leak through.
+    if (businessId != null && businessId.capacity() > 0) {
+      recordForPICreationEvent.setBusinessId(businessId);
+    } else {
+      recordForPICreationEvent.setBusinessId("");
+    }
+
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, recordForPICreationEvent);
   }
 }

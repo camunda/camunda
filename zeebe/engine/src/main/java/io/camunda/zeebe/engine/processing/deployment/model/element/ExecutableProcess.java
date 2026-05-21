@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,10 +21,19 @@ import org.agrona.DirectBuffer;
 public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
+  private Expression defaultJobPriority;
 
   public ExecutableProcess(final String id) {
     super(id);
     addFlowElement(this);
+  }
+
+  public Expression getDefaultJobPriority() {
+    return defaultJobPriority;
+  }
+
+  public void setDefaultJobPriority(final Expression defaultJobPriority) {
+    this.defaultJobPriority = defaultJobPriority;
   }
 
   public void addFlowElement(final AbstractFlowElement element) {

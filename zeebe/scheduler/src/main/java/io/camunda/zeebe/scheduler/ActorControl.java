@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class ActorControl implements ConcurrencyControl {
   final ActorTask task;
@@ -69,8 +70,8 @@ public class ActorControl implements ConcurrencyControl {
    * @param action
    * @return
    */
-  public ActorFuture<Void> call(final Runnable action) {
-    final Callable<Void> c =
+  public ActorFuture<@Nullable Void> call(final Runnable action) {
+    final Callable<@Nullable Void> c =
         () -> {
           action.run();
           return null;
@@ -143,7 +144,7 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public <T> void runOnCompletion(
-      final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
+      final ActorFuture<T> future, final BiConsumer<T, @Nullable Throwable> callback) {
     ensureCalledFromWithinActor("runOnCompletion(...)");
 
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
@@ -169,10 +170,9 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
+      final Collection<ActorFuture<T>> futures, final Consumer<@Nullable Throwable> callback) {
     if (!futures.isEmpty()) {
-      final BiConsumer<T, Throwable> futureConsumer =
-          new AllCompletedFutureConsumer<>(futures.size(), callback);
+      final var futureConsumer = new AllCompletedFutureConsumer<T>(futures.size(), callback);
 
       for (final ActorFuture<T> future : futures) {
         runOnCompletion(future, futureConsumer);
@@ -298,7 +298,7 @@ public class ActorControl implements ConcurrencyControl {
 
   private <T> void submitContinuationJob(
       final ActorFuture<T> future,
-      final BiConsumer<T, Throwable> callback,
+      final BiConsumer<T, @Nullable Throwable> callback,
       final Function<ActorJob, ActorFutureSubscription> futureSubscriptionSupplier) {
     final ActorJob continuationJob = new ActorJob();
     continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
@@ -316,7 +316,7 @@ public class ActorControl implements ConcurrencyControl {
     job.getTask().yieldThread();
   }
 
-  public ActorFuture<Void> close() {
+  public ActorFuture<@Nullable Void> close() {
     final ActorJob closeJob = new ActorJob();
 
     closeJob.onJobAddedToTask(task);
@@ -360,12 +360,12 @@ public class ActorControl implements ConcurrencyControl {
     return task.getLifecyclePhase();
   }
 
-  public boolean isCalledFromWithinActor(final ActorJob job) {
+  public boolean isCalledFromWithinActor(final @Nullable ActorJob job) {
     return job != null && job.getActor() == actor;
   }
 
   private ActorJob ensureCalledFromWithinActor(final String methodName) {
-    final ActorJob currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
+    final var currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
     if (!isCalledFromWithinActor(currentJob)) {
       throw new UnsupportedOperationException(
           "Incorrect usage of actor."

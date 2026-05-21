@@ -7,9 +7,9 @@
  */
 package io.camunda.service.authorization;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_TASK_LISTENER;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMPONENT;
+import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
+import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
 
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -18,7 +18,9 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -59,6 +61,9 @@ public abstract class Authorizations {
   public static final Authorization<FlowNodeInstanceEntity> ELEMENT_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 
+  public static final Authorization<FormEntity> FORM_READ_AUTHORIZATION =
+      Authorization.of(a -> a.resource().read());
+
   public static final Authorization<GroupEntity> GROUP_READ_AUTHORIZATION =
       Authorization.of(a -> a.group().read());
 
@@ -77,6 +82,9 @@ public abstract class Authorizations {
 
   public static final Authorization<ProcessDefinitionEntity> PROCESS_DEFINITION_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessDefinition());
+
+  public static final Authorization<DeployedResourceEntity> RESOURCE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.resource().read());
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());

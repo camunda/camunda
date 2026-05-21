@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.security.configuration.ConfiguredGroup;
+import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.stream.Stream;
@@ -67,7 +68,7 @@ public class GroupConfigurer
                 new RoleRecord()
                     .setRoleId(id)
                     .setEntityId(groupId)
-                    .setEntityType(EntityType.GROUP));
+                    .setEntityType(AuthzModelMapper.toProtocol(EntityType.GROUP)));
   }
 
   private static Stream<GroupRecord> mapToGroupMembers(
@@ -76,7 +77,12 @@ public class GroupConfigurer
       return Stream.empty();
     }
     return memberIds.stream()
-        .map(id -> new GroupRecord().setGroupId(groupId).setEntityId(id).setEntityType(entityType));
+        .map(
+            id ->
+                new GroupRecord()
+                    .setGroupId(groupId)
+                    .setEntityId(id)
+                    .setEntityType(AuthzModelMapper.toProtocol(entityType)));
   }
 
   private GroupRecord mapToRecord(final ConfiguredGroup group) {

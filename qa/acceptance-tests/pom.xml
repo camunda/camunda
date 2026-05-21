@@ -113,11 +113,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -339,6 +334,16 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>
@@ -388,31 +393,31 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-postgresql</artifactId>
-      <version>2.0.4</version>
+      <version>2.0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-mssqlserver</artifactId>
-      <version>2.0.4</version>
+      <version>2.0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-mysql</artifactId>
-      <version>2.0.4</version>
+      <version>2.0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-mariadb</artifactId>
-      <version>2.0.4</version>
+      <version>2.0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-oracle-free</artifactId>
-      <version>2.0.4</version>
+      <version>2.0.5</version>
       <scope>test</scope>
     </dependency>
 
@@ -514,13 +519,33 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -544,11 +569,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
       <scope>test</scope>
@@ -565,8 +585,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-azure</artifactId>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -637,13 +657,23 @@
       <artifactId>testcontainers-toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
     <repository>
       <id>maven_central</id>
       <name>Maven Central</name>
-      <url>https://repo.maven.apache.org/maven2/</url>
+      <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
     </repository>
   </repositories>
 
@@ -673,7 +703,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -699,6 +729,25 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>dl-nightly</id>
+      <properties>
+        <failsafe.excluded.nightly/>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration combine.self="override">
+              <groups>dl-nightly</groups>
+              <excludedGroups/>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>rdbms</id>
       <build>
@@ -769,6 +818,59 @@
               <includes>
                 <include>${identity-packages}</include>
               </includes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    The following two profiles split the multi-db-test suite into smaller groups for
+    parallel execution. This is used by the AWS OpenSearch CI workflow to avoid exceeding
+    the job timeout. Tests are partitioned into client and non-client packages.
+    -->
+    <profile>
+      <id>multi-db-test-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <includes>
+                <include>io/camunda/it/client/*</include>
+              </includes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>multi-db-test-non-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>io/camunda/it/client/*</exclude>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>

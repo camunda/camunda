@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NullMarked
 public final class Loggers {
 
   public static final Logger LOGSTREAMS_LOGGER =

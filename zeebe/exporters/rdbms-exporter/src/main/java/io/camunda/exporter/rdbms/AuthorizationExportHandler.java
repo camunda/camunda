@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,8 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
         .resourceMatcher(authorization.getResourceMatcher().value())
         .resourceId(authorization.getResourceId())
         .resourcePropertyName(authorization.getResourcePropertyName())
-        .permissionTypes(authorization.getPermissionTypes())
+        .permissionTypes(
+            AuthzModelMapper.fromProtocolPermissionTypes(authorization.getPermissionTypes()))
         .build();
   }
 }

@@ -18,7 +18,7 @@ import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +39,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
- * Tests that the {@link LoggingAuthenticationFailureHandler} correctly handles JWT decoding
- * failures in the webapp security filter chain (protected by {@code
+ * Tests that the {@link io.camunda.security.spring.handler.LoggingAuthenticationFailureHandler}
+ * correctly handles JWT decoding failures in the webapp security filter chain (protected by {@code
  * ConditionalOnSecondaryStorageEnabled}).
  *
  * <p>This test specifically validates that transient JWKS endpoint failures (e.g., HTTP 500 errors)
@@ -64,7 +64,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
           + LoggingAuthenticationFailureHandlerWebappTest.CLIENT_ID,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.clientAuthenticationMethod="
-          + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
+          + OidcConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
       "camunda.security.authentication.oidc.assertion.keystore.path= ${user.dir}/src/test/resources/keystore.p12",
       "camunda.security.authentication.oidc.assertion.keystore.password=password",
       "camunda.security.authentication.oidc.assertion.keystore.keyAlias=camunda-standalone",
@@ -91,7 +91,7 @@ class LoggingAuthenticationFailureHandlerWebappTest {
   static final String ENDPOINT_WELL_KNOWN_JWKS = "/realms/" + REALM + "/.well-known/jwks.json";
   static final String ENDPOINT_WELL_KNOWN_OIDC =
       "/realms/" + REALM + "/.well-known/openid-configuration";
-  static final String WEBAPP_ENDPOINT = "/identity/users";
+  static final String WEBAPP_ENDPOINT = "/admin/users";
 
   @Autowired MockMvcTester mockMvcTester;
 

@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentEntity(
@@ -16,16 +18,28 @@ public record IncidentEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    ErrorType errorType,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable ErrorType errorType,
     String errorMessage,
     String flowNodeId,
     Long flowNodeInstanceKey,
     OffsetDateTime creationTime,
-    IncidentState state,
-    Long jobKey,
+    @Nullable IncidentState state,
+    @Nullable Long jobKey,
     String tenantId)
     implements TenantOwnedEntity {
+
+  public IncidentEntity {
+    Objects.requireNonNull(incidentKey, "incidentKey");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(errorMessage, "errorMessage");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
+    Objects.requireNonNull(creationTime, "creationTime");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
 
   public enum IncidentState {
     ACTIVE,

@@ -16,8 +16,8 @@ import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -71,6 +71,12 @@ public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSub
             mapper.search(dbQuery).stream().map(MessageSubscriptionEntityMapper::toEntity).toList(),
         dbPage,
         dbSort);
+  }
+
+  @Override
+  public MessageSubscriptionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   public Optional<MessageSubscriptionEntity> findOne(final long key) {

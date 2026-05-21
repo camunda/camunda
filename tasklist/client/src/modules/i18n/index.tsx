@@ -26,7 +26,7 @@ type LocaleConfig = {
   translationFile: Resource;
 };
 
-export type SelectionOption = {
+type SelectionOption = {
   id: string;
   label: string;
 };
@@ -58,19 +58,19 @@ const localeDefinitions: LocaleDefinitions = {
   },
 };
 
-const languageItems: SelectionOption[] = Object.keys(localeDefinitions).map(
-  (key) => {
+const languageItems: SelectionOption[] = Object.entries(localeDefinitions).map(
+  ([key, {language}]) => {
     return {
       id: key,
-      label: localeDefinitions[key].language,
+      label: language,
     };
   },
 );
 
-const translationResources: Resource = Object.keys(
+const translationResources: Resource = Object.entries(
   localeDefinitions,
-).reduce<Resource>((acc, key: keyof typeof localeDefinitions) => {
-  acc[key] = localeDefinitions[key].translationFile;
+).reduce<Resource>((acc, [key, {translationFile}]) => {
+  acc[key] = translationFile;
 
   return acc;
 }, {});
@@ -78,4 +78,5 @@ const translationResources: Resource = Object.keys(
 const getCurrentDateLocale = () =>
   localeDefinitions[i18n.language]?.dateLocale ?? dateLocaleEnUS;
 
+export type {SelectionOption};
 export {languageItems, translationResources, getCurrentDateLocale};

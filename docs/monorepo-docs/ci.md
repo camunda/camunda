@@ -145,7 +145,7 @@ Workflows that seek inclusion to the Unified CI (and thus GitHub required status
     2. disable them and create a ticket to fix them long-term
 * use [Vault for secret management](#ci-secret-management)
 * follow the [GitHub Actions Cache strategy](#caching-strategy) for the monorepo
-* follow all [CI Security best practices](#ci-security) for the monorepo
+* follow all [CI Security best practices](#ci-security) for the monorepo, including [SHA pinning of third-party actions](#usage-of-third-party-github-actions)
 * follow the [best practices to handle flaky tests](#flaky-tests)
 
 If the required short runtime _cannot_ be achieved, consider moving long-running tests into nightly jobs or standalone workflows that are no [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) and don't run in the merge queue (to preserve merge velocity).
@@ -453,6 +453,15 @@ GitHub Actions has a [large ecosystem of existing useful actions](https://github
 
 * Use the same action for the same (or similar) automation task, see [recipes](https://github.com/camunda/github-actions-recipes).
 * Use actions only from trusted sources (GitHub or small set of select 3rd parties, [settings](https://github.com/camunda/camunda/settings/actions)).
+* **Pin all third-party actions to a full-length commit SHA** instead of a mutable tag. This protects against supply-chain attacks where a tag is moved to point to malicious code. Add a version comment after the SHA for readability:
+  ```yaml
+  # Good — pinned to SHA with version comment
+  - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+  # Bad — mutable tag, vulnerable to tag rewriting
+  - uses: actions/checkout@v6
+  ```
+  This applies to all actions outside the `camunda` GitHub Enterprise organizations. Camunda-owned actions referenced by branch (e.g. `@main`) are exempt since we control those repositories.
 * Move actions from Camundi personal accounts to `camunda` for long-term maintenance, or find replacement.
 
 For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limit which actions can be used](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#allowing-select-actions-and-reusable-workflows-to-run) to:

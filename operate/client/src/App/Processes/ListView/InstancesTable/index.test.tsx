@@ -14,7 +14,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import * as clientConfig from 'modules/utils/getClientConfig';
@@ -47,6 +47,7 @@ const mockProcessInstances: ProcessInstance[] = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   },
 ];
 
@@ -99,7 +100,7 @@ describe('<InstancesTable />', () => {
         <InstancesTable
           state="content"
           processInstances={mockProcessInstances}
-          totalProcessInstancesCount={mockProcessInstances.length}
+          totalCount={mockProcessInstances.length}
           hasMoreTotalItems={false}
         />,
         {
@@ -127,7 +128,7 @@ describe('<InstancesTable />', () => {
       <InstancesTable
         state="content"
         processInstances={mockProcessInstances}
-        totalProcessInstancesCount={mockProcessInstances.length}
+        totalCount={mockProcessInstances.length}
         hasMoreTotalItems={false}
       />,
       {
@@ -147,7 +148,7 @@ describe('<InstancesTable />', () => {
       <InstancesTable
         state="content"
         processInstances={mockProcessInstances}
-        totalProcessInstancesCount={mockProcessInstances.length}
+        totalCount={mockProcessInstances.length}
         hasMoreTotalItems={false}
       />,
       {
@@ -167,7 +168,7 @@ describe('<InstancesTable />', () => {
       <InstancesTable
         state="content"
         processInstances={mockProcessInstances}
-        totalProcessInstancesCount={mockProcessInstances.length}
+        totalCount={mockProcessInstances.length}
         hasMoreTotalItems={false}
       />,
       {wrapper: getWrapper()},
@@ -202,7 +203,7 @@ describe('<InstancesTable />', () => {
       <InstancesTable
         state="empty"
         processInstances={[]}
-        totalProcessInstancesCount={0}
+        totalCount={0}
         hasMoreTotalItems={false}
       />,
       {wrapper: getWrapper()},
@@ -211,5 +212,48 @@ describe('<InstancesTable />', () => {
     expect(
       screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
+  });
+
+  it('should show Business ID column when at least one instance has a businessId', async () => {
+    const instancesWithBusinessId: ProcessInstance[] = [
+      {
+        ...mockProcessInstances[0]!,
+        businessId: 'order-12345',
+      },
+    ];
+
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={instancesWithBusinessId}
+        totalCount={instancesWithBusinessId.length}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /Business ID/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Sort by Business ID/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('order-12345')).toBeInTheDocument();
+  });
+
+  it('should hide Business ID column when no instance has a businessId', async () => {
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalCount={mockProcessInstances.length}
+        hasMoreTotalItems={false}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      screen.queryByRole('columnheader', {name: /Business ID/i}),
+    ).not.toBeInTheDocument();
   });
 });

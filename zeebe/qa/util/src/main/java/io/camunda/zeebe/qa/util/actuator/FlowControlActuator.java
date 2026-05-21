@@ -19,14 +19,14 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
-import io.zeebe.containers.ZeebeNode;
 import java.util.Map;
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface FlowControlActuator {
-  static FlowControlActuator of(final ZeebeNode<?> node) {
+  static FlowControlActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/flowControl", node.getExternalMonitoringAddress());
     return of(endpoint);

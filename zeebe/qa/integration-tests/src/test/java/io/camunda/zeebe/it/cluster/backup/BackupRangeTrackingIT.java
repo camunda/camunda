@@ -149,6 +149,14 @@ final class BackupRangeTrackingIT {
               }
             });
 
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(actuator.state().getBackupStates())
+                    .describedAs("There should be backup state for partition 1")
+                    .extracting(PartitionBackupState::getPartitionId)
+                    .contains(1));
+
     final var lastBackupBeforeLeaderChange =
         actuator.state().getBackupStates().stream()
             .filter((final PartitionBackupState state) -> state.getPartitionId() == 1)

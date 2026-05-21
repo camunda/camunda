@@ -24,6 +24,8 @@ env-h2-up:
 	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
 	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms \
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
+	ZEEBE_BROKER_NETWORK_HOST=127.0.0.1 \
+	ZEEBE_BROKER_NETWORK_ADVERTISEDHOST=127.0.0.1 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
 	  -Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,admin,consolidated-auth
@@ -34,7 +36,8 @@ env-up: $(DATABASE) setup-maven-context
 	$(eval SPRING_PROFILES_ACTIVE = tasklist,broker,dev,dev-data,consolidated-auth)
 	$(eval MAIN_CLASS = io.camunda.application.StandaloneCamunda)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
-		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "localhost" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "127.0.0.1" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_ADVERTISEDHOST "127.0.0.1" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME "demo" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD "demo" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME "Demo" $(MAVEN_CONTEXT) && \

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -34,12 +32,13 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -66,9 +65,10 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String GROUP_NAME = "raft-partition";
+  public static final String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
+  private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
@@ -83,9 +83,9 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
-  private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
+      final String partitionGroup,
       final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -103,9 +103,11 @@ public final class PartitionManagerImpl
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
+      final RocksDbResources rocksDbResources,
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -121,7 +123,6 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = allocateSharedCache(brokerCfg, meterRegistry);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -142,23 +143,35 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            sharedRocksDbResources,
-            clusterConfigurationService);
+            clusterConfigurationService,
+            rocksDbResources);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
+    RocksDbSharedCacheMetrics.registerAllocationStrategy(
+        brokerMeterRegistry,
+        brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
   }
 
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
+    // The default physical tenant's partition distribution is the only one stored in dynamic
+    // config; other physical tenants derive their distribution by rewriting the group on every
+    // PartitionId.
+    final var groupDistribution =
+        clusterConfigurationService.getPartitionDistribution().withGroupName(partitionGroup);
     final var memberPartitions =
-        clusterConfigurationService.getPartitionDistribution().partitions().stream()
+        groupDistribution.partitions().stream()
             .filter(p -> p.members().contains(localMemberId))
             .toList();
 
-    healthCheckService.registerBootstrapPartitions(memberPartitions);
+    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
+    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      healthCheckService.registerBootstrapPartitions(memberPartitions);
+    }
     for (final var partitionMetadata : memberPartitions) {
       final var initialPartitionConfig =
           clusterConfigurationService
@@ -288,7 +301,6 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            sharedRocksDbResources.close();
             topologyManager.closeAsync().onComplete(result);
           }
         });
@@ -345,7 +357,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             membersWithPriority,
             targetPriority,
@@ -397,7 +409,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,

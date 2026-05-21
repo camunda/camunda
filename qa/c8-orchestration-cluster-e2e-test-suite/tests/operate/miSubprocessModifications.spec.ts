@@ -14,7 +14,7 @@ import {
   cancelProcessInstance,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
+import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
@@ -108,9 +108,8 @@ test.afterAll(async () => {
 });
 
 test.describe('Multi-Instance Subprocess Modifications', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await hideHelperModals(page);
   });
@@ -384,9 +383,12 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     });
 
     await test.step('Verify the cross-boundary move was rejected: target selection prompt remains active', async () => {
+      // Use a longer timeout: the click on the invalid target can briefly
+      // de-render the prompt before it reappears, which races the default
+      // 5s toBeVisible check on slower runners.
       await expect(
         operateProcessInstanceViewModificationModePage.moveTokensMessage,
-      ).toBeVisible();
+      ).toBeVisible({timeout: 30000});
     });
   });
 
@@ -977,16 +979,16 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     await test.step('Verify no cancel or move actions are available for the terminated flow node', async () => {
       await expect(
         operateProcessInstanceViewModificationModePage.cancelButtonPopup,
-      ).not.toBeVisible();
+      ).toBeHidden();
       await expect(
         operateProcessInstanceViewModificationModePage.moveSelectedInstanceButton,
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
 
     await test.step('Verify Add is also not available for the terminated flow node', async () => {
       await expect(
         operateProcessInstanceViewModificationModePage.addModificationButtononPopup,
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
   });
 });

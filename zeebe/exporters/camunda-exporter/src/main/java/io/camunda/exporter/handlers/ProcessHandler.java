@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,11 +31,15 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ExtensionPropertyConfiguration extensionPropertiesConfiguration;
 
   public ProcessHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExtensionPropertyConfiguration extensionPropertiesConfiguration) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.extensionPropertiesConfiguration = extensionPropertiesConfiguration;
   }
 
   @Override
@@ -87,12 +92,17 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     final var reader = getProcessModelReader(process);
 
     final boolean hasUserTasks;
+    final Map<String, Map<String, String>> elementExtensionProperties;
     if (reader != null) {
       final var flowNodes = reader.extractFlowNodes();
       extractProcessModelData(reader, entity, flowNodes);
       hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
+      elementExtensionProperties =
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
     } else {
       hasUserTasks = true;
+      elementExtensionProperties = Map.of();
     }
 
     // update local cache so that the process info is available immediately to the process instance
@@ -104,7 +114,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersionTag(),
             entity.getCallActivityIds(),
             getFlowNodesMap(entity.getFlowNodes()),
-            hasUserTasks);
+            hasUserTasks,
+            elementExtensionProperties);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 

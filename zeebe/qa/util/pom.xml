@@ -69,11 +69,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
@@ -171,7 +166,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
+      <artifactId>camunda-security-library-api</artifactId>
     </dependency>
 
     <dependency>
@@ -253,6 +248,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-db</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
     </dependency>
 
   </dependencies>

@@ -13,6 +13,8 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.exporter.rdbms.replication.ReplicationController;
+import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -60,6 +62,10 @@ public final class RdbmsExporter {
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
 
+  // Async replication support — null when disabled
+  private final ReplicationControllerFactory replicationControllerFactory;
+  private ReplicationController replicationController;
+
   private RdbmsExporter(
       final int partitionId,
       final Duration flushInterval,
@@ -68,7 +74,8 @@ public final class RdbmsExporter {
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
       final RdbmsSchemaManager rdbmsSchemaManager,
       final HistoryCleanupService historyCleanupService,
-      final HistoryDeletionService historyDeletionService) {
+      final HistoryDeletionService historyDeletionService,
+      final ReplicationControllerFactory replicationControllerFactory) {
     this.historyCleanupService = historyCleanupService;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
@@ -78,6 +85,7 @@ public final class RdbmsExporter {
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.historyDeletionService = historyDeletionService;
+    this.replicationControllerFactory = replicationControllerFactory;
 
     LOG.info(
         "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -98,11 +106,6 @@ public final class RdbmsExporter {
       throw new ExporterException("Schema is not ready for use");
     }
 
-    if (!flushAfterEachRecord()) {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
@@ -118,17 +121,43 @@ public final class RdbmsExporter {
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter P{}] Position in Broker {} is more advanced than in rdbms {}",
+            "[RDBMS Exporter P{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             partitionId,
+            lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
-            lastPosition);
+            exporterRdbmsPosition.lastExportedPosition());
+        lastPosition = exporterRdbmsPosition.lastExportedPosition();
+        final boolean replayInitiated =
+            controller.requestReplay(exporterRdbmsPosition.lastExportedPosition());
+        if (!replayInitiated) {
+          throw new ExporterException(
+              String.format(
+                  "[RDBMS Exporter P%d] Cannot replay records from position %d: log segments are no longer available. "
+                      + "The RDBMS secondary storage cannot be recovered automatically.",
+                  partitionId, exporterRdbmsPosition.lastExportedPosition() + 1));
+        }
       }
     }
     lastFlushedPosition = lastPosition;
 
+    replicationController = replicationControllerFactory.createReplicationController(controller);
+    rdbmsWriters
+        .getExporterPositionService()
+        .registerLockPositionHook(partitionId, () -> lastFlushedPosition);
+
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
+    rdbmsWriters
+        .getExecutionQueue()
+        .registerPostFlushListener(() -> lastFlushedPosition = lastPosition);
+    rdbmsWriters
+        .getExecutionQueue()
+        .registerPostFlushListener(() -> replicationController.onFlush(lastPosition));
+
+    if (!flushAfterEachRecord()) {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
     // decoupled from the main export thread
@@ -162,6 +191,11 @@ public final class RdbmsExporter {
             partitionId);
         throw e;
       }
+
+      if (replicationController != null) {
+        replicationController.close();
+        replicationController = null;
+      }
     } catch (final Exception e) {
       LOG.warn(
           "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
@@ -175,6 +209,13 @@ public final class RdbmsExporter {
   }
 
   public void export(final Record<?> record) {
+    if (!replicationController.isReplicationInSync()) {
+      throw new ExporterException(
+          String.format(
+              "[RDBMS Exporter P%d] Exporting paused: DB-reported lag exceeded maxLag. Retry later.",
+              partitionId));
+    }
+
     LOG.trace(
         "[RDBMS Exporter P{}] Process record {}-{} - {}:{}",
         partitionId,
@@ -184,6 +225,7 @@ public final class RdbmsExporter {
         record.getIntent());
 
     boolean exported = false;
+    boolean shouldFlushAfterRecordProcessed = false;
     if (registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
@@ -194,6 +236,7 @@ public final class RdbmsExporter {
               handler.getClass());
           handler.export(record);
           exported = true;
+          shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
           LOG.trace(
               "[RDBMS Exporter P{}] Handler {} can not export record {}",
@@ -222,7 +265,8 @@ public final class RdbmsExporter {
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       try {
-        final boolean flushed = rdbmsWriters.flush(flushAfterEachRecord());
+        final boolean shouldFlush = flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
+        final boolean flushed = rdbmsWriters.flush(shouldFlush);
         if (flushed) {
           resetIntervalFlush();
         }
@@ -270,7 +314,6 @@ public final class RdbmsExporter {
 
   private void updatePositionInBroker() {
     LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
-    lastFlushedPosition = lastPosition;
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
@@ -372,6 +415,7 @@ public final class RdbmsExporter {
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
+    private ReplicationControllerFactory replicationControllerFactory;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -422,6 +466,12 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder replicationControllerFactory(
+        final ReplicationControllerFactory replicationControllerFactory) {
+      this.replicationControllerFactory = replicationControllerFactory;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
@@ -431,7 +481,8 @@ public final class RdbmsExporter {
           handlers,
           rdbmsSchemaManager,
           historyCleanupService,
-          historyDeletionService);
+          historyDeletionService,
+          replicationControllerFactory);
     }
   }
 }

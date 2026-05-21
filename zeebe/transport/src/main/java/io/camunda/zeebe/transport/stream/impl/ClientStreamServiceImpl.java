@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation for both {@link ClientStreamer} and {@link ClientStreamService}.
@@ -84,12 +85,12 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public ActorFuture<Void> remove(final ClientStreamId streamId) {
+  public ActorFuture<@Nullable Void> remove(final ClientStreamId streamId) {
     return actor.call(() -> clientStreamManager.remove(streamId));
   }
 
   @Override
-  public ActorFuture<Void> start(final ActorSchedulingService schedulingService) {
+  public ActorFuture<@Nullable Void> start(final ActorSchedulingService schedulingService) {
     return schedulingService.submitActor(this);
   }
 

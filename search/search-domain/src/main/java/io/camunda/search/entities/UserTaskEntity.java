@@ -14,38 +14,50 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserTaskEntity(
     Long userTaskKey,
     String elementId,
-    String name,
+    @Nullable String name,
     String processDefinitionId,
-    String processName,
+    @Nullable String processName,
     OffsetDateTime creationDate,
-    OffsetDateTime completionDate,
-    String assignee,
+    @Nullable OffsetDateTime completionDate,
+    @Nullable String assignee,
     UserTaskState state,
-    Long formKey,
+    @Nullable Long formKey,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     Long elementInstanceKey,
     String tenantId,
-    OffsetDateTime dueDate,
-    OffsetDateTime followUpDate,
+    @Nullable OffsetDateTime dueDate,
+    @Nullable OffsetDateTime followUpDate,
     List<String> candidateGroups,
     List<String> candidateUsers,
-    String externalFormReference,
+    @Nullable String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority,
+    @Nullable Integer priority,
     Set<String> tags)
     implements TenantOwnedEntity {
 
   public UserTaskEntity {
+    Objects.requireNonNull(userTaskKey, "userTaskKey");
+    Objects.requireNonNull(elementId, "elementId");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(creationDate, "creationDate");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.

@@ -10,10 +10,10 @@ package io.camunda.application.commons.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.configuration.ConfiguredAuthorization;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +33,7 @@ class ConfiguredAuthorizationPropertiesTest {
     final var authorizations = securityProperties.getInitialization().getAuthorizations();
 
     // then
-    assertThat(authorizations).hasSize(5);
+    assertThat(authorizations).hasSize(7);
   }
 
   @Test
@@ -129,6 +129,28 @@ class ConfiguredAuthorizationPropertiesTest {
     // Both helper methods return false, indicating the invalid state
     assertThat(auth.hasResourceId()).isFalse();
     assertThat(auth.hasResourcePropertyName()).isFalse();
+  }
+
+  @Test
+  void shouldFilterEmptyPermissionFromTrailingComma() {
+    // when — simulates PERMISSIONS=READ,UPDATE, (trailing comma produces empty string)
+    final var auth = securityProperties.getInitialization().getAuthorizations().get(5);
+
+    // then — empty entry is filtered out, only valid permissions remain
+    assertThat(auth.ownerId()).isEqualTo("trailing.comma");
+    assertThat(auth.permissions())
+        .containsExactlyInAnyOrder(PermissionType.READ, PermissionType.UPDATE);
+  }
+
+  @Test
+  void shouldFilterWhitespaceOnlyPermission() {
+    // when — simulates PERMISSIONS=READ, ,UPDATE (whitespace-only entry)
+    final var auth = securityProperties.getInitialization().getAuthorizations().get(6);
+
+    // then — whitespace entry is filtered out, only valid permissions remain
+    assertThat(auth.ownerId()).isEqualTo("whitespace.entry");
+    assertThat(auth.permissions())
+        .containsExactlyInAnyOrder(PermissionType.READ, PermissionType.UPDATE);
   }
 
   @Configuration

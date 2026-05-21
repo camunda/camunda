@@ -70,7 +70,7 @@ public class CreateRoleMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.roleRecords()
                   .withRoleId(roleId)

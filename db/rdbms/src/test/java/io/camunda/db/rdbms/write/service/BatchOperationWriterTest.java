@@ -32,7 +32,6 @@ class BatchOperationWriterTest {
       Mockito.mock(BatchOperationMapper.class);
   private final BatchOperationWriter batchOperationWriter =
       new BatchOperationWriter(
-          null,
           executionQueue,
           batchOperationMapper,
           RdbmsWriterConfig.builder().batchOperationItemInsertBlockSize(10).build(),

@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {
   OperationModel,
   ValidationScenario,
@@ -12,11 +20,11 @@ interface Opts {
 }
 
 interface ResolvedParamSchema {
-  schema: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  schema: any;
   pattern?: string;
   minLength?: number;
   maxLength?: number;
-  enumValues?: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  enumValues?: any[];
   type?: string;
 }
 
@@ -24,21 +32,21 @@ interface ResolvedParamSchema {
 function resolveParamSchema(
   p: ParameterModel,
 ): ResolvedParamSchema | undefined {
-  const schema: any = p.schema; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const schema: any = p.schema;
   if (!schema) return undefined;
   const out: ResolvedParamSchema = {schema};
-  function merge(s: any) {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
+  function merge(s: unknown) {
     if (!s || typeof s !== 'object') return;
-    if (typeof s.pattern === 'string' && out.pattern === undefined)
-      out.pattern = s.pattern;
-    if (typeof s.minLength === 'number' && out.minLength === undefined)
-      out.minLength = s.minLength;
-    if (typeof s.maxLength === 'number' && out.maxLength === undefined)
-      out.maxLength = s.maxLength;
-    if (Array.isArray(s.enum) && !out.enumValues)
-      out.enumValues = s.enum.slice();
-    if (typeof s.type === 'string' && !out.type) out.type = s.type;
+    const obj = s as Record<string, unknown>;
+    if (typeof obj.pattern === 'string' && out.pattern === undefined)
+      out.pattern = obj.pattern;
+    if (typeof obj.minLength === 'number' && out.minLength === undefined)
+      out.minLength = obj.minLength;
+    if (typeof obj.maxLength === 'number' && out.maxLength === undefined)
+      out.maxLength = obj.maxLength;
+    if (Array.isArray(obj.enum) && !out.enumValues)
+      out.enumValues = obj.enum.slice();
+    if (typeof obj.type === 'string' && !out.type) out.type = obj.type;
   }
   // Direct
   merge(schema);
@@ -140,9 +148,9 @@ export function generateParamConstraintViolations(
           headersAuth: true,
           source: p.in,
           // Additional metadata for emitter/title building
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           constraintKind: v.kind as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           constraintOrigin: 'param' as any,
         });
         produced++;

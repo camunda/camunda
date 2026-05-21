@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 public final class ConfigurationUtil {
 
@@ -30,7 +31,7 @@ public final class ConfigurationUtil {
   public static ClusterConfiguration getClusterConfigFrom(
       final Set<PartitionMetadata> partitionDistribution,
       final DynamicPartitionConfig partitionConfig,
-      final String clusterId) {
+      @Nullable final String clusterId) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {
       final var partitionId = partitionMetadata.id().id();

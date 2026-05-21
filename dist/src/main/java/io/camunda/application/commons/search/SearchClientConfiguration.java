@@ -22,6 +22,7 @@ import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
+import io.camunda.search.clients.reader.DeployedResourceReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormReader;
 import io.camunda.search.clients.reader.GlobalListenerReader;
@@ -57,8 +58,8 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
+import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,18 +93,17 @@ public class SearchClientConfiguration {
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageEnabled
-  public CamundaSearchClients searchClients(
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
+  public CamundaSearchClients camundaSearchClients(
       final SearchClientReaders searchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
-        searchClientReaders,
-        new ResourceAccessDelegatingController(resourceAccessControllers),
-        null);
+        Map.of("default", searchClientReaders),
+        new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageEnabled
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
   public SearchClientReaders searchClientReaders(
       final AuthorizationReader authorizationReader,
       final BatchOperationReader batchOperationReader,
@@ -146,7 +146,8 @@ public class SearchClientConfiguration {
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionReader
           incidentProcessInstanceStatisticsByDefinitionReader,
-      final GlobalListenerReader globalListenerReader) {
+      final GlobalListenerReader globalListenerReader,
+      final DeployedResourceReader deployedResourceReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -171,6 +172,7 @@ public class SearchClientConfiguration {
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
         processInstanceFlowNodeStatisticsReader,
+        deployedResourceReader,
         roleReader,
         roleMemberReader,
         sequenceFlowReader,

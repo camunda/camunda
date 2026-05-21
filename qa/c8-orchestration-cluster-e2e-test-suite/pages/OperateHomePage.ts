@@ -14,13 +14,21 @@ class OperateHomePage {
   readonly dashboardLink: Locator;
   readonly processesTab: Locator;
   readonly decisionsTab: Locator;
+  readonly operationsMenuButton: Locator;
+  readonly batchOperationsNavItem: Locator;
+  readonly operationsLogNavItem: Locator;
   readonly informationDialog: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
+  readonly variableValueEditor: Locator;
   readonly saveVariableButton: Locator;
   readonly editVariableSpinner: Locator;
   readonly settingsButton: Locator;
   readonly logoutButton: Locator;
+  readonly openButton: Locator;
+  readonly closeButton: Locator;
+  readonly messageBanner: Locator;
+  readonly applyButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -28,18 +36,34 @@ class OperateHomePage {
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
+    this.operationsMenuButton = page
+      .locator('.cds--header__menu-title')
+      .filter({hasText: /^Operations$/});
+    this.batchOperationsNavItem = page.getByRole('link', {
+      name: 'Batch operations',
+    });
+    this.operationsLogNavItem = page.getByRole('link', {
+      name: 'Operations log',
+    });
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
     });
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.variableValueInput = page.getByTestId('edit-variable-value');
-    this.saveVariableButton = page.getByLabel('Save variable');
+    this.variableValueEditor = page.getByRole('code');
+    this.saveVariableButton = page.getByLabel('Save');
     this.editVariableSpinner = page
       .getByTestId('variable-operation-spinner')
       .locator('circle')
       .nth(1);
     this.settingsButton = page.getByRole('button', {name: 'Open Settings'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.openButton = page
+      .getByTestId('variable-testVariable')
+      .getByLabel('Open');
+    this.closeButton = page.getByRole('button', {name: 'Got it - Dismiss'});
+    this.messageBanner = page.getByRole('button', {name: 'Close'});
+    this.applyButton = page.getByRole('button', {name: 'Apply'});
   }
 
   async clickProcessesTab(): Promise<void> {
@@ -55,9 +79,13 @@ class OperateHomePage {
   }
 
   async clickEditVariableButton(variableName: string): Promise<void> {
-    const editVariableButton = 'Edit variable ' + variableName;
-    await expect(this.page.getByLabel(editVariableButton)).toBeVisible({timeout: 30000});
-    await this.page.getByLabel(editVariableButton).click();
+    const editVariableButton = this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByLabel('Edit');
+    await expect(editVariableButton).toBeVisible({
+      timeout: 30000,
+    });
+    await editVariableButton.click();
   }
 
   async clickVariableValueInput(): Promise<void> {
@@ -65,11 +93,14 @@ class OperateHomePage {
   }
 
   async clearVariableValueInput(): Promise<void> {
-    await this.variableValueInput.clear();
+    await expect(this.variableValueEditor).toBeVisible();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
   }
 
-  async fillVariableValueInput(value: string): Promise<void> {
-    await this.variableValueInput.fill(value);
+  async fillVariableValueInput(newValue: string): Promise<void> {
+    await expect(this.variableValueEditor).toBeVisible();
+    await this.page.keyboard.insertText(newValue);
   }
 
   async clickSaveVariableButton(): Promise<void> {
@@ -79,6 +110,16 @@ class OperateHomePage {
   async logout(): Promise<void> {
     await this.settingsButton.click();
     await this.logoutButton.click();
+  }
+
+  async clickMessageBanner(): Promise<void> {
+    try {
+      const button = this.messageBanner.or(this.closeButton).first();
+      await expect(button).toBeVisible({timeout: 15000});
+      await button.click();
+    } catch {
+      console.log('No banner or close button found to click');
+    }
   }
 }
 

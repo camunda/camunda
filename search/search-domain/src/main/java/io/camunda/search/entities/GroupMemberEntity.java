@@ -8,7 +8,14 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GroupMemberEntity(String id, EntityType entityType) {}
+public record GroupMemberEntity(String id, EntityType entityType) {
+
+  public GroupMemberEntity {
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(entityType, "entityType");
+  }
+}

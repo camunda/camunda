@@ -11,4 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public record ProcessDiagramData(
-    List<String> callActivityIds, Map<String, String> flowNodesMap, boolean hasUserTasks) {}
+    List<String> callActivityIds,
+    Map<String, String> flowNodesMap,
+    boolean hasUserTasks,
+    Map<String, Map<String, String>> elementExtensionProperties) {}

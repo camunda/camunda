@@ -21,6 +21,14 @@ public class OptimizeApiConfiguration {
   @JsonProperty("audience")
   private String audience;
 
+  /**
+   * When {@code true}, non-public {@code /api/**} endpoints also accept a standard {@code
+   * Authorization: Bearer <jwt>} header in addition to the existing Identity session cookie. Only
+   * meaningful in self-managed (CCSM) mode. Defaults to {@code false}.
+   */
+  @JsonProperty("jwtAuthForApiEnabled")
+  private boolean jwtAuthForApiEnabled = false;
+
   public OptimizeApiConfiguration() {}
 
   public String getAccessToken() {
@@ -50,8 +58,18 @@ public class OptimizeApiConfiguration {
     this.audience = audience;
   }
 
-  protected boolean canEqual(final Object other) {
-    return other instanceof OptimizeApiConfiguration;
+  public boolean isJwtAuthForApiEnabled() {
+    return jwtAuthForApiEnabled;
+  }
+
+  @JsonProperty("jwtAuthForApiEnabled")
+  public void setJwtAuthForApiEnabled(final boolean jwtAuthForApiEnabled) {
+    this.jwtAuthForApiEnabled = jwtAuthForApiEnabled;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(accessToken, jwtSetUri, audience, jwtAuthForApiEnabled);
   }
 
   @Override
@@ -60,14 +78,10 @@ public class OptimizeApiConfiguration {
       return false;
     }
     final OptimizeApiConfiguration that = (OptimizeApiConfiguration) o;
-    return Objects.equals(accessToken, that.accessToken)
+    return jwtAuthForApiEnabled == that.jwtAuthForApiEnabled
+        && Objects.equals(accessToken, that.accessToken)
         && Objects.equals(jwtSetUri, that.jwtSetUri)
         && Objects.equals(audience, that.audience);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(accessToken, jwtSetUri, audience);
   }
 
   @Override
@@ -78,6 +92,8 @@ public class OptimizeApiConfiguration {
         + getJwtSetUri()
         + ", audience="
         + getAudience()
+        + ", jwtAuthForApiEnabled="
+        + isJwtAuthForApiEnabled()
         + ")";
   }
 }

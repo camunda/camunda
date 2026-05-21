@@ -40,6 +40,14 @@ public interface JobWorkerMetrics {
   default void jobHandled(final int count) {}
 
   /**
+   * Called every time the streaming job worker recreates its stream because the configured stream
+   * inactivity timeout elapsed without any activity. Useful to monitor whether the inactivity
+   * watchdog is firing in a given deployment (e.g. due to an upstream proxy idle close), without
+   * relying on log scraping.
+   */
+  default void streamInactivityRecreated() {}
+
+  /**
    * Returns a new builder for the Micrometer bridge.
    *
    * @throws UnsupportedOperationException if Micrometer is not found in the class path

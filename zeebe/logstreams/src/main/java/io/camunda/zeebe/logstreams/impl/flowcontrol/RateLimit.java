@@ -10,11 +10,9 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.google.common.util.concurrent.RateLimiter;
 import java.time.Duration;
 import java.util.Objects;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("UnstableApiUsage")
-@NullMarked
 public record RateLimit(boolean enabled, int limit, Duration rampUp, Throttling throttling) {
   public RateLimit {
     Objects.requireNonNull(throttling, "throttling must not be null");
@@ -45,7 +43,6 @@ public record RateLimit(boolean enabled, int limit, Duration rampUp, Throttling 
     return RateLimiter.create(limit, rampUp);
   }
 
-  @NullMarked
   public record Throttling(
       boolean enabled, long acceptableBacklog, long minRate, Duration resolution) {
     public Throttling {

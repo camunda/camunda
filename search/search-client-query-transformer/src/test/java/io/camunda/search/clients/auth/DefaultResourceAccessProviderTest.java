@@ -17,10 +17,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;

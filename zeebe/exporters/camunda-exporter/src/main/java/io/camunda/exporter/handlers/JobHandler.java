@@ -19,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAI
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
@@ -49,6 +50,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
           JobIntent.MIGRATED);
   private static final Set<JobIntent> FAILED_JOB_EVENTS =
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
+  private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN, JobIntent.RETRIES_UPDATED);
 
   protected final String indexName;
 
@@ -100,6 +103,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setWorker(recordValue.getWorker())
         .setState(record.getIntent().name())
         .setRetries(recordValue.getRetries())
+        .setPriority(recordValue.getPriority())
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
@@ -130,9 +134,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
       entity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
 
-    if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
-      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
+    if (INTENTS_RETAINING_ELEMENT_ID.contains(record.getIntent())) {
       entity.setFlowNodeId(null);
+    }
+
+    if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
       if (recordValue.getRetries() > 0) {
         entity.setJobFailedWithRetriesLeft(true);
       } else {
@@ -160,6 +166,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
     updateFields.put(RETRIES, jobEntity.getRetries());
+    updateFields.put(PRIORITY, jobEntity.getPriority());
     updateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     updateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     updateFields.put(TIME, jobEntity.getEndTime());

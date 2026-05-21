@@ -53,28 +53,30 @@ describe('Interaction with other fields during validation', () => {
     });
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
-    await user.type(screen.getByLabelText(/^operation id$/i), 'a');
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'a');
 
     vi.runOnlyPendingTimers();
 
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Process Instance Key(s)'));
 
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(screen.getByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.batchOperationKey)).toBeInTheDocument();
 
     vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
-    expect(screen.getByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.batchOperationKey)).toBeInTheDocument();
   });
 
-  it('validation for Operation ID field should not affect other fields validation errors', async () => {
+  it('validation for batch operation key field should not affect other fields validation errors', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -88,14 +90,16 @@ describe('Interaction with other fields during validation', () => {
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
-    await user.type(screen.getByLabelText(/^operation id$/i), 'abc');
+    await user.click(screen.getByText('Batch Operation Key'));
+    await user.type(screen.getByLabelText(/^batch operation key$/i), 'abc');
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     vi.runOnlyPendingTimers();
 
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
@@ -230,11 +234,11 @@ describe('Interaction with other fields during validation', () => {
     });
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Batch Operation Key'));
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Parent Process Instance Key'));
 
-    await user.type(screen.getByLabelText(/^operation id$/i), '1');
+    await user.type(screen.getByLabelText(/^batch operation key$/i), '1');
 
     await user.type(
       screen.getByLabelText(/^parent process instance key$/i),
@@ -247,6 +251,8 @@ describe('Interaction with other fields during validation', () => {
       await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
-    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.batchOperationKey),
+    ).toBeInTheDocument();
   });
 });

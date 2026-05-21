@@ -126,7 +126,7 @@ public class RaftServerForwardCompatibilityIT {
    * </ul>
    */
   static void configure89Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    // noop (default configuration)
+    broker.withClusterConfig(c -> c.setSendOnLegacySubject(true));
   }
 
   /**
@@ -142,6 +142,9 @@ public class RaftServerForwardCompatibilityIT {
   static void configure89To810Mode(final MemberId memberId, final TestStandaloneBroker broker) {
     if (memberId.id().equals(MEMBER_NODE_ID_0)) {
       broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
+    } else {
+      // 8.9 nodes still send on legacy subjects
+      broker.withClusterConfig(c -> c.setSendOnLegacySubject(true));
     }
   }
 

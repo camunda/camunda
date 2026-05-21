@@ -26,7 +26,7 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
     const navigate = useNavigate();
     const location = useLocation();
 
-    useQuery({
+    const {data: response} = useQuery({
       queryKey: ['newTasks', instance?.id],
       enabled: instance !== null,
       refetchInterval: 1000,
@@ -49,32 +49,7 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
         );
 
         if (response !== null) {
-          const data = (await response.json()) as QueryUserTasksResponseBody;
-          const {items} = data;
-
-          if (items.length === 0) {
-            return null;
-          }
-
-          newInstance.removeInstance();
-
-          if (
-            items.length === 1 &&
-            location.pathname === `/${pages.processes()}`
-          ) {
-            const [{userTaskKey}] = items;
-
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'single-task-found',
-            });
-
-            navigate({pathname: pages.taskDetails(userTaskKey)});
-
-            return null;
-          }
-
-          return data;
+          return (await response.json()) as QueryUserTasksResponseBody;
         }
 
         if (error !== null) {
@@ -86,6 +61,29 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
       gcTime: 0,
       refetchOnWindowFocus: false,
     });
+
+    const items = response?.items ?? [];
+
+    if (items.length > 0) {
+      newInstance.removeInstance();
+    }
+
+    if (
+      items.length === 1 &&
+      items[0] !== undefined &&
+      location.pathname === `/${pages.processes()}`
+    ) {
+      const [{userTaskKey}] = items;
+
+      tracking.track({
+        eventName: 'process-tasks-polling-ended',
+        outcome: 'single-task-found',
+      });
+
+      navigate({pathname: pages.taskDetails(userTaskKey)});
+
+      return null;
+    }
 
     return null;
   },

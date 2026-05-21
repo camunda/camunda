@@ -11,24 +11,26 @@ import {readFileSync} from 'node:fs';
 import {APIRequestContext} from 'playwright-core';
 import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
 
+type DeploymentItem = Record<string, Record<string, unknown> | undefined>;
+
 export function validateProcessDefinitionDeployment(
   deployments: unknown[],
   expectedResourceName: string,
   expectedProcessDefinitionId: string,
 ): void {
   const processDeployment = deployments.find(
-    (d) => (d as any).processDefinition != null,
-  ) as any;
+    (d) => (d as DeploymentItem).processDefinition != null,
+  ) as DeploymentItem;
   expect(processDeployment).toBeDefined();
-  expect(processDeployment.processDefinition.tenantId).toEqual('<default>');
-  expect(processDeployment.processDefinition.resourceName).toEqual(
+  expect(processDeployment.processDefinition!.tenantId).toEqual('<default>');
+  expect(processDeployment.processDefinition!.resourceName).toEqual(
     expectedResourceName,
   );
-  expect(processDeployment.processDefinition.processDefinitionId).toEqual(
+  expect(processDeployment.processDefinition!.processDefinitionId).toEqual(
     expectedProcessDefinitionId,
   );
   expect(
-    processDeployment.processDefinition.processDefinitionKey,
+    processDeployment.processDefinition!.processDefinitionKey,
   ).toBeDefined();
 }
 
@@ -38,17 +40,17 @@ export function validateFormDeployment(
   expectedFormId: string,
 ): void {
   const formDeployment = deployments.find(
-    (d) => (d as any).form != null,
-  ) as any;
+    (d) => (d as DeploymentItem).form != null,
+  ) as DeploymentItem;
   expect(
     formDeployment,
     `No Form Deployment found in ${JSON.stringify(deployments)}`,
   ).toBeDefined();
-  expect(formDeployment.form.tenantId).toEqual('<default>');
-  expect(formDeployment.form.resourceName).toEqual(expectedResourceName);
-  expect(formDeployment.form.formId).toEqual(expectedFormId);
-  expect(formDeployment.form.formKey).toBeDefined();
-  expect(formDeployment.form.version).toBeDefined();
+  expect(formDeployment.form!.tenantId).toEqual('<default>');
+  expect(formDeployment.form!.resourceName).toEqual(expectedResourceName);
+  expect(formDeployment.form!.formId).toEqual(expectedFormId);
+  expect(formDeployment.form!.formKey).toBeDefined();
+  expect(formDeployment.form!.version).toBeDefined();
 }
 
 export function validateDecisionDefinitionDeployment(
@@ -57,26 +59,26 @@ export function validateDecisionDefinitionDeployment(
   expectedName: string,
 ): void {
   const decisionDeployment = deployments.find(
-    (d) => (d as any).decisionDefinition != null,
-  ) as any;
+    (d) => (d as DeploymentItem).decisionDefinition != null,
+  ) as DeploymentItem;
   expect(
     decisionDeployment,
     `No Decision Definition found in ${JSON.stringify(deployments)}`,
   ).toBeDefined();
-  expect(decisionDeployment.decisionDefinition.tenantId).toEqual('<default>');
-  expect(decisionDeployment.decisionDefinition.decisionDefinitionId).toEqual(
+  expect(decisionDeployment.decisionDefinition!.tenantId).toEqual('<default>');
+  expect(decisionDeployment.decisionDefinition!.decisionDefinitionId).toEqual(
     expectedDecisionDefinitionId,
   );
-  expect(decisionDeployment.decisionDefinition.name).toEqual(expectedName);
+  expect(decisionDeployment.decisionDefinition!.name).toEqual(expectedName);
   expect(
-    decisionDeployment.decisionDefinition.decisionDefinitionKey,
+    decisionDeployment.decisionDefinition!.decisionDefinitionKey,
   ).toBeDefined();
-  expect(decisionDeployment.decisionDefinition.version).toBeDefined();
+  expect(decisionDeployment.decisionDefinition!.version).toBeDefined();
   expect(
-    decisionDeployment.decisionDefinition.decisionRequirementsId,
+    decisionDeployment.decisionDefinition!.decisionRequirementsId,
   ).toBeDefined();
   expect(
-    decisionDeployment.decisionDefinition.decisionRequirementsKey,
+    decisionDeployment.decisionDefinition!.decisionRequirementsKey,
   ).toBeDefined();
 }
 
@@ -87,53 +89,52 @@ export function validateDecisionRequirementsDeployment(
   expectedDecisionRequirementsName: string,
 ): void {
   const decisionRequirementsDeployment = deployments.find(
-    (d) => (d as any).decisionRequirements != null,
-  ) as any;
+    (d) => (d as DeploymentItem).decisionRequirements != null,
+  ) as DeploymentItem;
   expect(
     decisionRequirementsDeployment,
     `No Decision Requirements found in ${JSON.stringify(deployments)}`,
   ).toBeDefined();
-  expect(decisionRequirementsDeployment.decisionRequirements.tenantId).toEqual(
+  expect(decisionRequirementsDeployment.decisionRequirements!.tenantId).toEqual(
     '<default>',
   );
   expect(
-    decisionRequirementsDeployment.decisionRequirements.resourceName,
+    decisionRequirementsDeployment.decisionRequirements!.resourceName,
   ).toEqual(expectedResourceName);
   expect(
-    decisionRequirementsDeployment.decisionRequirements.decisionRequirementsId,
+    decisionRequirementsDeployment.decisionRequirements!.decisionRequirementsId,
   ).toEqual(expectedDecisionRequirementsId);
   expect(
-    decisionRequirementsDeployment.decisionRequirements
+    decisionRequirementsDeployment.decisionRequirements!
       .decisionRequirementsName,
   ).toEqual(expectedDecisionRequirementsName);
   expect(
-    decisionRequirementsDeployment.decisionRequirements.decisionRequirementsKey,
+    decisionRequirementsDeployment.decisionRequirements!
+      .decisionRequirementsKey,
   ).toBeDefined();
   expect(
-    decisionRequirementsDeployment.decisionRequirements.version,
+    decisionRequirementsDeployment.decisionRequirements!.version,
   ).toBeDefined();
 }
 
 export function validateRpaDeployment(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deployments: any[],
+  deployments: unknown[],
   expectedResourceName: string,
   expectedRpaId: string,
 ): void {
   const rpaDeployment = deployments.find(
-    (d) => (d as any).resource != null,
-  ) as any;
+    (d) => (d as DeploymentItem).resource != null,
+  ) as DeploymentItem;
   expect(rpaDeployment).toBeDefined();
-  expect(rpaDeployment.resource.tenantId).toEqual('<default>');
-  expect(rpaDeployment.resource.resourceName).toEqual(expectedResourceName);
-  expect(rpaDeployment.resource.resourceId).toEqual(expectedRpaId);
-  expect(rpaDeployment.resource.resourceKey).toBeDefined();
-  expect(rpaDeployment.resource.version).toBeDefined();
+  expect(rpaDeployment.resource!.tenantId).toEqual('<default>');
+  expect(rpaDeployment.resource!.resourceName).toEqual(expectedResourceName);
+  expect(rpaDeployment.resource!.resourceId).toEqual(expectedRpaId);
+  expect(rpaDeployment.resource!.resourceKey).toBeDefined();
+  expect(rpaDeployment.resource!.version).toBeDefined();
 }
 
 export function validateDeploymentResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  body: any,
+  body: {tenantId: unknown; deploymentKey: unknown; deployments: unknown[]},
   expectedDeploymentCount: number,
 ): void {
   expect(body.tenantId).toEqual('<default>');

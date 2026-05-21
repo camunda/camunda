@@ -317,12 +317,18 @@ public class IncidentHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1"), false));
+            null,
+            1,
+            null,
+            List.of("0", "1", "2", callActivityId1),
+            Map.of("FI1", "FN1"),
+            false,
+            Map.of()));
 
     processCache.put(
         processDefinitionKey2,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1"), false));
+            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1"), false, Map.of()));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();
@@ -332,6 +338,52 @@ public class IncidentHandlerTest {
     assertThat(incidentEntity.getTreePath())
         .isEqualTo(
             "PI_111/FN_callActivity1/FNI_123/PI_222/FN_callActivity2/FNI_234/PI_333/FN_userTask/FNI_345");
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
+  @Test
+  void shouldUpdateTreePathWhenCallActivityIsNestedInAnotherFlowScope() {
+    // given
+    final long parentProcessDefinitionKey = 999L;
+    final Long parentPiKey = 111L;
+    final long parentSubprocessFnInstanceKey = 122L;
+    final long callActivityFnInstanceKey = 123L;
+    final Integer callActivityIndex = 0;
+    final String callActivityId = "callActivity";
+    final Long childPiKey = 222L;
+    final long leafFnInstanceKey = 234L;
+    final long childProcessDefinitionKey = 888L;
+
+    final ImmutableIncidentRecordValue.Builder valueBuilder =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class));
+    addCallStackInfo(
+        valueBuilder,
+        List.of(
+            List.of(parentPiKey, parentSubprocessFnInstanceKey, callActivityFnInstanceKey),
+            List.of(childPiKey, leafFnInstanceKey)),
+        List.of(callActivityIndex),
+        List.of(parentProcessDefinitionKey, childProcessDefinitionKey),
+        "userTask");
+    final IncidentRecordValue incidentRecordValue = valueBuilder.build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    processCache.put(
+        parentProcessDefinitionKey,
+        new CachedProcessEntity(
+            null, 1, null, List.of(callActivityId), Map.of("FI1", "FN1"), false, Map.of()));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getTreePath())
+        .isEqualTo("PI_111/FN_callActivity/FNI_123/PI_222/FN_userTask/FNI_234");
   }
 
   @Test

@@ -158,11 +158,14 @@ public final class JobPollerImpl implements JobPoller {
 
     if (throwable instanceof StatusRuntimeException) {
       final StatusRuntimeException statusRuntimeException = (StatusRuntimeException) throwable;
-      if (statusRuntimeException.getStatus().getCode() == Status.RESOURCE_EXHAUSTED.getCode()) {
-        // Log RESOURCE_EXHAUSTED status exceptions only as trace, otherwise it is just too
-        // noisy. Furthermore it is not worth to be a warning since it is expected on a fully
-        // loaded cluster. It should be handled by our backoff mechanism, but if there is an
-        // issue or a configuration mistake the user can turn on trace logging to see this.
+      if (statusRuntimeException.getStatus().getCode() == Status.RESOURCE_EXHAUSTED.getCode()
+          || statusRuntimeException.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode()) {
+        // Log RESOURCE_EXHAUSTED and DEADLINE_EXCEEDED status exceptions only as trace,
+        // otherwise it is just too noisy. RESOURCE_EXHAUSTED is expected on a fully loaded
+        // cluster, and DEADLINE_EXCEEDED is expected during idle long-polling when the
+        // gateway's long-polling timeout exceeds the client's gRPC deadline. Both should be
+        // handled by the backoff mechanism, but if there is an issue or a configuration
+        // mistake the user can turn on trace logging to see this.
         LOG.trace(errorMsg, workerName, jobType, throwable);
         return;
       }

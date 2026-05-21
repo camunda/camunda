@@ -26,6 +26,7 @@ public class JobEntityTransformer
         .kind(toJobKind(value.getJobKind()))
         .listenerEventType(toListenerEventType(value.getListenerEventType()))
         .retries(value.getRetries())
+        .priority(value.getPriority())
         .isDenied(value.isDenied())
         .deniedReason(value.getDeniedReason())
         .hasFailedWithRetriesLeft(value.isJobFailedWithRetriesLeft())
@@ -53,8 +54,10 @@ public class JobEntityTransformer
 
     return switch (value) {
       case "UNSPECIFIED" -> ListenerEventType.UNSPECIFIED;
+      case "BEFORE_ALL" -> ListenerEventType.BEFORE_ALL;
       case "START" -> ListenerEventType.START;
       case "END" -> ListenerEventType.END;
+      case "CANCEL" -> ListenerEventType.CANCEL;
       case "CREATING" -> ListenerEventType.CREATING;
       case "ASSIGNING" -> ListenerEventType.ASSIGNING;
       case "UPDATING" -> ListenerEventType.UPDATING;

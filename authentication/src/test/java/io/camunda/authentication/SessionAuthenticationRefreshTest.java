@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
+import static io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,7 +18,7 @@ import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.service.MembershipService;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import java.time.Duration;

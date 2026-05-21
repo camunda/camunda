@@ -8,9 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter.Listener;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 class NoopListener implements Listener {
   public static final NoopListener INSTANCE = new NoopListener();
 

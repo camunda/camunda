@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
@@ -1547,28 +1548,37 @@ public class ResourceDeletionTest {
       final long processInstanceKey, final long processDefinitionKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
         processDefinitionKey,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
-        Set.of(),
-        null);
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        null, // treePath
+        Set.of(), // tags
+        null); // businessId
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(decisionInstanceKey + "-1")
         .decisionInstanceKey(decisionInstanceKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(decisionInstanceKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 

@@ -27,7 +27,7 @@ public class Upgrade {
   private boolean enableVersionCheck = ExperimentalCfg.DEFAULT_VERSION_CHECK_ENABLED;
 
   public boolean getEnableVersionCheck() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-version-check",
         enableVersionCheck,
         Boolean.class,

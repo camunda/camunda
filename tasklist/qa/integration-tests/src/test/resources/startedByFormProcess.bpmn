@@ -72,9 +72,6 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:extensionElements>
         <zeebe:formDefinition formKey="camunda-forms:bpmn:testForm" />
-        <zeebe:properties>
-          <zeebe:property name="publicAccess" value="true" />
-        </zeebe:properties>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_15vkolf</bpmn:outgoing>
     </bpmn:startEvent>

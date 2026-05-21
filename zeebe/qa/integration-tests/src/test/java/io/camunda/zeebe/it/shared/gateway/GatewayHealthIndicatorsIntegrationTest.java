@@ -12,14 +12,15 @@ import static org.assertj.core.data.Offset.offset;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
 import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
 import io.camunda.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
 import io.camunda.zeebe.it.shared.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
-import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -89,7 +90,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -118,7 +119,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(42));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -138,6 +139,6 @@ public class GatewayHealthIndicatorsIntegrationTest {
   }
 
   @Configuration
-  @ComponentScan({"io.camunda.zeebe.gateway.impl", "io.camunda.zeebe.util.health"})
+  @ComponentScan("io.camunda.zeebe.gateway.impl")
   static class Config {}
 }

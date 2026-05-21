@@ -115,6 +115,26 @@ class SnapshotDirectorPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
+  @ArgumentsSource(TransitionsThatShouldInstallService.class)
+  void shouldPublishSnapshotDirectorBeforeFutureCompletes(
+      final Role currentRole, final Role targetRole) {
+    // regression for #43421: by the time the transition future completes, the snapshot director
+    // must be visible on the context. Otherwise the next transition step can read null and
+    // construct a MigrationSnapshotDirector that NPEs on its first forceSnapshot.
+    // given
+    initializeContext(currentRole);
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final ActorFuture<Void> transition = step.transitionTo(transitionContext, 1, targetRole);
+
+    // when
+    schedulerExtension.workUntilDone();
+
+    // then
+    assertThat(transition.isDone()).isTrue();
+    assertThat(transitionContext.getSnapshotDirector()).isNotNull();
+  }
+
+  @ParameterizedTest
   @ArgumentsSource(TransitionsThatShouldDoNothing.class)
   void shouldNotReInstallSnapshotDirector(final Role currentRole, final Role targetRole) {
     // given

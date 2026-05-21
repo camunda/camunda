@@ -7,22 +7,22 @@
  */
 package io.camunda.authentication.service;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
+import static io.camunda.security.api.model.authz.EntityType.GROUP;
+import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,7 +44,7 @@ public class DefaultMembershipService implements MembershipService {
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
   private final GroupServices groupServices;
-  private final OidcGroupsLoader oidcGroupsLoader;
+  private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
   public DefaultMembershipService(
@@ -57,8 +57,9 @@ public class DefaultMembershipService implements MembershipService {
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    oidcGroupsLoader =
-        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+    oidcGroupsExtractor =
+        new OidcGroupsExtractor(
+            securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
         securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
@@ -89,7 +90,7 @@ public class DefaultMembershipService implements MembershipService {
 
     final Set<String> groups;
     if (isGroupsClaimConfigured) {
-      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
+      groups = new HashSet<>(oidcGroupsExtractor.extract(tokenClaims));
     } else {
       groups =
           groupServices
@@ -130,7 +131,7 @@ public class DefaultMembershipService implements MembershipService {
           }
           return a.roleIds(roles.stream().toList())
               .groupIds(groups.stream().toList())
-              .mappingRule(mappingRules.stream().toList())
+              .mappingRules(mappingRules.stream().toList())
               .tenants(tenants)
               .claims(tokenClaims);
         });

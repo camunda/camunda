@@ -11,15 +11,6 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
@@ -48,17 +39,6 @@ public class StandaloneOperate {
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
-                // Unified Configuration classes
-                UnifiedConfiguration.class,
-                UnifiedConfigurationHelper.class,
-                OperatePropertiesOverride.class,
-                GatewayBasedPropertiesOverride.class,
-                GatewayRestPropertiesOverride.class,
-                SearchEngineConnectPropertiesOverride.class,
-                SearchEngineIndexPropertiesOverride.class,
-                SearchEngineRetentionPropertiesOverride.class,
-                SearchEngineSchemaManagerPropertiesOverride.class,
-                // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 WebappsModuleConfiguration.class)
@@ -90,8 +70,7 @@ public class StandaloneOperate {
         "management.endpoint.health.probes.enabled", "true",
 
         // enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include",
-            "health, prometheus, loggers, usage-metrics, backups",
+        "management.endpoints.web.exposure.include", "health, prometheus, loggers, backups",
 
         // add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");

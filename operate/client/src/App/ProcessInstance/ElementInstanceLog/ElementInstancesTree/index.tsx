@@ -70,17 +70,24 @@ function convertToVirtualElementInstance(params: {
 }): VirtualElementInstance[] {
   const {elementInstancePlaceholders, businessObjects} = params;
 
-  return elementInstancePlaceholders.map((elementInstancePlaceholder) => {
-    const businessObject =
-      businessObjects[elementInstancePlaceholder.elementId];
-    return {
-      isVirtual: true,
-      elementId: elementInstancePlaceholder.elementId,
-      elementName: businessObject?.name,
-      type: businessObject?.$type,
-      elementInstanceKey: elementInstancePlaceholder.elementInstanceKey,
-    };
-  });
+  return elementInstancePlaceholders.flatMap(
+    (elementInstancePlaceholder): VirtualElementInstance[] => {
+      const businessObject =
+        businessObjects[elementInstancePlaceholder.elementId];
+      if (businessObject?.$type === undefined) {
+        return [];
+      }
+      return [
+        {
+          isVirtual: true,
+          elementId: elementInstancePlaceholder.elementId,
+          elementName: businessObject.name,
+          type: businessObject.$type,
+          elementInstanceKey: elementInstancePlaceholder.elementInstanceKey,
+        },
+      ];
+    },
+  );
 }
 
 const ElementInstanceHistoryTree = createContext<{
@@ -567,7 +574,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
           selectElementInstance({
             elementId,
             elementInstanceKey: scopeKey,
-            anchorElementId: childInstances[0].elementId,
+            anchorElementId: childInstances[0]?.elementId,
           });
           return;
         }
@@ -791,9 +798,9 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       sort: [{field: 'processedDate', order: 'desc'}],
       page: {limit: 1, from: 0},
     });
-    const migrationItems = data?.pages[0].items ?? [];
+    const migrationItems = data?.pages[0]?.items ?? [];
     const latestMigrationDate =
-      migrationItems.length > 0 ? migrationItems[0].processedDate : null;
+      migrationItems[0] !== undefined ? migrationItems[0].processedDate : null;
     const rootElementInstance = useMemo<ElementInstance>(() => {
       const {
         processInstanceKey,

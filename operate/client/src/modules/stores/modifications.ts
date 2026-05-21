@@ -648,6 +648,7 @@ class Modifications {
     if (parentScope !== undefined && 'parentScopeIds' in parentScope) {
       return parentScope.parentScopeIds[elementId];
     }
+    return undefined;
   };
 
   addCancelModification = ({
@@ -753,6 +754,7 @@ class Modifications {
   };
 }
 
+const modificationsStore = new Modifications();
+
 export type {ElementModification, AncestorScopeType};
-export const modificationsStore = new Modifications();
-export {EMPTY_MODIFICATION};
+export {modificationsStore, EMPTY_MODIFICATION};

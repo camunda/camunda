@@ -17,11 +17,13 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class PersistedForm extends UnpackedObject implements DbValue {
+public final class PersistedForm extends UnpackedObject
+    implements DbValue, ProjectionOf<FormRecord, PersistedForm> {
   private static final long NO_DEPLOYMENT_KEY = -1L;
 
   private final StringProperty formIdProp = new StringProperty("formId");
@@ -108,7 +110,8 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public void wrap(final FormRecord record) {
+  @Override
+  public PersistedForm wrap(final FormRecord record) {
     formIdProp.setValue(record.getFormId());
     versionProp.setValue(record.getVersion());
     formKeyProp.setValue(record.getFormKey());
@@ -118,5 +121,10 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
+    return this;
+  }
+
+  public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
+    return getResourceName().equals(resourceName) && getChecksum().equals(checksum);
   }
 }
