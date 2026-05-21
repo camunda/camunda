@@ -1,0 +1,13 @@
+{
+  "name": "camunda-spectral-deps",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned Spectral toolchain for the `Lint / C8 REST OpenAPI` CI job. See README.md for context.",
+  "dependencies": {
+    "@stoplight/spectral-cli": "6.16.0"
+  },
+  "overrides": {
+    "@stoplight/spectral-rulesets": "1.22.2",
+    "@stoplight/spectral-ruleset-migrator": "1.12.0"
+  }
+}
