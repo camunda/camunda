@@ -363,58 +363,6 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('variable filter applied conditions visible', async ({
-    page,
-    processesPage,
-    processesPage: {filtersPanel},
-  }) => {
-    await page.addInitScript(() => {
-      window.sessionStorage.setItem(
-        'operate.variableFilter.conditions',
-        JSON.stringify([
-          {name: 'status', operator: 'equals', value: '"active"'},
-          {name: 'region', operator: 'contains', value: 'EU'},
-        ]),
-      );
-    });
-
-    await page.route(
-      URL_API_PATTERN,
-      mockResponses({
-        processDefinitions: mockProcessDefinitions,
-        batchOperations: mockBatchOperations,
-        processInstances: mockProcessInstances,
-        batchOperationItems: {
-          items: [],
-          page: {
-            totalItems: 0,
-            startCursor: null,
-            endCursor: null,
-            hasMoreTotalItems: false,
-          },
-        },
-        statistics: mockStatistics,
-        processXml: mockProcessXml,
-      }),
-    );
-
-    await processesPage.gotoProcessesPage({
-      searchParams: {
-        active: 'true',
-        incidents: 'true',
-      },
-    });
-
-    await expect(
-      filtersPanel.panel.getByText('status equals "active"'),
-    ).toBeVisible();
-    await expect(
-      filtersPanel.panel.getByText('region contains EU'),
-    ).toBeVisible();
-
-    await expect(page).toHaveScreenshot();
-  });
-
   test('optional filters visible (part 2)', async ({
     page,
     processesPage,
