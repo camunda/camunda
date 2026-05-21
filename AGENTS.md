@@ -193,6 +193,11 @@ exist, and only when relevant to the current task:
 - `<module>/AGENTS.md` — module-specific behavioral rules (only exists for complex modules with
   rules that differ from this file)
 
+If the module is a sub-module (e.g. `zeebe/engine`), also check each parent module up to the repo
+root for the same files (e.g. `zeebe/docs/architecture.md`, `zeebe/docs/adr/`, `zeebe/AGENTS.md`).
+Parent context is lower priority than the sub-module's own context; the sub-module's files take
+precedence on any conflicting guidance.
+
 Do not load all module context upfront. Fetch only what is needed for the task at hand.
 
 ### Code style
