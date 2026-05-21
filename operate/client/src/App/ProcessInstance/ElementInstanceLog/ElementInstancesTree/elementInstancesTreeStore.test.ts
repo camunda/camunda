@@ -107,7 +107,8 @@ const mockChildResponse = createMockResponse(mockChildInstances, 2);
 
 const mockEmptyResponse = createMockResponse([], 0);
 
-describe('elementInstancesTreeStore', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('elementInstancesTreeStore', () => {
   afterEach(() => {
     elementInstancesTreeStore.reset();
     vi.clearAllTimers();

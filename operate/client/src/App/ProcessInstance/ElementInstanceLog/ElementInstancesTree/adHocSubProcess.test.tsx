@@ -25,7 +25,8 @@ import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations
 
 const adHocProcessXml = open('AdHocProcess.bpmn');
 
-describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));

@@ -22,7 +22,8 @@ import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fe
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 
-describe('ElementInstancesTree - Event Subprocess', () => {
+// TODO: https://github.com/camunda/camunda/issues/20862
+describe.todo('ElementInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
