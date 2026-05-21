@@ -15,7 +15,22 @@
         "http://localhost:8080/physical-tenant/default/login/oauth2/code/*",
         "http://localhost:8080/login/oauth2/code/*"
       ],
-      "webOrigins": ["http://localhost:8080"]
+      "webOrigins": ["http://localhost:8080"],
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "pt-default-aud",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "lightweight.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [

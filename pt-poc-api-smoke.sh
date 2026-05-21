@@ -101,8 +101,13 @@ matrix() {
 echo "=== Acquiring tokens ==="
 TA=$(token "$KC_TENANTA" camunda-pt-tenanta-client tenanta-secret bob bob)
 DEF=$(token "$KC_DEFAULT" camunda-pt-default-client default-secret alice alice)
-echo "tenanta token: ${TA:0:40}..."
-echo "default token: ${DEF:0:40}..."
+# Default tenant's SECOND assigned IdP (Task 17): the tenanta Keycloak realm is shared between
+# tenant A's primary client and default's secondary client. Same issuer; tenant separation
+# rides on the audience claim emitted by each client at the IdP.
+DVTA=$(token "$KC_TENANTA" camunda-pt-default-via-tenanta-client default-via-tenanta-secret bob bob)
+echo "tenanta token:             ${TA:0:40}..."
+echo "default token:             ${DEF:0:40}..."
+echo "default-via-tenanta token: ${DVTA:0:40}..."
 echo
 
 matrix "Webapp-relative API Path" "$WEBAPP_URL_TEMPLATE"
@@ -131,6 +136,19 @@ call_with_cookies "default session -> /v2/whoami"               "$DEF_JAR" "/v2/
 call_with_cookies "default session -> tenanta webapp-aligned"   "$DEF_JAR" "/physical-tenant/tenanta/v2/whoami"  401
 call_with_cookies "default session -> tenanta API-client URL"   "$DEF_JAR" "/v2/physical-tenants/tenanta/whoami" 401
 rm -f "$DEF_JAR"
+echo
+
+# Audience-based isolation when an IdP is shared between PTs (spec D8, Task 17). The token from
+# the default-via-tenanta client is issued by the SAME realm (tenanta, :8082) as TA — so the
+# issuer-allowlist check on tenant A's chain would pass it. The audience-allowlist check rejects
+# it: this token carries aud=pt-default-via-tenanta-aud, which is in default's expected list but
+# NOT in tenant A's.
+echo "=== Audience isolation (shared tenanta realm; aud-based PT separation) ==="
+call "dvta -> default (webapp)"    "$DVTA" "$(printf "$WEBAPP_URL_TEMPLATE" default)"    200
+call "dvta -> default (apiclient)" "$DVTA" "$(printf "$APICLIENT_URL_TEMPLATE" default)" 200
+call "dvta -> default (unpref.)"   "$DVTA" "/v2/whoami"                                  200
+call "dvta -> tenanta (webapp)"    "$DVTA" "$(printf "$WEBAPP_URL_TEMPLATE" tenanta)"    403
+call "dvta -> tenanta (apiclient)" "$DVTA" "$(printf "$APICLIENT_URL_TEMPLATE" tenanta)" 403
 echo
 
 rm -f /tmp/pt-poc-api-body
