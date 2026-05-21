@@ -20,6 +20,7 @@ import { isCamundaGroupsEnabled } from "src/configuration";
 import { GroupKeys } from "src/utility/api/groups";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type GroupsProps = {
   tenantId: string;
@@ -27,6 +28,7 @@ type GroupsProps = {
 
 const Groups: FC<GroupsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const isReadOnly = isDefaultTenant(tenantId);
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(getGroupsByTenantId, {
@@ -61,7 +63,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isGroupsEmpty)
+  if (success && isGroupsEmpty && !isReadOnly)
     return (
       <>
         <TabEmptyState
@@ -94,17 +96,21 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
         data={groups}
         headers={groupsListHeaders}
         loading={loading}
-        addEntityLabel={t("assignGroup")}
-        onAddEntity={openAssignModal}
+        addEntityLabel={isReadOnly ? null : t("assignGroup")}
+        onAddEntity={isReadOnly ? undefined : openAssignModal}
         searchPlaceholder={t("searchByGroupId")}
-        menuItems={[
-          {
-            label: t("remove"),
-            icon: TrashCan,
-            isDangerous: true,
-            onClick: unassignGroup,
-          },
-        ]}
+        menuItems={
+          isReadOnly
+            ? undefined
+            : [
+                {
+                  label: t("remove"),
+                  icon: TrashCan,
+                  isDangerous: true,
+                  onClick: unassignGroup,
+                },
+              ]
+        }
         {...paginationProps}
       />
       {assignGroupsModal}
