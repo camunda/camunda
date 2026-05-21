@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /** Exporter that ships Camunda process analytics to the Camunda Analytics backend. */
 public class AnalyticsExporter implements Exporter {
 
-  public static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
+  private static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
   private static final ThrottledLogger SAMPLED_LOG =
@@ -62,7 +62,7 @@ public class AnalyticsExporter implements Exporter {
     try {
       clusterId = context.getClusterId();
     } catch (final NoSuchMethodError ex) {
-      // Fallback for customers testing this exporter on 8.8 where getCluserId does not exist.
+      // Fallback for customers testing this exporter on 8.8 where getClusterId does not exist.
       final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
       clusterId = fromEnv != null ? fromEnv : "";
     }
