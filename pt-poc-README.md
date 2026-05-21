@@ -139,8 +139,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 5  | Add default tenant prefixed chain + per-chain cookie isolation     | ✅ done         |
 | 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`    | ✅ done         |
 | 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test            | ✅ done         |
-| 8  | **Extract `PerTenantOidcRegistry` + consume `providers.assigned`** | 🔄 in progress |
-| 9  | Wire per-tenant `WebSessionRepository` against per-tenant storage  | ⏳ pending      |
+| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`     | ✅ done         |
+| 9  | **Wire per-tenant `WebSessionRepository` against per-tenant storage** | 🔄 in progress |
 | 10 | Extract `PhysicalTenantCookieSerializer` + unit test               | ⏳ pending      |
 | 11 | API chain — shared decoder + per-chain issuer allowlist            | ⏳ pending      |
 | 12 | Default tenant unprefixed access-path chains                       | ⏳ pending      |
