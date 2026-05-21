@@ -4,7 +4,7 @@
 
 Camunda 8 is a process automation platform that executes BPMN workflows and evaluates DMN decisions
 at scale, for both self-managed and SaaS deployments. The monorepo contains the full platform: Zeebe
-(write-side execution engine), Operate (process monitoring), Tasklist (human task management),
+(process engine), Operate (process monitoring), Tasklist (human task management),
 Identity (authentication and authorization), and Optimize (process analytics), plus shared
 libraries, gateways, and supporting infrastructure. Java 21 backend built with Maven; React/Carbon
 frontends. `dist/` wires the components into deployable Spring Boot application variants (e.g.
@@ -14,7 +14,7 @@ frontends. `dist/` wires the components into deployable Spring Boot application 
 
 ### Write path
 
-Clients submit commands (deploy a process, start an instance, complete a job) through one of two
+Clients submit commands (deploy a process, start an instance, complete a job) through one of three
 entry points:
 
 - **gRPC gateway** (`zeebe/gateway`, `zeebe/gateway-grpc`): exposes the Zeebe gRPC API defined in
@@ -27,7 +27,7 @@ entry points:
 - **MCP gateway** (`gateways/gateway-mcp`): exposes the Camunda API as a Model Context Protocol
   server for AI agent integrations.
 
-Both entry points authenticate via `authentication/` (OIDC token processing, Spring Security).
+All entry points authenticate via `authentication/` (OIDC token processing, Spring Security).
 Authorization is enforced by `security/` against rules managed by `identity/`.
 
 The **Zeebe broker** (`zeebe/broker`) receives commands, appends them to a partitioned append-only
@@ -43,21 +43,24 @@ After processing, the broker emits records to configured exporters:
 | Elasticsearch exporter        | `zeebe/exporters/elasticsearch-exporter` | Elasticsearch indices       |
 | OpenSearch exporter           | `zeebe/exporters/opensearch-exporter`    | OpenSearch indices          |
 | RDBMS exporter                | `zeebe/exporters/rdbms-exporter`         | Relational DB via `db/`     |
-| Camunda exporter (all-in-one) | `zeebe/exporters/camunda-exporter`       | All of the above (combined) |
+| Camunda exporter              | `zeebe/exporters/camunda-exporter`       | All of the above            |
 
-ES/OS index shapes are defined in `webapps-schema/` and applied at startup by `schema-manager/`.
+ES/OS index shapes are defined in `webapps-schema/` and applied at startup by `schema-manager/`, which are then written to by the Camunda Exporter. For RDBMS, the schema is defined in `db/rdbms-schema`, which is written to by the RDBMS exporter.
 
 The Camunda Exporter also runs background **archiver jobs** that move completed process data from
 active ES/OS indices into dated archive indices (e.g. `operate-list-view-8.3.0_2024-01-01`),
 keeping primary indices lean. Archiving is ES/OS-only; RDBMS deployments use TTL-based cleanup
-instead. Operate and Tasklist queries span both active and archive indices.
+instead. Search queries span both active and archive indices, using aliases.
 
 ### Read path
 
-Operate and Tasklist are read-side webapps that query secondary storage (ES/OS or RDBMS) through
-the `search/` abstraction layer. The REST API also serves read queries: `zeebe/gateway-rest` calls
-`service/`, which delegates to `search/`. Optimize reads from the same ES/OS indices through
-its own internal analytics pipeline.
+Operate and Tasklist query secondary storage (ES/OS or RDBMS) through the `search/` abstraction
+layer. The REST API also serves read queries: `zeebe/gateway-rest` calls `service/`, which
+delegates to `search/`.
+
+Optimize manages its own ES/OS schema. It reads data emitted by the ES/OS exporters, transforming
+it into data structures more suited for data analysis. Optimize entities (reports/collections) are
+also stored in Optimize-managed indices. There is no RDBMS support for Optimize.
 
 ## Architectural decisions
 
@@ -83,6 +86,11 @@ All templates use `"dynamic": "strict"` — new fields must be explicitly added 
 definitions before the exporter writes them. Changing a field type is a breaking change that
 requires a migration plan. Never query ES/OS indices directly from application code; always go
 through `search/`.
+
+**ES/OS exporter index templates** (`zeebe/exporters/elasticsearch-exporter/src/main/resources`,
+`zeebe/exporters/opensearch-exporter/src/main/resources`)\
+Index templates owned by the dedicated ES/OS exporters. Do not modify them without understanding
+the impact on existing index mappings.
 
 **`service/` as the REST-to-engine bridge**\
 All REST commands must flow through `service/` before reaching Zeebe. REST controllers in
@@ -121,7 +129,7 @@ Changes that propagate farthest:
 - `optimize/` — independent internal build; excluded by default with `-Dquickly`. Build explicitly
   with `-pl optimize` when needed.
 - `webapps-schema/src/main/resources/schema/` — canonical ES/OS template JSON; changes here affect
-  exporters, `schema-manager/`, `operate/`, `tasklist/`, and `search/` simultaneously.
+  exporters, `schema-manager/`, and `search/` directly.
 - `bom-deprecated/` — legacy BOM kept for backwards compatibility; do not add new entries.
 - `dist/` — distribution assembly only; no application logic lives here.
 
