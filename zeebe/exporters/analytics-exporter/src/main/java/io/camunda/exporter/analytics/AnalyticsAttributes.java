@@ -27,6 +27,7 @@ final class AnalyticsAttributes {
 
   // Common
   static final AttributeKey<Long> LOG_POSITION = AttributeKey.longKey("camunda.log.position");
+  static final AttributeKey<Long> SEQUENCE_NUMBER = AttributeKey.longKey("camunda.sequence_number");
   static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
 
   // Process instance
