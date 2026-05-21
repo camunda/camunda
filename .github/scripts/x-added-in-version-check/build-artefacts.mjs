@@ -44,8 +44,12 @@ const ref = process.env.RETURN_OF_API_REF ?? "main";
 const repoUrl =
   process.env.RETURN_OF_API_REPO_URL ??
   "https://github.com/camunda/return-of-api-added-in-analysis.git";
-const versionMapPath = resolve(process.env.VERSION_MAP_PATH ?? "./artefacts/version-map.json");
-const endpointMapPath = resolve(process.env.ENDPOINT_MAP_PATH ?? "./artefacts/endpoint-map.json");
+const versionMapPath = resolve(
+  process.env.VERSION_MAP_PATH ?? join(scriptDir, "artefacts", "version-map.json"),
+);
+const endpointMapPath = resolve(
+  process.env.ENDPOINT_MAP_PATH ?? join(scriptDir, "artefacts", "endpoint-map.json"),
+);
 const bundlerSpecsDir = resolve(
   process.env.BUNDLER_SPECS_DIR ?? join(scriptDir, "artefacts", "bundler-specs"),
 );
