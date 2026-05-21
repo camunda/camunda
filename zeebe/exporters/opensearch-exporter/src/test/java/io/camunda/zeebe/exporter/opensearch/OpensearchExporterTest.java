@@ -169,6 +169,53 @@ final class OpensearchExporterTest {
   }
 
   @Test
+  void shouldNotManagePolicyResourceWhenManagePolicyIsDisabledAndRetentionEnabled() {
+    // given
+    config.retention.setEnabled(true);
+    config.retention.setManagePolicy(false);
+    exporter.configure(context);
+    exporter.open(controller);
+
+    // when
+    final var recordMock = mock(Record.class);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
+    exporter.export(recordMock);
+
+    // then the policy resource is left untouched (no read/create/update/delete)
+    verify(client, never()).getIndexStateManagementPolicy();
+    verify(client, never()).createIndexStateManagementPolicy();
+    verify(client, never()).updateIndexStateManagementPolicy(anyInt(), anyInt());
+    verify(client, never()).deleteIndexStateManagementPolicy();
+    // but the (externally managed) policy is still attached to existing indices
+    verify(client, times(1)).bulkAddISMPolicyToAllZeebeIndices();
+    verify(client, never()).bulkRemoveISMPolicyFromAllZeebeIndices();
+  }
+
+  @Test
+  void shouldNotTouchPolicyWhenManagePolicyIsDisabledAndRetentionDisabled() {
+    // given
+    config.retention.setEnabled(false);
+    config.retention.setManagePolicy(false);
+    exporter.configure(context);
+    exporter.open(controller);
+
+    // when
+    final var recordMock = mock(Record.class);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
+    exporter.export(recordMock);
+
+    // then nothing about the policy resource or its assignments is touched
+    verify(client, never()).getIndexStateManagementPolicy();
+    verify(client, never()).createIndexStateManagementPolicy();
+    verify(client, never()).updateIndexStateManagementPolicy(anyInt(), anyInt());
+    verify(client, never()).deleteIndexStateManagementPolicy();
+    verify(client, never()).bulkAddISMPolicyToAllZeebeIndices();
+    verify(client, never()).bulkRemoveISMPolicyFromAllZeebeIndices();
+  }
+
+  @Test
   void shouldNotCreateOrUpdateIndexStateManagementPolicy() {
     // given
     config.retention.setEnabled(true);
