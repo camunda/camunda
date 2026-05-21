@@ -7,9 +7,10 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.application.commons.identity.PhysicalTenantsConfiguredCondition;
 import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,11 +25,11 @@ import org.springframework.web.bind.annotation.PathVariable;
  *   <li>{@code /physical-tenant/{physicalTenantId}/v2/whoami} — webapp/SPA URL.
  * </ul>
  *
- * <p>The bare {@code /v2/whoami} path is registered as a side effect; the PoC's pt-security chains
- * don't match it, so it falls through to whatever the host serves under {@code /v2}.
+ * <p>The bare {@code /v2/whoami} path is registered as a side effect; the PoC's PT chains don't
+ * match it, so it falls through to whatever the host serves under {@code /v2}.
  */
 @CamundaRestController
-@Profile("pt-security")
+@Conditional(PhysicalTenantsConfiguredCondition.class)
 public class PhysicalTenantWhoamiController {
 
   @GetMapping("/v2/whoami")

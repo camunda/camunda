@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 #
-# Boots OC under the pt-poc profile (which pulls in consolidated-auth,
-# pt-security, and rdbmsH2 via the spring.profiles.group declaration in
-# application.properties). The rdbmsH2 profile points secondary storage at an
-# in-memory H2 database so no Elasticsearch or external DB is required.
+# Boots OC under the pt-poc profile (which pulls in consolidated-auth and
+# rdbmsH2 via the spring.profiles.group declaration in application.properties).
+# The rdbmsH2 profile points secondary storage at an in-memory H2 database so
+# no Elasticsearch or external DB is required. The per-tenant SecurityFilterChain
+# wiring activates from the camunda.physical-tenants.* entries in
+# application-pt-poc.yaml — no separate profile required.
 # Stdout/stderr both stream to the terminal AND tee to /tmp/oc.log so the log
 # can be inspected after the fact.
 #

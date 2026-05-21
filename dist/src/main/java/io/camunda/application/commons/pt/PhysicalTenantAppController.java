@@ -7,8 +7,9 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.application.commons.identity.PhysicalTenantsConfiguredCondition;
 import org.jspecify.annotations.Nullable;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -39,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * PhysicalTenantRequestMappingHandlerMapping} correctly ignores it.
  */
 @Controller
-@Profile("pt-security")
+@Conditional(PhysicalTenantsConfiguredCondition.class)
 public class PhysicalTenantAppController {
 
   @GetMapping(

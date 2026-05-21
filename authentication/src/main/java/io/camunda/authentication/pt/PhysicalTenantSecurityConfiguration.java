@@ -9,13 +9,18 @@ package io.camunda.authentication.pt;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 /**
- * Enables Spring Security's web infrastructure under the {@code pt-security} profile and installs
- * the {@link PhysicalTenantSecurityChainRegistrar} which programmatically registers one {@link
+ * Enables Spring Security's web infrastructure and installs the {@link
+ * PhysicalTenantSecurityChainRegistrar} which programmatically registers one {@link
  * org.springframework.security.web.SecurityFilterChain} bean per (tenant × variant) combination.
+ *
+ * <p>Always loaded — activation is config-driven: the registrar self-gates on an empty {@code
+ * camunda.physical-tenants.*} list (no tenants ⇒ no PT chains registered, and the OC instance runs
+ * as a single-tenant deployment served by CSL's standard chains). When tenants are present, the PT
+ * chains co-exist with CSL's chains via {@code @Order} precedence — see the registrar javadoc for
+ * the layout.
  *
  * <p>The explicit per-tenant {@code @Bean} methods this configuration used to carry were replaced
  * (Task 13) with a single {@link
@@ -31,7 +36,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
  */
 @Configuration
 @EnableWebSecurity
-@Profile("pt-security")
 public class PhysicalTenantSecurityConfiguration {
 
   @Bean

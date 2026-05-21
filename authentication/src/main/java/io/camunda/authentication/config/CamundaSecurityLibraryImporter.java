@@ -20,20 +20,16 @@ import org.springframework.context.annotation.Configuration;
  * Always-loaded entry point that pulls the Camunda Security Library (CSL) auto-configuration into
  * the host context plus the minimal host SPI beans CSL's {@code BaseSecurityConfiguration} requires
  * at boot. No profile gate — so CSL's unprotected-paths chain and catch-all 404 chain light up
- * under both {@code !pt-security} and {@code pt-security}.
- *
- * <p>Previously the {@code @ImportAutoConfiguration} directive lived on {@link WebSecurityConfig},
- * which is profile-gated to {@code consolidated-auth & !pt-security}. Under {@code pt-security}
- * that meant CSL never loaded and we re-implemented its unprotected-paths chain plus a {@link
- * org.springframework.security.web.savedrequest.NullRequestCache} workaround inside the PT
- * registrar. Lifting the import out lets CSL's chains co-exist with the PT chains.
+ * regardless of whether physical tenants are configured. When PT chains are present they co-exist
+ * with CSL's chains via {@code @Order} precedence (see {@code
+ * PhysicalTenantSecurityChainRegistrar}).
  *
  * <p>The {@link SecurityPathPort} and {@link WebAppProviderPort} beans are stateless adapters with
  * no OC-runtime dependencies, so they live here alongside the import. The other SPI beans ({@code
  * AdminUserPresencePort}, {@code AuthorizationRepositoryPort}, {@code ResourcePermissionPort})
- * carry OC-specific wiring and stay profile-gated on {@link WebSecurityConfig}; CSL chains that
- * depend on them (OidcWebapp, BasicAuth) back off under {@code pt-security} where the PT chains
- * handle those concerns instead.
+ * carry OC-specific wiring and live on {@link WebSecurityConfig} (gated to {@code
+ * consolidated-auth}); CSL chains that depend on them (OidcWebapp, BasicAuth) back off via
+ * {@code @ConditionalOnMissingBean} when an alternative is present.
  *
  * <p>{@code @ImportAutoConfiguration} (vs plain {@code @Import}) is intentional — see the rationale
  * on {@link WebSecurityConfig}: CSL's {@code @ConditionalOnBean} /

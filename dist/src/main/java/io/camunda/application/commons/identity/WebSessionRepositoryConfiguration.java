@@ -33,8 +33,8 @@ import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 
@@ -86,10 +86,22 @@ public class WebSessionRepositoryConfiguration {
    * Non-PT configuration: single cluster-wide {@link WebSessionRepository} plus the {@link
    * EnableSpringHttpSession} integration that registers a servlet-container-wide {@code
    * SessionRepositoryFilter}.
+   *
+   * <p>Gated on the absence of any {@code camunda.physical-tenants.*} entry. When PTs are
+   * configured, the {@link PerPhysicalTenant} nested config below produces per-tenant {@link
+   * WebSessionRepository}s instead and the PT chains install their own per-chain {@code
+   * SessionRepositoryFilter}s — so the global {@link EnableSpringHttpSession} integration must NOT
+   * register a servlet-container-wide one.
+   *
+   * <p>{@code camunda.physical-tenants} is a structured map property (keys are tenant ids), so
+   * checking for its presence requires binding the prefix — a flat
+   * {@code @ConditionalOnExpression("${camunda.physical-tenants:}")} would always resolve to the
+   * empty default. {@link NoPhysicalTenantsConfiguredCondition} performs the bind and returns true
+   * iff the result is empty.
    */
   @Configuration(proxyBeanMethods = false)
   @EnableSpringHttpSession
-  @Profile("!pt-security")
+  @Conditional(NoPhysicalTenantsConfiguredCondition.class)
   static class SingleTenant {
 
     private final GenericConversionService conversionService;
@@ -155,7 +167,7 @@ public class WebSessionRepositoryConfiguration {
    * process, no per-tenant {@code WebSessionDeletionTask} runs.
    */
   @Configuration(proxyBeanMethods = false)
-  @Profile("pt-security")
+  @Conditional(PhysicalTenantsConfiguredCondition.class)
   static class PerPhysicalTenant {
 
     @Bean

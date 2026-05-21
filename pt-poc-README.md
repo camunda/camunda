@@ -58,8 +58,9 @@ The script:
 2. Skips spotless/license/code-style checks (`-DskipChecks`) and the webapp npm build (`-PskipFrontendBuild`) for speed.
 3. Boots OC under the `pt-poc` Spring profile, which activates:
    - `consolidated-auth` — the existing host security graph
-   - `pt-security` — the per-tenant `SecurityFilterChain` wiring (this PoC)
    - `rdbmsH2` — in-memory H2 secondary storage (no Elasticsearch required)
+
+   The per-tenant `SecurityFilterChain` wiring (this PoC) activates automatically from the `camunda.physical-tenants.*` entries in `application-pt-poc.yaml` — no separate profile gates it. When that map is empty, the PT chains and supporting beans stay dormant and OC boots as a single-tenant deployment served by CSL's standard chains.
 4. Streams logs to the terminal AND tees them to `/tmp/oc.log`.
 
 Wait for:
@@ -104,11 +105,11 @@ Two chains per tenant: an OAuth2-login webapp chain at `/physical-tenant/<id>/**
 
 For each tenant, open the SPA-style demo page in a fresh browser tab (or different browser profile to keep sessions independent). The page is served from the OAuth2-protected webapp chain — landing on it means OAuth2 login succeeded, the session cookie is in place, and the buttons on the page exercise the API chains from that authenticated browser tab.
 
-|  Tenant   |                              URL                            | Login as          | Expected after login                                                                                            |
-|-----------|-------------------------------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------|
-| `tenanta` (prefixed)                | `http://localhost:8080/physical-tenant/tenanta/app`         | `bob` / `bob`     | Page renders with `Session principal: bob` and three buttons (see [SPA-style page](#spa-style-page-webapp-session--api-call-from-the-browser) below). Button 1 calls `/physical-tenant/tenanta/v2/whoami`. |
-| `default` (prefixed)                | `http://localhost:8080/physical-tenant/default/app`         | `alice` / `alice` | Page renders with `Session principal: alice`. Button 1 calls `/physical-tenant/default/v2/whoami`.                                                                                                          |
-| `default` (unprefixed, like operate/tasklist) | `http://localhost:8080/app`                                 | `alice` / `alice` | Same page, but accessed via the default-unprefixed access path. Button 1 calls bare `/v2/whoami` (cookie at `Path=/`).                                                                                      |
+|                    Tenant                     |                         URL                         |     Login as      |                                                                                            Expected after login                                                                                            |
+|-----------------------------------------------|-----------------------------------------------------|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `tenanta` (prefixed)                          | `http://localhost:8080/physical-tenant/tenanta/app` | `bob` / `bob`     | Page renders with `Session principal: bob` and three buttons (see [SPA-style page](#spa-style-page-webapp-session--api-call-from-the-browser) below). Button 1 calls `/physical-tenant/tenanta/v2/whoami`. |
+| `default` (prefixed)                          | `http://localhost:8080/physical-tenant/default/app` | `alice` / `alice` | Page renders with `Session principal: alice`. Button 1 calls `/physical-tenant/default/v2/whoami`.                                                                                                         |
+| `default` (unprefixed, like operate/tasklist) | `http://localhost:8080/app`                         | `alice` / `alice` | Same page, but accessed via the default-unprefixed access path. Button 1 calls bare `/v2/whoami` (cookie at `Path=/`).                                                                                     |
 
 Two simultaneous tab logins coexist — neither tenant's session cookie is sent to the other tenant's URLs (cookie `Path` scoping). To inspect cookies in DevTools: each tab should see only its own `camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`.
 
@@ -206,17 +207,17 @@ The 403 on cross-tenant calls comes from the per-chain `AuthorizationManager`: t
 
 ## What's where
 
-|                             Path                             |                                       Purpose                                       |
-|--------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| `pt-poc-idp.sh`                                              | Boots two `KeycloakContainer`s on fixed host ports 8081/8082 from the realm exports |
-| `pt-poc-oc.sh`                                               | Rebuilds + boots OC under the `pt-poc` profile                                      |
-| `pt-poc-api-smoke.sh`                                        | Runs the cross-tenant API matrix (200/403/401) end-to-end via curl + jq             |
-| `dist/src/test/resources/pt-poc/*.json`                      | Keycloak realm exports (one client + one test user each)                            |
-| `dist/src/main/resources/application-pt-poc.yaml`            | OC's PoC-specific Spring config (tenant A's OIDC provider, security DEBUG logging)  |
-| `dist/src/main/resources/application.properties`             | `spring.profiles.group.pt-poc=consolidated-auth,pt-security,rdbmsH2` lives here     |
-| `authentication/src/main/java/io/camunda/authentication/pt/` | Per-tenant Spring Security wiring                                                   |
+|                             Path                             |                                                                            Purpose                                                                            |
+|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pt-poc-idp.sh`                                              | Boots two `KeycloakContainer`s on fixed host ports 8081/8082 from the realm exports                                                                           |
+| `pt-poc-oc.sh`                                               | Rebuilds + boots OC under the `pt-poc` profile                                                                                                                |
+| `pt-poc-api-smoke.sh`                                        | Runs the cross-tenant API matrix (200/403/401) end-to-end via curl + jq                                                                                       |
+| `dist/src/test/resources/pt-poc/*.json`                      | Keycloak realm exports (one client + one test user each)                                                                                                      |
+| `dist/src/main/resources/application-pt-poc.yaml`            | OC's PoC-specific Spring config (tenant A's OIDC provider, security DEBUG logging)                                                                            |
+| `dist/src/main/resources/application.properties`             | `spring.profiles.group.pt-poc=consolidated-auth,rdbmsH2` lives here                                                                                           |
+| `authentication/src/main/java/io/camunda/authentication/pt/` | Per-tenant Spring Security wiring                                                                                                                             |
 | `dist/src/main/java/io/camunda/application/commons/pt/`      | PoC controllers (PT whoami REST + SPA-style HTML page) — REST endpoint declares `/v2/...` only; auto-prefixed by `PhysicalTenantRequestMappingHandlerMapping` |
-| `/tmp/oc.log`                                                | OC's stdout/stderr, including Spring Security DEBUG + FilterChainProxy TRACE        |
+| `/tmp/oc.log`                                                | OC's stdout/stderr, including Spring Security DEBUG + FilterChainProxy TRACE                                                                                  |
 
 ## Logs
 
@@ -236,7 +237,7 @@ grep -A 30 "Securing GET /physical-tenant/tenanta/v2/whoami" /tmp/oc.log | head 
 
 **Keycloak fails to start with `File name / realm name mismatch`** — the realm JSON's basename must match `<realmName>-realm.json`. The committed files are correct (`default-realm.json`, `tenanta-realm.json`); if you copy one, keep the naming.
 
-**OC starts but boots a different security graph than expected** — confirm the active profile set is `pt-poc,consolidated-auth,pt-security,rdbmsH2`:
+**OC starts but boots a different security graph than expected** — confirm the active profile set is `pt-poc,consolidated-auth,rdbmsH2`:
 
 ```bash
 grep "Started Camunda using profiles" /tmp/oc.log
@@ -259,28 +260,28 @@ Docker `ps` should show no `quay.io/keycloak/keycloak` containers after both ter
 
 Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md) (designed against the [spec](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md)). The current task is **bolded**.
 
-| #  |                                 Task                                  |     State      |
-|----|-----------------------------------------------------------------------|----------------|
-| 1  | Profile scaffold + verify CSL opts out                                | ✅ done         |
-| 2  | Keycloak realm exports                                                | ✅ done         |
-| 3  | `PtPocLocalIdpRunner` standalone `main()`                             | ✅ done         |
-| 4  | Walking skeleton — one tenant, end-to-end login                       | ✅ done         |
-| 5  | Add default tenant prefixed chain + per-chain cookie isolation        | ✅ done         |
-| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`       | ✅ done         |
-| 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test               | ✅ done         |
-| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`        | ✅ done         |
-| 9  | Wire per-tenant `WebSessionRepository`                                | ✅ done         |
-| 10 | Extract `PhysicalTenantCookieSerializer` + unit test                  | ✅ done         |
-|    | Checkpoint C — components extracted                                   | ✅ done         |
-| 11 | API chain — shared decoder + per-chain issuer allowlist               | ✅ done         |
-| 12 | Default tenant unprefixed access-path chains                          | ✅ done         |
-| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ✅ done         |
-|    | Checkpoint D — full functional surface                                | ✅ done         |
-| 16 | Manual browser smoke test                                             | ✅ done         |
-| 17 | **Multi-IdP picker + audience-based PT isolation for shared IdPs**    | 🔄 in progress |
-|    | Checkpoint E — PoC acceptance                                         | ⏳ pending      |
-| 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ deferred     |
-| 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ deferred     |
+| #  |                                Task                                |     State      |
+|----|--------------------------------------------------------------------|----------------|
+| 1  | Profile scaffold + verify CSL opts out                             | ✅ done         |
+| 2  | Keycloak realm exports                                             | ✅ done         |
+| 3  | `PtPocLocalIdpRunner` standalone `main()`                          | ✅ done         |
+| 4  | Walking skeleton — one tenant, end-to-end login                    | ✅ done         |
+| 5  | Add default tenant prefixed chain + per-chain cookie isolation     | ✅ done         |
+| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`    | ✅ done         |
+| 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test            | ✅ done         |
+| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`     | ✅ done         |
+| 9  | Wire per-tenant `WebSessionRepository`                             | ✅ done         |
+| 10 | Extract `PhysicalTenantCookieSerializer` + unit test               | ✅ done         |
+|    | Checkpoint C — components extracted                                | ✅ done         |
+| 11 | API chain — shared decoder + per-chain issuer allowlist            | ✅ done         |
+| 12 | Default tenant unprefixed access-path chains                       | ✅ done         |
+| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`      | ✅ done         |
+|    | Checkpoint D — full functional surface                             | ✅ done         |
+| 16 | Manual browser smoke test                                          | ✅ done         |
+| 17 | **Multi-IdP picker + audience-based PT isolation for shared IdPs** | 🔄 in progress |
+|    | Checkpoint E — PoC acceptance                                      | ⏳ pending      |
+| 14 | `PhysicalTenantSecurityIT` happy path                              | ⏳ deferred     |
+| 15 | `PhysicalTenantSecurityIT` full flow + isolation                   | ⏳ deferred     |
 
 **What currently works:**
 

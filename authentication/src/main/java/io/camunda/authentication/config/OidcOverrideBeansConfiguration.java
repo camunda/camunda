@@ -60,7 +60,6 @@ import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.core.Authentication;
@@ -325,30 +324,29 @@ public class OidcOverrideBeansConfiguration {
         securityConfiguration, oidcAuthenticationConfigurationRepository);
   }
 
-  // Gated off under pt-security: the JWS-algorithm lookup map keys by the
-  // ClientRegistration object references produced by ClientRegistrationFactory from
-  // authentication.providers.oidc.*. The walking-skeleton PT chains construct their
-  // own ClientRegistrations inline, so they don't appear in this map and the factory's
-  // resolver returns null → missing_signature_verifier on ID-token verification.
-  // Under pt-security, Spring Security's default OidcIdTokenDecoderFactory is used.
+  // The JWS-algorithm lookup map is keyed by registration id (String) rather than by
+  // ClientRegistration object reference. The PT chains construct their own ClientRegistrations
+  // (different object references with potentially the same registration id as the root-side
+  // registrations); an object-keyed map would never match those, and ID-token verification
+  // would fail with missing_signature_verifier. Keying by id lets PT and root registrations
+  // that share an id share the algorithm — which is the only sensible behaviour, since the
+  // algorithm is a property of the OIDC provider (identified by id), not of any particular
+  // ClientRegistration object.
   @Bean
-  @Profile("!pt-security")
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
-      final ClientRegistrationRepository clientRegistrationRepository) {
+      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
     final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
         oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
-    final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
+    final Map<String, JwsAlgorithm> algorithmsByRegistrationId =
         oidcAuthenticationConfigurations.entrySet().stream()
             .collect(
-                toMap(
-                    e -> clientRegistrationRepository.findByRegistrationId(e.getKey()),
-                    e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
-    decoderFactory.setJwsAlgorithmResolver(clientRegistrationToAlgorithmMap::get);
+                toMap(Map.Entry::getKey, e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
+    decoderFactory.setJwsAlgorithmResolver(
+        reg -> algorithmsByRegistrationId.get(reg.getRegistrationId()));
     return decoderFactory;
   }
 
@@ -388,8 +386,9 @@ public class OidcOverrideBeansConfiguration {
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final ClientRegistrationRepository clientRegistrationRepository,
       final OidcAuthenticationConfigurationRepository oidcProviderRepository,
-      // PoC pt-security: optional per-tenant client-registration repositories. Absent under
-      // the non-PT setup, present (one entry per physical tenant) under pt-security.
+      // PoC PT: optional per-tenant client-registration repositories. The bean is always
+      // declared but resolves to an empty map when no camunda.physical-tenants.* entries are
+      // present; populated (one entry per physical tenant) when they are.
       @Qualifier("ptClientRegistrationRepositories")
           final ObjectProvider<Map<String, ClientRegistrationRepository>>
               ptClientRegistrationRepositories) {
@@ -605,9 +604,11 @@ public class OidcOverrideBeansConfiguration {
   }
 
   // --------------------------------------------------------------------------------------------
-  // Physical-tenant overlays (active only under the pt-security profile).
+  // Physical-tenant overlays. The beans below are always declared; each one self-gates by
+  // returning an empty Map.copyOf(...) when camunda.physical-tenants.* is empty, so they are
+  // safe to leave loaded in non-PT deployments.
   //
-  // Produces two map beans keyed by tenant id that the jwtDecoder bean above picks up via
+  // Produces map beans keyed by tenant id that the jwtDecoder bean above picks up via
   // ObjectProvider:
   //   * ptClientRegistrationRepositories — one ClientRegistrationRepository per tenant,
   //     assembled from camunda.physical-tenants.<id>.security.* + providers.assigned via
@@ -615,6 +616,7 @@ public class OidcOverrideBeansConfiguration {
   //   * ptAllowedIssuersPerTenant — the set of OIDC issuer URIs each tenant has assigned;
   //     used both for the per-tenant API chain allowlist and (via the cluster-shared
   //     issuer-aware jwtDecoder) for the unioned validator chain.
+  //   * ptExpectedAudiencesPerTenant — the set of expected audiences per tenant (spec D8).
   //
   // Tenant ids are enumerated by binding camunda.physical-tenants directly off the Environment
   // — the authentication module does not depend on the configuration module where
@@ -622,7 +624,6 @@ public class OidcOverrideBeansConfiguration {
   // --------------------------------------------------------------------------------------------
 
   @Bean
-  @Profile("pt-security")
   public Map<String, ClientRegistrationRepository> ptClientRegistrationRepositories(
       final Environment environment) {
     final Map<String, ClientRegistrationRepository> repositories = new LinkedHashMap<>();
@@ -649,7 +650,6 @@ public class OidcOverrideBeansConfiguration {
    * separates tenants that share an IdP (same {@code iss}, distinct {@code aud}).
    */
   @Bean
-  @Profile("pt-security")
   public Map<String, Set<String>> ptExpectedAudiencesPerTenant(final Environment environment) {
     final Map<String, Set<String>> perTenant = new LinkedHashMap<>();
     for (final String tenantId : readTenantIds(environment)) {
@@ -672,7 +672,6 @@ public class OidcOverrideBeansConfiguration {
   }
 
   @Bean
-  @Profile("pt-security")
   public Map<String, Set<String>> ptAllowedIssuersPerTenant(final Environment environment) {
     final Map<String, Set<String>> perTenant = new LinkedHashMap<>();
     for (final String tenantId : readTenantIds(environment)) {

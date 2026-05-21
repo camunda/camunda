@@ -7,21 +7,21 @@
  */
 package io.camunda.authentication.pt;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 /**
- * Stand-in beans for the walking-skeleton PT-security profile.
+ * Stand-in beans for the walking-skeleton PT security setup.
  *
- * <p>Under {@code pt-security}, {@link io.camunda.authentication.config.WebSecurityConfig} is gated
- * off and the CSL filter-chain stack with it. A handful of OC beans defined in {@link
- * io.camunda.authentication.config.OidcOverrideBeansConfiguration} (which is still active because
- * it's gated only on {@code authentication.method=oidc}) consume Spring-Security collaborators that
- * are normally produced as a side-effect of CSL's {@code oauth2Login()} application — once that's
- * gone, they need to be provided explicitly.
+ * <p>A handful of OC beans defined in {@link
+ * io.camunda.authentication.config.OidcOverrideBeansConfiguration} (which is active whenever {@code
+ * authentication.method=oidc}) consume Spring-Security collaborators that are normally produced as
+ * a side-effect of CSL's {@code oauth2Login()} application on a webapp chain — in setups where no
+ * CSL chain installs {@code oauth2Login} (e.g. some PT shapes), they need to be provided
+ * explicitly.
  *
  * <p>Beans currently stubbed:
  *
@@ -39,10 +39,10 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
  * ambient OAuth2 beans at all.
  */
 @Configuration
-@Profile("pt-security")
 public class PhysicalTenantHostStubs {
 
   @Bean
+  @ConditionalOnMissingBean
   public OAuth2AuthorizedClientRepository oauth2AuthorizedClientRepository() {
     return new HttpSessionOAuth2AuthorizedClientRepository();
   }

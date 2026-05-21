@@ -107,11 +107,12 @@ public final class PhysicalTenantSecurityChainRegistrar
   @Override
   public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry) {
     final Environment env = environment;
-    if (env == null || !isPtSecurityActive(env)) {
-      // Profile gate: the registrar bean is itself profile-gated, but defensively skip if the
-      // environment got swapped or the active profiles don't include pt-security.
+    if (env == null) {
       return;
     }
+    // Self-gate on config: no tenants ⇒ no PT chains registered. The host then boots as a
+    // single-tenant deployment served by CSL's standard chains. Adding/removing entries under
+    // camunda.physical-tenants.* is the only switch — there is no separate profile to flip.
     final var tenantIds = readTenantIds(env);
     if (tenantIds.isEmpty()) {
       return;
@@ -251,15 +252,6 @@ public final class PhysicalTenantSecurityChainRegistrar
             .bind(PHYSICAL_TENANTS_PREFIX, Bindable.mapOf(String.class, Object.class))
             .orElse(new LinkedHashMap<>());
     return tenants.keySet();
-  }
-
-  private static boolean isPtSecurityActive(final Environment environment) {
-    for (final String profile : environment.getActiveProfiles()) {
-      if ("pt-security".equals(profile)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   static String beanName(final String tenantId, final String suffix) {

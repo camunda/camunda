@@ -7,10 +7,11 @@
  */
 package io.camunda.application.commons.pt;
 
+import io.camunda.application.commons.identity.PhysicalTenantsConfiguredCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -33,7 +34,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * </ul>
  */
 @Controller
-@Profile("pt-security")
+@Conditional(PhysicalTenantsConfiguredCondition.class)
 public class PhysicalTenantLoginPageController {
 
   private final Map<String, ClientRegistrationRepository> repositories;

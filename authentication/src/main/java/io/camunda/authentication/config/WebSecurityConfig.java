@@ -41,17 +41,16 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
  *
  * <p>The CSL auto-configuration import itself was lifted into the always-loaded {@link
  * CamundaSecurityLibraryImporter} so CSL's {@code BaseSecurityConfiguration} chains
- * (unprotected-paths, webapp/api, catch-all 404) light up under both {@code !pt-security} and
- * {@code pt-security} — under {@code pt-security} those CSL chains co-exist with the
- * programmatically registered PT chains. The OC-specific bean overrides on this class remain gated
- * to the non-PT profile because the PT setup supplies its own equivalents.
+ * (unprotected-paths, webapp/api, catch-all 404) light up regardless of whether the PT chains are
+ * active. When physical tenants are configured the PT chains co-exist with CSL's chains via
+ * {@code @Order} precedence — see {@code PhysicalTenantSecurityChainRegistrar} for the layout.
  *
  * <p>OC-specific OIDC and basic-auth bean overrides live in {@link OidcOverrideBeansConfiguration}
  * and {@link BasicAuthBeansConfiguration} respectively; CSL defaults back off via
  * {@code @ConditionalOnMissingBean}.
  */
 @Configuration
-@Profile("consolidated-auth & !pt-security")
+@Profile("consolidated-auth")
 @Import({
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,

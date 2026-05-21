@@ -53,16 +53,16 @@ The unprefixed default access path is served by CSL's standard `OidcWebapp` and 
 
 CSRF cookies follow the same Path scoping.
 
-### D3. Profile-gate the new chain set, opt out of CSL chains for PT paths
+### D3. Config-driven activation; PT chains co-exist with CSL chains
 
-The library (CSL) is a singleton-style auto-config that assumes one chain per (auth-method × api/webapp). We don't fight CSL on this. Instead:
+The library (CSL) is a singleton-style auto-config that assumes one chain per (auth-method × api/webapp). The PT chains do not displace CSL's chains — they interleave with them via `@Order` precedence.
 
-- Introduce a Spring profile `pt-security` that:
-  - Excludes `CamundaSecurityAutoConfiguration` from the import (or makes our chains take precedence by `@Order`).
-  - Activates `PhysicalTenantSecurityConfiguration` (new).
-- Without `pt-security`, OC boots unchanged. With `pt-security`, our chains take over.
+- `PhysicalTenantSecurityConfiguration` and the supporting bean overlays in `OidcOverrideBeansConfiguration` (`ptClientRegistrationRepositories`, `ptAllowedIssuersPerTenant`, `ptExpectedAudiencesPerTenant`) are always available; activation is config-driven.
+- `PhysicalTenantSecurityChainRegistrar` self-gates on the tenant set bound from `camunda.physical-tenants.*`. An empty map ⇒ no chains registered, OC boots as a single-tenant deployment served by CSL's standard chains. A non-empty map ⇒ one prefixed API chain + one prefixed webapp chain per tenant get registered.
+- Ordering layout (low number wins): PT API chains at `@Order(-1)` (sub-pattern of `/v2/**`, must beat CSL's OidcApi at `@Order(1)`); PT webapp chains at `@Order(0)` (disjoint matchers from CSL's unprotected-paths chain at the same order); CSL's chains stay at `0/1/2`. See the `PhysicalTenantSecurityChainRegistrar` javadoc for the full table.
+- The session machinery cooperates: `WebSessionRepositoryConfiguration.SingleTenant` (with `@EnableSpringHttpSession` and the cluster-wide `WebSessionRepository`) loads only when no PTs are configured; `PerPhysicalTenant` produces the per-tenant `Map<String, WebSessionRepository>` only when PTs are configured. Both nested configs are gated by `PhysicalTenantsConfiguredCondition` / `NoPhysicalTenantsConfiguredCondition` (a `Binder`-backed `@Conditional` — the property is a structured map, not a flat value).
 
-This keeps the blast radius small and the rollback path obvious.
+This keeps the blast radius small: a deployment with no PT entries is byte-for-byte equivalent in security behaviour to the pre-PT codebase.
 
 ### D4. Reuse OC's OIDC machinery; bind it per tenant
 
@@ -219,7 +219,7 @@ New classes / configurations introduced by the PoC:
 | `TenantSecuritySlice` (record)                                       | Per-tenant collaborator bundle: tenant id, access path, `ClientRegistrationRepository`, `SessionRepositoryFilter`, `CookieHttpSessionIdResolver`. Built once per tenant at startup. `JwtDecoder`, `LogoutSuccessHandler`, `AuthorizedClientRepository`, `SecurityContextRepository` are intentionally NOT in the slice — they are cluster-shared (issuer-aware decoder validates any known issuer; the chains' per-tenant authorization rule enforces `iss` ∈ tenant's assigned issuers; logout/authorized-client/security-context are session-derived). |
 | `PerTenantOidcRegistry`                                              | Builds the per-tenant `OidcAuthenticationConfigurationRepository` by applying `providers.assigned` to the tenant's OIDC providers map.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `PhysicalTenantRedirectUriRewriter`                                  | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template at registration build time.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `PhysicalTenantWebSessionRepositoryConfiguration` (in `dist/`)       | `@Profile("pt-security")` `@Configuration` exposing `Map<String, WebSessionRepository>` keyed by tenant id. Lives in `dist/` because it needs `PhysicalTenantResolver` (not on `authentication/`'s classpath). The chain config injects this map directly — no registry wrapper class.                                                                                                                                                                                                                                                                   |
+| `PhysicalTenantWebSessionRepositoryConfiguration` (in `dist/`)       | `@Conditional(PhysicalTenantsConfiguredCondition.class)` nested `@Configuration` exposing `Map<String, WebSessionRepository>` keyed by tenant id. Lives in `dist/` because it needs `PhysicalTenantResolver` (not on `authentication/`'s classpath). The chain config injects this map directly — no registry wrapper class.                                                                                                                                                                                                                            |
 | `InMemoryPersistentWebSessionClient` (in `dist/`)                    | Per-tenant `PersistentWebSessionClient` backed by a private `ConcurrentHashMap`. One instance per tenant; structurally unreachable from other tenants. PoC scope only — see "Out of scope" below for the durable-storage follow-up.                                                                                                                                                                                                                                                                                                                      |
 | `PhysicalTenantCookieSerializer` (helper)                            | Produces a Spring Session `CookieSerializer` configured with the tenant's cookie name + Path for use by `CookieHttpSessionIdResolver`.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
@@ -342,7 +342,7 @@ Both return `{ tenantId, principal, providers, accessPath }`. That is sufficient
 
 Demo:
 
-1. Start OC with the `pt-security` profile and the config above (two tenants, two IdPs — Keycloak realms `default` and `tenanta`).
+1. Start OC with the config above (two tenants, two IdPs — Keycloak realms `default` and `tenanta`). The presence of `camunda.physical-tenants.*` entries activates the PT chains; no separate profile is needed.
 2. Browser → `https://localhost:8080/physical-tenant/tenanta/whoami`.
 3. PT webapp chain matches; user is unauthenticated; redirect to `/physical-tenant/tenanta/oauth2/authorization/tenanta` → tenant A's Keycloak (tenant A binds its Keycloak realm to a *named* OIDC provider `tenanta` under `authentication.providers.oidc.tenanta.*`).
 4. Login → callback at `/physical-tenant/tenanta/login/oauth2/code/tenanta` → session created with cookie `camunda-session-tenanta; Path=/physical-tenant/tenanta`. `whoami` returns `{tenantId:"tenanta", principal:"bob@tenanta", providers:["tenanta"], accessPath:"prefixed"}`.
@@ -388,14 +388,14 @@ Both clients pre-configured with redirect URIs `http://localhost:8080/physical-t
 
 ### 2. Bundled config for the OC process
 
-`dist/src/main/resources/application-pt-poc.yaml` — activates with `--spring.profiles.active=pt-poc,pt-security` and references the local Keycloak issuer URIs by default (overridable via standard Spring property indirection). Contains the two-tenant config from the [Configuration consumed](#configuration-consumed) section pre-filled for the local runner's realms.
+`dist/src/main/resources/application-pt-poc.yaml` — activates with `--spring.profiles.active=pt-poc` (which expands to `consolidated-auth,rdbmsH2` via `spring.profiles.group` in `application.properties`) and references the local Keycloak issuer URIs by default (overridable via standard Spring property indirection). Contains the two-tenant config from the [Configuration consumed](#configuration-consumed) section pre-filled for the local runner's realms; the presence of those entries is what activates the PT chains.
 
 ### 3. Integration test (CI verification)
 
 `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java` — a single IT that:
 
 - Boots two `KeycloakContainer`s (random ports, isolated per-test).
-- Boots OC in-JVM with the `pt-security` profile and tenant config wired to those issuer URIs.
+- Boots OC in-JVM with the `consolidated-auth` profile and tenant config wired to those issuer URIs (the tenant config alone activates the PT chains).
 - Drives the OIDC flow via a programmatic `RestClient` that handles the `302` → IdP login form → `302` callback chain (the pattern used in `OidcAuthOverRestIT`).
 - Asserts each [verification point](#end-to-end-demo-path) above.
 

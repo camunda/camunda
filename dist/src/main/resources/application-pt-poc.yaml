@@ -72,6 +72,8 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.security.web.FilterChainProxy: TRACE
 
-# NOTE: the consolidated-auth and pt-security profiles are pulled in by the
-# spring.profiles.group.pt-poc declaration in application.properties — Spring
-# Boot 2.4+ forbids spring.profiles.include inside profile-specific resources.
+# NOTE: the consolidated-auth profile is pulled in by the spring.profiles.group.pt-poc
+# declaration in application.properties — Spring Boot 2.4+ forbids
+# spring.profiles.include inside profile-specific resources. The per-tenant
+# SecurityFilterChain wiring activates automatically from the camunda.physical-tenants.*
+# entries above; no separate profile gates it.
