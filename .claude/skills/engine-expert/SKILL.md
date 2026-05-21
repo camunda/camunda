@@ -31,6 +31,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 | Editing or creating a processor, behavior class, validation, or rejection                                    | `processors.md`     |
 | Editing or creating an event applier, a `Mutable*State` interface method, or anything called from an applier | `event-appliers.md` |
 | Writing or modifying engine tests                                                                            | `testing.md`        |
+| Working with authorization resource types or permission types (which enum to use in which layer)             | `authz-enums.md`    |
 
 ## Local checks before commit
 
