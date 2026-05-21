@@ -36,10 +36,13 @@ public class NoDBMembershipService implements MembershipPort {
       final Map<String, Object> tokenClaims,
       final String principalId,
       final PrincipalType principalType) {
-    final List<String> groups =
+    final List<String> extracted =
         isGroupsClaimConfigured ? oidcGroupsExtractor.extract(tokenClaims) : List.of();
-    return new Memberships(
-        groups != null ? groups : List.of(), List.of(), List.of(), List.of());
+    // Dedup and produce an immutable list: matches the previous Set-backed semantics and
+    // shields downstream from a mutable extractor result.
+    final List<String> groups =
+        extracted != null ? extracted.stream().distinct().toList() : List.of();
+    return new Memberships(groups, List.of(), List.of(), List.of());
   }
 
   @Override

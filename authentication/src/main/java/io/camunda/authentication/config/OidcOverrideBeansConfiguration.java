@@ -265,9 +265,10 @@ public class OidcOverrideBeansConfiguration {
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
-    final var extraValidators = new java.util.ArrayList<
-        org.springframework.security.oauth2.core.OAuth2TokenValidator<
-            org.springframework.security.oauth2.jwt.Jwt>>();
+    final var extraValidators =
+        new java.util.ArrayList<
+            org.springframework.security.oauth2.core.OAuth2TokenValidator<
+                org.springframework.security.oauth2.jwt.Jwt>>();
     if (securityConfiguration.getSaas().isConfigured()) {
       extraValidators.add(
           new OrganizationValidator(securityConfiguration.getSaas().getOrganizationId()));

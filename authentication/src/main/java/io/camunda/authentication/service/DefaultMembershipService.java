@@ -76,8 +76,7 @@ public class DefaultMembershipService implements MembershipPort {
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
     ownerTypeToIds.put(
-        principalType.equals(PrincipalType.USER) ? USER : EntityType.CLIENT,
-        Set.of(principalId));
+        principalType.equals(PrincipalType.USER) ? USER : EntityType.CLIENT, Set.of(principalId));
 
     final var mappingRules =
         mappingRuleServices
@@ -126,10 +125,7 @@ public class DefaultMembershipService implements MembershipPort {
             .toList();
 
     return new Memberships(
-        groups.stream().toList(),
-        roles.stream().toList(),
-        tenants,
-        mappingRules.stream().toList());
+        groups.stream().toList(), roles.stream().toList(), tenants, mappingRules.stream().toList());
   }
 
   @Override
@@ -166,7 +162,6 @@ public class DefaultMembershipService implements MembershipPort {
             .map(TenantEntity::tenantId)
             .toList();
 
-    return new Memberships(
-        groups.stream().toList(), roles.stream().toList(), tenants, List.of());
+    return new Memberships(groups.stream().toList(), roles.stream().toList(), tenants, List.of());
   }
 }

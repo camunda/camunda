@@ -25,9 +25,7 @@ class NoDBMembershipServiceTest {
 
     final var memberships =
         service.resolveMemberships(
-            Map.of("sub", "alice", "groups", List.of("eng", "ops")),
-            "alice",
-            PrincipalType.USER);
+            Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
     assertThat(memberships.groupIds()).containsExactlyInAnyOrder("eng", "ops");
     assertThat(memberships.roleIds()).isEmpty();
@@ -42,9 +40,7 @@ class NoDBMembershipServiceTest {
 
     final var memberships =
         service.resolveMemberships(
-            Map.of("sub", "alice", "groups", List.of("eng", "ops")),
-            "alice",
-            PrincipalType.USER);
+            Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
     assertThat(memberships.groupIds()).isEmpty();
     assertThat(memberships.roleIds()).isEmpty();

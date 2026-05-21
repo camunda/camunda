@@ -54,8 +54,7 @@ class DefaultMembershipServiceTest {
   @Test
   void resolveMembershipsAggregatesGroupsRolesTenantsAndMappingRules() {
     when(mappingRuleServices.getMatchingMappingRules(any(), any()))
-        .thenReturn(
-            Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
+        .thenReturn(Stream.of(new MappingRuleEntity("mr1", 1L, "claim", "value", "rule")));
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
