@@ -27,6 +27,9 @@ public record AgentInstanceEntity(
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     Long processDefinitionKey,
+    String processDefinitionId,
+    Integer processDefinitionVersion,
+    @Nullable String versionTag,
     String tenantId,
     OffsetDateTime creationDate,
     OffsetDateTime lastUpdatedDate,
@@ -43,6 +46,8 @@ public record AgentInstanceEntity(
     Objects.requireNonNull(elementId, "elementId");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
     Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion");
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(creationDate, "creationDate");
     Objects.requireNonNull(lastUpdatedDate, "lastUpdatedDate");

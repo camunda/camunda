@@ -20,10 +20,13 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record AgentInstanceFilter(
-    List<Long> agentInstanceKeys,
-    List<Long> elementInstanceKeys,
-    List<Long> processInstanceKeys,
-    List<Long> processDefinitionKeys,
+    List<Operation<Long>> agentInstanceKeyOperations,
+    List<Operation<Long>> elementInstanceKeyOperations,
+    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<String>> processDefinitionIdOperations,
+    List<Operation<Integer>> processDefinitionVersionOperations,
+    List<Operation<String>> versionTagOperations,
     List<Operation<String>> elementIdOperations,
     List<Operation<String>> statusOperations,
     List<Operation<String>> tenantIdOperations,
@@ -39,10 +42,13 @@ public record AgentInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<AgentInstanceFilter> {
 
-    private List<Long> agentInstanceKeys;
-    private List<Long> elementInstanceKeys;
-    private List<Long> processInstanceKeys;
-    private List<Long> processDefinitionKeys;
+    private List<Operation<Long>> agentInstanceKeyOperations;
+    private List<Operation<Long>> elementInstanceKeyOperations;
+    private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> processDefinitionKeyOperations;
+    private List<Operation<String>> processDefinitionIdOperations;
+    private List<Operation<Integer>> processDefinitionVersionOperations;
+    private List<Operation<String>> versionTagOperations;
     private List<Operation<String>> elementIdOperations;
     private List<Operation<String>> statusOperations;
     private List<Operation<String>> tenantIdOperations;
@@ -50,40 +56,111 @@ public record AgentInstanceFilter(
     private List<Operation<OffsetDateTime>> lastUpdatedDateOperations;
     private List<Operation<OffsetDateTime>> completionDateOperations;
 
-    public Builder agentInstanceKeys(final List<Long> values) {
-      agentInstanceKeys = addValuesToList(agentInstanceKeys, values);
+    public Builder agentInstanceKeyOperations(final List<Operation<Long>> operations) {
+      agentInstanceKeyOperations = addValuesToList(agentInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder agentInstanceKeys(final Long... values) {
-      return agentInstanceKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder agentInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return agentInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder elementInstanceKeys(final List<Long> values) {
-      elementInstanceKeys = addValuesToList(elementInstanceKeys, values);
+    public Builder agentInstanceKeys(final Long value, final Long... values) {
+      return agentInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
+      elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder elementInstanceKeys(final Long... values) {
-      return elementInstanceKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder elementInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return elementInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    public Builder elementInstanceKeys(final Long value, final Long... values) {
+      return elementInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      processDefinitionKeyOperations = addValuesToList(processDefinitionKeyOperations, operations);
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
+      return processDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
+      processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder processDefinitionVersionOperations(
+        final List<Operation<Integer>> operations) {
+      processDefinitionVersionOperations =
+          addValuesToList(processDefinitionVersionOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionVersionOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return processDefinitionVersionOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionVersions(final Integer value, final Integer... values) {
+      return processDefinitionVersionOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder versionTagOperations(final List<Operation<String>> operations) {
+      versionTagOperations = addValuesToList(versionTagOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder versionTagOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return versionTagOperations(collectValues(operation, operations));
+    }
+
+    public Builder versionTags(final String value, final String... values) {
+      return versionTagOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder elementIdOperations(final List<Operation<String>> operations) {
@@ -167,10 +244,13 @@ public record AgentInstanceFilter(
     @Override
     public AgentInstanceFilter build() {
       return new AgentInstanceFilter(
-          Objects.requireNonNullElse(agentInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(agentInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(versionTagOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(statusOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
