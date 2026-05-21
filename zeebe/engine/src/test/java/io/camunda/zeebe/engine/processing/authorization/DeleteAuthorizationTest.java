@@ -122,7 +122,7 @@ public class DeleteAuthorizationTest {
         .hasRejectionReason(
             "Expected to delete authorization with key "
                 + authorizationKey
-                + ", but it belongs to protected role '"
+                + ", but it belongs to default role '"
                 + protectedRoleId
                 + "' whose authorizations cannot be deleted.");
   }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.identity.ProtectedRoles;
+import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -31,7 +31,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
   public static final String ROLE_PROTECTED_ERROR_MESSAGE =
-      "Expected to update role with ID '%s', but this role is protected and cannot be modified.";
+      "Expected to update role with ID '%s', which is a default role and cannot be modified.";
   private final RoleState roleState;
   private final KeyGenerator keyGenerator;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -73,7 +73,8 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
 
-    if (ProtectedRoles.isProtected(record.getRoleId())) {
+    final String roleId = record.getRoleId();
+    if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);

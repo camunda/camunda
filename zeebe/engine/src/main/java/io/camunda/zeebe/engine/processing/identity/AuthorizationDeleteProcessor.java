@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION;
 
-import io.camunda.security.identity.ProtectedRoles;
+import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -36,7 +36,7 @@ public class AuthorizationDeleteProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
 
   public static final String AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE =
-      "Expected to delete authorization with key %s, but it belongs to protected role '%s' "
+      "Expected to delete authorization with key %s, but it belongs to default role '%s' "
           + "whose authorizations cannot be deleted.";
 
   private final KeyGenerator keyGenerator;
@@ -82,19 +82,6 @@ public class AuthorizationDeleteProcessor
             });
   }
 
-  private static Either<Rejection, PersistedAuthorization> rejectIfProtectedRoleOwner(
-      final PersistedAuthorization authorization) {
-    if (authorization.getOwnerType() == AuthorizationOwnerType.ROLE
-        && ProtectedRoles.isProtected(authorization.getOwnerId())) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_STATE,
-              AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE.formatted(
-                  authorization.getAuthorizationKey(), authorization.getOwnerId())));
-    }
-    return Either.right(authorization);
-  }
-
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
@@ -116,6 +103,21 @@ public class AuthorizationDeleteProcessor
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private static Either<Rejection, PersistedAuthorization> rejectIfProtectedRoleOwner(
+      final PersistedAuthorization authorization) {
+    if (authorization.getOwnerType() == AuthorizationOwnerType.ROLE) {
+      final String roleId = authorization.getOwnerId();
+      if (roleId != null && DefaultRole.ids().contains(roleId)) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_STATE,
+                AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE.formatted(
+                    authorization.getAuthorizationKey(), authorization.getOwnerId())));
+      }
+    }
+    return Either.right(authorization);
   }
 
   private void writeEventAndDistribute(

@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -24,7 +25,6 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.identity.ProtectedRoles;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -203,7 +203,7 @@ public class AdminClientConfigControllerTest {
     // then
     assertThat(config.get("protectedRoleIds"))
         .asInstanceOf(list(String.class))
-        .containsExactlyInAnyOrderElementsOf(ProtectedRoles.PROTECTED_ROLE_IDS);
+        .containsExactlyInAnyOrderElementsOf(DefaultRole.ids());
   }
 
   @Test

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.identity.ProtectedRoles;
+import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -39,7 +39,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete role with ID '%s', but a role with this ID doesn't exist.";
   public static final String ROLE_PROTECTED_ERROR_MESSAGE =
-      "Expected to delete role with ID '%s', but this role is protected and cannot be deleted.";
+      "Expected to delete role with ID '%s', which is a default role and cannot be deleted.";
   private final RoleState roleState;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
@@ -87,7 +87,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
 
-    if (ProtectedRoles.isProtected(roleId)) {
+    if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(roleId);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);

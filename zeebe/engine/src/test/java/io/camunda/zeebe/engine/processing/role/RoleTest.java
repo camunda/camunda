@@ -142,7 +142,7 @@ public class RoleTest {
         .hasRejectionReason(
             "Expected to update role with ID '"
                 + protectedRoleId
-                + "', but this role is protected and cannot be modified.");
+                + "', which is a default role and cannot be modified.");
   }
 
   @Test
@@ -161,7 +161,7 @@ public class RoleTest {
         .hasRejectionReason(
             "Expected to delete role with ID '"
                 + protectedRoleId
-                + "', but this role is protected and cannot be deleted.");
+                + "', which is a default role and cannot be deleted.");
   }
 
   @Test
