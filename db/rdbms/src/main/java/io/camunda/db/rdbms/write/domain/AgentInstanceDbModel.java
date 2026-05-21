@@ -27,7 +27,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
   private String elementId;
   private long processInstanceKey;
   private long rootProcessInstanceKey;
-  private String bpmnProcessId;
+  private String processDefinitionId;
   private long processDefinitionKey;
   private int processDefinitionVersion;
   private String versionTag;
@@ -66,7 +66,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
         .elementId(elementId)
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
-        .bpmnProcessId(bpmnProcessId)
+        .processDefinitionId(processDefinitionId)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionVersion(processDefinitionVersion)
         .versionTag(versionTag)
@@ -124,12 +124,12 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
-  public String bpmnProcessId() {
-    return bpmnProcessId;
+  public String processDefinitionId() {
+    return processDefinitionId;
   }
 
-  public void bpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public void processDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
   }
 
   public long processDefinitionKey() {
@@ -359,7 +359,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
     private String elementId;
     private long processInstanceKey;
     private long rootProcessInstanceKey;
-    private String bpmnProcessId;
+    private String processDefinitionId;
     private long processDefinitionKey;
     private int processDefinitionVersion;
     private String versionTag;
@@ -402,8 +402,8 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       return this;
     }
 
-    public Builder bpmnProcessId(final String bpmnProcessId) {
-      this.bpmnProcessId = bpmnProcessId;
+    public Builder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
       return this;
     }
 
@@ -519,7 +519,7 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
       result.elementId(elementId);
       result.processInstanceKey(processInstanceKey);
       result.rootProcessInstanceKey(rootProcessInstanceKey);
-      result.bpmnProcessId(bpmnProcessId);
+      result.processDefinitionId(processDefinitionId);
       result.processDefinitionKey(processDefinitionKey);
       result.processDefinitionVersion(processDefinitionVersion);
       result.versionTag(versionTag);
