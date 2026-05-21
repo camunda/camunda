@@ -91,13 +91,13 @@ const List: FC<ListProps> = ({ isOIDC }) => {
             label: t("edit"),
             icon: Edit,
             onClick: editTenant,
-            hidden: (tenant) => isDefaultTenant(tenant.tenantId),
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            hidden: (tenant) => isDefaultTenant(tenant.tenantId),
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
             onClick: (tenant) =>
               deleteTenant({
                 tenantId: tenant.tenantId,
