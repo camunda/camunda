@@ -8,10 +8,11 @@ on:
   pull_request:
     types: [labeled]
 
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Limit to 1 concurrent run per (ref, label): re-adding `update-snapshots` cancels its previous
+# in-flight run, but adding other labels at the same time doesn't cancel the snapshot update.
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
 
 jobs:
   update-snapshots:

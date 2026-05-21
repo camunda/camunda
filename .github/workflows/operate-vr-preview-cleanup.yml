@@ -1,6 +1,6 @@
 # description: Weekly cleanup of orphaned Operate VR report preview deployments
 # type: maintenance
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/fe-operate
 ---
 name: Operate VR Preview Cleanup
 
