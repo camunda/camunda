@@ -7,11 +7,10 @@
  */
 package io.camunda.application.commons.identity;
 
-import io.camunda.authentication.pt.PerTenantWebSessionRepositories;
 import io.camunda.authentication.session.WebSessionMapper;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
+import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.search.clients.PersistentWebSessionClient;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,22 +24,18 @@ import org.springframework.core.convert.support.GenericConversionService;
  * Per-tenant counterpart to {@link WebSessionRepositoryConfiguration} (gated on the {@code
  * pt-security} profile).
  *
- * <p>Iterates {@link PhysicalTenantResolver#getAll()} and produces one {@link
- * PersistentWebSessionClient} per tenant. The clients are exposed as a {@code Map<String,
- * PersistentWebSessionClient>} bean and consumed by {@link PerTenantWebSessionRepositories}, which
- * the {@code PhysicalTenantSecurityConfiguration} chains inject for their per-chain {@code
- * SessionRepositoryFilter}.
+ * <p>Iterates {@link PhysicalTenantResolver#getAll()} and produces one {@link WebSessionRepository}
+ * per tenant, exposed as a {@code Map<String, WebSessionRepository>} keyed by tenant id. The map is
+ * injected directly into {@code PhysicalTenantSecurityConfiguration}, which looks the right
+ * instance up per chain.
  *
- * <p>Storage isolation is structural: each tenant's repository is bound to its own client instance
- * — no shared backend, no key-prefixing decorator.
+ * <p>Storage isolation is structural: each tenant's repository owns its own backing client — no
+ * shared backend, no key-prefixing decorator.
  *
- * <p><b>PoC backend choice.</b> Each tenant gets an {@link InMemoryPersistentWebSessionClient}. The
- * natural production substitution is a per-tenant {@code PersistentWebSessionRdbmsClient} (or
- * {@code PersistentWebSessionSearchImpl}) built from per-tenant {@code SqlSessionFactory} / {@code
- * SearchClients}. The data-source and search-clients primitives already exist per tenant; the
- * matching per-tenant MyBatis bundle (per-tenant {@code SqlSessionFactory} + {@code
- * PersistentWebSessionMapper}) does not yet exist in this branch. Wiring it up is a separate
- * refactor of {@code MyBatisConfiguration} and out of scope for the security PoC.
+ * <p><b>PoC scope:</b> the backing client for each tenant is an in-memory {@link
+ * InMemoryPersistentWebSessionClient}. The PoC deliberately does not wire per-tenant durable
+ * secondary storage; that's a separate concern from the per-tenant security wiring this PoC
+ * validates. Sessions live for the lifetime of the process.
  *
  * <p>The {@code !pt-security} sibling {@link WebSessionRepositoryConfiguration} continues to
  * register the cluster-wide {@code WebSessionRepository}; it is excluded when this profile is
@@ -52,27 +47,22 @@ import org.springframework.core.convert.support.GenericConversionService;
 public class PhysicalTenantWebSessionRepositoryConfiguration {
 
   @Bean
-  public Map<String, PersistentWebSessionClient> ptPersistentWebSessionClients(
-      final PhysicalTenantResolver physicalTenantResolver) {
-    final var clients = new LinkedHashMap<String, PersistentWebSessionClient>();
+  public Map<String, WebSessionRepository> ptWebSessionRepositories(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final GenericConversionService conversionService,
+      final HttpServletRequest request) {
+    final var mapper =
+        new WebSessionMapper(new SpringBasedWebSessionAttributeConverter(conversionService));
+    final var repositories = new LinkedHashMap<String, WebSessionRepository>();
     physicalTenantResolver
         .getAll()
         .keySet()
-        .forEach(tenantId -> clients.put(tenantId, new InMemoryPersistentWebSessionClient()));
-    return Map.copyOf(clients);
-  }
-
-  @Bean
-  public WebSessionMapper ptWebSessionMapper(final GenericConversionService conversionService) {
-    return new WebSessionMapper(new SpringBasedWebSessionAttributeConverter(conversionService));
-  }
-
-  @Bean
-  public PerTenantWebSessionRepositories perTenantWebSessionRepositories(
-      final Map<String, PersistentWebSessionClient> ptPersistentWebSessionClients,
-      final WebSessionMapper ptWebSessionMapper,
-      final HttpServletRequest request) {
-    return new PerTenantWebSessionRepositories(
-        ptPersistentWebSessionClients, ptWebSessionMapper, request);
+        .forEach(
+            tenantId ->
+                repositories.put(
+                    tenantId,
+                    new WebSessionRepository(
+                        new InMemoryPersistentWebSessionClient(), mapper, request)));
+    return Map.copyOf(repositories);
   }
 }

@@ -9,8 +9,10 @@ package io.camunda.authentication.pt;
 
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
+import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
+import java.util.Map;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
@@ -48,11 +50,11 @@ public class PhysicalTenantSecurityConfiguration {
   private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
 
   private final PerTenantSecurityChainFactory chainFactory = new PerTenantSecurityChainFactory();
-  private final PerTenantWebSessionRepositories perTenantWebSessionRepositories;
+  private final Map<String, WebSessionRepository> ptWebSessionRepositories;
 
   public PhysicalTenantSecurityConfiguration(
-      final PerTenantWebSessionRepositories perTenantWebSessionRepositories) {
-    this.perTenantWebSessionRepositories = perTenantWebSessionRepositories;
+      final Map<String, WebSessionRepository> ptWebSessionRepositories) {
+    this.ptWebSessionRepositories = ptWebSessionRepositories;
   }
 
   @Bean
@@ -140,9 +142,10 @@ public class PhysicalTenantSecurityConfiguration {
    * (spec D2): a cookie at {@code Path=/physical-tenant/<t>} is never sent to a different tenant's
    * URLs (RFC 6265 path-matching).
    *
-   * <p>The session store is resolved from {@link PerTenantWebSessionRepositories}, which hands back
-   * a {@code WebSessionRepository} bound to the tenant's dedicated backend instance. Storage
-   * isolation is structural at the backend layer — no shared backend, no key-prefixing decorator.
+   * <p>The session store is the tenant's own {@link WebSessionRepository} bean from {@link
+   * #ptWebSessionRepositories} — each tenant has its own instance with its own private backing
+   * store. Storage isolation is structural; there is no shared backend and no key-prefixing
+   * decorator.
    */
   private SessionFilterAndResolver perChainSessionFilter(
       final String cookieName, final String cookiePath, final String tenantId) {
@@ -157,8 +160,13 @@ public class PhysicalTenantSecurityConfiguration {
     final CookieHttpSessionIdResolver sessionIdResolver = new CookieHttpSessionIdResolver();
     sessionIdResolver.setCookieSerializer(serializer);
 
+    final WebSessionRepository repository = ptWebSessionRepositories.get(tenantId);
+    if (repository == null) {
+      throw new IllegalStateException(
+          "No WebSessionRepository bean for physical tenant '" + tenantId + "'");
+    }
     final SessionRepositoryFilter<WebSession> sessionFilter =
-        new SessionRepositoryFilter<>(perTenantWebSessionRepositories.forTenant(tenantId));
+        new SessionRepositoryFilter<>(repository);
     sessionFilter.setHttpSessionIdResolver(sessionIdResolver);
     return new SessionFilterAndResolver(sessionFilter, sessionIdResolver);
   }

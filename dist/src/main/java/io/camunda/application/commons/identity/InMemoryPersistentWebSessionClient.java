@@ -20,17 +20,12 @@ import org.jspecify.annotations.Nullable;
  * Per-tenant in-memory {@link PersistentWebSessionClient} used by the Physical Tenant PoC.
  *
  * <p>Each tenant chain owns its own instance; the backing map is private to the instance, so
- * sessions stored under tenant A are structurally unreachable from tenant B — there is no shared
- * backend, no key-prefixing decorator, and no cross-tenant lookup path. Storage isolation is proven
- * at the backend layer.
+ * sessions stored under tenant A are structurally unreachable from tenant B — no shared backend, no
+ * key-prefixing decorator, no cross-tenant lookup path.
  *
- * <p><b>PoC limitation:</b> durability is sacrificed. A production wiring would substitute a
- * per-tenant {@code PersistentWebSessionRdbmsClient} (one {@code SqlSessionFactory} per tenant) or
- * {@code PersistentWebSessionSearchImpl} (one {@code SearchClients} per tenant). Those per-tenant
- * primitives exist for data-sources / search-clients but the matching per-tenant MyBatis
- * infrastructure (per-tenant {@code SqlSessionFactory} + per-tenant {@code
- * PersistentWebSessionMapper}) is not yet exposed in this branch — building it is a separate
- * concern from the security wiring this PoC validates.
+ * <p><b>PoC scope:</b> in-memory is intentional. Validating the per-tenant security wiring does not
+ * require depending on per-tenant durable secondary storage, so the PoC deliberately stays off that
+ * path. Sessions live for the lifetime of the process.
  */
 @NullMarked
 public final class InMemoryPersistentWebSessionClient implements PersistentWebSessionClient {

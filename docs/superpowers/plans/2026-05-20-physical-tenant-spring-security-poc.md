@@ -8,7 +8,7 @@
 
 **Tech Stack** (confirmed against `parent/pom.xml`):
 - Spring Boot **4.0.6** / Spring Security **7.0.5** (`oauth2Login`, `oauth2ResourceServer`)
-- Spring Session (one `WebSessionRepository` instance per tenant, each bound to that tenant's dedicated secondary storage via the existing per-tenant `PersistentWebSessionClient` infrastructure)
+- Spring Session (one `WebSessionRepository` instance per tenant, each backed by a tenant-private in-memory `PersistentWebSessionClient` — durable per-tenant storage is intentionally out of scope for the PoC)
 - `dasniko/testcontainers-keycloak` (already a project dependency, used by `OidcAuthOverRestIT`)
 - JUnit **6.0.3** + AssertJ + Awaitility (project conventions)
 
@@ -35,7 +35,8 @@ New files (all paths from repo root):
 | `authentication/src/main/java/io/camunda/authentication/pt/TenantSecuritySlice.java`                 | Record bundling per-tenant collaborators (clients, decoder, session repo, cookie serializer, etc.)                                         |
 | `authentication/src/main/java/io/camunda/authentication/pt/PerTenantOidcRegistry.java`               | Builds the per-tenant `OidcAuthenticationConfigurationRepository` (filters by `providers.assigned`) and the `ClientRegistrationRepository` |
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantRedirectUriRewriter.java`   | Stamps the per-tenant prefix into each `ClientRegistration.redirectUri` template                                                           |
-| `authentication/src/main/java/io/camunda/authentication/pt/PerTenantWebSessionRepositories.java`     | Factory/registry that produces one `WebSessionRepository` per tenant, each bound to that tenant's dedicated `PersistentWebSessionClient`   |
+| `dist/src/main/java/io/camunda/application/commons/identity/PhysicalTenantWebSessionRepositoryConfiguration.java` | `@Profile("pt-security")` config exposing `Map<String, WebSessionRepository>` keyed by tenant id (each backed by an in-memory `PersistentWebSessionClient`) |
+| `dist/src/main/java/io/camunda/application/commons/identity/InMemoryPersistentWebSessionClient.java` | `PersistentWebSessionClient` with a private `ConcurrentHashMap`; one instance per tenant, structurally unreachable from other tenants                       |
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantCookieSerializer.java`      | Static factory that produces a `DefaultCookieSerializer` configured per tenant (cookie name + Path)                                        |
 | `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantWhoamiController.java`      | Demo controller exposing `/physical-tenant/{t}/whoami` and `/v2/physical-tenants/{t}/whoami`                                               |
 | `dist/src/main/resources/application-pt-poc.yaml`                                                    | Bundled config that activates the PoC against the local Keycloak runner's default ports                                                    |
@@ -1298,175 +1299,121 @@ git commit -m "feat: extract PerTenantOidcRegistry and consume providers.assigne
 
 ---
 
-## Task 9: Wire per-tenant `WebSessionRepository` against per-tenant storage
+## Task 9: Wire per-tenant `WebSessionRepository`
 
-**Goal:** Replace the `MapSessionRepository` stub from Task 5 with one `WebSessionRepository` instance per tenant, each bound to that tenant's dedicated secondary storage. Storage is genuinely isolated — tenant A's session rows live in tenant A's RDBMS schema (or ES/OS index), tenant B's in tenant B's. **No key-prefixing decorator**: tenants do not share a backend.
+**Goal:** Replace the `MapSessionRepository` stub from Task 5 with one `WebSessionRepository` instance per tenant. Each tenant chain gets its own repository with its own private backing store — no shared backend, no key-prefixing decorator, no cross-tenant lookup path. Storage isolation is structural.
 
-The repo's existing per-tenant secondary-storage infrastructure is already in place:
-- `dist/src/main/java/io/camunda/application/commons/rdbms/RdbmsDataSources.java` — `of(Map<String, Rdbms>, ...)` produces per-tenant `HikariDataSource` pools
-- `dist/src/main/java/io/camunda/application/commons/rdbms/MyBatisConfiguration.java` — per-tenant `SqlSessionFactory` + mapper bundles (commit `70aecea9e43`)
-- `dist/src/main/java/io/camunda/application/commons/search/PhysicalTenantSearchClientReadersConfiguration.java` — per-tenant `SearchClients`
-- The original `dist/src/main/java/io/camunda/application/commons/identity/WebSessionRepositoryConfiguration.java` builds a single `PersistentWebSessionClient` (`PersistentWebSessionSearchImpl` or `PersistentWebSessionRdbmsClient`) from the *root* config
+**PoC scope: in-memory backends.** The PoC deliberately does not depend on per-tenant durable secondary storage. The matching per-tenant MyBatis bundle (per-tenant `SqlSessionFactory` + `PersistentWebSessionMapper`) and per-tenant rdbms overlay are not yet exposed in this branch, and wiring them up is a separate refactor unrelated to the security wiring this PoC validates. Each tenant gets an in-memory `PersistentWebSessionClient` (private `ConcurrentHashMap`). Sessions live for the lifetime of the process; the cookie-path / chain-isolation behaviour the PoC exists to demonstrate is unaffected.
 
-Task 9 builds a `Map<String, PersistentWebSessionClient>` (one per tenant) from the per-tenant storage primitives, then a `Map<String, WebSessionRepository>` from that, and exposes it under `pt-security`.
+The wiring lives in two places:
+
+- A `@Bean Map<String, WebSessionRepository>` in `dist/` keyed by tenant id. Each value is built from a tenant-private in-memory `PersistentWebSessionClient`.
+- `PhysicalTenantSecurityConfiguration` injects the map directly (Spring's idiomatic `Map<String, T>` injection) and looks the right instance up per chain.
+
+No registry wrapper class — the map itself is the per-tenant lookup. Module-dependency note: `PhysicalTenantResolver` lives in `configuration/`, which `authentication/` does not depend on, so the bean must live in `dist/`.
 
 **Files:**
-- Create: `authentication/src/main/java/io/camunda/authentication/pt/PerTenantWebSessionRepositories.java` — registry/factory exposing `WebSessionRepository forTenant(String tenantId)`
-- Test: `authentication/src/test/java/io/camunda/authentication/pt/PerTenantWebSessionRepositoriesTest.java` — asserts the registry hands back distinct `WebSessionRepository` instances bound to distinct underlying clients
-- Modify: `dist/src/main/java/io/camunda/application/commons/identity/WebSessionRepositoryConfiguration.java` — split: keep the original config gated on `!pt-security`; under `pt-security` register the per-tenant registry instead
-- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` — chains consume the registry's per-tenant repo for their `SessionRepositoryFilter`
-- No changes to `WebSession.java` (no decorator means no copy-constructor requirement)
+- Create: `dist/src/main/java/io/camunda/application/commons/identity/InMemoryPersistentWebSessionClient.java` — `PersistentWebSessionClient` backed by a private `ConcurrentHashMap`
+- Create: `dist/src/main/java/io/camunda/application/commons/identity/PhysicalTenantWebSessionRepositoryConfiguration.java` — `@Profile("pt-security")`, exposes `Map<String, WebSessionRepository>` by iterating `PhysicalTenantResolver.getAll()`
+- Modify: `authentication/src/main/java/io/camunda/authentication/pt/PhysicalTenantSecurityConfiguration.java` — inject `Map<String, WebSessionRepository>`, look up by tenant id in the chain factory
 
-### Step 1 — Inventory the per-tenant `PersistentWebSessionClient` shape
+### Step 1 — Implement `InMemoryPersistentWebSessionClient`
 
-Before writing code, read the existing `WebSessionRepositoryConfiguration` once and check how it constructs the global `PersistentWebSessionClient`. The constructor inputs are what the per-tenant variant must take per tenant. Likely shape:
-
-- ES/OS path: takes a `PersistentWebSessionWriter` + `PersistentWebSessionReader` (or equivalent) backed by a `SearchClients` instance.
-- RDBMS path: takes a `PersistentWebSessionDbReader` + `PersistentWebSessionWriter` backed by an `SqlSessionFactory`.
-
-The per-tenant `SearchClients` and `SqlSessionFactory` are already produced by the configurations referenced above. The task is to fan out the existing construction across the tenant map.
-
-### Step 2 — Write the failing test
+Each tenant's repository needs a `PersistentWebSessionClient` to satisfy `WebSessionRepository`'s constructor. For the PoC's in-memory scope, this is a private `ConcurrentHashMap` per instance:
 
 ```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-
-import io.camunda.authentication.session.WebSessionMapper;
-import io.camunda.search.clients.PersistentWebSessionClient;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
-
-class PerTenantWebSessionRepositoriesTest {
-
-  @Test
-  void shouldReturnRepositoryBoundToTenantsClient() {
-    final var tenantaClient = mock(PersistentWebSessionClient.class);
-    final var defaultClient = mock(PersistentWebSessionClient.class);
-    final var clientsByTenant = Map.of("tenanta", tenantaClient, "default", defaultClient);
-    final var registry =
-        new PerTenantWebSessionRepositories(
-            clientsByTenant, mock(WebSessionMapper.class), mock(HttpServletRequest.class));
-
-    final var tenantaRepo = registry.forTenant("tenanta");
-    final var defaultRepo = registry.forTenant("default");
-
-    assertThat(tenantaRepo).isNotNull();
-    assertThat(defaultRepo).isNotNull();
-    assertThat(tenantaRepo).isNotSameAs(defaultRepo);
-  }
-
-  @Test
-  void shouldFailFastForUnknownTenant() {
-    final var registry =
-        new PerTenantWebSessionRepositories(
-            Map.of(), mock(WebSessionMapper.class), mock(HttpServletRequest.class));
-    assertThatThrownBy(() -> registry.forTenant("ghost"))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("ghost");
-  }
-}
-```
-
-### Step 3 — Implement the registry
-
-```java
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-package io.camunda.authentication.pt;
-
-import io.camunda.authentication.session.WebSessionMapper;
-import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.search.clients.PersistentWebSessionClient;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.Map;
-import org.jspecify.annotations.NullMarked;
-
 @NullMarked
-public final class PerTenantWebSessionRepositories {
+public final class InMemoryPersistentWebSessionClient implements PersistentWebSessionClient {
 
-  private final Map<String, WebSessionRepository> repositoriesByTenant;
+  private final Map<String, PersistentWebSessionEntity> store = new ConcurrentHashMap<>();
 
-  public PerTenantWebSessionRepositories(
-      final Map<String, PersistentWebSessionClient> clientsByTenant,
-      final WebSessionMapper mapper,
-      final HttpServletRequest request) {
-    final Map<String, WebSessionRepository> built = new HashMap<>();
-    clientsByTenant.forEach(
-        (tenantId, client) -> built.put(tenantId, new WebSessionRepository(client, mapper, request)));
-    this.repositoriesByTenant = Map.copyOf(built);
+  @Override
+  public @Nullable PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+    return store.get(sessionId);
   }
 
-  public WebSessionRepository forTenant(final String tenantId) {
-    final WebSessionRepository repo = repositoriesByTenant.get(tenantId);
-    if (repo == null) {
-      throw new IllegalArgumentException("No WebSessionRepository for tenant '" + tenantId + "'");
-    }
-    return repo;
+  @Override
+  public void upsertPersistentWebSession(final PersistentWebSessionEntity entity) {
+    store.put(entity.id(), entity);
+  }
+
+  @Override
+  public void deletePersistentWebSession(final String sessionId) {
+    store.remove(sessionId);
+  }
+
+  @Override
+  public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+    return SearchQueryResult.of(b -> b.items(List.copyOf(store.values())));
   }
 }
 ```
 
-`WebSessionRepository` already takes `(PersistentWebSessionClient, WebSessionMapper, HttpServletRequest)` per the existing class — no new constructor needed.
+### Step 2 — Expose `Map<String, WebSessionRepository>` from `dist/`
 
-### Step 4 — Build the per-tenant `Map<String, PersistentWebSessionClient>` bean
-
-Under `pt-security`, register a `@Bean Map<String, PersistentWebSessionClient> ptPersistentWebSessionClients(...)` that iterates `PhysicalTenantResolver.getAll()` and, for each tenant, constructs the appropriate `PersistentWebSessionClient` against that tenant's storage:
-
-- ES/OS branch: pull the tenant's `SearchClients` (from `PhysicalTenantSearchClientReadersConfiguration` or equivalent), build `PersistentWebSessionSearchImpl(tenantSearchClients)`.
-- RDBMS branch: pull the tenant's `SqlSessionFactory` / mapper bundle (from `MyBatisConfiguration`), build `PersistentWebSessionRdbmsClient(tenantDbReader, tenantWriter)`.
-
-The exact bean lookups depend on what the per-tenant storage configurations expose today. The engineer reads those classes and reuses their exposed primitives. If they only expose internal beans, this task adds a small accessor (or adds a `@Bean Map<String, SearchClients> physicalTenantSearchClients(...)` if it doesn't already exist).
-
-### Step 5 — Split `WebSessionRepositoryConfiguration`
-
-The original configuration registers a single `WebSessionRepository` + `@EnableSpringHttpSession` + a deletion task. Split it:
-
-- Outer class stays as-is, gated on `@Profile("!pt-security")` (already done in Task 1).
-- New inner / sibling configuration under `@Profile("pt-security")`:
-  - Exposes the `Map<String, PersistentWebSessionClient>` bean above.
-  - Exposes the `PerTenantWebSessionRepositories` bean.
-  - Replicates the expired-session deletion task per tenant (each tenant's storage gets its own cleanup; see `WebSessionDeletionTask` in the original config — wrap one per tenant).
-  - Does NOT use `@EnableSpringHttpSession` — per-chain `SessionRepositoryFilter`s are wired manually by the chain factory.
-
-### Step 6 — Wire the registry into the chain config
-
-`PhysicalTenantSecurityConfiguration` injects `PerTenantWebSessionRepositories` and, for each tenant chain, replaces:
+Add a sibling configuration under `@Profile("pt-security")` that iterates `PhysicalTenantResolver.getAll()` and emits one `WebSessionRepository` per tenant:
 
 ```java
-new SessionRepositoryFilter<>(new MapSessionRepository(new ConcurrentHashMap<>()))
+@Configuration(proxyBeanMethods = false)
+@Profile("pt-security")
+@NullMarked
+public class PhysicalTenantWebSessionRepositoryConfiguration {
+
+  @Bean
+  public Map<String, WebSessionRepository> ptWebSessionRepositories(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final GenericConversionService conversionService,
+      final HttpServletRequest request) {
+    final var mapper =
+        new WebSessionMapper(new SpringBasedWebSessionAttributeConverter(conversionService));
+    final var repositories = new LinkedHashMap<String, WebSessionRepository>();
+    physicalTenantResolver
+        .getAll()
+        .keySet()
+        .forEach(
+            tenantId ->
+                repositories.put(
+                    tenantId,
+                    new WebSessionRepository(
+                        new InMemoryPersistentWebSessionClient(), mapper, request)));
+    return Map.copyOf(repositories);
+  }
+}
 ```
 
-with:
+The `!pt-security` sibling (`WebSessionRepositoryConfiguration`, already gated in Task 1) continues to register the cluster-wide `WebSessionRepository`. It is excluded when this profile is active, so there is no conflicting bean.
+
+### Step 3 — Inject the map into the chain config
+
+`PhysicalTenantSecurityConfiguration` injects `Map<String, WebSessionRepository>` directly (no wrapper class) and looks the right instance up per chain:
 
 ```java
-new SessionRepositoryFilter<>(perTenantSessions.forTenant(tenantId))
+public PhysicalTenantSecurityConfiguration(
+    final Map<String, WebSessionRepository> ptWebSessionRepositories) {
+  this.ptWebSessionRepositories = ptWebSessionRepositories;
+}
 ```
 
-### Step 7 — Run tests, manual smoke
+In the per-chain session-filter helper, replace `new MapSessionRepository(new ConcurrentHashMap<>())` with:
+
+```java
+final WebSessionRepository repository = ptWebSessionRepositories.get(tenantId);
+if (repository == null) {
+  throw new IllegalStateException(
+      "No WebSessionRepository bean for physical tenant '" + tenantId + "'");
+}
+final SessionRepositoryFilter<WebSession> sessionFilter =
+    new SessionRepositoryFilter<>(repository);
+```
+
+### Step 4 — Build, boot, smoke
 
 ```bash
-./mvnw verify -pl authentication -Dtest=PerTenantWebSessionRepositoriesTest -DskipTests=false -DskipITs -Dquickly -T1C
+./mvnw install -pl authentication,dist -am -Dquickly -DskipChecks -T1C
+./pt-poc-oc.sh   # in another terminal: ./pt-poc-idp.sh
 ```
 
-Manual: two tabs login. Restart OC. Cookies still work (sessions persisted). Inspect the storage backend (one schema/index per tenant — or one row set in the shared backend partitioned by the per-tenant routing already in place): each tenant's sessions appear only under their own scope. No `t:` prefix in row ids — the isolation is at the storage level, not the key level.
+Expected: both `Will secure Or [PathPattern [/physical-tenant/<t>/**]]` log lines include `SessionRepositoryFilter`; no missing-bean errors. Manual smoke: log in as `bob` against `tenanta` and `alice` against `default`; cookies are per-chain (`camunda-session-<tenant>` at `Path=/physical-tenant/<tenant>`); each tenant's session map is private to its `WebSessionRepository` instance. Sessions die with the process — that's the documented PoC limitation.
 
 ### Step 8 — Format and commit
 

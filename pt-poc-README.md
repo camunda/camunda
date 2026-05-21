@@ -130,25 +130,25 @@ Docker `ps` should show no `quay.io/keycloak/keycloak` containers after both ter
 
 Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-05-20-physical-tenant-spring-security-poc.md) (designed against the [spec](docs/superpowers/specs/2026-05-20-physical-tenant-spring-security-poc-design.md)). The current task is **bolded**.
 
-| #  |                                Task                                |     State      |
-|----|--------------------------------------------------------------------|----------------|
-| 1  | Profile scaffold + verify CSL opts out                             | ✅ done         |
-| 2  | Keycloak realm exports                                             | ✅ done         |
-| 3  | `PtPocLocalIdpRunner` standalone `main()`                          | ✅ done         |
-| 4  | Walking skeleton — one tenant, end-to-end login                    | ✅ done         |
-| 5  | Add default tenant prefixed chain + per-chain cookie isolation     | ✅ done         |
-| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`    | ✅ done         |
-| 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test            | ✅ done         |
-| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`     | ✅ done         |
-| 9  | **Wire per-tenant `WebSessionRepository` against per-tenant storage** | 🔄 in progress |
-| 10 | Extract `PhysicalTenantCookieSerializer` + unit test               | ⏳ pending      |
-| 11 | API chain — shared decoder + per-chain issuer allowlist            | ⏳ pending      |
-| 12 | Default tenant unprefixed access-path chains                       | ⏳ pending      |
-| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`      | ⏳ pending      |
-| 14 | `PhysicalTenantSecurityIT` happy path                              | ⏳ pending      |
-| 15 | `PhysicalTenantSecurityIT` full flow + isolation                   | ⏳ pending      |
-| 16 | Manual browser smoke test                                          | ⏳ pending      |
-| 17 | Multi-IdP verification for default tenant (picker page)            | ⏳ pending      |
+| #  |                                 Task                                  |     State      |
+|----|-----------------------------------------------------------------------|----------------|
+| 1  | Profile scaffold + verify CSL opts out                                | ✅ done         |
+| 2  | Keycloak realm exports                                                | ✅ done         |
+| 3  | `PtPocLocalIdpRunner` standalone `main()`                             | ✅ done         |
+| 4  | Walking skeleton — one tenant, end-to-end login                       | ✅ done         |
+| 5  | Add default tenant prefixed chain + per-chain cookie isolation        | ✅ done         |
+| 6  | Extract `TenantSecuritySlice` + `PerTenantSecurityChainFactory`       | ✅ done         |
+| 7  | Extract `PhysicalTenantRedirectUriRewriter` + unit test               | ✅ done         |
+| 8  | Extract `PerTenantOidcRegistry` + consume `providers.assigned`        | ✅ done         |
+| 9  | Wire per-tenant `WebSessionRepository`                                | ✅ done         |
+| 10 | **Extract `PhysicalTenantCookieSerializer` + unit test**              | 🔄 in progress |
+| 11 | API chain — shared decoder + per-chain issuer allowlist               | ⏳ pending      |
+| 12 | Default tenant unprefixed access-path chains                          | ⏳ pending      |
+| 13 | Generalise registration via `PhysicalTenantResolver.getAll()`         | ⏳ pending      |
+| 14 | `PhysicalTenantSecurityIT` happy path                                 | ⏳ pending      |
+| 15 | `PhysicalTenantSecurityIT` full flow + isolation                      | ⏳ pending      |
+| 16 | Manual browser smoke test                                             | ⏳ pending      |
+| 17 | Multi-IdP verification for default tenant (picker page)               | ⏳ pending      |
 
 **What currently works:**
 
@@ -160,11 +160,11 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 **What is not yet wired** (Tasks 6–16):
 
-- Slice + chain-factory extraction (`TenantSecuritySlice`, `PerTenantSecurityChainFactory`) — Task 6.
-- Per-tenant `WebSessionRepository` against tenant-dedicated secondary storage (currently an in-memory `MapSessionRepository` stub) — Task 9.
-- API chain (`/v2/physical-tenants/<tenant>/**`) with cross-tenant issuer allowlist.
-- Default tenant's unprefixed access-path chains.
-- End-to-end `PhysicalTenantSecurityIT`.
+- API chain (`/v2/physical-tenants/<tenant>/**`) with cross-tenant issuer allowlist — Task 11.
+- Default tenant's unprefixed access-path chains — Task 12.
+- End-to-end `PhysicalTenantSecurityIT` — Tasks 14–15.
+
+Per-tenant durable secondary storage is intentionally out of scope: each tenant's `WebSessionRepository` is backed by a private in-memory `PersistentWebSessionClient`. Storage isolation is structural (no shared backend, no key-prefixing), but sessions die with the process.
 
 **Verified cookie surface** (re-checked end-to-end on 2026-05-21 via curl-driven OAuth flow against both tenants):
 
