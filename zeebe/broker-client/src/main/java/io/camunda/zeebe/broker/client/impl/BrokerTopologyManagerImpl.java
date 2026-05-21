@@ -20,13 +20,14 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +38,20 @@ public final class BrokerTopologyManagerImpl extends Actor
         ClusterConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerTopologyManagerImpl.class);
-  private volatile BrokerClientTopologyImpl topology = BrokerClientTopologyImpl.uninitialized();
+
+  // Per-group live+configured topology; replaced atomically on updates.
+  // The outer key is partition group name; the inner key is broker member id.
+  private final Map<String, Map<BrokerMemberId, BrokerInfo>> memberPropertiesPerGroup =
+      new HashMap<>();
+
+  // Immutable snapshot replaced atomically; keyed by partition group name.
+  private volatile Map<String, BrokerClientTopologyImpl> topologyPerGroup = Map.of();
+
   private volatile ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
   private final BrokerClientTopologyMetrics topologyMetrics;
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
-
-  private final Map<BrokerMemberId, BrokerInfo> memberProperties = new HashMap<>();
 
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
@@ -53,12 +60,15 @@ public final class BrokerTopologyManagerImpl extends Actor
     this.topologyMetrics = topologyMetrics;
   }
 
-  /**
-   * @return a copy of the currently known topology
-   */
   @Override
   public BrokerClusterState getTopology() {
-    return topology;
+    return getTopology(Protocol.DEFAULT_PARTITION_GROUP_NAME);
+  }
+
+  @Override
+  public BrokerClusterState getTopology(final String physicalTenantId) {
+    return topologyPerGroup.getOrDefault(
+        physicalTenantId, BrokerClientTopologyImpl.uninitialized());
   }
 
   @Override
@@ -71,23 +81,17 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(
         () -> {
           topologyListeners.add(listener);
-          memberProperties.keySet().forEach(listener::brokerAdded);
+          // Backfill listener with all known broker IDs across all groups
+          memberPropertiesPerGroup.values().stream()
+              .flatMap(m -> m.keySet().stream())
+              .distinct()
+              .forEach(listener::brokerAdded);
         });
   }
 
   @Override
   public void removeTopologyListener(final BrokerTopologyListener listener) {
     actor.run(() -> topologyListeners.remove(listener));
-  }
-
-  private void updateTopology(
-      final Function<BrokerClientTopologyImpl, BrokerClientTopologyImpl> updater) {
-    actor.run(
-        () -> {
-          final var updated = updater.apply(topology);
-          topology = updated;
-          updateMetrics(updated);
-        });
   }
 
   /**
@@ -105,47 +109,81 @@ public final class BrokerTopologyManagerImpl extends Actor
     }
 
     for (final Member member : members) {
-      final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
-      if (brokerInfo != null) {
-        addBroker(member, brokerInfo);
+      for (final BrokerInfo brokerInfo : BrokerInfo.allFromProperties(member.properties())) {
+        addBroker(brokerInfo);
       }
     }
   }
 
-  private void addBroker(final Member member, final BrokerInfo brokerInfo) {
+  private void addBroker(final BrokerInfo brokerInfo) {
     final var brokerMemberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
+    final var group = brokerInfo.getPartitionGroup();
     actor.run(
         () -> {
-          if (!memberProperties.containsKey(brokerMemberId)) {
+          // Notify listeners only on the first appearance of this broker across all groups.
+          final boolean isNew =
+              memberPropertiesPerGroup.values().stream()
+                  .noneMatch(m -> m.containsKey(brokerMemberId));
+          if (isNew) {
             topologyListeners.forEach(l -> l.brokerAdded(brokerMemberId));
           }
 
-          memberProperties.put(brokerMemberId, brokerInfo);
-
-          updateTopology(
-              oldTopology ->
-                  BrokerClientTopologyImpl.fromMemberProperties(
-                      memberProperties.values(), oldTopology.configuredClusterState()));
+          memberPropertiesPerGroup
+              .computeIfAbsent(group, g -> new HashMap<>())
+              .put(brokerMemberId, brokerInfo);
+          rebuildGroupTopology(group);
         });
   }
 
   private void removeBroker(final Member member) {
-    final var brokerInfo = BrokerInfo.fromProperties(member.properties());
-    if (brokerInfo == null) {
+    final List<BrokerInfo> allInfos = BrokerInfo.allFromProperties(member.properties());
+    final BrokerMemberId brokerMemberId;
+    if (!allInfos.isEmpty()) {
+      final var anyInfo = allInfos.getFirst();
+      brokerMemberId = BrokerMemberId.from(anyInfo.brokerIdStr());
+    } else {
+      // no brokerInfo means we have not added it to the topology yet, or it could be a gateway.
       return;
     }
 
-    final var brokerMemberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
     actor.run(
         () -> {
-          memberProperties.remove(brokerMemberId);
-          topologyListeners.forEach(l -> l.brokerRemoved(brokerMemberId));
+          final Set<String> groupsToRebuild = new HashSet<>();
+          memberPropertiesPerGroup.forEach(
+              (group, groupMap) -> {
+                if (groupMap.remove(brokerMemberId) != null) {
+                  groupsToRebuild.add(group);
+                }
+              });
 
-          final var oldTopology = topology;
-          topology =
-              BrokerClientTopologyImpl.fromMemberProperties(
-                  memberProperties.values(), oldTopology.configuredClusterState());
+          if (!groupsToRebuild.isEmpty()) {
+            topologyListeners.forEach(l -> l.brokerRemoved(brokerMemberId));
+            groupsToRebuild.forEach(this::rebuildGroupTopology);
+          }
         });
+  }
+
+  private void rebuildGroupTopology(final String group) {
+    final var groupMembers = memberPropertiesPerGroup.getOrDefault(group, Map.of()).values();
+    final var configuredState = currentConfiguredState();
+    final var newGroupTopology =
+        BrokerClientTopologyImpl.fromMemberProperties(groupMembers, configuredState);
+
+    final Map<String, BrokerClientTopologyImpl> updated = new HashMap<>(topologyPerGroup);
+    updated.put(group, newGroupTopology);
+    topologyPerGroup = Map.copyOf(updated);
+
+    // temp: only update metrics for default group until we support group-specific metrics
+    if (Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(group)) {
+      updateMetrics(newGroupTopology);
+    }
+  }
+
+  private ConfiguredClusterState currentConfiguredState() {
+    return topologyPerGroup.values().stream()
+        .findFirst()
+        .map(BrokerClientTopologyImpl::configuredClusterState)
+        .orElse(BrokerClientTopologyImpl.uninitialized().configuredClusterState());
   }
 
   @Override
@@ -155,9 +193,6 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   @Override
   protected void onActorStarted() {
-    // Get the initial member state before the listener is registered.
-    // Also called AFTER registering this as a membership listener, to cover the window
-    // between the snapshot here and listener attachment.
     initializeTopologyFromMembership();
   }
 
@@ -165,34 +200,27 @@ public final class BrokerTopologyManagerImpl extends Actor
   public void event(final ClusterMembershipEvent event) {
     final Member subject = event.subject();
     final Type eventType = event.type();
-    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
+    final List<BrokerInfo> allInfos = BrokerInfo.allFromProperties(subject.properties());
 
-    if (brokerInfo == null) {
+    if (allInfos.isEmpty()) {
       return;
     }
-    final var brokerId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
+
+    final var brokerId = subject.id();
 
     switch (eventType) {
-      case MEMBER_ADDED -> {
+      case MEMBER_ADDED, METADATA_CHANGED -> {
         LOG.debug(
-            "Received new broker {} : partitions {}, terms {} and health {}",
-            brokerInfo,
-            brokerInfo.getPartitionRoles(),
-            brokerInfo.getPartitionLeaderTerms(),
-            brokerInfo.getPartitionHealthStatuses());
-        addBroker(subject, brokerInfo);
-      }
-      case METADATA_CHANGED -> {
-        LOG.debug(
-            "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
+            "Received {} from broker {}, updating {} group(s)",
+            eventType,
             brokerId,
-            brokerInfo.getPartitionRoles(),
-            brokerInfo.getPartitionLeaderTerms(),
-            brokerInfo.getPartitionHealthStatuses());
-        addBroker(subject, brokerInfo);
+            allInfos.size());
+        for (final BrokerInfo brokerInfo : allInfos) {
+          addBroker(brokerInfo);
+        }
       }
       case MEMBER_REMOVED -> {
-        LOG.debug("Received broker was removed {}.", brokerInfo);
+        LOG.debug("Received broker was removed {}.", brokerId);
         removeBroker(subject);
       }
       default -> LOG.debug("Received {} for broker {}, do nothing.", eventType, brokerId);
@@ -224,8 +252,35 @@ public final class BrokerTopologyManagerImpl extends Actor
       return;
     }
     clusterConfiguration = clusterTopology;
+    actor.run(() -> applyClusterConfiguration(clusterTopology));
+  }
 
-    updateTopology(oldTopology -> updateConfiguredClusterState(clusterTopology, oldTopology));
+  private void applyClusterConfiguration(final ClusterConfiguration clusterTopology) {
+    // Run the full comparison + listener-notification logic against the default group once.
+    final var oldDefault =
+        topologyPerGroup.getOrDefault(
+            Protocol.DEFAULT_PARTITION_GROUP_NAME, BrokerClientTopologyImpl.uninitialized());
+    final var updatedDefault = updateConfiguredClusterState(clusterTopology, oldDefault);
+    final var newConfiguredState = updatedDefault.configuredClusterState();
+
+    final Map<String, BrokerClientTopologyImpl> allGroups = new HashMap<>(topologyPerGroup);
+    allGroups.put(Protocol.DEFAULT_PARTITION_GROUP_NAME, updatedDefault);
+
+    // temp: apply the same configured state to all other known groups. This must be revisited when
+    // we add support for group-specific cluster configurations.
+    memberPropertiesPerGroup.keySet().stream()
+        .filter(group -> !group.equals(Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .forEach(
+            group -> {
+              final var oldGroup =
+                  topologyPerGroup.getOrDefault(group, BrokerClientTopologyImpl.uninitialized());
+              allGroups.put(
+                  group,
+                  new BrokerClientTopologyImpl(oldGroup.liveClusterState(), newConfiguredState));
+            });
+
+    topologyPerGroup = Map.copyOf(allGroups);
+    updateMetrics(updatedDefault);
   }
 
   private BrokerClientTopologyImpl updateConfiguredClusterState(

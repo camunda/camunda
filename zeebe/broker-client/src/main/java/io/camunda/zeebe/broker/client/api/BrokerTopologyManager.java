@@ -14,10 +14,18 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 
   /**
-   * Returns live topology that includes which brokers are available, who is leader for each
-   * partition, etc.
+   * Returns live topology for the default partition group. Equivalent to {@code
+   * getTopology("default")}.
    */
   BrokerClusterState getTopology();
+
+  /**
+   * Returns live topology for the given physical tenant (partition group). Returns an uninitialized
+   * topology if the group is unknown.
+   */
+  default BrokerClusterState getTopology(final String physicalTenantId) {
+    return getTopology();
+  }
 
   /**
    * Returns the current cluster topology. The topology contains the information about brokers which
