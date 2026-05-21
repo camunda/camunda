@@ -10,8 +10,6 @@ package io.camunda.authentication.config;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
 import io.camunda.authentication.config.spi.AuthorizationRepositoryAdapter;
 import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter;
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
-import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -19,15 +17,11 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
-import io.camunda.security.core.port.out.SecurityPathPort;
-import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
-import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -42,16 +36,15 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 /**
- * Host security configuration. Opts into the full camunda-security-library filter chain stack
- * through {@link CamundaSecurityAutoConfiguration} and wires the host SPI beans the library
- * requires.
+ * Host security configuration. Wires the host SPI beans the camunda-security-library (CSL)
+ * requires, plus the OC-specific OIDC and basic-auth bean overrides.
  *
- * <p>The CSL umbrella is loaded via {@code @ImportAutoConfiguration} rather than plain
- * {@code @Import}: under {@code @Import} loading, Spring's {@code @ConditionalOnBean} /
- * {@code @ConditionalOnMissingBean} evaluate against a partial bean graph and CSL configurations
- * sporadically drop beans or fail to back off when the host supplies overrides
- * (camunda/camunda-security-library#173). The {@code @AutoConfiguration} umbrella shifts CSL
- * processing into the deferred phase so its conditions evaluate against the full bean graph.
+ * <p>The CSL auto-configuration import itself was lifted into the always-loaded {@link
+ * CamundaSecurityLibraryImporter} so CSL's {@code BaseSecurityConfiguration} chains
+ * (unprotected-paths, webapp/api, catch-all 404) light up under both {@code !pt-security} and
+ * {@code pt-security} — under {@code pt-security} those CSL chains co-exist with the
+ * programmatically registered PT chains. The OC-specific bean overrides on this class remain gated
+ * to the non-PT profile because the PT setup supplies its own equivalents.
  *
  * <p>OC-specific OIDC and basic-auth bean overrides live in {@link OidcOverrideBeansConfiguration}
  * and {@link BasicAuthBeansConfiguration} respectively; CSL defaults back off via
@@ -59,7 +52,6 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
  */
 @Configuration
 @Profile("consolidated-auth & !pt-security")
-@ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 @Import({
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,
@@ -109,16 +101,6 @@ public class WebSecurityConfig {
         return bean;
       }
     };
-  }
-
-  @Bean
-  public SecurityPathPort securityPathPort() {
-    return new SecurityPathAdapter();
-  }
-
-  @Bean
-  public WebAppProviderPort webAppProvider() {
-    return new WebAppProviderAdapter();
   }
 
   /**

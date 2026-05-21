@@ -7,12 +7,10 @@
  */
 package io.camunda.authentication.pt;
 
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -67,17 +65,36 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
  * registered {@link RootBeanDefinition}s there is no annotated factory method to read
  * {@code @Order} from, so we attach precedence by wrapping each chain in an {@link
  * OrderedSecurityFilterChain} instance — the comparator honours {@link
- * org.springframework.core.Ordered} on the bean instance itself. Within the registered set:
+ * org.springframework.core.Ordered} on the bean instance itself.
+ *
+ * <p>The PT chains must interleave with CSL's {@code BaseSecurityConfiguration} chains, which sit
+ * at {@code @Order(0)} (unprotected paths), {@code @Order(1)} (OidcWebapp / OidcApi / BasicAuth),
+ * and {@code @Order(2)} (catch-all 404). Concretely:
  *
  * <ul>
- *   <li>API chains (prefixed) get the lowest order values (highest precedence) — their matchers are
- *       sub-patterns of the webapp matchers.
- *   <li>Webapp chains (prefixed) come next.
- *   <li>Unprefixed default chains come last — their {@code /v2/**} and {@code /**} matchers would
- *       swallow everything if evaluated first.
+ *   <li>PT API chains (prefixed and unprefixed-default) use {@code @Order(-1)}. They MUST beat
+ *       CSL's {@code OidcApi} at {@code @Order(1)} because PT API matchers like {@code
+ *       /v2/physical-tenants/<id>/**} are sub-patterns of CSL's {@code /v2/**} matcher. Among
+ *       themselves their matchers are per-tenant disjoint.
+ *   <li>PT webapp chains (prefixed and unprefixed-default) use {@code @Order(0)}. They tie with
+ *       CSL's unprotected-paths chain, but the matchers are disjoint: {@code
+ *       SecurityPathPort.unprotectedPaths()} does not include any PT or {@code /v2/...} URL. The PT
+ *       API chains are at a strictly lower order so URLs like {@code
+ *       /physical-tenant/<id>/v2/whoami} hit the API chain before the webapp chain.
  * </ul>
  *
- * <p>With N tenants the result is 2N + 2 chains. Adding a tenant to {@code application-pt-poc.yaml}
+ * Final ordering at runtime (low number wins):
+ *
+ * <pre>
+ *  -1  PT API chains (prefixed, plus unprefixed-default at /v2/**)
+ *   0  PT webapp chains (prefixed, plus unprefixed-default at /**)
+ *   0  CSL unprotectedPathsSecurityFilterChain (disjoint matchers — favicon, /error, /actuator, ...)
+ *   1  CSL OidcWebapp + OidcApi (catch the residual /v2/** and webappPaths the PT chains don't claim)
+ *   2  CSL protectedUnhandledPathsSecurityFilterChain (/** denyAll -> 404, the catch-all)
+ * </pre>
+ *
+ * <p>With N tenants the result is 2N + 2 chains (one API + one webapp per tenant, plus the
+ * unprefixed-default API + webapp pair). Adding a tenant to {@code application-pt-poc.yaml}
  * automatically grows the chain set; no Java changes required.
  */
 @NullMarked
@@ -107,44 +124,45 @@ public final class PhysicalTenantSecurityChainRegistrar
       return;
     }
 
-    // The relative ordering is intentional (and load-bearing — see class javadoc). We compute
-    // explicit integers below so the boot log shows the same precedence the explicit @Order
-    // annotations used to assign.
-    int order = 1;
-    // 0) Unauthenticated chain — highest precedence. Claims the host's "always-public" paths
-    //    (favicons, /error, /actuator/**, swagger, static webapp assets) from
-    //    SecurityPathAdapter. Under !pt-security CSL provides this chain; under pt-security we
-    //    gated CSL off, so we have to re-introduce it here. Without it, anonymous browser
-    //    background fetches (favicon, robots, anything wrong) fall into the per-tenant webapp
-    //    chains and trigger OAuth2 redirect machinery — wasted work plus accidental cookies.
-    registerChain(
-        registry, "ptUnauthenticatedChain", order++, ChainVariant.UNAUTHENTICATED, "");
+    // Ordering is split into two groups so the PT chains interleave correctly with CSL's
+    // BaseSecurityConfiguration chains — see class javadoc. API chains run ahead of CSL's
+    // OidcApi (@Order(1)); webapp chains tie with CSL's unprotected-paths chain at @Order(0)
+    // (disjoint matchers).
+    final int apiOrder = -1;
+    final int webappOrder = 0;
+
     // 1) Prefixed API chains — one per tenant, ordered by config iteration order.
     for (final String tenantId : tenantIds) {
       registerChain(
-          registry, beanName(tenantId, "ApiChain"), order++, ChainVariant.PREFIXED_API, tenantId);
+          registry, beanName(tenantId, "ApiChain"), apiOrder, ChainVariant.PREFIXED_API, tenantId);
     }
-    // 2) Prefixed webapp chains — one per tenant.
-    for (final String tenantId : tenantIds) {
-      registerChain(
-          registry,
-          beanName(tenantId, "WebappChain"),
-          order++,
-          ChainVariant.PREFIXED_WEBAPP,
-          tenantId);
-    }
-    // 3) Unprefixed-default API + webapp chains — broad matchers, must come last.
+    // 2) Unprefixed-default API chain — broader matcher (/v2/**), but still ahead of CSL's
+    //    OidcApi at @Order(1). Per-tenant API chains share apiOrder; their matchers are
+    //    per-tenant disjoint and disjoint from /v2/** for non-default tenants.
     if (tenantIds.contains(DEFAULT_TENANT_ID)) {
       registerChain(
           registry,
           "ptDefaultUnprefixedApiChain",
-          order++,
+          apiOrder,
           ChainVariant.UNPREFIXED_DEFAULT_API,
           DEFAULT_TENANT_ID);
+    }
+    // 3) Prefixed webapp chains — one per tenant.
+    for (final String tenantId : tenantIds) {
+      registerChain(
+          registry,
+          beanName(tenantId, "WebappChain"),
+          webappOrder,
+          ChainVariant.PREFIXED_WEBAPP,
+          tenantId);
+    }
+    // 4) Unprefixed-default webapp chain — broad /** matcher, registered last so iteration order
+    //    puts it behind the prefixed PT webapp chains at the same Order value.
+    if (tenantIds.contains(DEFAULT_TENANT_ID)) {
       registerChain(
           registry,
           "ptDefaultUnprefixedWebappChain",
-          order++,
+          webappOrder,
           ChainVariant.UNPREFIXED_DEFAULT_WEBAPP,
           DEFAULT_TENANT_ID);
     }
@@ -173,8 +191,6 @@ public final class PhysicalTenantSecurityChainRegistrar
     try {
       final SecurityFilterChain chain =
           switch (variant) {
-            case UNAUTHENTICATED ->
-                factory.buildUnauthenticatedChain(http, unauthenticatedPathPatterns());
             case PREFIXED_API ->
                 factory.buildApiChain(
                     http,
@@ -320,22 +336,7 @@ public final class PhysicalTenantSecurityChainRegistrar
     return "pt" + pascal + suffix;
   }
 
-  /**
-   * Union of {@link SecurityPathAdapter#unprotectedPaths()} and {@link
-   * SecurityPathAdapter#unauthenticatedWebappPaths()} — the central list the host already
-   * declares for "no auth required". Reusing the SPI keeps the PT setup consistent with the
-   * non-PT setup so changes to either list propagate without a parallel PoC-local list.
-   */
-  private static String[] unauthenticatedPathPatterns() {
-    final SecurityPathAdapter adapter = SecurityPathAdapter.INSTANCE;
-    final Set<String> all = new LinkedHashSet<>();
-    all.addAll(adapter.unprotectedPaths());
-    all.addAll(adapter.unauthenticatedWebappPaths());
-    return all.toArray(String[]::new);
-  }
-
   private enum ChainVariant {
-    UNAUTHENTICATED,
     PREFIXED_API,
     PREFIXED_WEBAPP,
     UNPREFIXED_DEFAULT_API,

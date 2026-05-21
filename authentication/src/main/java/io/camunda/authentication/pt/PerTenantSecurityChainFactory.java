@@ -15,7 +15,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
@@ -27,7 +26,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
-import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
  * Builds a per-tenant {@link SecurityFilterChain} from a {@link TenantSecuritySlice}. Replaces the
@@ -48,28 +46,6 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 @NullMarked
 public final class PerTenantSecurityChainFactory {
 
-  /**
-   * Cluster-shared chain that {@code permitAll}s a fixed set of path patterns — favicons, error
-   * pages, actuator endpoints, swagger UI, the host's static asset roots. These are paths that no
-   * per-tenant security chain should claim: serving them via the protected webapp chain forces
-   * each anonymous background request (e.g. the browser's auto-fetch of {@code /favicon.ico}) to
-   * pass through OAuth2 redirect machinery, which previously emitted gratuitous session cookies.
-   *
-   * <p>Registered with the highest precedence ({@code @Order(1)}) so it wins over every PT chain
-   * for the paths it claims. {@code SessionCreationPolicy.STATELESS} +
-   * {@code NullRequestCache} together guarantee no session, no cookie, no saved request — exactly
-   * the surface a public resource should expose.
-   */
-  public SecurityFilterChain buildUnauthenticatedChain(
-      final HttpSecurity http, final String... matchers) throws Exception {
-    return http.securityMatcher(matchers)
-        .authorizeHttpRequests(a -> a.anyRequest().permitAll())
-        .csrf(c -> c.disable())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .requestCache(rc -> rc.requestCache(new NullRequestCache()))
-        .build();
-  }
-
   public SecurityFilterChain buildWebappChain(
       final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {
     final String prefix = slice.webappPathPrefix();
@@ -89,17 +65,6 @@ public final class PerTenantSecurityChainFactory {
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
         .authorizeHttpRequests(a -> a.anyRequest().authenticated())
-        // Replace the default HttpSessionRequestCache with a NullRequestCache: with
-        // alwaysUse=true on defaultSuccessUrl below, we never need to redirect the user
-        // back to the URL they originally requested, so there is no reason to save it.
-        // The default cache would call request.getSession() to store the saved request,
-        // which creates a session and emits a Set-Cookie on the response — even for
-        // anonymous background requests like /favicon.ico, /robots.txt, or any URL the
-        // chain's matcher happens to claim. With NullRequestCache the chain only creates
-        // a session when an actual OAuth2 flow is in progress (state storage at the start
-        // of the authorization request, SecurityContext storage at the end of the
-        // callback) — and those are the only legitimate reasons for a session here.
-        .requestCache(rc -> rc.requestCache(new NullRequestCache()))
         .oauth2Login(
             l ->
                 l.clientRegistrationRepository(slice.clientRegistrationRepository())
