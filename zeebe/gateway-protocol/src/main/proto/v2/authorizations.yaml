@@ -347,7 +347,7 @@ components:
           description: The key of the authorization.
       x-properties-added-in-version:
         - propertyName: resourcePropertyName
-          addedInVersion: "8.9"
+          addedInVersion: "8.10"
 
     AuthorizationSearchResult:
       type: object
