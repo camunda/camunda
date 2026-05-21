@@ -133,12 +133,14 @@ export default function PartitionDistributionVisualizer() {
       {/* Tabs */}
       <div className={styles.tabs}>
         <button
+          type="button"
           className={`${styles.tab} ${activeTab === 'matrix' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('matrix')}
         >
           Matrix Table
         </button>
         <button
+          type="button"
           className={`${styles.tab} ${activeTab === 'cards' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('cards')}
         >
@@ -155,42 +157,47 @@ export default function PartitionDistributionVisualizer() {
             </div>
           )}
           <div className={styles.matrixScroll}>
-            <table className={styles.matrix}>
-              <thead>
-                <tr>
-                  <th className={styles.rl} />
-                  {dist.map((p) => <th key={p.id}>P{p.id}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: brokers }, (_, b) => (
-                  <tr key={b}>
-                    <td className={styles.rl}>Broker {b}</td>
-                    {dist.map((p) => {
-                      const isLeader = b === p.primary;
-                      const isFollower = !isLeader && p.members.includes(b);
-                      const pri = showPriority
-                        ? getPriorities(p.id, p.members, p.primary, brokers, p.members.length)
-                        : null;
-                      return (
-                        <td key={p.id}>
-                          {isLeader && (
-                            <span className={styles.cellLeader}>
-                              L{showPriority && <span className={styles.cellPri}> ·{pri[b]}</span>}
-                            </span>
-                          )}
-                          {isFollower && (
-                            <span className={styles.cellFollower}>
-                              F{showPriority && <span className={styles.cellPri}> ·{pri[b]}</span>}
-                            </span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {(() => {
+              const priMaps = showPriority
+                ? dist.map((p) => getPriorities(p.id, p.members, p.primary, brokers, p.members.length))
+                : null;
+              return (
+                <table className={styles.matrix}>
+                  <thead>
+                    <tr>
+                      <th className={styles.rl} />
+                      {dist.map((p) => <th key={p.id}>P{p.id}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: brokers }, (_, b) => (
+                      <tr key={b}>
+                        <td className={styles.rl}>Broker {b}</td>
+                        {dist.map((p) => {
+                          const isLeader = b === p.primary;
+                          const isFollower = !isLeader && p.members.includes(b);
+                          const pri = priMaps ? priMaps[p.id - 1] : null;
+                          return (
+                            <td key={p.id}>
+                              {isLeader && (
+                                <span className={styles.cellLeader}>
+                                  L{showPriority && <span className={styles.cellPri}> ·{pri[b]}</span>}
+                                </span>
+                              )}
+                              {isFollower && (
+                                <span className={styles.cellFollower}>
+                                  F{showPriority && <span className={styles.cellPri}> ·{pri[b]}</span>}
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
           <div className={styles.legend}>
             <div className={styles.legItem}>
