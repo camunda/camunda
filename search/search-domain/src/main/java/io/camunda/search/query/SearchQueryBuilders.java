@@ -14,6 +14,15 @@ public final class SearchQueryBuilders {
 
   private SearchQueryBuilders() {}
 
+  public static AgentInstanceQuery.Builder agentInstanceSearchQuery() {
+    return new AgentInstanceQuery.Builder();
+  }
+
+  public static AgentInstanceQuery agentInstanceSearchQuery(
+      final Function<AgentInstanceQuery.Builder, ObjectBuilder<AgentInstanceQuery>> fn) {
+    return fn.apply(agentInstanceSearchQuery()).build();
+  }
+
   public static UsageMetricsQuery.Builder usageMetricsSearchQuery() {
     return new UsageMetricsQuery.Builder();
   }
