@@ -103,11 +103,17 @@ class OperateDecisionsPage {
   }
 
   async clickEvaluatedCheckbox(): Promise<void> {
-    await this.evaluatedCheckbox.click({force: true});
+    // Carbon Design System hides the <input> and overlays a <label>;
+    // click the label (the visible interactive element) via the for/id relationship.
+    const id = await this.evaluatedCheckbox.getAttribute('id');
+    await this.page.locator(`label[for="${id}"]`).click();
   }
 
   async clickFailedCheckbox(): Promise<void> {
-    await this.failedCheckbox.click({force: true});
+    // Carbon Design System hides the <input> and overlays a <label>;
+    // click the label (the visible interactive element) via the for/id relationship.
+    const id = await this.failedCheckbox.getAttribute('id');
+    await this.page.locator(`label[for="${id}"]`).click();
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
