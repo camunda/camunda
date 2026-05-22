@@ -11,6 +11,7 @@
       "publicClient": false,
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
       "redirectUris": [
         "http://localhost:8080/physical-tenant/default/login/oauth2/code/*",
         "http://localhost:8080/login/oauth2/code/*",
