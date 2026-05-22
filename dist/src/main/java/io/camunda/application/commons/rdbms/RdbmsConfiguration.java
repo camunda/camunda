@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
+import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
@@ -126,6 +127,11 @@ public class RdbmsConfiguration {
   public VariableDbReader variableRdbmsReader(
       final VariableMapper variableMapper, final RdbmsReaderConfig readerConfig) {
     return new VariableDbReader(variableMapper, readerConfig);
+  }
+
+  @Bean
+  public AgentInstanceDbReader agentInstanceReader(final RdbmsReaderConfig readerConfig) {
+    return new AgentInstanceDbReader(readerConfig);
   }
 
   @Bean

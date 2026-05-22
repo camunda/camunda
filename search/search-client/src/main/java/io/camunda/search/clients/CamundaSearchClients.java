@@ -14,6 +14,7 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_MULTIPLE
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
+import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -64,6 +65,7 @@ import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
+import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -155,6 +157,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
     this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
+  }
+
+  @Override
+  public AgentInstanceEntity getAgentInstance(final long key) {
+    return doGetWithReader(readers.agentInstanceReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Agent Instance", key));
+  }
+
+  @Override
+  public SearchQueryResult<AgentInstanceEntity> searchAgentInstances(
+      final AgentInstanceQuery query) {
+    return doSearchWithReader(readers.agentInstanceReader(), query);
   }
 
   @Override
