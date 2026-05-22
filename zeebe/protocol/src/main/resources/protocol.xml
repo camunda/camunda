@@ -86,6 +86,7 @@
       <validValue name="GLOBAL_LISTENER">68</validValue>
       <validValue name="RESOURCE_REEXPORT">69</validValue>
       <validValue name="AGENT_INSTANCE">70</validValue>
+      <validValue name="MESSAGE_START_PROCESS_INSTANCE_REQUEST">71</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

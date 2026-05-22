@@ -74,6 +74,9 @@ public interface Intent {
     map.put(ValueType.MESSAGE_BATCH, MessageBatchIntent.class);
     map.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationIntent.class);
     map.put(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionIntent.class);
+    map.put(
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.class);
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);
