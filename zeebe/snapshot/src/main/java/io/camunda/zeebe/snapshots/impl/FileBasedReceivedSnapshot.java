@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -17,7 +19,6 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.Unit;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -68,7 +69,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     return actor.call(
         () -> {
           applyInternal(snapshotChunk);
-          return Unit.unit();
+          return unit();
         });
   }
 
@@ -202,7 +203,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     actor.run(
         () -> {
           abortInternal();
-          abortFuture.complete(Unit.unit());
+          abortFuture.complete(unit());
         });
     return abortFuture;
   }

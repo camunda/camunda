@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+import static io.camunda.zeebe.util.Unit.unit;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.Unit;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -264,7 +264,7 @@ public final class FileBasedSnapshotStoreImpl {
               abortedAll,
               error -> {
                 if (error == null) {
-                  abortFuture.complete(Unit.unit());
+                  abortFuture.complete(unit());
                 } else {
                   abortFuture.completeExceptionally(error);
                 }
@@ -297,7 +297,7 @@ public final class FileBasedSnapshotStoreImpl {
             throw new UncheckedIOException(e);
           }
 
-          return Unit.unit();
+          return unit();
         });
   }
 
