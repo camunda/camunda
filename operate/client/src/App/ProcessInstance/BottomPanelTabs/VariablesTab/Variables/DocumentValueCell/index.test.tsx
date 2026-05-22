@@ -14,7 +14,11 @@ describe('<DocumentValueCell />', () => {
   it('should render a single document with filename and size', () => {
     const result: DocumentParseResult = {
       type: 'single',
-      document: {fileName: 'photo.png', size: 112640},
+      document: {
+        link: '/v2/documents/doc',
+        fileName: 'photo.png',
+        size: 112640,
+      },
     };
 
     render(<DocumentValueCell result={result} />);
@@ -26,7 +30,11 @@ describe('<DocumentValueCell />', () => {
   it('should render a single document without size', () => {
     const result: DocumentParseResult = {
       type: 'single',
-      document: {fileName: 'report.pdf', size: undefined},
+      document: {
+        link: '/v2/documents/doc',
+        fileName: 'report.pdf',
+        size: undefined,
+      },
     };
 
     render(<DocumentValueCell result={result} />);
@@ -39,7 +47,7 @@ describe('<DocumentValueCell />', () => {
     const longName = 'a'.repeat(40) + 'original-middle' + 'z'.repeat(40);
     const result: DocumentParseResult = {
       type: 'single',
-      document: {fileName: longName, size: 1000},
+      document: {link: '/v2/documents/doc', fileName: longName, size: 1000},
     };
 
     render(<DocumentValueCell result={result} />);
@@ -53,9 +61,9 @@ describe('<DocumentValueCell />', () => {
     const result: DocumentParseResult = {
       type: 'list',
       documents: [
-        {fileName: 'a.pdf', size: 1000},
-        {fileName: 'b.pdf', size: 2000},
-        {fileName: 'c.pdf', size: 3000},
+        {link: '/v2/documents/doc-1', fileName: 'a.pdf', size: 1000},
+        {link: '/v2/documents/doc-2', fileName: 'b.pdf', size: 2000},
+        {link: '/v2/documents/doc-3', fileName: 'c.pdf', size: 3000},
       ],
       isLowerBound: false,
     };
@@ -69,8 +77,8 @@ describe('<DocumentValueCell />', () => {
     const result: DocumentParseResult = {
       type: 'list',
       documents: [
-        {fileName: 'a.pdf', size: 1000},
-        {fileName: 'b.pdf', size: 2000},
+        {link: '/v2/documents/doc-1', fileName: 'a.pdf', size: 1000},
+        {link: '/v2/documents/doc-2', fileName: 'b.pdf', size: 2000},
       ],
       isLowerBound: true,
     };
@@ -83,7 +91,11 @@ describe('<DocumentValueCell />', () => {
   it('should set the filename as title attribute for tooltip', () => {
     const result: DocumentParseResult = {
       type: 'single',
-      document: {fileName: 'my-important-file.pdf', size: 5000},
+      document: {
+        link: '/v2/documents/doc',
+        fileName: 'my-important-file.pdf',
+        size: 5000,
+      },
     };
 
     render(<DocumentValueCell result={result} />);

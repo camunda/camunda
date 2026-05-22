@@ -10,6 +10,7 @@ import {
   parseDocumentVariable,
   toHumanReadableBytes,
 } from './parseDocumentVariable';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const makeDocRef = (overrides: Record<string, unknown> = {}) => ({
   'camunda.document.type': 'camunda',
@@ -36,6 +37,7 @@ describe('parseDocumentVariable', () => {
     expect(result).toEqual({
       type: 'single',
       document: {
+        link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
         size: 109748,
       },
@@ -49,6 +51,7 @@ describe('parseDocumentVariable', () => {
     expect(result).toEqual({
       type: 'single',
       document: {
+        link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
         size: 109748,
       },
@@ -58,12 +61,15 @@ describe('parseDocumentVariable', () => {
   it('should detect an array of document references', () => {
     const value = JSON.stringify([
       makeDocRef({
+        documentId: 'doc-123',
         metadata: {...makeDocRef().metadata, fileName: 'a.pdf', size: 1000},
       }),
       makeDocRef({
+        documentId: 'doc-124',
         metadata: {...makeDocRef().metadata, fileName: 'b.json', size: 500},
       }),
       makeDocRef({
+        documentId: 'doc-125',
         metadata: {...makeDocRef().metadata, fileName: 'c.txt', size: 200},
       }),
     ]);
@@ -72,11 +78,42 @@ describe('parseDocumentVariable', () => {
     expect(result).toEqual({
       type: 'list',
       documents: [
-        {fileName: 'a.pdf', size: 1000},
-        {fileName: 'b.json', size: 500},
-        {fileName: 'c.txt', size: 200},
+        {
+          link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
+          fileName: 'a.pdf',
+          size: 1000,
+        },
+        {
+          link: '/v2/documents/doc-124?storeId=in-memory&contentHash=sha256%3Aabc',
+          fileName: 'b.json',
+          size: 500,
+        },
+        {
+          link: '/v2/documents/doc-125?storeId=in-memory&contentHash=sha256%3Aabc',
+          fileName: 'c.txt',
+          size: 200,
+        },
       ],
       isLowerBound: false,
+    });
+  });
+
+  it('should construct a document link with context path', () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      contextPath: '/some-context',
+    });
+
+    const value = JSON.stringify(makeDocRef());
+    const result = parseDocumentVariable(value, false);
+
+    expect(result).toEqual({
+      type: 'single',
+      document: {
+        link: '/some-context/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
+        fileName: 'photo.png',
+        size: 109748,
+      },
     });
   });
 
@@ -178,6 +215,7 @@ describe('parseDocumentVariable', () => {
     expect(result).toEqual({
       type: 'single',
       document: {
+        link: '/v2/documents/doc-no-meta?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'doc-no-meta',
         size: undefined,
       },
