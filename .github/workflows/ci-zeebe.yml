@@ -553,8 +553,7 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      github.actor == 'monorepo-devops-automation[bot]' &&
-      startsWith(github.event.pull_request.title, '[Backport ')
+      github.actor == 'monorepo-devops-automation[bot]'
     permissions:
       checks: read
       pull-requests: write
@@ -572,7 +571,7 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: approve-and-merge-backport
+      - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
