@@ -35,7 +35,7 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 **Audience isolation cells, multi-IdP picker, and the full curl matrix all pass** — see [Testing the PoC](#testing-the-poc) below.
 
-## Scope — what's not (yet)
+## Open topics
 
 **Webapp logout flow under a PT prefix.** No `.logout(...)` on the PT webapp chain. `POST /physical-tenant/<id>/logout` returns 403 — CSRF rejects the POST before `LogoutFilter` (which is bound to the default `/logout` URL) gets a chance to match. Tracked as Task 19.
 
