@@ -1,3 +1,0 @@
-# Add/remove 'support' label if issue contains a Jira Support issue id
-support:
-  - '(SUPPORT|SEC)-\d+'
