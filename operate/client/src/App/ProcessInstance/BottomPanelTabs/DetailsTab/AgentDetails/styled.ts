@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Accordion as CarbonAccordion} from '@carbon/react';
 import styled from 'styled-components';
 
 const AgentDetailsContainer = styled.div`
@@ -19,6 +20,15 @@ const AgentHeading = styled.h5`
   font-weight: var(--cds-heading-compact-01-font-weight);
   line-height: var(--cds-heading-compact-01-line-height);
   margin: 0;
+`;
+
+const Accordion = styled(CarbonAccordion)`
+  .cds--accordion__item:first-child {
+    border-block-start: none;
+  }
+  .cds--accordion__content {
+    padding-inline-end: var(--cds-spacing-02);
+  }
 `;
 
 const StatusRow = styled.div`
@@ -38,10 +48,18 @@ const StatusLabel = styled.span`
   font-size: var(--cds-body-compact-01-font-size);
 `;
 
+const MetricsRow = styled.div`
+  display: flex;
+  gap: var(--cds-spacing-05);
+  flex-wrap: wrap;
+`;
+
 export {
   AgentDetailsContainer,
   AgentHeading,
+  Accordion,
   StatusRow,
   StatusIconWrapper,
   StatusLabel,
+  MetricsRow,
 };
