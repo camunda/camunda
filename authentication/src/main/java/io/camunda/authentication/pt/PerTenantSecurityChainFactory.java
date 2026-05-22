@@ -8,7 +8,9 @@
 package io.camunda.authentication.pt;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -27,8 +29,10 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 
 /**
  * Builds a per-tenant {@link SecurityFilterChain} from a {@link PhysicalTenantChainContext}.
@@ -65,9 +69,20 @@ public final class PerTenantSecurityChainFactory {
     final OAuth2AuthorizationRequestResolver resolver =
         prefixAwareResolver(slice.clientRegistrationRepository(), authPrefix);
 
+    // Build a PT-scoped picker filter. Spring Security 7's DefaultLoginPageConfigurer only
+    // auto-installs DefaultLoginPageGeneratingFilter when no custom AuthenticationEntryPoint
+    // is set; we set one (webappAuthenticationEntryPoint) for PT-prefixed routing, so the
+    // auto-picker is skipped. We construct and install it ourselves with the per-PT URL
+    // (prefix + "/login") and the PT's ClientRegistrationRepository so the rendered picker
+    // shows exactly this PT's assigned providers with PT-prefixed authorization URLs.
+    final DefaultLoginPageGeneratingFilter pickerFilter =
+        ptPickerFilter(slice.clientRegistrationRepository(), prefix, authBaseUri);
+
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
-        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+        .addFilterAfter(pickerFilter, CsrfFilter.class)
+        .authorizeHttpRequests(
+            a -> a.requestMatchers(prefix + "/login").permitAll().anyRequest().authenticated())
         .exceptionHandling(
             eh ->
                 eh.authenticationEntryPoint(
@@ -90,16 +105,14 @@ public final class PerTenantSecurityChainFactory {
   }
 
   /**
-   * Always sends unauthenticated requests on a prefixed PT chain straight to the FIRST assigned
-   * registration's OAuth2 authorization endpoint — no picker UI on the prefixed access path. The
-   * picker for the unprefixed default tenant is rendered by Spring Security's {@code
-   * DefaultLoginPageGeneratingFilter} on CSL's standard {@code OidcWebapp} chain (its provider list
-   * is unfiltered — CSL does not consult {@code providers.assigned}, see the PoC follow-up).
-   * Multi-IdP selection for a prefixed PT is reachable by navigating directly to {@code prefix +
-   * /oauth2/authorization/<regId>}.
+   * Mirrors CSL's {@code OidcWebappSecurityConfiguration.resolveOauthRedirectTarget} — but with the
+   * PT prefix prepended. Single registration: skip the picker, redirect straight to the IdP.
+   * Multiple registrations: redirect to the PT-prefixed picker page rendered by the {@link
+   * DefaultLoginPageGeneratingFilter} installed on this chain in {@link #buildWebappChain}.
    */
   private static AuthenticationEntryPoint webappAuthenticationEntryPoint(
       final ClientRegistrationRepository repo, final String prefix) {
+    final String pickerUrl = prefix + "/login";
     final String defaultTarget = prefix + "/oauth2/authorization/oidc";
     if (!(repo instanceof final Iterable<?> iterable)) {
       return new LoginUrlAuthenticationEntryPoint(defaultTarget);
@@ -109,11 +122,40 @@ public final class PerTenantSecurityChainFactory {
       return new LoginUrlAuthenticationEntryPoint(defaultTarget);
     }
     final Object first = iterator.next();
+    if (iterator.hasNext()) {
+      return new LoginUrlAuthenticationEntryPoint(pickerUrl);
+    }
     if (first instanceof final ClientRegistration registration) {
       return new LoginUrlAuthenticationEntryPoint(
           prefix + "/oauth2/authorization/" + registration.getRegistrationId());
     }
     return new LoginUrlAuthenticationEntryPoint(defaultTarget);
+  }
+
+  /**
+   * Construct a {@link DefaultLoginPageGeneratingFilter} configured for this PT's prefixed login
+   * URL and OAuth2 entries. The filter renders an HTML picker matching the request URI {@code
+   * prefix + "/login"} (GET only), listing one link per registration in this PT's {@link
+   * ClientRegistrationRepository} with {@code prefix + "/oauth2/authorization/<regId>"} as the
+   * href. No form-login or OpenID 1.0 entries are enabled.
+   */
+  private static DefaultLoginPageGeneratingFilter ptPickerFilter(
+      final ClientRegistrationRepository repo, final String prefix, final String authBaseUri) {
+    final var filter = new DefaultLoginPageGeneratingFilter();
+    filter.setLoginPageUrl(prefix + "/login");
+    final Map<String, String> loginLinks = new LinkedHashMap<>();
+    if (repo instanceof final Iterable<?> iterable) {
+      for (final Object obj : iterable) {
+        if (obj instanceof final ClientRegistration reg) {
+          final String label =
+              reg.getClientName() != null ? reg.getClientName() : reg.getRegistrationId();
+          loginLinks.put(authBaseUri + "/" + reg.getRegistrationId(), label);
+        }
+      }
+    }
+    filter.setOauth2LoginEnabled(true);
+    filter.setOauth2AuthenticationUrlToClientName(loginLinks);
+    return filter;
   }
 
   /**
