@@ -50,37 +50,8 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
         service
             // no requirements on last processing position
             .getLatestSnapshot(partitionId, -1, transferId)
-            .andThen(
-                snapshot -> {
-                  if (snapshot == null) {
-                    final CompletableActorFuture<@Nullable Tuple<SnapshotChunk, ReceivedSnapshot>>
-                        nullFuture = new CompletableActorFuture<>();
-                    nullFuture.complete(null);
-                    return nullFuture;
-                  }
-                  return snapshotStore
-                      .newReceivedSnapshot(snapshot.getSnapshotId())
-                      .thenApply(
-                          fbsnapshot -> {
-                            fbsnapshot.apply(snapshot);
-                            return new Tuple<>(snapshot, fbsnapshot);
-                          });
-                },
-                actor)
-            .andThen(
-                tuple -> {
-                  if (tuple == null) {
-                    final CompletableActorFuture<@Nullable PersistedSnapshot> nullFuture =
-                        new CompletableActorFuture<>();
-                    nullFuture.complete(null);
-                    return nullFuture;
-                  }
-                  final ActorFuture<@Nullable PersistedSnapshot> future =
-                      receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
-                  future.onError(error -> tuple.getRight().abort());
-                  return future;
-                },
-                actor);
+            .andThen(this::startReceiving, actor)
+            .andThen(tuple -> persistReceived(partitionId, tuple, transferId), actor);
     result.onComplete(
         (ignored, error) ->
             Optional.ofNullable(timers.remove(transferId)).ifPresent(CloseableSilently::close));
@@ -91,6 +62,33 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   @VisibleForTesting
   SnapshotTransferService snapshotTransferService() {
     return service;
+  }
+
+  private ActorFuture<@Nullable Tuple<SnapshotChunk, ReceivedSnapshot>> startReceiving(
+      final @Nullable SnapshotChunk snapshot) {
+    if (snapshot == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    return snapshotStore
+        .newReceivedSnapshot(snapshot.getSnapshotId())
+        .thenApply(
+            fbsnapshot -> {
+              fbsnapshot.apply(snapshot);
+              return new Tuple<>(snapshot, fbsnapshot);
+            });
+  }
+
+  private ActorFuture<@Nullable PersistedSnapshot> persistReceived(
+      final int partitionId,
+      final @Nullable Tuple<SnapshotChunk, ReceivedSnapshot> tuple,
+      final UUID transferId) {
+    if (tuple == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    final ActorFuture<@Nullable PersistedSnapshot> future =
+        receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
+    future.onError(error -> tuple.getRight().abort());
+    return future;
   }
 
   private ActorFuture<@Nullable PersistedSnapshot> receiveAllChunks(
@@ -110,10 +108,7 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
                 receivedSnapshot.apply(chunk);
                 return receiveAllChunks(partitionId, chunk, receivedSnapshot, transferId);
               } else {
-                @SuppressWarnings("unchecked")
-                final ActorFuture<@Nullable PersistedSnapshot> persistResult =
-                    (ActorFuture<@Nullable PersistedSnapshot>) (Object) receivedSnapshot.persist();
-                return persistResult;
+                return receivedSnapshot.persist().asNullable();
               }
             },
             actor);
