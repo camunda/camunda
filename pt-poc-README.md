@@ -115,7 +115,6 @@ Note: GET requests do NOT carry the `X-CSRF-TOKEN` request header — the SPA on
 |--|--|--|
 | Task 19 | Wire `.logout(...)` on the PT webapp chain (no LogoutFilter matcher under PT prefix; CSRF 403 today). Spec note + PoC scope. | This repo |
 | Task 45 | Multi-tab CSRF cookie invalidation on logout / auth-rotate. Path-scoped or per-PT-name cookie options outlined in spec. | This repo |
-| Task 18 | Tasklist end-to-end (Operate is verified; Tasklist follows the same pattern but hasn't been smoke-tested). | This repo |
 | [camunda-security-library#269](https://github.com/camunda/camunda-security-library/issues/269) | CSL installs `DefaultLoginPageGeneratingFilter` on its `OidcWebapp` chain so the unprefixed `/login` picker doesn't need a host-side controller. | Upstream CSL |
 | [camunda/camunda#53810](https://github.com/camunda/camunda/issues/53810) | Resolve `physicalTenantId` from the unified webapp's request context for `WebappIndexController` (same shape as #52572 for the REST gateway). | Upstream camunda |
 | Spec OQ-5 | Per-PT Spring sub-`ApplicationContext`s as an isolation primitive vs the current `Map<String, T>` injection pattern. Worth a design spike when the PT roadmap revisits data-layer / service-layer isolation. | Future design |
@@ -191,7 +190,7 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 16 | Manual browser smoke test | ✅ done |
 | 17 | Multi-IdP picker + audience-based PT isolation for shared IdPs | ✅ done |
 |    | Checkpoint E — PoC acceptance | ✅ closed |
-| 18 | Operate + Tasklist webapps end-to-end with PT chains | 🟡 Operate ✅, Tasklist not smoke-tested yet |
+| 18 | Operate + Tasklist webapps end-to-end with PT chains | ✅ done |
 | 19 | Investigate broken webapp logout flow on PT chains | ⏳ follow-up |
 | 20 | CSL: install `DefaultLoginPageGeneratingFilter` on OidcWebapp chain ([CSL#269](https://github.com/camunda/camunda-security-library/issues/269)) | ⏳ follow-up (upstream) |
 | 45 | PT CSRF cookie cross-tab invalidation on logout / auth-rotate | ⏳ follow-up |
