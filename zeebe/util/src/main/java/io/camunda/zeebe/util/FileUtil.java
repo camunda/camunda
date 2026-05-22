@@ -22,9 +22,9 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import java.util.Objects;
 import org.agrona.SystemUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -86,10 +86,23 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    final var targetParent =
-        Objects.requireNonNull(
-            target.getParent(), "Expected target path to have a parent directory, but it is null");
-    flushDirectory(targetParent);
+    flushDirectory(requireParent(target));
+  }
+
+  /**
+   * Returns the parent of the given directory, throwing if it has none.
+   *
+   * @param directory the path whose parent to return
+   * @return the non-null parent path
+   * @throws NullPointerException if the directory has no parent
+   */
+  public static Path requireParent(final Path directory) {
+    final var parent = directory.getParent();
+    if (parent == null) {
+      throw new NullPointerException(
+          "Expected that the parent of directory " + directory + " to not be null");
+    }
+    return parent;
   }
 
   public static void deleteFolder(final String path) throws IOException {

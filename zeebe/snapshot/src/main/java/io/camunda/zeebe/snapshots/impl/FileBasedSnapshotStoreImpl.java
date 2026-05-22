@@ -562,7 +562,7 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private Path buildSnapshotsChecksumPath(final Path snapshotPath, final SnapshotId snapshotId) {
-    return Objects.requireNonNull(snapshotPath.getParent(), "snapshotPath parent")
+    return FileUtil.requireParent(snapshotPath)
         .resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
@@ -609,7 +609,8 @@ public final class FileBasedSnapshotStoreImpl {
             name ->
                 moveNamedFileToDirectory(
                     name,
-                    Objects.requireNonNull(snapshotFiles.get(name), "snapshotFiles(" + name + ")"),
+                    Objects.requireNonNull(
+                        snapshotFiles.get(name), () -> "snapshotFiles(" + name + ")"),
                     snapshotPath));
 
     final var checksumFile =
@@ -641,7 +642,7 @@ public final class FileBasedSnapshotStoreImpl {
     return actor.call(
         () -> {
           restore(snapshot.getId(), snapshot.files());
-          return Unit.unit();
+          return unit();
         });
   }
 
@@ -728,7 +729,7 @@ public final class FileBasedSnapshotStoreImpl {
     return actor.call(
         () -> {
           deleteBootstrapSnapshotsInternal();
-          return Unit.unit();
+          return unit();
         });
   }
 

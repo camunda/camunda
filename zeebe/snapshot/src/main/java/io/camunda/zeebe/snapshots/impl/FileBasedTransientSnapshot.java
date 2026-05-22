@@ -202,7 +202,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
               snapshotId.getExportedPosition(),
               snapshotId.getBrokerId(),
               Long.toHexString(Objects.requireNonNull(checksum, "checksum").getCombinedChecksum()));
-      final var directoryParent = Objects.requireNonNull(directory.getParent(), "directory parent");
+      final var directoryParent = FileUtil.requireParent(directory);
       final var directoryWithChecksum =
           directoryParent.resolve(idWithChecksum.getSnapshotIdAsString());
       try {
