@@ -28,6 +28,7 @@ import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
 import MappingRules from "src/pages/tenants/detail/mapping-rules";
 import Clients from "src/pages/tenants/detail/clients";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 type DetailsProps = {
   isOIDC: boolean;
@@ -68,18 +69,20 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
                 <Stack gap={spacing03}>
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{tenant.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
-                      <OverflowMenuItem
-                        itemText={t("edit")}
-                        onClick={() => editTenant(tenant)}
-                      />
-                      <OverflowMenuItem
-                        itemText={t("delete")}
-                        onClick={() => {
-                          deleteTenant(tenant);
-                        }}
-                      />
-                    </OverflowMenu>
+                    {!isDefaultTenant(tenant.tenantId) && (
+                      <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
+                        <OverflowMenuItem
+                          itemText={t("edit")}
+                          onClick={() => editTenant(tenant)}
+                        />
+                        <OverflowMenuItem
+                          itemText={t("delete")}
+                          onClick={() => {
+                            deleteTenant(tenant);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
                   </Stack>
                   <p>
                     {t("tenantId")}: {tenant.tenantId}

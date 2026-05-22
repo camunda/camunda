@@ -38,6 +38,8 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -216,6 +218,42 @@ public class TenantServiceTest {
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType())
         .isEqualTo(AuthzModelMapper.toProtocol(entityType));
+  }
+
+  @Test
+  public void shouldRejectUpdateOfDefaultTenant() {
+    // given
+    final var tenantDTO =
+        new TenantRequest(null, TenantOwned.DEFAULT_TENANT_IDENTIFIER, "NewName", "NewDescription");
+
+    // when
+    final var future = services.updateTenant(tenantDTO, authentication);
+
+    // then
+    assertThat(future).isCompletedExceptionally();
+    final var cause =
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class).actual().getCause();
+    assertThat(cause)
+        .isInstanceOf(ServiceException.class)
+        .extracting(t -> ((ServiceException) t).getStatus())
+        .isEqualTo(Status.FORBIDDEN);
+    assertThat(stubbedBrokerClient.getBrokerRequests()).isEmpty();
+  }
+
+  @Test
+  public void shouldRejectDeleteOfDefaultTenant() {
+    // when
+    final var future = services.deleteTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, authentication);
+
+    // then
+    assertThat(future).isCompletedExceptionally();
+    final var cause =
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class).actual().getCause();
+    assertThat(cause)
+        .isInstanceOf(ServiceException.class)
+        .extracting(t -> ((ServiceException) t).getStatus())
+        .isEqualTo(Status.FORBIDDEN);
+    assertThat(stubbedBrokerClient.getBrokerRequests()).isEmpty();
   }
 
   @Test

@@ -20,6 +20,7 @@ import AddModal from "src/pages/tenants/modals/AddModal";
 import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ListProps = {
@@ -86,11 +87,17 @@ const List: FC<ListProps> = ({ isOIDC }) => {
         onAddEntity={addTenant}
         loading={loading}
         menuItems={[
-          { label: t("edit"), icon: Edit, onClick: editTenant },
+          {
+            label: t("edit"),
+            icon: Edit,
+            onClick: editTenant,
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
+          },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
             onClick: (tenant) =>
               deleteTenant({
                 tenantId: tenant.tenantId,
