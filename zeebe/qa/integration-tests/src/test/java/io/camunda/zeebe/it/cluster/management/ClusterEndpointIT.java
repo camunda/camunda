@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.cluster.management;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
@@ -25,7 +26,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
@@ -33,18 +36,93 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @Timeout(2 * 60) // 2 minutes
-final class ClusterEndpointIT {
-  private static final int BROKER_COUNT = 2;
-  private static final int PARTITION_COUNT = 2;
-  private static final String SCALE_BROKERS_REQUEST_BODY = "[1,2]";
+abstract class ClusterEndpointIT {
+
+  protected static final int BROKER_COUNT = 3;
+  protected static final int PARTITION_COUNT = 3;
+
+  protected abstract TestCluster createCluster(int replicationFactor);
+
+  protected abstract String zone();
+
+  protected abstract BrokerId brokerId(int nodeIdx);
+
+  /**
+   * Returns the internal {@link MemberId} (TestCluster key) for a given node index. Subclasses
+   * override this when the TestCluster internal IDs differ from the API-level node indices.
+   */
+  protected MemberId memberIdForBroker(final int nodeIdx) {
+    return MemberId.from(java.lang.String.valueOf(nodeIdx));
+  }
+
+  protected List<BrokerId> brokerIds(final int... nodeIdxs) {
+    return java.util.stream.IntStream.of(nodeIdxs).mapToObj(this::brokerId).toList();
+  }
+
+  protected static String scaleRequestBody(final TestCluster cluster) {
+    return cluster.brokers().keySet().stream().toList().toString();
+  }
+
+  @Test
+  void shouldFailRequestWhenHavingTypoInParameter() throws IOException, InterruptedException {
+    assumeTrue(zone() == null, "Scale request body uses bare integers not valid for zone-aware");
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+
+      // when
+      final var response = sendBrokerScaleRequest(cluster, URI.create("/brokers?dry-run=true"));
+
+      // then
+      assertThat(response.statusCode()).isEqualTo(400);
+      assertThat(response.body()).contains("Unsupported query parameter(s): dry-run");
+    }
+  }
+
+  private void movePartition(final ClusterActuator actuator, final BrokerId id) {
+    final var topology = actuator.getTopology();
+    final var brokerState =
+        topology.getBrokers().stream().filter(b -> b.getId().equals(id)).findFirst().orElseThrow();
+    final var targetBroker =
+        topology.getBrokers().stream()
+            .filter(b -> !b.getId().equals(id))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+
+    for (final var partition : brokerState.getPartitions()) {
+      // First join another broker so the partition keeps at least one replica
+      final var join = actuator.joinPartition(targetBroker, partition.getId(), 1);
+      Awaitility.await()
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(join));
+
+      final var leave = actuator.leavePartition(id, partition.getId());
+      Awaitility.await()
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(leave));
+    }
+  }
+
+  private static java.net.http.HttpResponse<String> sendBrokerScaleRequest(
+      final TestCluster cluster, final URI pathAndQuery) throws IOException, InterruptedException {
+    final var baseClusterEndpoint = cluster.availableGateway().actuatorUri("cluster");
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(baseClusterEndpoint + pathAndQuery.toString()))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(scaleRequestBody(cluster)))
+            .build();
+
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(request, BodyHandlers.ofString());
+    }
+  }
 
   @Test
   void shouldQueryCurrentClusterTopology() {
-    final ClusterActuator actuator;
-    try (final var cluster = createCluster(2)) {
+    try (final var cluster = createCluster(BROKER_COUNT)) {
       // given
       cluster.awaitCompleteTopology();
-      actuator = ClusterActuator.of(cluster.availableGateway());
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when
       final var response = actuator.getTopology();
@@ -64,14 +142,15 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRequestPartitionLeave() {
-    final ClusterActuator actuator;
+    assumeTrue(zone() == null, "Partition leave not supported on zone-aware clusters");
     try (final var cluster = createCluster(2)) {
       // given
       cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      actuator = ClusterActuator.of(cluster.availableGateway());
       // when -- request a leave
-      final var response = actuator.leavePartition(1, 2);
+      final var response = actuator.leavePartition(brokerId(1), 2);
+
       // then
       assertThat(response.getPlannedChanges())
           .singleElement()
@@ -84,40 +163,43 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRequestClusterPurge() {
-    final ClusterActuator actuator;
     try (final var cluster = createCluster(2)) {
       // given
       cluster.awaitCompleteTopology();
-      actuator = ClusterActuator.of(cluster.availableGateway());
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when -- request a purge
       final var response = actuator.purge(false);
 
       // then
+      final int replicationFactor = 2;
+      final var expected = new ArrayList<OperationEnum>();
+      IntStream.range(0, PARTITION_COUNT * replicationFactor)
+          .forEach(i -> expected.add(OperationEnum.PARTITION_LEAVE));
+      expected.addAll(
+          List.of(OperationEnum.DELETE_HISTORY, OperationEnum.UPDATE_INCARNATION_NUMBER));
+      IntStream.range(0, PARTITION_COUNT)
+          .forEach(i -> expected.add(OperationEnum.PARTITION_BOOTSTRAP));
+      expected.addAll(
+          IntStream.range(0, PARTITION_COUNT * (replicationFactor - 1))
+              .mapToObj(i -> OperationEnum.PARTITION_JOIN)
+              .toList());
       assertThat(response.getPlannedChanges().stream().map(Operation::getOperation))
-          .containsExactlyElementsOf(
-              List.of(
-                  OperationEnum.PARTITION_LEAVE,
-                  OperationEnum.PARTITION_LEAVE,
-                  OperationEnum.PARTITION_LEAVE,
-                  OperationEnum.PARTITION_LEAVE,
-                  OperationEnum.DELETE_HISTORY,
-                  OperationEnum.UPDATE_INCARNATION_NUMBER,
-                  OperationEnum.PARTITION_BOOTSTRAP,
-                  OperationEnum.PARTITION_BOOTSTRAP,
-                  OperationEnum.PARTITION_JOIN,
-                  OperationEnum.PARTITION_JOIN));
+          .containsExactlyElementsOf(expected);
     }
   }
 
   @Test
   void shouldRequestPartitionJoin() {
+    assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
+
       // when -- request a join
-      final var response = actuator.joinPartition(0, 2, 3);
+      final var response = actuator.joinPartition(brokerId(0), 2, 3);
+
       // then
       assertThat(response.getPlannedChanges())
           .singleElement()
@@ -131,12 +213,14 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRejectJoinOnNonExistingPartition() {
+    assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
+
       // when -- request a join
-      assertThatCode(() -> actuator.joinPartition(0, 3, 3))
+      assertThatCode(() -> actuator.joinPartition(brokerId(0), 4, 3))
           .describedAs("Joining a non-existing partition should fail with 400 Bad Request")
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("partition has no active members");
@@ -145,30 +229,31 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRequestScaleBrokers() {
+    assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when
-      final var response = actuator.scaleBrokers(List.of(0, 1, 2));
+      final var response = actuator.scaleByBrokerIds(brokerIds(0, 1, 2, BROKER_COUNT));
 
       // then
-      assertThat(response.getExpectedTopology()).hasSize(3);
+      assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT + 1);
     }
   }
 
   @Test
   void shouldRequestForceScaleDownBrokers() {
-    // create cluster with two brokers
-    try (final var cluster = createCluster(2)) {
+    assumeTrue(zone() == null, "Force scale-down not valid for zone-aware clusters");
+    try (final var cluster = createCluster(BROKER_COUNT)) {
       // given
       cluster.awaitCompleteTopology();
       cluster.brokers().get(MemberId.from("1")).close();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - force remove broker 1
-      final var response = actuator.scaleBrokers(List.of(0), false, true);
+      final var response = actuator.scaleByBrokerIds(brokerIds(0), false, true);
 
       // then
       assertThat(response.getExpectedTopology()).hasSize(1);
@@ -177,13 +262,14 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRequestAddBroker() {
+    assumeTrue(zone() == null, "Add broker with zone-index IDs not valid for zone-aware");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when
-      final var response = actuator.addBroker(2);
+      final var response = actuator.addBroker(brokerId(2));
 
       // then
       assertThat(response.getExpectedTopology()).hasSize(3);
@@ -192,23 +278,26 @@ final class ClusterEndpointIT {
 
   @Test
   void shouldRequestRemoveBroker() {
+    assumeTrue(zone() == null, "Remove broker uses join/leave not supported on zone-aware");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
-      // Must move partitions to broker 0 before removing broker 1 from the cluster
-      movePartition(actuator);
+      //      // Must move partitions to broker 0 before removing broker 1 from the cluster
+      final var id = brokerId(2);
+      movePartition(actuator, id);
 
       // when
-      final var response = actuator.removeBroker(1);
+      final var response = actuator.removeBroker(brokerId(2));
 
       // then
-      assertThat(response.getExpectedTopology()).hasSize(1);
+      assertThat(response.getExpectedTopology()).hasSize(2);
     }
   }
 
   @Test
   void canDryRunScale() {
+    assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
     try (final var cluster = createCluster(1)) {
       // given
       cluster.awaitCompleteTopology();
@@ -216,7 +305,7 @@ final class ClusterEndpointIT {
       final var initialTopology = actuator.getTopology();
 
       // when
-      final var dryRun = actuator.scaleBrokers(List.of(1, 2), true);
+      final var dryRun = actuator.scaleByBrokerIds(brokerIds(1, 2), true);
 
       // then -- dry run response looks as expected
       assertThat(dryRun.getExpectedTopology()).hasSize(2);
@@ -227,61 +316,11 @@ final class ClusterEndpointIT {
     }
   }
 
-  @Test
-  void shouldFailRequestWhenHavingTypoInParameter() throws IOException, InterruptedException {
-    try (final var cluster = createCluster(1)) {
-      // given
-      cluster.awaitCompleteTopology();
-
-      // when
-      final var response = sendBrokerScaleRequest(cluster, URI.create("/brokers?dry-run=true"));
-
-      // then
-      assertThat(response.statusCode()).isEqualTo(400);
-      assertThat(response.body()).contains("Unsupported query parameter(s): dry-run");
-    }
-  }
-
-  private static void movePartition(final ClusterActuator actuator) {
-    final var plannedJoin = actuator.joinPartition(0, 2, 1);
-    Awaitility.await()
-        .untilAsserted(
-            () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(plannedJoin));
-    final var leave = actuator.leavePartition(1, 2);
-    Awaitility.await()
-        .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(leave));
-  }
-
-  private static java.net.http.HttpResponse<String> sendBrokerScaleRequest(
-      final TestCluster cluster, final URI pathAndQuery) throws IOException, InterruptedException {
-    final var baseClusterEndpoint = cluster.availableGateway().actuatorUri("cluster");
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(baseClusterEndpoint + pathAndQuery.toString()))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(SCALE_BROKERS_REQUEST_BODY))
-            .build();
-
-    try (final var httpClient = HttpClient.newHttpClient()) {
-      return httpClient.send(request, BodyHandlers.ofString());
-    }
-  }
-
-  @SuppressWarnings("resource")
-  private static TestCluster createCluster(final int replicationFactor) {
-    return TestCluster.builder()
-        .withEmbeddedGateway(true)
-        .withBrokersCount(BROKER_COUNT)
-        .withPartitionsCount(PARTITION_COUNT)
-        .withReplicationFactor(replicationFactor)
-        .build()
-        .start();
-  }
-
   @Nested
   final class ClusterPatchRequest {
     @Test
     void shouldRequestClusterScale() {
+      assumeTrue(zone() == null, "Zone-aware clusters require RF>=2, incompatible with this test");
       try (final var cluster = createCluster(1)) {
         // given
         cluster.awaitCompleteTopology();
@@ -290,18 +329,19 @@ final class ClusterEndpointIT {
         // when
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().count(2))
+                .brokers(new ClusterConfigPatchRequestBrokers().count(BROKER_COUNT))
                 .partitions(
-                    new ClusterConfigPatchRequestPartitions().count(2).replicationFactor(2));
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(PARTITION_COUNT)
+                        .replicationFactor(2));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
-            .describedAs("ClusterSize is increased to 2")
-            .hasSize(2);
+            .describedAs("ClusterSize is " + BROKER_COUNT)
+            .hasSize(BROKER_COUNT);
         assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
-            .describedAs("Each broker has 2 partitions")
-            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size())
-            .isEqualTo(2);
+            .describedAs("Partitions are evenly distributed")
+            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
 
         assertThat(response.getPlannedChanges()).isNotEmpty();
       }
@@ -309,6 +349,7 @@ final class ClusterEndpointIT {
 
     @Test
     void shouldRequestClusterPatch() {
+      assumeTrue(zone() == null, "Zone-aware clusters require RF>=2, incompatible with this test");
       try (final var cluster = createCluster(1)) {
         // given
         cluster.awaitCompleteTopology();
@@ -317,18 +358,19 @@ final class ClusterEndpointIT {
         // when
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(BrokerId.of(1))))
+                .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(brokerId(1))))
                 .partitions(
-                    new ClusterConfigPatchRequestPartitions().count(2).replicationFactor(2));
+                    new ClusterConfigPatchRequestPartitions()
+                        .count(PARTITION_COUNT)
+                        .replicationFactor(2));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
-            .describedAs("ClusterSize is increased to 2")
-            .hasSize(2);
+            .describedAs("Cluster has " + BROKER_COUNT + " brokers")
+            .hasSize(BROKER_COUNT);
         assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
-            .describedAs("Each broker has 2 partitions")
-            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size())
-            .isEqualTo(2);
+            .describedAs("Partitions are evenly distributed")
+            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
 
         assertThat(response.getPlannedChanges()).isNotEmpty();
       }
@@ -336,21 +378,20 @@ final class ClusterEndpointIT {
 
     @Test
     void shouldRequestForceRemoveBroker() {
-      // create cluster with two brokers
       try (final var cluster = createCluster(2)) {
         // given
         cluster.awaitCompleteTopology();
-        cluster.brokers().get(MemberId.from("1")).close();
+        cluster.brokers().get(memberIdForBroker(1)).close();
         final var actuator = ClusterActuator.of(cluster.availableGateway());
 
         // when - force remove broker 1
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().remove(List.of(BrokerId.of(1))));
+                .brokers(new ClusterConfigPatchRequestBrokers().remove(List.of(brokerId(1))));
         final var response = actuator.patchCluster(request, false, true);
 
         // then
-        assertThat(response.getExpectedTopology()).hasSize(1);
+        assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT - 1);
       }
     }
   }

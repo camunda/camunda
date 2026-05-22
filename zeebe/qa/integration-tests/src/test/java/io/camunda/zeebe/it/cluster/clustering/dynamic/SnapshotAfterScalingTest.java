@@ -61,7 +61,7 @@ final class SnapshotAfterScalingTest {
 
     // given
     final var actuator = ClusterActuator.of(cluster.availableGateway());
-    final var response = actuator.joinPartition(1, 1, 1);
+    final var response = actuator.joinPartition("1", 1, 1);
     assertChangeIsPlanned(response);
     Awaitility.await("Requested change is completed in time")
         .untilAsserted(

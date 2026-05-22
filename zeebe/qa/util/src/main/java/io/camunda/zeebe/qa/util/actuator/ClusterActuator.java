@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.actuator;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Body;
+import feign.Contract;
 import feign.Feign;
 import feign.Headers;
 import feign.Param;
@@ -19,12 +20,15 @@ import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.container.cluster.BrokerNode;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public interface ClusterActuator {
@@ -68,7 +72,17 @@ public interface ClusterActuator {
    */
   static ClusterActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(ClusterActuator.class, endpoint);
+    // Custom contract that disables slash decoding in URL templates, so that
+    // zone-aware broker IDs like "zoneA%2F0" are preserved in path parameters.
+    final Contract defaultContract = new Contract.Default();
+    final Contract noDecodeSlash =
+        targetType -> {
+          final var metadata = defaultContract.parseAndValidateMetadata(targetType);
+          metadata.forEach(md -> md.template().decodeSlash(false));
+          return metadata;
+        };
     return Feign.builder()
+        .contract(noDecodeSlash)
         .encoder(new JacksonEncoder(List.of(new Jdk8Module(), new JavaTimeModule())))
         .decoder(new JacksonDecoder(List.of(new Jdk8Module(), new JavaTimeModule())))
         .retryer(Retryer.NEVER_RETRY)
@@ -86,7 +100,28 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   @Body("%7B\"priority\": {priority}%7D")
   PlannedOperationsResponse joinPartition(
+      @Param final String brokerId, @Param final int partitionId, @Param final int priority);
+
+  /**
+   * Request that the broker joins the partition with the given priority.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Body("%7B\"priority\": {priority}%7D")
+  PlannedOperationsResponse joinPartition(
       @Param final int brokerId, @Param final int partitionId, @Param final int priority);
+
+  /**
+   * Request that the broker leaves the partition.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /brokers/{brokerId}/partitions/{partitionId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse leavePartition(
+      @Param final String brokerId, @Param final int partitionId);
 
   /**
    * Request that the broker leaves the partition.
@@ -152,6 +187,58 @@ public interface ClusterActuator {
       @RequestBody List<Integer> ids, @Param boolean dryRun, @Param boolean force);
 
   /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokersString(@RequestBody List<String> ids);
+
+  /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers based on new
+   * replication factor.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers?replicationFactor={newReplicationFactor}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokersString(
+      @RequestBody List<String> ids, @Param final int newReplicationFactor);
+
+  /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers.
+   *
+   * @param dryRun if true, changes are not applied but only simulated.
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokersString(
+      @RequestBody List<String> ids, @Param boolean dryRun);
+
+  /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers.
+   *
+   * @param dryRun if true, changes are not applied but only simulated.
+   * @param force if true, the brokers that are not specified will be forcely removed.
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers?dryRun={dryRun}&force={force}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokersString(
+      @RequestBody List<String> ids, @Param boolean dryRun, @Param boolean force);
+
+  /**
+   * Request that the broker is added to the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse addBroker(@Param final String brokerId);
+
+  /**
    * Request that the broker is added to the cluster.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
@@ -159,6 +246,15 @@ public interface ClusterActuator {
   @RequestLine("POST /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse addBroker(@Param final int brokerId);
+
+  /**
+   * Request that the broker is removed from the cluster
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /brokers/{brokerId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse removeBroker(@Param final String brokerId);
 
   /**
    * Request that the broker is removed from the cluster
@@ -212,4 +308,82 @@ public interface ClusterActuator {
   @RequestLine("PATCH /routing-state?dryRun={dryRun}&force={force}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun);
+
+  // -- BrokerId dispatch methods (default) --
+
+  /**
+   * Dispatches to {@link #joinPartition(int, int, int)} or {@link #joinPartition(String, int,
+   * int)}.
+   */
+  default PlannedOperationsResponse joinPartition(
+      final BrokerId brokerId, final int partitionId, final int priority) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> joinPartition(i.value(), partitionId, priority);
+      case final BrokerId.String s ->
+          joinPartition(
+              URLEncoder.encode(s.value(), StandardCharsets.UTF_8), partitionId, priority);
+    };
+  }
+
+  /** Dispatches to {@link #leavePartition(int, int)} or {@link #leavePartition(String, int)}. */
+  default PlannedOperationsResponse leavePartition(final BrokerId brokerId, final int partitionId) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> leavePartition(i.value(), partitionId);
+      case final BrokerId.String s ->
+          leavePartition(URLEncoder.encode(s.value(), StandardCharsets.UTF_8), partitionId);
+    };
+  }
+
+  /** Dispatches to {@link #addBroker(int)} or {@link #addBroker(String)}. */
+  default PlannedOperationsResponse addBroker(final BrokerId brokerId) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> addBroker(i.value());
+      case final BrokerId.String s ->
+          addBroker(URLEncoder.encode(s.value(), StandardCharsets.UTF_8));
+    };
+  }
+
+  /** Dispatches to {@link #removeBroker(int)} or {@link #removeBroker(String)}. */
+  default PlannedOperationsResponse removeBroker(final BrokerId brokerId) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> removeBroker(i.value());
+      case final BrokerId.String s ->
+          removeBroker(URLEncoder.encode(s.value(), StandardCharsets.UTF_8));
+    };
+  }
+
+  /** Dispatches to {@link #scaleBrokers(List)} or {@link #scaleBrokersString(List)}. */
+  default PlannedOperationsResponse scaleByBrokerIds(final List<BrokerId> ids) {
+    if (ids.isEmpty() || ids.getFirst() instanceof BrokerId.Integer) {
+      return scaleBrokers(ids.stream().map(b -> ((BrokerId.Integer) b).value()).toList());
+    }
+    return scaleBrokersString(ids.stream().map(b -> ((BrokerId.String) b).value()).toList());
+  }
+
+  /**
+   * Dispatches to {@link #scaleBrokers(List, boolean)} or {@link #scaleBrokersString(List,
+   * boolean)}.
+   */
+  default PlannedOperationsResponse scaleByBrokerIds(
+      final List<BrokerId> ids, final boolean dryRun) {
+    if (ids.isEmpty() || ids.getFirst() instanceof BrokerId.Integer) {
+      return scaleBrokers(ids.stream().map(b -> ((BrokerId.Integer) b).value()).toList(), dryRun);
+    }
+    return scaleBrokersString(
+        ids.stream().map(b -> ((BrokerId.String) b).value()).toList(), dryRun);
+  }
+
+  /**
+   * Dispatches to {@link #scaleBrokers(List, boolean, boolean)} or {@link #scaleBrokersString(List,
+   * boolean, boolean)}.
+   */
+  default PlannedOperationsResponse scaleByBrokerIds(
+      final List<BrokerId> ids, final boolean dryRun, final boolean force) {
+    if (ids.isEmpty() || ids.getFirst() instanceof BrokerId.Integer) {
+      return scaleBrokers(
+          ids.stream().map(b -> ((BrokerId.Integer) b).value()).toList(), dryRun, force);
+    }
+    return scaleBrokersString(
+        ids.stream().map(b -> ((BrokerId.String) b).value()).toList(), dryRun, force);
+  }
 }

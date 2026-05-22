@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.topology;
 
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.CompletedChange;
@@ -36,9 +37,17 @@ public final class ClusterActuatorAssert
         ClusterActuator.of(actuator.anyGateway()), ClusterActuatorAssert.class);
   }
 
-  public ClusterActuatorAssert doesNotHaveBroker(final Integer brokerId) {
+  public ClusterActuatorAssert doesNotHaveBroker(final int brokerId) {
+    return doesNotHaveBroker(BrokerId.of(brokerId));
+  }
+
+  public ClusterActuatorAssert doesNotHaveBroker(final String brokerId) {
+    return doesNotHaveBroker(BrokerId.of(brokerId));
+  }
+
+  public ClusterActuatorAssert doesNotHaveBroker(final BrokerId brokerId) {
     Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId().valueEquals(brokerId))
+        .filteredOn(b -> b.getId().equals(brokerId))
         .isEmpty();
     return this;
   }
@@ -63,28 +72,29 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert brokerHasPartition(final int brokerId, final int partitionId) {
-    assertThatBroker(brokerId)
-        .matches(
-            b -> b.getPartitions().stream().anyMatch(p -> p.getId() == partitionId),
-            "Broker %d has partition %d".formatted(brokerId, partitionId));
-    return this;
+    return brokerHasPartition(BrokerId.of(brokerId), partitionId);
+  }
+
+  public ClusterActuatorAssert brokerHasPartition(final String brokerId, final int partitionId) {
+    return brokerHasPartition(BrokerId.of(brokerId), partitionId);
   }
 
   public ClusterActuatorAssert brokerDoesNotHavePartition(
       final int brokerId, final int partitionId) {
-    assertThatBroker(brokerId)
-        .matches(
-            b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
-            "Broker %d does not have partition %d".formatted(brokerId, partitionId));
-    return this;
+    return brokerDoesNotHavePartition(BrokerId.of(brokerId), partitionId);
+  }
+
+  public ClusterActuatorAssert brokerDoesNotHavePartition(
+      final String brokerId, final int partitionId) {
+    return brokerDoesNotHavePartition(BrokerId.of(brokerId), partitionId);
   }
 
   public ClusterActuatorAssert hasActiveBroker(final int brokerId) {
-    assertThatBroker(brokerId)
-        .matches(
-            b -> b.getState().equals(BrokerStateCode.ACTIVE),
-            "Cluster does not have broker %d in Active state".formatted(brokerId));
-    return this;
+    return hasActiveBroker(BrokerId.of(brokerId));
+  }
+
+  public ClusterActuatorAssert hasActiveBroker(final String brokerId) {
+    return hasActiveBroker(BrokerId.of(brokerId));
   }
 
   public ClusterActuatorAssert doesNotHavePendingChanges() {
@@ -95,19 +105,54 @@ public final class ClusterActuatorAssert
 
   public ClusterActuatorAssert brokerHasPartitionAtState(
       final int brokerId, final int partitionId, final PartitionStateCode state) {
+    return brokerHasPartitionAtState(BrokerId.of(brokerId), partitionId, state);
+  }
+
+  public ClusterActuatorAssert brokerHasPartitionAtState(
+      final String brokerId, final int partitionId, final PartitionStateCode state) {
+    return brokerHasPartitionAtState(BrokerId.of(brokerId), partitionId, state);
+  }
+
+  private ClusterActuatorAssert brokerHasPartition(final BrokerId brokerId, final int partitionId) {
+    assertThatBroker(brokerId)
+        .matches(
+            b -> b.getPartitions().stream().anyMatch(p -> p.getId() == partitionId),
+            "Broker %s has partition %d".formatted(brokerId, partitionId));
+    return this;
+  }
+
+  private ClusterActuatorAssert brokerDoesNotHavePartition(
+      final BrokerId brokerId, final int partitionId) {
+    assertThatBroker(brokerId)
+        .matches(
+            b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
+            "Broker %s does not have partition %d".formatted(brokerId, partitionId));
+    return this;
+  }
+
+  private ClusterActuatorAssert hasActiveBroker(final BrokerId brokerId) {
+    assertThatBroker(brokerId)
+        .matches(
+            b -> b.getState().equals(BrokerStateCode.ACTIVE),
+            "Cluster does not have broker %s in Active state".formatted(brokerId));
+    return this;
+  }
+
+  private ClusterActuatorAssert brokerHasPartitionAtState(
+      final BrokerId brokerId, final int partitionId, final PartitionStateCode state) {
     assertThatBroker(brokerId)
         .matches(
             b ->
                 b.getPartitions().stream()
                     .anyMatch(p -> p.getId() == partitionId && p.getState().equals(state)),
-            "Broker %d has partition %d with state %s".formatted(brokerId, partitionId, state));
+            "Broker %s has partition %d with state %s".formatted(brokerId, partitionId, state));
     return this;
   }
 
   private AbstractAssert<ObjectAssert<BrokerState>, BrokerState> assertThatBroker(
-      final Integer brokerId) {
+      final BrokerId brokerId) {
     return Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId().valueEquals(brokerId))
+        .filteredOn(b -> b.getId().equals(brokerId))
         .singleElement();
   }
 }
