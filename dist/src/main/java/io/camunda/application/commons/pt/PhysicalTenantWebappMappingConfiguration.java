@@ -37,16 +37,29 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class PhysicalTenantWebappMappingConfiguration implements WebMvcConfigurer {
 
   @Bean
-  public PhysicalTenantWebappRequestMappingHandlerMapping
-      physicalTenantWebappRequestMappingHandlerMapping() {
-    final var mapping = new PhysicalTenantWebappRequestMappingHandlerMapping();
-    mapping.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
-    return mapping;
-  }
-
-  @Bean
   public PhysicalTenantWebappContextPathInterceptor physicalTenantWebappContextPathInterceptor() {
     return new PhysicalTenantWebappContextPathInterceptor();
+  }
+
+  /**
+   * Our custom {@link PhysicalTenantWebappRequestMappingHandlerMapping} does NOT get interceptors
+   * auto-applied — Spring's {@code WebMvcConfigurationSupport} only calls {@code
+   * setInterceptors(...)} on the auto-configured handler mapping. We therefore install the PT
+   * context-path interceptor on this RMHM explicitly via {@link
+   * org.springframework.web.servlet.handler.AbstractHandlerMapping#setInterceptors}. The same
+   * interceptor is ALSO registered globally via {@link #addInterceptors} so it fires on the default
+   * RMHM too — needed because {@code OperateIndexController#forwardToOperate} returns {@code
+   * "forward:/operate"} for SPA sub-paths, and the forwarded {@code /operate} request is resolved
+   * by the default RMHM.
+   */
+  @Bean
+  public PhysicalTenantWebappRequestMappingHandlerMapping
+      physicalTenantWebappRequestMappingHandlerMapping(
+          final PhysicalTenantWebappContextPathInterceptor contextPathInterceptor) {
+    final var mapping = new PhysicalTenantWebappRequestMappingHandlerMapping();
+    mapping.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+    mapping.setInterceptors(contextPathInterceptor);
+    return mapping;
   }
 
   @Override
