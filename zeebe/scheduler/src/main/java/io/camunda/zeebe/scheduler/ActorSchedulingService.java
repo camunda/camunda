@@ -8,14 +8,13 @@
 package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Service interface to schedule an actor (without exposing the full interface of {@code
  * ActorScheduler}
  */
 public interface ActorSchedulingService {
-  ActorFuture<@Nullable Void> submitActor(final Actor actor);
+  ActorFuture<Void> submitActor(final Actor actor);
 
-  ActorFuture<@Nullable Void> submitActor(final Actor actor, SchedulingHints schedulingHints);
+  ActorFuture<Void> submitActor(final Actor actor, SchedulingHints schedulingHints);
 }

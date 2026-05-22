@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.future;
 
 import static io.camunda.zeebe.util.Nulls.uncheckedCastToNonNull;
+import static io.camunda.zeebe.util.Unit.unit;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -90,8 +91,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     isDoneCondition = completionLock.newCondition();
   }
 
-  public static CompletableActorFuture<@Nullable Void> completed() {
-    return CompletableActorFuture.completed(null);
+  public static CompletableActorFuture<Void> completed() {
+    return CompletableActorFuture.completed(unit());
   }
 
   public static <V extends @Nullable Object> CompletableActorFuture<V> completed(final V result) {
@@ -113,11 +114,11 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
    *     successfully. if one future returns an error, the computation is stopped (the rest of the
    *     Future will not be started) and the error is returned
    */
-  public static <A> ActorFuture<@Nullable Void> traverseIgnoring(
+  public static <A> ActorFuture<Void> traverseIgnoring(
       final Collection<A> collection,
-      final Function<A, ActorFuture<@Nullable Void>> function,
+      final Function<A, ActorFuture<Void>> function,
       final Executor executor) {
-    ActorFuture<@Nullable Void> future = completed();
+    ActorFuture<Void> future = completed();
     for (final A a : collection) {
       future = future.andThen(unused -> function.apply(a), executor);
     }

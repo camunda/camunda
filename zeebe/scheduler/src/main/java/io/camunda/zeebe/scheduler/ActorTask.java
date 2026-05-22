@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jetbrains.annotations.Async;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,19 +40,15 @@ public class ActorTask {
 
   // Start with a completed future to allow closing unscheduled tasks. The future is reset to
   // uncompleted in `onTaskScheduled`.
-  public final CompletableActorFuture<@Nullable Void> closeFuture =
-      CompletableActorFuture.completed(null);
+  public final CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed();
   final Actor actor;
   ActorJob currentJob;
   boolean shouldYield;
   final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
   final AtomicLong stateCount = new AtomicLong(0);
-  private final CompletableActorFuture<@Nullable Void> jobClosingTaskFuture =
-      new CompletableActorFuture<>();
-  private final CompletableActorFuture<@Nullable Void> startingFuture =
-      new CompletableActorFuture<>();
-  private final CompletableActorFuture<@Nullable Void> jobStartingTaskFuture =
-      new CompletableActorFuture<>();
+  private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
+  private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
+  private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
   private ActorThreadGroup actorThreadGroup;
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
@@ -72,7 +67,7 @@ public class ActorTask {
   }
 
   /** called when the task is initially scheduled. */
-  public ActorFuture<@Nullable Void> onTaskScheduled(final ActorThreadGroup actorThreadGroup) {
+  public ActorFuture<Void> onTaskScheduled(final ActorThreadGroup actorThreadGroup) {
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
     closeFuture.close();
@@ -486,7 +481,7 @@ public class ActorTask {
     return lifecyclePhase;
   }
 
-  public CompletableActorFuture<@Nullable Void> getStartingFuture() {
+  public CompletableActorFuture<Void> getStartingFuture() {
     return startingFuture;
   }
 

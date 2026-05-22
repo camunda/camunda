@@ -13,7 +13,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A remote stream service that manages streams from the Gateways.
@@ -26,7 +25,7 @@ public interface RemoteStreamService<M, P extends BufferWriter>
   ActorFuture<RemoteStreamer<M, P>> start(
       ActorSchedulingService actorSchedulingService, ConcurrencyControl concurrencyControl);
 
-  ActorFuture<@Nullable Void> closeAsync(ConcurrencyControl concurrencyControl);
+  ActorFuture<Void> closeAsync(ConcurrencyControl concurrencyControl);
 
   /** Returns all registered remote streams. */
   Collection<RemoteStreamInfo<M>> streams();

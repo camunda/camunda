@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.Loggers;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A thread group is a group of threads which process the same kind of tasks (ie. blocking I/O vs.
@@ -77,11 +78,10 @@ public abstract class ActorThreadGroup {
     return schedulerName;
   }
 
-  public CompletableFuture<@Nullable Void> closeAsync() {
+  public CompletableFuture<Void> closeAsync() {
     Loggers.ACTOR_LOGGER.debug("Closing actor thread ground '{}'", groupName);
 
-    final CompletableFuture<@Nullable Void>[] terminationFutures =
-        new CompletableFuture[numOfThreads];
+    final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[numOfThreads];
 
     for (int i = 0; i < numOfThreads; i++) {
       final ActorThread thread = threads[i];
@@ -93,7 +93,7 @@ public abstract class ActorThreadGroup {
             groupName,
             thread.getRunnerId(),
             e);
-        terminationFutures[i] = CompletableFuture.completedFuture(null);
+        terminationFutures[i] = CompletableFuture.completedFuture(unit());
       }
     }
 

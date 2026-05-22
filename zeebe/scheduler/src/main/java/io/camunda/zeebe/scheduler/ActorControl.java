@@ -70,8 +70,8 @@ public class ActorControl implements ConcurrencyControl {
    * @param action
    * @return
    */
-  public ActorFuture<@Nullable Void> call(final Runnable action) {
-    final Callable<@Nullable Void> c =
+  public ActorFuture<Void> call(final Runnable action) {
+    final Callable<Void> c =
         () -> {
           action.run();
           return null;
@@ -316,7 +316,7 @@ public class ActorControl implements ConcurrencyControl {
     job.getTask().yieldThread();
   }
 
-  public ActorFuture<@Nullable Void> close() {
+  public ActorFuture<Void> close() {
     final ActorJob closeJob = new ActorJob();
 
     closeJob.onJobAddedToTask(task);

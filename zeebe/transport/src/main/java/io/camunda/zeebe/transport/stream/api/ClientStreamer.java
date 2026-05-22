@@ -11,7 +11,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Allows to add and remove client streams.
@@ -47,5 +46,5 @@ public interface ClientStreamer<M extends BufferWriter> extends CloseableSilentl
    * @param streamId unique id of the stream
    * @return a future which will be completed after the stream is removed
    */
-  ActorFuture<@Nullable Void> remove(final ClientStreamId streamId);
+  ActorFuture<Void> remove(final ClientStreamId streamId);
 }
