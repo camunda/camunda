@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
 
@@ -127,7 +128,10 @@ public class ProcessesToolRepository implements ToolRepository {
                   return CallToolResultMapper.from(
                       messageServices.correlateMessage(
                           new CorrelateMessageRequest(
-                              entity.messageName(), "", arguments, entity.tenantId()),
+                              entity.messageName(),
+                              UUID.randomUUID().toString(),
+                              arguments,
+                              entity.tenantId()),
                           authenticationProvider.getCamundaAuthentication()),
                       record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
                 })

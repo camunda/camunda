@@ -323,7 +323,7 @@ class ProcessesToolRepositoryTest {
 
       assertThat(reqCaptor.getValue().name()).isEqualTo("deploy.start");
       assertThat(reqCaptor.getValue().tenantId()).isEqualTo("tenant-a");
-      assertThat(reqCaptor.getValue().correlationKey()).isEmpty();
+      assertThat(reqCaptor.getValue().correlationKey()).isNotBlank();
       assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
     }
 
@@ -440,9 +440,13 @@ class ProcessesToolRepositoryTest {
 
       assertThat(incident).containsExactly(entry("processInstanceKey", 12345678910L));
 
-      verify(messageServices)
-          .correlateMessage(
-              eq(new CorrelateMessageRequest("message", "", Map.of(), "<default>")), any());
+      final ArgumentCaptor<CorrelateMessageRequest> captor =
+          ArgumentCaptor.forClass(CorrelateMessageRequest.class);
+      verify(messageServices).correlateMessage(captor.capture(), any());
+      assertThat(captor.getValue().name()).isEqualTo("message");
+      assertThat(captor.getValue().tenantId()).isEqualTo("<default>");
+      assertThat(captor.getValue().variables()).isEmpty();
+      assertThat(captor.getValue().correlationKey()).isNotBlank();
     }
   }
 
