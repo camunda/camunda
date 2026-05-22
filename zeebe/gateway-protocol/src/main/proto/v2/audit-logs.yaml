@@ -255,6 +255,9 @@ components:
             Additional description of the entity affected by the operation.
             For example, for variable operations, this will contain the variable name.
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: agentToolName
+          addedInVersion: "8.10"
     AuditLogSearchQuerySortRequest:
       type: object
       additionalProperties: false
@@ -432,6 +435,9 @@ components:
           description: The entity description filter.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: agentToolName
+          addedInVersion: "8.10"
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
