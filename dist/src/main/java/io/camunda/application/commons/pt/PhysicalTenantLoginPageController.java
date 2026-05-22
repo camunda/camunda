@@ -29,6 +29,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * <p>The prefixed equivalent at {@code /physical-tenant/{tenantId}/login} is handled by Spring
  * Security's auto-generated picker — see {@code PerTenantSecurityChainFactory#buildWebappChain}
  * which reconfigures the filter's URL after build().
+ *
+ * <p><b>PoC follow-up:</b> this whole controller goes away once CSL's {@code OidcWebapp} chain
+ * registers {@code DefaultLoginPageGeneratingFilter} itself — either by dropping any {@code
+ * .loginPage(...)} override on its {@code oauth2Login(...)} (Spring then auto-registers the picker)
+ * or by exposing a post-build hook the host can use to mutate the filter's URL the same way {@code
+ * PerTenantSecurityChainFactory} does on the PT chains. For the real production implementation (PT
+ * support migrated into CSL) this controller should not exist.
  */
 @Controller
 @Conditional(PhysicalTenantsConfiguredCondition.class)
