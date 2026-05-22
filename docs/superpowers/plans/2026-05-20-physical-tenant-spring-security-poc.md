@@ -2049,6 +2049,47 @@ Bump Task 19 to ✅ done in `pt-poc-README.md`'s Status table when complete.
 
 ---
 
+## Task 20: CSL — install DefaultLoginPageGeneratingFilter on the OidcWebapp chain
+
+**Goal:** Make the unprefixed `/login` URL render a multi-IdP picker for OIDC deployments without each host having to ship its own controller. Today CSL's `OidcWebappSecurityConfiguration` sets a custom `AuthenticationEntryPoint`, which trips Spring Security 7's `DefaultLoginPageConfigurer.configure()` gate (auto-picker is only added when `exceptionHandling.authenticationEntryPoint == null`). Net effect: CSL ships no picker; every host that runs OIDC with multiple `ClientRegistration`s has to render `/login` themselves.
+
+**Files:**
+- `~/git/camunda-security-library/spring-boot-starter/src/main/java/io/camunda/security/spring/security/OidcWebappSecurityConfiguration.java` — main change.
+
+**Approach:** Inside `oidcWebappSecurityFilterChain(...)`, construct a `DefaultLoginPageGeneratingFilter`, populate it from the injected `ClientRegistrationRepository` (`setOauth2LoginEnabled(true)` + `setOauth2AuthenticationUrlToClientName(loginLinks)` + `setLoginPageUrl(LOGIN_URL)`), and install it before the `.exceptionHandling(...)` call:
+
+```java
+final var picker = new DefaultLoginPageGeneratingFilter();
+picker.setLoginPageUrl(LOGIN_URL);
+picker.setOauth2LoginEnabled(true);
+picker.setOauth2AuthenticationUrlToClientName(buildLoginLinks(clientRegistrationRepository));
+filterChainBuilder.addFilterAfter(picker, CsrfFilter.class);
+```
+
+Same pattern this PoC's `PerTenantSecurityChainFactory#buildWebappChain` uses.
+
+**Verification points:**
+- Unprefixed `/login` on any OC deployment with `camunda.security.authentication.method=oidc` and 2+ root-declared providers renders a picker listing all registrations.
+- Single-registration deployments still get the entry-point's direct redirect to `/oauth2/authorization/<id>` (the picker filter only matches GET `/login`, so it doesn't change the single-registration behaviour).
+- The PoC's `dist/` host can be cleaned up by dropping the explicit picker filter install in `PerTenantSecurityChainFactory` IF and only if CSL also exposes a per-chain login page URL — otherwise the PT-prefixed picker installation stays.
+
+**Commit (in the CSL repo):**
+```
+feat: install DefaultLoginPageGeneratingFilter on the OidcWebapp chain
+
+Spring Security 7's DefaultLoginPageConfigurer only auto-installs the picker
+when no custom AuthenticationEntryPoint is set; CSL sets one for bearer-vs-
+redirect delegation, so the picker filter is never auto-added and hosts
+hit a 404 on /login for multi-IdP OIDC deployments. Install the filter
+explicitly here so the standard login page works out of the box.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+```
+
+Bump Task 20 to ✅ done in `pt-poc-README.md`'s Status table when complete.
+
+---
+
 ## Self-review checklist (run after the plan is written)
 
 - [x] **Spec coverage** — every spec section has at least one task:
