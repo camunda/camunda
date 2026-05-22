@@ -19,6 +19,13 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
+import io.camunda.gateway.protocol.model.AgentInstanceLimits;
+import io.camunda.gateway.protocol.model.AgentInstanceMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceResult;
+import io.camunda.gateway.protocol.model.AgentInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.AgentInstanceStatusEnum;
+import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
@@ -147,6 +154,7 @@ import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -1898,6 +1906,90 @@ public final class SearchQueryResponseMapper {
         .resourceId(entity.resourceId())
         .tenantId(entity.tenantId())
         .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .build();
+  }
+
+  public static AgentInstanceResult toAgentInstanceResult(final AgentInstanceEntity entity) {
+    final var d = entity.definition();
+    final var definition =
+        AgentInstanceDefinition.Builder.create()
+            .model(d.model())
+            .provider(d.provider())
+            .systemPrompt(d.systemPrompt())
+            .build();
+
+    final var m = entity.metrics();
+    final var metrics =
+        AgentInstanceMetrics.Builder.create()
+            .inputTokens(m.inputTokens())
+            .outputTokens(m.outputTokens())
+            .modelCalls(m.modelCalls())
+            .toolCalls(m.toolCalls())
+            .build();
+
+    final var l = entity.limits();
+    final var limits =
+        AgentInstanceLimits.Builder.create()
+            .maxModelCalls(l.maxModelCalls())
+            .maxTokens(l.maxTokens())
+            .maxToolCalls(l.maxToolCalls())
+            .build();
+
+    final var tools =
+        ofNullable(entity.tools())
+            .map(
+                ts ->
+                    ts.stream()
+                        .map(
+                            t ->
+                                AgentTool.Builder.create()
+                                    .name(t.name())
+                                    .description(t.description())
+                                    .elementId(t.elementId())
+                                    .build())
+                        .toList())
+            .orElseGet(Collections::emptyList);
+
+    final var elementInstanceKeys =
+        ofNullable(entity.elementInstanceKeys())
+            .map(keys -> keys.stream().map(k -> keyToString(k)).toList())
+            .orElseGet(Collections::emptyList);
+
+    return AgentInstanceResult.Builder.create()
+        .agentInstanceKey(keyToString(entity.agentInstanceKey()))
+        .status(AgentInstanceStatusEnum.fromValue(entity.status().name()))
+        .definition(definition)
+        .metrics(metrics)
+        .limits(limits)
+        .tools(tools)
+        .elementId(entity.elementId())
+        .processInstanceKey(keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
+        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processDefinitionId(entity.processDefinitionId())
+        .processDefinitionVersion(entity.processDefinitionVersion())
+        .processDefinitionVersionTag(entity.versionTag())
+        .tenantId(entity.tenantId())
+        .creationDate(formatDate(entity.creationDate()))
+        .lastUpdatedDate(formatDate(entity.lastUpdatedDate()))
+        .completionDate(formatDateOrNull(entity.completionDate()))
+        .elementInstanceKeys(elementInstanceKeys)
+        .build();
+  }
+
+  public static AgentInstanceSearchQueryResult toAgentInstanceSearchQueryResponse(
+      final SearchQueryResult<AgentInstanceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return AgentInstanceSearchQueryResult.Builder.create()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream()
+                            .map(SearchQueryResponseMapper::toAgentInstanceResult)
+                            .toList())
+                .orElseGet(Collections::emptyList))
         .build();
   }
 

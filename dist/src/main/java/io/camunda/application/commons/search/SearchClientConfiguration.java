@@ -13,6 +13,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
+import io.camunda.search.clients.reader.AgentInstanceReader;
 import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
@@ -105,6 +106,7 @@ public class SearchClientConfiguration {
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
   public SearchClientReaders searchClientReaders(
+      final AgentInstanceReader agentInstanceReader,
       final AuthorizationReader authorizationReader,
       final BatchOperationReader batchOperationReader,
       final BatchOperationItemReader batchOperationItemReader,
@@ -149,6 +151,7 @@ public class SearchClientConfiguration {
       final GlobalListenerReader globalListenerReader,
       final DeployedResourceReader deployedResourceReader) {
     return new SearchClientReaders(
+        agentInstanceReader,
         authorizationReader,
         batchOperationReader,
         batchOperationItemReader,

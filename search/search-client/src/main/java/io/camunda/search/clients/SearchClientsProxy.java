@@ -12,7 +12,8 @@ import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
-    extends AuditLogSearchClient,
+    extends AgentInstanceSearchClient,
+        AuditLogSearchClient,
         AuthorizationSearchClient,
         BatchOperationSearchClient,
         DecisionDefinitionSearchClient,

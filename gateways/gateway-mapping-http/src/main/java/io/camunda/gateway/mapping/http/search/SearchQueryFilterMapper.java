@@ -44,6 +44,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -1443,6 +1444,52 @@ public class SearchQueryFilterMapper {
           .map(mapToKeyOperations("deploymentKey", validationErrors))
           .ifPresent(builder::deploymentKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentInstanceFilter> toAgentInstanceFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentInstanceFilter filter) {
+    final var builder = FilterBuilders.agentInstance();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getAgentInstanceKey())
+          .map(mapToKeyOperations("agentInstanceKey", validationErrors))
+          .ifPresent(builder::agentInstanceKeyOperations);
+      ofNullable(filter.getStatus())
+          .map(mapToStringOperations())
+          .ifPresent(builder::statusOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getCreationDate())
+          .map(mapToOffsetDateTimeOperations("creationDate", validationErrors))
+          .ifPresent(builder::creationDateOperations);
+      ofNullable(filter.getLastUpdatedDate())
+          .map(mapToOffsetDateTimeOperations("lastUpdatedDate", validationErrors))
+          .ifPresent(builder::lastUpdatedDateOperations);
+      ofNullable(filter.getCompletionDate())
+          .map(mapToOffsetDateTimeOperations("completionDate", validationErrors))
+          .ifPresent(builder::completionDateOperations);
+      if (!CollectionUtils.isEmpty(filter.getElementInstanceKeys())) {
+        final var elementInstanceKeyMapper =
+            mapToKeyOperations("elementInstanceKeys", validationErrors);
+        filter.getElementInstanceKeys().stream()
+            .map(elementInstanceKeyMapper)
+            .forEach(builder::elementInstanceKeyOperations);
+      }
     }
 
     return validationErrors.isEmpty()

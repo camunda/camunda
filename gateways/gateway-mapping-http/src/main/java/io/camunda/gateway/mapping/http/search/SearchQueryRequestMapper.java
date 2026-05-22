@@ -24,6 +24,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -244,6 +245,22 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
     final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, AgentInstanceQuery> toAgentInstanceQuery(
+      final AgentInstanceSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.agentInstanceSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromAgentInstanceSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::agentInstance,
+            SearchQuerySortRequestMapper::applyAgentInstanceSortField);
+    final var filter = SearchQueryFilterMapper.toAgentInstanceFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::agentInstanceSearchQuery);
   }
 
   public static Either<ProblemDetail, JobQuery> toJobQuery(final JobSearchQuery request) {

@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 public record SearchClientReaders(
+    AgentInstanceReader agentInstanceReader,
     AuthorizationReader authorizationReader,
     BatchOperationReader batchOperationReader,
     BatchOperationItemReader batchOperationItemReader,
