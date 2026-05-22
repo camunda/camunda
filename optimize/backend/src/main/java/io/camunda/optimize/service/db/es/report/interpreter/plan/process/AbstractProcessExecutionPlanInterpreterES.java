@@ -37,15 +37,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractProcessExecutionPlanInterpreterES
     extends AbstractExecutionPlanInterpreterES<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterES {
-
-  private static final Logger log =
-      LoggerFactory.getLogger(AbstractProcessExecutionPlanInterpreterES.class);
   // Instance date filters should also reduce the total count (baseline) considered for report
   // evaluation
   private static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE =
@@ -126,19 +121,6 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
     // If the user has access to no definitions, management reports may contain no processes in its
     // data source so we exclude all instances from the result
-    log.info(
-        "[AGENTIC-DEBUG] buildDefinitionBaseQueryForFilters: isManagement={}, definitions={}",
-        context.getReportData().isManagementReport(),
-        context.getReportData().getDefinitions().stream()
-            .map(
-                d ->
-                    "key="
-                        + d.getKey()
-                        + " versions="
-                        + d.getVersions()
-                        + " tenants="
-                        + d.getTenantIds())
-            .toList());
     if (context.getReportData().getDefinitions().isEmpty()
         && context.getReportData().isManagementReport()) {
       final BoolQuery.Builder builder = new OptimizeBoolQueryBuilderES();

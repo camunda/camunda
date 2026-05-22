@@ -372,11 +372,6 @@ public abstract class ReportEvaluationHandler {
             resolvedDefinitions.stream()
                 .filter(d -> scopeKeys.contains(d.getKey()))
                 .collect(Collectors.toList());
-        logger.info(
-            "[AGENTIC-DEBUG] Scoping definitions: scopeKeys={}, resolved={}, filtered={}",
-            scopeKeys,
-            resolvedDefinitions.stream().map(d -> d.getKey() + ":" + d.getTenantIds()).toList(),
-            filteredDefinitions.stream().map(d -> d.getKey() + ":" + d.getTenantIds()).toList());
         if (!filteredDefinitions.isEmpty()) {
           definitionDto.getData().setDefinitions(filteredDefinitions);
         }

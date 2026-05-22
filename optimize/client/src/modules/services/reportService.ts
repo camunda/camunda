@@ -62,11 +62,9 @@ export async function evaluateReport(
 
   if (typeof payload !== 'object') {
     // evaluate saved report
-    const body = {filter, ...(additionalContext ?? {})};
-    console.log('[AGENTIC-DEBUG] evaluateReport POST body:', JSON.stringify(body));
     response = await post(
       `api/report/${payload}/evaluate`,
-      body,
+      {filter, ...(additionalContext ?? {})},
       {query}
     );
   } else {
