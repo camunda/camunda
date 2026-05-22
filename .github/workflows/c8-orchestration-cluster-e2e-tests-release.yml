@@ -18,6 +18,9 @@ permissions:
 jobs:
   validate-release:
     runs-on: ubuntu-latest
+    # Cap runtime so a hung `git ls-remote`/shell step can't block the
+    # whole release-tests workflow indefinitely.
+    timeout-minutes: 5
     outputs:
       release_version: ${{ steps.get-release.outputs.release_version }}
       base: ${{ steps.detect-base.outputs.base }}
@@ -371,6 +374,17 @@ jobs:
           path: dev-dist/
           retention-days: 1
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: c8-orchestration-cluster-build-rdbms-dist-release
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   c8-orchestration-cluster-api-tests-rdbms:
     name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }})
     needs: [validate-release, build-rdbms-dist]
@@ -427,8 +441,8 @@ jobs:
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
-          # Oracle - Supported versions: 21c, 26ai
-          - database-name: "Oracle 26ai"
+          # Oracle - Supported versions: 21c, 23ai
+          - database-name: "Oracle 23ai"
             database-type: "oracle"
             database-image-version: "23.26.1-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
@@ -477,20 +491,6 @@ jobs:
           echo "Updating docker image to version: $release_version"
           sed -i.bak "s|image:.*camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
-
       - name: Setup Java
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -538,14 +538,22 @@ jobs:
 
           echo "Waiting for DB on port $PORT..."
 
+          ready=false
           for i in {1..90}; do
             if (echo > "/dev/tcp/localhost/$PORT") >/dev/null 2>&1; then
               echo "DB port open"
+              ready=true
               break
             fi
             echo "Attempt $i: DB not ready"
             sleep 2
           done
+
+          if [ "$ready" != true ]; then
+            echo "DB on port $PORT did not become reachable in time."
+            docker compose -f db/docker-compose.yml logs "${{ env.DATABASE_CONTAINER }}" || true
+            exit 1
+          fi
 
           sleep 10
 
@@ -686,6 +694,22 @@ jobs:
           if [ -f dev-dist/camunda.pid ]; then
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
           fi
+
+      - name: Tear down database service
+        if: always()
+        run: docker compose -f db/docker-compose.yml down --remove-orphans -v || true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: c8-orchestration-cluster-api-tests-rdbms-release
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   c8-orchestration-cluster-e2e-tests:
     name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
