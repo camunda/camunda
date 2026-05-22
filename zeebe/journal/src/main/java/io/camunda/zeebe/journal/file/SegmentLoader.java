@@ -74,7 +74,7 @@ final class SegmentLoader {
     // necessary to flush the directory to ensure that the file itself is visible as an entry of
     // that directory after recovery
     try {
-      FileUtil.flushParentDirectory(segmentFile);
+      FileUtil.flushDirectory(segmentFile.getParent());
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),
@@ -105,7 +105,7 @@ final class SegmentLoader {
     // necessary to flush the directory to ensure that the file itself is visible as an entry of
     // that directory after recovery
     try {
-      FileUtil.flushParentDirectory(segmentFile);
+      FileUtil.flushDirectory(segmentFile.getParent());
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),

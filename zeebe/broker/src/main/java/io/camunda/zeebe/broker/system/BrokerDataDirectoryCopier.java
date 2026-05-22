@@ -77,7 +77,7 @@ public final class BrokerDataDirectoryCopier {
               Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
             }
 
-            FileUtil.flushParentDirectory(targetFile);
+            FileUtil.flushDirectory(targetFile.getParent());
             return FileVisitResult.CONTINUE;
           }
         });

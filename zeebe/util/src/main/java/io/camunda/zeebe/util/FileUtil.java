@@ -25,6 +25,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.agrona.SystemUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class FileUtil {
@@ -54,39 +55,18 @@ public final class FileUtil {
    * durability to sync the parent directory after creating a new file or renaming it, this is safe
    * to do as Windows (or rather NTFS) does not need this.
    *
-   * @param path the path to synchronize
+   * @param path the path to synchronize; ignored when {@code null}
    * @throws IOException can be thrown on opening and on flushing the file
    */
-  public static void flushDirectory(final Path path) throws IOException {
+  public static void flushDirectory(final @Nullable Path path) throws IOException {
     // Windows does not allow flushing a directory except under very specific conditions which are
     // not possible to produce with the standard JDK; it's also not necessary to flush a directory
     // in Windows
-    if (SystemUtil.isWindows()) {
+    if (SystemUtil.isWindows() || path == null) {
       return;
     }
 
     flush(path);
-  }
-
-  /**
-   * Flushes the parent directory, checking for the existence of the parent folder of {@param path}.
-   * Calls {@link #flushDirectory(Path)} with the parent.
-   *
-   * @param path whose parents will be flushed
-   * @throws IOException if the flush fails
-   * @throws NullPointerException if the parent does not exist (unless it's on Windows)
-   */
-  public static void flushParentDirectory(final Path path)
-      throws IOException, NullPointerException {
-    if (SystemUtil.isWindows()) {
-      return;
-    }
-    final var parent = path.getParent();
-    if (parent == null) {
-      throw new NullPointerException(
-          String.format("Expected path %s to have a parent, but it was null", path));
-    }
-    flushDirectory(parent);
   }
 
   /**
@@ -102,7 +82,7 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    flushParentDirectory(target);
+    flushDirectory(target.getParent());
   }
 
   public static void deleteFolder(final String path) throws IOException {

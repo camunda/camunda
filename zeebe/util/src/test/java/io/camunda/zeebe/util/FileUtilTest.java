@@ -130,4 +130,10 @@ final class FileUtilTest {
     // when - then
     assertThat(FileUtil.isEmpty(regularFile)).isFalse();
   }
+
+  @Test
+  void shouldIgnoreNullDirectoryWhenFlushing() {
+    // when - then
+    assertThatCode(() -> FileUtil.flushDirectory(null)).doesNotThrowAnyException();
+  }
 }
