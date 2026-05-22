@@ -52,6 +52,7 @@ public final class OpenSearchIncidentUpdateRepositoryTest {
         "listViewFullQualifiedName",
         "flowNodeAlias",
         "operationAlias",
+        "importPositionFullQualifiedName",
         client,
         Runnable::run,
         LOGGER);
