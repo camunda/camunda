@@ -37,3 +37,23 @@ body {
         roboto, oxygen, ubuntu, cantarell, fira sans, droid sans, helvetica neue,
         sans-serif !important;
 }
+
+/* SWIM simulator palette */
+:root {
+    --viz-suspect: #f57c00;
+    --viz-suspect-light: #fff3e0;
+    --viz-gossip-update: #2e7d32;
+    --viz-gossip-update-light: #e8f5e9;
+    --viz-msg-probe: #f57c00;
+    --viz-msg-sync: #1565c0;
+    --viz-gossip-exclude: #f9a825;
+}
+[data-theme='dark'] {
+    --viz-suspect: #ffb74d;
+    --viz-suspect-light: #3e2000;
+    --viz-gossip-update: #66bb6a;
+    --viz-gossip-update-light: #1b2e1b;
+    --viz-msg-probe: #ffb74d;
+    --viz-msg-sync: #42a5f5;
+    --viz-gossip-exclude: #ffe082;
+}
