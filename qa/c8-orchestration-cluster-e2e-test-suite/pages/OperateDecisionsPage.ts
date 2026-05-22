@@ -56,8 +56,8 @@ class OperateDecisionsPage {
       name: 'Clear selected item',
     });
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
-    this.evaluatedCheckbox = page.locator('label').filter({hasText: 'Evaluated'});
-    this.failedCheckbox = page.locator('label').filter({hasText: 'Failed'});
+    this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
+    this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
     this.decisionInstancesList = page.getByTestId('data-list');
   }
 
