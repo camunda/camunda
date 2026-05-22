@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -149,17 +148,16 @@ public final class MessageCorrelationCorrelateProcessor
 
     // If a start event will be triggered and a tool name was provided, propagate agent context
     // so process creation events and the CORRELATED record carry agent/tool traceability info.
-    tempCorrelatingSubscriptions
-        .getFirstMessageStartEventSubscription()
-        .ifPresent(
-            sub -> {
-              final var toolName =
-                  (String) command.getAuthorizations().get(Authorization.INBOUND_TOOL_NAME);
-              if (toolName != null && sub.startEventId() != null) {
-                session.appendAgentInfoToFollowUps(
-                    new AgentInfo().setElementId(sub.startEventId()).setToolName(toolName));
-              }
-            });
+    final var toolName = messageCorrelationRecord.getToolName();
+    if (toolName != null) {
+      tempCorrelatingSubscriptions
+          .getFirstMessageStartEventSubscription()
+          .filter(sub -> sub.startEventId() != null)
+          .ifPresent(
+              sub ->
+                  session.appendAgentInfoToFollowUps(
+                      new AgentInfo().setElementId(sub.startEventId()).setToolName(toolName)));
+    }
 
     // Now that authorization passed, write the message and correlations to state
     final var messageRecord =

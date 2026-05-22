@@ -37,6 +37,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue TOOL_NAME_KEY = new StringValue("toolName");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -53,9 +54,10 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty toolNameProp = new StringProperty(TOOL_NAME_KEY, "");
 
   public MessageCorrelationRecord() {
-    super(10);
+    super(11);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
@@ -65,7 +67,8 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(requestStreamIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(toolNameProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -75,6 +78,9 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setTenantId(record.getTenantId());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setBusinessId(record.getBusinessIdBuffer());
+    if (record.getToolName() != null) {
+      setToolName(record.getToolName());
+    }
   }
 
   @Override
@@ -199,6 +205,17 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getToolName() {
+    final var value = bufferAsString(toolNameProp.getValue());
+    return value.isEmpty() ? null : value;
+  }
+
+  public MessageCorrelationRecord setToolName(final String toolName) {
+    toolNameProp.setValue(toolName);
     return this;
   }
 }

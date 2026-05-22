@@ -53,23 +53,15 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
       final CorrelateMessageRequest correlationRequest,
       final CamundaAuthentication authentication) {
-    return correlateMessage(correlationRequest, authentication, Map.of());
-  }
-
-  public CompletableFuture<MessageCorrelationRecord> correlateMessage(
-      final CorrelateMessageRequest correlationRequest,
-      final CamundaAuthentication authentication,
-      final Map<String, Object> additionalClaims) {
-    final var brokerRequest = buildCorrelateMessageBrokerRequest(correlationRequest);
-    return sendBrokerRequest(brokerRequest, authentication, additionalClaims);
-  }
-
-  private BrokerCorrelateMessageRequest buildCorrelateMessageBrokerRequest(
-      final CorrelateMessageRequest correlationRequest) {
-    return new BrokerCorrelateMessageRequest(
-            correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
-        .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-        .setTenantId(correlationRequest.tenantId);
+    final var brokerRequest =
+        new BrokerCorrelateMessageRequest(
+                correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
+            .setVariables(getDocumentOrEmpty(correlationRequest.variables))
+            .setTenantId(correlationRequest.tenantId);
+    if (correlationRequest.toolName != null) {
+      brokerRequest.setToolName(correlationRequest.toolName);
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BrokerResponse<MessageRecord>> publishMessage(
@@ -84,7 +76,20 @@ public final class MessageServices extends ApiServices<MessageServices> {
   }
 
   public record CorrelateMessageRequest(
-      String name, String correlationKey, Map<String, Object> variables, String tenantId) {}
+      String name,
+      String correlationKey,
+      Map<String, Object> variables,
+      String tenantId,
+      @org.jspecify.annotations.Nullable String toolName) {
+
+    public CorrelateMessageRequest(
+        final String name,
+        final String correlationKey,
+        final Map<String, Object> variables,
+        final String tenantId) {
+      this(name, correlationKey, variables, tenantId, null);
+    }
+  }
 
   public record PublicationMessageRequest(
       String name,
