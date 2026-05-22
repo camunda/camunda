@@ -35,9 +35,14 @@ class OtelSdkManager {
 
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
+  private AnalyticsExporterMetadata metadata;
 
   OtelSdkManager initialize(
-      final AnalyticsExporterConfig config, final String clusterId, final int partitionId) {
+      final AnalyticsExporterConfig config,
+      final String clusterId,
+      final int partitionId,
+      final AnalyticsExporterMetadata metadata) {
+    this.metadata = metadata;
     final var resource = buildResource(clusterId, partitionId);
     final var loggerProvider = createLoggerProvider(config, resource);
 
@@ -48,10 +53,7 @@ class OtelSdkManager {
   }
 
   void logEvent(
-      final String eventName,
-      final long logPosition,
-      final long sequenceNumber,
-      final Consumer<LogRecordBuilder> builder) {
+      final String eventName, final long logPosition, final Consumer<LogRecordBuilder> builder) {
     final var record =
         otelLogger
             .logRecordBuilder()
@@ -59,7 +61,7 @@ class OtelSdkManager {
             .setSeverityText("INFO")
             .setAttribute(EVENT_NAME, eventName)
             .setAttribute(LOG_POSITION, logPosition)
-            .setAttribute(SEQUENCE_NUMBER, sequenceNumber);
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetSequenceNumber());
     builder.accept(record);
     record.emit();
   }

@@ -7,30 +7,51 @@
  */
 package io.camunda.exporter.analytics;
 
-import java.nio.ByteBuffer;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 
 /** Persisted state for the analytics exporter, stored alongside the last exported position. */
+@JsonIgnoreProperties(ignoreUnknown = true)
 final class AnalyticsExporterMetadata {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private long sequenceNumber;
+
+  /** No-arg constructor required by Jackson. */
+  AnalyticsExporterMetadata() {}
 
   AnalyticsExporterMetadata(final long sequenceNumber) {
     this.sequenceNumber = sequenceNumber;
   }
 
-  long getSequenceNumber() {
+  public long getSequenceNumber() {
     return sequenceNumber;
   }
 
-  void incrementSequenceNumber() {
-    sequenceNumber++;
+  public void setSequenceNumber(final long sequenceNumber) {
+    this.sequenceNumber = sequenceNumber;
+  }
+
+  public long incrementAndGetSequenceNumber() {
+    return ++sequenceNumber;
   }
 
   byte[] serialize() {
-    return ByteBuffer.allocate(Long.BYTES).putLong(sequenceNumber).array();
+    try {
+      return OBJECT_MAPPER.writeValueAsBytes(this);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException("Failed to serialize exporter metadata", e);
+    }
   }
 
   static AnalyticsExporterMetadata deserialize(final byte[] bytes) {
-    return new AnalyticsExporterMetadata(ByteBuffer.wrap(bytes).getLong());
+    try {
+      return OBJECT_MAPPER.readValue(bytes, AnalyticsExporterMetadata.class);
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to deserialize exporter metadata", e);
+    }
   }
 }

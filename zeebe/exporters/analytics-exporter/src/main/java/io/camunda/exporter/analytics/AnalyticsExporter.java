@@ -86,8 +86,8 @@ public class AnalyticsExporter implements Exporter {
         controller
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
-            .orElse(new AnalyticsExporterMetadata(0L));
-    otelSdkManager.initialize(config, clusterId, partitionId);
+            .orElse(new AnalyticsExporterMetadata());
+    otelSdkManager.initialize(config, clusterId, partitionId, metadata);
     LOG.info("Analytics exporter opened");
   }
 
@@ -102,7 +102,6 @@ public class AnalyticsExporter implements Exporter {
     try {
       final var handler = handlers.get(record);
       if (handler != null) {
-        metadata.incrementSequenceNumber();
         handler.accept(record);
       }
     } catch (final Exception e) {
@@ -119,7 +118,6 @@ public class AnalyticsExporter implements Exporter {
     otelSdkManager.logEvent(
         "process_instance_created",
         record.getPosition(),
-        metadata.getSequenceNumber(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
                 .setAttribute(PROCESS_VERSION, (long) value.getVersion())
