@@ -150,6 +150,7 @@ final class AgentInstanceHandlerTest {
                     .withToolCalls(toolCalls)
                     .build())
             .withTools(List.of(toolValue))
+            .withElementInstanceKeys(List.of(elementInstanceKey))
             .build();
 
     final Record<AgentInstanceRecordValue> record =
@@ -193,10 +194,38 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getToolCalls()).isEqualTo(toolCalls);
     assertThat(entity.getTools())
         .containsExactly(new AgentInstanceToolValue("search", "Search the web", "searchElement"));
-    assertThat(entity.getElementInstanceKeys()).containsExactly(elementInstanceKey);
+    assertThat(entity.getElementInstanceKeys())
+        .containsExactlyElementsOf(recordValue.getElementInstanceKeys());
     assertThat(entity.getCreationDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getLastUpdatedDate()).isEqualTo(expectedTimestamp);
     assertThat(entity.getCompletionDate()).isNull();
+  }
+
+  @Test
+  void shouldMapMultipleElementInstanceKeys() {
+    // given — agent instance associated with two element instances
+    final long firstElementInstanceKey = 200L;
+    final long secondElementInstanceKey = 201L;
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildMinimalRecordValue(100L))
+            .withElementInstanceKey(secondElementInstanceKey)
+            .withElementInstanceKeys(List.of(firstElementInstanceKey, secondElementInstanceKey))
+            .build();
+
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r -> r.withIntent(AgentInstanceIntent.UPDATED).withValue(recordValue));
+
+    final var entity = new AgentInstanceEntity().setId("100");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then — all element instance keys are propagated to the entity
+    assertThat(entity.getElementInstanceKeys())
+        .containsExactly(firstElementInstanceKey, secondElementInstanceKey);
   }
 
   @Test
