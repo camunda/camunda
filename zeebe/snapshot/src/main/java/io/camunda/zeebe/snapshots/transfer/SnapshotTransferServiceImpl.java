@@ -251,7 +251,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
 
     private @Nullable SnapshotChunk next() {
       // reader.hasNext does not involve any I/O
-      if (reader != null && reader.hasNext()) {
+      if (reader.hasNext()) {
         final var next = reader.next();
         lastChunkName = next.getChunkName();
         return next;
