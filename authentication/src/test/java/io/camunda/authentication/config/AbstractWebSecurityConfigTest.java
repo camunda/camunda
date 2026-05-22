@@ -68,7 +68,7 @@ public class AbstractWebSecurityConfigTest {
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   // Basic-auth and OIDC bean configurations both depend on MembershipPort. Slice tests don't
   // wire a real implementation, so provide a mock that satisfies the dependency.
-  @MockitoBean private io.camunda.security.core.port.out.MembershipPort membershipPort;
+  @MockitoBean private io.camunda.security.api.model.auth.MembershipPort membershipPort;
 
   /**
    * Different types of endpoints that the security config handles specifically

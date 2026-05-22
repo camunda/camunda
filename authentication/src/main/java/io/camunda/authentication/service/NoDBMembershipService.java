@@ -7,20 +7,18 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.api.model.auth.MembershipProvider;
+import io.camunda.security.api.model.auth.MembershipPort;
+import io.camunda.security.api.model.auth.MembershipQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
-import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /**
  * Host-side {@link MembershipPort} for deployments without secondary storage. Only OIDC
- * groups-claim extraction is available — there is no DB to query for roles, tenants, or mapping
- * rules, so those always resolve to an empty list. The OIDC groups-claim parse is in-memory and
- * eager (fails fast on malformed input).
+ * groups-claim extraction is available; roles, tenants, and mapping rules always return empty since
+ * no DB is available.
  */
 @Service
 @ConditionalOnSecondaryStorageDisabled
@@ -38,38 +36,26 @@ public class NoDBMembershipService implements MembershipPort {
   }
 
   @Override
-  public MembershipProvider createProvider(
-      final Map<String, Object> tokenClaims,
-      final String principalId,
-      final PrincipalType principalType) {
-    final List<String> extracted =
-        isGroupsClaimConfigured ? oidcGroupsExtractor.extract(tokenClaims) : List.of();
-    final List<String> groups =
-        extracted != null ? extracted.stream().distinct().toList() : List.of();
-    return new StaticProvider(groups);
+  public List<String> mappingRuleIds(final MembershipQuery query) {
+    return List.of();
   }
 
   @Override
-  public MembershipProvider createProviderForUser(final String username) {
-    // No secondary storage — BASIC flow has no DB-backed lookups and no claims-based groups.
-    return new StaticProvider(List.of());
+  public List<String> groupIds(final MembershipQuery query) {
+    if (!isGroupsClaimConfigured) {
+      return List.of();
+    }
+    final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
+    return extracted != null ? extracted.stream().distinct().toList() : List.of();
   }
 
-  /** Returns the eagerly-resolved groups; everything else is empty. */
-  private record StaticProvider(List<String> groupIds) implements MembershipProvider {
-    @Override
-    public List<String> roleIds() {
-      return List.of();
-    }
+  @Override
+  public List<String> roleIds(final MembershipQuery query) {
+    return List.of();
+  }
 
-    @Override
-    public List<String> tenantIds() {
-      return List.of();
-    }
-
-    @Override
-    public List<String> mappingRuleIds() {
-      return List.of();
-    }
+  @Override
+  public List<String> tenantIds(final MembershipQuery query) {
+    return List.of();
   }
 }
