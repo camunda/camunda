@@ -150,6 +150,7 @@ public final class AgentInstanceCreateProcessor
         new AgentInstanceRecord()
             .setAgentInstanceKey(agentInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
+            .setElementInstanceKeys(List.of(elementInstanceKey))
             .setElementId(elementInstanceValue.getElementId())
             .setBpmnProcessId(elementInstanceValue.getBpmnProcessId())
             .setProcessInstanceKey(elementInstanceValue.getProcessInstanceKey())

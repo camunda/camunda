@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,7 @@ public class AgentInstanceCreatedApplierTest {
         new AgentInstanceRecord()
             .setAgentInstanceKey(agentInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
+            .setElementInstanceKeys(List.of(elementInstanceKey))
             .setElementId("agent-task")
             .setProcessInstanceKey(7L)
             .setProcessDefinitionKey(3L)
@@ -64,6 +66,7 @@ public class AgentInstanceCreatedApplierTest {
     assertThat(stored).isNotNull();
     assertThat(stored.getAgentInstanceKey()).isEqualTo(agentInstanceKey);
     assertThat(stored.getElementInstanceKey()).isEqualTo(elementInstanceKey);
+    assertThat(stored.getElementInstanceKeys()).containsExactly(elementInstanceKey);
     assertThat(stored.getElementId()).isEqualTo("agent-task");
     assertThat(stored.getProcessInstanceKey()).isEqualTo(7L);
     assertThat(stored.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
