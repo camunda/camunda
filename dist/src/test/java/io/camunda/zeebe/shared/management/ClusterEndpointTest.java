@@ -127,8 +127,7 @@ final class ClusterEndpointTest {
         new ClusterEndpoint(sender).add(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    assertRejected(response, errorFragment);
     verify(sender, never()).addMembers(any());
   }
 
@@ -162,8 +161,7 @@ final class ClusterEndpointTest {
         new ClusterEndpoint(sender).remove(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    assertRejected(response, errorFragment);
     verify(sender, never()).removeMembers(any());
   }
 
@@ -200,9 +198,7 @@ final class ClusterEndpointTest {
             ClusterEndpoint.Resource.brokers, List.of(0, 1, 2), false, false, Optional.empty());
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
+    assertRejected(response, "bare node ID", "zone-aware");
     verify(requestSender, never()).scaleMembers(any());
     verify(requestSender, never()).forceScaleDown(any());
   }
@@ -244,8 +240,7 @@ final class ClusterEndpointTest {
         new ClusterEndpoint(sender).updateClusterConfiguration(false, false, request);
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    assertRejected(response, errorFragment);
     verify(sender, never()).patchCluster(any());
   }
 
@@ -340,9 +335,7 @@ final class ClusterEndpointTest {
     final var response = endpoint.updateClusterConfiguration(false, true, request);
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
+    assertRejected(response, "bare node ID", "zone-aware");
     verify(requestSender, never()).forceRemoveBrokers(any());
   }
 
@@ -382,8 +375,7 @@ final class ClusterEndpointTest {
     final var response = operation.apply(new ClusterEndpoint(sender));
 
     // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    assertThat(((Error) response.getBody()).getMessage()).contains("zone-aware");
+    assertRejected(response, "zone-aware");
     verifyNeverCalled.accept(sender);
   }
 
@@ -519,6 +511,12 @@ final class ClusterEndpointTest {
     when(requestSender.getTopology())
         .thenReturn(CompletableFuture.completedFuture(Either.right(config)));
     return requestSender;
+  }
+
+  private static void assertRejected(
+      final ResponseEntity<?> response, final String... errorFragments) {
+    assertThat(response.getStatusCode().value()).isEqualTo(400);
+    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragments);
   }
 
   private static ClusterConfigurationChangeResponse successResponse() {
