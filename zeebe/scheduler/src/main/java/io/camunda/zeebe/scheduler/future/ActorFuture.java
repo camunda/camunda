@@ -326,4 +326,13 @@ public interface ActorFuture<V extends @Nullable Object>
   default ActorFuture<Void> thenRun(final Runnable next) {
     return thenAccept(ignored -> next.run());
   }
+
+  /**
+   * Widens this future's value type to allow null. Safe because consumers only read the value, they
+   * never write to it, making the covariant cast sound in practice.
+   */
+  @SuppressWarnings("unchecked")
+  default ActorFuture<@Nullable V> asNullable() {
+    return (ActorFuture<@Nullable V>) this;
+  }
 }
