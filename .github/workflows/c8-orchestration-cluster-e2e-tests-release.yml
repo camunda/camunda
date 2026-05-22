@@ -53,7 +53,21 @@ jobs:
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Detect base branch and verify release tag
+      # Resolves two outputs:
+      #   * `base`  — stable/x.y or main, used by the rest of the workflow
+      #               for routing decisions (which test directories, V1/V2
+      #               matrix, RDBMS gating, etc).
+      #   * `ref`   — fully-qualified git ref used by every source-code
+      #               checkout. Prefers refs/heads/release-<version> if the
+      #               branch exists (typical for a fresh or in-flight
+      #               release, which may also carry post-tag fixes the team
+      #               wants tested), otherwise falls back to refs/tags/
+      #               <version>. Fails fast if neither exists.
+      #
+      # Note: we deliberately do NOT require the tag to exist when the
+      # release branch is present, so this workflow can be used to test
+      # an in-flight release (pre-tag).
+      - name: Detect base branch and resolve source ref
         id: detect-base
         run: |
           release_version="${{ steps.get-release.outputs.release_version }}"
