@@ -76,8 +76,6 @@ jobs:
           # Extract major.minor version
           major_minor=$(echo "$release_version" | cut -d. -f1-2)
 
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main
-
           # Determine base branch based on version. `base` drives routing
           # decisions (which test directories to run, NON_STANDALONE for
           # 8.6/8.7, RDBMS matrix gating, etc.). It is *not* used to
