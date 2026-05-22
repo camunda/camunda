@@ -83,6 +83,88 @@ describe('VariablesTab document variables', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should render an enabled preview button for image documents', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myImage',
+          value: JSON.stringify(
+            makeDocumentRef({
+              metadata: {
+                fileName: 'photo.png',
+                contentType: 'image/png',
+              },
+            }),
+          ),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    const variableRow = within(screen.getByTestId('variable-myImage'));
+    const previewButton = variableRow.getByLabelText(
+      'Preview document for variable myImage',
+    );
+    expect(previewButton).toBeEnabled();
+  });
+
+  it('should render a disabled preview button for unsupported document types', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocument',
+          value: JSON.stringify(
+            makeDocumentRef({
+              metadata: {
+                fileName: 'document.docx',
+                contentType: 'application/docx',
+              },
+            }),
+          ),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    const variableRow = within(screen.getByTestId('variable-myDocument'));
+    const previewButton = variableRow.getByLabelText(
+      'Preview document for variable myDocument',
+    );
+    expect(previewButton).toBeDisabled();
+  });
+
+  it('should not render a preview button for variables with multiple documents', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocumentList',
+          value: JSON.stringify([
+            makeDocumentRef({documentId: 'doc-1'}),
+            makeDocumentRef({documentId: 'doc-2'}),
+          ]),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    const variableRow = within(screen.getByTestId('variable-myDocumentList'));
+    expect(
+      variableRow.queryByLabelText(/preview document for variable/i),
+    ).not.toBeInTheDocument();
+  });
+
   it('should not render a download button for regular variables', async () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 

@@ -39,6 +39,7 @@ describe('parseDocumentVariable', () => {
       document: {
         link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
+        type: 'image',
         size: 109748,
       },
     });
@@ -53,6 +54,7 @@ describe('parseDocumentVariable', () => {
       document: {
         link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
+        type: 'image',
         size: 109748,
       },
     });
@@ -62,15 +64,30 @@ describe('parseDocumentVariable', () => {
     const value = JSON.stringify([
       makeDocRef({
         documentId: 'doc-123',
-        metadata: {...makeDocRef().metadata, fileName: 'a.pdf', size: 1000},
+        metadata: {
+          ...makeDocRef().metadata,
+          fileName: 'a.pdf',
+          contentType: 'application/pdf',
+          size: 1000,
+        },
       }),
       makeDocRef({
         documentId: 'doc-124',
-        metadata: {...makeDocRef().metadata, fileName: 'b.json', size: 500},
+        metadata: {
+          ...makeDocRef().metadata,
+          fileName: 'b.json',
+          contentType: 'application/json',
+          size: 500,
+        },
       }),
       makeDocRef({
         documentId: 'doc-125',
-        metadata: {...makeDocRef().metadata, fileName: 'c.txt', size: 200},
+        metadata: {
+          ...makeDocRef().metadata,
+          fileName: 'c.txt',
+          contentType: 'text/plain',
+          size: 200,
+        },
       }),
     ]);
     const result = parseDocumentVariable(value, false);
@@ -81,16 +98,19 @@ describe('parseDocumentVariable', () => {
         {
           link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'a.pdf',
+          type: 'unknown',
           size: 1000,
         },
         {
           link: '/v2/documents/doc-124?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'b.json',
+          type: 'unknown',
           size: 500,
         },
         {
           link: '/v2/documents/doc-125?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'c.txt',
+          type: 'unknown',
           size: 200,
         },
       ],
@@ -112,9 +132,33 @@ describe('parseDocumentVariable', () => {
       document: {
         link: '/some-context/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
+        type: 'image',
         size: 109748,
       },
     });
+  });
+
+  it('should parse a image document type for supported image formats', () => {
+    for (const format of [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ]) {
+      const value = JSON.stringify(
+        makeDocRef({
+          metadata: {...makeDocRef().metadata, contentType: format},
+        }),
+      );
+      const result = parseDocumentVariable(value, false);
+
+      expect(result).toEqual({
+        type: 'single',
+        document: expect.objectContaining({
+          type: 'image',
+        }),
+      });
+    }
   });
 
   it('should return null for a plain string variable', () => {
@@ -217,6 +261,7 @@ describe('parseDocumentVariable', () => {
       document: {
         link: '/v2/documents/doc-no-meta?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'doc-no-meta',
+        type: 'unknown',
         size: undefined,
       },
     });

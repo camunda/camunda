@@ -17,6 +17,7 @@ describe('<DocumentValueCell />', () => {
       document: {
         link: '/v2/documents/doc',
         fileName: 'photo.png',
+        type: 'image',
         size: 112640,
       },
     };
@@ -33,6 +34,7 @@ describe('<DocumentValueCell />', () => {
       document: {
         link: '/v2/documents/doc',
         fileName: 'report.pdf',
+        type: 'unknown',
         size: undefined,
       },
     };
@@ -47,7 +49,12 @@ describe('<DocumentValueCell />', () => {
     const longName = 'a'.repeat(40) + 'original-middle' + 'z'.repeat(40);
     const result: DocumentParseResult = {
       type: 'single',
-      document: {link: '/v2/documents/doc', fileName: longName, size: 1000},
+      document: {
+        link: '/v2/documents/doc',
+        fileName: longName,
+        type: 'unknown',
+        size: 1000,
+      },
     };
 
     render(<DocumentValueCell result={result} />);
@@ -61,9 +68,24 @@ describe('<DocumentValueCell />', () => {
     const result: DocumentParseResult = {
       type: 'list',
       documents: [
-        {link: '/v2/documents/doc-1', fileName: 'a.pdf', size: 1000},
-        {link: '/v2/documents/doc-2', fileName: 'b.pdf', size: 2000},
-        {link: '/v2/documents/doc-3', fileName: 'c.pdf', size: 3000},
+        {
+          link: '/v2/documents/doc-1',
+          fileName: 'a.pdf',
+          type: 'unknown',
+          size: 1000,
+        },
+        {
+          link: '/v2/documents/doc-2',
+          fileName: 'b.pdf',
+          type: 'unknown',
+          size: 2000,
+        },
+        {
+          link: '/v2/documents/doc-3',
+          fileName: 'c.pdf',
+          type: 'unknown',
+          size: 3000,
+        },
       ],
       isLowerBound: false,
     };
@@ -77,8 +99,18 @@ describe('<DocumentValueCell />', () => {
     const result: DocumentParseResult = {
       type: 'list',
       documents: [
-        {link: '/v2/documents/doc-1', fileName: 'a.pdf', size: 1000},
-        {link: '/v2/documents/doc-2', fileName: 'b.pdf', size: 2000},
+        {
+          link: '/v2/documents/doc-1',
+          fileName: 'a.pdf',
+          type: 'unknown',
+          size: 1000,
+        },
+        {
+          link: '/v2/documents/doc-2',
+          fileName: 'b.pdf',
+          type: 'unknown',
+          size: 2000,
+        },
       ],
       isLowerBound: true,
     };
@@ -94,6 +126,7 @@ describe('<DocumentValueCell />', () => {
       document: {
         link: '/v2/documents/doc',
         fileName: 'my-important-file.pdf',
+        type: 'unknown',
         size: 5000,
       },
     };
