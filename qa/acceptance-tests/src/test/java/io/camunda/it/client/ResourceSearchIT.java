@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Resource;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
@@ -26,7 +28,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest
+@MultiDbTest(DatabaseType.RDBMS_MSSQL)
 class ResourceSearchIT {
 
   private static CamundaClient camundaClient;
@@ -43,6 +45,7 @@ class ResourceSearchIT {
 
   @BeforeAll
   static void beforeAll() {
+    RESOURCES.clear();
     RESOURCES.add(
         camundaClient
             .newDeployResourceCommand()
@@ -60,7 +63,7 @@ class ResourceSearchIT {
     RESOURCES.add(
         camundaClient
             .newDeployResourceCommand()
-            .addResourceFromClasspath("rpa/test-rpa-2.rpa")
+            .addResourceFromClasspath("rpa/test-rpa2.rpa")
             .tenantId("tenantB")
             .execute()
             .getResource()
@@ -68,7 +71,7 @@ class ResourceSearchIT {
     RESOURCES.add(
         camundaClient
             .newDeployResourceCommand()
-            .addResourceFromClasspath("rpa/test-rpa-21.rpa")
+            .addResourceFromClasspath("rpa/test-rpa21.rpa")
             .tenantId("tenantB")
             .execute()
             .getResource()
@@ -225,21 +228,7 @@ class ResourceSearchIT {
     final var resultDesc =
         camundaClient.newResourceSearchRequest().sort(s -> s.resourceName().desc()).send().join();
 
-    // then
-    assertThat(resultAsc.items())
-        .extracting(Resource::getResourceName)
-        .containsExactlyElementsOf(
-            RESOURCES.stream()
-                .map(Resource::getResourceName)
-                .sorted(Comparator.naturalOrder())
-                .toList());
-    assertThat(resultDesc.items())
-        .extracting(Resource::getResourceName)
-        .containsExactlyElementsOf(
-            RESOURCES.stream()
-                .map(Resource::getResourceName)
-                .sorted(Comparator.reverseOrder())
-                .toList());
+    TestHelper.assertSortedFlexible(resultAsc, resultDesc, Resource::getResourceName);
   }
 
   @Test
