@@ -8,6 +8,8 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.Agent;
@@ -38,6 +40,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   @Override
+  @JsonInclude(Include.NON_NULL)
   public String getToolName() {
     final var value = BufferUtil.bufferAsString(toolNameProp.getValue());
     return value.isEmpty() ? null : value;
