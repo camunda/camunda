@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
+import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcesses;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -242,6 +244,117 @@ public class DeleteProcessDefinitionHistoryIT {
               assertThat(exception.code()).isEqualTo(404);
               assertThat(exception.details().getDetail()).containsIgnoringCase("NOT_FOUND");
             });
+  }
+
+  @Test
+  void shouldDeleteStartEventSubscriptionsWhenDeletingProcessDefinitionWithHistory() {
+    // given - a deployed process with a message start event (no instances started)
+    final var processId = Strings.newRandomValidBpmnId();
+    final var messageName = "start-" + processId;
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .message(m -> m.name(messageName).id("startMessage"))
+                .endEvent()
+                .done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // wait for the start event subscription to be indexed
+    waitForMessageSubscriptions(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(processDefinitionKey)
+                .messageSubscriptionType(MessageSubscriptionType.START_EVENT),
+        1);
+
+    // when - delete the process definition with history
+    camundaClient.newDeleteResourceCommand(processDefinitionKey).deleteHistory(true).send().join();
+
+    // then - the process definition and its start event subscriptions are deleted
+    assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
+    Awaitility.await("Start event subscriptions should be deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var subscriptions =
+                  camundaClient
+                      .newMessageSubscriptionSearchRequest()
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(subscriptions).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldNotDeleteStartEventSubscriptionsWhenDeletingProcessInstanceHistory() {
+    // given - a process with a message start event that has created a process instance
+    final var processId = Strings.newRandomValidBpmnId();
+    final var messageName = "start-" + processId;
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .message(m -> m.name(messageName).id("startMessage"))
+                .endEvent()
+                .done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+
+    // wait for the start event subscription to appear
+    waitForMessageSubscriptions(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(processDefinitionKey)
+                .messageSubscriptionType(MessageSubscriptionType.START_EVENT),
+        1);
+
+    // trigger the start event to create a process instance and wait for it to complete
+    camundaClient
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey("")
+        .send()
+        .join();
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED),
+        1);
+    final var piKey =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId(processId))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessInstanceKey();
+
+    // when - delete the process instance history
+    camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
+    assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
+
+    // then - start event subscription should still exist after PI history deletion
+    final var remainingSubscriptions =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKey)
+                        .messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+            .send()
+            .join()
+            .items();
+    assertThat(remainingSubscriptions).hasSize(1);
   }
 
   /** Asserts that a process definition has been deleted from secondary storage. */
