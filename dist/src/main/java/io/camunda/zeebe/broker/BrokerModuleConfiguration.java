@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -142,7 +143,15 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             searchClientsProxy,
             new BrokerRequestAuthorizationConverter(securityConfiguration),
             nodeIdProvider,
-            List.copyOf(physicalTenantResolver.getAll().keySet()));
+            // PoC trade-off: only the default physical tenant participates in broker
+            // partitioning. Per-PT broker engines each instantiate the single rdbms exporter
+            // against the same H2 EXPORTER_POSITION row and race ("expected -1 but found N"
+            // mismatch on every flush) because RdbmsExporterConfiguration wires the exporter
+            // as a single bean against the default PT's data source. Making the exporter
+            // PT-aware is a code change beyond PoC scope; non-default PTs are present in the
+            // security-chain registry (so /physical-tenant/<id>/... routing works) but absent
+            // from the broker, and the default engine handles all event production.
+            List.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID));
     springBrokerBridge.registerShutdownHelper(
         (errorCode, reason) -> shutdownHelper.initiateShutdown(errorCode, reason));
     broker =
