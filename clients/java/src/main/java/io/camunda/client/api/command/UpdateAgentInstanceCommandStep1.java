@@ -35,8 +35,10 @@ import java.util.List;
 public interface UpdateAgentInstanceCommandStep1 {
 
   /**
-   * Sets the element instance key associated with this agent instance. Used to validate that the
-   * update targets the correct process instance.
+   * Sets the currently-active element instance for this agent instance. The engine uses this both
+   * for ownership/equality validation and — when the supplied key differs from the previous
+   * association (re-entry of an ad-hoc sub-process or AI Agent task) — to append the key to the
+   * accumulated list of associated element instances.
    *
    * @param elementInstanceKey the key of the element instance. Must be greater than 0.
    * @return the next step of the builder
