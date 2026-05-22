@@ -9,9 +9,13 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.AGENT_INSTANCES;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static java.util.stream.Collectors.toSet;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -111,6 +115,68 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
       searchResponse = esClient.search(searchRequest, Object.class);
     } catch (final IOException e) {
       final String reason = "Was not able to fetch non-onboarded process definition keys.";
+      LOG.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    final StringTermsAggregate definitionKeyTerms =
+        searchResponse.aggregations().get(defKeyAgg).sterms();
+    return definitionKeyTerms.buckets().array().stream()
+        .map(e -> e.key().stringValue())
+        .collect(toSet());
+  }
+
+  @Override
+  public Set<String> getProcessDefinitionsWithAgentRuns(final List<String> tenantIds) {
+    final String defKeyAgg = "defKeyAgg";
+
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, PROCESS_INSTANCE_MULTI_ALIAS)
+                    .query(
+                        q ->
+                            q.bool(
+                                b -> {
+                                  b.filter(
+                                      f ->
+                                          f.nested(
+                                              n ->
+                                                  n.path(AGENT_INSTANCES)
+                                                      .query(qq -> qq.matchAll(m -> m))
+                                                      .scoreMode(
+                                                          co.elastic.clients.elasticsearch._types
+                                                              .query_dsl.ChildScoreMode.None)));
+                                  if (tenantIds != null && !tenantIds.isEmpty()) {
+                                    b.filter(
+                                        f ->
+                                            f.terms(
+                                                t ->
+                                                    t.field(TENANT_ID)
+                                                        .terms(
+                                                            tt ->
+                                                                tt.value(
+                                                                    tenantIds.stream()
+                                                                        .map(
+                                                                            co.elastic.clients
+                                                                                    .elasticsearch
+                                                                                    ._types
+                                                                                    .FieldValue
+                                                                                ::of)
+                                                                        .toList()))));
+                                  }
+                                  return b;
+                                }))
+                    .aggregations(
+                        defKeyAgg,
+                        Aggregation.of(a -> a.terms(t -> t.field(PROCESS_DEFINITION_KEY))))
+                    .source(o -> o.fetch(false))
+                    .size(0));
+
+    final SearchResponse<?> searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, Object.class);
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch process definition keys with agent runs.";
       LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

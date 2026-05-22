@@ -27,5 +27,7 @@ public interface ProcessDefinitionReader {
 
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
 
+  Set<String> getProcessDefinitionsWithAgentRuns(List<String> tenantIds);
+
   DefinitionReader getDefinitionReader();
 }
