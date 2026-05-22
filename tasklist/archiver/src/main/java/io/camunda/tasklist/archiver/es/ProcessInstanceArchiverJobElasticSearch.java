@@ -96,14 +96,13 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
               FlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
               archiveBatch.getIds());
 
-      final var deleteProcessInstanceFuture =
-          archiverUtil.deleteDocuments(
-              processInstanceIndex.getFullQualifiedName(),
-              ProcessInstanceIndex.ID,
-              archiveBatch.getIds());
-
-      CompletableFuture.allOf(
-              deleteVariablesFuture, deleteFlowNodesFuture, deleteProcessInstanceFuture)
+      CompletableFuture.allOf(deleteVariablesFuture, deleteFlowNodesFuture)
+          .thenCompose(
+              (v) ->
+                  archiverUtil.deleteDocuments(
+                      processInstanceIndex.getFullQualifiedName(),
+                      ProcessInstanceIndex.ID,
+                      archiveBatch.getIds()))
           .thenAccept(
               (v) ->
                   archiveBatchFuture.complete(
