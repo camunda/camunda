@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,9 +38,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.ResponseEntity;
 
 final class ClusterEndpointTest {
 
@@ -90,12 +99,7 @@ final class ClusterEndpointTest {
   @Test
   void shouldDetectZoneAwareCluster() {
     // given
-    final var config =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("zone-a", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
+    final var config = zoneAwareConfiguration();
 
     // when - then
     assertThat(ClusterEndpoint.isZoneAware(config)).isTrue();
@@ -104,12 +108,7 @@ final class ClusterEndpointTest {
   @Test
   void shouldDetectNonZoneAwareCluster() {
     // given
-    final var config =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
+    final var config = nonZoneAwareConfiguration();
 
     // when - then
     assertThat(ClusterEndpoint.isZoneAware(config)).isFalse();
@@ -117,136 +116,74 @@ final class ClusterEndpointTest {
 
   // --- POST /brokers/{id} (add broker) ---
 
-  @Test
-  void shouldRejectAddBrokerWithBareIntegerWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-
+  @ParameterizedTest
+  @MethodSource("invalidBrokerIdCases")
+  void shouldRejectAddBrokerWithInvalidId(
+      final ClusterConfigurationManagementRequestSender sender,
+      final String id,
+      final String errorFragment) {
     // when
-    final var response = endpoint.add(ClusterEndpoint.Resource.brokers, "0", false);
+    final var response =
+        new ClusterEndpoint(sender).add(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
-    verify(requestSender, never()).addMembers(any());
+    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    verify(sender, never()).addMembers(any());
   }
 
-  @Test
-  void shouldAllowAddBrokerWithIntegerIdWhenClusterIsNotZoneAware() {
+  @ParameterizedTest
+  @MethodSource("validBrokerIdCases")
+  void shouldAllowAddBrokerWithValidId(
+      final ClusterConfigurationManagementRequestSender sender, final String id) {
     // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.addMembers(any()))
+    when(sender.addMembers(any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
 
     // when
-    final var response = endpoint.add(ClusterEndpoint.Resource.brokers, "0", false);
+    final var response =
+        new ClusterEndpoint(sender).add(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).addMembers(any());
-  }
-
-  @Test
-  void shouldAllowAddBrokerWithCompositeIdWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    when(requestSender.addMembers(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response = endpoint.add(ClusterEndpoint.Resource.brokers, "zone-a/0", false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).addMembers(any());
-  }
-
-  @Test
-  void shouldRejectAddBrokerWithCompositeIdWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response = endpoint.add(ClusterEndpoint.Resource.brokers, "zone-a/0", false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("not zone-aware").contains("composite member ID");
-    verify(requestSender, never()).addMembers(any());
+    verify(sender).addMembers(any());
   }
 
   // --- DELETE /brokers/{id} (remove broker) ---
 
-  @Test
-  void shouldRejectRemoveBrokerWithBareIntegerWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-
+  @ParameterizedTest
+  @MethodSource("invalidBrokerIdCases")
+  void shouldRejectRemoveBrokerWithInvalidId(
+      final ClusterConfigurationManagementRequestSender sender,
+      final String id,
+      final String errorFragment) {
     // when
-    final var response = endpoint.remove(ClusterEndpoint.Resource.brokers, "0", false);
+    final var response =
+        new ClusterEndpoint(sender).remove(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
-    verify(requestSender, never()).removeMembers(any());
+    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    verify(sender, never()).removeMembers(any());
   }
 
-  @Test
-  void shouldRejectRemoveBrokerWithCompositeIdWhenClusterIsNotZoneAware() {
+  @ParameterizedTest
+  @MethodSource("validBrokerIdCases")
+  void shouldAllowRemoveBrokerWithValidId(
+      final ClusterConfigurationManagementRequestSender sender, final String id) {
     // given
-    final var requestSender = mockNonZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response = endpoint.remove(ClusterEndpoint.Resource.brokers, "zone-a/0", false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("not zone-aware").contains("composite member ID");
-    verify(requestSender, never()).removeMembers(any());
-  }
-
-  @Test
-  void shouldAllowRemoveBrokerWithBareIntegerWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.removeMembers(any()))
+    when(sender.removeMembers(any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
 
     // when
-    final var response = endpoint.remove(ClusterEndpoint.Resource.brokers, "0", false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).removeMembers(any());
-  }
-
-  @Test
-  void shouldAllowRemoveBrokerWithCompositeIdWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    when(requestSender.removeMembers(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response = endpoint.remove(ClusterEndpoint.Resource.brokers, "zone-a/0", false);
+    final var response =
+        new ClusterEndpoint(sender).remove(ClusterEndpoint.Resource.brokers, id, false);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(202);
     final var captor = ArgumentCaptor.forClass(RemoveMembersRequest.class);
-    verify(requestSender).removeMembers(captor.capture());
-    assertThat(captor.getValue().members()).containsExactly(MemberId.from("zone-a/0"));
+    verify(sender).removeMembers(captor.capture());
+    assertThat(captor.getValue().members()).containsExactly(MemberId.from(id));
   }
 
   // --- POST /brokers (scale) ---
@@ -254,7 +191,7 @@ final class ClusterEndpointTest {
   @Test
   void shouldRejectScaleBrokersWithIntegersWhenClusterIsZoneAware() {
     // given
-    final var requestSender = mockZoneAwareTopology();
+    final var requestSender = mockTopology(zoneAwareConfiguration());
     final var endpoint = new ClusterEndpoint(requestSender);
 
     // when
@@ -270,184 +207,122 @@ final class ClusterEndpointTest {
     verify(requestSender, never()).forceScaleDown(any());
   }
 
-  @Test
-  void shouldAllowScaleBrokersWithIntegersWhenClusterIsNotZoneAware() {
+  @ParameterizedTest
+  @MethodSource("validScaleBrokerIdCases")
+  void shouldAllowScaleBrokersWithValidIds(
+      final ClusterConfigurationManagementRequestSender sender, final List<Object> ids) {
     // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.scaleMembers(any()))
+    when(sender.scaleMembers(any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
 
     // when
     final var response =
-        endpoint.scale(
-            ClusterEndpoint.Resource.brokers, List.of(0, 1, 2), false, false, Optional.empty());
+        new ClusterEndpoint(sender)
+            .scale(ClusterEndpoint.Resource.brokers, ids, false, false, Optional.empty());
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).scaleMembers(any());
+    verify(sender).scaleMembers(any());
   }
 
-  @Test
-  void shouldAllowScaleBrokersWithCompositeIdsWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    when(requestSender.scaleMembers(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response =
-        endpoint.scale(
-            ClusterEndpoint.Resource.brokers,
-            List.of("zone-a/0", "zone-b/1"),
-            false,
-            false,
-            Optional.empty());
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).scaleMembers(any());
+  static Stream<Arguments> validScaleBrokerIdCases() {
+    return Stream.of(
+        arguments(mockTopology(nonZoneAwareConfiguration()), List.of(0, 1, 2)),
+        arguments(mockTopology(zoneAwareConfiguration()), List.of("zone-a/0", "zone-b/1")));
   }
 
   // --- PATCH / (patch cluster with add/remove) ---
 
-  @Test
-  void shouldRejectPatchAddBrokersWithBareIntegerStringWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .add(List.of(new BrokerId.String("0"), new BrokerId.String("1"))));
-
+  @ParameterizedTest
+  @MethodSource("patchClusterRejectionCases")
+  void shouldRejectPatchWithInvalidBrokerId(
+      final ClusterConfigurationManagementRequestSender sender,
+      final ClusterConfigPatchRequest request,
+      final String errorFragment) {
     // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
+    final var response =
+        new ClusterEndpoint(sender).updateClusterConfiguration(false, false, request);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
-    verify(requestSender, never()).patchCluster(any());
+    assertThat(((Error) response.getBody()).getMessage()).contains(errorFragment);
+    verify(sender, never()).patchCluster(any());
   }
 
-  @Test
-  void shouldRejectPatchRemoveBrokersWithCompositeIdWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .remove(List.of(new BrokerId.String("zone-a/0"))));
-
-    // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("not zone-aware").contains("composite member ID");
-    verify(requestSender, never()).patchCluster(any());
+  static Stream<Arguments> patchClusterRejectionCases() {
+    return Stream.of(
+        arguments(
+            mockTopology(zoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .add(List.of(BrokerId.of("0"), BrokerId.of("1")))),
+            "bare node ID"),
+        arguments(
+            mockTopology(nonZoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .remove(List.of(BrokerId.of("zone-a/0")))),
+            "not zone-aware"),
+        arguments(
+            mockTopology(zoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .add(List.of(BrokerId.of(0), BrokerId.of(1)))),
+            "bare node ID"));
   }
 
-  @Test
-  void shouldAllowPatchAddBrokersWithCompositeIdWhenClusterIsZoneAware() {
+  @ParameterizedTest
+  @MethodSource("patchClusterAllowCases")
+  void shouldAllowPatchWithValidBrokerId(
+      final ClusterConfigurationManagementRequestSender sender,
+      final ClusterConfigPatchRequest request,
+      final Function<ClusterPatchRequest, Set<MemberId>> memberExtractor,
+      final Set<MemberId> expectedMembers) {
     // given
-    final var requestSender = mockZoneAwareTopology();
-    when(requestSender.patchCluster(any()))
+    when(sender.patchCluster(any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .add(
-                        List.of(new BrokerId.String("zone-a/2"), new BrokerId.String("zone-b/3"))));
 
     // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
+    final var response =
+        new ClusterEndpoint(sender).updateClusterConfiguration(false, false, request);
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(202);
     final var captor = ArgumentCaptor.forClass(ClusterPatchRequest.class);
-    verify(requestSender).patchCluster(captor.capture());
-    assertThat(captor.getValue().membersToAdd())
-        .containsExactlyInAnyOrder(MemberId.from("zone-a", 2), MemberId.from("zone-b", 3));
+    verify(sender).patchCluster(captor.capture());
+    assertThat(memberExtractor.apply(captor.getValue()))
+        .containsExactlyInAnyOrder(expectedMembers.toArray(new MemberId[0]));
   }
 
-  @Test
-  void shouldAllowPatchRemoveBrokersWithBareIntegerStringWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.patchCluster(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .remove(List.of(new BrokerId.String("0"), new BrokerId.String("1"))));
-
-    // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    final var captor = ArgumentCaptor.forClass(ClusterPatchRequest.class);
-    verify(requestSender).patchCluster(captor.capture());
-    assertThat(captor.getValue().membersToRemove())
-        .containsExactlyInAnyOrder(MemberId.from("0"), MemberId.from("1"));
-  }
-
-  // --- Backward compatibility: integer values in PATCH add/remove ---
-
-  @Test
-  void shouldAcceptIntegersInPatchAddBrokersWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.patchCluster(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .add(List.of(new BrokerId.Integer(0), new BrokerId.Integer(1))));
-
-    // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    final var captor = ArgumentCaptor.forClass(ClusterPatchRequest.class);
-    verify(requestSender).patchCluster(captor.capture());
-    assertThat(captor.getValue().membersToAdd())
-        .containsExactlyInAnyOrder(MemberId.from("0"), MemberId.from("1"));
-  }
-
-  @Test
-  void shouldRejectIntegersInPatchAddBrokersWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-    final var request =
-        new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .add(List.of(new BrokerId.Integer(0), new BrokerId.Integer(1))));
-
-    // when
-    final var response = endpoint.updateClusterConfiguration(false, false, request);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("bare node ID").contains("zone-aware");
-    verify(requestSender, never()).patchCluster(any());
+  static Stream<Arguments> patchClusterAllowCases() {
+    return Stream.of(
+        arguments(
+            mockTopology(zoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .add(List.of(BrokerId.of("zone-a/2"), BrokerId.of("zone-b/3")))),
+            (Function<ClusterPatchRequest, Set<MemberId>>) ClusterPatchRequest::membersToAdd,
+            Set.of(MemberId.from("zone-a", 2), MemberId.from("zone-b", 3))),
+        arguments(
+            mockTopology(nonZoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .remove(List.of(BrokerId.of("0"), BrokerId.of("1")))),
+            (Function<ClusterPatchRequest, Set<MemberId>>) ClusterPatchRequest::membersToRemove,
+            Set.of(MemberId.from("0"), MemberId.from("1"))),
+        arguments(
+            mockTopology(nonZoneAwareConfiguration()),
+            new ClusterConfigPatchRequest()
+                .brokers(
+                    new ClusterConfigPatchRequestBrokers()
+                        .add(List.of(BrokerId.of(0), BrokerId.of(1)))),
+            (Function<ClusterPatchRequest, Set<MemberId>>) ClusterPatchRequest::membersToAdd,
+            Set.of(MemberId.from("0"), MemberId.from("1"))));
   }
 
   // --- PATCH / with force (force remove brokers) ---
@@ -455,12 +330,11 @@ final class ClusterEndpointTest {
   @Test
   void shouldRejectForceRemoveBrokersWithBareIntegerWhenClusterIsZoneAware() {
     // given
-    final var requestSender = mockZoneAwareTopology();
+    final var requestSender = mockTopology(zoneAwareConfiguration());
     final var endpoint = new ClusterEndpoint(requestSender);
     final var request =
         new ClusterConfigPatchRequest()
-            .brokers(
-                new ClusterConfigPatchRequestBrokers().remove(List.of(new BrokerId.String("0"))));
+            .brokers(new ClusterConfigPatchRequestBrokers().remove(List.of(BrokerId.of("0"))));
 
     // when
     final var response = endpoint.updateClusterConfiguration(false, true, request);
@@ -475,15 +349,14 @@ final class ClusterEndpointTest {
   @Test
   void shouldAllowForceRemoveBrokersWithCompositeIdWhenClusterIsZoneAware() {
     // given
-    final var requestSender = mockZoneAwareTopology();
+    final var requestSender = mockTopology(zoneAwareConfiguration());
     when(requestSender.forceRemoveBrokers(any()))
         .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
     final var endpoint = new ClusterEndpoint(requestSender);
     final var request =
         new ClusterConfigPatchRequest()
             .brokers(
-                new ClusterConfigPatchRequestBrokers()
-                    .remove(List.of(new BrokerId.String("zone-a/0"))));
+                new ClusterConfigPatchRequestBrokers().remove(List.of(BrokerId.of("zone-a/0"))));
 
     // when
     final var response = endpoint.updateClusterConfiguration(false, true, request);
@@ -497,86 +370,117 @@ final class ClusterEndpointTest {
 
   // --- Sub-resource endpoints ---
 
-  @Test
-  void shouldRejectAddSubResourceWhenClusterIsZoneAware() {
+  @ParameterizedTest
+  @MethodSource("subResourceRejectionCases")
+  void shouldRejectSubResourceWhenClusterIsZoneAware(
+      final Function<ClusterEndpoint, ResponseEntity<?>> operation,
+      final Consumer<ClusterConfigurationManagementRequestSender> verifyNeverCalled) {
     // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
+    final var sender = mockTopology(zoneAwareConfiguration());
 
     // when
-    final var response =
-        endpoint.addSubResource(
-            ClusterEndpoint.Resource.brokers,
-            "0",
-            ClusterEndpoint.Resource.partitions,
-            "1",
-            new ClusterEndpoint.PartitionAddRequest(1),
-            false);
+    final var response = operation.apply(new ClusterEndpoint(sender));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("zone-aware");
-    verify(requestSender, never()).joinPartition(any());
+    assertThat(((Error) response.getBody()).getMessage()).contains("zone-aware");
+    verifyNeverCalled.accept(sender);
   }
 
-  @Test
-  void shouldRejectRemoveSubResourceWhenClusterIsZoneAware() {
-    // given
-    final var requestSender = mockZoneAwareTopology();
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response =
-        endpoint.removeSubResource(
-            ClusterEndpoint.Resource.brokers, "0", ClusterEndpoint.Resource.partitions, "1", false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(400);
-    final var error = (Error) response.getBody();
-    assertThat(error.getMessage()).contains("zone-aware");
-    verify(requestSender, never()).leavePartition(any());
+  static Stream<Arguments> subResourceRejectionCases() {
+    return Stream.of(
+        arguments(
+            (Function<ClusterEndpoint, ResponseEntity<?>>)
+                ep ->
+                    ep.addSubResource(
+                        ClusterEndpoint.Resource.brokers,
+                        "0",
+                        ClusterEndpoint.Resource.partitions,
+                        "1",
+                        new ClusterEndpoint.PartitionAddRequest(1),
+                        false),
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s -> verify(s, never()).joinPartition(any())),
+        arguments(
+            (Function<ClusterEndpoint, ResponseEntity<?>>)
+                ep ->
+                    ep.removeSubResource(
+                        ClusterEndpoint.Resource.brokers,
+                        "0",
+                        ClusterEndpoint.Resource.partitions,
+                        "1",
+                        false),
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s -> verify(s, never()).leavePartition(any())));
   }
 
-  @Test
-  void shouldAllowAddSubResourceWhenClusterIsNotZoneAware() {
+  @ParameterizedTest
+  @MethodSource("subResourceAllowCases")
+  void shouldAllowSubResourceWhenClusterIsNotZoneAware(
+      final Consumer<ClusterConfigurationManagementRequestSender> stub,
+      final Function<ClusterEndpoint, ResponseEntity<?>> operation,
+      final Consumer<ClusterConfigurationManagementRequestSender> verifyWasCalled) {
     // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.joinPartition(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
+    final var sender = mockTopology(nonZoneAwareConfiguration());
+    stub.accept(sender);
 
     // when
-    final var response =
-        endpoint.addSubResource(
-            ClusterEndpoint.Resource.brokers,
-            "0",
-            ClusterEndpoint.Resource.partitions,
-            "1",
-            new ClusterEndpoint.PartitionAddRequest(1),
-            false);
-
-    // then
-    assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).joinPartition(any());
-  }
-
-  @Test
-  void shouldAllowRemoveSubResourceWhenClusterIsNotZoneAware() {
-    // given
-    final var requestSender = mockNonZoneAwareTopology();
-    when(requestSender.leavePartition(any()))
-        .thenReturn(CompletableFuture.completedFuture(Either.right(successResponse())));
-    final var endpoint = new ClusterEndpoint(requestSender);
-
-    // when
-    final var response =
-        endpoint.removeSubResource(
-            ClusterEndpoint.Resource.brokers, "0", ClusterEndpoint.Resource.partitions, "1", false);
+    final var response = operation.apply(new ClusterEndpoint(sender));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(202);
-    verify(requestSender).leavePartition(any());
+    verifyWasCalled.accept(sender);
+  }
+
+  static Stream<Arguments> subResourceAllowCases() {
+    return Stream.of(
+        arguments(
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s ->
+                    when(s.joinPartition(any()))
+                        .thenReturn(
+                            CompletableFuture.completedFuture(Either.right(successResponse()))),
+            (Function<ClusterEndpoint, ResponseEntity<?>>)
+                ep ->
+                    ep.addSubResource(
+                        ClusterEndpoint.Resource.brokers,
+                        "0",
+                        ClusterEndpoint.Resource.partitions,
+                        "1",
+                        new ClusterEndpoint.PartitionAddRequest(1),
+                        false),
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s -> verify(s).joinPartition(any())),
+        arguments(
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s ->
+                    when(s.leavePartition(any()))
+                        .thenReturn(
+                            CompletableFuture.completedFuture(Either.right(successResponse()))),
+            (Function<ClusterEndpoint, ResponseEntity<?>>)
+                ep ->
+                    ep.removeSubResource(
+                        ClusterEndpoint.Resource.brokers,
+                        "0",
+                        ClusterEndpoint.Resource.partitions,
+                        "1",
+                        false),
+            (Consumer<ClusterConfigurationManagementRequestSender>)
+                s -> verify(s).leavePartition(any())));
+  }
+
+  // --- Shared method sources ---
+
+  static Stream<Arguments> invalidBrokerIdCases() {
+    return Stream.of(
+        arguments(mockTopology(zoneAwareConfiguration()), "0", "bare node ID"),
+        arguments(mockTopology(nonZoneAwareConfiguration()), "zone-a/0", "not zone-aware"));
+  }
+
+  static Stream<Arguments> validBrokerIdCases() {
+    return Stream.of(
+        arguments(mockTopology(nonZoneAwareConfiguration()), "0"),
+        arguments(mockTopology(zoneAwareConfiguration()), "zone-a/0"));
   }
 
   // --- Helper methods ---
@@ -585,35 +489,33 @@ final class ClusterEndpointTest {
     return new ClusterEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
   }
 
-  private static ClusterConfigurationManagementRequestSender mockZoneAwareTopology() {
-    final var requestSender = mock(ClusterConfigurationManagementRequestSender.class);
-    final var config =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("zone-a", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
-            .addMember(
-                MemberId.from("zone-b", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
-    when(requestSender.getTopology())
-        .thenReturn(CompletableFuture.completedFuture(Either.right(config)));
-    return requestSender;
+  private static ClusterConfiguration zoneAwareConfiguration() {
+    return ClusterConfiguration.init()
+        .addMember(
+            MemberId.from("zone-a", 0),
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+        .addMember(
+            MemberId.from("zone-b", 0),
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
   }
 
-  private static ClusterConfigurationManagementRequestSender mockNonZoneAwareTopology() {
+  private static ClusterConfiguration nonZoneAwareConfiguration() {
+    return ClusterConfiguration.init()
+        .addMember(
+            MemberId.from("0"),
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+        .addMember(
+            MemberId.from("1"),
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+  }
+
+  private static ClusterConfigurationManagementRequestSender mockTopology(
+      final ClusterConfiguration config) {
     final var requestSender = mock(ClusterConfigurationManagementRequestSender.class);
-    final var config =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
-            .addMember(
-                MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
     when(requestSender.getTopology())
         .thenReturn(CompletableFuture.completedFuture(Either.right(config)));
     return requestSender;
