@@ -110,9 +110,7 @@ final class ClientStreamPusher {
     try {
       return stream.clientStreamConsumer().push(payload);
     } catch (final Exception e) {
-      final ActorFuture<@Nullable Void> failed = new CompletableActorFuture<>();
-      failed.completeExceptionally(e);
-      return failed;
+      return CompletableActorFuture.completedExceptionally(e);
     }
   }
 
