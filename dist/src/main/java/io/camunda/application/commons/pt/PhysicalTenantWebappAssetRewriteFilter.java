@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -23,24 +24,36 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Rewrites the request URI for PT-prefixed webapp static-resource paths so Spring Boot's default
- * static-resource handler (mapped to {@code /operate/**}, {@code /tasklist/**}, {@code /admin/**})
- * can serve the file. After {@link PhysicalTenantWebappContextPathInterceptor} sets the rendered
- * SPA's {@code <base href>} to {@code /physical-tenant/<id>/operate/}, the browser issues asset
- * requests under that prefix; the dispatcher then has nowhere to send them (no controller, no
- * resource handler mapped at the PT-prefixed path).
+ * Rewrites the request URI for two flavours of PT-prefixed URLs that have no PT-prefixed handler
+ * but whose unprefixed equivalents are already served:
  *
- * <p>This filter intercepts requests of the form {@code
- * /physical-tenant/{tenantId}/{operate|tasklist|admin}/(assets/...|favicon.ico)}, wraps them with
- * an {@link HttpServletRequestWrapper} that reports the unprefixed URI from {@link
- * HttpServletRequest#getRequestURI()} and {@link HttpServletRequest#getServletPath()}, and
- * continues the filter chain. The dispatcher resolves the request against the unprefixed URI and
- * the standard static-resource handler serves the bytes — no forward, no second dispatch.
+ * <ol>
+ *   <li><b>Webapp static resources</b> ({@code
+ *       /physical-tenant/<id>/<app>/(assets/...|favicon.ico)}) — after {@link
+ *       PhysicalTenantWebappContextPathInterceptor} rewrites the SPA's {@code <base href>} to the
+ *       PT-prefixed URL, the browser emits asset requests under that prefix. Spring Boot's default
+ *       static-resource handler is wired to the unprefixed {@code /<app>/**}, so the PT-prefixed
+ *       URL would 404.
+ *   <li><b>Cluster-scoped REST endpoints</b> ({@code /physical-tenant/<id>/v(1|2)/(license|status
+ *       |topology|setup/user|rest-api.yaml)}) — controllers annotated with {@code @ClusterScoped}
+ *       are deliberately not given PT-prefixed siblings by {@code
+ *       PhysicalTenantRequestMappingHandlerMapping}, but the SPA happily prefixes every API call
+ *       with the (PT-aware) contextPath and 404s on these. The cluster-scoped list is kept by
+ *       convention in sync with the {@code @ClusterScoped} controllers in {@code
+ *       zeebe/gateway-rest/.../controller/} (Status, License, Topology, GlobalError) plus the
+ *       non-controller paths under {@code SecurityPathAdapter#unprotectedApiPaths}.
+ * </ol>
+ *
+ * <p>Both flavours are handled the same way: wrap the request with an {@link
+ * HttpServletRequestWrapper} that reports the unprefixed URI and continue the filter chain. The
+ * dispatcher resolves the request against the unprefixed URI and the existing handler (resource
+ * handler / cluster-scoped controller) serves it — no forward, no second dispatch.
  *
  * <p>Filter order: {@link Ordered#LOWEST_PRECEDENCE LOWEST_PRECEDENCE} - 100. Spring Security's
- * {@code FilterChainProxy} runs much earlier (default order is around {@code
+ * {@code FilterChainProxy} runs much earlier (default order around {@code
  * REQUEST_WRAPPER_FILTER_MAX_PRECEDENCE - 100}), so by the time we get the request the PT chain has
- * already authenticated it on the original PT-prefixed URI — exactly what we want.
+ * already authenticated it on the original PT-prefixed URI — exactly what we want for the cookie
+ * path scope.
  *
  * <p>Conditional on {@code camunda.physical-tenants.*} being configured.
  */
@@ -53,17 +66,32 @@ public class PhysicalTenantWebappAssetRewriteFilter extends OncePerRequestFilter
       Pattern.compile(
           "^/physical-tenant/[^/]+/(operate|tasklist|admin)/(assets/.+|favicon\\.ico)$");
 
+  private static final Pattern PT_CLUSTER_API =
+      Pattern.compile(
+          "^/physical-tenant/[^/]+(/v[12]/(license|status|topology|setup/user|rest-api\\.yaml))$");
+
   @Override
   protected void doFilterInternal(
       final HttpServletRequest request, final HttpServletResponse response, final FilterChain chain)
       throws ServletException, IOException {
-    final Matcher m = PT_ASSET.matcher(request.getRequestURI());
-    if (!m.matches()) {
+    final String unprefixed = rewriteIfMatch(request.getRequestURI());
+    if (unprefixed == null) {
       chain.doFilter(request, response);
       return;
     }
-    final String unprefixed = "/" + m.group(1) + "/" + m.group(2);
     chain.doFilter(new RewrittenUriRequest(request, unprefixed), response);
+  }
+
+  private static @Nullable String rewriteIfMatch(final String uri) {
+    final Matcher asset = PT_ASSET.matcher(uri);
+    if (asset.matches()) {
+      return "/" + asset.group(1) + "/" + asset.group(2);
+    }
+    final Matcher cluster = PT_CLUSTER_API.matcher(uri);
+    if (cluster.matches()) {
+      return cluster.group(1);
+    }
+    return null;
   }
 
   private static final class RewrittenUriRequest extends HttpServletRequestWrapper {
