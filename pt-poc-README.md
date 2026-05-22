@@ -41,8 +41,6 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 **Authorizations are disabled** (`camunda.security.authorizations.enabled: false`). The PoC bypasses the `WebAppAuthorizationCheckFilter` denial so users reach `/operate` without grant rows — seeding admin grants via `camunda.security.initialization.mappingRules` would have required the broker engine to run, which interacts badly with PT broker partitioning in this branch and is orthogonal to the security-chain story this PoC validates.
 
-**Some SPA-internal API calls still hit unprefixed URLs.** The asset filter rewrites known cluster-scoped endpoints; other endpoints the SPA composes from `/v2/...` (rather than from the PT-aware `contextPath`) may slip through. Watch the browser dev-tools for any 404s and add the path to the filter's regex.
-
 **Unprefixed `/login` is host-rendered**, not Spring-auto-generated — see [CSL#269](https://github.com/camunda/camunda-security-library/issues/269). The PoC keeps `PhysicalTenantLoginPageController` for the unprefixed picker only; PT-prefixed `/login` uses the auto-picker as described above.
 
 **Per-PT CSRF cookie isolation.** The CSRF cookie is shared at `Path=/` across all chains. Tenant boundaries are enforced by the per-PT session cookie's path, so this is acceptable security-wise (the CSRF token is a same-origin proof, not a tenant credential), but cross-tab UX papers cuts apply on logout + auth rotation (Task 45 follow-up).
