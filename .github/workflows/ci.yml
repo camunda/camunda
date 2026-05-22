@@ -1934,7 +1934,7 @@ jobs:
 
   openapi-lint:
     # Owner: CamundaEx
-    # Tag: @camunda-ex-medic
+    # Support: @camunda-ex-medic
     # Slack team: #team-camunda-ex
     name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
