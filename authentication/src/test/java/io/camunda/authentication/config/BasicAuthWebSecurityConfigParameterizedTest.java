@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
@@ -125,6 +127,35 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     @Bean
     public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
       return new HandlerMappingIntrospector();
+    }
+
+    /**
+     * CSL's {@code CamundaAuthenticationBeansConfiguration} provides a default {@code
+     * requestContextBasedAuthenticationHolder} bean that injects {@link
+     * jakarta.servlet.http.HttpServletRequest}, which is not available in a {@link
+     * org.springframework.boot.WebApplicationType#NONE} context. Registering a no-op holder here
+     * satisfies the {@code @ConditionalOnMissingBean} condition so the CSL default — and its {@code
+     * HttpServletRequest} dependency — is never activated.
+     */
+    @Bean(name = "requestContextBasedAuthenticationHolder")
+    public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {
+      return new CamundaAuthenticationHolder() {
+        @Override
+        public boolean supports() {
+          return false;
+        }
+
+        @Override
+        public void set(final CamundaAuthentication authentication) {}
+
+        @Override
+        public CamundaAuthentication get() {
+          return null;
+        }
+
+        @Override
+        public void clear() {}
+      };
     }
   }
 }
