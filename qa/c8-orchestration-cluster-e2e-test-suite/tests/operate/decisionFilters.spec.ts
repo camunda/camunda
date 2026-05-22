@@ -51,9 +51,7 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Verify filtered instances are visible', async () => {
-      await expect(
-        operateDecisionsPage.decisionInstancesList,
-      ).toBeVisible();
+      await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
@@ -72,10 +70,12 @@ test.describe('Decision Filters', () => {
   }) => {
     let totalCount: number;
 
+    await test.step('Filter by decision name to scope to test instances', async () => {
+      await operateDecisionsPage.selectDecisionName('Invoice Classification');
+    });
+
     await test.step('Get total row count with both filters active', async () => {
-      await expect(
-        operateDecisionsPage.decisionInstancesList,
-      ).toBeVisible();
+      await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
       totalCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
@@ -87,6 +87,9 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Verify row count decreased (only evaluated shown)', async () => {
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByRole('row'),
+      ).not.toHaveCount(totalCount);
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
@@ -106,10 +109,12 @@ test.describe('Decision Filters', () => {
   }) => {
     let totalCount: number;
 
+    await test.step('Filter by decision name to scope to test instances', async () => {
+      await operateDecisionsPage.selectDecisionName('Invoice Classification');
+    });
+
     await test.step('Get total row count with both filters active', async () => {
-      await expect(
-        operateDecisionsPage.decisionInstancesList,
-      ).toBeVisible();
+      await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
       totalCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
@@ -121,6 +126,9 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Verify row count decreased (only failed shown)', async () => {
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByRole('row'),
+      ).not.toHaveCount(totalCount);
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
@@ -182,7 +190,7 @@ test.describe('Decision Filter Reset', () => {
     await test.step('Verify no optional filters are visible', async () => {
       await expect(
         operateDecisionsPage.decisionInstanceKeysFilter,
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
   });
 });
