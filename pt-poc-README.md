@@ -41,7 +41,7 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 **Authorizations are disabled** (`camunda.security.authorizations.enabled: false`). The PoC bypasses the `WebAppAuthorizationCheckFilter` denial so users reach `/operate` without grant rows — seeding admin grants via `camunda.security.initialization.mappingRules` would have required the broker engine to run, which interacts badly with PT broker partitioning in this branch and is orthogonal to the security-chain story this PoC validates.
 
-**Multi-tab CSRF cookie loss on logout.** The CSRF cookie is shared at `Path=/` across all chains, so logging out in one tab deletes the cookie for every other open tab and the next state-changing request from those tabs fails. Needs further investigation — likely either PT-scoped CSRF cookies or not clearing the cookie on logout. Tracked as Task 45.
+**Multi-tab CSRF cookie loss on logout.** The CSRF cookie is shared at `Path=/` across all chains, so logging out in one tab deletes the cookie for every other open tab and the next state-changing request from those tabs fails. Needs further investigation — likely either PT-scoped CSRF cookies or not clearing the cookie on logout. Tracked as Task 21.
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ Note: GET requests do NOT carry the `X-CSRF-TOKEN` request header — the SPA on
 | Where | What | Status |
 |--|--|--|
 | Task 19 | Wire `.logout(...)` on the PT webapp chain (no LogoutFilter matcher under PT prefix; CSRF 403 today). Spec note + PoC scope. | This repo |
-| Task 45 | Multi-tab CSRF cookie invalidation on logout / auth-rotate. Path-scoped or per-PT-name cookie options outlined in spec. | This repo |
+| Task 21 | Multi-tab CSRF cookie invalidation on logout / auth-rotate. Path-scoped or per-PT-name cookie options outlined in spec. | This repo |
 | [camunda-security-library#269](https://github.com/camunda/camunda-security-library/issues/269) | CSL installs `DefaultLoginPageGeneratingFilter` on its `OidcWebapp` chain so the unprefixed `/login` picker doesn't need a host-side controller. | Upstream CSL |
 | [camunda/camunda#53810](https://github.com/camunda/camunda/issues/53810) | Resolve `physicalTenantId` from the unified webapp's request context for `WebappIndexController` (same shape as #52572 for the REST gateway). | Upstream camunda |
 | Spec OQ-5 | Per-PT Spring sub-`ApplicationContext`s as an isolation primitive vs the current `Map<String, T>` injection pattern. Worth a design spike when the PT roadmap revisits data-layer / service-layer isolation. | Future design |
@@ -190,7 +190,5 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 18 | Operate + Tasklist webapps end-to-end with PT chains | ✅ done |
 | 19 | Investigate broken webapp logout flow on PT chains | ⏳ follow-up |
 | 20 | CSL: install `DefaultLoginPageGeneratingFilter` on OidcWebapp chain ([CSL#269](https://github.com/camunda/camunda-security-library/issues/269)) | ⏳ follow-up (upstream) |
-| 45 | PT CSRF cookie cross-tab invalidation on logout / auth-rotate | ⏳ follow-up |
+| 21 | PT CSRF cookie cross-tab invalidation on logout / auth-rotate | ⏳ follow-up |
 |    | Webapp PT awareness ([#53810](https://github.com/camunda/camunda/issues/53810)) | ⏳ follow-up (upstream) |
-| 14 | `PhysicalTenantSecurityIT` happy path | ⏭ skipped (deferred to CSL upstream hardening) |
-| 15 | `PhysicalTenantSecurityIT` full flow + isolation | ⏭ skipped (deferred to CSL upstream hardening) |
