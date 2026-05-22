@@ -9,9 +9,9 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.model.auth.MembershipPort.PrincipalType;
-import io.camunda.security.api.model.auth.MembershipQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
+import io.camunda.security.core.port.out.MembershipQuery;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

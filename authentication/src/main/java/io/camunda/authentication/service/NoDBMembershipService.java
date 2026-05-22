@@ -7,10 +7,10 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.api.model.auth.MembershipPort;
-import io.camunda.security.api.model.auth.MembershipQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
+import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
 import org.springframework.stereotype.Service;

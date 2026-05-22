@@ -8,14 +8,14 @@
 package io.camunda.authentication.config;
 
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
-import io.camunda.security.api.model.auth.MembershipPort;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
-import io.camunda.security.spring.converter.UsernamePasswordAuthenticationTokenConverter;
+import io.camunda.security.spring.converter.LazyUsernamePasswordAuthenticationTokenConverter;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
@@ -27,8 +27,8 @@ import org.springframework.security.core.Authentication;
 /**
  * Host-side basic-authentication bean overrides. Lifted from the previous {@code
  * WebSecurityConfig.BasicConfiguration} nested class. Provides the {@link
- * UsernamePasswordAuthenticationTokenConverter} and verifies that no OIDC configuration is present
- * when basic auth is selected.
+ * LazyUsernamePasswordAuthenticationTokenConverter} and verifies that no OIDC configuration is
+ * present when basic auth is selected.
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
@@ -66,6 +66,6 @@ public class BasicAuthBeansConfiguration {
   @Bean
   public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
       final MembershipPort membershipPort) {
-    return new UsernamePasswordAuthenticationTokenConverter(membershipPort);
+    return new LazyUsernamePasswordAuthenticationTokenConverter(membershipPort);
   }
 }

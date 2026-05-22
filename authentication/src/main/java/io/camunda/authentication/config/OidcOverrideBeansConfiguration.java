@@ -10,11 +10,11 @@ package io.camunda.authentication.config;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
-import io.camunda.security.api.model.auth.MembershipPort;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
