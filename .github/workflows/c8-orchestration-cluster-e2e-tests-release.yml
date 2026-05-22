@@ -134,13 +134,21 @@ jobs:
         shell: bash
         run: |
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
-          echo "Base branch: ${{ needs.validate-release.outputs.base }}"
+          echo "Base branch (routing): ${{ needs.validate-release.outputs.base }}"
+          echo "Source ref (checkout): ${{ needs.validate-release.outputs.ref }}"
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Check out the release tag, not the stable branch — see
-          # validate-release for rationale.
+          # Check out the release branch (or tag fallback), not the
+          # stable branch — see validate-release for rationale.
           ref: ${{ needs.validate-release.outputs.ref }}
+
+      - name: Log checked-out commit
+        shell: bash
+        run: |
+          echo "Configured ref: ${{ needs.validate-release.outputs.ref }}"
+          echo "Resolved HEAD : $(git rev-parse HEAD)"
+          echo "Refs at HEAD  : $(git log -1 --format='%D' HEAD)"
 
       - name: Update docker-compose with release version
         shell: bash
@@ -370,9 +378,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Check out the release tag, not the stable branch — see
-          # validate-release for rationale.
+          # Check out the release branch (or tag fallback), not the
+          # stable branch — see validate-release for rationale.
           ref: ${{ needs.validate-release.outputs.ref }}
+
+      - name: Log checked-out commit
+        shell: bash
+        run: |
+          echo "Configured ref: ${{ needs.validate-release.outputs.ref }}"
+          echo "Resolved HEAD : $(git rev-parse HEAD)"
+          echo "Refs at HEAD  : $(git log -1 --format='%D' HEAD)"
 
       - uses: ./.github/actions/setup-build
         with:
@@ -486,7 +501,8 @@ jobs:
         shell: bash
         run: |
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
-          echo "Base branch: ${{ needs.validate-release.outputs.base }}"
+          echo "Base branch (routing): ${{ needs.validate-release.outputs.base }}"
+          echo "Source ref (checkout): ${{ needs.validate-release.outputs.ref }}"
 
       - name: Resolve database container name
         run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
@@ -494,9 +510,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Check out the release tag, not the stable branch — see
-          # validate-release for rationale.
+          # Check out the release branch (or tag fallback), not the
+          # stable branch — see validate-release for rationale.
           ref: ${{ needs.validate-release.outputs.ref }}
+
+      - name: Log checked-out commit
+        shell: bash
+        run: |
+          echo "Configured ref: ${{ needs.validate-release.outputs.ref }}"
+          echo "Resolved HEAD : $(git rev-parse HEAD)"
+          echo "Refs at HEAD  : $(git log -1 --format='%D' HEAD)"
 
       # If this job needs the docker-compose image tag changed too, keep this step
       - name: Update docker-compose with release version
@@ -739,14 +762,22 @@ jobs:
       - name: Print release info
         run: |
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
-          echo "Base branch: ${{ needs.validate-release.outputs.base }}"
+          echo "Base branch (routing): ${{ needs.validate-release.outputs.base }}"
+          echo "Source ref (checkout): ${{ needs.validate-release.outputs.ref }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Check out the release tag, not the stable branch — see
-          # validate-release for rationale.
+          # Check out the release branch (or tag fallback), not the
+          # stable branch — see validate-release for rationale.
           ref: ${{ needs.validate-release.outputs.ref }}
+
+      - name: Log checked-out commit
+        shell: bash
+        run: |
+          echo "Configured ref: ${{ needs.validate-release.outputs.ref }}"
+          echo "Resolved HEAD : $(git rev-parse HEAD)"
+          echo "Refs at HEAD  : $(git log -1 --format='%D' HEAD)"
 
       - name: Update docker-compose with release version
         run: |
