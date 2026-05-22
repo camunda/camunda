@@ -119,3 +119,96 @@ export function createSim(nodeCount, params) {
   });
   return sim;
 }
+
+// ── Gossip ────────────────────────────────────────────────────────────────────
+
+function stateRank(state) {
+  return state === 'alive' ? 0 : state === 'suspect' ? 1 : 2;
+}
+
+function enqueueGossipUpdate(node, entry) {
+  const existing = node.gossipQueue.find(e => e.memberId === entry.memberId);
+  if (existing) {
+    if (entry.incarnation > existing.incarnation ||
+        (entry.incarnation === existing.incarnation && stateRank(entry.state) > stateRank(existing.state))) {
+      Object.assign(existing, entry, { sendCount: 0 });
+    }
+  } else {
+    node.gossipQueue.push({ ...entry, sendCount: 0 });
+  }
+}
+
+function selectGossipTargets(sim, node) {
+  const alive = [...sim.nodes.values()].filter(n =>
+    n.id !== node.id && n.state === 'alive' && !n.gossipExcluded
+  ).map(n => n.id);
+  if (sim.params.broadcastUpdates) return alive;
+  return pickN(alive, sim.params.gossipFanout, []);
+}
+
+function sendGossip(sim, from, to, entries, wallTime) {
+  if (isPartitioned(sim, from, to)) return;
+  sim.msgCount++;
+  const hasFailure = entries.some(e => e.state === 'dead' || e.state === 'suspect');
+  const hasUpdate = entries.some(e => e.isPropertyUpdate);
+  const label = hasFailure ? 'G✗' : hasUpdate ? 'G↑' : 'G~';
+  const color = label === 'G✗' ? 'var(--viz-leader)'
+    : label === 'G↑' ? 'var(--viz-gossip-update)'
+    : 'var(--ifm-color-emphasis-400)';
+  sim.inFlightMessages.push({
+    id: sim.nextMsgId++, from, to, label, color,
+    startWallTime: wallTime, durationMs: 300,
+    payload: { type: 'GOSSIP', entries },
+  });
+  sim.eventQueue.push({
+    type: 'MSG_DELIVER', simTime: sim.simTime + 1, from, to,
+    payload: { type: 'GOSSIP', entries },
+  });
+}
+
+function handleGossipTick(sim, node, wallTime) {
+  sim.roundCount++;
+  const maxSends = Math.ceil(Math.log2(sim.nodes.size + 1));
+  const entries = [...node.gossipQueue]
+    .sort((a, b) => a.sendCount - b.sendCount)
+    .slice(0, 8);
+  entries.forEach(e => e.sendCount++);
+  node.gossipQueue = node.gossipQueue.filter(e => e.sendCount < maxSends);
+  const targets = selectGossipTargets(sim, node);
+  targets.forEach(tid => sendGossip(sim, node.id, tid, entries, wallTime));
+  sim.eventQueue.push({ type: 'GOSSIP_TICK', simTime: sim.simTime + sim.params.gossipInterval, nodeId: node.id });
+}
+
+function handleGossipReceived(sim, from, to, entries) {
+  const node = sim.nodes.get(to);
+  if (!node || node.state === 'crashed') return;
+  for (const entry of entries) {
+    if (entry.memberId === to) {
+      if (entry.state === 'suspect' && node.state === 'alive') {
+        node.incarnationNumber++;
+        const correction = { memberId: to, state: 'alive', incarnation: node.incarnationNumber };
+        enqueueGossipUpdate(node, correction);
+        if (sim.params.broadcastDisputes) {
+          [...sim.nodes.values()]
+            .filter(n => n.id !== to && n.state === 'alive' && !isPartitioned(sim, to, n.id))
+            .forEach(n => sendGossip(sim, to, n.id, [correction], 0));
+        }
+      }
+      continue;
+    }
+    const view = node.membershipView.get(entry.memberId);
+    if (!view) continue;
+    const acceptNew = entry.incarnation > view.incarnation ||
+      (entry.incarnation === view.incarnation && stateRank(entry.state) > stateRank(view.state));
+    const propChanged = entry.incarnation === view.incarnation &&
+      entry.state === view.state &&
+      entry.propertyVersion !== undefined &&
+      entry.propertyVersion > (view.propertyVersion ?? 0);
+    if (acceptNew || propChanged) {
+      view.state = entry.state;
+      view.incarnation = entry.incarnation;
+      if (entry.propertyVersion !== undefined) view.propertyVersion = entry.propertyVersion;
+      enqueueGossipUpdate(node, entry);
+    }
+  }
+}
