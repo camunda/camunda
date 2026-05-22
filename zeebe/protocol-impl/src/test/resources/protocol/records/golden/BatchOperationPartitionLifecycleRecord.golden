@@ -24,12 +24,14 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
       new IntegerProperty(PROP_SOURCE_PARTITION_ID, -1);
   private final ObjectProperty<BatchOperationError> errorProp =
       new ObjectProperty<>("error", new BatchOperationError());
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
 
   public BatchOperationPartitionLifecycleRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp);
     declareProperty(sourcePartitionIdProp);
     declareProperty(errorProp);
+    declareProperty(ordinalKeyProp);
   }
 
   @Override
@@ -63,10 +65,21 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
     return this;
   }
 
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public BatchOperationPartitionLifecycleRecord setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
+    return this;
+  }
+
   public BatchOperationPartitionLifecycleRecord wrap(
       final BatchOperationPartitionLifecycleRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setSourcePartitionId(record.getSourcePartitionId());
+    setOrdinalKey(record.getOrdinalKey());
     setError(record.getError());
     return this;
   }

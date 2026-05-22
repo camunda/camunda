@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -24,10 +25,13 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
   private final ArrayProperty<BatchOperationItem> itemsProp =
       new ArrayProperty<>(PROP_ITEMS_LIST, BatchOperationItem::new);
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
 
   public BatchOperationChunkRecord() {
-    super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(itemsProp);
+    super(3);
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(itemsProp)
+        .declareProperty(ordinalKeyProp);
   }
 
   @Override
@@ -52,8 +56,19 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public BatchOperationChunkRecord setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
+    return this;
+  }
+
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
+    setOrdinalKey(record.getOrdinalKey());
     setItems(record.getItems());
   }
 }

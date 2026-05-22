@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -94,34 +95,36 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
     }
 
     final var recordValue = command.getValue();
-    final var batchOperationKey = command.getValue().getBatchOperationKey();
+    final var batchOperationKey = recordValue.getBatchOperationKey();
     final var suspendKey = keyGenerator.nextKey();
-    LOGGER.debug(
-        "Suspending batch operation with key {}", command.getValue().getBatchOperationKey());
+    LOGGER.debug("Suspending batch operation with key {}", recordValue.getBatchOperationKey());
 
     // validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isEmpty()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isEmpty()) {
       rejectNotFound(command, batchOperationKey, recordValue);
       return;
     }
 
     // check if the batch operation can be suspended
-    if (!batchOperation.get().canSuspend()) {
-      final var batchOperationStatus = batchOperation.get().getStatus().name();
+    final PersistedBatchOperation bo = oBatchOperation.get();
+    recordValue.setOrdinalKey(bo.getOrdinalKey());
+
+    if (!bo.canSuspend()) {
+      final var batchOperationStatus = bo.getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
     }
 
     suspendBatchOperation(suspendKey, recordValue);
     responseWriter.writeEventOnCommand(
-        suspendKey, BatchOperationIntent.SUSPENDED, command.getValue(), command);
+        suspendKey, BatchOperationIntent.SUSPENDED, recordValue, command);
     commandDistributionBehavior
         .withKey(suspendKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
 
-    metrics.recordSuspended(batchOperation.get().getBatchOperationType());
+    metrics.recordSuspended(bo.getBatchOperationType());
   }
 
   @Override
@@ -131,12 +134,13 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
     final var batchOperationKey = recordValue.getBatchOperationKey();
 
     // Validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isPresent() && batchOperation.get().canSuspend()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isPresent() && oBatchOperation.get().canSuspend()) {
       LOGGER.debug(
           "Processing distributed command to suspend with key '{}': {}",
           batchOperationKey,
           recordValue);
+      recordValue.setOrdinalKey(oBatchOperation.get().getOrdinalKey());
       suspendBatchOperation(batchOperationKey, recordValue);
     } else {
       LOGGER.debug(

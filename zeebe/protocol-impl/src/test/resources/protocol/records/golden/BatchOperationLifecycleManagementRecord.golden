@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
@@ -23,11 +24,13 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
 
   private final ArrayProperty<BatchOperationError> errorsProp =
       new ArrayProperty<>("errors", BatchOperationError::new);
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
 
   public BatchOperationLifecycleManagementRecord() {
-    super(2);
+    super(3);
     declareProperty(batchOperationKeyProp);
     declareProperty(errorsProp);
+    declareProperty(ordinalKeyProp);
   }
 
   @Override
@@ -46,6 +49,7 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
       final BatchOperationLifecycleManagementRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setErrors(record.getErrors().stream().map(BatchOperationError.class::cast).toList());
+    setOrdinalKey(record.getOrdinalKey());
     return this;
   }
 
@@ -59,6 +63,16 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
     for (final var error : errors) {
       errorsProp.add().wrap(error);
     }
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public BatchOperationLifecycleManagementRecord setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
     return this;
   }
 }

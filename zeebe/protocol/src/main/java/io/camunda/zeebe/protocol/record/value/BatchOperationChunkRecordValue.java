@@ -29,7 +29,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationChunkRecordValue.Builder.class)
-public interface BatchOperationChunkRecordValue extends BatchOperationRelated, RecordValue {
+public interface BatchOperationChunkRecordValue
+    extends BatchOperationRelated, OrdinalKeyBased, RecordValue {
 
   /**
    * @return subset of items for the batch operation
@@ -38,7 +39,7 @@ public interface BatchOperationChunkRecordValue extends BatchOperationRelated, R
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableBatchOperationItemValue.Builder.class)
-  interface BatchOperationItemValue {
+  interface BatchOperationItemValue extends OrdinalKeyBased {
     long getItemKey();
 
     long getProcessInstanceKey();

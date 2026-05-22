@@ -117,6 +117,7 @@ public final class BatchOperationPartitionLifecycleFailPartitionProcessor
           batchOperationKey);
       final var batchFinished = new BatchOperationLifecycleManagementRecord();
       batchFinished.setBatchOperationKey(batchOperationKey);
+      batchFinished.setOrdinalKey(bo.getOrdinalKey());
       batchFinished.setErrors(bo.getErrors());
       stateWriter.appendFollowUpEvent(
           batchOperationKey,

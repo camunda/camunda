@@ -11,6 +11,7 @@ import com.google.common.collect.Lists;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -46,9 +47,12 @@ public class BatchOperationChunkAppender {
           .setSearchResultCursor(RandomStringUtils.insecure().next(1024));
 
   private final int chunkSize;
+  private final OrdinalKeyProvider ordinalKeyProvider;
 
-  public BatchOperationChunkAppender(final int chunkSize) {
+  public BatchOperationChunkAppender(
+      final int chunkSize, final OrdinalKeyProvider ordinalKeyProvider) {
     this.chunkSize = chunkSize;
+    this.ordinalKeyProvider = ordinalKeyProvider;
   }
 
   /**
@@ -144,20 +148,23 @@ public class BatchOperationChunkAppender {
     return taskResultBuilder.canAppendRecords(sizeCheckRecords, metadata);
   }
 
-  private static BatchOperationChunkRecord createChunkRecord(
+  private BatchOperationChunkRecord createChunkRecord(
       final long batchOperationKey, final List<Item> chunkItems) {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setItems(
-        chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
+    command.setOrdinalKey(ordinalKeyProvider.getOrdinal(batchOperationKey));
+    command.setItems(chunkItems.stream().map(this::mapItem).collect(Collectors.toSet()));
     return command;
   }
 
-  private static BatchOperationItem mapItem(final Item item) {
+  private BatchOperationItem mapItem(final Item item) {
+    final long rootProcessInstanceKey =
+        Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L);
     return new BatchOperationItem()
         .setItemKey(item.itemKey())
         .setProcessInstanceKey(item.processInstanceKey())
-        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setOrdinalKey(ordinalKeyProvider.getOrdinal(rootProcessInstanceKey));
   }
 
   /**

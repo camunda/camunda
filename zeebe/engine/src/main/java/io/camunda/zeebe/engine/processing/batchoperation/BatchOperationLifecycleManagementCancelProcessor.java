@@ -98,9 +98,10 @@ public final class BatchOperationLifecycleManagementCancelProcessor
 
     final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
+      recordValue.setOrdinalKey(batchOperation.get().getOrdinalKey());
       cancelBatchOperationEvent(cancelKey, recordValue);
       responseWriter.writeEventOnCommand(
-          cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
+          cancelKey, BatchOperationIntent.CANCELED, recordValue, command);
       commandDistributionBehavior
           .withKey(cancelKey)
           .inQueue(DistributionQueue.BATCH_OPERATION)
@@ -132,6 +133,8 @@ public final class BatchOperationLifecycleManagementCancelProcessor
       commandDistributionBehavior.acknowledgeCommand(command);
       return;
     }
+
+    recordValue.setOrdinalKey(batchOperation.get().getOrdinalKey());
 
     LOGGER.debug(
         "Processing distributed command to cancel a batch operation with key '{}': {}",

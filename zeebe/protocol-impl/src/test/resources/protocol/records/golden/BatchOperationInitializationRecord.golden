@@ -28,12 +28,14 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
       new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY, "");
   private final IntegerProperty searchQueryPageSize =
       new IntegerProperty(PROP_SEARCH_QUERY_PAGE_SIZE, 0);
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
 
   public BatchOperationInitializationRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp)
         .declareProperty(searchResultCursorProp)
-        .declareProperty(searchQueryPageSize);
+        .declareProperty(searchQueryPageSize)
+        .declareProperty(ordinalKeyProp);
   }
 
   @Override
@@ -69,9 +71,20 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public BatchOperationInitializationRecord setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
+    return this;
+  }
+
   public void wrap(final BatchOperationInitializationRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setSearchResultCursor(record.getSearchResultCursor());
     setSearchQueryPageSize(record.getSearchQueryPageSize());
+    setOrdinalKey(record.getOrdinalKey());
   }
 }

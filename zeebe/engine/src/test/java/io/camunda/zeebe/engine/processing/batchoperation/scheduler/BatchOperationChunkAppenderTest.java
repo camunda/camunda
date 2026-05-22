@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.ChunkingOutcome;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
@@ -39,10 +40,11 @@ class BatchOperationChunkAppenderTest {
   private BatchOperationChunkAppender processor;
   private ItemProvider mockItemProvider;
   private TaskResultBuilder mockTaskResultBuilder;
+  private final OrdinalKeyProvider mockOrdinalKeyProvider = mock(OrdinalKeyProvider.class);
 
   @BeforeEach
   void setUp() {
-    processor = new BatchOperationChunkAppender(CHUNK_SIZE);
+    processor = new BatchOperationChunkAppender(CHUNK_SIZE, mockOrdinalKeyProvider);
     mockItemProvider = mock(ItemProvider.class);
     mockTaskResultBuilder = mock(TaskResultBuilder.class);
   }
@@ -211,7 +213,7 @@ class BatchOperationChunkAppenderTest {
   @Test
   void shouldHandleDifferentChunkSizes() {
     // given
-    final var largeChunkProcessor = new BatchOperationChunkAppender(10);
+    final var largeChunkProcessor = new BatchOperationChunkAppender(10, mockOrdinalKeyProvider);
     final var items =
         List.of(new Item(100L, 200L, null), new Item(101L, 201L, null), new Item(102L, 202L, null));
     final var page = new ItemPage(items, "cursor", 3L, false);

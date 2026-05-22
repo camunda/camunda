@@ -212,9 +212,9 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
                 .onlyEvents()
                 .limitByCount(
                     record -> record.getIntent().equals(BatchOperationIntent.INITIALIZING),
-                    4)) // reduce to 5000, 2500, 1250 and then one more init-phase
+                    4)) // reduce to 5000, 2500, 1250, 625 (ordinalKey adds bytes per record)
         .extracting(r -> r.getValue().getSearchQueryPageSize())
-        .containsSequence(5000, 2500, 1250, 1250);
+        .containsSequence(5000, 2500, 1250, 625);
 
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()

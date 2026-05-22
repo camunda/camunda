@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
@@ -58,9 +59,10 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
   private final ObjectProperty<NestedRecord> followUpCommandProp =
       new ObjectProperty<>(PROP_FOLLOWUP_COMMAND, new NestedRecord());
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
 
   public BatchOperationCreationRecord() {
-    super(9);
+    super(10);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
@@ -69,7 +71,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
         .declareProperty(authenticationProp)
         .declareProperty(authorizationCheckProp)
         .declareProperty(partitionIdsProp)
-        .declareProperty(followUpCommandProp);
+        .declareProperty(followUpCommandProp)
+        .declareProperty(ordinalKeyProp);
   }
 
   @Override
@@ -175,6 +178,16 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
+    return this;
+  }
+
   public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
     batchOperationKeyProp.setValue(record.getBatchOperationKey());
     batchOperationTypeProp.setValue(record.getBatchOperationType());
@@ -184,7 +197,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     authenticationProp.setValue(record.getAuthenticationBuffer());
     setPartitionIds(record.getPartitionIds());
     followUpCommandProp.getValue().wrap(record.getFollowUpCommand());
-
+    setOrdinalKey(record.getOrdinalKey());
     return this;
   }
 }

@@ -71,6 +71,7 @@ public final class BatchOperationPartitionLifecycleFailProcessor
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(batchOperationKey)
             .setSourcePartitionId(command.getPartitionId())
+            .setOrdinalKey(command.getValue().getOrdinalKey())
             .setError(recordValue.getError());
 
     LOGGER.debug(
@@ -79,13 +80,17 @@ public final class BatchOperationPartitionLifecycleFailProcessor
         boLeadPartitionId);
 
     if (boLeadPartitionId == command.getPartitionId()) {
+      final var oBatchOperation = batchOperationState.get(batchOperationKey);
+
+      // override if present, but not an issue as this intent is not handled by exporters
+      oBatchOperation.ifPresent(bo -> batchInternalFail.setOrdinalKey(bo.getOrdinalKey()));
+
       commandWriter.appendFollowUpCommand(
           batchOperationKey,
           BatchOperationIntent.FAIL_PARTITION,
           batchInternalFail,
           FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
 
-      final var oBatchOperation = batchOperationState.get(batchOperationKey);
       oBatchOperation.ifPresent(
           persistedBatchOperation ->
               metrics.recordFailed(persistedBatchOperation.getBatchOperationType()));

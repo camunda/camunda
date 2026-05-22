@@ -158,7 +158,8 @@ public class BatchOperationInitializationBehavior {
 
   private void finishInitialization(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
-    commands.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
+    commands.appendFinishInitializationCommand(
+        resultBuilder, batchOperation.getKey(), batchOperation.getOrdinalKey());
     metrics.recordInitialized(batchOperation.getBatchOperationType());
   }
 
