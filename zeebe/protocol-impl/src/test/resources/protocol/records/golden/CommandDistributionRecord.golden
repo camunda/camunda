@@ -62,7 +62,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
   private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
-  private static final StringValue START_TIME_KEY = new StringValue("timestamp");
+  private static final StringValue START_TIME_KEY = new StringValue("startTime");
 
   // You'll need to register any of the records value's that you want to distribute
   static {

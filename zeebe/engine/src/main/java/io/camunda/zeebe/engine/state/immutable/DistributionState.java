@@ -73,8 +73,8 @@ public interface DistributionState {
   /**
    * Returns the {@link DistributionMetadata} persisted for a specific distribution and target
    * partition. Metadata is written by {@link
-   * io.camunda.zeebe.engine.state.mutable.MutableDistributionState#addRetriableDistribution(long,
-   * int, long)} (the 3-arg variant) and removed when the retriable entry is removed.
+   * io.camunda.zeebe.engine.state.mutable.MutableDistributionState} and removed when the retriable
+   * entry is removed.
    *
    * @param distributionKey the key of the distribution
    * @param partition the target partition of the distribution
