@@ -288,6 +288,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 
 **Task 18 (real webapps end-to-end) is a follow-up.** The PoC validates the security wiring against the SPA demo controllers — exercising the actual Operate + Tasklist UIs against PT chains is meaningful but mechanical follow-up work that depends on those webapp profiles' specific routing/asset expectations.
 
+**Drop `PhysicalTenantLoginPageController` (follow-up).** PT-prefixed `/login` already uses Spring's auto-generated `DefaultLoginPageGeneratingFilter` (the chain factory retargets its URL after `build()`). The controller exists only to render the unprefixed `/login` because CSL's `OidcWebapp` chain doesn't register that filter. Once CSL's chain wires it — either by leaving the picker auto-registered on `oauth2Login()` or by exposing a host-facing post-build hook — the controller can be deleted entirely. Real production impl should not ship it.
+
 **What currently works:**
 
 - Two Keycloak realms boot on `:8081` (default) and `:8082` (tenanta).

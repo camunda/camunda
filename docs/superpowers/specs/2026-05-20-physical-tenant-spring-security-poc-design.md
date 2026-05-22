@@ -417,6 +417,7 @@ If iteration speed becomes the bottleneck, swapping to `no.nav.security:mock-oau
 - Migration of cookie `name` and `Path` for non-PT users — backwards compat for existing deployments stays on the default tenant's unprefixed chains with `Path=/` and existing cookie name.
 - Per-PT *durable* secondary storage for the session repository. The PoC uses in-memory per-tenant `PersistentWebSessionClient` instances. Wiring per-tenant RDBMS/search (per-tenant `SqlSessionFactory` + `PersistentWebSessionMapper`, or per-tenant `SearchClients`-backed `PersistentWebSessionSearchImpl`) is a separate follow-up: it requires fanning out `MyBatisConfiguration` (or its search counterpart) per tenant and adding per-tenant rdbms overlays in `application-pt-poc.yaml`. That work is unrelated to the security wiring this PoC validates.
 - Forbidden-override validation (#52680) for the PT properties this PoC touches.
+- Remove `PhysicalTenantLoginPageController` once CSL's `OidcWebapp` chain registers `DefaultLoginPageGeneratingFilter` itself. The PoC's PT chains already use Spring's auto-generated picker (via a post-build `setLoginPageUrl` on the shared filter); the controller exists only because CSL's standard chain doesn't wire that filter for the unprefixed `/login`. Real production impl should drop the controller and either let CSL `oauth2Login()` without a `.loginPage()` override on the OidcWebapp chain, or expose a host-facing post-build hook so the same trick applies upstream.
 
 ---
 
