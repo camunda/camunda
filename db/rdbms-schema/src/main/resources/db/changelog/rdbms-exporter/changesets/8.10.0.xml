@@ -243,4 +243,17 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_agent_instance_element_instance_agent_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_AGENT_INSTANCE_KEY"
+          tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_INSTANCE_AGENT_INSTANCE_KEY">
+      <column name="AGENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>
