@@ -22,8 +22,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
-import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
-import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -207,9 +207,10 @@ public class AgentDashboardService {
 
   private List<DashboardFilterDto<?>> buildAvailableFilters() {
     final DashboardInstanceEndDateFilterDto endDateFilter = new DashboardInstanceEndDateFilterDto();
-    final RollingDateFilterDataDto rolling =
-        new RollingDateFilterDataDto(new RollingDateFilterStartDto(30L, DateUnit.DAYS));
-    endDateFilter.setData(new DashboardDateFilterDataDto(rolling));
+    // Default to "Last 30 days" relative filter — matches the frontend preset ComboBox default
+    final RelativeDateFilterDataDto relative =
+        new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(30L, DateUnit.DAYS));
+    endDateFilter.setData(new DashboardDateFilterDataDto(relative));
 
     return List.of(endDateFilter, new DashboardProcessScopeFilterDto());
   }

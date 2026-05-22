@@ -18,6 +18,56 @@ import {useErrorHandling} from 'hooks';
 
 import {getDefaultFilter} from '../service';
 
+const DATE_PRESETS = [
+  {
+    id: 'today',
+    label: 'Today',
+    filter: {type: 'relative', start: {value: 0, unit: 'days'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'yesterday',
+    label: 'Yesterday',
+    filter: {type: 'relative', start: {value: 1, unit: 'days'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'last7days',
+    label: 'Last 7 days',
+    filter: {type: 'relative', start: {value: 7, unit: 'days'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'last30days',
+    label: 'Last 30 days',
+    filter: {type: 'relative', start: {value: 30, unit: 'days'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'last3months',
+    label: 'Last 3 months',
+    filter: {type: 'relative', start: {value: 3, unit: 'months'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'last6months',
+    label: 'Last 6 months',
+    filter: {type: 'relative', start: {value: 6, unit: 'months'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+  {
+    id: 'last12months',
+    label: 'Last 12 months',
+    filter: {type: 'relative', start: {value: 12, unit: 'months'}, end: null, excludeUndefined: false, includeUndefined: false},
+  },
+];
+
+function findDatePreset(filterData) {
+  if (!filterData) return null;
+  return (
+    DATE_PRESETS.find(
+      (p) =>
+        filterData.type === 'relative' &&
+        filterData.start?.value === p.filter.start.value &&
+        filterData.start?.unit === p.filter.start.unit
+    ) || null
+  );
+}
+
 import InstanceStateFilter from './InstanceStateFilter';
 import DateFilter from './DateFilter';
 import VariableFilter from './VariableFilter';
@@ -108,6 +158,31 @@ export default function FiltersView({
             case 'instanceStartDate':
             case 'instanceEndDate': {
               const dateFilter = filter.find((filter) => filter.type === type);
+              if (datePresetMode === 'agentic') {
+                const selectedPreset = findDatePreset(dateFilter?.data) || DATE_PRESETS[3]; // default: Last 30 days
+                return (
+                  <div key={type} className="ProcessScopeFilter__Dashboard">
+                    <div className="title">{t('dashboard.filter.types.' + type)}</div>
+                    <ComboBox
+                      id="agentic-date-preset"
+                      className="agentic-date-preset-combobox"
+                      size="sm"
+                      items={DATE_PRESETS}
+                      itemToString={(item) => item?.label ?? ''}
+                      selectedItem={selectedPreset}
+                      onChange={({selectedItem}) => {
+                        if (!selectedItem) return;
+                        const rest = filter.filter((f) => f.type !== type);
+                        setFilter([...rest, {type, data: selectedItem.filter, filterLevel: 'instance'}]);
+                      }}
+                      shouldFilterItem={({inputValue, item}) => {
+                        if (!inputValue || item?.label === selectedPreset?.label) return true;
+                        return item?.label.toLowerCase().includes(inputValue.toLowerCase());
+                      }}
+                    />
+                  </div>
+                );
+              }
               return (
                 <DateFilter
                   key={type}
