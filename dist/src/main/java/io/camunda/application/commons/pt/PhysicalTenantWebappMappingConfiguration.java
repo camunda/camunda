@@ -8,11 +8,13 @@
 package io.camunda.application.commons.pt;
 
 import io.camunda.application.commons.identity.PhysicalTenantsConfiguredCondition;
+import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -65,5 +67,27 @@ public class PhysicalTenantWebappMappingConfiguration implements WebMvcConfigure
   @Override
   public void addInterceptors(final InterceptorRegistry registry) {
     registry.addInterceptor(physicalTenantWebappContextPathInterceptor());
+  }
+
+  /**
+   * Maps PT-prefixed static-asset URLs to the same classpath locations Spring Boot's default
+   * handler serves the unprefixed assets from. After {@link
+   * PhysicalTenantWebappContextPathInterceptor} rewrites {@code <base href>} to {@code
+   * /physical-tenant/<id>/operate/}, the SPA emits asset requests like {@code
+   * /physical-tenant/<id>/operate/assets/index-xyz.js}; without this resource handler those URLs
+   * 404 (no controller matches and the default static-resource handler is wired to {@code
+   * /operate/**}).
+   *
+   * <p>Covers operate, tasklist, and admin in parallel with {@link
+   * PhysicalTenantWebappRequestMappingHandlerMapping#WEBAPP_BASES} (kept in sync by convention;
+   * both lists are small).
+   */
+  @Override
+  public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+    for (final String app : Set.of("operate", "tasklist", "admin")) {
+      registry
+          .addResourceHandler("/physical-tenant/{tenantId}/" + app + "/**")
+          .addResourceLocations("classpath:/META-INF/resources/" + app + "/");
+    }
   }
 }
