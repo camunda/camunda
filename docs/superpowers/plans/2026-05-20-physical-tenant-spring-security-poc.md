@@ -1783,9 +1783,16 @@ git commit -m "refactor: register PT chains programmatically from PhysicalTenant
 
 ---
 
-## Task 14: PhysicalTenantSecurityIT — happy path
+## Task 14: PhysicalTenantSecurityIT — happy path  *(SKIPPED — deferred to upstream)*
 
-**Goal:** End-to-end Testcontainers IT booting two `KeycloakContainer`s + OC in-JVM. Drives the OIDC flow programmatically and asserts the redirect-to-IdP behaviour from Task 4. Becomes the CI gate.
+> **Status:** skipped at PoC close. Functional verification rides on
+> [`pt-poc-api-smoke.sh`](../../../pt-poc-api-smoke.sh) and manual browser smoke (Task 16).
+> An IT attempt under `dist/` test scope hit a Spring wiring obstacle: `OidcAuthenticationConfigurationRepository`
+> returns empty during context boot even though the same property layout works at runtime — likely an
+> interaction with `dist/`-level `@AutoConfiguration` units. The right home for this IT is the eventual CSL upstreaming
+> work, where the multi-IdP / multi-tenant test infrastructure already exists.
+
+**Original goal (preserved for context):** End-to-end Testcontainers IT booting two `KeycloakContainer`s + OC in-JVM. Drives the OIDC flow programmatically and asserts the redirect-to-IdP behaviour from Task 4. Becomes the CI gate.
 
 **Files:**
 - Create: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`
@@ -1818,9 +1825,14 @@ git commit -m "test: add PhysicalTenantSecurityIT happy-path redirect assertion"
 
 ---
 
-## Task 15: PhysicalTenantSecurityIT — full flow + isolation
+## Task 15: PhysicalTenantSecurityIT — full flow + isolation  *(SKIPPED — deferred to upstream)*
 
-**Goal:** Extend the IT to drive the complete OIDC authorization-code flow and assert (a) the tenant-scoped cookie is issued, (b) tenant A's cookie does not authenticate the default tenant's chain, (c) a tenant-A-issued bearer token returns 401 on the default tenant's API chain.
+> **Status:** skipped at PoC close, alongside Task 14. The full code-flow + cross-tenant isolation assertions
+> are exercised end-to-end by the smoke script (`pt-poc-api-smoke.sh` runs the cross-tenant matrix + session
+> cross-tenant cells against a live IdP setup) and manual browser smoke. The IT will land when PT is upstreamed
+> into CSL.
+
+**Original goal (preserved for context):** Extend the IT to drive the complete OIDC authorization-code flow and assert (a) the tenant-scoped cookie is issued, (b) tenant A's cookie does not authenticate the default tenant's chain, (c) a tenant-A-issued bearer token returns 401 on the default tenant's API chain.
 
 **Files:**
 - Modify: `dist/src/test/java/io/camunda/application/pt/PhysicalTenantSecurityIT.java`

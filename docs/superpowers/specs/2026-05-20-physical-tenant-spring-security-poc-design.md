@@ -1,7 +1,7 @@
 # Physical-Tenant Spring Security PoC — Design
 
-**Status:** Draft for review
-**Scope:** OC (`dist/`) application only. Optimize, Operate, Tasklist out of scope.
+**Status:** **PoC closed 2026-05-22.** Functional surface complete and verified via `pt-poc-api-smoke.sh` matrix + manual browser smoke. Open follow-ups: Task 18 (real Operate + Tasklist webapps on PT chains); Tasks 14/15 (Testcontainers ITs — skipped, deferred to the eventual CSL upstreaming work where the multi-IdP test infrastructure already exists).
+**Scope:** OC (`dist/`) application only. Optimize out of scope.
 **Audience:** sebastian.bathke@camunda.com / identity squad.
 
 ---
