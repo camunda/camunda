@@ -354,6 +354,22 @@
       "enabled": false
     },
     {
+      "description": "Disable http-proxy-middleware major updates in Optimize — v4 breaks the pipeline (reverted in fbbbe62a791c). Re-evaluate when Optimize's webpack-dev-server setup is compatible with v4.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "optimize/**"
+      ],
+      "matchPackageNames": [
+        "http-proxy-middleware"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Exclude Optimize backend dependencies",
       "matchManagers": [
         "maven"
