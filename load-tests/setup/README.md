@@ -17,7 +17,7 @@ Follow these guides to install each of them:
 
 * tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
+* Helm 4.*  https://helm.sh/docs/intro/install/
 * docker https://docs.docker.com/install/
 * kubens/kubectx https://github.com/ahmetb/kubectx
 * OPTIONAL go https://golang.org/doc/install
@@ -36,8 +36,9 @@ tsh kube login camunda-benchmark-prod
 ## If you don't have access, request it in the #ask-infra Slack channel.
 docker login registry.camunda.cloud
 
-## install helm
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+## install helm (v4 required for Camunda chart 8.10+; note: the script is named get-helm-3 for
+## historical reasons but installs the latest version, which is v4+)
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
 
@@ -63,7 +64,7 @@ These are the components to install on Windows:
 These are the components to install within the WSL:
 * tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
+* Helm 4.*  https://helm.sh/docs/intro/install/
 * kubens/kubectx https://github.com/ahmetb/kubectx
 
 When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
