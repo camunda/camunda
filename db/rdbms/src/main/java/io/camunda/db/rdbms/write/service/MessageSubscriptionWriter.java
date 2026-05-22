@@ -14,9 +14,11 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 
 public class MessageSubscriptionWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
+  private final MessageSubscriptionMapper mapper;
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
@@ -25,6 +27,7 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
       final MessageSubscriptionMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
     super(mapper);
+    this.mapper = mapper;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
@@ -53,5 +56,11 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
             messageSubscription.messageSubscriptionKey(),
             "io.camunda.db.rdbms.sql.MessageSubscriptionMapper.update",
             messageSubscription));
+  }
+
+  public int deleteStartEventSubscriptionsByProcessDefinitionKeys(
+      final List<Long> processDefinitionKeys, final int limit) {
+    return mapper.deleteStartEventSubscriptionsByProcessDefinitionKeys(
+        processDefinitionKeys, limit);
   }
 }

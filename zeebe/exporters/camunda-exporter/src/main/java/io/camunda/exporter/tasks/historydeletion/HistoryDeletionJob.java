@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -50,6 +51,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final DecisionInstanceTemplate decisionInstanceTemplate;
   private final DecisionRequirementsIndex decisionRequirementsIndex;
   private final DecisionIndex decisionIndex;
+  private final MessageSubscriptionTemplate messageSubscriptionTemplate;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -72,6 +74,8 @@ public class HistoryDeletionJob implements BackgroundTask {
     decisionRequirementsIndex =
         resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
     decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
+    messageSubscriptionTemplate =
+        resourceProvider.getIndexTemplateDescriptor(MessageSubscriptionTemplate.class);
   }
 
   @Override
@@ -206,9 +210,15 @@ public class HistoryDeletionJob implements BackgroundTask {
     }
 
     return deleterRepository
-        .deleteDocumentsById(
-            processIndex.getFullQualifiedName(),
-            processDefinitions.stream().map(Object::toString).toList())
+        .deleteDocumentsByField(
+            messageSubscriptionTemplate.getIndexPattern(),
+            MessageSubscriptionTemplate.PROCESS_KEY,
+            processDefinitions)
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsById(
+                    processIndex.getFullQualifiedName(),
+                    processDefinitions.stream().map(Object::toString).toList()))
         .thenApply(
             ignored -> {
               final var ids = new ArrayList<>(deletedResourceIds);

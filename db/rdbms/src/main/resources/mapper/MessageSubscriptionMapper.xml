@@ -278,6 +278,50 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteStartEventSubscriptionsByProcessDefinitionKeys">
+    DELETE FROM ${prefix}MESSAGE_SUBSCRIPTION
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    AND MESSAGE_SUBSCRIPTION_TYPE = 'START_EVENT'
+    LIMIT #{limit}
+  </delete>
+
+  <delete id="deleteStartEventSubscriptionsByProcessDefinitionKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}MESSAGE_SUBSCRIPTION
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    AND MESSAGE_SUBSCRIPTION_TYPE = 'START_EVENT'
+  </delete>
+
+  <delete id="deleteStartEventSubscriptionsByProcessDefinitionKeys" databaseId="oracle">
+    DELETE FROM ${prefix}MESSAGE_SUBSCRIPTION
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}MESSAGE_SUBSCRIPTION
+                    WHERE PROCESS_DEFINITION_KEY IN
+                    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                      #{key}
+                    </foreach>
+                    AND MESSAGE_SUBSCRIPTION_TYPE = 'START_EVENT'
+                    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <delete id="deleteStartEventSubscriptionsByProcessDefinitionKeys" databaseId="postgresql">
+    DELETE FROM ${prefix}MESSAGE_SUBSCRIPTION
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}MESSAGE_SUBSCRIPTION
+                   WHERE PROCESS_DEFINITION_KEY IN
+                   <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                     #{key}
+                   </foreach>
+                   AND MESSAGE_SUBSCRIPTION_TYPE = 'START_EVENT'
+                   LIMIT #{limit})
+  </delete>
+
   <!-- Message Subscription Process Definition Statistics Aggregation -->
   <select id="getProcessDefinitionStatistics"
     parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionMessageSubscriptionStatisticsDbQuery"
