@@ -108,28 +108,31 @@ public final class BatchOperationLifecycleManagementResumeProcessor
     LOGGER.debug("Resuming batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isEmpty()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isEmpty()) {
       rejectNotFound(command, batchOperationKey, recordValue);
       return;
     }
 
     // check if the batch operation can be resumed
-    if (!batchOperation.get().canResume()) {
-      final var batchOperationStatus = batchOperation.get().getStatus().name();
+    final PersistedBatchOperation bo = oBatchOperation.get();
+    recordValue.setOrdinalKey(bo.getOrdinalKey());
+
+    if (!bo.canResume()) {
+      final var batchOperationStatus = bo.getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
     }
 
-    resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
+    resumeBatchOperation(resumeKey, bo, recordValue);
     responseWriter.writeEventOnCommand(
-        resumeKey, BatchOperationIntent.RESUMED, command.getValue(), command);
+        resumeKey, BatchOperationIntent.RESUMED, recordValue, command);
     commandDistributionBehavior
         .withKey(resumeKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
 
-    metrics.recordResumed(batchOperation.get().getBatchOperationType());
+    metrics.recordResumed(bo.getBatchOperationType());
   }
 
   @Override
@@ -139,13 +142,14 @@ public final class BatchOperationLifecycleManagementResumeProcessor
     final var batchOperationKey = recordValue.getBatchOperationKey();
 
     // Validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isPresent() && batchOperation.get().canResume()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isPresent() && oBatchOperation.get().canResume()) {
       LOGGER.debug(
           "Processing distributed command to resume with key '{}': {}",
           batchOperationKey,
           recordValue);
-      resumeBatchOperation(batchOperationKey, batchOperation.get(), recordValue);
+      recordValue.setOrdinalKey(oBatchOperation.get().getOrdinalKey());
+      resumeBatchOperation(batchOperationKey, oBatchOperation.get(), recordValue);
     } else {
       LOGGER.debug(
           "Distributed command to resume a batch operation with key '{}' will be ignored: {}",
@@ -168,6 +172,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
+    batchExecute.setOrdinalKey(batchOperation.getOrdinalKey());
     if (batchOperation.isInitialized()) {
       commandWriter.appendFollowUpCommand(
           batchOperation.getKey(),

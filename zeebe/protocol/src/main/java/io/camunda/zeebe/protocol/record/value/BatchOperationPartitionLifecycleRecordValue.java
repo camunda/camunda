@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationPartitionLifecycleRecordValue.Builder.class)
 public interface BatchOperationPartitionLifecycleRecordValue
-    extends BatchOperationRelated, RecordValue {
+    extends BatchOperationRelated, OrdinalKeyBased, RecordValue {
 
   /**
    * Returns the partition id of the source partition where this record was created.

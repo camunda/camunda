@@ -182,6 +182,7 @@ public final class BatchOperationExecutionExecuteProcessor
         command.getPartitionId());
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
+    followupCommand.setOrdinalKey(batchOperation.getOrdinalKey());
     commandWriter.appendFollowUpCommand(
         command.getKey(),
         BatchOperationExecutionIntent.EXECUTE,
@@ -196,6 +197,7 @@ public final class BatchOperationExecutionExecuteProcessor
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
     batchExecute.setItemKeys(keys);
+    batchExecute.setOrdinalKey(executionRecord.getOrdinalKey());
     stateWriter.appendFollowUpEvent(
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTING,
@@ -220,6 +222,7 @@ public final class BatchOperationExecutionExecuteProcessor
 
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setItemKeys(keys);
+    batchExecute.setOrdinalKey(batchOperation.getOrdinalKey());
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTED,
@@ -233,6 +236,7 @@ public final class BatchOperationExecutionExecuteProcessor
     final var batchInternalComplete =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
+            .setOrdinalKey(executionRecord.getOrdinalKey())
             .setSourcePartitionId(command.getPartitionId());
 
     LOGGER.debug(

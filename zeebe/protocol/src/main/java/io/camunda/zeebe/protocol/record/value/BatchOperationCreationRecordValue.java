@@ -29,7 +29,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationCreationRecordValue.Builder.class)
-public interface BatchOperationCreationRecordValue extends BatchOperationRelated, RecordValue {
+public interface BatchOperationCreationRecordValue
+    extends BatchOperationRelated, OrdinalKeyBased, RecordValue {
   /**
    * @return batch operation type which defines the batch operation which should operate on the keys
    */

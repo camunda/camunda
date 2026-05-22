@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.base.Strings;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
@@ -26,9 +27,12 @@ import org.slf4j.LoggerFactory;
 public class BatchOperationCommands {
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationCommands.class);
   private final int partitionId;
+  private final OrdinalKeyProvider ordinalKeyProvider;
 
-  public BatchOperationCommands(final int partitionId) {
+  public BatchOperationCommands(
+      final int partitionId, final OrdinalKeyProvider ordinalKeyProvider) {
     this.partitionId = partitionId;
+    this.ordinalKeyProvider = ordinalKeyProvider;
   }
 
   public void appendInitializationCommand(
@@ -39,6 +43,7 @@ public class BatchOperationCommands {
     final var command =
         new BatchOperationInitializationRecord()
             .setBatchOperationKey(batchOperationKey)
+            .setOrdinalKey(ordinalKeyProvider.getOrdinal(batchOperationKey))
             .setSearchResultCursor(Strings.nullToEmpty(searchResultCursor))
             .setSearchQueryPageSize(pageSize);
 
@@ -51,9 +56,11 @@ public class BatchOperationCommands {
   }
 
   public void appendFinishInitializationCommand(
-      final TaskResultBuilder builder, final long batchOperationKey) {
+      final TaskResultBuilder builder, final long batchOperationKey, final int ordinalKey) {
     final var command =
-        new BatchOperationInitializationRecord().setBatchOperationKey(batchOperationKey);
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setOrdinalKey(ordinalKey);
     LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
 
     builder.appendCommandRecord(

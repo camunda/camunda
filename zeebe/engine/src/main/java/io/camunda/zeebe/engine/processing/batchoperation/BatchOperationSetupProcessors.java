@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -53,6 +54,7 @@ public final class BatchOperationSetupProcessors {
       final EngineConfiguration engineConfiguration,
       final int partitionId,
       final RoutingInfo routingInfo,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final BatchOperationMetrics batchOperationMetrics,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     final var batchExecutionHandlers =
@@ -83,8 +85,9 @@ public final class BatchOperationSetupProcessors {
     final var batchOperationInitializer =
         new BatchOperationInitializationBehavior(
             new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
-            new BatchOperationChunkAppender(engineConfiguration.getBatchOperationChunkSize()),
-            new BatchOperationCommands(partitionId),
+            new BatchOperationChunkAppender(
+                engineConfiguration.getBatchOperationChunkSize(), ordinalKeyProvider),
+            new BatchOperationCommands(partitionId, ordinalKeyProvider),
             batchOperationMetrics);
 
     final var retryHandler =
@@ -105,6 +108,7 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior,
                 authorizationCheckBehavior,
                 routingInfo,
+                ordinalKeyProvider,
                 batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
@@ -127,7 +131,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
-            new BatchOperationChunkCreateProcessor(writers, keyGenerator))
+            new BatchOperationChunkCreateProcessor(writers, keyGenerator, ordinalKeyProvider))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,

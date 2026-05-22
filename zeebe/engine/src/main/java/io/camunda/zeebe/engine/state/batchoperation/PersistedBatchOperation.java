@@ -132,8 +132,11 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   private final ObjectProperty<NestedRecord> followUpCommandProp =
       new ObjectProperty<>("followUpCommand", new NestedRecord());
 
+  /** The ordinal key of the batch operation. */
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty("ordinalKey", 0);
+
   public PersistedBatchOperation() {
-    super(17);
+    super(18);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -150,7 +153,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(numTotalItemsProp)
         .declareProperty(numExecutedItemsProp)
         .declareProperty(errorsProp)
-        .declareProperty(followUpCommandProp);
+        .declareProperty(followUpCommandProp)
+        .declareProperty(ordinalKeyProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -162,6 +166,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setAuthentication(record.getAuthenticationBuffer());
     setPartitions(record.getPartitionIds());
     setFollowUpCommand(record.getFollowUpCommand());
+    setOrdinalKey(record.getOrdinalKey());
     return this;
   }
 
@@ -340,6 +345,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public boolean hasFollowUpCommand() {
     return !followUpCommandProp.getValue().getValueType().equals(ValueType.NULL_VAL);
+  }
+
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public PersistedBatchOperation setOrdinalKey(final int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
+    return this;
   }
 
   public PersistedBatchOperation addFinishedPartition(final int partitionId) {

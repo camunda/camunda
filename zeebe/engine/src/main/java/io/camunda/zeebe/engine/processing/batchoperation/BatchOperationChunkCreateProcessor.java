@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,11 +29,15 @@ public final class BatchOperationChunkCreateProcessor
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final OrdinalKeyProvider ordinalKeyProvider;
 
   public BatchOperationChunkCreateProcessor(
-      final Writers writers, final KeyGenerator keyGenerator) {
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final OrdinalKeyProvider ordinalKeyProvider) {
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
+    this.ordinalKeyProvider = ordinalKeyProvider;
   }
 
   @Override
@@ -43,7 +48,10 @@ public final class BatchOperationChunkCreateProcessor
         recordValue.getItems().size(),
         recordValue.getBatchOperationKey());
 
+    final long batchOperationKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
-        keyGenerator.nextKey(), BatchOperationChunkIntent.CREATED, recordValue);
+        batchOperationKey,
+        BatchOperationChunkIntent.CREATED,
+        recordValue.setOrdinalKey(ordinalKeyProvider.getOrdinal(batchOperationKey)));
   }
 }

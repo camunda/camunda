@@ -131,12 +131,12 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
         type: string
         required: false
-        default: custom
+        default: "realistic"
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. Can be combined with any scenario, or used alone when scenario is empty.'
         type: string
         required: false
       platform-helm-values:
@@ -203,6 +203,14 @@ env:
   # Namespaces MUST start with c8 due to access policy
   NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  # Workaround to prevent the Kubernetes client SDK from failing while
+  # https://github.com/gravitational/teleport/issues/64188 is opened.
+  # See https://app.incident.io/camunda/incidents/5624 for more details.
+  # This needs to be applied to all the subcommands run in this workflow.
+  # Consider removing this once
+  # https://github.com/gravitational/teleport/issues/64188 has been fixed and
+  # deployed.
+  KUBE_FEATURE_WatchListClient: "false"
 
 defaults:
   run:
@@ -464,6 +472,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+      # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        with:
+          tool_versions: |
+            helm 4.2.0
       # Authenticate with Teleport
       - name: Set up Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
@@ -478,18 +492,44 @@ jobs:
             token: ${{ env.TELEPORT_JOIN_TOKEN }}
             kubernetes-cluster: ${{ env.CLUSTER }}
 
-      - name: Create namespace if not exists
+      - name: Print tool versions
+        run: |
+          helm_v=$(helm version --short 2>&1 || true)
+          kubectl_v=$(kubectl version --client -o json 2>/dev/null | jq -r '.clientVersion.gitVersion' || true)
+          tsh_v=$(tsh version --client --format=json 2>/dev/null | jq -r '.version' || tsh version 2>&1 | head -1)
+          git_v=$(git --version)
+          openssl_v=$(openssl version)
+          awk_v=$(awk --version 2>/dev/null | head -1 || awk -W version 2>&1 | head -1)
+          jq_v=$(jq --version)
+
+          {
+            echo "## Tool versions"
+            echo ""
+            echo "| Tool | Version |"
+            echo "|------|---------|"
+            echo "| helm | \`${helm_v}\` |"
+            echo "| kubectl | \`${kubectl_v}\` |"
+            echo "| tsh | \`${tsh_v}\` |"
+            echo "| git | \`${git_v}\` |"
+            echo "| openssl | \`${openssl_v}\` |"
+            echo "| awk | \`${awk_v}\` |"
+            echo "| jq | \`${jq_v}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::group::Tool versions"
+          printf '%-10s %s\n' helm "${helm_v}" kubectl "${kubectl_v}" tsh "${tsh_v}" \
+            git "${git_v}" openssl "${openssl_v}" awk "${awk_v}" jq "${jq_v}"
+          echo "::endgroup::"
+
+      - name: Scaffold load-test folder
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
-          # Create the namespace for the load test
+          # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
+          # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
           ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
-          # Annotate namespace with the workflow run URL for traceability
-          kubectl annotate namespace ${{ env.NAMESPACE }} \
-            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --overwrite
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
@@ -554,6 +594,12 @@ jobs:
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
+      - name: Annotate namespace with workflow run URL
+        run: |
+          # Traceability annotation, applied after `make install` has created the namespace.
+          kubectl annotate namespace ${{ env.NAMESPACE }} \
+            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --overwrite
       - name: Summarize platform deployment
         if: success()
         run: |

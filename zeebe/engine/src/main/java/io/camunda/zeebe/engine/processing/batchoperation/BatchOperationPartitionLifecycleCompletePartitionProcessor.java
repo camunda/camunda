@@ -80,11 +80,12 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
   }
 
   private void doProcessRecord(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
-    final var batchOperationKey = command.getValue().getBatchOperationKey();
+    final var recordValue = command.getValue();
+    final var batchOperationKey = recordValue.getBatchOperationKey();
     LOGGER.debug(
         "Processing command from partition {} to mark batch operation {} as completed",
-        command.getValue().getSourcePartitionId(),
-        command.getValue().getBatchOperationKey());
+        recordValue.getSourcePartitionId(),
+        recordValue.getBatchOperationKey());
 
     final var oBatchOperation = batchOperationState.get(batchOperationKey);
     if (oBatchOperation.isEmpty()) {
@@ -92,22 +93,24 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
     }
 
     final var bo = oBatchOperation.get();
-    if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
+    if (bo.getFinishedPartitions().contains(recordValue.getSourcePartitionId())) {
       LOGGER.debug(
           "Batch operation {} already contains partition {}, ignoring command",
           batchOperationKey,
-          command.getValue().getSourcePartitionId());
+          recordValue.getSourcePartitionId());
       return;
     }
+
+    recordValue.setOrdinalKey(bo.getOrdinalKey());
 
     // mark the source partition as finished. This information is directly applied and present
     // in the batch operation state
     stateWriter.appendFollowUpEvent(
         batchOperationKey,
         BatchOperationIntent.PARTITION_COMPLETED,
-        command.getValue(),
+        recordValue,
         FollowUpEventMetadata.of(
-            b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
+            b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
 
     // after the source partition is marked as finished, we check if now all partitions are
     // finished (either completed or failed). If yes, we can append the final COMPLETED event
@@ -126,6 +129,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
 
     final var batchCompleted = new BatchOperationLifecycleManagementRecord();
     batchCompleted.setBatchOperationKey(batchOperationKey);
+    batchCompleted.setOrdinalKey(bo.getOrdinalKey());
     if (!bo.getErrors().isEmpty()) {
       LOGGER.debug(
           "Some partitions ({}) finished with errors, appending them to COMPLETED event for batch operation {}",

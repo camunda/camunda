@@ -381,6 +381,7 @@ public final class EngineProcessors {
         config,
         partitionId,
         routingInfo,
+        ordinalKeyProvider,
         batchOperationMetrics,
         brokerRequestAuthorizationConverter);
 

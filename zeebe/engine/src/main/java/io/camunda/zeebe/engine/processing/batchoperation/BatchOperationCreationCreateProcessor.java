@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -58,6 +59,7 @@ public final class BatchOperationCreationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final RoutingInfo routingInfo;
+  private final OrdinalKeyProvider ordinalKeyProvider;
   private final BatchOperationMetrics metrics;
   private final BatchOperationState batchOperationState;
 
@@ -68,6 +70,7 @@ public final class BatchOperationCreationCreateProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final RoutingInfo routingInfo,
+      final OrdinalKeyProvider ordinalKeyProvider,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     batchOperationState = state.getBatchOperationState();
@@ -77,6 +80,7 @@ public final class BatchOperationCreationCreateProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     this.routingInfo = routingInfo;
+    this.ordinalKeyProvider = ordinalKeyProvider;
     this.metrics = metrics;
   }
 
@@ -114,6 +118,7 @@ public final class BatchOperationCreationCreateProcessor
     final var recordWithKey = new BatchOperationCreationRecord();
     recordWithKey.wrap(recordValue);
     recordWithKey.setBatchOperationKey(key);
+    recordWithKey.setOrdinalKey(ordinalKeyProvider.getOrdinal(key));
     // we remember the partition ids of the batch operation, so that we can count the number of
     // finished partitions in the end.
     recordWithKey.setPartitionIds(routingInfo.partitions());

@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
@@ -29,13 +30,15 @@ class BatchOperationCommandsTest {
 
   private static final int PARTITION_ID = 1;
   private static final long BATCH_OPERATION_KEY = 123L;
+  private static final int ORDINAL_KEY = 789;
 
   private BatchOperationCommands appender;
   private TaskResultBuilder mockBuilder;
+  private final OrdinalKeyProvider mockOrdinalKeyProvider = mock(OrdinalKeyProvider.class);
 
   @BeforeEach
   void setUp() {
-    appender = new BatchOperationCommands(PARTITION_ID);
+    appender = new BatchOperationCommands(PARTITION_ID, mockOrdinalKeyProvider);
     mockBuilder = mock(TaskResultBuilder.class);
   }
 
@@ -90,7 +93,7 @@ class BatchOperationCommandsTest {
   @Test
   void shouldAppendFinishInitializationCommand() {
     // when
-    appender.appendFinishInitializationCommand(mockBuilder, BATCH_OPERATION_KEY);
+    appender.appendFinishInitializationCommand(mockBuilder, BATCH_OPERATION_KEY, ORDINAL_KEY);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationInitializationRecord.class);
@@ -177,7 +180,8 @@ class BatchOperationCommandsTest {
   void shouldUseCorrectPartitionIdInFailureCommand() {
     // given
     final int differentPartitionId = 5;
-    final var differentAppender = new BatchOperationCommands(differentPartitionId);
+    final var differentAppender =
+        new BatchOperationCommands(differentPartitionId, mockOrdinalKeyProvider);
     final String errorMessage = "Partition specific error";
     final BatchOperationErrorType errorType = BatchOperationErrorType.UNKNOWN;
 

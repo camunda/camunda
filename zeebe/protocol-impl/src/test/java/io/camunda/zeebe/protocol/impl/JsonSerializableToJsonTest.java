@@ -3843,7 +3843,8 @@ final class JsonSerializableToJsonTest {
                     "valueType": "NULL_VAL",
                     "intent": "UNKNOWN",
                     "recordValue": null
-                  }
+                  },
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -3968,7 +3969,8 @@ final class JsonSerializableToJsonTest {
                         "tenantId": "<default>",
                         "decisionDefinitionId": ""
                       }
-                    }
+                    },
+                    "ordinalKey": 0
                  }
                 """
       },
@@ -3984,7 +3986,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "items": []
+                  "items": [],
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -4013,18 +4016,21 @@ final class JsonSerializableToJsonTest {
                       "itemKey": 1,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": 3,
+                      "ordinalKey": 0,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 66
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": -1,
+                      "ordinalKey": 0,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 66
                     }
                   ],
-                  "batchOperationKey": 12345
+                  "batchOperationKey": 12345,
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -4043,7 +4049,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": [1, 2]
+                  "itemKeys": [1, 2],
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -4059,7 +4066,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": []
+                  "itemKeys": [],
+                  "ordinalKey": 0
                 }
                 """
       },
@@ -4075,7 +4083,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "errors":[]
+                  "errors":[],
+                  "ordinalKey": 0
                 }
                 """
       },

@@ -26,7 +26,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationExecutionRecordValue.Builder.class)
-public interface BatchOperationExecutionRecordValue extends BatchOperationRelated, RecordValue {
+public interface BatchOperationExecutionRecordValue
+    extends BatchOperationRelated, OrdinalKeyBased, RecordValue {
 
   /**
    * @return subset of entity keys for the batch operation which are being or were processed
