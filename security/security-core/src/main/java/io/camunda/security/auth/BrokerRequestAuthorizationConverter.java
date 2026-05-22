@@ -33,10 +33,13 @@ import java.util.Map;
 public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
+  private final boolean groupsClaimConfigured;
   private final boolean shouldIncludeAuthorizationClaims;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
+    final var oidc = securityConfiguration.getAuthentication().getOidc();
+    groupsClaimConfigured = oidc != null && oidc.isGroupsClaimConfigured();
     shouldIncludeAuthorizationClaims =
         securityConfiguration.getAuthorizations().isEnabled()
             || securityConfiguration.getMultiTenancy().isChecksEnabled();
@@ -48,11 +51,20 @@ public class BrokerRequestAuthorizationConverter {
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
+    // authenticatedGroupIds() is supplier-backed on the lazy MembershipPort path: read it only
+    // when groups will actually end up in the broker request. The engine's
+    // ClaimsExtractor.getGroups() falls back to its own membershipState when USER_GROUPS_CLAIMS
+    // is absent, so we only need to pass groups in the OIDC claim-extracted case
+    // (!camundaGroupsEnabled && groupsClaimConfigured). Otherwise reading the field would
+    // trigger an avoidable provider call (and in the no-claim case, a DB lookup that the broker
+    // would never consume).
+    final boolean readGroups =
+        shouldIncludeAuthorizationClaims && !camundaGroupsEnabled && groupsClaimConfigured;
     return convert(
         authentication.isAnonymous(),
         authentication.authenticatedUsername(),
         authentication.authenticatedClientId(),
-        authentication.authenticatedGroupIds(),
+        readGroups ? authentication.authenticatedGroupIds() : null,
         authentication.claims());
   }
 

@@ -20,6 +20,7 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
@@ -161,5 +162,36 @@ public class BrokerRequestAuthorizationConverterTest {
 
     // then
     assertThat(brokerRequestAuth).hasSize(0);
+  }
+
+  @Test
+  void shouldNotInvokeGroupsSupplierWhenNoGroupsClaimConfigured() {
+    // given — OIDC with camundaGroupsEnabled=false and authorizations enabled, but no groupsClaim
+    // configured. Groups would otherwise come from a DB lookup, which we don't want on the broker
+    // request path; the engine resolves groups from its own membershipState in that case.
+    final var invoked = new AtomicBoolean();
+    final var oidcConfiguration = new OidcConfiguration();
+    // no groupsClaim set
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
   }
 }
