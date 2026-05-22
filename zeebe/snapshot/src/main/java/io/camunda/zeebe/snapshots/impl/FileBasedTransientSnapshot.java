@@ -42,7 +42,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ConcurrencyControl actor;
   private final FileBasedSnapshotStoreImpl snapshotStore;
   private final FileBasedSnapshotId snapshotId;
-  private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
+  private final ActorFuture<@Nullable Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private MutableChecksumsSFV checksum;
@@ -67,7 +67,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   @Override
-  public ActorFuture<Void> take(final Consumer<Path> takeSnapshot) {
+  public ActorFuture<@Nullable Void> take(final Consumer<Path> takeSnapshot) {
     actor.run(() -> takeInternal(takeSnapshot));
     return takenFuture;
   }
@@ -116,8 +116,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   @Override
-  public ActorFuture<Void> abort() {
-    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
+  public ActorFuture<@Nullable Void> abort() {
+    final CompletableActorFuture<@Nullable Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           abortInternal();

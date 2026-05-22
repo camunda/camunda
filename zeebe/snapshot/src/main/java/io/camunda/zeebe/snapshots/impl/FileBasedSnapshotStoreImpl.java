@@ -251,8 +251,8 @@ public final class FileBasedSnapshotStoreImpl {
                 .orElse(0L));
   }
 
-  public ActorFuture<Void> abortPendingSnapshots() {
-    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
+  public ActorFuture<@Nullable Void> abortPendingSnapshots() {
+    final CompletableActorFuture<@Nullable Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           final var abortedAll = pendingSnapshots.stream().map(PersistableSnapshot::abort).toList();
@@ -281,7 +281,7 @@ public final class FileBasedSnapshotStoreImpl {
     return getLatestSnapshot().map(PersistedSnapshot::getIndex).orElse(0L);
   }
 
-  public ActorFuture<Void> delete() {
+  public ActorFuture<@Nullable Void> delete() {
     return actor.call(
         () -> {
           currentSnapshot.set(null);
@@ -627,7 +627,7 @@ public final class FileBasedSnapshotStoreImpl {
     setLatestSnapshot(snapshot);
   }
 
-  public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
+  public ActorFuture<@Nullable Void> restore(final PersistedSnapshot snapshot) {
     return actor.call(
         () -> {
           restore(snapshot.getId(), snapshot.files());
@@ -714,7 +714,7 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  ActorFuture<Void> deleteBootstrapSnapshots() {
+  ActorFuture<@Nullable Void> deleteBootstrapSnapshots() {
     return actor.call(
         () -> {
           deleteBootstrapSnapshotsInternal();

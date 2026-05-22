@@ -62,7 +62,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<Void> apply(final SnapshotChunk snapshotChunk) {
+  public ActorFuture<@Nullable Void> apply(final SnapshotChunk snapshotChunk) {
     return actor.call(
         () -> {
           applyInternal(snapshotChunk);
@@ -198,8 +198,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<Void> abort() {
-    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
+  public ActorFuture<@Nullable Void> abort() {
+    final CompletableActorFuture<@Nullable Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           abortInternal();

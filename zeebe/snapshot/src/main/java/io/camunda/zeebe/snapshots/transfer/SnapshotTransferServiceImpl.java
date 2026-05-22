@@ -17,6 +17,7 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotChunkReader;
+import static io.camunda.zeebe.util.Unit.unit;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -129,7 +130,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
         .thenApply(
             ignored -> {
               pendingTransfers.clear();
-              return null;
+              return unit();
             });
   }
 

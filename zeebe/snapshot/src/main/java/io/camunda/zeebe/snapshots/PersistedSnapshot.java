@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots;
+import org.jspecify.annotations.Nullable;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -89,7 +90,7 @@ public interface PersistedSnapshot {
    *
    * @return the metadata of the snapshot.
    */
-  SnapshotMetadata getMetadata();
+  @Nullable SnapshotMetadata getMetadata();
 
   /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.
