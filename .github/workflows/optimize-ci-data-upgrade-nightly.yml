@@ -56,7 +56,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Read Java/version info
         id: "pom-info"
-        uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
+        uses: YunaBraska/java-info-action@5d0095dcb0217292b19ed09d219651ece1c7b098 # 3.0.6
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions
