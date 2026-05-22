@@ -221,6 +221,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           elementInstance.getUserTaskKey(),
           UserTaskIntent.MIGRATED,
           userTask
+              .copy()
               .setProcessDefinitionKey(targetProcessDefinition.getKey())
               .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
               .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
