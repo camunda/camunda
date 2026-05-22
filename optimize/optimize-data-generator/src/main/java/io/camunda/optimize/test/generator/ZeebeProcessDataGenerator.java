@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.test.generator;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_AGENT_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
@@ -18,6 +19,7 @@ import static io.camunda.zeebe.protocol.record.value.BpmnElementType.PROCESS;
 
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -89,6 +91,7 @@ public class ZeebeProcessDataGenerator {
     final ZeebeBulkWriter writer = new ZeebeBulkWriter(esClient, config.batchSize);
     requiredIndexNames().forEach(writer::ensureIndexExists);
     insertProcessDefinitions(writer, processIds);
+    insertOptimizeProcessDefinitions(writer, processIds);
     insertProcessInstances(writer, processIds);
 
     if (config.updateRate > 0.0) {
@@ -114,14 +117,53 @@ public class ZeebeProcessDataGenerator {
     final long creationTimestampMs = OffsetDateTime.now(ZoneOffset.UTC).toInstant().toEpochMilli();
     final List<BulkOperation> processDefinitionOps =
         IntStream.range(0, processIds.length)
-            .mapToObj(
+            .boxed()
+            .flatMap(
                 i -> {
                   final String processId = processIds[i];
-                  final long definitionKey = config.definitionKeyFor(i);
-                  return factory.processDefinitionOp(processId, definitionKey, creationTimestampMs);
+                  return IntStream.rangeClosed(1, config.processVersionCount)
+                      .mapToObj(
+                          version -> {
+                            final long definitionKey = config.definitionKeyFor(i, version);
+                            return factory.processDefinitionOp(
+                                processId, definitionKey, version, creationTimestampMs);
+                          });
                 })
             .toList();
     writer.write(zeebeIndexName(ZEEBE_PROCESS_DEFINITION_INDEX_NAME), processDefinitionOps);
+  }
+
+  // ── Optimize process definitions (direct seeding) ─────────────────────────
+
+  /**
+   * Writes Optimize-formatted process definition documents directly to the Optimize
+   * {@code process-definition} index. This ensures the process ComboBox is populated immediately
+   * without waiting for the Optimize importer to process the Zeebe raw records.
+   *
+   * <p>The target index is {@code {optimizeIndexPrefix}-process-definition_v{version}}, which is
+   * the same index that the Optimize importer and UI query. If the index does not yet exist it is
+   * created with dynamic mapping (Optimize will re-apply its own mapping on next startup).
+   */
+  private void insertOptimizeProcessDefinitions(
+      final ZeebeBulkWriter writer, final String[] processIds) {
+    final String index =
+        config.optimizeIndexPrefix
+            + "-"
+            + PROCESS_DEFINITION_INDEX_NAME
+            + "_v"
+            + ProcessDefinitionIndex.VERSION;
+    writer.ensureIndexExists(index);
+    final List<BulkOperation> ops =
+        Arrays.stream(processIds)
+            .flatMap(
+                processId ->
+                    IntStream.rangeClosed(1, config.processVersionCount)
+                        .mapToObj(
+                            version ->
+                                factory.optimizeProcessDefinitionOp(
+                                    processId, version, config.zeebeRecordPrefix)))
+            .toList();
+    writer.write(index, ops);
   }
 
   // ── Process instances ─────────────────────────────────────────────────────
@@ -137,11 +179,12 @@ public class ZeebeProcessDataGenerator {
 
     for (int instanceIndex = 0; instanceIndex < config.instanceCount; instanceIndex++) {
       final int definitionIndex = instanceIndex % processIds.length;
+      final int version = 1 + random.nextInt(config.processVersionCount);
       final long instanceKey = config.instanceKeyOffset + instanceIndex;
-      final long definitionKey = config.definitionKeyFor(definitionIndex);
+      final long definitionKey = config.definitionKeyFor(definitionIndex, version);
       final String processId = processIds[definitionIndex];
       final InstanceContext instanceContext =
-          new InstanceContext(instanceKey, definitionKey, processId);
+          new InstanceContext(instanceKey, definitionKey, processId, version);
       final List<FlowNode> executionPath = processGraphs[definitionIndex].walk(random);
       final InstanceWindow instanceWindow =
           sampleInstanceWindow(earliestStartTime, historicalRangeSeconds);
@@ -183,10 +226,11 @@ public class ZeebeProcessDataGenerator {
 
     for (int i = 0; i < updateCount; i++) {
       final int definitionIndex = i % processIds.length;
+      final int version = 1 + random.nextInt(config.processVersionCount);
       final long instanceKey = config.instanceKeyOffset + i;
-      final long definitionKey = config.definitionKeyFor(definitionIndex);
+      final long definitionKey = config.definitionKeyFor(definitionIndex, version);
       final String processId = processIds[definitionIndex];
-      final InstanceContext ctx = new InstanceContext(instanceKey, definitionKey, processId);
+      final InstanceContext ctx = new InstanceContext(instanceKey, definitionKey, processId, version);
 
       variableBatch.addAll(emitter.variableUpdateOps(ctx, updateTimestampMs));
       writer.flushIfNeeded(variableBatch);

@@ -11,6 +11,8 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
@@ -29,6 +31,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,11 +82,11 @@ class ZeebeRecordFactory {
   // ── Process definition ────────────────────────────────────────────────────
 
   BulkOperation processDefinitionOp(
-      final String bpmnProcessId, final long defKey, final long timestamp) {
+      final String bpmnProcessId, final long defKey, final int version, final long timestamp) {
     final ZeebeProcessDefinitionDataDto data = new ZeebeProcessDefinitionDataDto();
     data.setBpmnProcessId(bpmnProcessId);
     data.setProcessDefinitionKey(defKey);
-    data.setVersion(1);
+    data.setVersion(version);
     data.setResourceName(bpmnProcessId + ".bpmn");
     data.setResource(bpmnProvider.bpmnFor(bpmnProcessId));
     data.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
@@ -94,6 +98,43 @@ class ZeebeRecordFactory {
     record.setIntent(ProcessIntent.CREATED);
     record.setValue(data);
     return wrap(record, ++pdPosition);
+  }
+
+  // ── Optimize process definition seeding ───────────────────────────────────
+
+  /**
+   * Builds an Optimize-formatted process definition document for direct insertion into the Optimize
+   * {@code process-definition} index. This bypasses the Zeebe importer pipeline so the process
+   * ComboBox is populated immediately without waiting for an import cycle.
+   *
+   * @param processId the BPMN process ID (e.g. {@code customer-onboarding})
+   * @param version the process definition version (e.g. 1–5)
+   * @param dataSourceName the Zeebe record prefix used as the data-source name
+   */
+  BulkOperation optimizeProcessDefinitionOp(
+      final String processId, final int version, final String dataSourceName) {
+    final String bpmn20Xml =
+        new String(bpmnProvider.bpmnFor(processId), StandardCharsets.UTF_8);
+    final String docId = processId + ":" + version + ":" + ZEEBE_DEFAULT_TENANT_ID;
+    final String versionStr = String.valueOf(version);
+    final ProcessDefinitionOptimizeDto dto =
+        ProcessDefinitionOptimizeDto.builder()
+            .id(docId)
+            .key(processId)
+            .version(versionStr)
+            .name(humanizeProcessId(processId))
+            .dataSource(new ZeebeDataSourceDto(dataSourceName, partitionId))
+            .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+            .bpmn20Xml(bpmn20Xml)
+            .deleted(false)
+            .build();
+    return BulkOperation.of(b -> b.index(idx -> idx.id(docId).document(dto)));
+  }
+
+  private static String humanizeProcessId(final String processId) {
+    return Arrays.stream(processId.split("-"))
+        .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+        .collect(Collectors.joining(" "));
   }
 
   // ── Process instance ──────────────────────────────────────────────────────
@@ -113,7 +154,7 @@ class ZeebeRecordFactory {
     data.setElementId(element.elementId());
     data.setBpmnElementType(element.type());
     data.setFlowScopeKey(element.flowScopeKey());
-    data.setVersion(1);
+    data.setVersion(ctx.version());
     data.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
 
     final ZeebeProcessInstanceRecordDto record = new ZeebeProcessInstanceRecordDto();
