@@ -7,7 +7,15 @@
  */
 package io.camunda.authentication.pt;
 
+import io.camunda.security.core.port.out.SecurityPathPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.csrf.CsrfProtectionRequestMatcher;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +25,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -32,7 +43,10 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Builds a per-tenant {@link SecurityFilterChain} from a {@link PhysicalTenantChainContext}.
@@ -54,7 +68,11 @@ import org.springframework.security.web.csrf.CsrfFilter;
 public final class PerTenantSecurityChainFactory {
 
   public SecurityFilterChain buildWebappChain(
-      final HttpSecurity http, final PhysicalTenantChainContext slice) throws Exception {
+      final HttpSecurity http,
+      final PhysicalTenantChainContext slice,
+      final CamundaSecurityLibraryProperties securityProperties,
+      final SecurityPathPort pathPort)
+      throws Exception {
     final String prefix = slice.webappPathPrefix();
     final String securityMatcher = prefix.isEmpty() ? "/**" : prefix + "/**";
     final String authBaseUri = prefix + "/oauth2/authorization";
@@ -77,6 +95,13 @@ public final class PerTenantSecurityChainFactory {
     // shows exactly this PT's assigned providers with PT-prefixed authorization URLs.
     final DefaultLoginPageGeneratingFilter pickerFilter =
         ptPickerFilter(slice.clientRegistrationRepository(), prefix, authBaseUri);
+
+    // Apply the same cookie-backed CSRF setup CSL uses on its webapp chains. CSL exposes the
+    // shared helper as package-private, so we replicate the configuration inline; semantics are
+    // intentionally identical (cookie name X-CSRF-TOKEN, optional httpOnly via properties, allowed
+    // paths drawn from SecurityPathPort + the CSRF properties' ignored set, plus a response-header
+    // filter that surfaces the token to browser SPAs on authenticated GETs and login responses).
+    applyCsrfConfiguration(http, securityProperties, pathPort, prefix);
 
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
@@ -306,5 +331,98 @@ public final class PerTenantSecurityChainFactory {
         return delegate.resolve(request, registrationId);
       }
     };
+  }
+
+  // ----- CSRF wiring (mirrors CSL's package-private SecurityFilterChainSupport) ----------------
+
+  private static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
+  private static final String LOGIN_URL = "/login";
+  private static final String LOGOUT_URL = "/logout";
+
+  /**
+   * Replicates CSL's {@code SecurityFilterChainSupport#applyCsrfConfiguration} on the PT webapp
+   * chain so browser-based clients get the same cookie-backed CSRF behaviour they get from CSL's
+   * unprefixed chains: {@code X-CSRF-TOKEN} cookie (httpOnly per {@code
+   * camunda.security.csrf.cookieHttpOnly}), {@code CsrfProtectionRequestMatcher} that exempts the
+   * host's unprotected paths plus the standard login/logout URLs and any patterns the host has
+   * added under {@code camunda.security.csrf.ignoredPathPatterns}, and a response-header filter
+   * that surfaces the freshly-generated token on authenticated GETs + login responses.
+   *
+   * <p>Also exempts the PT-prefixed login URL ({@code prefix + "/login"}) from CSRF — the picker is
+   * rendered by Spring Security's {@code DefaultLoginPageGeneratingFilter}, never receives a
+   * state-changing POST from the browser, and exempting it keeps parity with CSL's treatment of
+   * {@code /login}.
+   */
+  private static void applyCsrfConfiguration(
+      final HttpSecurity http,
+      final CamundaSecurityLibraryProperties properties,
+      final SecurityPathPort pathPort,
+      final String prefix)
+      throws Exception {
+    if (!properties.getCsrf().isEnabled()) {
+      http.csrf(AbstractHttpConfigurer::disable);
+      return;
+    }
+
+    final var allowedPaths = new HashSet<String>();
+    allowedPaths.addAll(pathPort.unprotectedPaths());
+    allowedPaths.addAll(pathPort.unprotectedApiPaths());
+    allowedPaths.add(LOGIN_URL);
+    allowedPaths.add(LOGOUT_URL);
+    allowedPaths.add(prefix + LOGIN_URL);
+    allowedPaths.addAll(properties.getCsrf().getIgnoredPathPatterns());
+
+    final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+    repository.setHeaderName(X_CSRF_TOKEN);
+    repository.setCookieName(X_CSRF_TOKEN);
+    final boolean httpOnly = properties.getCsrf().isCookieHttpOnly();
+    repository.setCookieCustomizer(builder -> builder.httpOnly(httpOnly));
+
+    http.csrf(
+        csrf ->
+            csrf.csrfTokenRepository(repository)
+                .requireCsrfProtectionMatcher(new CsrfProtectionRequestMatcher(allowedPaths)));
+    http.addFilterAfter(csrfTokenResponseHeaderFilter(), CsrfFilter.class);
+  }
+
+  /**
+   * Replicates CSL's response-header filter. Browser SPAs read the token from the response header
+   * on authenticated GETs (operate/tasklist do this) and echo it back on subsequent state-changing
+   * requests as {@code X-CSRF-TOKEN}. The header is only written for {@code GET} or {@code /login}
+   * (so the login form picks up the initial token) and is skipped for {@code /logout} (the chain is
+   * about to invalidate the session anyway).
+   */
+  private static OncePerRequestFilter csrfTokenResponseHeaderFilter() {
+    return new OncePerRequestFilter() {
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        writeCsrfTokenHeaderIfApplicable(request, response);
+        filterChain.doFilter(request, response);
+      }
+    };
+  }
+
+  private static void writeCsrfTokenHeaderIfApplicable(
+      final HttpServletRequest request, final HttpServletResponse response) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      return;
+    }
+    final String path = request.getRequestURI();
+    final String method = request.getMethod();
+    final boolean isGetOrLogin =
+        "GET".equalsIgnoreCase(method) || (path != null && path.contains(LOGIN_URL));
+    final boolean isLogout = path != null && path.contains(LOGOUT_URL);
+    if (!isGetOrLogin || isLogout) {
+      return;
+    }
+    final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+    if (token != null) {
+      response.setHeader(X_CSRF_TOKEN, token.getToken());
+    }
   }
 }

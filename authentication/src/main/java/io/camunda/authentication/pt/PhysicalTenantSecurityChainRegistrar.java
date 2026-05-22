@@ -172,7 +172,12 @@ public final class PhysicalTenantSecurityChainRegistrar
                     allowedIssuersFor(beanFactory, tenantId),
                     expectedAudiencesFor(beanFactory, tenantId));
             case PREFIXED_WEBAPP ->
-                factory.buildWebappChain(http, sliceForPrefixed(beanFactory, tenantId));
+                factory.buildWebappChain(
+                    http,
+                    sliceForPrefixed(beanFactory, tenantId),
+                    beanFactory.getBean(
+                        io.camunda.security.spring.CamundaSecurityLibraryProperties.class),
+                    beanFactory.getBean(io.camunda.security.core.port.out.SecurityPathPort.class));
           };
       return new OrderedSecurityFilterChain(chain, order);
     } catch (final Exception e) {
