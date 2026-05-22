@@ -316,6 +316,7 @@ export function DashboardView(props) {
         />
         <div className="content">
           <DashboardRenderer
+            key={isAgenticControlPlaneDashboard ? (processScope?.key ?? 'all') : undefined}
             loadTile={(reportOrId, activeFilter, params) =>
               evaluateReport(reportOrId, activeFilter, params, additionalEvaluationContext)
             }

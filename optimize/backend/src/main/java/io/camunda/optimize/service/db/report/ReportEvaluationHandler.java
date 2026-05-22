@@ -350,9 +350,18 @@ public abstract class ReportEvaluationHandler {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final AdditionalProcessReportEvaluationFilterDto additionalFilters,
       final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
-    if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
-      if (reportDefinitionDto
-          instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
+    if (additionalFilters == null) {
+      return;
+    }
+
+    if (reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
+      // Override definitions if a process scope was selected
+      if (!CollectionUtils.isEmpty(additionalFilters.getDefinitions())) {
+        definitionDto.getData().setDefinitions(additionalFilters.getDefinitions());
+      }
+
+      if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
         final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
         // We only fetch the variable filter values if a variable filter is present
         if (additionalFilters.getFilter().stream()
@@ -389,11 +398,11 @@ public abstract class ReportEvaluationHandler {
         } else {
           definitionDto.getData().setFilter(additionalFiltersToApply);
         }
-      } else {
-        logger.debug(
-            "Cannot add additional filters to report [{}] as it is not a process report",
-            reportDefinitionDto.getId());
       }
+    } else if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
+      logger.debug(
+          "Cannot add additional filters to report [{}] as it is not a process report",
+          reportDefinitionDto.getId());
     }
   }
 }
