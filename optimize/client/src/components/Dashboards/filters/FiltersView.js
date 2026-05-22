@@ -176,8 +176,14 @@ export default function FiltersView({
                         setFilter([...rest, {type, data: selectedItem.filter, filterLevel: 'instance'}]);
                       }}
                       shouldFilterItem={({inputValue, item}) => {
-                        if (!inputValue || item?.label === selectedPreset?.label) return true;
-                        return item?.label.toLowerCase().includes(inputValue.toLowerCase());
+                        // when dropdown opens it prefills inputValue with the selected label — show all items
+                        if (inputValue && (selectedPreset?.label || '') === inputValue) {
+                          return true;
+                        }
+                        return (
+                          typeof inputValue !== 'undefined' &&
+                          item?.label.toLowerCase().includes(inputValue?.toLowerCase() ?? '')
+                        );
                       }}
                     />
                   </div>
