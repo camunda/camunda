@@ -133,7 +133,7 @@ final class FileUtilTest {
   }
 
   @Test
-  void shouldPreserveNullFlushDirectoryBehavior() {
+  void shouldHandleNullDirectoryBasedOnPlatform() {
     // when - then
     if (SystemUtil.isWindows()) {
       assertThatCode(() -> FileUtil.flushDirectory(null)).doesNotThrowAnyException();
