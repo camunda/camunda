@@ -14,11 +14,12 @@ final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
   @SuppressWarnings("resource")
-  protected TestCluster createCluster(final int replicationFactor) {
+  protected TestCluster createCluster(
+      final int brokerCount, final int partitionCount, final int replicationFactor) {
     return TestCluster.builder()
         .withEmbeddedGateway(true)
-        .withBrokersCount(BROKER_COUNT)
-        .withPartitionsCount(PARTITION_COUNT)
+        .withBrokersCount(brokerCount)
+        .withPartitionsCount(partitionCount)
         .withReplicationFactor(replicationFactor)
         .build()
         .start();

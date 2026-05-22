@@ -41,7 +41,20 @@ abstract class ClusterEndpointIT {
   protected static final int BROKER_COUNT = 3;
   protected static final int PARTITION_COUNT = 3;
 
-  protected abstract TestCluster createCluster(int replicationFactor);
+  protected abstract TestCluster createCluster(
+      int brokerCount, int partitionCount, int replicationFactor);
+
+  protected TestCluster createCluster(final int replicationFactor) {
+    return createCluster(BROKER_COUNT, PARTITION_COUNT, replicationFactor);
+  }
+
+  /**
+   * The minimum valid replication factor for this cluster type. Non-zone-aware clusters can use
+   * RF=1; zone-aware clusters require at least 1 replica per zone, so RF>=2.
+   */
+  protected int minReplicationFactor() {
+    return 1;
+  }
 
   protected abstract String zone();
 
@@ -66,7 +79,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldFailRequestWhenHavingTypoInParameter() throws IOException, InterruptedException {
     assumeTrue(zone() == null, "Scale request body uses bare integers not valid for zone-aware");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
 
@@ -143,7 +156,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRequestPartitionLeave() {
     assumeTrue(zone() == null, "Partition leave not supported on zone-aware clusters");
-    try (final var cluster = createCluster(2)) {
+    try (final var cluster = createCluster(minReplicationFactor() + 1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -163,7 +176,7 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestClusterPurge() {
-    try (final var cluster = createCluster(2)) {
+    try (final var cluster = createCluster(minReplicationFactor() + 1)) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -172,7 +185,7 @@ abstract class ClusterEndpointIT {
       final var response = actuator.purge(false);
 
       // then
-      final int replicationFactor = 2;
+      final int replicationFactor = minReplicationFactor() + 1;
       final var expected = new ArrayList<OperationEnum>();
       IntStream.range(0, PARTITION_COUNT * replicationFactor)
           .forEach(i -> expected.add(OperationEnum.PARTITION_LEAVE));
@@ -192,7 +205,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRequestPartitionJoin() {
     assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -214,7 +227,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRejectJoinOnNonExistingPartition() {
     assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -230,7 +243,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRequestScaleBrokers() {
     assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -245,7 +258,6 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestForceScaleDownBrokers() {
-    assumeTrue(zone() == null, "Force scale-down not valid for zone-aware clusters");
     try (final var cluster = createCluster(BROKER_COUNT)) {
       // given
       cluster.awaitCompleteTopology();
@@ -263,7 +275,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRequestAddBroker() {
     assumeTrue(zone() == null, "Add broker with zone-index IDs not valid for zone-aware");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -279,7 +291,7 @@ abstract class ClusterEndpointIT {
   @Test
   void shouldRequestRemoveBroker() {
     assumeTrue(zone() == null, "Remove broker uses join/leave not supported on zone-aware");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -298,7 +310,7 @@ abstract class ClusterEndpointIT {
   @Test
   void canDryRunScale() {
     assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -320,8 +332,7 @@ abstract class ClusterEndpointIT {
   final class ClusterPatchRequest {
     @Test
     void shouldRequestClusterScale() {
-      assumeTrue(zone() == null, "Zone-aware clusters require RF>=2, incompatible with this test");
-      try (final var cluster = createCluster(1)) {
+      try (final var cluster = createCluster(minReplicationFactor())) {
         // given
         cluster.awaitCompleteTopology();
         final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -333,7 +344,7 @@ abstract class ClusterEndpointIT {
                 .partitions(
                     new ClusterConfigPatchRequestPartitions()
                         .count(PARTITION_COUNT)
-                        .replicationFactor(2));
+                        .replicationFactor(minReplicationFactor() + 1));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
@@ -349,8 +360,7 @@ abstract class ClusterEndpointIT {
 
     @Test
     void shouldRequestClusterPatch() {
-      assumeTrue(zone() == null, "Zone-aware clusters require RF>=2, incompatible with this test");
-      try (final var cluster = createCluster(1)) {
+      try (final var cluster = createCluster(minReplicationFactor())) {
         // given
         cluster.awaitCompleteTopology();
         final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -362,7 +372,7 @@ abstract class ClusterEndpointIT {
                 .partitions(
                     new ClusterConfigPatchRequestPartitions()
                         .count(PARTITION_COUNT)
-                        .replicationFactor(2));
+                        .replicationFactor(minReplicationFactor() + 1));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
@@ -378,7 +388,7 @@ abstract class ClusterEndpointIT {
 
     @Test
     void shouldRequestForceRemoveBroker() {
-      try (final var cluster = createCluster(2)) {
+      try (final var cluster = createCluster(minReplicationFactor() + 1)) {
         // given
         cluster.awaitCompleteTopology();
         cluster.brokers().get(memberIdForBroker(1)).close();

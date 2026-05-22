@@ -29,13 +29,14 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
   @SuppressWarnings("resource")
-  protected TestCluster createCluster(final int replicationFactor) {
+  protected TestCluster createCluster(
+      final int brokerCount, final int partitionCount, final int replicationFactor) {
     final var replicasZoneB = replicationFactor / 2;
     final var replicasZoneA = replicationFactor - replicasZoneB;
     return TestCluster.builder()
         .withEmbeddedGateway(true)
-        .withBrokersCount(BROKER_COUNT)
-        .withPartitionsCount(PARTITION_COUNT)
+        .withBrokersCount(brokerCount)
+        .withPartitionsCount(partitionCount)
         .withReplicationFactor(replicationFactor)
         .withoutNodeId()
         .multiZone()
@@ -47,12 +48,12 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                   uc -> {
                     uc.getCluster().setZone(zone);
                     uc.getCluster().setNodeId(localId / 2); // 2 zones: 0->0, 1-> 0, 2 -> 1, 3 -> 1
-                    uc.getCluster().setSize(BROKER_COUNT);
-                    final var half = BROKER_COUNT / 2;
+                    uc.getCluster().setSize(brokerCount);
+                    final var half = brokerCount / 2;
                     final var zoneAware =
                         new ZoneAware(
                             List.of(
-                                new Zone(ZONES[0], BROKER_COUNT - half, replicasZoneA, 100),
+                                new Zone(ZONES[0], brokerCount - half, replicasZoneA, 100),
                                 new Zone(ZONES[1], half, replicasZoneB, 10)));
                     uc.getCluster().getPartitioning().setScheme(Scheme.ZONE_AWARE);
                     uc.getCluster().getPartitioning().setZoneAware(zoneAware);
@@ -60,6 +61,11 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
             })
         .build()
         .start();
+  }
+
+  @Override
+  protected int minReplicationFactor() {
+    return 2;
   }
 
   @Override
