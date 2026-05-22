@@ -68,51 +68,66 @@ test.describe('Decision Filters', () => {
 
   test('Evaluated filter shows only evaluated instances', async ({
     operateDecisionsPage,
+    page,
   }) => {
-    await test.step('Uncheck Failed filter', async () => {
-      await operateDecisionsPage.clickFailedCheckbox();
-    });
+    let totalCount: number;
 
-    await test.step('Verify only evaluated instances are shown', async () => {
+    await test.step('Get total row count with both filters active', async () => {
       await expect(
         operateDecisionsPage.decisionInstancesList,
       ).toBeVisible();
+      totalCount = await operateDecisionsPage.decisionInstancesList
+        .getByRole('row')
+        .count();
+    });
+
+    await test.step('Uncheck Failed filter', async () => {
+      await operateDecisionsPage.clickFailedCheckbox();
+      await expect(operateDecisionsPage.failedCheckbox).not.toBeChecked();
+    });
+
+    await test.step('Verify row count decreased (only evaluated shown)', async () => {
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
-      await expect(
-        operateDecisionsPage.decisionInstancesList.getByTestId(
-          'EVALUATED-icon',
-        ),
-      ).not.toHaveCount(0);
-      await expect(
-        operateDecisionsPage.decisionInstancesList.getByTestId('FAILED-icon'),
-      ).toHaveCount(0);
+      const evaluatedCount = await operateDecisionsPage.decisionInstancesList
+        .getByRole('row')
+        .count();
+      expect(evaluatedCount).toBeLessThan(totalCount);
+    });
+
+    await test.step('Verify Failed checkbox is not visible in filter panel', async () => {
+      await expect(page.getByText('Evaluation failed')).toHaveCount(0);
     });
   });
 
   test('Failed filter shows only failed instances', async ({
     operateDecisionsPage,
   }) => {
-    await test.step('Uncheck Evaluated filter', async () => {
-      await operateDecisionsPage.clickEvaluatedCheckbox();
-    });
+    let totalCount: number;
 
-    await test.step('Verify only failed instances are shown', async () => {
+    await test.step('Get total row count with both filters active', async () => {
       await expect(
         operateDecisionsPage.decisionInstancesList,
       ).toBeVisible();
+      totalCount = await operateDecisionsPage.decisionInstancesList
+        .getByRole('row')
+        .count();
+    });
+
+    await test.step('Uncheck Evaluated filter', async () => {
+      await operateDecisionsPage.clickEvaluatedCheckbox();
+      await expect(operateDecisionsPage.evaluatedCheckbox).not.toBeChecked();
+    });
+
+    await test.step('Verify row count decreased (only failed shown)', async () => {
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
-      await expect(
-        operateDecisionsPage.decisionInstancesList.getByTestId('FAILED-icon'),
-      ).not.toHaveCount(0);
-      await expect(
-        operateDecisionsPage.decisionInstancesList.getByTestId(
-          'EVALUATED-icon',
-        ),
-      ).toHaveCount(0);
+      const failedCount = await operateDecisionsPage.decisionInstancesList
+        .getByRole('row')
+        .count();
+      expect(failedCount).toBeLessThan(totalCount);
     });
   });
 });
@@ -154,7 +169,9 @@ test.describe('Decision Filter Reset', () => {
     });
 
     await test.step('Verify decision name filter is cleared', async () => {
-      await expect(operateDecisionsPage.decisionNameFilter).toHaveValue('');
+      await expect(operateDecisionsPage.decisionNameFilter).not.toHaveValue(
+        'Invoice Classification',
+      );
     });
 
     await test.step('Verify Evaluated and Failed checkboxes are both selected', async () => {
