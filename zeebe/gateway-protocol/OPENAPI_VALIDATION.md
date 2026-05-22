@@ -19,9 +19,10 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Property versioning annotation shape validation (`x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only)
   - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
-> Property-level version annotations (`x-properties-added-in-version`) are validated by a separate Node verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md), not by Spectral. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the rules.
+> Property-level version annotations (`x-properties-added-in-version`) have their shape checked by the Spectral rule `properties-added-in-version-shape` (see below). Their semantic correctness (property exists, version is right) is validated in CI by a separate Node verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md). See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the rules.
 
 ## Running Validation Locally
 
@@ -157,6 +158,32 @@ paths:
 ```
 
 Set the value to the version in which the endpoint **first** ships and do not update it on later changes. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention.
+
+### Malformed `x-properties-added-in-version`
+
+The `properties-added-in-version-shape` rule (severity `error`) checks the shape of every `x-properties-added-in-version` annotation. It must be a non-empty array of `{propertyName, addedInVersion}` objects with no other keys, where `addedInVersion` matches `^[0-9]+\.[0-9]+(\.[0-9]+)?$` (e.g. `"8.8"`).
+
+The rule runs with `resolved: false` so paths point at the schema's source file. It fires in the file-level pass (`spectral lint "...*.yaml"`), not the entry-point pass on `rest-api.yaml`.
+
+**Wrong:**
+
+```yaml
+ProcessInstanceModificationInstruction:
+  x-properties-added-in-version:
+    - propertyame: moveInstructions   # ❌ typo: should be propertyName
+      addedInVersion: "8.8"
+```
+
+**Correct:**
+
+```yaml
+ProcessInstanceModificationInstruction:
+  x-properties-added-in-version:
+    - propertyName: moveInstructions
+      addedInVersion: "8.8"
+```
+
+Semantic correctness of these annotations (does the property actually exist? was it really introduced in that version?) is still validated in CI by the verifier under [`.github/scripts/x-added-in-version-check/`](../../.github/scripts/x-added-in-version-check/README.md) — the Spectral rule only checks shape.
 
 ### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
 

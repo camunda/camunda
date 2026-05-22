@@ -43,7 +43,9 @@ artefacts/                # generated; gitignored (endpoint-map.json, version-ma
 The verifier checks two annotations:
 
 - `x-added-in-version` — set on **every operation** (`paths.<route>.<method>`). Value must equal the operation's added version from the version map. Operations listed in the version map's `deletedOperations` must **not** carry this annotation.
-- `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }` and records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
+- `x-properties-added-in-version` — a list set on a **schema object** (the node that owns a `properties:` map). Each entry has the form `{ propertyName, addedInVersion }`. The shape of each entry is enforced by the `properties-added-in-version-shape` Spectral rule (see [`zeebe/gateway-protocol/OPENAPI_VALIDATION.md`](../../../zeebe/gateway-protocol/OPENAPI_VALIDATION.md)); this verifier checks semantic correctness.
+
+Each entry of `x-properties-added-in-version` records when a single property under that schema was introduced — unless that entry is suppressed by one of the rules below.
 
 ### Rule 1 — Property version differs from its endpoint version
 

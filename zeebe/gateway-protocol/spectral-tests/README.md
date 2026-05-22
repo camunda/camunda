@@ -32,6 +32,9 @@ spectral-tests/
 
 1. Create a fixture directory under `fixtures/<rule-name>/` with a multi-part
    YAML spec that exercises both valid and invalid cases.
-2. Create `<ruleName>.test.js` using the helpers from `helpers.js`.
+2. Create `<ruleName>.test.js` using the helpers from `helpers.js`, or add a
+   new `describe` block to an existing test file when the rule is closely
+   related (e.g. `properties-added-in-version-shape` lives in
+   `verifyAddedInVersion.test.js`).
 3. Run `node --test spectral-tests/<ruleName>.test.js` to verify.
 
