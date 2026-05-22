@@ -103,11 +103,11 @@ class OperateDecisionsPage {
   }
 
   async clickEvaluatedCheckbox(): Promise<void> {
-    await this.evaluatedCheckbox.click();
+    await this.evaluatedCheckbox.click({force: true});
   }
 
   async clickFailedCheckbox(): Promise<void> {
-    await this.failedCheckbox.click();
+    await this.failedCheckbox.click({force: true});
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
