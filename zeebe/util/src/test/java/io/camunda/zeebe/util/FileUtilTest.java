@@ -132,7 +132,7 @@ final class FileUtilTest {
   }
 
   @Test
-  void shouldIgnoreNullDirectoryWhenFlushing() {
+  void shouldHandleNullDirectoryGracefully() {
     // when - then
     assertThatCode(() -> FileUtil.flushDirectory(null)).doesNotThrowAnyException();
   }

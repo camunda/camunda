@@ -55,7 +55,10 @@ public final class FileUtil {
    * durability to sync the parent directory after creating a new file or renaming it, this is safe
    * to do as Windows (or rather NTFS) does not need this.
    *
-   * @param path the path to synchronize; ignored when {@code null}
+   * @param path the path to synchronize; if {@code null}, the method returns immediately without
+   *     performing any operation and without throwing an exception. This is useful for callers
+   *     which pass {@code path.getParent()}, where the parent may be absent, such as for root paths
+   *     or relative paths without parent components.
    * @throws IOException can be thrown on opening and on flushing the file
    */
   public static void flushDirectory(final @Nullable Path path) throws IOException {
