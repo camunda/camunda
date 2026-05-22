@@ -4683,6 +4683,7 @@ final class JsonSerializableToJsonTest {
                   new AgentInstanceRecord()
                       .setAgentInstanceKey(2251799813685251L)
                       .setElementInstanceKey(2251799813685249L)
+                      .setElementInstanceKeys(List.of(2251799813685248L, 2251799813685249L))
                       .setElementId("invoice-data-extraction-agent")
                       .setProcessInstanceKey(2251799813685248L)
                       .setBpmnProcessId("invoice-handling-process")
@@ -4719,6 +4720,7 @@ final class JsonSerializableToJsonTest {
         {
           "agentInstanceKey": 2251799813685251,
           "elementInstanceKey": 2251799813685249,
+          "elementInstanceKeys": [2251799813685248, 2251799813685249],
           "elementId": "invoice-data-extraction-agent",
           "processInstanceKey": 2251799813685248,
           "bpmnProcessId": "invoice-handling-process",
@@ -4749,6 +4751,7 @@ final class JsonSerializableToJsonTest {
         {
           "agentInstanceKey": -1,
           "elementInstanceKey": -1,
+          "elementInstanceKeys": [],
           "elementId": "",
           "processInstanceKey": -1,
           "bpmnProcessId": "",

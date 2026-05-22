@@ -31,6 +31,9 @@
             "elementInstanceKey": {
               "type": "long"
             },
+            "elementInstanceKeys": {
+              "type": "long"
+            },
             "elementId": {
               "type": "keyword"
             },

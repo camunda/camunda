@@ -35,6 +35,12 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getElementInstanceKey();
 
   /**
+   * @return the full list of element instance keys this agent instance has been associated with.
+   *     The most recently associated key is also available as {@link #getElementInstanceKey()}.
+   */
+  List<Long> getElementInstanceKeys();
+
+  /**
    * @return the ID of the process element representing the agent
    */
   String getElementId();
