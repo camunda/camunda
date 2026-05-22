@@ -195,7 +195,6 @@ class AnalyticsExporterTest {
           void logEvent(
               final String eventName,
               final long logPosition,
-              final long sequenceNumber,
               final Consumer<LogRecordBuilder> builder) {
             throw new RuntimeException("simulated failure");
           }

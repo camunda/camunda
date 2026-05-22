@@ -56,7 +56,7 @@ class OtelSdkManagerTest {
 
     // when — flood 100 events; @Timeout kills the test if logEvent ever blocks
     for (int i = 0; i < 100; i++) {
-      manager.logEvent("test", 0L, 0L, log -> {});
+      manager.logEvent("test", 0L, log -> {});
     }
 
     // then — wait for the exporter to confirm it started, then verify drops
@@ -79,11 +79,14 @@ class OtelSdkManagerTest {
     final var manager =
         new OtelSdkManager()
             .initialize(
-                new AnalyticsExporterConfig().setEndpoint("http://localhost:1"), "test-cluster", 1);
+                new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
+                "test-cluster",
+                1,
+                new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
     for (int i = 0; i < 10; i++) {
-      manager.logEvent("test", 0L, 0L, log -> {});
+      manager.logEvent("test", 0L, log -> {});
     }
 
     manager.shutdown();
@@ -106,7 +109,7 @@ class OtelSdkManagerTest {
 
     // when
     for (int i = 0; i < 50; i++) {
-      manager.logEvent("test", 0L, 0L, log -> {});
+      manager.logEvent("test", 0L, log -> {});
     }
     manager.shutdown();
 
@@ -136,7 +139,7 @@ class OtelSdkManagerTest {
 
     // when — send events, then immediately shutdown
     for (int i = 0; i < 20; i++) {
-      manager.logEvent("test", 0L, 0L, log -> {});
+      manager.logEvent("test", 0L, log -> {});
     }
     manager.shutdown();
 
@@ -175,13 +178,13 @@ class OtelSdkManagerTest {
 
     // when — send events during failure
     for (int i = 0; i < 10; i++) {
-      manager.logEvent("during_failure", 0L, 0L, log -> {});
+      manager.logEvent("during_failure", 0L, log -> {});
     }
 
     // recover, then send more and flush
     failing.set(false);
     for (int i = 0; i < 5; i++) {
-      manager.logEvent("after_recovery", 0L, 0L, log -> {});
+      manager.logEvent("after_recovery", 0L, log -> {});
     }
     manager.shutdown();
 
@@ -197,7 +200,7 @@ class OtelSdkManagerTest {
     manager.shutdown();
 
     // when / then
-    assertThatCode(() -> manager.logEvent("post_shutdown", 0L, 0L, log -> {}))
+    assertThatCode(() -> manager.logEvent("post_shutdown", 0L, log -> {}))
         .doesNotThrowAnyException();
     assertThatCode(manager::shutdown).doesNotThrowAnyException();
   }
@@ -219,7 +222,8 @@ class OtelSdkManagerTest {
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
         "test-cluster",
-        1);
+        1,
+        new AnalyticsExporterMetadata());
   }
 
   private static LogRecordExporter exporterFrom(
