@@ -64,4 +64,14 @@ public interface MessageCorrelationRecordValue
    * @since 8.10
    */
   String getBusinessId();
+
+  /**
+   * Returns the MCP tool name that initiated this message correlation, if any.
+   *
+   * @return the tool name, or null if not set
+   */
+  @edu.umd.cs.findbugs.annotations.Nullable
+  default String getToolName() {
+    return null;
+  }
 }

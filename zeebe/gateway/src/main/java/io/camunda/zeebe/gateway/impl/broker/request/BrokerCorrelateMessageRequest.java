@@ -48,6 +48,11 @@ public final class BrokerCorrelateMessageRequest
     return this;
   }
 
+  public BrokerCorrelateMessageRequest setToolName(final String toolName) {
+    requestDto.setToolName(toolName);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;
