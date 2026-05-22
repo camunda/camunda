@@ -21,14 +21,14 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.CamundaTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class CoverageDataSourceSnapshot implements CoverageDataSource {
+public final class CoverageTestResultsSnapshot implements CoverageTestResults {
 
   private final List<ProcessInstance> processInstances;
   private final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey;
@@ -40,7 +40,7 @@ public final class CoverageDataSourceSnapshot implements CoverageDataSource {
   private final Map<String, DecisionDefinition> decisionDefinitionsByDecisionDefinitionId;
   private final Map<Long, String> decisionDefinitionXmlByDecisionDefinitionKey;
 
-  private CoverageDataSourceSnapshot(
+  private CoverageTestResultsSnapshot(
       final List<ProcessInstance> processInstances,
       final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey,
       final Map<Long, List<ProcessInstanceSequenceFlow>> sequenceFlowsByProcessInstanceKey,
@@ -62,7 +62,7 @@ public final class CoverageDataSourceSnapshot implements CoverageDataSource {
         decisionDefinitionXmlByDecisionDefinitionKey;
   }
 
-  public static CoverageDataSourceSnapshot from(final CamundaDataSource dataSource) {
+  public static CoverageTestResultsSnapshot from(final CamundaTestResults dataSource) {
     final List<ProcessInstance> processInstances = dataSource.findProcessInstances();
     final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey =
         processInstances.stream()
@@ -116,7 +116,7 @@ public final class CoverageDataSourceSnapshot implements CoverageDataSource {
               dataSource::getDecisionDefinitionXmlByDecisionDefinitionKey);
         });
 
-    return new CoverageDataSourceSnapshot(
+    return new CoverageTestResultsSnapshot(
         processInstances,
         elementInstancesByProcessInstanceKey,
         sequenceFlowsByProcessInstanceKey,
@@ -128,8 +128,8 @@ public final class CoverageDataSourceSnapshot implements CoverageDataSource {
         decisionDefinitionXmlByDecisionDefinitionKey);
   }
 
-  public static CoverageDataSourceSnapshot empty() {
-    return new CoverageDataSourceSnapshot(
+  public static CoverageTestResultsSnapshot empty() {
+    return new CoverageTestResultsSnapshot(
         java.util.Collections.emptyList(),
         java.util.Collections.emptyMap(),
         java.util.Collections.emptyMap(),

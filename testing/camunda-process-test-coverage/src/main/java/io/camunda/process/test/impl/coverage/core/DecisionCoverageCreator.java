@@ -16,10 +16,10 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,32 +41,26 @@ public class DecisionCoverageCreator {
    * <p>Retrieves the matched rules for the given decision instance and calculates the coverage
    * percentage based on the total rule count in the decision model.
    *
-   * @param dataSource The data source to retrieve decision instance details
-   * @param decisionInstance The decision instance to analyze (from search results)
+   * @param decisionInstanceResult The decision instance to analyze (from search results)
    * @param model The decision model containing rule count information
    * @return A DecisionCoverage object containing the coverage details
    */
   public static DecisionCoverage createCoverage(
-      final CoverageDataSource dataSource,
-      final DecisionInstance decisionInstance,
-      final DecisionModel model) {
-    final DecisionInstance detailedInstance =
-        dataSource
-            .getDecisionInstancesByDecisionInstanceId()
-            .get(decisionInstance.getDecisionInstanceId());
+      final CoverageDecisionInstanceResult decisionInstanceResult, final DecisionModel model) {
+    final DecisionInstance decisionInstance = decisionInstanceResult.getDecisionInstance();
 
     final List<String> matchedRuleIds =
-        detailedInstance.getMatchedRules() == null
+        decisionInstance.getMatchedRules() == null
             ? new ArrayList<>()
-            : detailedInstance.getMatchedRules().stream()
+            : decisionInstance.getMatchedRules().stream()
                 .map(rule -> rule.getRuleId())
                 .distinct()
                 .collect(Collectors.toList());
 
     final List<Integer> matchedRuleIndices =
-        detailedInstance.getMatchedRules() == null
+        decisionInstance.getMatchedRules() == null
             ? new ArrayList<>()
-            : detailedInstance.getMatchedRules().stream()
+            : decisionInstance.getMatchedRules().stream()
                 .map(rule -> rule.getRuleIndex())
                 .distinct()
                 .collect(Collectors.toList());

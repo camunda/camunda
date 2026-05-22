@@ -15,14 +15,14 @@
  */
 package io.camunda.process.test.impl.coverage.core;
 
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
@@ -53,37 +53,27 @@ public class CoverageCreator {
    * <p>Analyzes the elements and sequence flows taken in the process instance and calculates the
    * overall coverage percentage based on the model definition.
    *
-   * @param dataSource The data source to retrieve process execution data
-   * @param processInstance The process instance to analyze
+   * @param processInstanceResult The process instance to analyze
    * @param model The process model containing definition information
    * @return A ProcessCoverage object containing the coverage details for the process instance
    */
   public static ProcessCoverage createCoverage(
-      final CoverageDataSource dataSource,
-      final ProcessInstance processInstance,
-      final Model model) {
+      final CoverageProcessInstanceResult processInstanceResult, final Model model) {
 
-    final List<ElementInstance> takenElementInstances =
-        dataSource
-            .getElementInstancesByProcessInstanceKey()
-            .getOrDefault(
-                processInstance.getProcessInstanceKey(), java.util.Collections.emptyList())
-            .stream()
+    final List<ElementInstance> completedElementInstances =
+        processInstanceResult.getElementInstances().stream()
             .filter(elementInstance -> !EXCLUDED_ELEMENT_TYPES.contains(elementInstance.getType()))
+            .filter(elementInstance -> elementInstance.getState() == ElementInstanceState.COMPLETED)
             .collect(Collectors.toList());
 
-    final List<String> takenElements =
-        takenElementInstances.stream()
+    final List<String> completedElementIds =
+        completedElementInstances.stream()
             .map(ElementInstance::getElementId)
             .distinct()
             .collect(Collectors.toList());
 
-    final List<String> takenSequenceFlows =
-        dataSource
-            .getSequenceFlowsByProcessInstanceKey()
-            .getOrDefault(
-                processInstance.getProcessInstanceKey(), java.util.Collections.emptyList())
-            .stream()
+    final List<String> takenSequenceFlowIds =
+        processInstanceResult.getSequenceFlows().stream()
             .map(ProcessInstanceSequenceFlow::getElementId)
             .distinct()
             .collect(Collectors.toList());
@@ -91,13 +81,13 @@ public class CoverageCreator {
     // for event based gateways we need to find out how the flow continues to get the correct
     // sequence flow and add that as an event, as sequence flows after an event based gateway are
     // not reflected in the records
-    enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlows, takenElementInstances, model);
+    enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlowIds, completedElementInstances, model);
 
     return ImmutableProcessCoverage.builder()
-        .processDefinitionId(processInstance.getProcessDefinitionId())
-        .addAllCompletedElements(takenElements)
-        .addAllTakenSequenceFlows(takenSequenceFlows)
-        .coverage(calculateCoverage(takenElements, takenSequenceFlows, model))
+        .processDefinitionId(processInstanceResult.getProcessInstance().getProcessDefinitionId())
+        .addAllCompletedElements(completedElementIds)
+        .addAllTakenSequenceFlows(takenSequenceFlowIds)
+        .coverage(calculateCoverage(completedElementIds, takenSequenceFlowIds, model))
         .build();
   }
 

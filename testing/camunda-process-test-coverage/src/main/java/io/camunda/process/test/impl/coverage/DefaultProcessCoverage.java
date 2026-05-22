@@ -15,11 +15,10 @@
  */
 package io.camunda.process.test.impl.coverage;
 
-import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -42,8 +41,8 @@ public final class DefaultProcessCoverage implements ProcessCoverage {
 
   @Override
   public CoverageReport collectTestRunCoverage(
-      final String runName, final CoverageDataSource dataSource) {
-    coverageCollector.collectTestRunCoverage(runName, dataSource);
+      final String runName, final CoverageTestResults testResults) {
+    coverageCollector.collectTestRunCoverage(runName, testResults);
     return coverageReporter.createSuiteCoverageReport(coverageCollector);
   }
 

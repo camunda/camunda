@@ -16,9 +16,10 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessDefinitionResult;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
@@ -45,19 +46,27 @@ public class ModelCreator {
    * and sequence flows, and calculates the total number of executable elements for coverage
    * analysis.
    *
-   * @param dataSource The data source to retrieve process definition data
+   * @param testResults The data source to retrieve process definition data
    * @param processDefinitionId The ID of the process definition to create a model for
    * @return A Model object containing process structure information and element counts
    * @throws IllegalArgumentException if the model cannot be read from the process definition
    */
   public static Model createModel(
-      final CoverageDataSource dataSource, final String processDefinitionId) {
+      final CoverageTestResults testResults, final String processDefinitionId) {
+
+    final CoverageProcessDefinitionResult processDefinitionResult =
+        testResults.getProcessDefinitionResults().stream()
+            .filter(
+                result ->
+                    result
+                        .getProcessDefinition()
+                        .getProcessDefinitionId()
+                        .equals(processDefinitionId))
+            .findFirst()
+            .orElseThrow();
+
     final ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(
-            dataSource
-                .getProcessDefinitionXmlByProcessDefinitionId()
-                .get(processDefinitionId)
-                .getBytes());
+        new ByteArrayInputStream(processDefinitionResult.getXml().getBytes());
     final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(inputStream);
 
     if (modelInstance == null) {
@@ -65,8 +74,7 @@ public class ModelCreator {
           "Cannot read model from process definition: " + processDefinitionId);
     }
 
-    final ProcessDefinition processDefinition =
-        dataSource.getProcessDefinitionsByProcessDefinitionId().get(processDefinitionId);
+    final ProcessDefinition processDefinition = processDefinitionResult.getProcessDefinition();
 
     final Set<FlowNode> definitionFlowNodes =
         modelInstance.getModelElementsByType(FlowNode.class).stream()

@@ -15,8 +15,6 @@
  */
 package io.camunda.process.test.impl.coverage;
 
-import io.camunda.process.test.api.coverage.ProcessCoverage;
-import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;

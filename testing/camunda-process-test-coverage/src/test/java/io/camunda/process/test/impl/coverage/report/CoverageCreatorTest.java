@@ -20,12 +20,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.MatchedDecisionRule;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
@@ -33,9 +33,10 @@ import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceResult;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Arrays;
-import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 class CoverageCreatorTest {
@@ -43,7 +44,6 @@ class CoverageCreatorTest {
   @Test
   void shouldCreateCoverageFromSnapshotData() {
     // given
-    final CoverageDataSource dataSource = mock(CoverageDataSource.class);
     final ProcessInstance processInstance = mock(ProcessInstance.class);
     final ElementInstance elementInstance = mock(ElementInstance.class);
     final ProcessInstanceSequenceFlow flow = mock(ProcessInstanceSequenceFlow.class);
@@ -54,21 +54,28 @@ class CoverageCreatorTest {
             .version("1")
             .xml(
                 Bpmn.convertToString(
-                    Bpmn.createExecutableProcess("process").startEvent("start").endEvent("end").done()))
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent("start")
+                        .endEvent("end")
+                        .done()))
             .build();
 
     when(processInstance.getProcessInstanceKey()).thenReturn(1L);
     when(processInstance.getProcessDefinitionId()).thenReturn("process");
     when(elementInstance.getElementId()).thenReturn("task");
     when(elementInstance.getType()).thenReturn(ElementInstanceType.SERVICE_TASK);
+    when(elementInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
     when(flow.getElementId()).thenReturn("flow");
-    when(dataSource.getElementInstancesByProcessInstanceKey())
-        .thenReturn(Collections.singletonMap(1L, Collections.singletonList(elementInstance)));
-    when(dataSource.getSequenceFlowsByProcessInstanceKey())
-        .thenReturn(Collections.singletonMap(1L, Collections.singletonList(flow)));
+
+    final ImmutableCoverageProcessInstanceResult processInstanceResult =
+        ImmutableCoverageProcessInstanceResult.builder()
+            .processInstance(processInstance)
+            .addElementInstances(elementInstance)
+            .addSequenceFlows(flow)
+            .build();
 
     // when
-    final var coverage = CoverageCreator.createCoverage(dataSource, processInstance, model);
+    final var coverage = CoverageCreator.createCoverage(processInstanceResult, model);
 
     // then
     assertThat(coverage.getProcessDefinitionId()).isEqualTo("process");
@@ -80,9 +87,7 @@ class CoverageCreatorTest {
   @Test
   void shouldCreateDecisionCoverageFromSnapshotData() {
     // given
-    final CoverageDataSource dataSource = mock(CoverageDataSource.class);
-    final DecisionInstance searchInstance = mock(DecisionInstance.class);
-    final DecisionInstance detailedInstance = mock(DecisionInstance.class);
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
     final MatchedDecisionRule rule1 = mock(MatchedDecisionRule.class);
     final MatchedDecisionRule rule2 = mock(MatchedDecisionRule.class);
     final DecisionModel model =
@@ -93,19 +98,22 @@ class CoverageCreatorTest {
             .xml("<dmn />")
             .build();
 
-    when(searchInstance.getDecisionInstanceId()).thenReturn("instance-1");
-    when(searchInstance.getDecisionDefinitionId()).thenReturn("decision");
+    when(decisionInstance.getDecisionInstanceId()).thenReturn("instance-1");
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("decision");
     when(rule1.getRuleId()).thenReturn("rule-1");
     when(rule1.getRuleIndex()).thenReturn(1);
     when(rule2.getRuleId()).thenReturn("rule-2");
     when(rule2.getRuleIndex()).thenReturn(2);
-    when(detailedInstance.getMatchedRules()).thenReturn(Arrays.asList(rule1, rule2));
-    when(dataSource.getDecisionInstancesByDecisionInstanceId())
-        .thenReturn(Collections.singletonMap("instance-1", detailedInstance));
+    when(decisionInstance.getMatchedRules()).thenReturn(Arrays.asList(rule1, rule2));
+
+    final ImmutableCoverageDecisionInstanceResult decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceResult.builder()
+            .decisionInstance(decisionInstance)
+            .build();
 
     // when
     final DecisionCoverage coverage =
-        DecisionCoverageCreator.createCoverage(dataSource, searchInstance, model);
+        DecisionCoverageCreator.createCoverage(decisionInstanceResult, model);
 
     // then
     assertThat(coverage.getDecisionDefinitionId()).isEqualTo("decision");

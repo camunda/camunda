@@ -15,10 +15,10 @@
  */
 package io.camunda.process.test.impl.coverage.core;
 
-import io.camunda.client.api.search.response.DecisionDefinition;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionDefinitionResult;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
 import java.io.ByteArrayInputStream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -41,20 +41,22 @@ public class DecisionModelCreator {
    * <p>Retrieves the DMN XML for the specified decision definition, parses it to find the decision
    * table for the given decision, and counts the rules for coverage analysis.
    *
-   * @param dataSource The data source to retrieve decision definition data
+   * @param testResults The data source to retrieve decision definition data
    * @param decisionDefinitionId The ID of the decision definition to create a model for
    * @return A DecisionModel object containing decision structure information and rule counts
    * @throws IllegalArgumentException if the model cannot be read from the decision definition
    */
   public static DecisionModel createModel(
-      final CoverageDataSource dataSource, final String decisionDefinitionId) {
-    final DecisionDefinition decisionDefinition =
-        dataSource.getDecisionDefinitionsByDecisionDefinitionId().get(decisionDefinitionId);
+      final CoverageTestResults testResults, final String decisionDefinitionId) {
+    final CoverageDecisionDefinitionResult decisionDefinitionResult =
+        testResults.getDecisionDefinitionResults().stream()
+            .filter(
+                result ->
+                    result.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
+            .findFirst()
+            .orElseThrow();
 
-    final String xml =
-        dataSource
-            .getDecisionDefinitionXmlByDecisionDefinitionKey()
-            .get(decisionDefinition.getDecisionKey());
+    final String xml = decisionDefinitionResult.getXml();
 
     if (xml == null || xml.isEmpty()) {
       throw new IllegalArgumentException(
@@ -69,7 +71,7 @@ public class DecisionModelCreator {
     return ImmutableDecisionModel.builder()
         .decisionDefinitionId(decisionDefinitionId)
         .totalRuleCount(ruleCount)
-        .version(String.valueOf(decisionDefinition.getVersion()))
+        .version(String.valueOf(decisionDefinitionResult.getDecisionDefinition().getVersion()))
         .xml(xml)
         .build();
   }

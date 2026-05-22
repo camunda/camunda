@@ -23,6 +23,11 @@ import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.impl.coverage.ProcessCoverage;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceResult;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceResult;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageTestResults;
 import org.junit.jupiter.api.Test;
 
 class ProcessCoverageBuilderTest {
@@ -38,25 +43,17 @@ class ProcessCoverageBuilderTest {
     when(decisionInstance.getDecisionDefinitionType())
         .thenReturn(DecisionDefinitionType.DECISION_TABLE);
 
-    final CoverageDataSource dataSource = mock(CoverageDataSource.class);
-    when(dataSource.getProcessInstances())
-        .thenReturn(java.util.Collections.singletonList(processInstance));
-    when(dataSource.getDecisionInstances())
-        .thenReturn(java.util.Collections.singletonList(decisionInstance));
-    when(dataSource.getElementInstancesByProcessInstanceKey())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getSequenceFlowsByProcessInstanceKey())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getProcessDefinitionsByProcessDefinitionId())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getProcessDefinitionXmlByProcessDefinitionId())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getDecisionInstancesByDecisionInstanceId())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getDecisionDefinitionsByDecisionDefinitionId())
-        .thenReturn(java.util.Collections.emptyMap());
-    when(dataSource.getDecisionDefinitionXmlByDecisionDefinitionKey())
-        .thenReturn(java.util.Collections.emptyMap());
+    final CoverageTestResults testResults =
+        ImmutableCoverageTestResults.builder()
+            .addProcessInstanceResults(
+                ImmutableCoverageProcessInstanceResult.builder()
+                    .processInstance(processInstance)
+                    .build())
+            .addDecisionInstanceResults(
+                ImmutableCoverageDecisionInstanceResult.builder()
+                    .decisionInstance(decisionInstance)
+                    .build())
+            .build();
 
     final ProcessCoverage processCoverage =
         ProcessCoverage.newBuilder()
@@ -66,7 +63,7 @@ class ProcessCoverageBuilderTest {
             .build();
 
     // when
-    final CoverageReport report = processCoverage.collectTestRunCoverage("run-1", dataSource);
+    final CoverageReport report = processCoverage.collectTestRunCoverage("run-1", testResults);
 
     // then
     assertThat(report.getSuites())

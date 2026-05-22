@@ -16,17 +16,17 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
-import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
-import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceResult;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceResult;
+import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -108,28 +108,27 @@ public final class CoverageCollector {
    *
    * @param runName Identifier for the current test run
    */
-  public void collectTestRunCoverage(final String runName, final CoverageDataSource dataSource) {
-    final List<ProcessInstance> processInstances =
-        dataSource.getProcessInstances().stream()
+  public void collectTestRunCoverage(final String runName, final CoverageTestResults testResults) {
+    final List<CoverageProcessInstanceResult> processInstanceResults =
+        testResults.getProcessInstanceResults().stream()
             .filter(
-                processInstance ->
+                processInstanceResult ->
                     !excludedProcessDefinitionIds.contains(
-                        processInstance.getProcessDefinitionId()))
+                        processInstanceResult.getProcessInstance().getProcessDefinitionId()))
             .collect(Collectors.toList());
 
     final List<ProcessCoverage> coverages =
-        processInstances.stream()
+        processInstanceResults.stream()
             .map(
-                processInstance ->
+                processInstanceResult ->
                     CoverageCreator.createCoverage(
-                        dataSource,
-                        processInstance,
+                        processInstanceResult,
                         models.computeIfAbsent(
-                            processInstance.getProcessDefinitionId(),
-                            key -> ModelCreator.createModel(dataSource, key))))
+                            processInstanceResult.getProcessInstance().getProcessDefinitionId(),
+                            key -> ModelCreator.createModel(testResults, key))))
             .collect(Collectors.toList());
 
-    final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(dataSource);
+    final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(testResults);
 
     runs.add(
         ImmutableRun.builder()
@@ -166,27 +165,32 @@ public final class CoverageCollector {
     return decisionModels.values();
   }
 
-  private List<DecisionCoverage> collectDecisionCoverages(final CoverageDataSource dataSource) {
-    final List<DecisionInstance> decisionInstances =
-        dataSource.getDecisionInstances().stream()
-            .filter(di -> di.getDecisionDefinitionType() == DecisionDefinitionType.DECISION_TABLE)
-            .filter(di -> !excludedDecisionDefinitionIds.contains(di.getDecisionDefinitionId()))
+  private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestResults dataSource) {
+    final List<CoverageDecisionInstanceResult> decisionInstanceResults =
+        dataSource.getDecisionInstanceResults().stream()
+            .filter(
+                decisionInstanceResult ->
+                    decisionInstanceResult.getDecisionInstance().getDecisionDefinitionType()
+                        == DecisionDefinitionType.DECISION_TABLE)
+            .filter(
+                decisionInstanceResult ->
+                    !excludedDecisionDefinitionIds.contains(
+                        decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId()))
             .collect(Collectors.toList());
 
-    return decisionInstances.stream()
+    return decisionInstanceResults.stream()
         .map(
-            di -> {
+            decisionInstanceResult -> {
               try {
                 return DecisionCoverageCreator.createCoverage(
-                    dataSource,
-                    di,
+                    decisionInstanceResult,
                     decisionModels.computeIfAbsent(
-                        di.getDecisionDefinitionId(),
+                        decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
                         key -> DecisionModelCreator.createModel(dataSource, key)));
               } catch (final Exception e) {
                 LOG.warn(
                     "Failed to collect coverage for decision '{}': {}",
-                    di.getDecisionDefinitionId(),
+                    decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId(),
                     e.getMessage());
                 return null;
               }
