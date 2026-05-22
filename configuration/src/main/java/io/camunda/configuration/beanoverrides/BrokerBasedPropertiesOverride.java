@@ -37,6 +37,7 @@ import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.Write;
+import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -45,7 +46,6 @@ import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
-import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
@@ -61,6 +61,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
@@ -431,28 +432,37 @@ public class BrokerBasedPropertiesOverride {
     override.getExperimental().setReceiveOnLegacySubject(cluster.isReceiveOnLegacySubject());
   }
 
+  @SuppressWarnings("MissingSwitchDefault")
   private void populateFromPartitioning(final BrokerBasedProperties override) {
     final Partitioning partitioning =
         unifiedConfiguration.getCamunda().getCluster().getPartitioning();
 
     // Order between legacy and new partitioning props is not guaranteed.
     // Log common partitioning warning instead of using UnifiedConfigurationHelper logging.
-    final var partioningCfg = override.getExperimental().getPartitioning();
-    if (partioningCfg.getScheme() == Scheme.FIXED && !partioningCfg.getFixed().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.cluster.partitioning.fixed", "zeebe.broker.experimental.partitioning.fixed");
-      LOGGER.warn(warningMessage);
-    }
-
-    if (partitioning.getScheme() == Partitioning.Scheme.FIXED
-        && !partitioning.getFixed().isEmpty()) {
-      final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
-      partitioningCfg.setScheme(Scheme.valueOf(partitioning.getScheme().name()));
-      final var fixedPartitionCfgList =
-          partitioning.getFixed().stream().map(FixedPartition::toFixedPartitionCfg).toList();
-      partitioningCfg.setFixed(fixedPartitionCfgList);
+    final var partitioningCfg = override.getExperimental().getPartitioning();
+    switch (partitioning.getScheme()) {
+      case FIXED -> {
+        if (!partitioningCfg.getFixed().isEmpty()) {
+          final String warningMessage =
+              String.format(
+                  "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+                  "camunda.cluster.partitioning.fixed",
+                  "zeebe.broker.experimental.partitioning.fixed");
+          LOGGER.warn(warningMessage);
+        }
+        if (!partitioning.getFixed().isEmpty()) {
+          partitioningCfg.setScheme(Scheme.FIXED);
+          partitioningCfg.setFixed(
+              partitioning.getFixed().stream().map(FixedPartition::toFixedPartitionCfg).toList());
+        }
+      }
+      case ZONE_AWARE -> {
+        partitioningCfg.setScheme(Scheme.ZONE_AWARE);
+        partitioningCfg.setZoneAware(
+            new ZoneAwareCfg(
+                partitioning.getZoneAware().zones().stream().map(Zone::toZoneCfg).toList()));
+      }
+      case ROUND_ROBIN -> partitioningCfg.setScheme(Scheme.ROUND_ROBIN);
     }
   }
 

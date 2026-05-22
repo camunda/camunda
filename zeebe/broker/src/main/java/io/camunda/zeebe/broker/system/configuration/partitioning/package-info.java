@@ -5,10 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+@NullMarked
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
-public enum Scheme {
-  FIXED,
-  ROUND_ROBIN,
-  ZONE_AWARE;
-}
+import org.jspecify.annotations.NullMarked;

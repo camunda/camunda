@@ -11,6 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Partitioning {
   private static final String PREFIX = "camunda.cluster.partitioning";
@@ -35,6 +36,12 @@ public class Partitioning {
    * empty, list by default. Used when the {@link Scheme#FIXED} partitioning scheme is selected.
    */
   private List<FixedPartition> fixed = Collections.emptyList();
+
+  /**
+   * The zone-aware partitioning configuration. Used when the {@link Scheme#ZONE_AWARE} partitioning
+   * scheme is selected.
+   */
+  @NestedConfigurationProperty private ZoneAware zoneAware = new ZoneAware(List.of());
 
   public Partitioning() {}
 
@@ -64,8 +71,17 @@ public class Partitioning {
     this.fixed = fixed;
   }
 
+  public ZoneAware getZoneAware() {
+    return zoneAware;
+  }
+
+  public void setZoneAware(final ZoneAware zoneAware) {
+    this.zoneAware = zoneAware;
+  }
+
   public enum Scheme {
     FIXED,
-    ROUND_ROBIN;
+    ROUND_ROBIN,
+    ZONE_AWARE;
   }
 }

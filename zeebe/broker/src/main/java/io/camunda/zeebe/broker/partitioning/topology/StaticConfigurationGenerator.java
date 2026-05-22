@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
-import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.FIXED;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -17,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistribut
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -25,6 +24,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSpec;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public final class StaticConfigurationGenerator {
     final var replicationFactor = clusterCfg.getReplicationFactor();
 
     final var partitionDistributor = getPartitionDistributor(partitioningCfg);
-    final var clusterMembers = getRaftGroupMembers(clusterCfg);
+    final var clusterMembers = getRaftGroupMembers(clusterCfg, partitioningCfg);
     final var partitionIds = getSortedPartitionIds(partitionCount);
     final var partitionConfig = generatePartitionConfig(brokerCfg);
     final var clusterId = clusterCfg.getClusterId();
@@ -66,9 +67,20 @@ public final class StaticConfigurationGenerator {
   }
 
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
-    return config.getScheme() == FIXED
-        ? buildFixedPartitionDistributor(config)
-        : new RoundRobinPartitionDistributor();
+    return switch (config.getScheme()) {
+      case FIXED -> buildFixedPartitionDistributor(config);
+      case ZONE_AWARE -> buildZoneAwarePartitionDistributor(config);
+      default -> new RoundRobinPartitionDistributor();
+    };
+  }
+
+  private static ZoneAwarePartitionDistributor buildZoneAwarePartitionDistributor(
+      final PartitioningCfg config) {
+    final var specs =
+        config.getZoneAware().zones().stream()
+            .map(r -> new ZoneSpec(r.name(), r.numberOfReplicas(), r.priority()))
+            .toList();
+    return new ZoneAwarePartitionDistributor(specs);
   }
 
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
@@ -86,11 +98,31 @@ public final class StaticConfigurationGenerator {
     return distributionBuilder.build();
   }
 
-  private static Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static Set<MemberId> getRaftGroupMembers(
+      final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
+    if (partitioningCfg.getScheme() == Scheme.ZONE_AWARE) {
+      return getZoneAwareRaftGroupMembers(partitioningCfg);
+    }
+    // Legacy path: node ids are always 0 to clusterSize - 1
     final int clusterSize = clusterCfg.getClusterSize();
-    // node ids are always 0 to clusterSize - 1
     return IntStream.range(0, clusterSize)
         .mapToObj(nodeId -> MemberId.from(Integer.toString(nodeId)))
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Generates composite {@link MemberId}s for all brokers in a zone-aware cluster. The format is
+   * {@code "zone/localNodeId"} (e.g. {@code "us-east1/0"}). Local node IDs are 0-indexed within
+   * each zone, derived from the {@link
+   * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg} configuration in the
+   * same insertion order used by each broker to determine its own member ID.
+   */
+  private static Set<MemberId> getZoneAwareRaftGroupMembers(final PartitioningCfg partitioningCfg) {
+    return partitioningCfg.getZoneAware().zones().stream()
+        .flatMap(
+            r ->
+                IntStream.range(0, r.numberOfBrokers())
+                    .mapToObj(localId -> MemberId.from(r.name(), localId)))
         .collect(Collectors.toSet());
   }
 

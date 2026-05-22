@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
-public enum Scheme {
-  FIXED,
-  ROUND_ROBIN,
-  ZONE_AWARE;
+import java.util.List;
+
+public record ZoneAwareCfg(List<ZoneCfg> zones) {
+  public ZoneAwareCfg() {
+    this(List.of());
+  }
 }

@@ -44,8 +44,12 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
       final Set<MemberId> clusterMembers,
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
-    final List<MemberId> sorted = new ArrayList<>(clusterMembers);
-    sorted.sort(Comparator.comparingInt(MemberId::nodeIdx));
+    final List<MemberId> sorted =
+        clusterMembers.stream()
+            .sorted(
+                Comparator.comparingInt(MemberId::nodeIdx)
+                    .thenComparing(id -> id.zone() != null ? id.zone() : ""))
+            .toList();
 
     final int length = sorted.size();
     final int count = Math.min(replicationFactor, length);
