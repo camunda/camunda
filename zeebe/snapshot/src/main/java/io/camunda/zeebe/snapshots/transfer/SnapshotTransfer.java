@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.transfer;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Receive a complete snapshot from a {@link SnapshotTransferService} by repeatedly asking for the
@@ -24,5 +25,5 @@ public interface SnapshotTransfer extends AsyncClosable {
    * @param partitionId the partition to get the snapshot from
    * @return a persisted snapshot satisfying the parameters' requirements
    */
-  ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId);
+  ActorFuture<@Nullable PersistedSnapshot> getLatestSnapshot(final int partitionId);
 }

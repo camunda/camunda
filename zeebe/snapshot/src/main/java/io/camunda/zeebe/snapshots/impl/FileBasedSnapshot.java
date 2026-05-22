@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshot implements PersistedSnapshot {

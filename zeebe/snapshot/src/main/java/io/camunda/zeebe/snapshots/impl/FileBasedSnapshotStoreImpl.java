@@ -28,6 +28,7 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.Unit;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -44,6 +45,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +69,10 @@ public final class FileBasedSnapshotStoreImpl {
   private final ConcurrencyControl actor;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
-  private final AtomicReference<FileBasedSnapshot> currentSnapshot = new AtomicReference<>();
-  private final AtomicReference<FileBasedSnapshot> bootstrapSnapshot = new AtomicReference<>();
+  private final AtomicReference<@Nullable FileBasedSnapshot> currentSnapshot =
+      new AtomicReference<>();
+  private final AtomicReference<@Nullable FileBasedSnapshot> bootstrapSnapshot =
+      new AtomicReference<>();
 
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
@@ -104,7 +108,7 @@ public final class FileBasedSnapshotStoreImpl {
     deleteBootstrapSnapshotsInternal();
   }
 
-  private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
+  private @Nullable FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
     try (final var stream = Files.newDirectoryStream(snapshotDirectory, Files::isDirectory)) {
       for (final var path : stream) {
@@ -150,7 +154,7 @@ public final class FileBasedSnapshotStoreImpl {
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
   //  can have better error messages, and the return type better expresses what we attempt to do,
   //  i.e. either it failed (with an error) or it succeeded
-  private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
+  private @Nullable FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotId.ofPath(path);
     if (optionalMeta instanceof Invalid(final var cause)) {
       LOGGER.warn("Failed to parse snapshot id", cause);
@@ -230,7 +234,7 @@ public final class FileBasedSnapshotStoreImpl {
     return Optional.ofNullable(currentSnapshot.get());
   }
 
-  private void setLatestSnapshot(final FileBasedSnapshot snapshot) {
+  private void setLatestSnapshot(final @Nullable FileBasedSnapshot snapshot) {
     currentSnapshot.set(snapshot);
     if (snapshot != null) {
       availableSnapshots.add(snapshot);
@@ -251,8 +255,8 @@ public final class FileBasedSnapshotStoreImpl {
                 .orElse(0L));
   }
 
-  public ActorFuture<@Nullable Void> abortPendingSnapshots() {
-    final CompletableActorFuture<@Nullable Void> abortFuture = new CompletableActorFuture<>();
+  public ActorFuture<Void> abortPendingSnapshots() {
+    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           final var abortedAll = pendingSnapshots.stream().map(PersistableSnapshot::abort).toList();
@@ -260,7 +264,7 @@ public final class FileBasedSnapshotStoreImpl {
               abortedAll,
               error -> {
                 if (error == null) {
-                  abortFuture.complete(null);
+                  abortFuture.complete(Unit.unit());
                 } else {
                   abortFuture.completeExceptionally(error);
                 }
@@ -281,7 +285,7 @@ public final class FileBasedSnapshotStoreImpl {
     return getLatestSnapshot().map(PersistedSnapshot::getIndex).orElse(0L);
   }
 
-  public ActorFuture<@Nullable Void> delete() {
+  public ActorFuture<Void> delete() {
     return actor.call(
         () -> {
           currentSnapshot.set(null);
@@ -293,7 +297,7 @@ public final class FileBasedSnapshotStoreImpl {
             throw new UncheckedIOException(e);
           }
 
-          return null;
+          return Unit.unit();
         });
   }
 
@@ -440,7 +444,7 @@ public final class FileBasedSnapshotStoreImpl {
     final var isBootstrap = metadata.isBootstrap();
     final var currentPersistedSnapshot = currentSnapshot.get();
 
-    if (!isBootstrap && isCurrentSnapshotNewer(snapshotId)) {
+    if (!isBootstrap && currentPersistedSnapshot != null && isCurrentSnapshotNewer(snapshotId)) {
       final var currentPersistedSnapshotId = currentPersistedSnapshot.getSnapshotId();
 
       LOGGER.debug(
@@ -558,7 +562,8 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private Path buildSnapshotsChecksumPath(final Path snapshotPath, final SnapshotId snapshotId) {
-    return snapshotPath.getParent().resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
+    return Objects.requireNonNull(snapshotPath.getParent(), "snapshotPath parent")
+        .resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
   private boolean isChecksumFile(final String name) {
@@ -600,7 +605,12 @@ public final class FileBasedSnapshotStoreImpl {
     final var snapshotFileNames = snapshotFiles.keySet();
     snapshotFileNames.stream()
         .filter(name -> !isChecksumFile(name))
-        .forEach(name -> moveNamedFileToDirectory(name, snapshotFiles.get(name), snapshotPath));
+        .forEach(
+            name ->
+                moveNamedFileToDirectory(
+                    name,
+                    Objects.requireNonNull(snapshotFiles.get(name), "snapshotFiles(" + name + ")"),
+                    snapshotPath));
 
     final var checksumFile =
         snapshotFileNames.stream()
@@ -627,11 +637,11 @@ public final class FileBasedSnapshotStoreImpl {
     setLatestSnapshot(snapshot);
   }
 
-  public ActorFuture<@Nullable Void> restore(final PersistedSnapshot snapshot) {
+  public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
     return actor.call(
         () -> {
           restore(snapshot.getId(), snapshot.files());
-          return null;
+          return Unit.unit();
         });
   }
 
@@ -714,11 +724,11 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  ActorFuture<@Nullable Void> deleteBootstrapSnapshots() {
+  ActorFuture<Void> deleteBootstrapSnapshots() {
     return actor.call(
         () -> {
           deleteBootstrapSnapshotsInternal();
-          return null;
+          return Unit.unit();
         });
   }
 

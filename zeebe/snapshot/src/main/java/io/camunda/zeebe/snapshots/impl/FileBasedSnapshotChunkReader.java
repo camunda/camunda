@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implements a chunk reader where each chunk is a single file in a root directory. Chunks are then
@@ -76,7 +77,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   }
 
   @Override
-  public ByteBuffer nextId() {
+  public @Nullable ByteBuffer nextId() {
     if (chunksView.isEmpty()) {
       return null;
     }

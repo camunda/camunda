@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public interface SnapshotTransferService extends AsyncClosable {
 
@@ -25,7 +26,7 @@ public interface SnapshotTransferService extends AsyncClosable {
    * @return the first {@link SnapshotChunk}. It must be used in subsequent calls to {@link
    *     SnapshotTransferService#getNextChunk}
    */
-  ActorFuture<SnapshotChunk> getLatestSnapshot(
+  ActorFuture<@Nullable SnapshotChunk> getLatestSnapshot(
       int partition, long lastProcessedPosition, UUID transferId);
 
   /**
@@ -37,7 +38,7 @@ public interface SnapshotTransferService extends AsyncClosable {
    *     identified
    * @return null if there is no other chunk or the SnapshotChunk after {@param previousChunkName}
    */
-  ActorFuture<SnapshotChunk> getNextChunk(
+  ActorFuture<@Nullable SnapshotChunk> getNextChunk(
       int partition, String snapshotId, String previousChunkName, UUID transferId);
 
   interface TakeSnapshot {

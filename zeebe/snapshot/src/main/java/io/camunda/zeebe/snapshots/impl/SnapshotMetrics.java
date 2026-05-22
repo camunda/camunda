@@ -92,37 +92,45 @@ public final class SnapshotMetrics {
     }
   }
 
+  @SuppressWarnings("NullAway")
   void incrementSnapshotCount(final boolean isBootstrap) {
     snapshotCount.get(encodeBoolean(isBootstrap)).increment();
   }
 
+  @SuppressWarnings("NullAway")
   void observeSnapshotSize(final long sizeInBytes, final boolean isBootstrap) {
     snapshotSizeArray.get(encodeBoolean(isBootstrap)).set(sizeInBytes);
   }
 
+  @SuppressWarnings("NullAway")
   void observeSnapshotChunkCount(final long count, final boolean isBootstrap) {
     snapshotChunkCountArray.get(encodeBoolean(isBootstrap)).set(count);
   }
 
+  @SuppressWarnings("NullAway")
   void observeSnapshotFileSize(final long sizeInBytes, final boolean isBootstrap) {
     snapshotFileSize.get(encodeBoolean(isBootstrap)).record(sizeInBytes / 1_000_000f);
   }
 
+  @SuppressWarnings("NullAway")
   CloseableSilently startTimer(final boolean isBootstrap) {
     return MicrometerUtil.timer(
         snapshotDuration.get(encodeBoolean(isBootstrap)), Timer.start(clock));
   }
 
+  @SuppressWarnings("NullAway")
   CloseableSilently startPersistTimer(final boolean isBootstrap) {
     return MicrometerUtil.timer(
         snapshotPersistDuration.get(encodeBoolean(isBootstrap)), Timer.start(clock));
   }
 
+  @SuppressWarnings("NullAway")
   public CloseableSilently startTransferTimer(final boolean isBootstrap) {
     return MicrometerUtil.timer(
         snapshotTransferDuration.get(encodeBoolean(isBootstrap)), Timer.start(clock));
   }
 
+  @SuppressWarnings("NullAway")
   @VisibleForTesting
   public Timer getTransferDuration(final boolean isBootstrap) {
     return snapshotTransferDuration.get(encodeBoolean(isBootstrap));

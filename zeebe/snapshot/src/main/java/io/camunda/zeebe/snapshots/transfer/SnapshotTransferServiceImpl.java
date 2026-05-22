@@ -8,6 +8,8 @@
 
 package io.camunda.zeebe.snapshots.transfer;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -17,16 +19,17 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotChunkReader;
-import static io.camunda.zeebe.util.Unit.unit;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotTransferServiceImpl implements SnapshotSenderService {
 
@@ -51,7 +54,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getLatestSnapshot(
+  public ActorFuture<@Nullable SnapshotChunk> getLatestSnapshot(
       final int partition, final long lastProcessedPosition, final UUID transferId) {
     if (partition != partitionId) {
       return CompletableActorFuture.completedExceptionally(
@@ -87,7 +90,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getNextChunk(
+  public ActorFuture<@Nullable SnapshotChunk> getNextChunk(
       final int partition,
       final String snapshotId,
       final String previousChunkName,
@@ -101,7 +104,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
                     "[%s] Invalid snapshotId: %s. Expected: %s",
                     transferId, snapshotId, transfer.snapshotId)));
       }
-      if (!transfer.lastChunkName.equals(previousChunkName)) {
+      if (!Objects.equals(transfer.lastChunkName, previousChunkName)) {
         return CompletableActorFuture.completedExceptionally(
             new IllegalArgumentException(
                 String.format(
@@ -152,7 +155,8 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
     final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
     final ActorFuture<PersistedSnapshot> lastSnapshot =
         lastPersistedSnapshot.isEmpty()
-                || lastPersistedSnapshot.get().getMetadata().processedPosition()
+                || Objects.requireNonNull(lastPersistedSnapshot.get().getMetadata(), "metadata")
+                        .processedPosition()
                     < lastProcessedPosition
             ? takeSnapshot.takeSnapshot(lastProcessedPosition)
             : CompletableActorFuture.completed(lastPersistedSnapshot.get());
@@ -168,8 +172,15 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
                             (snapshot, error) -> {
                               if (error != null) {
                                 if (error instanceof SnapshotAlreadyExistsException) {
-                                  return CompletableActorFuture.completed(
-                                      snapshotStore.getBootstrapSnapshot().orElse(null));
+                                  final var bootstrapSnapshot =
+                                      snapshotStore.getBootstrapSnapshot();
+                                  return bootstrapSnapshot
+                                      .map(CompletableActorFuture::completed)
+                                      .orElseGet(
+                                          () ->
+                                              CompletableActorFuture.completedExceptionally(
+                                                  new IllegalStateException(
+                                                      "Bootstrap snapshot already exists but cannot be found")));
                                 } else {
                                   return CompletableActorFuture.completedExceptionally(error);
                                 }
@@ -226,17 +237,19 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   private static class PendingTransfer {
 
     private final String snapshotId;
-    private String lastChunkName;
+    private @Nullable String lastChunkName;
     private final SnapshotChunkReader reader;
 
     PendingTransfer(
-        final String snapshotId, final String lastChunkName, final SnapshotChunkReader reader) {
+        final String snapshotId,
+        final @Nullable String lastChunkName,
+        final SnapshotChunkReader reader) {
       this.snapshotId = snapshotId;
       this.lastChunkName = lastChunkName;
       this.reader = reader;
     }
 
-    private SnapshotChunk next() {
+    private @Nullable SnapshotChunk next() {
       // reader.hasNext does not involve any I/O
       if (reader != null && reader.hasNext()) {
         final var next = reader.next();

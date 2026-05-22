@@ -17,6 +17,7 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.Unit;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +40,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private final FileBasedSnapshotId snapshotId;
   private int expectedTotalCount;
-  private FileBasedSnapshotMetadata metadata;
-  private ByteBuffer metadataBuffer;
+  private @Nullable FileBasedSnapshotMetadata metadata;
+  private @Nullable ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private SfvChecksumImpl checksumCollection;
+  private @Nullable SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -62,11 +64,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<@Nullable Void> apply(final SnapshotChunk snapshotChunk) {
+  public ActorFuture<Void> apply(final SnapshotChunk snapshotChunk) {
     return actor.call(
         () -> {
           applyInternal(snapshotChunk);
-          return null;
+          return Unit.unit();
         });
   }
 
@@ -198,12 +200,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<@Nullable Void> abort() {
-    final CompletableActorFuture<@Nullable Void> abortFuture = new CompletableActorFuture<>();
+  public ActorFuture<Void> abort() {
+    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           abortInternal();
-          abortFuture.complete(null);
+          abortFuture.complete(Unit.unit());
         });
     return abortFuture;
   }
@@ -277,7 +279,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 false);
       }
       final PersistedSnapshot value =
-          snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);
+          snapshotStore.persistNewSnapshot(
+              directory,
+              snapshotId,
+              Objects.requireNonNull(checksumCollection, "checksumCollection"),
+              metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
