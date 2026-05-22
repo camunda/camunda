@@ -146,4 +146,31 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    */
   void deleteProcessInstanceKeyMappingByBusinessId(
       String businessId, String processDefinitionId, String tenantId, long processInstanceKey);
+
+  /**
+   * Increments the loop-detection activation counter for the given element within the given process
+   * instance.
+   *
+   * @param processInstanceKey the key of the root process instance
+   * @param elementId the BPMN element id of the element being activated
+   */
+  void incrementElementActivationCount(long processInstanceKey, DirectBuffer elementId);
+
+  /**
+   * Returns the current activation count for the given element, or {@code 0} when it has never been
+   * activated.
+   *
+   * @param processInstanceKey the key of the root process instance
+   * @param elementId the BPMN element id of the element
+   * @return current activation count, or {@code 0} if not yet activated
+   */
+  long getElementActivationCount(long processInstanceKey, DirectBuffer elementId);
+
+  /**
+   * Deletes all element activation counters that belong to the given process instance. Called when
+   * the process instance ends to avoid leaking state.
+   *
+   * @param processInstanceKey the key of the root process instance whose counters should be removed
+   */
+  void deleteAllElementActivationCounters(long processInstanceKey);
 }

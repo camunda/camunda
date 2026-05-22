@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscrip
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
@@ -65,6 +66,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
   private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
@@ -78,6 +80,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionProcessor();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    loopDetectionBehavior = bpmnBehaviors.loopDetectionBehavior();
     multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
@@ -100,6 +103,18 @@ public final class MultiInstanceBodyProcessor
                 eventSubscriptionBehavior
                     .subscribeToEvents(element, context)
                     .map(ok -> inputCollection))
+        .flatMap(
+            inputCollection -> {
+              // For parallel MI, check whether this batch would push the cumulative projected
+              // child activations past the configured threshold. Sequential MI creates children
+              // one-by-one (not in a batch) and is therefore excluded from this check.
+              if (!element.getLoopCharacteristics().isSequential()) {
+                return loopDetectionBehavior
+                    .checkBatchActivationThreshold(context, inputCollection.size())
+                    .map(ok -> inputCollection);
+              }
+              return Either.right(inputCollection);
+            })
         .thenDo(inputCollection -> activate(element, context, inputCollection));
   }
 

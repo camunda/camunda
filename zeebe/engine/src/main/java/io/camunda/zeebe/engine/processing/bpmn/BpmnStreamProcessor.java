@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOu
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -64,6 +65,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -95,6 +97,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    loopDetectionBehavior = bpmnBehaviors.loopDetectionBehavior();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -171,6 +174,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
+            .flatMap(
+                ok ->
+                    shouldCheckLoopDetection(activatingContext, element)
+                        ? loopDetectionBehavior.checkActivationThreshold(activatingContext)
+                        : BpmnElementProcessor.SUCCESS)
             .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
@@ -428,6 +436,34 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
+  }
+
+  /**
+   * Decides whether loop-detection counting applies to this element activation. Sequential MI
+   * bodies and parallel MI children are skipped (their counts are tracked elsewhere to avoid firing
+   * early or producing false positives on large collections); all other elements are counted.
+   */
+  private boolean shouldCheckLoopDetection(
+      final BpmnElementContext context, final ExecutableFlowElement element) {
+    if (context.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      // Only count parallel MI bodies; sequential MI bodies share their elementId counter
+      // with sequential children (the element that actually accumulates the count).
+      return !((ExecutableMultiInstanceBody) element).getLoopCharacteristics().isSequential();
+    }
+    final var flowScope = stateBehavior.getFlowScopeInstance(context);
+    if (flowScope != null
+        && flowScope.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      // Skip parallel MI children (activated in a batch → use checkBatchActivationThreshold).
+      // Count sequential MI children (activated one-by-one → normal loop detection applies).
+      final var miBody =
+          processState.getFlowElement(
+              context.getProcessDefinitionKey(),
+              context.getTenantId(),
+              flowScope.getValue().getElementIdBuffer(),
+              ExecutableMultiInstanceBody.class);
+      return miBody != null && miBody.getLoopCharacteristics().isSequential();
+    }
+    return true;
   }
 
   private ExecutableFlowElement getElement(
