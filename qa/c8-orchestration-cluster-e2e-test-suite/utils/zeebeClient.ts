@@ -161,6 +161,30 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
+const waitForInstancesToComplete = async (
+  instanceKeys: string[],
+  maxRetries: number = 20,
+  retryDelayMs: number = 1000,
+): Promise<void> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const results = await Promise.all(
+      instanceKeys.map((key) =>
+        zeebe.searchProcessInstances({filter: {processInstanceKey: key}}),
+      ),
+    );
+    const allCompleted = results.every(
+      (res) => res?.items?.[0]?.state === 'COMPLETED',
+    );
+    if (allCompleted) return;
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+  throw new Error(
+    `Not all instances reached COMPLETED state after ${maxRetries} retries`,
+  );
+};
+
 export {
   deploy,
   deployWithSubstitutions,
@@ -171,4 +195,5 @@ export {
   cancelProcessInstance,
   createWorker,
   setVariables,
+  waitForInstancesToComplete,
 };

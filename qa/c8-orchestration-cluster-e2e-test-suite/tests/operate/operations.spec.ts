@@ -13,6 +13,7 @@ import {
   deployWithSubstitutions,
   createInstances,
   createSingleInstance,
+  waitForInstancesToComplete,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
@@ -255,8 +256,9 @@ test.describe('Delete Operations', () => {
       })),
     };
 
-    // Allow time for all instances to auto-complete
-    await sleep(5000);
+    await waitForInstancesToComplete(
+      instances.map((instance) => instance.processInstanceKey),
+    );
   });
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
@@ -297,8 +299,8 @@ test.describe('Delete Operations', () => {
     });
 
     await test.step('Click Delete batch operation button', async () => {
-      await expect(operateProcessesPage.deleteButton).toBeEnabled();
-      await operateProcessesPage.deleteButton.click();
+      await expect(operateProcessesPage.deleteBatchOperationButton).toBeEnabled();
+      await operateProcessesPage.deleteBatchOperationButton.click();
     });
 
     await test.step('Confirm deletion in modal', async () => {
