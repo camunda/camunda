@@ -116,10 +116,10 @@ Pause freezes the clock. Step advances by one `probeInterval` of sim time.
   gossipQueue: Array<{                  // updates pending for gossip
     memberId, state, incarnation, propertyVersion, sendCount
   }>,
-  probeFailCounts: Map<id, number>,     // consecutive probe failures per target
+  probeOrder: id[],                     // shuffled probe list; round-robined via probeCounter
+  probeCounter: number,                 // incremented each probe tick, mod probeOrder.length
   suspectSince: Map<id, simTime>,       // when did we first suspect each peer
-  probeTarget: id | null,              // current probe in flight
-  probeSentAt: simTime | null,
+  gossipExcluded: boolean,              // injectable fault: other nodes skip this node in fanout
 }
 ```
 
@@ -140,11 +140,27 @@ Messages between partitioned pairs are dropped at send time (no `MSG_DELIVER` sc
 ### Gossip update selection
 
 Each node's gossip queue entries are sorted by `sendCount` ascending (least recently sent first).
-On each gossip tick, the top `min(gossipFanout, queue.length)` entries are included in the
-message. `sendCount` is incremented; entries are removed after `⌈log₂(N)⌉` sends.
-If `broadcastUpdates=true`: send to all alive peers regardless of fanout.
+On each gossip tick, pick `gossipFanout` random peers from the alive member list, **excluding any
+node with `gossipExcluded=true`**. Send those peers the top entries from the gossip queue.
+`sendCount` is incremented; entries are removed after `⌈log₂(N)⌉` sends.
+If `broadcastUpdates=true`: send to all alive peers regardless of fanout (gossip-excluded nodes
+are still excluded, as `broadcastUpdates` only bypasses the fanout count, not the exclude flag).
 If `broadcastDisputes=true` and the queued entry is a suspect/dead state change: send to all peers
-regardless of fanout (overrides fanout for that entry only).
+regardless of fanout (overrides fanout for that entry only; gossip-excluded nodes are still
+excluded).
+
+### Probe target selection (shuffle + round-robin)
+
+Each node maintains a `probeOrder` list: all other known alive nodes in shuffled order.
+The list is re-shuffled whenever membership changes (node added, removed, or declared dead).
+On each `PROBE_TICK`, the next target is `probeOrder[probeCounter % probeOrder.length]`;
+`probeCounter` increments each tick. This matches the actual implementation.
+
+Dead nodes are removed from `probeOrder` when declared dead. However, they are re-added to a
+separate `deadNodes` set. Each `PROBE_TICK` also probes one dead node (selected round-robin from
+`deadNodes`) to detect resurrection — if it responds, it is re-added to `probeOrder` with alive
+state and a new incarnation number. This mirrors how Zeebe re-probes discovery-service nodes that
+are not present in the live members map.
 
 ### Probe pipeline (indirect probes — the core SWIM mechanism)
 
@@ -155,8 +171,10 @@ positives from single-link network issues: if A cannot reach B but C can, B is n
 
 ```
 PROBE_TICK fires for node A:
-  pick random peer B (round-robin through membership view)
+  pick next alive peer B via round-robin through shuffled probeOrder
   send P→ to B (direct probe, timeout = probeTimeout)
+  if deadNodes is non-empty: also probe one dead node D (round-robin through deadNodes)
+    if D responds: resurrect D (add to probeOrder, remove from deadNodes, new incarnation)
 
 B receives P→:
   if B is alive: send P✓ back to A
@@ -228,7 +246,7 @@ Record the sim time of first convergence after each fault injection. Reset on ne
 │  [▶ Play] [⏸ Pause] [⏭ Step]  Speed: ×1 ×5 ×20   [Reset]  │
 │  Inject: [Crash node ▼]  [Restore node ▼]                   │
 │          [Property update ▼]  [Partition A→B ▼▼]           │
-│          [Clear all partitions]                             │
+│          [Gossip exclude ▼]  [Clear all faults]             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -247,6 +265,7 @@ rendered as dashed red lines with a direction indicator.
 | Suspect | Orange border (`#f57c00`), light orange fill |
 | Dead | Red fill (`var(--viz-leader)`), white label |
 | Crashed | Dark grey fill, label struck-through |
+| Gossip-excluded (overlay) | Yellow dashed outer ring — combinable with any liveness state |
 
 Node label: `N{id}` (e.g. `N0`, `N1`). Small property-version badge below label.
 
@@ -305,6 +324,14 @@ Multiple pairs can be blocked. "Clear all partitions" removes all blocks.
 
 Partitioned directed links are shown as dashed red SVG lines with a small arrow indicating
 direction. Bidirectional partitions render two overlapping dashed lines.
+
+### Gossip exclude
+Dropdown selects a target node. Sets `gossipExcluded=true` on that node: all other nodes skip it
+when selecting gossip fanout targets. The node can still be probed and synced — it is not
+network-isolated, just systematically unlucky in gossip selection. This demonstrates the
+worst-case scenario where a node never happens to be picked by any peer's random fanout, leaving
+it stale until `syncInterval` fires or `broadcastUpdates=true`. Toggle off to restore normal
+selection. Gossip-excluded nodes are visually marked with a dashed yellow outline in the graph.
 
 ---
 
