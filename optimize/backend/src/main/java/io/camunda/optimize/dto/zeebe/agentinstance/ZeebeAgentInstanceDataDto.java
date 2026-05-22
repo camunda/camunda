@@ -33,6 +33,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   public ZeebeAgentInstanceDataDto() {}
 
   @Override
+  public List<String> getChangedAttributes() {
+    return List.of();
+  }
+
+  @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
   }

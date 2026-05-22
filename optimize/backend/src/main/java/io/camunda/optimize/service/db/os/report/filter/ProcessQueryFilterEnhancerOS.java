@@ -26,6 +26,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
@@ -95,6 +96,7 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
   private final InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter;
   private final FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter;
   private final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter;
+  private final HasAgentInstancesQueryFilterOS hasAgentInstancesQueryFilter;
 
   public ProcessQueryFilterEnhancerOS(
       final ConfigurationService configurationService,
@@ -127,7 +129,8 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
           completedOrCanceledFlowNodesOnlyQueryFilter,
       final InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter,
       final FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter,
-      final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter) {
+      final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter,
+      final HasAgentInstancesQueryFilterOS hasAgentInstancesQueryFilter) {
     this.configurationService = configurationService;
     this.environment = environment;
     this.instanceStartDateQueryFilter = instanceStartDateQueryFilter;
@@ -158,6 +161,7 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
     this.instancesContainingUserTasksFilter = instancesContainingUserTasksFilter;
     this.flowNodeStartDateQueryFilter = flowNodeStartDateQueryFilter;
     this.flowNodeEndDateQueryFilter = flowNodeEndDateQueryFilter;
+    this.hasAgentInstancesQueryFilter = hasAgentInstancesQueryFilter;
   }
 
   @Override
@@ -235,7 +239,9 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
         flowNodeStartDateQueryFilter.filterQueries(
             extractInstanceFilters(filters, FlowNodeStartDateFilterDto.class), filterContext),
         flowNodeEndDateQueryFilter.filterQueries(
-            extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext));
+            extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext),
+        hasAgentInstancesQueryFilter.filterQueries(
+            extractInstanceFilters(filters, HasAgentInstancesFilterDto.class), filterContext));
   }
 
   @SuppressWarnings(UNCHECKED_CAST)

@@ -28,6 +28,7 @@ import io.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsRe
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
+import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import io.camunda.optimize.service.tenant.TenantService;
@@ -64,6 +65,7 @@ public class DefinitionService implements ConfigurationReloadable {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionService.class);
 
   private final DefinitionReader definitionReader;
+  private final ProcessDefinitionReader processDefinitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
 
@@ -74,10 +76,12 @@ public class DefinitionService implements ConfigurationReloadable {
 
   public DefinitionService(
       final DefinitionReader definitionReader,
+      final ProcessDefinitionReader processDefinitionReader,
       final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
       final TenantService tenantService,
       final ConfigurationService configurationService) {
     this.definitionReader = definitionReader;
+    this.processDefinitionReader = processDefinitionReader;
     this.definitionAuthorizationService = definitionAuthorizationService;
     this.tenantService = tenantService;
 
@@ -216,6 +220,14 @@ public class DefinitionService implements ConfigurationReloadable {
     }
 
     return getFullyImportedDefinitions(null, null, null, userId);
+  }
+
+  public Set<String> getProcessDefinitionKeysWithAgentRuns(final String userId) {
+    if (userId == null) {
+      throw new ForbiddenException("userId is null");
+    }
+    final List<String> tenantIds = tenantService.getTenantIdsForUser(userId);
+    return processDefinitionReader.getProcessDefinitionsWithAgentRuns(tenantIds);
   }
 
   public List<DefinitionResponseDto> getFullyImportedDefinitions(

@@ -35,7 +35,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
@@ -176,11 +178,18 @@ public class DefinitionRestService {
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @PathVariable(name = "type") final DefinitionType type,
       @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
+      @RequestParam(name = "hasAgentRuns", required = false) final Boolean hasAgentRuns,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
-    return definitions.stream()
+    Stream<DefinitionResponseDto> definitionStream = definitions.stream();
+    if (Boolean.TRUE.equals(hasAgentRuns) && DefinitionType.PROCESS.equals(type)) {
+      final Set<String> keysWithAgentRuns =
+          definitionService.getProcessDefinitionKeysWithAgentRuns(userId);
+      definitionStream = definitionStream.filter(d -> keysWithAgentRuns.contains(d.getKey()));
+    }
+    return definitionStream
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
         .collect(Collectors.toList());
   }
