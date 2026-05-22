@@ -27,7 +27,7 @@ testing the entire project.
 Before modifying code in any module:
 
 1. Read the module's `README.md` (if present) and any documentation in its directory.
-2. Check `docs/` for cross-cutting guides relevant to your change before starting.
+2. When unsure about cross-cutting conventions, consult `docs/` before inventing a solution.
 
 Not every module has a README yet — when one exists, treat it as the primary reference for that
 module.
@@ -83,13 +83,6 @@ Cross-cutting decisions: `docs/adr/`.
 
 Before making any architectural change, consult the ADR index. If the decision is not covered by
 an existing ADR, draft a new one using the `create-architecture-decision` skill before proceeding.
-
-Additional instruction files are auto-loaded when you edit matching paths:
-
-- Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
-- MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
-- Load tests (`load-tests/`, load test workflows) →
-  `.github/instructions/load-tests.instructions.md`
 
 ### Skills
 
@@ -195,6 +188,8 @@ Note: `-Dquickly` skips tests, formatting checks, and Optimize — use it for fa
 
 Note: some modules are split into sub-modules where tests live (e.g. `zeebe/engine`, `zeebe/broker`). If running tests against a top-level module produces no results, target the specific sub-module instead.
 
+Never use `-am` with `verify` — it runs tests in all dependency modules. Use `-am` only with `install -Dquickly` when rebuilding dependencies.
+
 #### Before submitting
 
 Always run these steps before every commit — never skip them, even for "obvious" or single-line
@@ -204,11 +199,20 @@ changes. Skipping formatting reliably breaks the `Java checks` CI job.
    that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent edit.
 2. Build the changed module (see "Module-scoped builds" above for commands)
 3. Run module tests and verify zero failures
+4. Verify the full repo still compiles: `./mvnw install -Dquickly -T1C`
 
-### Module context
+### Scoped instructions
 
-When working inside a specific module, load additional context on demand — only if the files
-exist, and only when relevant to the current task:
+Load extra context on demand — only when relevant, only if the files exist.
+
+**When editing these areas**, read the corresponding instruction file:
+
+- Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
+- MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
+- Load tests (`load-tests/`, load test workflows) →
+  `.github/instructions/load-tests.instructions.md`
+
+**When working inside a specific module**:
 
 - `<module>/docs/architecture.md` — module ownership, dependencies, and constraints
 - `<module>/docs/adr/` — module-scoped architectural decisions
@@ -219,8 +223,6 @@ If the module is a sub-module (e.g. `zeebe/engine`), also check each parent modu
 root for the same files (e.g. `zeebe/docs/architecture.md`, `zeebe/docs/adr/`, `zeebe/AGENTS.md`).
 Parent context is lower priority than the sub-module's own context; the sub-module's files take
 precedence on any conflicting guidance.
-
-Do not load all module context upfront. Fetch only what is needed for the task at hand.
 
 ### Code style
 
