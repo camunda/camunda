@@ -72,7 +72,7 @@
     "@testing-library/user-event": "14.6.1",
     "@types/lodash": "4.17.24",
     "@types/node": "24.12.4",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.59.4",
