@@ -37,11 +37,9 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 ## Scope — what's not (yet)
 
-**Per-PT broker partitioning + RDBMS exporter race.** Each PT gets its own `PartitionManager`, but the rdbms exporter is wired as a single bean against the default PT's data source. With two `PartitionManager`s both writing to the same `EXPORTER_POSITION` row, the second one races and fails every flush — `expected -1 but found N` errors. **Workaround in the PoC**: `BrokerModuleConfiguration` narrows `physicalTenantIds` to `[default]` so only the default engine runs. Tenanta's security chain still works (routing, auth, cookies); reads of process/instance data go through the default engine's tables. The right fix is making the rdbms exporter PT-aware (separate factory + data source per PartitionManager), which is upstream work beyond the PoC.
-
 **Webapp logout flow under a PT prefix.** No `.logout(...)` on the PT webapp chain. `POST /physical-tenant/<id>/logout` returns 403 — CSRF rejects the POST before `LogoutFilter` (which is bound to the default `/logout` URL) gets a chance to match. Tracked as Task 19.
 
-**Authorizations are disabled** (`camunda.security.authorizations.enabled: false`). Seeding admin grants via `camunda.security.initialization.mappingRules` needs the broker engine to process `IDENTITY_SETUP` records, which would fan out per-PT under the broker partitioning above and never succeed. The PoC bypasses the WebAppAuthorizationCheckFilter denial so users reach `/operate` without grant rows.
+**Authorizations are disabled** (`camunda.security.authorizations.enabled: false`). The PoC bypasses the `WebAppAuthorizationCheckFilter` denial so users reach `/operate` without grant rows — seeding admin grants via `camunda.security.initialization.mappingRules` would have required the broker engine to run, which interacts badly with PT broker partitioning in this branch and is orthogonal to the security-chain story this PoC validates.
 
 **Some SPA-internal API calls still hit unprefixed URLs.** The asset filter rewrites known cluster-scoped endpoints; other endpoints the SPA composes from `/v2/...` (rather than from the PT-aware `contextPath`) may slip through. Watch the browser dev-tools for any 404s and add the path to the filter's regex.
 
@@ -124,7 +122,6 @@ Note: GET requests do NOT carry the `X-CSRF-TOKEN` request header — the SPA on
 | [camunda-security-library#269](https://github.com/camunda/camunda-security-library/issues/269) | CSL installs `DefaultLoginPageGeneratingFilter` on its `OidcWebapp` chain so the unprefixed `/login` picker doesn't need a host-side controller. | Upstream CSL |
 | [camunda/camunda#53810](https://github.com/camunda/camunda/issues/53810) | Resolve `physicalTenantId` from the unified webapp's request context for `WebappIndexController` (same shape as #52572 for the REST gateway). | Upstream camunda |
 | Spec OQ-5 | Per-PT Spring sub-`ApplicationContext`s as an isolation primitive vs the current `Map<String, T>` injection pattern. Worth a design spike when the PT roadmap revisits data-layer / service-layer isolation. | Future design |
-| Out of scope | PT-aware RDBMS exporter wiring (`RdbmsExporterConfiguration` + `PartitionManagerStep` per-PT factories) so each PartitionManager writes to its own schema. | Upstream broker |
 | Out of scope | Per-PT durable secondary storage for `WebSessionRepository`. The PoC uses in-memory `PersistentWebSessionClient` per tenant; structurally isolated but non-durable. | Beyond PoC |
 | Out of scope | PT-aware operate/tasklist SPA API client (not just `contextPath` / `baseName` — the actual `/v2/...` URL composition). | Upstream operate/tasklist |
 | Out of scope | Tasks 14/15 (Testcontainers ITs) — bootstrap obstacle in `dist/` test scope; deferred to upstream CSL hardening where the test infrastructure already exists. | Upstream CSL |
@@ -141,7 +138,6 @@ Note: GET requests do NOT carry the `X-CSRF-TOKEN` request header — the SPA on
 | `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-poc=consolidated-auth,rdbmsH2,operate,tasklist,broker,admin` |
 | `authentication/src/main/java/io/camunda/authentication/pt/` | Per-tenant Spring Security chain factory + registrar + slice/context |
 | `dist/src/main/java/io/camunda/application/commons/pt/` | PoC controllers + the webapp-routing wiring (RMHM, interceptor, filter, advice, login-page controller) |
-| `dist/src/main/java/io/camunda/zeebe/broker/BrokerModuleConfiguration.java` | Broker startup wiring with the `physicalTenantIds = [default]` workaround for the RDBMS exporter race |
 | `/tmp/oc.log` | OC's stdout/stderr, Spring Security DEBUG + FilterChainProxy TRACE |
 
 ## Logs and troubleshooting
@@ -163,7 +159,6 @@ Common issues:
 - **`No qualifying bean of type ...` at boot** — usually an SPI port the host expected. Check the stack trace; the broker engine's PT partitioning workaround in `BrokerModuleConfiguration` is a known soft spot.
 - **404 on `/physical-tenant/<id>/v2/<something>`** — probably a `@ClusterScoped` controller that isn't yet in the asset filter's `PT_CLUSTER_API` regex. Add the path or the SPA endpoint to the pattern.
 - **`<Router basename="/operate"> is not able to match the URL ...`** — the `client-config.js` rewrite didn't fire. Check the advice supports() method matches the controller class name; class names changed at some point upstream may need adjustment.
-- **Repeated `Exporter position mismatch for partition 1` log lines** — the broker partitioning workaround isn't applied (or you removed it). The PoC currently silences `io.camunda.db.rdbms` + `io.camunda.exporter.rdbms` to `OFF` so these don't flood the log; if you see them, check `BrokerModuleConfiguration#broker` is still narrowing PT IDs to `[default]`.
 - **Port already in use** — `lsof -iTCP:8080 -sTCP:LISTEN` (or 8081/8082/9600) and kill the offender.
 
 ## Stopping everything
