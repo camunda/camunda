@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,8 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
               + "across availability zones. This is likely a misconfiguration.",
           this.zoneSpecs.getFirst().name());
     }
+
+    validateZoneSpecs(zoneSpecs);
   }
 
   @Override
@@ -178,6 +181,18 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
                 .formatted(spec.name(), spec.numberOfReplicas(), zoneCount));
       }
     }
+  }
+
+  private void validateZoneSpecs(final List<ZoneSpec> zoneSpecs) {
+    zoneSpecs.stream()
+        .collect(Collectors.groupingBy(ZoneSpec::name))
+        .forEach(
+            (name, zones) -> {
+              if (zones.size() > 1) {
+                throw new IllegalArgumentException(
+                    "Expected zone names to be unique, but got " + zones);
+              }
+            });
   }
 
   /**

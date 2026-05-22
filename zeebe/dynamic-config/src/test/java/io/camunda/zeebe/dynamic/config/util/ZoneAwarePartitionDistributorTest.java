@@ -236,6 +236,14 @@ final class ZoneAwarePartitionDistributorTest {
         .hasMessageContaining("name");
   }
 
+  @Test
+  void shouldThrowWhenZonesAreNotUnique() {
+    final var zones = Stream.of("zoneA", "zoneA").map(name -> new ZoneSpec(name, 1, 1000)).toList();
+    assertThatThrownBy(() -> new ZoneAwarePartitionDistributor(zones))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("zone names to be unique");
+  }
+
   // -------------------------------------------------------------------------
   // ZoneSpec construction validation
   // -------------------------------------------------------------------------
