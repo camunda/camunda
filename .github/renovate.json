@@ -44,12 +44,12 @@
   ],
   "packageRules": [
     {
-      "description": "This rule is a Renovate performance optimization specifying only one URL to avoid redundant Maven Central lookups in mirrors.",
+      "description": "Use the Google Maven Central mirror to match CI (setup-build). .mvn/extensions.xml has no repository declarations so Renovate cannot auto-discover the mirror; applying to all Maven deps for consistency.",
       "matchDatasources": [
         "maven"
       ],
       "registryUrls": [
-        "https://repo.maven.apache.org/maven2"
+        "https://maven-central.storage-download.googleapis.com/maven2"
       ]
     },
     {
