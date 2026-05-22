@@ -31,8 +31,8 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 /**
- * Builds a per-tenant {@link SecurityFilterChain} from a {@link TenantSecuritySlice}. Replaces the
- * two near-duplicate {@code @Bean} method bodies that previously lived in {@link
+ * Builds a per-tenant {@link SecurityFilterChain} from a {@link PhysicalTenantChainContext}.
+ * Replaces the two near-duplicate {@code @Bean} method bodies that previously lived in {@link
  * PhysicalTenantSecurityConfiguration}.
  *
  * <p>The chain shape:
@@ -50,7 +50,7 @@ import org.springframework.security.web.context.SecurityContextHolderFilter;
 public final class PerTenantSecurityChainFactory {
 
   public SecurityFilterChain buildWebappChain(
-      final HttpSecurity http, final TenantSecuritySlice slice) throws Exception {
+      final HttpSecurity http, final PhysicalTenantChainContext slice) throws Exception {
     final String prefix = slice.webappPathPrefix();
     final String securityMatcher = prefix.isEmpty() ? "/**" : prefix + "/**";
     final String authBaseUri = prefix + "/oauth2/authorization";
@@ -160,13 +160,13 @@ public final class PerTenantSecurityChainFactory {
    */
   public SecurityFilterChain buildApiChain(
       final HttpSecurity http,
-      final TenantSecuritySlice slice,
+      final PhysicalTenantChainContext slice,
       final JwtDecoder sharedDecoder,
       final Set<String> allowedIssuers,
       final Set<String> expectedAudiences)
       throws Exception {
     final String[] securityMatchers;
-    if (slice.accessPath() == TenantSecuritySlice.AccessPath.PREFIXED) {
+    if (slice.accessPath() == PhysicalTenantChainContext.AccessPath.PREFIXED) {
       securityMatchers =
           new String[] {
             // webapp/SPA-aligned URL — inside the per-tenant cookie's Path scope.

@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
 import io.camunda.authentication.config.spi.AuthorizationRepositoryAdapter;
 import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter;
+import io.camunda.authentication.config.spi.SecurityPathAdapter;
+import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -17,11 +19,15 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
+import io.camunda.security.core.port.out.SecurityPathPort;
+import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
+import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -36,27 +42,52 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 /**
- * Host security configuration. Wires the host SPI beans the camunda-security-library (CSL)
- * requires, plus the OC-specific OIDC and basic-auth bean overrides.
+ * Host security configuration. Imports the camunda-security-library (CSL) auto-configuration, wires
+ * the host SPI beans CSL requires, and pulls in the OC-specific OIDC and basic-auth bean overrides.
  *
- * <p>The CSL auto-configuration import itself was lifted into the always-loaded {@link
- * CamundaSecurityLibraryImporter} so CSL's {@code BaseSecurityConfiguration} chains
- * (unprotected-paths, webapp/api, catch-all 404) light up regardless of whether the PT chains are
- * active. When physical tenants are configured the PT chains co-exist with CSL's chains via
- * {@code @Order} precedence — see {@code PhysicalTenantSecurityChainRegistrar} for the layout.
+ * <p>When physical tenants are configured (via {@code camunda.physical-tenants.*}), PT chains
+ * co-exist with CSL's {@code BaseSecurityConfiguration} chains (unprotected-paths, OidcWebapp /
+ * OidcApi, catch-all 404) via {@code @Order} precedence — see {@code
+ * PhysicalTenantSecurityChainRegistrar} for the layout. PT activation is config-driven (not
+ * profile-driven), so this class doesn't need to differentiate.
  *
  * <p>OC-specific OIDC and basic-auth bean overrides live in {@link OidcOverrideBeansConfiguration}
  * and {@link BasicAuthBeansConfiguration} respectively; CSL defaults back off via
  * {@code @ConditionalOnMissingBean}.
+ *
+ * <p>{@code @ImportAutoConfiguration} (vs plain {@code @Import}) is intentional: CSL's
+ * {@code @ConditionalOnBean} / {@code @ConditionalOnMissingBean} evaluations are unreliable when
+ * CSL is pulled in via {@code @Import} because the bean graph is still partial at that point.
+ * Auto-configuration import shifts CSL into the deferred phase so its conditions see the full
+ * graph.
  */
 @Configuration
 @Profile("consolidated-auth")
+@ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 @Import({
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,
   SaasCspModeCompatibility.class,
 })
 public class WebSecurityConfig {
+
+  /**
+   * Host-supplied {@link SecurityPathPort} declaring the path patterns CSL's filter chains operate
+   * on. Stateless adapter, zero OC-runtime deps — safe under any host setup.
+   */
+  @Bean
+  public SecurityPathPort securityPathPort() {
+    return new SecurityPathAdapter();
+  }
+
+  /**
+   * Host-supplied {@link WebAppProviderPort} declaring the webapp components OC ships. Stateless
+   * adapter — see {@link WebAppProviderAdapter}.
+   */
+  @Bean
+  public WebAppProviderPort webAppProvider() {
+    return new WebAppProviderAdapter();
+  }
 
   /**
    * Syncs OC's {@link SecurityConfiguration} into CSL's {@link CamundaSecurityLibraryProperties}

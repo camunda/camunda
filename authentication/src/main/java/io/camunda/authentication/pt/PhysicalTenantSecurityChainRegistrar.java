@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
-import io.camunda.authentication.pt.TenantSecuritySlice.AccessPath;
+import io.camunda.authentication.pt.PhysicalTenantChainContext.AccessPath;
 import io.camunda.authentication.session.WebSession;
 import io.camunda.authentication.session.WebSessionRepository;
 import java.util.LinkedHashMap;
@@ -185,7 +185,7 @@ public final class PhysicalTenantSecurityChainRegistrar
   // ----- slice + lookup helpers ---------------------------------------------------------------
 
   @SuppressWarnings("unchecked")
-  private static TenantSecuritySlice sliceForPrefixed(
+  private static PhysicalTenantChainContext sliceForPrefixed(
       final BeanFactory beanFactory, final String tenantId) {
     final var repos =
         (Map<String, ClientRegistrationRepository>)
@@ -201,7 +201,8 @@ public final class PhysicalTenantSecurityChainRegistrar
     final SessionRepositoryFilter<WebSession> sessionFilter =
         new SessionRepositoryFilter<>(webSessionRepositoryFor(beanFactory, tenantId));
     sessionFilter.setHttpSessionIdResolver(resolver);
-    return new TenantSecuritySlice(tenantId, AccessPath.PREFIXED, repo, sessionFilter, resolver);
+    return new PhysicalTenantChainContext(
+        tenantId, AccessPath.PREFIXED, repo, sessionFilter, resolver);
   }
 
   @SuppressWarnings("unchecked")

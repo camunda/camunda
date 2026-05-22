@@ -13,17 +13,18 @@ import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.session.web.http.SessionRepositoryFilter;
 
 /**
- * Per-tenant data carried into {@link PerTenantSecurityChainFactory#buildWebappChain}. All fields
- * are tenant-scoped; cluster-shared collaborators (JwtDecoder, LogoutSuccessHandler,
- * AuthorizedClientRepository, SecurityContextRepository) are intentionally NOT on the slice and are
- * wired through their own beans.
+ * Per-tenant context object handed to {@link PerTenantSecurityChainFactory} when building one PT's
+ * webapp or API chain. All fields are tenant-scoped; cluster-shared collaborators (JwtDecoder,
+ * LogoutSuccessHandler, AuthorizedClientRepository, SecurityContextRepository) are intentionally
+ * NOT on the context object and are wired through their own beans.
  *
- * <p>The {@link AccessPath} discriminator is forward-looking for Task 12 (an unprefixed default
- * chain at {@code /**}). Today only {@link AccessPath#PREFIXED} is exercised; including it now so
- * the slice shape is stable across Tasks 6–12.
+ * <p>The {@link AccessPath} discriminator distinguishes the prefixed PT chains (matching {@code
+ * /physical-tenant/<id>/**}) from the default tenant's unprefixed chains (matching {@code /**}).
+ * The {@link #webappPathPrefix()} helper centralises the URL prefix derivation so the chain factory
+ * stays prefix-agnostic.
  */
 @NullMarked
-public record TenantSecuritySlice(
+public record PhysicalTenantChainContext(
     String tenantId,
     AccessPath accessPath,
     ClientRegistrationRepository clientRegistrationRepository,
@@ -37,7 +38,7 @@ public record TenantSecuritySlice(
 
   /**
    * URL prefix for this tenant's webapp chain. {@code /physical-tenant/<tenantId>} for prefixed
-   * tenants; empty string for the unprefixed default chain (Task 12).
+   * tenants; empty string for the unprefixed default chain.
    */
   public String webappPathPrefix() {
     return accessPath == AccessPath.PREFIXED ? "/physical-tenant/" + tenantId : "";
