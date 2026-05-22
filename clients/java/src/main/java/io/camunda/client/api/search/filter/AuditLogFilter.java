@@ -245,6 +245,22 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter agentElementId(final Consumer<StringProperty> fn);
 
   /**
+   * Filter audit logs by the agent tool name
+   *
+   * @param agentToolName the agent tool name
+   * @return the updated filter
+   */
+  AuditLogFilter agentToolName(final String agentToolName);
+
+  /**
+   * Filter audit logs by the agent tool name using {@link StringProperty} consumer
+   *
+   * @param fn the agent tool name filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter agentToolName(final Consumer<StringProperty> fn);
+
+  /**
    * Filter audit logs by the entity type
    *
    * @param entityType the entity type

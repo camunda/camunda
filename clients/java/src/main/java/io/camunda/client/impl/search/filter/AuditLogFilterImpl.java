@@ -225,6 +225,19 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter agentToolName(final String agentToolName) {
+    return agentToolName(b -> b.eq(agentToolName));
+  }
+
+  @Override
+  public AuditLogFilter agentToolName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setAgentToolName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AuditLogFilter entityType(final AuditLogEntityTypeEnum entityType) {
     return entityType(b -> b.eq(entityType));
   }

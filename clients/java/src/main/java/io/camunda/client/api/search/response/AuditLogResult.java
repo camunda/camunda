@@ -44,6 +44,8 @@ public interface AuditLogResult {
 
   String getAgentElementId();
 
+  String getAgentToolName();
+
   String getTenantId();
 
   AuditLogResultEnum getResult();

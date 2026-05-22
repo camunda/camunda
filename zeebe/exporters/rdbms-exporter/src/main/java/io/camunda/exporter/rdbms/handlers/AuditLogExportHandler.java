@@ -85,6 +85,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .actorId(log.getActor().actorId())
             .actorType(log.getActor().actorType())
             .agentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
+            .agentToolName(log.getAgent().map(Agent::getToolName).orElse(null))
             .tenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
             .tenantScope(
                 log.getTenant().map(AuditLogTenant::scope).orElse(AuditLogTenantScope.GLOBAL))

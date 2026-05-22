@@ -1676,6 +1676,7 @@ public final class SearchQueryResponseMapper {
                 .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
         .agentElementId(auditLog.agentElementId())
+        .agentToolName(auditLog.agentToolName())
         .tenantId(auditLog.tenantId())
         .result(AuditLogResultEnum.fromValue(auditLog.result().name()))
         .category(AuditLogCategoryEnum.fromValue(auditLog.category().name()))

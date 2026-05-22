@@ -38,6 +38,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String actorId;
   private AuditLogActorTypeEnum actorType;
   private String agentElementId;
+  private String agentToolName;
   private String tenantId;
   private AuditLogResultEnum result;
   private AuditLogCategoryEnum category;
@@ -71,6 +72,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     actorId = item.getActorId();
     actorType = EnumUtil.convert(item.getActorType(), AuditLogActorTypeEnum.class);
     agentElementId = item.getAgentElementId();
+    agentToolName = item.getAgentToolName();
     tenantId = item.getTenantId();
     result = EnumUtil.convert(item.getResult(), AuditLogResultEnum.class);
     category = EnumUtil.convert(item.getCategory(), AuditLogCategoryEnum.class);
@@ -178,6 +180,15 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setAgentElementId(final String agentElementId) {
     this.agentElementId = agentElementId;
+  }
+
+  @Override
+  public String getAgentToolName() {
+    return agentToolName;
+  }
+
+  public void setAgentToolName(final String agentToolName) {
+    this.agentToolName = agentToolName;
   }
 
   @Override
