@@ -12,25 +12,29 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Registers a secondary {@link PhysicalTenantWebappRequestMappingHandlerMapping} bean that Spring's
- * {@code DispatcherServlet} discovers alongside the primary {@code
- * PhysicalTenantRequestMappingHandlerMapping} (REST-scoped, in {@code zeebe/gateway-rest}). The two
- * cover disjoint URL spaces — REST {@code /v2/...} on the primary, webapp bases on the secondary —
- * so neither competes for the same path.
+ * Wires the two host-side pieces that make plain Spring MVC webapp controllers (Operate, Tasklist,
+ * Admin) reachable under the {@code /physical-tenant/<id>/...} access path:
  *
- * <p>Order is set above Spring's default {@link RequestMappingHandlerMapping default RMHM} (which
- * runs at {@code Ordered.LOWEST_PRECEDENCE - 1} via {@code WebMvcConfigurationSupport}).
- * PT-prefixed patterns are strictly more specific than the unprefixed defaults, so running this
- * handler first cannot mis-route any non-PT URL.
+ * <ol>
+ *   <li>{@link PhysicalTenantWebappRequestMappingHandlerMapping} — registers PT-prefixed siblings
+ *       of every webapp controller mapping so URLs like {@code
+ *       /physical-tenant/<id>/operate/client-config.js} actually have a handler.
+ *   <li>{@link PhysicalTenantWebappContextPathInterceptor} — rewrites the {@code contextPath} model
+ *       attribute that index controllers emit, so the rendered SPA's base URL stays inside the PT
+ *       prefix (otherwise the SPA bootstraps from the unprefixed {@code /operate/} and drops out of
+ *       the PT cookie scope).
+ * </ol>
  *
- * <p>Conditional on {@code camunda.physical-tenants.*} being configured — same gate as the rest of
- * the PT wiring (see {@link PhysicalTenantsConfiguredCondition}).
+ * <p>Both pieces are conditional on {@code camunda.physical-tenants.*} being configured (same gate
+ * as the rest of the PT wiring, see {@link PhysicalTenantsConfiguredCondition}).
  */
 @Configuration(proxyBeanMethods = false)
 @Conditional(PhysicalTenantsConfiguredCondition.class)
-public class PhysicalTenantWebappMappingConfiguration {
+public class PhysicalTenantWebappMappingConfiguration implements WebMvcConfigurer {
 
   @Bean
   public PhysicalTenantWebappRequestMappingHandlerMapping
@@ -38,5 +42,15 @@ public class PhysicalTenantWebappMappingConfiguration {
     final var mapping = new PhysicalTenantWebappRequestMappingHandlerMapping();
     mapping.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
     return mapping;
+  }
+
+  @Bean
+  public PhysicalTenantWebappContextPathInterceptor physicalTenantWebappContextPathInterceptor() {
+    return new PhysicalTenantWebappContextPathInterceptor();
+  }
+
+  @Override
+  public void addInterceptors(final InterceptorRegistry registry) {
+    registry.addInterceptor(physicalTenantWebappContextPathInterceptor());
   }
 }
