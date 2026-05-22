@@ -91,22 +91,27 @@ jobs:
           #      e.g. "8.8.0", "8.8.0-alpha8-rc1");
           #   3) otherwise fail fast.
           #
+          # Refs are fully qualified (`refs/heads/...`, `refs/tags/...`)
+          # so a tag and a branch with the same name can never be
+          # resolved ambiguously by actions/checkout.
+          #
           # This is what the upstream release pipeline produces — see
           # camunda-platform-release.yml:
           #   RELEASE_BRANCH = release-${releaseVersion}
           #   tag            = ${releaseVersion}
           release_branch="release-$release_version"
+          repo_url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-camunda/camunda}"
           echo "Looking for release branch: $release_branch"
           if git ls-remote --exit-code --heads origin "refs/heads/$release_branch" >/dev/null; then
-            ref="$release_branch"
+            ref="refs/heads/$release_branch"
             echo "Using release branch as ref: $ref"
           else
             echo "Release branch '$release_branch' not found; falling back to tag."
             if git ls-remote --exit-code --tags origin "refs/tags/$release_version" >/dev/null; then
-              ref="$release_version"
+              ref="refs/tags/$release_version"
               echo "Using release tag as ref: $ref"
             else
-              echo "Error: neither branch 'release-$release_version' nor tag '$release_version' exist on origin."
+              echo "Error: neither branch 'release-$release_version' nor tag '$release_version' exist on $repo_url."
               exit 1
             fi
           fi
