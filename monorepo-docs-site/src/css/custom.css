@@ -57,3 +57,13 @@ body {
     --viz-msg-sync: #42a5f5;
     --viz-gossip-exclude: #ffe082;
 }
+
+/* Shared viz palette (also defined in partition-distribution-viz branch — merge-safe) */
+:root {
+    --viz-leader: #c62828;
+    --viz-leader-light: #ffebee;
+}
+[data-theme='dark'] {
+    --viz-leader: #ef9a9a;
+    --viz-leader-light: #3e0a0a;
+}
