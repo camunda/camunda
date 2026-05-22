@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -37,9 +36,11 @@ public final class IdentityInterceptor implements ServerInterceptor {
   private final Identity identity;
   private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
+  private final String audience;
 
   public IdentityInterceptor(final IdentityCfg config, final GatewayCfg gatewayCfg) {
     this(
+        config.getAudience(),
         createIdentity(config),
         gatewayCfg.getMultiTenancy(),
         gatewayCfg.getExperimental().getIdentityRequest());
@@ -48,15 +49,18 @@ public final class IdentityInterceptor implements ServerInterceptor {
   public IdentityInterceptor(
       final IdentityConfiguration configuration, final GatewayCfg gatewayCfg) {
     this(
+        configuration.getAudience(),
         new Identity(configuration),
         gatewayCfg.getMultiTenancy(),
         gatewayCfg.getExperimental().getIdentityRequest());
   }
 
   public IdentityInterceptor(
+      final String audience,
       final Identity identity,
       final MultiTenancyCfg multiTenancy,
       final IdentityServiceCfg identityServiceCfg) {
+    this.audience = audience;
     this.identity = identity;
     this.multiTenancy = multiTenancy;
     tenantService = new IdentityTenantService(identity, identityServiceCfg);
@@ -92,8 +96,8 @@ public final class IdentityInterceptor implements ServerInterceptor {
 
     final String token = authorization.replaceFirst("^Bearer ", "");
     try {
-      identity.authentication().verifyToken(token);
-    } catch (final TokenVerificationException e) {
+      identity.authentication().verifyAndDecode(token, audience);
+    } catch (final Exception e) {
       LOGGER.debug(
           "Denying call {} as the token could not be verified successfully. Error message: {}",
           methodDescriptor.getFullMethodName(),

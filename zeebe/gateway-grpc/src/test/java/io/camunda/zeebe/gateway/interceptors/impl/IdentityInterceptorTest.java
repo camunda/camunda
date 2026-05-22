@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 public class IdentityInterceptorTest {
 
+  private static final String AUDIENCE = "zeebe-api-special-audience";
   private final MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
   private final IdentityServiceCfg identityServiceCfg = new IdentityServiceCfg();
 
@@ -44,7 +46,7 @@ public class IdentityInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
+    new IdentityInterceptor(AUDIENCE, identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -62,13 +64,13 @@ public class IdentityInterceptorTest {
   public void invalidTokenIsRejected() {
     // given
     final Identity identityMock = mock(Identity.class, RETURNS_DEEP_STUBS);
-    when(identityMock.authentication().verifyToken(anyString()))
+    when(identityMock.authentication().verifyAndDecode(anyString(), eq(AUDIENCE)))
         .thenThrow(TokenVerificationException.class);
 
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
+    new IdentityInterceptor(AUDIENCE, identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(closeStatusCapturingServerCall, createAuthHeader(), failingNextHandler());
 
     // then
@@ -86,12 +88,13 @@ public class IdentityInterceptorTest {
   public void genericRuntimeFailure() {
     // given
     final Identity identityMock = mock(Identity.class, RETURNS_DEEP_STUBS);
-    when(identityMock.authentication().verifyToken(anyString())).thenThrow(RuntimeException.class);
+    when(identityMock.authentication().verifyAndDecode(anyString(), eq(AUDIENCE)))
+        .thenThrow(RuntimeException.class);
 
     // when
     assertThatThrownBy(
             () ->
-                new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
+                new IdentityInterceptor(AUDIENCE, identityMock, multiTenancy, identityServiceCfg)
                     .interceptCall(
                         new NoopServerCall<>(), createAuthHeader(), failingNextHandler()))
         // then
@@ -102,12 +105,12 @@ public class IdentityInterceptorTest {
   public void validTokenIsAccepted() {
     // given
     final Identity identityMock = mock(Identity.class, RETURNS_DEEP_STUBS);
-    when(identityMock.authentication().verifyToken(anyString())).thenReturn(null);
+    when(identityMock.authentication().verifyAndDecode(anyString(), eq(AUDIENCE))).thenReturn(null);
 
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
+    new IdentityInterceptor(AUDIENCE, identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -131,7 +134,8 @@ public class IdentityInterceptorTest {
 
     // when
     final var interceptor =
-        new IdentityInterceptor(identity, multiTenancy.setEnabled(true), identityServiceCfg);
+        new IdentityInterceptor(
+            AUDIENCE, identity, multiTenancy.setEnabled(true), identityServiceCfg);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),
@@ -173,7 +177,8 @@ public class IdentityInterceptorTest {
 
     // when
     final var interceptor =
-        new IdentityInterceptor(identity, multiTenancy.setEnabled(false), identityServiceCfg);
+        new IdentityInterceptor(
+            AUDIENCE, identity, multiTenancy.setEnabled(false), identityServiceCfg);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),

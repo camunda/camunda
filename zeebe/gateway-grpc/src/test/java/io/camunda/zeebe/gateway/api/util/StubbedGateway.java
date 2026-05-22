@@ -100,7 +100,11 @@ public final class StubbedGateway {
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
-                    new IdentityInterceptor(identity, multiTenancy, identityServiceCfg)));
+                    new IdentityInterceptor(
+                        config.getSecurity().getAuthentication().getIdentity().getAudience(),
+                        identity,
+                        multiTenancy,
+                        identityServiceCfg)));
     server = serverBuilder.build();
     server.start();
   }
