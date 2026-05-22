@@ -56,19 +56,19 @@ public class NoDBMembershipService implements MembershipPort {
   }
 
   /** Returns the eagerly-resolved groups; everything else is empty. */
-  private record StaticProvider(List<String> groups) implements MembershipProvider {
+  private record StaticProvider(List<String> groupIds) implements MembershipProvider {
     @Override
-    public List<String> roles() {
+    public List<String> roleIds() {
       return List.of();
     }
 
     @Override
-    public List<String> tenants() {
+    public List<String> tenantIds() {
       return List.of();
     }
 
     @Override
-    public List<String> mappingRules() {
+    public List<String> mappingRuleIds() {
       return List.of();
     }
   }

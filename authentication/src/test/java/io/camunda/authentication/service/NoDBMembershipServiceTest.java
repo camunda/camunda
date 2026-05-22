@@ -26,10 +26,10 @@ class NoDBMembershipServiceTest {
         service.createProvider(
             Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
-    assertThat(provider.groups()).containsExactlyInAnyOrder("eng", "ops");
-    assertThat(provider.roles()).isEmpty();
-    assertThat(provider.tenants()).isEmpty();
-    assertThat(provider.mappingRules()).isEmpty();
+    assertThat(provider.groupIds()).containsExactlyInAnyOrder("eng", "ops");
+    assertThat(provider.roleIds()).isEmpty();
+    assertThat(provider.tenantIds()).isEmpty();
+    assertThat(provider.mappingRuleIds()).isEmpty();
   }
 
   @Test
@@ -41,10 +41,10 @@ class NoDBMembershipServiceTest {
         service.createProvider(
             Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
 
-    assertThat(provider.groups()).isEmpty();
-    assertThat(provider.roles()).isEmpty();
-    assertThat(provider.tenants()).isEmpty();
-    assertThat(provider.mappingRules()).isEmpty();
+    assertThat(provider.groupIds()).isEmpty();
+    assertThat(provider.roleIds()).isEmpty();
+    assertThat(provider.tenantIds()).isEmpty();
+    assertThat(provider.mappingRuleIds()).isEmpty();
   }
 
   @Test
@@ -53,10 +53,10 @@ class NoDBMembershipServiceTest {
 
     final var provider = service.createProviderForUser("alice");
 
-    assertThat(provider.groups()).isEmpty();
-    assertThat(provider.roles()).isEmpty();
-    assertThat(provider.tenants()).isEmpty();
-    assertThat(provider.mappingRules()).isEmpty();
+    assertThat(provider.groupIds()).isEmpty();
+    assertThat(provider.roleIds()).isEmpty();
+    assertThat(provider.tenantIds()).isEmpty();
+    assertThat(provider.mappingRuleIds()).isEmpty();
   }
 
   private static SecurityConfiguration securityConfigurationWithGroupsClaim(

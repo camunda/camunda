@@ -67,10 +67,10 @@ class DefaultMembershipServiceTest {
     final var provider =
         service.createProvider(Map.of("sub", "alice"), "alice", PrincipalType.USER);
 
-    assertThat(provider.groups()).containsExactly("g1");
-    assertThat(provider.roles()).containsExactly("r1");
-    assertThat(provider.tenants()).containsExactly("t1");
-    assertThat(provider.mappingRules()).containsExactly("mr1");
+    assertThat(provider.groupIds()).containsExactly("g1");
+    assertThat(provider.roleIds()).containsExactly("r1");
+    assertThat(provider.tenantIds()).containsExactly("t1");
+    assertThat(provider.mappingRuleIds()).containsExactly("mr1");
   }
 
   @Test
@@ -90,7 +90,7 @@ class DefaultMembershipServiceTest {
 
     final var provider =
         service.createProvider(Map.of("sub", "alice"), "alice", PrincipalType.USER);
-    provider.groups();
+    provider.groupIds();
 
     verify(mappingRuleServices).getMatchingMappingRules(any(), any());
     verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
@@ -109,10 +109,10 @@ class DefaultMembershipServiceTest {
 
     final var provider = service.createProviderForUser("alice");
 
-    assertThat(provider.groups()).containsExactly("g1");
-    assertThat(provider.roles()).containsExactly("r1");
-    assertThat(provider.tenants()).containsExactly("t1");
-    assertThat(provider.mappingRules()).isEmpty();
+    assertThat(provider.groupIds()).containsExactly("g1");
+    assertThat(provider.roleIds()).containsExactly("r1");
+    assertThat(provider.tenantIds()).containsExactly("t1");
+    assertThat(provider.mappingRuleIds()).isEmpty();
     verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
   }
 }

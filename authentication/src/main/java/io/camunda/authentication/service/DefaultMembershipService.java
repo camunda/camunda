@@ -119,7 +119,7 @@ public class DefaultMembershipService implements MembershipPort {
     }
 
     @Override
-    public synchronized List<String> mappingRules() {
+    public synchronized List<String> mappingRuleIds() {
       if (mappingRules == null) {
         // BASIC auth passes no claims; nothing can match, so skip the mappingRules query.
         if (tokenClaims.isEmpty()) {
@@ -142,11 +142,11 @@ public class DefaultMembershipService implements MembershipPort {
     }
 
     @Override
-    public synchronized List<String> groups() {
+    public synchronized List<String> groupIds() {
       if (groups == null) {
-        // mappingRules must run first so ownerTypeToIds includes MAPPING_RULE before the group
-        // lookup uses it.
-        mappingRules();
+        // mappingRuleIds() must run first so ownerTypeToIds includes MAPPING_RULE before the
+        // group lookup uses it.
+        mappingRuleIds();
 
         final Set<String> ids;
         if (eagerGroupsFromClaims != null) {
@@ -170,9 +170,9 @@ public class DefaultMembershipService implements MembershipPort {
     }
 
     @Override
-    public synchronized List<String> roles() {
+    public synchronized List<String> roleIds() {
       if (roles == null) {
-        groups();
+        groupIds();
 
         final var ids =
             roleServices
@@ -190,9 +190,9 @@ public class DefaultMembershipService implements MembershipPort {
     }
 
     @Override
-    public synchronized List<String> tenants() {
+    public synchronized List<String> tenantIds() {
       if (tenants == null) {
-        roles();
+        roleIds();
 
         tenants =
             tenantServices
