@@ -241,6 +241,19 @@ final class AgentInstanceRecordTest {
   }
 
   @Test
+  void shouldAppendElementInstanceKey() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setElementInstanceKeys(List.of(1L, 2L));
+
+    // when
+    record.addElementInstanceKey(3L);
+
+    // then
+    assertThat(record.getElementInstanceKeys()).containsExactly(1L, 2L, 3L);
+  }
+
+  @Test
   void shouldDefaultChangedAttributesToEmptyList() {
     final AgentInstanceRecord record = new AgentInstanceRecord();
     assertThat(record.getChangedAttributes()).isEmpty();
