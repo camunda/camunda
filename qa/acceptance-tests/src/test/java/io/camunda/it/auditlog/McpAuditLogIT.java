@@ -88,11 +88,7 @@ public class McpAuditLogIT {
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - search for audit logs with the MCP tool name
     final var result =
-        client
-            .newAuditLogSearchRequest()
-            .filter(f -> f.agentToolName(MCP_TOOL_NAME))
-            .send()
-            .join();
+        client.newAuditLogSearchRequest().filter(f -> f.agentToolName(MCP_TOOL_NAME)).send().join();
 
     // then - all entries should carry both agentToolName and agentElementId from the start event
     assertThat(result.items())
@@ -109,16 +105,11 @@ public class McpAuditLogIT {
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - filter by agentToolName
     final var result =
-        client
-            .newAuditLogSearchRequest()
-            .filter(f -> f.agentToolName(MCP_TOOL_NAME))
-            .send()
-            .join();
+        client.newAuditLogSearchRequest().filter(f -> f.agentToolName(MCP_TOOL_NAME)).send().join();
 
     // then - only entries with the matching agentToolName are returned
     assertThat(result.items()).isNotEmpty();
     assertThat(result.items())
-        .allSatisfy(
-            auditLog -> assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME));
+        .allSatisfy(auditLog -> assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME));
   }
 }
