@@ -17,7 +17,6 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -26,6 +25,7 @@ import java.time.Duration;
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ public class AnalyticsExporter implements Exporter {
 
   private AnalyticsExporterConfig config;
   private Controller controller;
-  private EnumMap<ValueType, Consumer<Record<?>>> handlers;
+  private HandlerRegistry handlers;
   private int partitionId;
   private String clusterId;
 
@@ -67,8 +67,10 @@ public class AnalyticsExporter implements Exporter {
       clusterId = fromEnv != null ? fromEnv : "";
     }
 
-    handlers = new EnumMap<>(ValueType.class);
-    registerHandler(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation);
+    handlers =
+        new HandlerRegistry()
+            .register(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation)
+            .apply(context);
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}",
@@ -94,7 +96,7 @@ public class AnalyticsExporter implements Exporter {
     controller.updateLastExportedRecordPosition(record.getPosition());
 
     try {
-      final var handler = handlers.get(record.getValueType());
+      final var handler = handlers.get(record);
       if (handler != null) {
         handler.accept(record);
       }
@@ -128,15 +130,24 @@ public class AnalyticsExporter implements Exporter {
         record.getPosition());
   }
 
-  @SuppressWarnings("unchecked")
-  private <T extends RecordValue> void registerHandler(
-      final ValueType valueType, final Consumer<Record<T>> handler) {
-    handlers.put(
-        valueType,
-        record -> {
-          if (record.getRecordType() == RecordType.EVENT) {
-            handler.accept((Record<T>) record);
-          }
-        });
+  static final class HandlerRegistry {
+
+    private final EnumMap<ValueType, Consumer<Record<?>>> handlers = new EnumMap<>(ValueType.class);
+
+    @SuppressWarnings("unchecked")
+    <T extends RecordValue> HandlerRegistry register(
+        final ValueType valueType, final Consumer<Record<T>> handler) {
+      handlers.put(valueType, record -> handler.accept((Record<T>) record));
+      return this;
+    }
+
+    HandlerRegistry apply(final Context context) {
+      context.setFilter(new AnalyticsRecordFilter(handlers.keySet(), context.getPartitionId()));
+      return this;
+    }
+
+    @Nullable Consumer<Record<?>> get(final Record<?> record) {
+      return handlers.get(record.getValueType());
+    }
   }
 }

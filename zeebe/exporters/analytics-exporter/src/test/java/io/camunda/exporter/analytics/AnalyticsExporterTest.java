@@ -145,6 +145,23 @@ class AnalyticsExporterTest {
     assertThat(memoryExporter.getFinishedLogRecordItems()).isEmpty();
   }
 
+  @Test
+  void shouldInstallRecordFilterOnConfigure() {
+    // given
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setClusterId("test-cluster")
+            .setPartitionId(1);
+
+    // when
+    new AnalyticsExporter().configure(context);
+
+    // then
+    assertThat(context.getRecordFilter()).isNotNull().isInstanceOf(AnalyticsRecordFilter.class);
+  }
+
   // -- helpers --
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
