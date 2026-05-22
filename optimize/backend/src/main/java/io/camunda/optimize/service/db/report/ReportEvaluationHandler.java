@@ -181,12 +181,6 @@ public abstract class ReportEvaluationHandler {
                             def.getName()))
                 .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);
-        logger.info(
-            "[AGENTIC-DEBUG] setDataSourcesForSystemGeneratedReports: resolved {} management definitions: {}",
-            definitionsForManagementReport.size(),
-            definitionsForManagementReport.stream()
-                .map(d -> "key=" + d.getKey() + " tenants=" + d.getTenantIds())
-                .toList());
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
@@ -362,33 +356,30 @@ public abstract class ReportEvaluationHandler {
 
     if (reportDefinitionDto
         instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
-      // Override definitions if a process scope was selected
-      logger.info(
-          "[AGENTIC-DEBUG] addAdditionalFiltersForReport: report={}, isManagement={}, existingDefinitions={}, additionalDefinitions={}",
-          reportDefinitionDto.getId(),
-          definitionDto.getData().isManagementReport(),
-          definitionDto.getData().getDefinitions().stream()
-              .map(d -> d.getKey() + ":" + d.getTenantIds())
-              .toList(),
-          additionalFilters.getDefinitions() == null
-              ? "null"
-              : additionalFilters.getDefinitions().stream()
-                  .map(d -> d.getKey() + ":" + d.getTenantIds())
-                  .toList());
+      // Scope definitions: when a process scope is selected, filter the already-resolved
+      // definitions to only include those matching the requested keys. This preserves the
+      // tenant IDs that were resolved from the definition service and avoids a tenant mismatch
+      // that would occur if we replaced definitions with the frontend-supplied ones (which have
+      // no tenantIds and default to [null]).
       if (!CollectionUtils.isEmpty(additionalFilters.getDefinitions())) {
-        definitionDto.getData().setDefinitions(additionalFilters.getDefinitions());
-        logger.info(
-            "[AGENTIC-DEBUG] Overriding definitions with: {}",
+        final Set<String> scopeKeys =
             additionalFilters.getDefinitions().stream()
-                .map(
-                    d ->
-                        "key="
-                            + d.getKey()
-                            + " versions="
-                            + d.getVersions()
-                            + " tenants="
-                            + d.getTenantIds())
-                .toList());
+                .map(ReportDataDefinitionDto::getKey)
+                .collect(Collectors.toSet());
+        final List<ReportDataDefinitionDto> resolvedDefinitions =
+            definitionDto.getData().getDefinitions();
+        final List<ReportDataDefinitionDto> filteredDefinitions =
+            resolvedDefinitions.stream()
+                .filter(d -> scopeKeys.contains(d.getKey()))
+                .collect(Collectors.toList());
+        logger.info(
+            "[AGENTIC-DEBUG] Scoping definitions: scopeKeys={}, resolved={}, filtered={}",
+            scopeKeys,
+            resolvedDefinitions.stream().map(d -> d.getKey() + ":" + d.getTenantIds()).toList(),
+            filteredDefinitions.stream().map(d -> d.getKey() + ":" + d.getTenantIds()).toList());
+        if (!filteredDefinitions.isEmpty()) {
+          definitionDto.getData().setDefinitions(filteredDefinitions);
+        }
       }
 
       if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
