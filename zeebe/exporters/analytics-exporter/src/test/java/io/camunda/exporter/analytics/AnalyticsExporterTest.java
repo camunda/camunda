@@ -163,12 +163,57 @@ class AnalyticsExporterTest {
     assertThat(context.getRecordFilter()).isNotNull().isInstanceOf(AnalyticsRecordFilter.class);
   }
 
+  @Test
+  void shouldPersistSequenceNumberInMetadata() {
+    // given / when — use explicit increasing positions so the controller always persists metadata
+    exporter.export(piCreatedEvent(1L));
+    exporter.export(piCreatedEvent(2L));
+    exporter.export(piCreatedEvent(3L));
+
+    // then
+    assertThat(controller.readMetadata())
+        .isPresent()
+        .get()
+        .satisfies(
+            bytes ->
+                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getSequenceNumber())
+                    .isEqualTo(3L));
+  }
+
+  @Test
+  void shouldRestoreSequenceNumberFromMetadataOnOpen() {
+    // given — controller pre-seeded with persisted sequence number 5
+    final var seededController = new ExporterTestController();
+    seededController.updateLastExportedRecordPosition(
+        0L, new AnalyticsExporterMetadata(5L).serialize());
+    final var freshMemoryExporter = InMemoryLogRecordExporter.create();
+    final var freshExporter = exporterWithInMemory(freshMemoryExporter, seededController);
+
+    // when
+    freshExporter.export(piCreatedEvent());
+
+    // then
+    assertThat(freshMemoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .isEqualTo(6L);
+  }
+
   // -- helpers --
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
     return FACTORY.generateRecord(
         ValueType.PROCESS_INSTANCE_CREATION,
         r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+  }
+
+  private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent(final long position) {
+    return FACTORY.generateRecord(
+        ValueType.PROCESS_INSTANCE_CREATION,
+        r ->
+            r.withRecordType(RecordType.EVENT)
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withPosition(position));
   }
 
   private static AnalyticsExporter exporterWithInMemory(
