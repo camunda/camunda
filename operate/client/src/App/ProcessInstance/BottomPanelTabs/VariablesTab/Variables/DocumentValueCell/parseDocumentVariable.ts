@@ -28,7 +28,7 @@ const documentReferenceSchema = z
     'camunda.document.type': z.literal('camunda'),
     documentId: z.string(),
     storeId: z.string().optional(),
-    contentHash: z.string().optional(),
+    contentHash: z.string(),
     metadata: z
       .object({
         fileName: z.string().optional(),
