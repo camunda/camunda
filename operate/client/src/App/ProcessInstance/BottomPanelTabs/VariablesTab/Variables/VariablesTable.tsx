@@ -119,6 +119,20 @@ const VariablesTable: React.FC<Props> = ({
                 }
               />
               {(() => {
+                if (documentResult !== null) {
+                  return (
+                    <>
+                      {documentResult.type === 'single' && (
+                        <DownloadDocumentButton
+                          documentLink={documentResult.document.link}
+                          fileName={documentResult.document.fileName}
+                          variableName={name}
+                        />
+                      )}
+                    </>
+                  );
+                }
+
                 if (isModificationModeEnabled || !isProcessInstanceRunning) {
                   return null;
                 }
@@ -144,16 +158,9 @@ const VariablesTable: React.FC<Props> = ({
                   />
                 );
               })()}
-              {documentResult?.type === 'single' && (
-                <DownloadDocumentButton
-                  documentLink={documentResult.document.link}
-                  fileName={documentResult.document.fileName}
-                  variableName={name}
-                />
-              )}
             </Operations>
           ),
-          width: '150px',
+          width: '120px',
         },
       ],
     }),
@@ -165,7 +172,7 @@ const VariablesTable: React.FC<Props> = ({
       headerColumns={[
         {cellContent: 'Name', width: '35%'},
         {cellContent: 'Value', width: 'auto'},
-        {cellContent: '', width: '150px'},
+        {cellContent: '', width: '120px'},
       ]}
       headerSize="sm"
       verticalCellPadding="var(--cds-spacing-02)"
@@ -219,7 +226,7 @@ const VariablesTable: React.FC<Props> = ({
                             />
                           </Operations>
                         ),
-                        width: '150px',
+                        width: '120px',
                       },
                     ],
                   }))}
