@@ -17,6 +17,8 @@ import {
   CheckmarkOutline,
   Time,
   MeterAlt,
+  Chip,
+  DocumentBlank,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -26,11 +28,14 @@ import {
   StatusIconWrapper,
   StatusLabel,
   MetricsRow,
+  ModelInfo,
+  ModelInfoLabel,
 } from './styled';
 import {ModelCallsMetric} from './AgentMetrics/ModelCallsMetric';
 import {TokensUsedMetric} from './AgentMetrics/TokensUsedMetric';
 import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
 import {SectionTitle} from './SectionTitle';
+import {ConversationMessage} from './ConversationMessage';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   INITIALIZING: 'Initializing',
@@ -95,7 +100,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   const statusLabel =
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
-  const {metrics, limits} = agentInstance;
+  const {metrics, limits, definition} = agentInstance;
 
   return (
     <AgentDetailsContainer data-testid="agent-details">
@@ -128,6 +133,30 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
               maxToolCalls={limits.maxToolCalls}
             />
           </MetricsRow>
+        </AccordionItem>
+        <AccordionItem
+          data-testid="agent-system-prompt-section"
+          title={
+            <SectionTitle icon={<DocumentBlank size={16} />}>
+              System prompt
+            </SectionTitle>
+          }
+        >
+          <ConversationMessage
+            actor="system"
+            messages={[definition.systemPrompt]}
+          />
+        </AccordionItem>
+        <AccordionItem
+          data-testid="agent-model-section"
+          title={<SectionTitle icon={<Chip size={16} />}>Model</SectionTitle>}
+        >
+          <ModelInfo>
+            <ModelInfoLabel>Provider:</ModelInfoLabel> {definition.provider}
+          </ModelInfo>
+          <ModelInfo>
+            <ModelInfoLabel>Model:</ModelInfoLabel> {definition.model}
+          </ModelInfo>
         </AccordionItem>
       </Accordion>
     </AgentDetailsContainer>

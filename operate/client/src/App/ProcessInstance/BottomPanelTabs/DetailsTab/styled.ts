@@ -21,6 +21,12 @@ const Container = styled.div`
   flex-direction: column;
   gap: var(--cds-spacing-05);
   padding-inline: var(--cds-spacing-05);
+  padding-block-end: var(--cds-spacing-05);
+  overflow-y: auto;
+
+  & > * {
+    flex-shrink: 0;
+  }
 `;
 
 const Callout = styled(BaseCallout)`
