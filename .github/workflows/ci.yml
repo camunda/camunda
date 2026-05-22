@@ -1933,6 +1933,8 @@ jobs:
           user_description: "General"
 
   openapi-lint:
+    # Owner: CamundaEx
+    # Slack: #team-camunda-ex
     name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
