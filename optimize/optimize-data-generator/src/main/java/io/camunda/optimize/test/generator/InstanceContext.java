@@ -7,5 +7,5 @@
  */
 package io.camunda.optimize.test.generator;
 
-/** Groups the three identity fields shared across all records of a single process instance. */
-record InstanceContext(long instanceKey, long defKey, String processId) {}
+/** Groups the identity fields shared across all records of a single process instance. */
+record InstanceContext(long instanceKey, long defKey, String processId, int version) {}

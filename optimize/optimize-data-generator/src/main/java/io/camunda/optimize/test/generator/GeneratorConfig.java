@@ -97,6 +97,19 @@ public final class GeneratorConfig {
    */
   public final double agentInstanceRate;
 
+  /**
+   * Number of versions to generate per process definition. Each process will have versions 1
+   * through {@code processVersionCount} (inclusive). Default is {@code 5}.
+   */
+  public final int processVersionCount;
+
+  /**
+   * Prefix for Optimize-processed indexes (e.g. {@code optimize}). Used to directly seed the
+   * Optimize {@code process-definition} index so the process ComboBox is populated without relying
+   * on the Optimize importer pipeline. Default is {@code "optimize"}.
+   */
+  public final String optimizeIndexPrefix;
+
   private GeneratorConfig(final Builder builder) {
     this.instanceCount = builder.instanceCount;
     this.processDefinitionCount = builder.processDefinitionCount;
@@ -110,6 +123,8 @@ public final class GeneratorConfig {
     this.seed = builder.seed;
     this.updateRate = builder.updateRate;
     this.agentInstanceRate = builder.agentInstanceRate;
+    this.processVersionCount = builder.processVersionCount;
+    this.optimizeIndexPrefix = builder.optimizeIndexPrefix;
   }
 
   /**
@@ -127,12 +142,12 @@ public final class GeneratorConfig {
   }
 
   /**
-   * Derives a stable numeric process definition key from the definition's array index. Stable
-   * across generator calls with the same config so variable records and PI records reference the
-   * same key.
+   * Derives a stable numeric process definition key from the definition's array index and version.
+   * Stable across generator calls with the same config so variable records and PI records reference
+   * the same key.
    */
-  long definitionKeyFor(final int defIndex) {
-    return (defIndex + 1) * 1_000L + partitionId;
+  long definitionKeyFor(final int defIndex, final int version) {
+    return ((long) defIndex * 10 + version) * 1_000L + partitionId;
   }
 
   public static final class Builder {
@@ -151,6 +166,8 @@ public final class GeneratorConfig {
     private long seed = 42L;
     private double updateRate = 0.0;
     private double agentInstanceRate = 0.3;
+    private int processVersionCount = 5;
+    private String optimizeIndexPrefix = "optimize";
 
     public Builder instanceCount(final int instanceCount) {
       this.instanceCount = instanceCount;
@@ -209,6 +226,16 @@ public final class GeneratorConfig {
 
     public Builder agentInstanceRate(final double agentInstanceRate) {
       this.agentInstanceRate = agentInstanceRate;
+      return this;
+    }
+
+    public Builder processVersionCount(final int count) {
+      this.processVersionCount = count;
+      return this;
+    }
+
+    public Builder optimizeIndexPrefix(final String prefix) {
+      this.optimizeIndexPrefix = prefix;
       return this;
     }
 
