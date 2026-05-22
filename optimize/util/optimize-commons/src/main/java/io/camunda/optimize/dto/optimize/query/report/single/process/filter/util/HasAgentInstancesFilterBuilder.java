@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 
 public final class HasAgentInstancesFilterBuilder {
@@ -22,7 +23,9 @@ public final class HasAgentInstancesFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    filterBuilder.addFilter(new HasAgentInstancesFilterDto());
+    final HasAgentInstancesFilterDto filter = new HasAgentInstancesFilterDto();
+    filter.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    filterBuilder.addFilter(filter);
     return filterBuilder;
   }
 }
