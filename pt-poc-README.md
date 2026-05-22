@@ -76,12 +76,11 @@ Logs stream to the terminal and also tee to `/tmp/oc.log`.
 
 ### Browser smoke
 
-Four flows cover the interesting cases, all against the real Operate webapp:
+Three flows cover the interesting cases, all against the real Operate webapp:
 
 1. **Tenant A prefixed (single-IdP, no picker).** Open `http://localhost:8080/physical-tenant/tenanta/operate`. Tenanta has only one assigned provider (`tenanta`), so the entry point redirects straight to Keycloak. Log in as `bob`. Operate loads with `<base href="/physical-tenant/tenanta/operate/">`.
 2. **Default tenant prefixed (multi-IdP picker).** Open `http://localhost:8080/physical-tenant/default/operate`. Default has two assigned providers (`oidc` + `tenanta`). The PT chain's installed `DefaultLoginPageGeneratingFilter` renders a picker at `/physical-tenant/default/login` listing both, with PT-prefixed authorization URLs. Pick `oidc`; log in as `alice`. Operate loads with `<base href="/physical-tenant/default/operate/">`, asset URLs resolve under the PT prefix, `client-config.js` returns `"baseName":"/physical-tenant/default/operate"`, and `react-router` accepts the URL.
 3. **Default tenant unprefixed (CSL chain).** Open `http://localhost:8080/operate`. Served by CSL's standard `OidcWebapp` chain. The host-rendered picker at `/login` lists every root-declared provider; pick `oidc`; log in as `alice`. Operate loads at the unprefixed URL with `<base href="/operate/">`. Useful for confirming the unprefixed access path is untouched by the PT wiring.
-4. **Deep-linking.** Before login, open `http://localhost:8080/physical-tenant/default/operate/processes`. After the OAuth round-trip the user lands back on `/processes`, not on `/operate`'s default landing — the saved request is honoured.
 
 ### Cookie + session isolation
 
