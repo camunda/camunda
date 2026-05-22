@@ -36,6 +36,23 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_DURATION_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_FREQUENCY_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_AVG_TOKENS_PER_CALL_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_AVG_TOKENS_PER_CALL_GROUP_BY_PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_END_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_START_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_MODEL_CALLS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_MODEL_CALLS_GROUP_BY_START_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_END_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_START_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOOL_CALLS_GROUP_BY_END_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOOL_CALLS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOOL_CALLS_GROUP_BY_START_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_END_DATE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_START_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_END_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_END_DATE_BY_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_DURATION_GROUP_BY_END_DATE_BY_VARIABLE;
@@ -233,6 +250,23 @@ public interface GenericProcessExecutionPlanInterpreter extends ProcessExecution
         PROCESS_USER_TASK_FREQUENCY_GROUP_BY_TASK_BY_CANDIDATE_GROUP,
         PROCESS_USER_TASK_FREQUENCY_GROUP_BY_TASK_BY_PROCESS,
         PROCESS_USER_TASK_FREQUENCY_GROUP_BY_TASK,
-        PROCESS_VARIABLE_GROUP_BY_NONE);
+        PROCESS_VARIABLE_GROUP_BY_NONE,
+        PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_END_DATE,
+        PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_START_DATE,
+        PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_NONE,
+        PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_END_DATE,
+        PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_START_DATE,
+        PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_NONE,
+        PROCESS_AGENT_MODEL_CALLS_GROUP_BY_START_DATE,
+        PROCESS_AGENT_MODEL_CALLS_GROUP_BY_NONE,
+        PROCESS_AGENT_TOOL_CALLS_GROUP_BY_END_DATE,
+        PROCESS_AGENT_TOOL_CALLS_GROUP_BY_START_DATE,
+        PROCESS_AGENT_TOOL_CALLS_GROUP_BY_NONE,
+        PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_END_DATE,
+        PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_START_DATE,
+        PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY,
+        PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE,
+        PROCESS_AGENT_AVG_TOKENS_PER_CALL_GROUP_BY_PROCESS_DEFINITION_KEY,
+        PROCESS_AGENT_AVG_TOKENS_PER_CALL_GROUP_BY_NONE);
   }
 }

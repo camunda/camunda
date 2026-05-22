@@ -7,10 +7,16 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_AVG_TOKENS_PER_CALL_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INPUT_TOKENS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_MODEL_CALLS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_OUTPUT_TOKENS_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_PERCENTAGE_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOOL_CALLS_PROPERTY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_TOTAL_TOKENS_PROPERTY;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -30,6 +36,13 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
   public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
   public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
+  public static final ViewProperty INPUT_TOKENS = new ViewProperty(VIEW_INPUT_TOKENS_PROPERTY);
+  public static final ViewProperty OUTPUT_TOKENS = new ViewProperty(VIEW_OUTPUT_TOKENS_PROPERTY);
+  public static final ViewProperty MODEL_CALLS = new ViewProperty(VIEW_MODEL_CALLS_PROPERTY);
+  public static final ViewProperty TOOL_CALLS = new ViewProperty(VIEW_TOOL_CALLS_PROPERTY);
+  public static final ViewProperty TOTAL_TOKENS = new ViewProperty(VIEW_TOTAL_TOKENS_PROPERTY);
+  public static final ViewProperty AVG_TOKENS_PER_CALL =
+      new ViewProperty(VIEW_AVG_TOKENS_PER_CALL_PROPERTY);
   private final TypedViewPropertyDto viewPropertyDto;
 
   @JsonCreator
