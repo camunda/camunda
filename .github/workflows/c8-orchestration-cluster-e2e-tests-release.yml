@@ -18,6 +18,9 @@ permissions:
 jobs:
   validate-release:
     runs-on: ubuntu-latest
+    # Cap runtime so a hung `git ls-remote`/shell step can't block the
+    # whole release-tests workflow indefinitely.
+    timeout-minutes: 5
     outputs:
       release_version: ${{ steps.get-release.outputs.release_version }}
       base: ${{ steps.detect-base.outputs.base }}
