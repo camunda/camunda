@@ -118,9 +118,6 @@ Note: GET requests do NOT carry the `X-CSRF-TOKEN` request header — the SPA on
 | [camunda-security-library#269](https://github.com/camunda/camunda-security-library/issues/269) | CSL installs `DefaultLoginPageGeneratingFilter` on its `OidcWebapp` chain so the unprefixed `/login` picker doesn't need a host-side controller. | Upstream CSL |
 | [camunda/camunda#53810](https://github.com/camunda/camunda/issues/53810) | Resolve `physicalTenantId` from the unified webapp's request context for `WebappIndexController` (same shape as #52572 for the REST gateway). | Upstream camunda |
 | Spec OQ-5 | Per-PT Spring sub-`ApplicationContext`s as an isolation primitive vs the current `Map<String, T>` injection pattern. Worth a design spike when the PT roadmap revisits data-layer / service-layer isolation. | Future design |
-| Out of scope | Per-PT durable secondary storage for `WebSessionRepository`. The PoC uses in-memory `PersistentWebSessionClient` per tenant; structurally isolated but non-durable. | Beyond PoC |
-| Out of scope | PT-aware operate/tasklist SPA API client (not just `contextPath` / `baseName` — the actual `/v2/...` URL composition). | Upstream operate/tasklist |
-| Out of scope | Tasks 14/15 (Testcontainers ITs) — bootstrap obstacle in `dist/` test scope; deferred to upstream CSL hardening where the test infrastructure already exists. | Upstream CSL |
 
 ## What's where
 
