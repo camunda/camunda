@@ -273,7 +273,11 @@ components:
         - tools
         - elementId
         - processInstanceKey
+        - rootProcessInstanceKey
         - processDefinitionKey
+        - processDefinitionId
+        - processDefinitionVersion
+        - processDefinitionVersionTag
         - tenantId
         - creationDate
         - lastUpdatedDate
@@ -311,10 +315,29 @@ components:
           description: The key of the process instance that owns this agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         processDefinitionKey:
           description: The key of the process definition associated with this agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        processDefinitionId:
+          description: The BPMN process ID of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersion:
+          type: integer
+          format: int32
+          description: The version of the process definition associated with this agent instance.
+        processDefinitionVersionTag:
+          type: string
+          nullable: true
+          description: The version tag of the process definition associated with this agent instance.
         tenantId:
           description: The tenant ID of this agent instance.
           allOf:
@@ -428,6 +451,7 @@ components:
       description: The current status of an agent instance.
       type: string
       enum:
+        - UNKNOWN
         - COMPLETED
         - IDLE
         - INITIALIZING
