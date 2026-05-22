@@ -67,6 +67,13 @@ public interface Context {
   String getClusterId();
 
   /**
+   * Returns the Camunda license key, or {@code null} if not configured.
+   *
+   * @return the license key, or {@code null} if not available.
+   */
+  String getLicenseKey();
+
+  /**
    * Apply the given filter to limit the records which are exported.
    *
    * @param filter the filter to apply.

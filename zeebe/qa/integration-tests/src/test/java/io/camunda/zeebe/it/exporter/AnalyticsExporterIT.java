@@ -75,6 +75,7 @@ final class AnalyticsExporterIT {
 
   @Test
   void shouldExportProcessInstanceCreatedToOtelCollector() {
+    System.setProperty("CAMUNDA_LICENSE_KEY", "test-license-key-for-analytics-it");
     COLLECTOR_LOGS.clear();
 
     // given — broker with analytics exporter pointing at the collector

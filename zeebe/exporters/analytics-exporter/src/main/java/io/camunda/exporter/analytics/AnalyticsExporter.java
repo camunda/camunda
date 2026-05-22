@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 /** Exporter that ships Camunda process analytics to the Camunda Analytics backend. */
 public class AnalyticsExporter implements Exporter {
 
+  private static final String LICENSE_KEY_ENV_VAR = "CAMUNDA_LICENSE_KEY";
   private static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
@@ -44,8 +45,7 @@ public class AnalyticsExporter implements Exporter {
   private AnalyticsExporterConfig config;
   private Controller controller;
   private HandlerRegistry handlers;
-  private int partitionId;
-  private String clusterId;
+  private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
 
   public AnalyticsExporter() {
@@ -59,14 +59,10 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
-    partitionId = context.getPartitionId();
-    try {
-      clusterId = context.getClusterId();
-    } catch (final NoSuchMethodError ex) {
-      // Fallback for customers testing this exporter on 8.8 where getClusterId does not exist.
-      final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
-      clusterId = fromEnv != null ? fromEnv : "";
-    }
+
+    analyticsContext =
+        AnalyticsExporterContext.create(
+            resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
 
     handlers =
         new HandlerRegistry()
@@ -74,9 +70,10 @@ public class AnalyticsExporter implements Exporter {
             .apply(context);
 
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
         config.getEndpoint(),
-        clusterId);
+        analyticsContext.clusterId(),
+        analyticsContext.partitionId());
   }
 
   @Override
@@ -87,7 +84,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, clusterId, partitionId, metadata);
+    otelSdkManager.initialize(config, analyticsContext, metadata);
     LOG.info("Analytics exporter opened");
   }
 
@@ -134,6 +131,41 @@ public class AnalyticsExporter implements Exporter {
         value.getBpmnProcessId(),
         record.getKey(),
         record.getPosition());
+  }
+
+  /**
+   * Resolves and validates the license key from the broker context, falling back to the {@code
+   * CAMUNDA_LICENSE_KEY} environment variable for brokers that predate the {@code getLicenseKey()}
+   * API (8.8 and earlier).
+   */
+  private static String resolveLicenseKey(final Context context) {
+    String licenseKey;
+    try {
+      licenseKey = context.getLicenseKey();
+    } catch (final NoSuchMethodError e) {
+      licenseKey = System.getenv(LICENSE_KEY_ENV_VAR);
+    }
+    if (licenseKey == null || licenseKey.isBlank()) {
+      throw new IllegalStateException(
+          "Analytics exporter requires a license key. Set the "
+              + LICENSE_KEY_ENV_VAR
+              + " environment variable.");
+    }
+    return licenseKey;
+  }
+
+  /**
+   * Resolves the cluster ID from the broker context, falling back to the {@code
+   * ZEEBE_BROKER_CLUSTER_CLUSTERID} environment variable for brokers that predate the {@code
+   * getClusterId()} API (8.8 and earlier).
+   */
+  private static String resolveClusterId(final Context context) {
+    try {
+      return context.getClusterId();
+    } catch (final NoSuchMethodError e) {
+      final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
+      return fromEnv != null ? fromEnv : "";
+    }
   }
 
   static final class HandlerRegistry {

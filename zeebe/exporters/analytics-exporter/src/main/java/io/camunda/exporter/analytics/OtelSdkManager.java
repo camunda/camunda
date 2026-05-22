@@ -32,6 +32,7 @@ class OtelSdkManager {
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
   private static final String OTLP_LOGS_PATH = "/v1/logs";
+  private static final String SERVICE_NAME_VALUE = "camunda-zeebe";
 
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
@@ -39,12 +40,10 @@ class OtelSdkManager {
 
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
-      final String clusterId,
-      final int partitionId,
+      final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata) {
     this.metadata = metadata;
-    final var resource = buildResource(clusterId, partitionId);
-    final var loggerProvider = createLoggerProvider(config, resource);
+    final var loggerProvider = createLoggerProvider(config, context);
 
     sdk = OpenTelemetrySdk.builder().setLoggerProvider(loggerProvider).build();
     otelLogger =
@@ -76,11 +75,11 @@ class OtelSdkManager {
    * Override in tests that need full pipeline control (e.g. sync processor, custom queue sizes).
    */
   protected SdkLoggerProvider createLoggerProvider(
-      final AnalyticsExporterConfig config, final Resource resource) {
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
     return SdkLoggerProvider.builder()
-        .setResource(resource)
+        .setResource(buildResource(context))
         .addLogRecordProcessor(
-            BatchLogRecordProcessor.builder(createLogExporter(config))
+            BatchLogRecordProcessor.builder(createLogExporter(config, context))
                 .setMaxQueueSize(config.getMaxQueueSize())
                 .setMaxExportBatchSize(config.getMaxBatchSize())
                 .setScheduleDelay(config.getPushInterval())
@@ -89,19 +88,29 @@ class OtelSdkManager {
   }
 
   /** Override in tests to swap the OTLP transport for an in-memory exporter. */
-  protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig config) {
-    return OtlpHttpLogRecordExporter.builder()
-        .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
-        .build();
+  protected LogRecordExporter createLogExporter(
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
+    final var builder =
+        OtlpHttpLogRecordExporter.builder()
+            .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
+            // Static auth headers (constant per exporter lifetime)
+            .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
+            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
+
+    if (config.isSigning()) {
+      builder.setHeaders(context::computeSignatureHeaders);
+    }
+
+    return builder.build();
   }
 
-  private static Resource buildResource(final String clusterId, final int partitionId) {
+  static Resource buildResource(final AnalyticsExporterContext context) {
     return Resource.getDefault()
         .merge(
             Resource.builder()
-                .put(SERVICE_NAME, "camunda-zeebe")
-                .put(CLUSTER_ID, clusterId)
-                .put(PARTITION_ID, partitionId)
+                .put(SERVICE_NAME, SERVICE_NAME_VALUE)
+                .put(CLUSTER_ID, context.clusterId())
+                .put(PARTITION_ID, context.partitionId())
                 .build());
   }
 }

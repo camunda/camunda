@@ -16,6 +16,7 @@ public class AnalyticsExporterConfig {
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5S";
+  private boolean signing = true;
 
   public String getEndpoint() {
     return endpoint;
@@ -50,6 +51,15 @@ public class AnalyticsExporterConfig {
 
   public AnalyticsExporterConfig setPushInterval(final String pushInterval) {
     this.pushInterval = pushInterval;
+    return this;
+  }
+
+  public boolean isSigning() {
+    return signing;
+  }
+
+  public AnalyticsExporterConfig setSigning(final boolean signing) {
+    this.signing = signing;
     return this;
   }
 

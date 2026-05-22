@@ -80,8 +80,7 @@ class OtelSdkManagerTest {
         new OtelSdkManager()
             .initialize(
                 new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
-                "test-cluster",
-                1,
+                AnalyticsExporterContext.create("test-license", "test-cluster", 1),
                 new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
@@ -230,7 +229,8 @@ class OtelSdkManagerTest {
     final var manager =
         new OtelSdkManager() {
           @Override
-          protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig cfg) {
+          protected LogRecordExporter createLogExporter(
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return exporterFrom(
                 logs -> {
                   received.addAll(logs);
@@ -239,8 +239,7 @@ class OtelSdkManagerTest {
           }
         }.initialize(
             new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
-            "test-cluster",
-            1,
+            AnalyticsExporterContext.create("test-license", "test-cluster", 1),
             new AnalyticsExporterMetadata(5L));
 
     // when
@@ -275,7 +274,8 @@ class OtelSdkManagerTest {
       final int maxBatchSize) {
     return new OtelSdkManager() {
       @Override
-      protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig cfg) {
+      protected LogRecordExporter createLogExporter(
+          final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
         return exporterFrom(exportFn);
       }
     }.initialize(
@@ -283,8 +283,7 @@ class OtelSdkManagerTest {
             .setMaxQueueSize(maxQueueSize)
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
-        "test-cluster",
-        1,
+        AnalyticsExporterContext.create("test-license", "test-cluster", 1),
         new AnalyticsExporterMetadata());
   }
 
