@@ -84,9 +84,14 @@ public class PhysicalTenantWebappMappingConfiguration implements WebMvcConfigure
    */
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+    // Use Ant-style "*" for the tenant id segment rather than the {tenantId} URI template form
+    // — ResourceHandlerRegistry installs a SimpleUrlHandlerMapping whose pattern matching does
+    // not treat the {var} placeholder as a wildcard the same way @RequestMapping does. "*" gives
+    // us the one-segment match we want without forcing a path-variable extraction (we don't need
+    // the value here; the security chain + interceptor already carry the tenant context).
     for (final String app : Set.of("operate", "tasklist", "admin")) {
       registry
-          .addResourceHandler("/physical-tenant/{tenantId}/" + app + "/**")
+          .addResourceHandler("/physical-tenant/*/" + app + "/**")
           .addResourceLocations("classpath:/META-INF/resources/" + app + "/");
     }
   }
