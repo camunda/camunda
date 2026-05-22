@@ -181,6 +181,12 @@ public abstract class ReportEvaluationHandler {
                             def.getName()))
                 .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);
+        logger.info(
+            "[AGENTIC-DEBUG] setDataSourcesForSystemGeneratedReports: resolved {} management definitions: {}",
+            definitionsForManagementReport.size(),
+            definitionsForManagementReport.stream()
+                .map(d -> "key=" + d.getKey() + " tenants=" + d.getTenantIds())
+                .toList());
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
@@ -357,8 +363,32 @@ public abstract class ReportEvaluationHandler {
     if (reportDefinitionDto
         instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
       // Override definitions if a process scope was selected
+      logger.info(
+          "[AGENTIC-DEBUG] addAdditionalFiltersForReport: report={}, isManagement={}, existingDefinitions={}, additionalDefinitions={}",
+          reportDefinitionDto.getId(),
+          definitionDto.getData().isManagementReport(),
+          definitionDto.getData().getDefinitions().stream()
+              .map(d -> d.getKey() + ":" + d.getTenantIds())
+              .toList(),
+          additionalFilters.getDefinitions() == null
+              ? "null"
+              : additionalFilters.getDefinitions().stream()
+                  .map(d -> d.getKey() + ":" + d.getTenantIds())
+                  .toList());
       if (!CollectionUtils.isEmpty(additionalFilters.getDefinitions())) {
         definitionDto.getData().setDefinitions(additionalFilters.getDefinitions());
+        logger.info(
+            "[AGENTIC-DEBUG] Overriding definitions with: {}",
+            additionalFilters.getDefinitions().stream()
+                .map(
+                    d ->
+                        "key="
+                            + d.getKey()
+                            + " versions="
+                            + d.getVersions()
+                            + " tenants="
+                            + d.getTenantIds())
+                .toList());
       }
 
       if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
