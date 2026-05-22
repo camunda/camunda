@@ -157,16 +157,16 @@ Never suppress warnings or failures to force a build to pass.
 
 Do not proceed without a green baseline.
 
-If an engineer instructs you to ignore a test failure, you must:
+If a test fails during the baseline check, re-run it once to determine whether it is flaky. If it
+passes on retry, treat the baseline as green and proceed. If it fails consistently, it should not
+be on the target branch — stop and inform the engineer.
 
-1. Search for an existing open issue for the failing test(s) in camunda/camunda before creating
-   anything. If one exists, inform the engineer and link it. If none exists, raise a new issue
-   using the most appropriate template from `.github/ISSUE_TEMPLATE/` (use `bug_report.yml` for
-   flaky or broken tests).
-2. Assign the issues to the engineer. They can reassign them to another engineer, but they are accountable for managing this.
-3. Disable the failing tests in a PR.
-4. Secure a green baseline.
-5. Target any PR resulting from the work to the test-disabling PR.
+If it is flaky (non-deterministic):
+
+1. Search for an existing open issue in camunda/camunda. If none exists, raise one using
+   `.github/ISSUE_TEMPLATE/bug_report.yml`.
+2. Assign the issue to the engineer.
+3. Treat the baseline as passed and proceed — do not disable the test.
 
 #### Module-scoped builds (preferred)
 
