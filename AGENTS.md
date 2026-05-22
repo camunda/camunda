@@ -128,9 +128,21 @@ Before every AI-assisted session, establish a green baseline in two steps:
 gh run list --branch main --limit 5 --repo camunda/camunda
 ```
 
-If `main` is already red, tell the engineer before proceeding. Any failure you encounter during the session must still be investigated — a pre-existing red `main` is not a reason to dismiss failures as unrelated.
+If `main` is red, inform the engineer and continue — CI can fail for infra reasons unrelated to
+the code. Do not block on this, but note any failures so they are not confused with regressions
+introduced during the session.
 
-**Step 2 — Once the target module is known, verify it passes locally:**
+**Step 2 — Build the full repo locally right after branching** (blocking):
+
+```bash
+./mvnw install -Dquickly -T1C
+```
+
+This installs all module JARs and catches any cross-module compilation errors before work begins
+(e.g. an API change on `main` that breaks a downstream module). Do not proceed until this is
+green — a compilation error here will waste far more time if discovered mid-session.
+
+**Step 3 — Once the target module is known, verify it passes locally:**
 
 ```bash
 ./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C
