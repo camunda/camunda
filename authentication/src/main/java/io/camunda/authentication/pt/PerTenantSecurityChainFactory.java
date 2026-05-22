@@ -97,10 +97,11 @@ public final class PerTenantSecurityChainFactory {
                         // mishandles for multi-segment prefixes. Both are needed.
                         ae -> ae.baseUri(authBaseUri).authorizationRequestResolver(resolver))
                     .redirectionEndpoint(re -> re.baseUri(callbackBaseUri))
-                    // alwaysUse=true overrides any saved request — the PoC wants every
-                    // login to terminate at /app for the demo, not at whatever URL
-                    // triggered the redirect (notably "/" which has no controller).
-                    .defaultSuccessUrl(defaultSuccessUrl, true))
+                    // alwaysUse=false lets the SavedRequestAwareAuthenticationSuccessHandler
+                    // honour the URL the user originally requested (e.g. /physical-tenant/<id>/
+                    // operate/...). The PT-prefixed /app stays as the fallback when there is no
+                    // saved request — typical when the user navigates straight to /login.
+                    .defaultSuccessUrl(defaultSuccessUrl, false))
         .build();
   }
 
