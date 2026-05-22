@@ -99,8 +99,7 @@
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>2.0.5</version.testcontainers>
-    <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
-    <version.testcontainer-mariadb>2.0.2</version.testcontainer-mariadb>
+    <version.mariadb-java-client>3.5.8</version.mariadb-java-client>
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
@@ -1749,6 +1748,12 @@
         <groupId>com.h2database</groupId>
         <artifactId>h2</artifactId>
         <version>${version.h2}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>${version.mariadb-java-client}</version>
       </dependency>
 
       <dependency>
