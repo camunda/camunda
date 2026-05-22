@@ -22,12 +22,15 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
 
@@ -38,15 +41,31 @@ public class ProcessesToolRepository implements ToolRepository {
   protected static final String PROPERTY_RESULTS = "io.camunda.tool:results";
   protected static final String PROPERTY_WHEN_NOT_TO_USE = "io.camunda.tool:when_not_to_use";
   protected static final String PROPERTY_WHEN_TO_USE = "io.camunda.tool:when_to_use";
-
   protected static final String LABEL_INPUTS = "## Inputs";
   protected static final String LABEL_RESULTS = "## Results";
   protected static final String LABEL_WHEN_NOT_TO_USE = "## When not to use";
   protected static final String LABEL_WHEN_TO_USE = "## When to use";
 
+  private static final char TOOL_NAME_DELIMITER = '_';
+  private static final Map<String, Object> TOOL_OUTPUT_SCHEMA =
+      Map.of(
+          "type",
+          "object",
+          "properties",
+          Map.of(
+              "processInstanceKey",
+              Map.of(
+                  "type",
+                  "integer",
+                  "format",
+                  "int64",
+                  "description",
+                  "The key of the started process instance. Use this to investigate the state of the started instance.")),
+          "required",
+          List.of("processInstanceKey"));
   private static final List<Tuple<String, String>> DESCRIPTION_PARTS =
       List.of(
-          Tuple.of(PROPERTY_PURPOSE, null),
+          Tuple.of(PROPERTY_PURPOSE, ""),
           Tuple.of(PROPERTY_INPUTS, LABEL_INPUTS),
           Tuple.of(PROPERTY_WHEN_TO_USE, LABEL_WHEN_TO_USE),
           Tuple.of(PROPERTY_WHEN_NOT_TO_USE, LABEL_WHEN_NOT_TO_USE),
@@ -71,6 +90,7 @@ public class ProcessesToolRepository implements ToolRepository {
   @Override
   public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
     final var auth = authenticationProvider.getCamundaAuthentication();
+    // fetch open start message subscriptions with tool names
     final var query =
         MessageSubscriptionQuery.of(
             b ->
@@ -81,8 +101,11 @@ public class ProcessesToolRepository implements ToolRepository {
                                     Operation.neq(MessageSubscriptionState.DELETED.name()))
                                 .toolNameOperations(Operation.exists(true)))
                     .unlimited());
+
+    // combine static and dynamic tools
     return Stream.concat(
-            messageSubscriptionServices.search(query, auth).items().stream().map(this::buildTool),
+            messageSubscriptionServices.search(query, auth).items().stream()
+                .map(ProcessesToolRepository::buildTool),
             staticTools.stream().map(SyncToolSpecification::tool))
         .toList();
   }
@@ -90,23 +113,35 @@ public class ProcessesToolRepository implements ToolRepository {
   @Override
   public @NonNull Either<String, SyncToolSpecification> findTool(
       @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
-    final Optional<SyncToolSpecification> staticTool =
+    // check static tools first
+    final var staticTool =
         staticTools.stream().filter(spec -> spec.tool().name().equals(toolName)).findFirst();
     if (staticTool.isPresent()) {
       return Either.right(staticTool.get());
     }
+    return findMessageSubscription(toolName)
+        .map(
+            entity ->
+                SyncToolSpecification.builder()
+                    .tool(buildTool(entity))
+                    .callHandler(buildCallHandler(entity))
+                    .build());
+  }
 
-    final int lastUnderscore = toolName.lastIndexOf('_');
-    if (lastUnderscore < 0) {
+  private Either<String, MessageSubscriptionEntity> findMessageSubscription(final String toolName) {
+    // extract the message subscription key encoded in the tool name
+    final int subscriptionKeyIndex = toolName.lastIndexOf(TOOL_NAME_DELIMITER);
+    if (subscriptionKeyIndex < 0) {
       return Either.left("Tool not found: " + toolName);
     }
     final long subscriptionKey;
     try {
-      subscriptionKey = Long.parseLong(toolName.substring(lastUnderscore + 1));
+      subscriptionKey = Long.parseLong(toolName.substring(subscriptionKeyIndex + 1));
     } catch (final NumberFormatException e) {
       return Either.left("Tool not found: " + toolName);
     }
 
+    // find the message subscription based on the key
     final var auth = authenticationProvider.getCamundaAuthentication();
     final var entity = messageSubscriptionServices.getByKey(subscriptionKey, auth);
 
@@ -117,51 +152,43 @@ public class ProcessesToolRepository implements ToolRepository {
       return Either.left("Tool " + toolName + " has been removed. Please refresh the tool list.");
     }
 
-    return Either.right(
-        SyncToolSpecification.builder()
-            .tool(buildTool(entity))
-            .callHandler(
-                (ctx, req) -> {
-                  final Map<String, Object> arguments =
-                      req.arguments() != null ? req.arguments() : Map.of();
-                  return CallToolResultMapper.from(
-                      messageServices.correlateMessage(
-                          new CorrelateMessageRequest(
-                              entity.messageName(), "", arguments, entity.tenantId()),
-                          authenticationProvider.getCamundaAuthentication()),
-                      record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
-                })
-            .build());
+    return Either.right(entity);
   }
 
-  private Tool buildTool(final MessageSubscriptionEntity entity) {
-    final String name = entity.toolName() + "_" + entity.messageSubscriptionKey();
-    final String description = buildDescription(entity.toolProperties());
+  private @NonNull BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
+      buildCallHandler(final MessageSubscriptionEntity entity) {
+    return (ctx, req) -> {
+      final Map<String, Object> arguments = req.arguments() != null ? req.arguments() : Map.of();
+      return CallToolResultMapper.from(
+          messageServices.correlateMessage(
+              new CorrelateMessageRequest(
+                  entity.messageName(),
+                  // UUID: distribute messages across partitions, support parallel process instances
+                  UUID.randomUUID().toString(),
+                  arguments,
+                  entity.tenantId()),
+              authenticationProvider.getCamundaAuthentication()),
+          record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
+    };
+  }
+
+  private static Tool buildTool(final MessageSubscriptionEntity entity) {
+    final var name = buildToolName(entity);
+    final var description = buildDescription(entity.toolProperties());
     return Tool.builder()
         .name(name)
         .title(entity.toolName())
         .description(description)
         .inputSchema(new JsonSchema("object", Map.of(), List.of(), false, Map.of(), Map.of()))
-        .outputSchema(
-            Map.of(
-                "type",
-                "object",
-                "properties",
-                Map.of(
-                    "processInstanceKey",
-                    Map.of(
-                        "type",
-                        "integer",
-                        "format",
-                        "int64",
-                        "description",
-                        "The key of the started process instance. Use this to investigate the state of the started instance.")),
-                "required",
-                List.of("processInstanceKey")))
+        .outputSchema(TOOL_OUTPUT_SCHEMA)
         .build();
   }
 
-  private String buildDescription(final Map<String, String> props) {
+  private static @NonNull String buildToolName(final MessageSubscriptionEntity entity) {
+    return entity.toolName() + TOOL_NAME_DELIMITER + entity.messageSubscriptionKey();
+  }
+
+  private static String buildDescription(final Map<String, String> props) {
     return String.join(
         "\n\n",
         DESCRIPTION_PARTS.stream()
@@ -171,7 +198,7 @@ public class ProcessesToolRepository implements ToolRepository {
                   if (value == null || value.isBlank()) {
                     return null;
                   }
-                  if (part.getRight() == null) {
+                  if (part.getRight().isBlank()) {
                     return value;
                   }
                   return part.getRight() + "\n" + value;
