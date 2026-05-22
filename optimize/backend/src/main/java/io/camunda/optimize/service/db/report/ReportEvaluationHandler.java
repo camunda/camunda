@@ -350,9 +350,34 @@ public abstract class ReportEvaluationHandler {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final AdditionalProcessReportEvaluationFilterDto additionalFilters,
       final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
-    if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
-      if (reportDefinitionDto
-          instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
+    if (additionalFilters == null) {
+      return;
+    }
+
+    if (reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto) {
+      // Scope definitions: when a process scope is selected, filter the already-resolved
+      // definitions to only include those matching the requested keys. This preserves the
+      // tenant IDs that were resolved from the definition service and avoids a tenant mismatch
+      // that would occur if we replaced definitions with the frontend-supplied ones (which have
+      // no tenantIds and default to [null]).
+      if (!CollectionUtils.isEmpty(additionalFilters.getDefinitions())) {
+        final Set<String> scopeKeys =
+            additionalFilters.getDefinitions().stream()
+                .map(ReportDataDefinitionDto::getKey)
+                .collect(Collectors.toSet());
+        final List<ReportDataDefinitionDto> resolvedDefinitions =
+            definitionDto.getData().getDefinitions();
+        final List<ReportDataDefinitionDto> filteredDefinitions =
+            resolvedDefinitions.stream()
+                .filter(d -> scopeKeys.contains(d.getKey()))
+                .collect(Collectors.toList());
+        if (!filteredDefinitions.isEmpty()) {
+          definitionDto.getData().setDefinitions(filteredDefinitions);
+        }
+      }
+
+      if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
         final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
         // We only fetch the variable filter values if a variable filter is present
         if (additionalFilters.getFilter().stream()
@@ -389,11 +414,11 @@ public abstract class ReportEvaluationHandler {
         } else {
           definitionDto.getData().setFilter(additionalFiltersToApply);
         }
-      } else {
-        logger.debug(
-            "Cannot add additional filters to report [{}] as it is not a process report",
-            reportDefinitionDto.getId());
       }
+    } else if (!CollectionUtils.isEmpty(additionalFilters.getFilter())) {
+      logger.debug(
+          "Cannot add additional filters to report [{}] as it is not a process report",
+          reportDefinitionDto.getId());
     }
   }
 }
