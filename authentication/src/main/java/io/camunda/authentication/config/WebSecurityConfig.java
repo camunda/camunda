@@ -72,24 +72,6 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 public class WebSecurityConfig {
 
   /**
-   * Host-supplied {@link SecurityPathPort} declaring the path patterns CSL's filter chains operate
-   * on. Stateless adapter, zero OC-runtime deps — safe under any host setup.
-   */
-  @Bean
-  public SecurityPathPort securityPathPort() {
-    return new SecurityPathAdapter();
-  }
-
-  /**
-   * Host-supplied {@link WebAppProviderPort} declaring the webapp components OC ships. Stateless
-   * adapter — see {@link WebAppProviderAdapter}.
-   */
-  @Bean
-  public WebAppProviderPort webAppProvider() {
-    return new WebAppProviderAdapter();
-  }
-
-  /**
    * Syncs OC's {@link SecurityConfiguration} into CSL's {@link CamundaSecurityLibraryProperties}
    * after both have finished property binding but before any {@code SecurityFilterChain} bean is
    * built.
@@ -131,6 +113,16 @@ public class WebSecurityConfig {
         return bean;
       }
     };
+  }
+
+  @Bean
+  public SecurityPathPort securityPathPort() {
+    return new SecurityPathAdapter();
+  }
+
+  @Bean
+  public WebAppProviderPort webAppProvider() {
+    return new WebAppProviderAdapter();
   }
 
   /**
