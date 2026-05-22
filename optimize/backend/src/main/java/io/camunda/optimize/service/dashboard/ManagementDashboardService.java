@@ -37,6 +37,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -73,6 +74,7 @@ public class ManagementDashboardService {
   }
 
   @EventListener(ApplicationReadyEvent.class)
+  @Order(0)
   public void init() {
     if (configurationService.getEntityConfiguration().getCreateOnStartup()) {
       // First we delete all existing management entities

@@ -53,6 +53,10 @@ public class ProcessFilterBuilder {
     return CompletedInstancesOnlyFilterBuilder.construct(this);
   }
 
+  public HasAgentInstancesFilterBuilder hasAgentInstances() {
+    return HasAgentInstancesFilterBuilder.construct(this);
+  }
+
   public RunningInstancesOnlyFilterBuilder runningInstancesOnly() {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
