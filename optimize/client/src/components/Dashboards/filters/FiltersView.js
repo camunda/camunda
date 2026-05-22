@@ -88,10 +88,16 @@ export default function FiltersView({
                 onProcessScopeChange?.({key: selectedItem.key, name: selectedItem.name});
               }}
               placeholder={t('common.select')}
-              shouldFilterItem={({inputValue, item}) =>
-                !inputValue ||
-                (item?.name || item?.key || '').toLowerCase().includes(inputValue.toLowerCase())
-              }
+              shouldFilterItem={({inputValue, item}) => {
+                // when a process is selected, show the whole list so the user can change selection
+                if (inputValue && (selectedProcessScopeItem?.name || '') === inputValue) {
+                  return true;
+                }
+                return (
+                  typeof inputValue !== 'undefined' &&
+                  (item?.name || item?.key || '').toLowerCase().includes(inputValue?.toLowerCase())
+                );
+              }}
             />
           </div>
         )}
