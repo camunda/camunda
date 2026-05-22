@@ -184,6 +184,7 @@ runs:
           - 'dist/**'
           - 'parent/**'
           - '**/pom.xml'
+          - '.mvn/**'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'
