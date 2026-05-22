@@ -8,12 +8,6 @@
 
 import isEqual from 'lodash/isEqual';
 import {makeAutoObservable, runInAction} from 'mobx';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-
-type Variable = {
-  name: string;
-  values: string;
-};
 
 type VariableFilterOperator =
   | 'equals'
@@ -40,14 +34,10 @@ type VariableCondition =
   | VariableConditionWithoutValue;
 
 type State = {
-  variable?: Variable;
-  isInMultipleMode: boolean;
   conditions: VariableCondition[];
 };
 
 const DEFAULT_STATE: State = {
-  variable: undefined,
-  isInMultipleMode: false,
   conditions: [],
 };
 
@@ -75,16 +65,6 @@ class VariableFilter {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
   };
 
-  setVariable = (variable?: Variable) => {
-    if (!isEqual(this.state.variable, variable)) {
-      this.state.variable = variable;
-    }
-  };
-
-  setIsInMultipleMode = (isInMultipleMode: boolean) => {
-    this.state.isInMultipleMode = isInMultipleMode;
-  };
-
   setConditions = (conditions: VariableCondition[]) => {
     if (!isEqual(this.state.conditions, conditions)) {
       this.state.conditions = conditions;
@@ -96,10 +76,6 @@ class VariableFilter {
     }
   };
 
-  get variable() {
-    return this.state.variable;
-  }
-
   get conditions() {
     return this.state.conditions;
   }
@@ -107,25 +83,9 @@ class VariableFilter {
   get hasActiveFilters() {
     return this.state.conditions.length > 0;
   }
-
-  get variableWithValidatedValues() {
-    if (!this.state.variable) {
-      return undefined;
-    }
-
-    const values =
-      getValidVariableValues(this.state.variable.values)?.map((value) =>
-        JSON.stringify(value),
-      ) ?? [];
-
-    return {
-      name: this.state.variable.name,
-      values,
-    };
-  }
 }
 
 const variableFilterStore = new VariableFilter();
 
 export {variableFilterStore};
-export type {Variable, VariableFilterOperator, VariableCondition};
+export type {VariableFilterOperator, VariableCondition};

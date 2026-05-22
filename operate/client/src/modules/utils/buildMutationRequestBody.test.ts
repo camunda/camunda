@@ -381,7 +381,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps variable name and values to variables array from context', () => {
+  it('maps conditions to variables array', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -390,15 +390,18 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'foo',
-        values: '"a","b"',
-      },
+      conditions: [
+        {name: 'foo', operator: 'equals', value: '"a"'},
+        {name: 'bar', operator: 'notEqual', value: '"b"'},
+      ],
     });
 
     expect(body).toEqual({
       filter: {
-        variables: [{name: 'foo', value: {$in: ['"a"', '"b"']}}],
+        variables: [
+          {name: 'foo', value: '"a"'},
+          {name: 'bar', value: {$neq: '"b"'}},
+        ],
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
       },
@@ -467,7 +470,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('adds single variable', () => {
+  it('adds single condition as equals', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -476,10 +479,7 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending"',
-      },
+      conditions: [{name: 'status', operator: 'equals', value: '"pending"'}],
     });
 
     expect(body).toEqual({
@@ -496,7 +496,7 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('adds multiple variable values with $in operator', () => {
+  it('adds oneOf condition with $in operator', () => {
     const searchParams = createSearchParams({
       active: 'true',
     });
@@ -505,10 +505,13 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending","active","completed"',
-      },
+      conditions: [
+        {
+          name: 'status',
+          operator: 'oneOf',
+          value: '["pending","active","completed"]',
+        },
+      ],
     });
 
     expect(body).toEqual({

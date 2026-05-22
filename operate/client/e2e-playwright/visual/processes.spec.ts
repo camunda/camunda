@@ -264,13 +264,102 @@ test.describe('processes page', () => {
       },
     });
 
-    await filtersPanel.displayOptionalFilter('Variable');
+    await filtersPanel.displayOptionalFilter('Variables');
     await filtersPanel.displayOptionalFilter('Error Message');
     await filtersPanel.displayOptionalFilter('Batch Operation Key');
     await filtersPanel.batchOperationKeyFilter.type('aaa');
     await expect(
       page.getByText('Key has to be a 16 to 19 digit number or a UUID'),
     ).toBeVisible();
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('variable filter modal', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Variables');
+    await filtersPanel.openVariableFilterModal.click();
+
+    await expect(
+      page.getByRole('dialog', {name: 'Filter by variable'}),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('variable filter modal with conditions', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Variables');
+    await filtersPanel.openVariableFilterModal.click();
+
+    const dialog = page.getByRole('dialog', {name: 'Filter by variable'});
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByTestId('variable-filter-name-0').fill('status');
+    await dialog.getByTestId('variable-filter-value-0').fill('"active"');
+    await dialog.getByRole('button', {name: 'Add condition'}).click();
+    await dialog.getByTestId('variable-filter-name-1').fill('region');
+    await dialog.getByTestId('variable-filter-value-1').fill('"EU"');
+
     await expect(page).toHaveScreenshot();
   });
 

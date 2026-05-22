@@ -271,7 +271,7 @@ describe('Filters', () => {
     await selectElement({user, option: 'Service Task 1'});
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
+    await user.click(screen.getByText('Variables'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Batch Operation Key'));
@@ -377,53 +377,6 @@ describe('Filters', () => {
     );
   });
 
-  it('should have JSON editor for variable value filter', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByRole('button', {name: /open json editor/i}));
-
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {
-        name: /cancel/i,
-      }),
-    ).toBeEnabled();
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i}),
-    ).toBeEnabled();
-    expect(
-      await within(screen.getByRole('dialog')).findByTestId('monaco-editor'),
-    ).toBeInTheDocument();
-  });
-
-  it('should have plain editor for variable value filter (multiple values)', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByLabelText('Multiple'));
-    await user.type(screen.getByLabelText(/^values$/i), '1, 2, 3');
-    await user.click(screen.getByRole('button', {name: /open editor modal/i}));
-
-    const withinDialog = within(screen.getByRole('dialog'));
-    expect(await withinDialog.findByText('1, 2, 3')).toBeInTheDocument();
-
-    await user.type(withinDialog.getByRole('textbox'), 'invalid');
-    expect(withinDialog.getByRole('button', {name: /apply/i})).toBeDisabled();
-
-    await user.clear(withinDialog.getByRole('textbox'));
-    await user.type(withinDialog.getByRole('textbox'), '"a", "b", "c"');
-    expect(withinDialog.getByRole('button', {name: /apply/i})).toBeEnabled();
-
-    await user.click(withinDialog.getByRole('button', {name: /apply/i}));
-    expect(screen.getByLabelText(/^values$/i)).toHaveValue('"a", "b", "c"');
-  });
-
   it('should enable the reset button', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
@@ -516,7 +469,7 @@ describe('Filters', () => {
         name: 'Parent Process Instance Key',
         fields: ['Parent Process Instance Key'],
       },
-      {name: 'Variable', fields: ['Name', 'Value']},
+      {name: 'Variables', fields: ['Variables']},
       {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
       {name: 'Batch Operation Key', fields: ['Batch Operation Key']},
       {name: 'Business ID', fields: ['Business ID']},
@@ -531,16 +484,14 @@ describe('Filters', () => {
       await user.click(screen.getByText(filter.name));
     }
 
-    let visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
-
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.getByText(fieldLabels[i]!)).toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
 
     await user.click(screen.getByRole('button', {name: /reset filters/i}));
 
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.queryByText(fieldLabels[i]!)).not.toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
     }
 
     optionalFilters.reverse();
@@ -553,10 +504,8 @@ describe('Filters', () => {
       await user.click(screen.getByText(filter.name));
     }
 
-    visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
-
-    for (let i = 0; i < visibleOptionalFilters.length; i++) {
-      expect(screen.getByText(fieldLabels[i]!)).toBeInTheDocument();
+    for (const label of fieldLabels) {
+      expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 

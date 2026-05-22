@@ -151,6 +151,10 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter('Variables');
+          await operateFiltersPanelPage.openVariableFilterModal();
+          await operateFiltersPanelPage.fillConditionRow(0, 'wuf', '1');
+          await operateFiltersPanelPage.applyVariableFilter();
         },
       });
 

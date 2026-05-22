@@ -68,7 +68,10 @@ const MigrateAction: React.FC = observer(() => {
       processInstancesSelectionStore.selectedCount,
     );
     processInstanceMigrationStore.setBatchOperationQuery({
-      variable: variableFilterStore.variableWithValidatedValues,
+      conditions:
+        variableFilterStore.conditions.length > 0
+          ? variableFilterStore.conditions
+          : undefined,
       ids: selectionMode === 'INCLUDE' ? selectedIds : [],
       excludeIds: selectionMode === 'EXCLUDE' ? excludedIds : [],
     });

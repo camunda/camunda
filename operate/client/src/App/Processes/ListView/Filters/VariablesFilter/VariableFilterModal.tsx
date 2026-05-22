@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment, lazy, Suspense, useRef, useState} from 'react';
+import {Fragment, lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -111,8 +111,15 @@ const VariableFilterModal: React.FC = observer(() => {
   };
 
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
+  const [isEditorValid, setIsEditorValid] = useState(true);
   const editorRef = useRef<EditorRef | null>(null);
   const preEditValueRef = useRef('');
+
+  useEffect(() => {
+    if (isEditorValid) {
+      editorRef.current?.hideMarkers();
+    }
+  }, [isEditorValid]);
 
   const handleSubmit = (
     values: FormValues,
@@ -166,10 +173,7 @@ const VariableFilterModal: React.FC = observer(() => {
             secondaryButtonText="Cancel"
             onRequestSubmit={() => {
               if (isEditing) {
-                const editorValue =
-                  form.getState().values?.['conditions']?.[editingRowIndex]
-                    ?.value ?? '';
-                if (!editorValue.trim() || isValidJSON(editorValue)) {
+                if (isEditorValid) {
                   setEditingRowIndex(null);
                 } else {
                   editorRef.current?.showMarkers();
@@ -218,11 +222,7 @@ const VariableFilterModal: React.FC = observer(() => {
                         <RichTextEditor
                           value={editorInput.value}
                           onChange={editorInput.onChange}
-                          onValidate={(valid) => {
-                            if (valid) {
-                              editorRef.current?.hideMarkers();
-                            }
-                          }}
+                          onValidate={setIsEditorValid}
                           onMount={(editor) => {
                             editorRef.current = editor;
                           }}

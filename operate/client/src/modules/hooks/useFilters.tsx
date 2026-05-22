@@ -11,8 +11,6 @@ import {updateProcessFiltersSearchString} from 'modules/utils/filter';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 
-import {variableFilterStore} from 'modules/stores/variableFilter';
-
 const useFilters = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,27 +39,10 @@ const useFilters = () => {
 
   const setFilters = (filters: ProcessInstanceFilters) => {
     setFiltersToURL(filters);
-    if (
-      filters.variableName !== undefined &&
-      filters.variableValues !== undefined
-    ) {
-      variableFilterStore.setVariable({
-        name: filters.variableName,
-        values: filters.variableValues,
-      });
-    }
   };
 
   const getFilters = () => {
-    return {
-      ...getProcessInstanceFilters(location.search),
-      ...(variableFilterStore.state.variable !== undefined
-        ? {
-            variableName: variableFilterStore.state.variable?.name,
-            variableValues: variableFilterStore.state.variable?.values,
-          }
-        : {}),
-    };
+    return getProcessInstanceFilters(location.search);
   };
 
   return {

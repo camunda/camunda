@@ -12,14 +12,14 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import type {Variable} from 'modules/stores/variableFilter';
+import type {VariableCondition} from 'modules/stores/variableFilter';
+import {buildVariableEntry} from 'modules/hooks/processInstancesSearch';
 
 type BuildMutationRequestBodyParams = {
   searchParams: URLSearchParams;
   includeIds?: string[];
   excludeIds?: string[];
-  variableFilter?: Variable;
+  conditions?: VariableCondition[];
   processDefinitionKey?: string;
 };
 
@@ -27,7 +27,7 @@ const buildMutationRequestBody = ({
   searchParams,
   includeIds = [],
   excludeIds = [],
-  variableFilter,
+  conditions,
   processDefinitionKey,
 }: BuildMutationRequestBodyParams) => {
   const baseFilter = parseProcessInstancesSearchFilter(searchParams);
@@ -47,21 +47,11 @@ const buildMutationRequestBody = ({
     };
   }
 
-  if (variableFilter?.name && variableFilter?.values) {
-    const parsed = (getValidVariableValues(variableFilter.values) ?? []).map(
-      (v) => JSON.stringify(v),
-    );
-    if (parsed.length > 0) {
-      filter = {
-        ...filter,
-        variables: [
-          {
-            name: variableFilter.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ],
-      };
-    }
+  if (conditions && conditions.length > 0) {
+    filter = {
+      ...filter,
+      variables: conditions.map(buildVariableEntry),
+    };
   }
 
   const requestBody:

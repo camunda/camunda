@@ -167,25 +167,11 @@ test.describe('Process Instances Filters', () => {
       await sleep(200);
     });
 
-    await test.step('Add Variable Filter', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('123');
-    });
-
-    await test.step('Open json editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
-      await expect(
-        operateFiltersPanelPage.dialogEditVariableValueText,
-      ).toBeVisible();
-      await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123'),
-      ).toBeVisible();
-    });
-
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
+    await test.step('Add Variable Filter via modal', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '123');
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
@@ -195,9 +181,6 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-          await operateFiltersPanelPage.fillVariableValueFilter('123');
         },
       });
       await expect(
@@ -216,28 +199,33 @@ test.describe('Process Instances Filters', () => {
       ).toBeHidden();
     });
 
-    await test.step('Switch to multiple mode and add multiple variables', async () => {
-      await operateFiltersPanelPage.clickMultipleVariablesSwitch();
-      await operateFiltersPanelPage.variableNameFilter.fill('filtersTest');
-      await operateFiltersPanelPage.variableValueFilter.fill('123, 456');
-    });
-
-    await test.step('Open editor modal and check content', async () => {
-      await operateFiltersPanelPage.clickJsonEditorModal();
+    await test.step('Re-open modal and verify JSON editor', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.openJsonEditorForRow(0);
       await expect(
-        operateFiltersPanelPage.dialogEditMultipleVariableValueText,
+        operateFiltersPanelPage.variableFilterDialog.getByText(
+          'Edit value: filtersTest',
+        ),
       ).toBeVisible();
       await expect(
-        operateFiltersPanelPage.variableEditorDialog.getByText('123, 456'),
+        operateFiltersPanelPage.variableFilterDialog.getByText('123'),
       ).toBeVisible();
+      await operateFiltersPanelPage.cancelVariableFilterModal();
+      await operateFiltersPanelPage.cancelVariableFilterModal();
     });
 
-    await test.step('Close modal', async () => {
-      await operateFiltersPanelPage.closeModalWithCancel();
-      await expect(operateFiltersPanelPage.variableEditorDialog).toBeHidden();
+    await test.step('Edit condition to use oneOf operator for multiple values', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.selectOperator(0, 'is one of');
+      await operateFiltersPanelPage.fillConditionRow(
+        0,
+        'filtersTest',
+        '[123, 456]',
+      );
+      await operateFiltersPanelPage.applyVariableFilter();
     });
 
-    await test.step('Check that process instances table is filtered correctly', async () => {
+    await test.step('Check that oneOf filter matches both values', async () => {
       await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
@@ -410,9 +398,10 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Filter by variable and assert results', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('604');
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '604');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
@@ -678,9 +667,10 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('sound');
-      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'sound', '"meow"');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       await waitForAssertion({
         assertion: async () => {
@@ -785,9 +775,10 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-      await operateFiltersPanelPage.fillVariableValueFilter('604');
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage.fillConditionRow(0, 'filtersTest', '604');
+      await operateFiltersPanelPage.applyVariableFilter();
 
       await waitForAssertion({
         assertion: async () => {
@@ -804,7 +795,6 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateFiltersPanelPage.processInstanceKeysFilter,
       ).toBeHidden();
-      await expect(operateFiltersPanelPage.variableNameFilter).toBeHidden();
       await operateFiltersPanelPage.validateCheckedState(
         [
           operateFiltersPanelPage.activeInstancesCheckbox,
