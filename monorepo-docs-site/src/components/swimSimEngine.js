@@ -503,8 +503,12 @@ export function crashNode(sim, nodeId) {
   const node = sim.nodes.get(nodeId);
   if (!node || node.state === 'crashed') return;
   node.state = 'crashed';
-  sim.eventQueue.removeWhere(e => e.nodeId === nodeId);
+  sim.eventQueue.removeWhere(e => e.nodeId === nodeId || e.from === nodeId || e.to === nodeId);
   sim.inFlightMessages = sim.inFlightMessages.filter(m => m.from !== nodeId && m.to !== nodeId);
+  sim.nodes.forEach(n => {
+    n.probeOrder = n.probeOrder.filter(id => id !== nodeId);
+    n.deadNodes = n.deadNodes.filter(id => id !== nodeId);
+  });
   sim.faultInjectedAt = sim.simTime;
   sim.firstDetectTime = null;
   sim.convergeTime = null;
