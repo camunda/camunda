@@ -145,7 +145,7 @@ If the module has sub-modules, target the specific sub-module where the code liv
 
 Any pre-existing failure here must be noted before the session begins — do not absorb it silently.
 
-Warnings are fatal. Never suppress a warning to make a build pass.
+Never suppress warnings or failures to force a build to pass.
 
 ```bash
 # Fast inner loop (single module / affected tests only) to iterate quickly
@@ -218,11 +218,9 @@ Load extra context on demand — only when relevant, only if the files exist.
 - `<module>/docs/adr/` — module-scoped architectural decisions
 - `<module>/AGENTS.md` — module-specific behavioral rules (only exists for complex modules with
   rules that differ from this file)
-
-If the module is a sub-module (e.g. `zeebe/engine`), also check each parent module up to the repo
-root for the same files (e.g. `zeebe/docs/architecture.md`, `zeebe/docs/adr/`, `zeebe/AGENTS.md`).
-Parent context is lower priority than the sub-module's own context; the sub-module's files take
-precedence on any conflicting guidance.
+- If working in a sub-module (e.g. `zeebe/engine`), also check each parent module up to the repo
+  root for the same files. Parent context is lower priority; the sub-module's files take precedence
+  on any conflict.
 
 ### Code style
 
@@ -247,7 +245,7 @@ precedence on any conflicting guidance.
 
 ### Pull request conventions
 
-- PR title follows conventional commit format (e.g., `feat: add user validation`)
+- PR title should clearly describe the change type (e.g., `feat: add user validation`, `fix: correct timeout handling`)
 - Reference the issue number in the description (e.g., `Closes #1234`)
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
