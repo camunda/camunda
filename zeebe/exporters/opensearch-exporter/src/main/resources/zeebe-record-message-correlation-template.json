@@ -54,6 +54,9 @@
             },
             "businessId": {
               "type": "keyword"
+            },
+            "toolName": {
+              "type": "keyword"
             }
           }
         }
