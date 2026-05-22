@@ -41,7 +41,7 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 **Authorizations are disabled** (`camunda.security.authorizations.enabled: false`). The PoC bypasses the `WebAppAuthorizationCheckFilter` denial so users reach `/operate` without grant rows — seeding admin grants via `camunda.security.initialization.mappingRules` would have required the broker engine to run, which interacts badly with PT broker partitioning in this branch and is orthogonal to the security-chain story this PoC validates.
 
-**Per-PT CSRF cookie isolation.** The CSRF cookie is shared at `Path=/` across all chains. Tenant boundaries are enforced by the per-PT session cookie's path, so this is acceptable security-wise (the CSRF token is a same-origin proof, not a tenant credential), but cross-tab UX papers cuts apply on logout + auth rotation (Task 45 follow-up).
+**Multi-tab CSRF cookie loss on logout.** The CSRF cookie is shared at `Path=/` across all chains, so logging out in one tab deletes the cookie for every other open tab and the next state-changing request from those tabs fails. Needs further investigation — likely either PT-scoped CSRF cookies or not clearing the cookie on logout. Tracked as Task 45.
 
 ## Prerequisites
 
