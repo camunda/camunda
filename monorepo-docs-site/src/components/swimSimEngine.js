@@ -130,7 +130,9 @@ function enqueueGossipUpdate(node, entry) {
   const existing = node.gossipQueue.find(e => e.memberId === entry.memberId);
   if (existing) {
     if (entry.incarnation > existing.incarnation ||
-        (entry.incarnation === existing.incarnation && stateRank(entry.state) > stateRank(existing.state))) {
+        (entry.incarnation === existing.incarnation && stateRank(entry.state) > stateRank(existing.state)) ||
+        (entry.incarnation === existing.incarnation && entry.state === existing.state &&
+         (entry.propertyVersion ?? 0) > (existing.propertyVersion ?? 0))) {
       Object.assign(existing, entry, { sendCount: 0 });
     }
   } else {
@@ -486,6 +488,7 @@ function checkConvergence(sim) {
   const ref = aliveNodes[0];
   for (const node of aliveNodes.slice(1)) {
     for (const [id, refEntry] of ref.membershipView.entries()) {
+      if (id === node.id) continue;
       const target = sim.nodes.get(id);
       if (!target || target.state === 'crashed') continue;
       const entry = node.membershipView.get(id);
@@ -503,7 +506,7 @@ export function crashNode(sim, nodeId) {
   const node = sim.nodes.get(nodeId);
   if (!node || node.state === 'crashed') return;
   node.state = 'crashed';
-  sim.eventQueue.removeWhere(e => e.nodeId === nodeId || e.from === nodeId || e.to === nodeId);
+  sim.eventQueue.removeWhere(e => e.nodeId === nodeId || e.from === nodeId);
   sim.inFlightMessages = sim.inFlightMessages.filter(m => m.from !== nodeId && m.to !== nodeId);
   sim.nodes.forEach(n => {
     n.probeOrder = n.probeOrder.filter(id => id !== nodeId);
@@ -519,6 +522,11 @@ export function restoreNode(sim, nodeId) {
   const node = sim.nodes.get(nodeId);
   if (!node || node.state !== 'crashed') return;
   node.state = 'alive';
+  sim.nodes.forEach(n => {
+    if (n.id !== nodeId && n.state === 'alive' && !n.probeOrder.includes(nodeId)) {
+      n.probeOrder.push(nodeId);
+    }
+  });
   node.incarnationNumber++;
   node.suspectSince.clear();
   sim.eventQueue.push({ type: 'GOSSIP_TICK', simTime: sim.simTime + sim.params.gossipInterval, nodeId });
