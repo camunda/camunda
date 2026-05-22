@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef} from 'react';
+import {useMemo, useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
@@ -25,6 +25,8 @@ import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariableValueCell} from './VariableValueCell';
+import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
+import {DownloadDocumentButton} from './DownloadDocumentButton';
 
 type Props = {
   scopeId: string | null;
@@ -49,92 +51,113 @@ const VariablesTable: React.FC<Props> = ({
     isFetchingNextPage,
   } = useVariables();
 
+  const processedVariables = useMemo(() => {
+    const allVariables =
+      variablesData?.pages.flatMap((page) => page.items) ?? [];
+
+    return allVariables.map((variable) => ({
+      name: variable.name,
+      value: variable.value,
+      variableKey: variable.variableKey,
+      isTruncated: Boolean(variable.isTruncated),
+      documentResult: parseDocumentVariable(
+        variable.value,
+        Boolean(variable.isTruncated),
+      ),
+    }));
+  }, [variablesData]);
+
   const isEditMode = (variableName: string) =>
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
     isVariableModificationAllowed;
 
-  const rows =
-    variablesData?.pages?.flatMap((page) =>
-      page.items.map(({name, value, variableKey, isTruncated}) => ({
-        key: name,
-        dataTestId: `variable-${name}`,
-        columns: [
-          {
-            cellContent: (
-              <VariableName title={name} ref={variableNameRef}>
-                {name}
-              </VariableName>
-            ),
-            width: '35%',
-          },
-          {
-            cellContent: isEditMode(name) ? (
-              <ExistingVariableValue
-                id={variableKey}
+  const rows = processedVariables.map(
+    ({name, value, variableKey, isTruncated, documentResult}) => ({
+      key: name,
+      dataTestId: `variable-${name}`,
+      columns: [
+        {
+          cellContent: (
+            <VariableName title={name} ref={variableNameRef}>
+              {name}
+            </VariableName>
+          ),
+          width: '35%',
+        },
+        {
+          cellContent: isEditMode(name) ? (
+            <ExistingVariableValue
+              id={variableKey}
+              variableName={name}
+              variableValue={value}
+              // TODO #46571: Verify if it's really optional
+              isPreview={Boolean(isTruncated)}
+            />
+          ) : (
+            <VariableValueCell
+              variableKey={variableKey}
+              variableName={name}
+              value={value}
+              documentResult={documentResult}
+              isTruncated={isTruncated}
+              isModificationModeEnabled={isModificationModeEnabled}
+              isProcessInstanceRunning={isProcessInstanceRunning}
+            />
+          ),
+          width: 'auto',
+        },
+        {
+          cellContent: (
+            <Operations>
+              <ViewFullVariableButton
                 variableName={name}
-                variableValue={value}
-                // TODO #46571: Verify if it's really optional
-                isPreview={Boolean(isTruncated)}
-              />
-            ) : (
-              <VariableValueCell
                 variableKey={variableKey}
-                variableName={name}
-                value={value}
-                isTruncated={isTruncated}
-                isModificationModeEnabled={isModificationModeEnabled}
-                isProcessInstanceRunning={isProcessInstanceRunning}
+                variableValue={value}
+                mode={isEditMode(name) ? 'edit' : 'show'}
+                canEdit={
+                  !isModificationModeEnabled && !!isProcessInstanceRunning
+                }
               />
-            ),
-            width: 'auto',
-          },
-          {
-            cellContent: (
-              <Operations>
-                <ViewFullVariableButton
+              {(() => {
+                if (isModificationModeEnabled || !isProcessInstanceRunning) {
+                  return null;
+                }
+
+                if (initialValues?.name === name) {
+                  return <EditButtons />;
+                }
+
+                return (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    tooltipPosition="top"
+                    iconDescription="Edit"
+                    aria-label={`Edit variable ${name}`}
+                    disabled={isFetchingNextPage || form.getState().submitting}
+                    onClick={async () => {
+                      form.reset({name, value, variableKey});
+                      form.change('value', value);
+                    }}
+                    hasIconOnly
+                    renderIcon={Edit}
+                  />
+                );
+              })()}
+              {documentResult?.type === 'single' && (
+                <DownloadDocumentButton
+                  documentLink={documentResult.document.link}
+                  fileName={documentResult.document.fileName}
                   variableName={name}
-                  variableKey={variableKey}
-                  variableValue={value}
-                  mode={isEditMode(name) ? 'edit' : 'show'}
-                  canEdit={
-                    !isModificationModeEnabled && !!isProcessInstanceRunning
-                  }
                 />
-                {(() => {
-                  if (isModificationModeEnabled || !isProcessInstanceRunning) {
-                    return null;
-                  }
-
-                  if (initialValues?.name === name) {
-                    return <EditButtons />;
-                  }
-
-                  return (
-                    <Button
-                      kind="ghost"
-                      size="sm"
-                      tooltipPosition="top"
-                      iconDescription="Edit"
-                      aria-label={`Edit variable ${name}`}
-                      disabled={
-                        isFetchingNextPage || form.getState().submitting
-                      }
-                      onClick={async () => {
-                        form.reset({name, value, variableKey});
-                        form.change('value', value);
-                      }}
-                      hasIconOnly
-                      renderIcon={Edit}
-                    />
-                  );
-                })()}
-              </Operations>
-            ),
-            width: '120px',
-          },
-        ],
-      })),
-    ) ?? [];
+              )}
+            </Operations>
+          ),
+          width: '150px',
+        },
+      ],
+    }),
+  );
 
   return (
     <StructuredList
@@ -142,7 +165,7 @@ const VariablesTable: React.FC<Props> = ({
       headerColumns={[
         {cellContent: 'Name', width: '35%'},
         {cellContent: 'Value', width: 'auto'},
-        {cellContent: '', width: '120px'},
+        {cellContent: '', width: '150px'},
       ]}
       headerSize="sm"
       verticalCellPadding="var(--cds-spacing-02)"
@@ -196,7 +219,7 @@ const VariablesTable: React.FC<Props> = ({
                             />
                           </Operations>
                         ),
-                        width: '120px',
+                        width: '150px',
                       },
                     ],
                   }))}

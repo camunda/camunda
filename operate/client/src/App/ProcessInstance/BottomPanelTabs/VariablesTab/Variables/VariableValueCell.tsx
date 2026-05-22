@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
+import type {DocumentParseResult} from './DocumentValueCell/parseDocumentVariable';
 import {DocumentValueCell} from './DocumentValueCell';
 
 type Props = {
   variableKey: string;
   variableName: string;
   value: string;
+  documentResult: DocumentParseResult | null;
   isTruncated: boolean | null;
   isModificationModeEnabled: boolean | undefined;
   isProcessInstanceRunning: boolean | undefined;
@@ -26,16 +26,12 @@ const VariableValueCell: React.FC<Props> = ({
   variableKey,
   variableName,
   value,
+  documentResult,
   isTruncated,
   isModificationModeEnabled,
   isProcessInstanceRunning,
 }) => {
   const {refetch} = useVariable(variableKey, {enabled: false});
-
-  const documentResult = useMemo(
-    () => parseDocumentVariable(value, Boolean(isTruncated)),
-    [value, isTruncated],
-  );
 
   if (documentResult !== null) {
     return <DocumentValueCell result={documentResult} />;
