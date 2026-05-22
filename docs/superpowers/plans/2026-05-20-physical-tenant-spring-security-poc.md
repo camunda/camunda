@@ -2051,6 +2051,8 @@ Bump Task 19 to ✅ done in `pt-poc-README.md`'s Status table when complete.
 
 ## Task 20: CSL — install DefaultLoginPageGeneratingFilter on the OidcWebapp chain
 
+**Upstream issue:** [camunda/camunda-security-library#269](https://github.com/camunda/camunda-security-library/issues/269).
+
 **Goal:** Make the unprefixed `/login` URL render a multi-IdP picker for OIDC deployments without each host having to ship its own controller. Today CSL's `OidcWebappSecurityConfiguration` sets a custom `AuthenticationEntryPoint`, which trips Spring Security 7's `DefaultLoginPageConfigurer.configure()` gate (auto-picker is only added when `exceptionHandling.authenticationEntryPoint == null`). Net effect: CSL ships no picker; every host that runs OIDC with multiple `ClientRegistration`s has to render `/login` themselves.
 
 **Files:**
