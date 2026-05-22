@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
@@ -159,6 +160,8 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.INCIDENT -> new IncidentRecord();
       case ValueType.TIMER -> new TimerRecord();
       case ValueType.MESSAGE_START_EVENT_SUBSCRIPTION -> new MessageStartEventSubscriptionRecord();
+      case ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST ->
+          new MessageStartProcessInstanceRequestRecord();
       case ValueType.VARIABLE -> new VariableRecord();
       case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
       case ValueType.CLUSTER_VARIABLE -> new ClusterVariableRecord();
