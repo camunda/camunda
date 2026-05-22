@@ -44,6 +44,8 @@ import DashboardCopyIcon from './DashboardCopyIcon.svg';
 
 import './DashboardView.scss';
 
+const AGENTIC_CONTROL_PLANE_DASHBOARD_ID = 'agentic-control-plane-dashboard';
+
 export function DashboardView(props) {
   const {
     id,
@@ -70,6 +72,7 @@ export function DashboardView(props) {
   const [deleting, setDeleting] = useState(null);
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
+  const [processScope, setProcessScope] = useState(null);
   const fullScreenHandle = useFullScreenHandle();
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const {userSearchAvailable} = useUiConfig();
@@ -79,6 +82,19 @@ export function DashboardView(props) {
   const {mightFail} = useErrorHandling();
   const history = useHistory();
   const {user} = useUser();
+  const isAgenticControlPlaneDashboard = id === AGENTIC_CONTROL_PLANE_DASHBOARD_ID;
+  const additionalEvaluationContext =
+    isAgenticControlPlaneDashboard && processScope?.key
+      ? {
+          definitions: [
+            {
+              key: processScope.key,
+              name: processScope.name,
+              versions: ['all'],
+            },
+          ],
+        }
+      : undefined;
 
   const themeRef = useRef(theme);
 
@@ -245,6 +261,7 @@ export function DashboardView(props) {
                     if (filtersShown) {
                       setFiltersShown(false);
                       setFilter([]);
+                      setProcessScope(null);
                     } else {
                       setFiltersShown(true);
                       setFilter(getDefaultFilter(availableFilters));
@@ -286,6 +303,9 @@ export function DashboardView(props) {
             availableFilters={availableFilters}
             filter={filter}
             setFilter={setFilter}
+            datePresetMode={isAgenticControlPlaneDashboard ? 'agentic' : undefined}
+            processScope={processScope}
+            onProcessScopeChange={setProcessScope}
           />
         )}
         <Deleter
@@ -296,7 +316,9 @@ export function DashboardView(props) {
         />
         <div className="content">
           <DashboardRenderer
-            loadTile={evaluateReport}
+            loadTile={(reportOrId, activeFilter, params) =>
+              evaluateReport(reportOrId, activeFilter, params, additionalEvaluationContext)
+            }
             tiles={tiles}
             filter={filter}
             disableNameLink={disableNameLink}

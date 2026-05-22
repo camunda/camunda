@@ -15,9 +15,12 @@ export type Definition = {
 
 export async function loadDefinitions(
   type: string,
-  collectionId: string | null
+  collectionId: string | null,
+  query: Record<string, string | boolean> = {}
 ): Promise<Definition[]> {
-  const params: {filterByCollectionScope?: string} = {};
+  const params: {filterByCollectionScope?: string} & Record<string, string | boolean> = {
+    ...query,
+  };
 
   if (collectionId) {
     params.filterByCollectionScope = collectionId;
