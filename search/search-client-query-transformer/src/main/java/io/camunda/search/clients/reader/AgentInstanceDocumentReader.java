@@ -14,12 +14,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-/**
- * Elasticsearch/OpenSearch-backed document reader for agent instances.
- *
- * <p>Full implementation will be covered in <a
- * href="https://github.com/camunda/camunda/issues/52817">#52817</a>.
- */
 public class AgentInstanceDocumentReader extends DocumentBasedReader
     implements AgentInstanceReader {
 
@@ -31,14 +25,19 @@ public class AgentInstanceDocumentReader extends DocumentBasedReader
   @Override
   public AgentInstanceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException(
-        "AgentInstanceDocumentReader is not yet implemented; see https://github.com/camunda/camunda/issues/52817");
+    return getSearchExecutor()
+        .getByQuery(
+            AgentInstanceQuery.of(b -> b.filter(f -> f.agentInstanceKeys(key)).singleResult()),
+            io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.class);
   }
 
   @Override
   public SearchQueryResult<AgentInstanceEntity> search(
       final AgentInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException(
-        "AgentInstanceDocumentReader is not yet implemented; see https://github.com/camunda/camunda/issues/52817");
+    return getSearchExecutor()
+        .search(
+            query,
+            io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.class,
+            resourceAccessChecks);
   }
 }
