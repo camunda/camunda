@@ -36,5 +36,8 @@ spectral-tests/
    new `describe` block to an existing test file when the rule is closely
    related (e.g. `properties-added-in-version-shape` lives in
    `verifyAddedInVersion.test.js`).
-3. Run `node --test spectral-tests/<ruleName>.test.js` to verify.
+3. Run the test file you touched to verify — either the new
+   `node --test spectral-tests/<ruleName>.test.js`, or the existing one you
+   added the `describe` block to (e.g.
+   `node --test spectral-tests/verifyAddedInVersion.test.js`).
 

@@ -822,7 +822,13 @@ If you add a new endpoint without this annotation, CI will fail with a message s
 Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
 ```
 
-The shape of `x-properties-added-in-version` (see below) is enforced by the `properties-added-in-version-shape` Spectral rule (severity `error`): each entry must be an object with exactly `propertyName` (non-empty string) and `addedInVersion` (matching `^[0-9]+\.[0-9]+(\.[0-9]+)?$`), no other keys. Typos like `propertyame` or extra fields fail the file-level lint pass. Whether the annotation is _correct_ (right property, right version) is checked separately by the CI verifier linked below.
+The shape of `x-properties-added-in-version` (see below) is enforced by the
+`properties-added-in-version-shape` Spectral rule (severity `error`): each entry
+must be an object with exactly `propertyName` (non-empty string) and
+`addedInVersion` (matching `^[0-9]+\.[0-9]+(\.[0-9]+)?$`), no other keys.\
+Typos like `propertyame` or extra fields fail the file-level lint pass. Whether
+the annotation is _correct_ (right property, right version) is checked
+separately by the CI verifier linked below.
 
 #### Property-level annotation rules
 
