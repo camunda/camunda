@@ -20,11 +20,6 @@ on:
       - '**/pom.xml'
       - 'bom/**'
       - 'parent/**'
-      - '**/package-lock.json'
-      - '**/yarn.lock'
-      - 'clients/go/go.sum'
-      - 'clients/go/go.mod'
-      - 'Dockerfile'
 
 defaults:
   run:
@@ -33,8 +28,6 @@ defaults:
 jobs:
   submit-maven-snapshot:
     name: "Security / Submit Maven Dependency Snapshot"
-    # Fork PRs have no Vault access and cannot resolve internal Maven artifacts.
-    if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
