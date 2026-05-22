@@ -372,4 +372,236 @@ function handleProbeReceived(sim, event, wallTime) {
     payload: { type: 'PROBE_ACK' },
   });
 }
+
+// ── Sync ──────────────────────────────────────────────────────────────────────
+
+function serializeView(node) {
+  return [...node.membershipView.entries()].map(([id, v]) => ({ memberId: id, ...v }));
+}
+
+function handleSyncTick(sim, node, wallTime) {
+  const target = pick(node.probeOrder, []);
+  if (target !== null && !isPartitioned(sim, node.id, target)) {
+    sim.msgCount++;
+    const view = serializeView(node);
+    sim.inFlightMessages.push({
+      id: sim.nextMsgId++, from: node.id, to: target, label: 'S⇄', color: 'var(--viz-msg-sync)',
+      startWallTime: wallTime, durationMs: 400,
+      payload: { type: 'SYNC', view },
+    });
+    sim.eventQueue.push({
+      type: 'MSG_DELIVER', simTime: sim.simTime + 1, from: node.id, to: target,
+      payload: { type: 'SYNC', view },
+    });
+  }
+  sim.eventQueue.push({ type: 'SYNC_TICK', simTime: sim.simTime + sim.params.syncInterval, nodeId: node.id });
+}
+
+function handleSyncReceived(sim, from, to, view, wallTime) {
+  const node = sim.nodes.get(to);
+  if (!node || node.state === 'crashed') return;
+  for (const entry of view) {
+    if (entry.memberId !== to) handleGossipReceived(sim, from, to, [entry]);
+  }
+  if (!isPartitioned(sim, to, from)) {
+    sim.msgCount++;
+    const responseView = serializeView(node);
+    sim.inFlightMessages.push({
+      id: sim.nextMsgId++, from: to, to: from, label: 'S⇄', color: 'var(--viz-msg-sync)',
+      startWallTime: wallTime, durationMs: 400,
+      payload: { type: 'SYNC_RESPONSE', view: responseView },
+    });
+    sim.eventQueue.push({
+      type: 'MSG_DELIVER', simTime: sim.simTime + 1, from: to, to: from,
+      payload: { type: 'SYNC_RESPONSE', view: responseView },
+    });
+  }
+}
+
+// ── Message dispatch ──────────────────────────────────────────────────────────
+
+function handleMsgDeliver(sim, event, wallTime) {
+  const { from, to, payload } = event;
+  const node = sim.nodes.get(to);
+  if (!node || node.state === 'crashed' || isPartitioned(sim, from, to)) return;
+
+  switch (payload.type) {
+    case 'GOSSIP': handleGossipReceived(sim, from, to, payload.entries); break;
+    case 'PROBE':  handleProbeReceived(sim, event, wallTime); break;
+    case 'PROBE_ACK': {
+      // `from` = node that ACKed (was probed), `to` = original prober
+      const prober = sim.nodes.get(to);
+      if (!prober) break;
+      // Resurrection: prober had `from` in its deadNodes list
+      const deadIdx = prober.deadNodes.indexOf(from);
+      if (deadIdx !== -1) {
+        prober.deadNodes.splice(deadIdx, 1);
+        const newIncarnation = (sim.nodes.get(from)?.incarnationNumber ?? 0) + 1;
+        prober.membershipView.set(from, { state: 'alive', incarnation: newIncarnation, propertyVersion: 0 });
+        if (!prober.probeOrder.includes(from)) { prober.probeOrder.push(from); shuffle(prober.probeOrder); }
+        logEvent(sim, `N${to}: N${from} resurrected`);
+        enqueueGossipUpdate(prober, { memberId: from, state: 'alive', incarnation: newIncarnation });
+      } else {
+        // Normal ACK — clear any pending suspicion
+        const view = prober.membershipView.get(from);
+        if (view && view.state === 'suspect') {
+          view.state = 'alive';
+          prober.suspectSince.delete(from);
+          logEvent(sim, `N${to} cleared suspicion of N${from}`);
+        }
+      }
+      break;
+    }
+    case 'PROBE_REQUEST': {
+      // We are an indirect prober — probe `suspect` on behalf of `coordinator`
+      const { suspect } = payload;
+      if (isPartitioned(sim, to, suspect)) break;
+      sim.msgCount++;
+      sim.inFlightMessages.push({
+        id: sim.nextMsgId++, from: to, to: suspect, label: 'P→', color: 'var(--viz-msg-probe)',
+        startWallTime: wallTime, durationMs: 300,
+        payload: { type: 'PROBE' },
+      });
+      sim.eventQueue.push({
+        type: 'MSG_DELIVER', simTime: sim.simTime + 1, from: to, to: suspect,
+        payload: { type: 'PROBE' },
+      });
+      break;
+    }
+    case 'SYNC':          handleSyncReceived(sim, from, to, payload.view, wallTime); break;
+    case 'SYNC_RESPONSE': {
+      for (const entry of payload.view) handleGossipReceived(sim, from, to, [entry]);
+      break;
+    }
+  }
+}
+
+// ── Convergence ───────────────────────────────────────────────────────────────
+
+function checkConvergence(sim) {
+  if (sim.convergeTime !== null || sim.faultInjectedAt === null) return;
+  const aliveNodes = [...sim.nodes.values()].filter(n => n.state === 'alive');
+  if (aliveNodes.length < 2) return;
+
+  const ref = aliveNodes[0];
+  for (const node of aliveNodes.slice(1)) {
+    for (const [id, refEntry] of ref.membershipView.entries()) {
+      const target = sim.nodes.get(id);
+      if (!target || target.state === 'crashed') continue;
+      const entry = node.membershipView.get(id);
+      if (!entry || entry.state !== refEntry.state || (entry.propertyVersion ?? 0) !== (refEntry.propertyVersion ?? 0)) return;
+    }
+  }
+
+  sim.convergeTime = sim.simTime - sim.faultInjectedAt;
+  logEvent(sim, `Cluster converged (all nodes agree)`);
+}
+
+// ── Fault injection ───────────────────────────────────────────────────────────
+
+export function crashNode(sim, nodeId) {
+  const node = sim.nodes.get(nodeId);
+  if (!node || node.state === 'crashed') return;
+  node.state = 'crashed';
+  sim.eventQueue.removeWhere(e => e.nodeId === nodeId);
+  sim.inFlightMessages = sim.inFlightMessages.filter(m => m.from !== nodeId && m.to !== nodeId);
+  sim.faultInjectedAt = sim.simTime;
+  sim.firstDetectTime = null;
+  sim.convergeTime = null;
+  logEvent(sim, `N${nodeId} crashed`);
+}
+
+export function restoreNode(sim, nodeId) {
+  const node = sim.nodes.get(nodeId);
+  if (!node || node.state !== 'crashed') return;
+  node.state = 'alive';
+  node.incarnationNumber++;
+  node.suspectSince.clear();
+  sim.eventQueue.push({ type: 'GOSSIP_TICK', simTime: sim.simTime + sim.params.gossipInterval, nodeId });
+  sim.eventQueue.push({ type: 'PROBE_TICK',  simTime: sim.simTime + sim.params.probeInterval,  nodeId });
+  sim.eventQueue.push({ type: 'SYNC_TICK',   simTime: sim.simTime + sim.params.syncInterval,   nodeId });
+  enqueueGossipUpdate(node, { memberId: nodeId, state: 'alive', incarnation: node.incarnationNumber });
+  logEvent(sim, `N${nodeId} restored (incarnation ${node.incarnationNumber})`);
+}
+
+export function injectPropertyUpdate(sim, nodeId) {
+  const node = sim.nodes.get(nodeId);
+  if (!node || node.state !== 'alive') return;
+  node.propertyVersion++;
+  enqueueGossipUpdate(node, {
+    memberId: nodeId, state: 'alive', incarnation: node.incarnationNumber,
+    propertyVersion: node.propertyVersion, isPropertyUpdate: true,
+  });
+  sim.faultInjectedAt = sim.simTime;
+  sim.firstDetectTime = null;
+  sim.convergeTime = null;
+  logEvent(sim, `N${nodeId} property update v${node.propertyVersion}`);
+}
+
+export function addPartition(sim, from, to) {
+  sim.partitions.add(`${from}-${to}`);
+  logEvent(sim, `Partition: N${from} → N${to} blocked`);
+}
+
+export function clearPartitions(sim) {
+  sim.partitions.clear();
+  logEvent(sim, 'All partitions cleared');
+}
+
+export function setGossipExcluded(sim, nodeId, excluded) {
+  const node = sim.nodes.get(nodeId);
+  if (node) {
+    node.gossipExcluded = excluded;
+    logEvent(sim, `N${nodeId} gossip ${excluded ? 'excluded' : 'restored'}`);
+  }
+}
+
+// ── Main simulation loop ──────────────────────────────────────────────────────
+
+export function advanceSim(sim, targetSimTime, wallTime) {
+  while (!sim.eventQueue.isEmpty() && sim.eventQueue.peek().simTime <= targetSimTime) {
+    const event = sim.eventQueue.pop();
+    sim.simTime = event.simTime;
+    const node = event.nodeId !== undefined ? sim.nodes.get(event.nodeId) : null;
+    if (node && node.state === 'crashed' && event.type !== 'MSG_DELIVER') continue;
+
+    switch (event.type) {
+      case 'GOSSIP_TICK':      if (node) handleGossipTick(sim, node, wallTime); break;
+      case 'PROBE_TICK':       if (node) handleProbeTick(sim, node, wallTime); break;
+      case 'PROBE_TIMEOUT':    handleProbeTimeout(sim, event, wallTime); break;
+      case 'INDIRECT_TIMEOUT': handleIndirectTimeout(sim, event, wallTime); break;
+      case 'FAILURE_TIMEOUT':  handleFailureTimeout(sim, event); break;
+      case 'SYNC_TICK':        if (node) handleSyncTick(sim, node, wallTime); break;
+      case 'MSG_DELIVER':      handleMsgDeliver(sim, event, wallTime); break;
+    }
+    checkConvergence(sim);
+  }
+  sim.simTime = targetSimTime;
+  sim.inFlightMessages = sim.inFlightMessages.filter(m => wallTime - m.startWallTime < m.durationMs + 100);
+}
+
+// ── Snapshot (for React rendering) ───────────────────────────────────────────
+
+export function captureSnapshot(sim, wallTime) {
+  return {
+    simTime: sim.simTime,
+    roundCount: sim.roundCount,
+    msgCount: sim.msgCount,
+    firstDetectTime: sim.firstDetectTime,
+    convergeTime: sim.convergeTime,
+    hasPartitions: sim.partitions.size > 0,
+    partitions: [...sim.partitions],
+    eventLog: [...sim.eventLog],
+    nodes: [...sim.nodes.values()].map(n => ({
+      id: n.id,
+      state: n.state,
+      propertyVersion: n.propertyVersion,
+      gossipExcluded: n.gossipExcluded,
+      view: new Map([...n.membershipView.entries()]),
+    })),
+    messages: sim.inFlightMessages.map(m => {
+      const progress = Math.min(1, (wallTime - m.startWallTime) / m.durationMs);
+      return { ...m, progress };
+    }).filter(m => m.progress >= 0 && m.progress <= 1),
+  };
 }
