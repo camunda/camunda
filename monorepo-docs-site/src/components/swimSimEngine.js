@@ -212,3 +212,164 @@ function handleGossipReceived(sim, from, to, entries) {
     }
   }
 }
+
+// ── Failure detection ─────────────────────────────────────────────────────────
+
+function sendProbe(sim, from, to, wallTime) {
+  if (isPartitioned(sim, from, to)) return;
+  sim.msgCount++;
+  sim.inFlightMessages.push({
+    id: sim.nextMsgId++, from, to, label: 'P→', color: 'var(--viz-msg-probe)',
+    startWallTime: wallTime, durationMs: 300,
+    payload: { type: 'PROBE' },
+  });
+  sim.eventQueue.push({ type: 'MSG_DELIVER', simTime: sim.simTime + 1, from, to, payload: { type: 'PROBE' } });
+}
+
+function handleProbeTick(sim, node, wallTime) {
+  // Probe one alive peer via shuffle + round-robin through probeOrder
+  if (node.probeOrder.length > 0) {
+    const idx = node.probeCounter % node.probeOrder.length;
+    node.probeCounter++;
+    const targetId = node.probeOrder[idx];
+    const target = sim.nodes.get(targetId);
+    if (target && target.state !== 'crashed') {
+      sendProbe(sim, node.id, targetId, wallTime);
+      sim.eventQueue.push({
+        type: 'PROBE_TIMEOUT', simTime: sim.simTime + sim.params.probeTimeout,
+        from: node.id, to: targetId,
+      });
+    }
+  }
+  // Also probe one dead node per tick (resurrection check).
+  // If it responds, the PROBE_ACK handler detects it's in deadNodes and resurrects it.
+  if (node.deadNodes.length > 0) {
+    const idx = node.deadProbeCounter % node.deadNodes.length;
+    node.deadProbeCounter++;
+    const deadId = node.deadNodes[idx];
+    sendProbe(sim, node.id, deadId, wallTime);
+  }
+  sim.eventQueue.push({ type: 'PROBE_TICK', simTime: sim.simTime + sim.params.probeInterval, nodeId: node.id });
+}
+
+function handleProbeTimeout(sim, event, wallTime) {
+  const { from, to } = event;
+  const prober = sim.nodes.get(from);
+  if (!prober || prober.state === 'crashed') return;
+  const target = sim.nodes.get(to);
+  if (!target) return;
+
+  // Send indirect probe requests to suspectProbes-1 random peers.
+  // Each peer receives a PROBE_REQUEST carrying the suspect's ID.
+  const indirectPeers = pickN(
+    [...sim.nodes.values()]
+      .filter(n => n.id !== from && n.id !== to && n.state === 'alive')
+      .map(n => n.id),
+    sim.params.suspectProbes - 1
+  );
+
+  if (indirectPeers.length === 0) {
+    markSuspect(sim, prober, to, wallTime);
+    return;
+  }
+
+  indirectPeers.forEach(pid => {
+    if (isPartitioned(sim, from, pid)) return;
+    sim.msgCount++;
+    sim.inFlightMessages.push({
+      id: sim.nextMsgId++, from, to: pid, label: 'PR→', color: '#e65100',
+      startWallTime: wallTime, durationMs: 300,
+      payload: { type: 'PROBE_REQUEST', suspect: to, coordinator: from },
+    });
+    sim.eventQueue.push({
+      type: 'MSG_DELIVER', simTime: sim.simTime + 1, from, to: pid,
+      payload: { type: 'PROBE_REQUEST', suspect: to, coordinator: from },
+    });
+  });
+
+  sim.eventQueue.push({
+    type: 'INDIRECT_TIMEOUT', simTime: sim.simTime + sim.params.probeTimeout * 2,
+    from, to,
+  });
+}
+
+function handleIndirectTimeout(sim, event, wallTime) {
+  const { from, to } = event;
+  const prober = sim.nodes.get(from);
+  if (!prober || prober.state === 'crashed') return;
+  markSuspect(sim, prober, to, wallTime);
+}
+
+function markSuspect(sim, prober, targetId, wallTime) {
+  const view = prober.membershipView.get(targetId);
+  if (!view || view.state !== 'alive') return;
+
+  view.state = 'suspect';
+  prober.suspectSince.set(targetId, sim.simTime);
+  logEvent(sim, `N${prober.id} suspects N${targetId}`);
+
+  if (sim.faultInjectedAt !== null && sim.firstDetectTime === null) {
+    sim.firstDetectTime = sim.simTime - sim.faultInjectedAt;
+  }
+
+  const entry = { memberId: targetId, state: 'suspect', incarnation: view.incarnation };
+  enqueueGossipUpdate(prober, entry);
+
+  if (sim.params.broadcastDisputes) {
+    [...sim.nodes.values()]
+      .filter(n => n.id !== prober.id && n.state === 'alive' && !isPartitioned(sim, prober.id, n.id))
+      .forEach(n => sendGossip(sim, prober.id, n.id, [entry], wallTime));
+  }
+
+  if (sim.params.notifySuspect) {
+    sendProbe(sim, prober.id, targetId, wallTime);
+  }
+
+  sim.eventQueue.push({
+    type: 'FAILURE_TIMEOUT', simTime: sim.simTime + sim.params.failureTimeout,
+    from: prober.id, to: targetId,
+  });
+}
+
+function handleFailureTimeout(sim, event) {
+  const { from, to } = event;
+  const prober = sim.nodes.get(from);
+  if (!prober || prober.state === 'crashed') return;
+  const view = prober.membershipView.get(to);
+  if (!view || view.state !== 'suspect') return;
+
+  view.state = 'dead';
+  logEvent(sim, `N${from} declares N${to} DEAD`);
+
+  prober.probeOrder = prober.probeOrder.filter(id => id !== to);
+  shuffle(prober.probeOrder);
+  if (!prober.deadNodes.includes(to)) prober.deadNodes.push(to);
+
+  const entry = { memberId: to, state: 'dead', incarnation: view.incarnation };
+  enqueueGossipUpdate(prober, entry);
+
+  if (sim.params.broadcastDisputes) {
+    [...sim.nodes.values()]
+      .filter(n => n.id !== from && n.state === 'alive' && !isPartitioned(sim, from, n.id))
+      .forEach(n => sendGossip(sim, from, n.id, [entry], 0));
+  }
+}
+
+function handleProbeReceived(sim, event, wallTime) {
+  const { from, to } = event;
+  // `from` = prober, `to` = us (the probed node)
+  const target = sim.nodes.get(to);
+  if (!target || target.state === 'crashed' || isPartitioned(sim, to, from)) return;
+
+  sim.msgCount++;
+  sim.inFlightMessages.push({
+    id: sim.nextMsgId++, from: to, to: from, label: 'P✓', color: 'var(--viz-gossip-update)',
+    startWallTime: wallTime, durationMs: 300,
+    payload: { type: 'PROBE_ACK' },
+  });
+  sim.eventQueue.push({
+    type: 'MSG_DELIVER', simTime: sim.simTime + 1, from: to, to: from,
+    payload: { type: 'PROBE_ACK' },
+  });
+}
+}
