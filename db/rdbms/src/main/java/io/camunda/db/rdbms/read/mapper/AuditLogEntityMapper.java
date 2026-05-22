@@ -24,6 +24,7 @@ public class AuditLogEntityMapper {
         .actorType(auditLogDbModel.actorType())
         .actorId(auditLogDbModel.actorId())
         .agentElementId(auditLogDbModel.agentElementId())
+        .agentToolName(auditLogDbModel.agentToolName())
         .tenantId(auditLogDbModel.tenantId())
         .tenantScope(auditLogDbModel.tenantScope())
         .result(auditLogDbModel.result())

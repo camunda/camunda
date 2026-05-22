@@ -18,6 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -166,7 +167,8 @@ public class ProcessesToolRepository implements ToolRepository {
                   UUID.randomUUID().toString(),
                   arguments,
                   entity.tenantId()),
-              authenticationProvider.getCamundaAuthentication()),
+              authenticationProvider.getCamundaAuthentication(),
+              Map.of(Authorization.INBOUND_TOOL_NAME, entity.toolName())),
           record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
     };
   }

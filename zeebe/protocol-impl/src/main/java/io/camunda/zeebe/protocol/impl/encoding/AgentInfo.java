@@ -19,10 +19,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class AgentInfo extends UnpackedObject implements Agent {
 
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final StringProperty toolNameProp = new StringProperty("toolName", "");
 
   public AgentInfo() {
-    super(1);
+    super(2);
     declareProperty(elementIdProp);
+    declareProperty(toolNameProp);
   }
 
   @Override
@@ -36,8 +38,20 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   @Override
+  public String getToolName() {
+    final var value = BufferUtil.bufferAsString(toolNameProp.getValue());
+    return value.isEmpty() ? null : value;
+  }
+
+  public AgentInfo setToolName(final String toolName) {
+    toolNameProp.setValue(toolName);
+    return this;
+  }
+
+  @Override
   public void reset() {
     elementIdProp.setValue("");
+    toolNameProp.setValue("");
   }
 
   @Override
@@ -68,7 +82,12 @@ public class AgentInfo extends UnpackedObject implements Agent {
 
   public static AgentInfo of(final Agent agent) {
     if (agent != null) {
-      return new AgentInfo().setElementId(agent.getElementId());
+      final var info = new AgentInfo().setElementId(agent.getElementId());
+      final var toolName = agent.getToolName();
+      if (toolName != null) {
+        info.setToolName(toolName);
+      }
+      return info;
     } else {
       return null;
     }

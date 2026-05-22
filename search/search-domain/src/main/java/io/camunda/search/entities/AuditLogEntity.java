@@ -25,6 +25,7 @@ public record AuditLogEntity(
     @Nullable String actorId,
     @Nullable AuditLogActorType actorType,
     @Nullable String agentElementId,
+    @Nullable String agentToolName,
     @Nullable String tenantId,
     @Nullable AuditLogTenantScope tenantScope,
     AuditLogOperationResult result,
@@ -76,6 +77,7 @@ public record AuditLogEntity(
     private @Nullable String actorId;
     private @Nullable AuditLogActorType actorType;
     private @Nullable String agentElementId;
+    private @Nullable String agentToolName;
     private @Nullable String tenantId;
     private @Nullable AuditLogTenantScope tenantScope;
     private @Nullable AuditLogOperationResult result;
@@ -147,6 +149,11 @@ public record AuditLogEntity(
 
     public Builder agentElementId(final String agentElementId) {
       this.agentElementId = agentElementId;
+      return this;
+    }
+
+    public Builder agentToolName(final String agentToolName) {
+      this.agentToolName = agentToolName;
       return this;
     }
 
@@ -279,6 +286,7 @@ public record AuditLogEntity(
           actorId,
           actorType,
           agentElementId,
+          agentToolName,
           tenantId,
           tenantScope,
           result,

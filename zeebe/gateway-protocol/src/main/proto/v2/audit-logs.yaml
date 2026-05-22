@@ -85,6 +85,7 @@ components:
         - actorId
         - actorType
         - agentElementId
+        - agentToolName
         - tenantId
         - result
         - category
@@ -143,6 +144,10 @@ components:
         agentElementId:
           type: string
           description: The element ID of the agent that performed the operation (e.g. ad-hoc subprocess element ID).
+          nullable: true
+        agentToolName:
+          type: string
+          description: The tool name that initiated the agent interaction (e.g. the MCP tool name).
           nullable: true
         tenantId:
           allOf:
@@ -345,6 +350,10 @@ components:
             - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
         agentElementId:
           description: The agent element ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        agentToolName:
+          description: The agent tool name search filter.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         entityKey:

@@ -27,6 +27,7 @@ public record AuditLogFilter(
     List<Operation<String>> actorTypeOperations,
     List<Operation<String>> actorIdOperations,
     List<Operation<String>> agentElementIdOperations,
+    List<Operation<String>> agentToolNameOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> resultOperations,
     List<Operation<String>> categoryOperations,
@@ -66,6 +67,7 @@ public record AuditLogFilter(
         .actorTypeOperations(actorTypeOperations)
         .actorIdOperations(actorIdOperations)
         .agentElementIdOperations(agentElementIdOperations)
+        .agentToolNameOperations(agentToolNameOperations)
         .tenantIdOperations(tenantIdOperations)
         .resultOperations(resultOperations)
         .categoryOperations(categoryOperations)
@@ -99,6 +101,7 @@ public record AuditLogFilter(
     private List<Operation<String>> actorTypeOperations;
     private List<Operation<String>> actorIdOperations;
     private List<Operation<String>> agentElementIdOperations;
+    private List<Operation<String>> agentToolNameOperations;
     private List<Operation<String>> tenantIdOperations;
     private List<Operation<String>> resultOperations;
     private List<Operation<String>> categoryOperations;
@@ -224,6 +227,17 @@ public record AuditLogFilter(
 
     public Builder agentElementIds(final String value, final String... values) {
       return agentElementIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder agentToolNameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        agentToolNameOperations = addValuesToList(agentToolNameOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder agentToolNames(final String value, final String... values) {
+      return agentToolNameOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
@@ -482,6 +496,7 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(actorTypeOperations, List.of()),
           Objects.requireNonNullElse(actorIdOperations, List.of()),
           Objects.requireNonNullElse(agentElementIdOperations, List.of()),
+          Objects.requireNonNullElse(agentToolNameOperations, List.of()),
           Objects.requireNonNullElse(tenantIdOperations, List.of()),
           Objects.requireNonNullElse(resultOperations, List.of()),
           Objects.requireNonNullElse(categoryOperations, List.of()),

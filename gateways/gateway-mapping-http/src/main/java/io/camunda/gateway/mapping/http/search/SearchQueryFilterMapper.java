@@ -1237,6 +1237,9 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getAgentElementId())
         .map(mapToStringOperations())
         .ifPresent(builder::agentElementIdOperations);
+    ofNullable(filter.getAgentToolName())
+        .map(mapToStringOperations())
+        .ifPresent(builder::agentToolNameOperations);
     ofNullable(filter.getEntityType())
         .map(
             mapToStringOperations(

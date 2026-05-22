@@ -58,6 +58,10 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String agentElementId;
 
+  // the tool name that initiated the agent interaction (e.g. the MCP tool name)
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String agentToolName;
+
   // marks if the operations was successful or failed
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationResult result;
@@ -228,6 +232,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setAgentElementId(final String agentElementId) {
     this.agentElementId = agentElementId;
+    return this;
+  }
+
+  public String getAgentToolName() {
+    return agentToolName;
+  }
+
+  public AuditLogEntity setAgentToolName(final String agentToolName) {
+    this.agentToolName = agentToolName;
     return this;
   }
 

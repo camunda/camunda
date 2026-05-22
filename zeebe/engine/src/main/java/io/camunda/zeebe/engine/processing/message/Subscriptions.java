@@ -44,7 +44,8 @@ public final class Subscriptions {
             subscription.getProcessInstanceKey(),
             0L,
             subscription.getProcessDefinitionKey(),
-            true);
+            true,
+            subscription.getStartEventId());
     addSubscriptionInternal(newSubscription);
   }
 
@@ -110,7 +111,8 @@ public final class Subscriptions {
       long processInstanceKey,
       long elementInstanceKey,
       long processDefinitionKey,
-      boolean isStartEventSubscription) {
+      boolean isStartEventSubscription,
+      @org.jspecify.annotations.Nullable String startEventId) {
     /* clone the bpmnProcessId buffer */
     public static Subscription cloned(
         final DirectBuffer bpmnProcessId,
@@ -118,12 +120,29 @@ public final class Subscriptions {
         final long elementInstanceKey,
         final long processDefinitionKey,
         final boolean isStartEventSubscription) {
+      return cloned(
+          bpmnProcessId,
+          processInstanceKey,
+          elementInstanceKey,
+          processDefinitionKey,
+          isStartEventSubscription,
+          null);
+    }
+
+    public static Subscription cloned(
+        final DirectBuffer bpmnProcessId,
+        final long processInstanceKey,
+        final long elementInstanceKey,
+        final long processDefinitionKey,
+        final boolean isStartEventSubscription,
+        final @org.jspecify.annotations.Nullable String startEventId) {
       return new Subscription(
           wrapInBufferIfNeeded(cloneBuffer(bpmnProcessId)),
           processInstanceKey,
           elementInstanceKey,
           processDefinitionKey,
-          isStartEventSubscription);
+          isStartEventSubscription,
+          startEventId);
     }
 
     /* Copy without cloning, buffer is already cloned */
@@ -133,7 +152,8 @@ public final class Subscriptions {
           subscription.processInstanceKey(),
           subscription.elementInstanceKey(),
           subscription.processDefinitionKey(),
-          subscription.isStartEventSubscription);
+          subscription.isStartEventSubscription,
+          subscription.startEventId());
     }
   }
 

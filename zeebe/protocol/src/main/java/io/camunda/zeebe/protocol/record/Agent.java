@@ -45,4 +45,16 @@ public interface Agent {
    * @return the elementId
    */
   String getElementId();
+
+  /**
+   * Returns the tool name that initiated this agent interaction.
+   *
+   * <p>For example, the MCP tool name used to start a process via message correlation.
+   *
+   * @return the tool name, or null if not set
+   */
+  @edu.umd.cs.findbugs.annotations.Nullable
+  default String getToolName() {
+    return null;
+  }
 }
