@@ -168,7 +168,8 @@ class AnalyticsExporterTest {
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
             .setClusterId("test-cluster")
-            .setPartitionId(1);
+            .setPartitionId(1)
+            .setLicenseKey("test-license-key");
 
     // when
     new AnalyticsExporter().configure(context);

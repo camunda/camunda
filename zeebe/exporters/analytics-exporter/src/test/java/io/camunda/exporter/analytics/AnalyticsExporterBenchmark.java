@@ -20,7 +20,6 @@ import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
-import io.opentelemetry.sdk.resources.Resource;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -70,8 +69,10 @@ public class AnalyticsExporterBenchmark {
         }
       };
 
-  private AnalyticsExporter exporterWithHandler;
-  private ExporterTestController controller;
+  private AnalyticsExporter exporterWithSigning;
+  private AnalyticsExporter exporterWithoutSigning;
+  private ExporterTestController controllerSigning;
+  private ExporterTestController controllerNoSigning;
   private Record<?> piCreatedRecord;
   private Record<?> jobRecord;
 
@@ -88,29 +89,11 @@ public class AnalyticsExporterBenchmark {
                     .withIntent(ProcessInstanceCreationIntent.CREATED));
     jobRecord = factory.generateRecord(ValueType.JOB);
 
-    controller = new ExporterTestController();
+    controllerSigning = new ExporterTestController();
+    controllerNoSigning = new ExporterTestController();
 
-    // Exporter with a no-op OTel backend (handler match + SDK emit, no I/O)
-    final var noopManager =
-        new OtelSdkManager() {
-          @Override
-          protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg, final Resource resource) {
-            return SdkLoggerProvider.builder()
-                .setResource(resource)
-                .addLogRecordProcessor(SimpleLogRecordProcessor.create(NOOP_EXPORTER))
-                .build();
-          }
-        };
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics-bench", new AnalyticsExporterConfig()))
-            .setClusterId("bench-cluster")
-            .setPartitionId(1);
-    exporterWithHandler = new AnalyticsExporter(noopManager);
-    exporterWithHandler.configure(context);
-    exporterWithHandler.open(controller);
+    exporterWithSigning = createExporter(controllerSigning, true);
+    exporterWithoutSigning = createExporter(controllerNoSigning, false);
   }
 
   /**
@@ -119,18 +102,51 @@ public class AnalyticsExporterBenchmark {
    */
   @Benchmark
   public void exportUnmatchedRecord() {
-    exporterWithHandler.export(jobRecord);
+    exporterWithSigning.export(jobRecord);
   }
 
-  /** Handler match path: PROCESS_INSTANCE_CREATION EVENT triggers OTel emit via no-op backend. */
+  /** Handler match with HMAC signing enabled (default). Measures crypto overhead per export. */
   @Benchmark
-  public void exportPiCreatedRecord() {
-    exporterWithHandler.export(piCreatedRecord);
+  public void exportPiCreatedWithSigning() {
+    exporterWithSigning.export(piCreatedRecord);
+  }
+
+  /** Handler match with signing disabled (fingerprint-only). Baseline for comparison. */
+  @Benchmark
+  public void exportPiCreatedWithoutSigning() {
+    exporterWithoutSigning.export(piCreatedRecord);
   }
 
   @TearDown
   public void tearDown() {
-    exporterWithHandler.close();
+    exporterWithSigning.close();
+    exporterWithoutSigning.close();
+  }
+
+  private static AnalyticsExporter createExporter(
+      final ExporterTestController controller, final boolean signing) {
+    final var noopManager =
+        new OtelSdkManager() {
+          @Override
+          protected SdkLoggerProvider createLoggerProvider(
+              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
+            return SdkLoggerProvider.builder()
+                .setResource(OtelSdkManager.buildResource(context))
+                .addLogRecordProcessor(SimpleLogRecordProcessor.create(NOOP_EXPORTER))
+                .build();
+          }
+        };
+    final var config = new AnalyticsExporterConfig().setSigning(signing);
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("analytics-bench", config))
+            .setClusterId("bench-cluster")
+            .setPartitionId(1)
+            .setLicenseKey("bench-license-key");
+    final var exporter = new AnalyticsExporter(noopManager);
+    exporter.configure(context);
+    exporter.open(controller);
+    return exporter;
   }
 
   /**

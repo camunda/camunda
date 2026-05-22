@@ -155,6 +155,11 @@ public final class ExporterTest {
       return "";
     }
 
+    @Override
+    public String getLicenseKey() {
+      return null;
+    }
+
     public RecordFilter getFilter() {
       return filter;
     }

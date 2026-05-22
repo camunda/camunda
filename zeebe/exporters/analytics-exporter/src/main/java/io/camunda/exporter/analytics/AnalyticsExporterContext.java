@@ -31,6 +31,7 @@ final class AnalyticsExporterContext {
 
   private static final String SHA_256 = "SHA-256";
   private static final String HMAC_SHA_256 = "HmacSHA256";
+  private static final String CANONICAL_FORMAT = "%s|%s|%s";
   private static final HexFormat HEX = HexFormat.of();
 
   private final String fingerprint;
@@ -49,7 +50,7 @@ final class AnalyticsExporterContext {
   static AnalyticsExporterContext create(
       final String licenseKey, final String clusterId, final int partitionId) {
     if (licenseKey == null || licenseKey.isBlank()) {
-      throw new IllegalStateException("CAMUNDA_LICENSE_KEY is required for the analytics exporter");
+      throw new IllegalArgumentException("licenseKey must not be null or blank");
     }
     try {
       final var keyBytes = licenseKey.getBytes(StandardCharsets.UTF_8);
@@ -61,8 +62,7 @@ final class AnalyticsExporterContext {
       throw new IllegalStateException(
           "JVM does not support required crypto algorithms (SHA-256 or HmacSHA256)", e);
     } catch (final InvalidKeyException e) {
-      throw new IllegalStateException(
-          "License key is not valid for HMAC signing — check CAMUNDA_LICENSE_KEY format", e);
+      throw new IllegalStateException("License key is not valid for HMAC signing", e);
     }
   }
 
@@ -85,7 +85,7 @@ final class AnalyticsExporterContext {
    */
   Map<String, String> computeSignatureHeaders() {
     final var timestamp = String.valueOf(Instant.now().getEpochSecond());
-    final var canonical = fingerprint + "|" + clusterId + "|" + timestamp;
+    final var canonical = CANONICAL_FORMAT.formatted(fingerprint, clusterId, timestamp);
     final byte[] sig;
     synchronized (signer) {
       sig = signer.doFinal(canonical.getBytes(StandardCharsets.UTF_8));

@@ -26,8 +26,6 @@ import org.slf4j.Logger;
 /** Encapsulates context associated with the exporter on open. */
 public interface Context {
 
-  String CAMUNDA_LICENSE_KEY_ENV_VAR = "CAMUNDA_LICENSE_KEY";
-
   MeterRegistry getMeterRegistry();
 
   /**
@@ -69,14 +67,11 @@ public interface Context {
   String getClusterId();
 
   /**
-   * Returns the Camunda license key, or {@code null} if not configured. Falls back to the {@code
-   * CAMUNDA_LICENSE_KEY} environment variable for brokers that don't provide it via the context.
+   * Returns the Camunda license key, or {@code null} if not configured.
    *
    * @return the license key, or {@code null} if not available.
    */
-  default String getLicenseKey() {
-    return System.getenv(CAMUNDA_LICENSE_KEY_ENV_VAR);
-  }
+  String getLicenseKey();
 
   /**
    * Apply the given filter to limit the records which are exported.

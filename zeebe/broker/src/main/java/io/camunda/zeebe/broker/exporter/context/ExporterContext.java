@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 
 public final class ExporterContext implements Context, AutoCloseable {
 
+  private static final String LICENSE_KEY_ENV_VAR = "CAMUNDA_LICENSE_KEY";
   private static final RecordFilter DEFAULT_FILTER = new AcceptAllRecordsFilter();
 
   private final Logger logger;
@@ -80,6 +81,12 @@ public final class ExporterContext implements Context, AutoCloseable {
   @Override
   public String getClusterId() {
     return clusterId;
+  }
+
+  @Override
+  public String getLicenseKey() {
+    final var fromEnv = System.getenv(LICENSE_KEY_ENV_VAR);
+    return fromEnv != null ? fromEnv : System.getProperty(LICENSE_KEY_ENV_VAR);
   }
 
   public RecordFilter getFilter() {
