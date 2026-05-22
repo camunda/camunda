@@ -43,7 +43,7 @@ module.
 | `identity/`        | Authentication and authorization                                                         |
 | `optimize/`        | Process analytics (skipped with `-Dquickly`)                                             |
 | `db/`              | Database layer (rdbms, rdbms-schema)                                                     |
-| `search/`          | Search client abstraction (Elasticsearch, OpenSearch)                                    |
+| `search/`          | Search client abstraction (Elasticsearch, OpenSearch, RDBMS)                             |
 | `service/`         | Domain service layer between REST controllers and engine                                 |
 | `clients/`         | Client libraries (Java, Spring Boot starters)                                            |
 | `gateways/`        | Gateway implementations (HTTP mapping, MCP)                                              |
@@ -73,7 +73,7 @@ module.
 
 - Run full-repo builds for single-module work
 - Commit secrets, tokens, or credentials
-- Force-push `main`
+- Force-push `main`, `stable/` or `release-` branches
 - Skip formatting checks
 
 ### Architecture
