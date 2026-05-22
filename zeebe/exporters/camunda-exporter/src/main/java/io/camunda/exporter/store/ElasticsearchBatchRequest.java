@@ -12,8 +12,14 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction.Builder;
+import co.elastic.clients.json.JsonpMapper;
+import co.elastic.clients.util.BinaryData;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -21,10 +27,12 @@ import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.exporter.utils.NdJsonSizeUtil;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,25 +40,31 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("rawtypes")
 public class ElasticsearchBatchRequest implements BatchRequest {
   public static final int UPDATE_RETRY_COUNT = 3;
-
+  private static final long DEFAULT_MAX_BULK_BYTES = 20L * 1024 * 1024;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
   private final ElasticsearchScriptBuilder scriptBuilder;
+  private final JsonpMapper jsonpMapper;
+  private final List<SizedOperation> operations = new ArrayList<>();
+  private long maxBulkBytes = DEFAULT_MAX_BULK_BYTES;
   private CamundaExporterMetrics metrics;
 
   public ElasticsearchBatchRequest(
-      final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
-      final ElasticsearchScriptBuilder scriptBuilder) {
+      final ElasticsearchClient esClient, final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
-    this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+    jsonpMapper = esClient._jsonpMapper();
   }
 
   @Override
   public BatchRequest withMetrics(final CamundaExporterMetrics metrics) {
     this.metrics = metrics;
+    return this;
+  }
+
+  @Override
+  public BatchRequest withMaxBytes(final long maxBulkBytes) {
+    this.maxBulkBytes = maxBulkBytes;
     return this;
   }
 
@@ -62,7 +76,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
-    bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(index).id(id).document(entity)));
+    addIndexOp(index, id, null, entity);
     return this;
   }
 
@@ -71,10 +85,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
-    bulkRequestBuilder.operations(
-        op ->
-            op.index(idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
-
+    addIndexOp(index, entity.getId(), routing, entity);
     return this;
   }
 
@@ -101,17 +112,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(a -> a.doc(updateFields).upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
+    addUpdateOp(index, id, routing, a -> a.doc(updateFields).upsert(entity));
     return this;
   }
 
@@ -141,20 +142,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         entity,
         script,
         parameters);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters))
-                                    .upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
+    addUpdateOp(
+        index,
+        id,
+        routing,
+        a -> a.script(scriptBuilder.getScriptWithParameters(script, parameters)).upsert(entity));
     return this;
   }
 
@@ -163,32 +155,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(updateFields))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
+    addUpdateOp(index, id, null, a -> a.doc(updateFields));
     return this;
   }
 
   @Override
   public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
+    addUpdateOp(index, id, null, a -> a.doc(entity));
     return this;
   }
 
@@ -204,25 +178,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         script,
         parameters);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters)))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
+    addUpdateOp(
+        index, id, null, a -> a.script(scriptBuilder.getScriptWithParameters(script, parameters)));
     return this;
   }
 
   @Override
   public BatchRequest delete(final String index, final String id) {
     LOGGER.debug("Add delete request for index {} and id {}", index, id);
-    bulkRequestBuilder.operations(op -> op.delete(del -> del.index(index).id(id)));
+    addDeleteOp(index, id, null);
     return this;
   }
 
@@ -230,7 +194,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
     LOGGER.debug(
         "Add delete index request with routing {} for index {} and entity {} ", routing, index, id);
-    bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(index).id(id).routing(routing)));
+    addDeleteOp(index, id, routing);
     return this;
   }
 
@@ -245,16 +209,93 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(null, true);
   }
 
+  private void addIndexOp(
+      final String index, final String id, final String routing, final ExporterEntity entity) {
+    final BinaryData binaryDoc = BinaryData.of(entity, jsonpMapper);
+    final IndexOperation<Object> indexOp =
+        IndexOperation.of(i -> i.index(index).id(id).routing(routing).document(binaryDoc));
+    addOperation(BulkOperation.of(b -> b.index(indexOp)), binaryDoc.size());
+  }
+
+  private void addUpdateOp(
+      final String index,
+      final String id,
+      final String routing,
+      final Function<Builder<Object, Object>, ?> actionBuilder) {
+    final UpdateAction<Object, Object> action =
+        UpdateAction.of(
+            b -> {
+              actionBuilder.apply(b);
+              return b;
+            });
+    final BinaryData binaryAction = BinaryData.of(action, jsonpMapper);
+    final BulkOperation op =
+        BulkOperation.of(
+            b ->
+                b.update(
+                    u ->
+                        u.index(index)
+                            .id(id)
+                            .routing(routing)
+                            .retryOnConflict(UPDATE_RETRY_COUNT)
+                            .binaryAction(binaryAction)));
+    addOperation(op, binaryAction.size());
+  }
+
+  private void addDeleteOp(final String index, final String id, final String routing) {
+    final BulkOperation op =
+        BulkOperation.of(b -> b.delete(d -> d.index(index).id(id).routing(routing)));
+    addOperation(op, 0L);
+  }
+
+  private void addOperation(final BulkOperation op, final long payloadBytes) {
+    operations.add(new SizedOperation(op, payloadBytes));
+  }
+
   private void execute(
       final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
-    if (shouldRefresh) {
-      bulkRequestBuilder.refresh(Refresh.True);
-    }
-    final BulkRequest bulkRequest = bulkRequestBuilder.build();
-    if (bulkRequest.operations().isEmpty()) {
+    if (operations.isEmpty()) {
       return;
     }
+    for (final List<BulkOperation> chunk : chunkByBytes(operations, maxBulkBytes)) {
+      executeChunk(chunk, shouldRefresh, customErrorHandlers);
+    }
+  }
+
+  static List<List<BulkOperation>> chunkByBytes(
+      final List<SizedOperation> ops, final long maxBytes) {
+    final List<List<BulkOperation>> chunks = new ArrayList<>();
+    List<BulkOperation> current = new ArrayList<>();
+    long currentBytes = 0L;
+    for (final SizedOperation sized : ops) {
+      if (!current.isEmpty() && currentBytes + sized.sizeBytes() > maxBytes) {
+        chunks.add(current);
+        current = new ArrayList<>();
+        currentBytes = 0L;
+      }
+      current.add(sized.operation());
+      currentBytes += sized.sizeBytes();
+    }
+    if (!current.isEmpty()) {
+      chunks.add(current);
+    }
+    return chunks;
+  }
+
+  private void executeChunk(
+      final List<BulkOperation> chunkOps,
+      final boolean shouldRefresh,
+      final BiConsumer<String, Error> customErrorHandlers)
+      throws PersistenceException {
+    if (chunkOps.isEmpty()) {
+      return;
+    }
+    final BulkRequest.Builder builder = new BulkRequest.Builder().operations(chunkOps);
+    if (shouldRefresh) {
+      builder.refresh(Refresh.True);
+    }
+    final BulkRequest bulkRequest = builder.build();
     try {
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
@@ -353,6 +394,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
           measureEx.getMessage());
     }
   }
+
+  record SizedOperation(BulkOperation operation, long sizeBytes) {}
 
   private record ErrorValues(List<String> indexes, List<String> ids) {}
 
