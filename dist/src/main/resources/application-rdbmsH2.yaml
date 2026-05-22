@@ -10,4 +10,12 @@ camunda:
         password:
 logging:
   level:
-    io.camunda.db.rdbms: DEBUG
+    # Silenced for the pt-poc profile (which activates rdbmsH2 via the profile group): under PT
+    # broker partitioning the rdbms exporter is wired as a single bean against the default tenant's
+    # data source, so both PartitionManagers race on the same H2 EXPORTER_POSITION row and emit
+    # noisy "expected -1 but found N" errors on every flush. The PoC accepts that gap (real fix is
+    # PT-aware exporter wiring beyond PoC scope — see Task 18 spec note); silencing the loggers
+    # keeps the boot log readable. Pre-PoC default was DEBUG; revert if rdbmsH2 ever needs SQL
+    # tracing again.
+    io.camunda.db.rdbms: OFF
+    io.camunda.exporter.rdbms: OFF

@@ -87,7 +87,8 @@ logging:
     io.camunda.authentication: DEBUG
     io.camunda.security: DEBUG
     io.camunda.application: DEBUG
-    io.camunda.db.rdbms: WARN
+    io.camunda.db.rdbms: OFF
+    io.camunda.exporter.rdbms: OFF
 
 # NOTE: the consolidated-auth profile is pulled in by the spring.profiles.group.pt-poc
 # declaration in application.properties — Spring Boot 2.4+ forbids
