@@ -104,11 +104,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
-    if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
-    }
-    checksumCollection.updateFromBytes(
-        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    getChecksumCollection()
+        .updateFromBytes(snapshotFile.getFileName().toString(), snapshotChunk.getContent());
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
@@ -280,16 +277,20 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(
-              directory,
-              snapshotId,
-              Objects.requireNonNull(checksumCollection, "checksumCollection"),
-              metadata);
+              directory, snapshotId, getChecksumCollection(), metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private SfvChecksumImpl getChecksumCollection() {
+    if (checksumCollection == null) {
+      checksumCollection = new SfvChecksumImpl();
+    }
+    return checksumCollection;
   }
 
   @Override
