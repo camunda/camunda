@@ -106,6 +106,7 @@ import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateAgentInstanceCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -289,6 +290,7 @@ import io.camunda.client.impl.command.UnassignRoleFromUserCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.client.impl.command.UpdateAgentInstanceCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
@@ -1715,6 +1717,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateAgentInstanceCommandStep1 newCreateAgentInstanceCommand() {
     return new CreateAgentInstanceCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateAgentInstanceCommandStep1 newUpdateAgentInstanceCommand(
+      final long agentInstanceKey) {
+    return new UpdateAgentInstanceCommandImpl(agentInstanceKey, httpClient, jsonMapper);
   }
 
   @Override

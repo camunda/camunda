@@ -311,4 +311,330 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .is5xxServerError();
   }
+
+  @Test
+  void shouldUpdateAgentInstanceWithStatus() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "status": "THINKING"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(agentInstanceServices)
+        .updateAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
+                  assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                  assertThat(record.getStatus().name()).isEqualTo("THINKING");
+                  assertThat(record.getChangedAttributes()).containsExactly("status");
+                }),
+            any());
+  }
+
+  @Test
+  void shouldUpdateAgentInstanceWithMetrics() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "metrics": {
+            "inputTokens": 1000,
+            "outputTokens": 500,
+            "modelCalls": 3,
+            "toolCalls": 7
+          }
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(agentInstanceServices)
+        .updateAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(1000L);
+                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(500L);
+                  assertThat(record.getMetrics().getModelCalls()).isEqualTo(3);
+                  assertThat(record.getMetrics().getToolCalls()).isEqualTo(7);
+                  assertThat(record.getChangedAttributes()).containsExactly("metrics");
+                }),
+            any());
+  }
+
+  @Test
+  void shouldUpdateAgentInstanceWithTools() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "tools": [
+            {
+              "name": "searchDatabase",
+              "description": "Searches the database",
+              "elementId": "searchTask"
+            }
+          ]
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(agentInstanceServices)
+        .updateAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getTools()).hasSize(1);
+                  assertThat(record.getTools().get(0).getName()).isEqualTo("searchDatabase");
+                  assertThat(record.getTools().get(0).getDescription())
+                      .isEqualTo("Searches the database");
+                  assertThat(record.getTools().get(0).getElementId()).isEqualTo("searchTask");
+                  assertThat(record.getChangedAttributes()).containsExactly("tools");
+                }),
+            any());
+  }
+
+  @Test
+  void shouldUpdateAgentInstanceWithEmptyToolsList() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new AgentInstanceRecord()));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "tools": []
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(agentInstanceServices)
+        .updateAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getTools()).isEmpty();
+                  assertThat(record.getChangedAttributes()).containsExactly("tools");
+                }),
+            any());
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("invalidUpdateRequests")
+  void shouldRejectInvalidUpdateRequest(final String requestBody, final String expectedDetail) {
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "%s",
+              "instance": "/v2/agent-instances/%d"
+            }
+            """
+                .formatted(expectedDetail, AGENT_INSTANCE_KEY),
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(agentInstanceServices);
+  }
+
+  static Stream<Arguments> invalidUpdateRequests() {
+    return Stream.of(
+        Arguments.of(
+            named(
+                "missing elementInstanceKey",
+                """
+                { "status": "THINKING" }
+                """),
+            "No elementInstanceKey provided."),
+        Arguments.of(
+            named(
+                "null elementInstanceKey",
+                """
+                { "elementInstanceKey": null, "status": "THINKING" }
+                """),
+            "No elementInstanceKey provided."),
+        Arguments.of(
+            named(
+                "non-numeric elementInstanceKey",
+                """
+                { "elementInstanceKey": "not-a-number", "status": "THINKING" }
+                """),
+            "The provided elementInstanceKey 'not-a-number' is not a valid key."
+                + " Expected a numeric value."
+                + " Did you pass an entity id instead of an entity key?."),
+        Arguments.of(
+            named(
+                "no mutable fields provided",
+                """
+                { "elementInstanceKey": "%d" }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "At least one of status, metrics, tools is required."),
+        Arguments.of(
+            named(
+                "negative inputTokens delta",
+                """
+                { "elementInstanceKey": "%d", "metrics": { "inputTokens": -1 } }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "The value for metrics.inputTokens is '-1' but must be >= 0."),
+        Arguments.of(
+            named(
+                "negative outputTokens delta",
+                """
+                { "elementInstanceKey": "%d", "metrics": { "outputTokens": -5 } }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "The value for metrics.outputTokens is '-5' but must be >= 0."),
+        Arguments.of(
+            named(
+                "negative modelCalls delta",
+                """
+                { "elementInstanceKey": "%d", "metrics": { "modelCalls": -1 } }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "The value for metrics.modelCalls is '-1' but must be >= 0."),
+        Arguments.of(
+            named(
+                "negative toolCalls delta",
+                """
+                { "elementInstanceKey": "%d", "metrics": { "toolCalls": -2 } }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "The value for metrics.toolCalls is '-2' but must be >= 0."),
+        Arguments.of(
+            named(
+                "only empty metrics object",
+                """
+                { "elementInstanceKey": "%d", "metrics": {} }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "At least one of status, metrics, tools is required."),
+        Arguments.of(
+            named(
+                "tool without name",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "tools": [{ "description": "Search database" }]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "No tools[0].name provided."),
+        Arguments.of(
+            named(
+                "tool with blank name",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "tools": [{ "name": "" }]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "No tools[0].name provided."),
+        Arguments.of(
+            named(
+                "tool with null name",
+                """
+                {
+                  "elementInstanceKey": "%d",
+                  "tools": [{ "name": null }]
+                }
+                """
+                    .formatted(ELEMENT_INSTANCE_KEY)),
+            "No tools[0].name provided."));
+  }
+
+  @Test
+  void shouldReturn5xxOnUpdateServiceError() {
+    // given
+    when(agentInstanceServices.updateAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
+
+    // when / then
+    webClient
+        .patch()
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            { "elementInstanceKey": "%d", "status": "IDLE" }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY))
+        .exchange()
+        .expectStatus()
+        .is5xxServerError();
+  }
 }

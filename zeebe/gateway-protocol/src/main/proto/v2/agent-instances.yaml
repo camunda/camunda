@@ -435,6 +435,16 @@ components:
         - TOOL_CALLING
         - TOOL_DISCOVERY
 
+    AgentInstanceUpdateStatusEnum:
+      description: |
+        The status values that can be set on an agent instance via an update request.
+      type: string
+      enum:
+        - IDLE
+        - THINKING
+        - TOOL_CALLING
+        - TOOL_DISCOVERY
+
     AgentInstanceCreationRequest:
       description: Request to create a new agent instance.
       type: object
@@ -506,11 +516,20 @@ components:
         Request to update the mutable state of an agent instance. At least one of
         status, metrics, or tools must be provided.
       type: object
+      required:
+        - elementInstanceKey
       properties:
+        elementInstanceKey:
+          nullable: false
+          description: |
+            The key of the element instance associated with this agent instance.
+            Used to validate that the update targets the correct process instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         status:
           description: The new status of the agent instance.
           allOf:
-            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+            - $ref: '#/components/schemas/AgentInstanceUpdateStatusEnum'
         metrics:
           description: Metric increments to apply to the aggregate counters.
           allOf:
@@ -520,6 +539,7 @@ components:
             The complete list of tools available to the agent, replacing any previously
             stored tools. When provided, the engine replaces the existing tool list with
             this value.
+          nullable: true
           type: array
           items:
             $ref: '#/components/schemas/AgentTool'

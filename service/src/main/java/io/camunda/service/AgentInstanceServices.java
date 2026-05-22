@@ -12,6 +12,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateAgentInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateAgentInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,5 +33,10 @@ public final class AgentInstanceServices extends ApiServices<AgentInstanceServic
   public CompletableFuture<AgentInstanceRecord> createAgentInstance(
       final AgentInstanceRecord record, final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerCreateAgentInstanceRequest(record), authentication);
+  }
+
+  public CompletableFuture<AgentInstanceRecord> updateAgentInstance(
+      final AgentInstanceRecord record, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerUpdateAgentInstanceRequest(record), authentication);
   }
 }

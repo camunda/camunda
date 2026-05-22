@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.mapping.http.mapper.AgentInstanceMapper;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AgentInstanceServices;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRe
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -52,5 +55,20 @@ public class AgentInstanceController {
         () -> agentInstanceServices.createAgentInstance(record, authentication),
         mapper::toAgentInstanceCreationResult,
         HttpStatus.OK);
+  }
+
+  @CamundaPatchMapping(path = "/{agentInstanceKey}")
+  public CompletableFuture<ResponseEntity<Object>> updateAgentInstance(
+      @PathVariable final String agentInstanceKey,
+      @RequestBody final AgentInstanceUpdateRequest request) {
+    return mapper
+        .toUpdateAgentInstanceRecord(agentInstanceKey, request)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> update(final AgentInstanceRecord record) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
+        () -> agentInstanceServices.updateAgentInstance(record, authentication));
   }
 }
