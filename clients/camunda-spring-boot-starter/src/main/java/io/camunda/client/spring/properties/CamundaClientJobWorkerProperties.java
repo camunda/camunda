@@ -102,7 +102,7 @@ public class CamundaClientJobWorkerProperties {
 
   /**
    * If streaming is enabled, sets the maximum duration the worker will wait without receiving any
-   * job on the open stream before cancelling and recreating it. The timer is reset every time a job
+   * job on the open stream before canceling and recreating it. The timer is reset every time a job
    * is received. Must be strictly less than {@code streamTimeout} when both are set.
    */
   private Duration streamInactivityTimeout;
