@@ -232,7 +232,7 @@ jobs:
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
@@ -293,7 +293,7 @@ jobs:
             secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
 
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
