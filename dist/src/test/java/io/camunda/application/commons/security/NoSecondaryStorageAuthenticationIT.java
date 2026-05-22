@@ -19,7 +19,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.spring.converter.TokenClaimsConverter;
+import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -74,7 +74,7 @@ public class NoSecondaryStorageAuthenticationIT {
     context.refresh();
 
     // then - should have the no-db OIDC service implementation
-    final var oidcService = context.getBean(TokenClaimsConverter.class);
+    final var oidcService = context.getBean(LazyTokenClaimsConverter.class);
     assertThat(oidcService).isNotNull();
 
     // and - the service should work with limited functionality
@@ -116,10 +116,10 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
+    public LazyTokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
         final SecurityConfiguration securityConfiguration,
         final NoDBMembershipService noDBMembershipService) {
-      return new TokenClaimsConverter(
+      return new LazyTokenClaimsConverter(
           securityConfiguration.getAuthentication().getOidc(), noDBMembershipService);
     }
   }
