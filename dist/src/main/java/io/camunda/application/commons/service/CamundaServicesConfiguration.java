@@ -11,6 +11,7 @@ import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabl
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.search.clients.AgentInstanceSearchClient;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -251,11 +252,13 @@ public class CamundaServicesConfiguration {
   public AgentInstanceServices agentInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
+      final AgentInstanceSearchClient agentInstanceSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new AgentInstanceServices(
         brokerClient,
         securityContextProvider,
+        agentInstanceSearchClient,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }

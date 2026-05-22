@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_UNKN
 
 import io.camunda.gateway.protocol.model.*;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQuerySortRequest.FieldEnum;
+import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
@@ -1004,6 +1005,30 @@ public class SearchQuerySortRequestMapper {
         case AFTER_NON_GLOBAL -> builder.afterNonGlobal();
         case PRIORITY -> builder.priority();
         case SOURCE -> builder.source();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<SearchQuerySortRequest<AgentInstanceSearchQuerySortRequest.FieldEnum>>
+      fromAgentInstanceSearchQuerySortRequest(
+          final List<AgentInstanceSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<String> applyAgentInstanceSortField(
+      final AgentInstanceSearchQuerySortRequest.FieldEnum field,
+      final AgentInstanceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case CREATION_DATE -> builder.creationDate();
+        case LAST_UPDATED_DATE -> builder.lastUpdatedDate();
+        case COMPLETION_DATE -> builder.completionDate();
+        case STATUS -> builder.status();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

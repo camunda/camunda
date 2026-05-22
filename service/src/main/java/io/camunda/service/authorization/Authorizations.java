@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMP
 import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
 import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
 
+import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -37,6 +38,9 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.security.auth.Authorization;
 
 public abstract class Authorizations {
+
+  public static final Authorization<AgentInstanceEntity> AGENT_INSTANCE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readProcessInstance());
 
   public static final Authorization<AuthorizationEntity> AUTHORIZATION_READ_AUTHORIZATION =
       Authorization.of(a -> a.authorization().read());
