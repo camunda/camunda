@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
 
@@ -42,17 +43,20 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   }
 
   @Override
-  public ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId) {
+  public ActorFuture<@Nullable PersistedSnapshot> getLatestSnapshot(final int partitionId) {
     final var transferId = UUID.randomUUID();
     timers.put(transferId, snapshotMetrics.startTransferTimer(true));
-    final var result =
+    final ActorFuture<@Nullable PersistedSnapshot> result =
         service
             // no requirements on last processing position
             .getLatestSnapshot(partitionId, -1, transferId)
             .andThen(
                 snapshot -> {
                   if (snapshot == null) {
-                    return CompletableActorFuture.completed(null);
+                    final CompletableActorFuture<@Nullable Tuple<SnapshotChunk, ReceivedSnapshot>>
+                        nullFuture = new CompletableActorFuture<>();
+                    nullFuture.complete(null);
+                    return nullFuture;
                   }
                   return snapshotStore
                       .newReceivedSnapshot(snapshot.getSnapshotId())
@@ -66,9 +70,12 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
             .andThen(
                 tuple -> {
                   if (tuple == null) {
-                    return CompletableActorFuture.completed(null);
+                    final CompletableActorFuture<@Nullable PersistedSnapshot> nullFuture =
+                        new CompletableActorFuture<>();
+                    nullFuture.complete(null);
+                    return nullFuture;
                   }
-                  final var future =
+                  final ActorFuture<@Nullable PersistedSnapshot> future =
                       receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
                   future.onError(error -> tuple.getRight().abort());
                   return future;
@@ -86,7 +93,7 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
     return service;
   }
 
-  private ActorFuture<PersistedSnapshot> receiveAllChunks(
+  private ActorFuture<@Nullable PersistedSnapshot> receiveAllChunks(
       final int partitionId,
       final SnapshotChunk snapshotChunk,
       final ReceivedSnapshot receivedSnapshot,
@@ -103,7 +110,10 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
                 receivedSnapshot.apply(chunk);
                 return receiveAllChunks(partitionId, chunk, receivedSnapshot, transferId);
               } else {
-                return receivedSnapshot.persist();
+                @SuppressWarnings("unchecked")
+                final ActorFuture<@Nullable PersistedSnapshot> persistResult =
+                    (ActorFuture<@Nullable PersistedSnapshot>) (Object) receivedSnapshot.persist();
+                return persistResult;
               }
             },
             actor);
