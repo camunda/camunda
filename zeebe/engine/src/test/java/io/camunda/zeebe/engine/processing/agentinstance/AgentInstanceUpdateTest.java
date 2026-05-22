@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +65,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withChangedAttributes(List.of("status"))
             .update();
@@ -102,6 +104,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withMetricsDelta(99L, 88L, 7, 5)
             .withTools(tools(tool("calc", "Calculator", "calc-task")))
@@ -145,6 +148,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withMetricsDelta(1L, 1L, 1, 1)
             .withChangedAttributes(List.of("status", "metrics"))
@@ -156,7 +160,10 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
-  public void shouldRejectEmptyChangedAttributes() {
+  public void shouldRejectUpdateWithEmptyChangedAttributesAndNoElementInstanceKey() {
+    // Rejection requires BOTH conditions: changedAttributes is empty AND no elementInstanceKey
+    // was supplied (sentinel -1). An empty changedAttributes paired with a valid elementInstanceKey
+    // is a valid pure-dedupe/association call and must NOT be rejected.
     // given
     ENGINE
         .deployment()
@@ -177,7 +184,7 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getAgentInstanceKey();
 
-    // when
+    // when — no elementInstanceKey supplied (default sentinel -1), no changedAttributes
     final Record<?> rejection =
         ENGINE
             .agentInstances()
@@ -219,6 +226,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(10L, 5L, 1, 2)
             .withChangedAttributes(List.of("metrics", "metrics"))
             .update();
@@ -253,18 +261,20 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getAgentInstanceKey();
 
-    // when
-    final Record<?> rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
-            .withChangedAttributes(List.of("foo"))
-            .expectRejection()
-            .update();
+    for (final var unknownAttr : List.of("foo", "elementInstanceKey")) {
+      // when
+      final Record<?> rejection =
+          ENGINE
+              .agentInstances()
+              .withAgentInstanceKey(agentInstanceKey)
+              .withChangedAttributes(List.of(unknownAttr))
+              .expectRejection()
+              .update();
 
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("foo");
+      // then
+      assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+      assertThat(rejection.getRejectionReason()).contains(unknownAttr);
+    }
   }
 
   @Test
@@ -351,6 +361,7 @@ public class AgentInstanceUpdateTest {
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
         .withMetricsDelta(10L, 5L, 1, 0)
         .withChangedAttributes(List.of("metrics"))
         .update();
@@ -359,6 +370,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(20L, 15L, 2, 1)
             .withChangedAttributes(List.of("metrics"))
             .update();
@@ -439,6 +451,7 @@ public class AgentInstanceUpdateTest {
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
         .withMetricsDelta(10L, 20L, 1, 2)
         .withChangedAttributes(List.of("metrics"))
         .update();
@@ -448,6 +461,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(5L, -1L, -1, -1)
             .withChangedAttributes(List.of("metrics"))
             .update();
@@ -488,6 +502,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(0L, -1L, 0, -1)
             .withChangedAttributes(List.of("metrics"))
             .update();
@@ -529,6 +544,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(200L, 0L, 0, 0)
             .withChangedAttributes(List.of("metrics"))
             .update();
@@ -566,6 +582,7 @@ public class AgentInstanceUpdateTest {
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
         .withTools(firstTools)
         .withChangedAttributes(List.of("tools"))
         .update();
@@ -573,6 +590,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withTools(secondTools)
             .withChangedAttributes(List.of("tools"))
             .update();
@@ -609,6 +627,7 @@ public class AgentInstanceUpdateTest {
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
         .withTools(tools(tool("t1", "first tool", "t1-elem")))
         .withChangedAttributes(List.of("tools"))
         .update();
@@ -616,6 +635,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withTools(List.of())
             .withChangedAttributes(List.of("tools"))
             .update();
@@ -651,11 +671,12 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.INITIALIZING)
             .withChangedAttributes(List.of("status"))
             .update();
 
-    // then
+    // then — UPDATED is still emitted but without "status" in changedAttributes (no-op)
     assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
     assertThat(updated.getValue().getChangedAttributes()).isEmpty();
   }
@@ -802,6 +823,7 @@ public class AgentInstanceUpdateTest {
           ENGINE
               .agentInstances()
               .withAgentInstanceKey(agentInstanceKey)
+              .withElementInstanceKey(serviceTaskInstance.getKey())
               .withStatus(from)
               .withChangedAttributes(List.of("status"))
               .update();
@@ -811,6 +833,7 @@ public class AgentInstanceUpdateTest {
             ENGINE
                 .agentInstances()
                 .withAgentInstanceKey(agentInstanceKey)
+                .withElementInstanceKey(serviceTaskInstance.getKey())
                 .withStatus(to)
                 .withChangedAttributes(List.of("status"))
                 .update();
@@ -822,6 +845,388 @@ public class AgentInstanceUpdateTest {
         assertThat(updated.getValue().getStatus()).isEqualTo(to);
       }
     }
+  }
+
+  @Test
+  public void shouldAssociateElementInstanceOnUpdate() {
+    // given — a multi-instance service task produces EI₁ and EI₂ simultaneously.
+    final var multiInstanceProcessId = "multi-instance-assoc";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0);
+    final var ei2 = children.get(1);
+
+    // Create agent instance on EI₁.
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE supplying EI₂ (new association)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .update();
+
+    // then — plural list carries [EI₁, EI₂], scalar = EI₂
+    assertThat(updated.getValue().getElementInstanceKeys())
+        .containsExactly(ei1.getKey(), ei2.getKey());
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(ei2.getKey());
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenElementInstanceKeyMissing() {
+    // given — agent instance created on a service task.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE without elementInstanceKey (default scalar = -1 sentinel)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            // intentionally no withElementInstanceKey() call — default is -1 sentinel
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then — engine rejects the command (defense-in-depth against internal command bus misuse)
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("elementInstanceKey");
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceNotFound() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    final var nonExistentEiKey = 987654321L;
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(nonExistentEiKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(nonExistentEiKey));
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceNotActive() {
+    // given — a service task with a faulty output expression. Completing the job triggers output
+    // mapping evaluation, which fails and raises an incident. The element instance is left in
+    // ELEMENT_COMPLETING state (not active) and is not removed from state.
+    final var notActiveProcessId = "not-active-process";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(notActiveProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t -> t.zeebeJobType("agent").zeebeOutputExpression("assert(x, x != null)", "y"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(notActiveProcessId).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // Complete the job — output mapping fails, raises incident, EI is stuck in COMPLETING.
+    ENGINE.job().ofInstance(processInstanceKey).withType("agent").complete();
+    RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).getFirst();
+
+    // when — attempt to UPDATE referencing the now-inactive (COMPLETING) element instance
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(serviceTaskInstance.getKey()));
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceElementIdMismatch() {
+    // given — agent instance on SERVICE_TASK_ID; attempt to UPDATE with an EI from a DIFFERENT
+    // task. A parallel gateway activates both tasks simultaneously.
+    final var mismatchProcessId = "mismatch-element-id";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(mismatchProcessId)
+                .startEvent()
+                .parallelGateway("split")
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .parallelGateway("merge")
+                .endEvent()
+                .moveToNode("split")
+                .serviceTask("other-task", t -> t.zeebeJobType("other"))
+                .connectTo("merge")
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(mismatchProcessId).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var otherTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("other-task")
+            .getFirst();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE with EI from "other-task" (different elementId)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(otherTaskInstance.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains(SERVICE_TASK_ID).contains("other-task");
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenAssociatedElementInstanceProcessInstanceKeyMismatch() {
+    // given — two separate process instances; agent instance on PI₁'s task,
+    // UPDATE supplies EI from PI₂.
+    final var piMismatchProcessId = "pi-mismatch";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(piMismatchProcessId)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var pi1Key = ENGINE.processInstance().ofBpmnProcessId(piMismatchProcessId).create();
+    final var pi2Key = ENGINE.processInstance().ofBpmnProcessId(piMismatchProcessId).create();
+    final var ei1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(pi1Key)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var ei2 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(pi2Key)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — UPDATE with EI from PI₂ (different processInstanceKey)
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei2.getKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(pi1Key))
+        .contains(String.valueOf(pi2Key));
+  }
+
+  @Test
+  public void
+      shouldRejectUpdateWhenAssociatedElementInstanceAlreadyAssociatedWithDifferentAgentInstance() {
+    // given — two multi-instance children; EI₁ → agentInstance₁, EI₂ → agentInstance₂.
+    // Attempt to UPDATE agentInstance₁ by supplying EI₂ (already associated with agentInstance₂).
+    final var alreadyAssocProcessId = "already-assoc";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(alreadyAssocProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(alreadyAssocProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1Key = children.get(0).getKey();
+    final var ei2Key = children.get(1).getKey();
+
+    final var agentInstance1Key =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1Key)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    final var agentInstance2Key =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei2Key)
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+
+    // when — try to associate EI₂ (already owned by agentInstance₂) with agentInstance₁
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstance1Key)
+            .withElementInstanceKey(ei2Key)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejection.getRejectionReason())
+        .contains(String.valueOf(ei2Key))
+        .contains(String.valueOf(agentInstance2Key));
   }
 
   private void assertRejectsTransitionToInitializingFrom(final AgentInstanceStatus from) {
@@ -847,6 +1252,7 @@ public class AgentInstanceUpdateTest {
     ENGINE
         .agentInstances()
         .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(serviceTaskInstance.getKey())
         .withStatus(from)
         .withChangedAttributes(List.of("status"))
         .update();
@@ -856,6 +1262,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.INITIALIZING)
             .withChangedAttributes(List.of("status"))
             .expectRejection()

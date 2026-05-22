@@ -84,8 +84,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
   @Test
   public void shouldAuthorizeWithUpdateProcessInstancePermission() {
     // given - a user with explicit UPDATE_PROCESS_INSTANCE on the parent PROCESS_DEFINITION
-    final var agentInstanceKey =
-        createAgentInstanceUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var instance = createAgentInstanceUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final var user = createUser();
     assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
@@ -99,20 +98,20 @@ public final class AgentInstanceUpdateAuthorizationTest {
     final var updated =
         engine
             .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
+            .withAgentInstanceKey(instance.agentInstanceKey())
+            .withElementInstanceKey(instance.elementInstanceKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .update(user.getUsername());
 
     // then
     assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
-    assertThat(updated.getKey()).isEqualTo(agentInstanceKey);
+    assertThat(updated.getKey()).isEqualTo(instance.agentInstanceKey());
   }
 
   @Test
   public void shouldRejectWhenCallerNotAuthorized() {
     // given - a user assigned to the resource's tenant but without any permissions
-    final var agentInstanceKey =
-        createAgentInstanceUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var instance = createAgentInstanceUnderTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final var user = createUser();
     assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
 
@@ -120,7 +119,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
     final var rejection =
         engine
             .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
+            .withAgentInstanceKey(instance.agentInstanceKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .expectRejection()
             .update(user.getUsername());
@@ -137,7 +136,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
   public void shouldRejectWhenAuthorizedTenantsExcludeAgentInstanceTenant() {
     // given - agent instance created under CUSTOM_TENANT, caller has UPDATE_PROCESS_INSTANCE on
     // the process id but is only assigned to DEFAULT_TENANT
-    final var agentInstanceKey = createAgentInstanceUnderTenant(CUSTOM_TENANT);
+    final var instance = createAgentInstanceUnderTenant(CUSTOM_TENANT);
     final var user = createUser();
     assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
@@ -151,7 +150,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
     final var rejection =
         engine
             .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
+            .withAgentInstanceKey(instance.agentInstanceKey())
             .withStatus(AgentInstanceStatus.THINKING)
             .withAuthorizedTenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .expectRejection()
@@ -161,7 +160,7 @@ public final class AgentInstanceUpdateAuthorizationTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
-  private long createAgentInstanceUnderTenant(final String tenantId) {
+  private AgentInstanceRef createAgentInstanceUnderTenant(final String tenantId) {
     engine
         .deployment()
         .withXmlResource(
@@ -185,13 +184,15 @@ public final class AgentInstanceUpdateAuthorizationTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst()
             .getKey();
-    return engine
-        .agentInstances()
-        .withElementInstanceKey(elementInstanceKey)
-        .withAuthorizedTenantIds(tenantId)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getAgentInstanceKey();
+    final var agentInstanceKey =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(elementInstanceKey)
+            .withAuthorizedTenantIds(tenantId)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getAgentInstanceKey();
+    return new AgentInstanceRef(agentInstanceKey, elementInstanceKey);
   }
 
   private void assignUserToTenant(final String tenantId, final String username) {
@@ -231,4 +232,6 @@ public final class AgentInstanceUpdateAuthorizationTest {
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
+
+  private record AgentInstanceRef(long agentInstanceKey, long elementInstanceKey) {}
 }

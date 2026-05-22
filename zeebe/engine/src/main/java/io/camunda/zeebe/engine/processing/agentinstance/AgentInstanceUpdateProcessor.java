@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -53,6 +54,18 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance metrics, but received invalid delta(s): inputTokens=%d, outputTokens=%d, modelCalls=%d, toolCalls=%d. Each metric delta must be either -1 (field not provided) or a non-negative value.";
   private static final String ERROR_MSG_INVALID_TRANSITION =
       "Expected to update agent instance with key '%d' from status '%s' to '%s', but this transition is not allowed.";
+  private static final String ERROR_MSG_ELEMENT_INSTANCE_KEY_MISSING =
+      "Expected to update agent instance with key '%d', but elementInstanceKey is missing (got -1). The element instance key must be provided.";
+  private static final String ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND =
+      "Expected to update agent instance for element instance with key '%d', but no such element instance was found.";
+  private static final String ERROR_MSG_ELEMENT_INSTANCE_NOT_ACTIVE =
+      "Expected to update agent instance for element instance with key '%d', but it is not active.";
+  private static final String ERROR_MSG_ELEMENT_ID_MISMATCH =
+      "Expected to update agent instance with key '%d' for element instance with key '%d', but the element id '%s' does not match the agent instance's element id '%s'.";
+  private static final String ERROR_MSG_PROCESS_INSTANCE_KEY_MISMATCH =
+      "Expected to update agent instance with key '%d' for element instance with key '%d', but the process instance key '%d' does not match the agent instance's process instance key '%d'.";
+  private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
+      "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
 
   private static final long METRIC_NOT_PROVIDED = -1L;
 
@@ -68,6 +81,7 @@ public final class AgentInstanceUpdateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
+  private final ElementInstanceState elementInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public AgentInstanceUpdateProcessor(
@@ -78,6 +92,7 @@ public final class AgentInstanceUpdateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
+    elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -109,7 +124,7 @@ public final class AgentInstanceUpdateProcessor
     }
 
     final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-    if (changed.isEmpty()) {
+    if (changed.isEmpty() && commandValue.getElementInstanceKey() == -1L) {
       writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
       return;
     }
@@ -147,6 +162,72 @@ public final class AgentInstanceUpdateProcessor
             ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to));
         return;
       }
+    }
+
+    final var newElementInstanceKey = commandValue.getElementInstanceKey();
+    if (newElementInstanceKey == -1L) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_ELEMENT_INSTANCE_KEY_MISSING.formatted(agentInstanceKey));
+      return;
+    }
+
+    final var elementInstance = elementInstanceState.getInstance(newElementInstanceKey);
+    if (elementInstance == null) {
+      writeRejection(
+          command,
+          RejectionType.NOT_FOUND,
+          ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND.formatted(newElementInstanceKey));
+      return;
+    }
+
+    if (!elementInstance.isActive()) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          ERROR_MSG_ELEMENT_INSTANCE_NOT_ACTIVE.formatted(newElementInstanceKey));
+      return;
+    }
+
+    final var elementInstanceValue = elementInstance.getValue();
+    if (!elementInstanceValue.getElementId().equals(current.getElementId())) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_ELEMENT_ID_MISMATCH.formatted(
+              agentInstanceKey,
+              newElementInstanceKey,
+              elementInstanceValue.getElementId(),
+              current.getElementId()));
+      return;
+    }
+
+    if (elementInstanceValue.getProcessInstanceKey() != current.getProcessInstanceKey()) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_PROCESS_INSTANCE_KEY_MISMATCH.formatted(
+              agentInstanceKey,
+              newElementInstanceKey,
+              elementInstanceValue.getProcessInstanceKey(),
+              current.getProcessInstanceKey()));
+      return;
+    }
+
+    final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
+    if (existingAgentInstanceKey != -1L && existingAgentInstanceKey != agentInstanceKey) {
+      writeRejection(
+          command,
+          RejectionType.ALREADY_EXISTS,
+          ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
+              newElementInstanceKey, existingAgentInstanceKey));
+      return;
+    }
+
+    if (!current.getElementInstanceKeys().contains(newElementInstanceKey)) {
+      current.addElementInstanceKey(newElementInstanceKey);
+      current.setElementInstanceKey(newElementInstanceKey);
     }
 
     current.setChangedAttributes(applyPatch(current, commandValue, changed));

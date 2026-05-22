@@ -32,14 +32,15 @@ import java.util.List;
 public final class AgentInstanceCreateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord> {
 
+  private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
+      "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
+
   private static final String ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND =
       "Expected to create agent instance for element instance with key '%d', but no such element instance was found.";
   private static final String ERROR_MSG_ELEMENT_INSTANCE_NOT_ACTIVE =
       "Expected to create agent instance for element instance with key '%d', but it is not active.";
   private static final String ERROR_MSG_UNSUPPORTED_ELEMENT_TYPE =
       "Expected to create agent instance for element instance with key '%d', but its BPMN element type '%s' is not supported. Supported types are: %s.";
-  private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
-      "Expected to create agent instance for element instance with key '%d', but an agent instance with key '%d' already exists for it.";
 
   private static final List<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       List.of(BpmnElementType.AD_HOC_SUB_PROCESS, BpmnElementType.SERVICE_TASK);
