@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.agrona.SystemUtil;
@@ -55,21 +56,20 @@ public final class FileUtil {
    * durability to sync the parent directory after creating a new file or renaming it, this is safe
    * to do as Windows (or rather NTFS) does not need this.
    *
-   * @param path the path to synchronize; if {@code null}, the method returns immediately without
-   *     performing any operation and without throwing an exception. This is useful for callers
-   *     which pass {@code path.getParent()}, where the parent may be absent, such as for root paths
-   *     or relative paths without parent components.
+   * @param path the path to synchronize; may be {@code null} for callers which pass {@code
+   *     path.getParent()}, where the parent may be absent, such as for root paths or relative paths
+   *     without parent components
    * @throws IOException can be thrown on opening and on flushing the file
    */
   public static void flushDirectory(final @Nullable Path path) throws IOException {
     // Windows does not allow flushing a directory except under very specific conditions which are
     // not possible to produce with the standard JDK; it's also not necessary to flush a directory
     // in Windows
-    if (SystemUtil.isWindows() || path == null) {
+    if (SystemUtil.isWindows()) {
       return;
     }
 
-    flush(path);
+    flush(Objects.requireNonNull(path));
   }
 
   /**
@@ -85,7 +85,11 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    flushDirectory(target.getParent());
+    final var parent =
+        Objects.requireNonNull(
+            target.getParent(),
+            "Expected parent of path " + target + " to have a parent, but it was null");
+    flushDirectory(parent);
   }
 
   public static void deleteFolder(final String path) throws IOException {

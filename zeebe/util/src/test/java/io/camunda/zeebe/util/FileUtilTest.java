@@ -17,6 +17,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import org.agrona.SystemUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -132,8 +133,13 @@ final class FileUtilTest {
   }
 
   @Test
-  void shouldHandleNullDirectoryGracefully() {
+  void shouldPreserveNullFlushDirectoryBehavior() {
     // when - then
-    assertThatCode(() -> FileUtil.flushDirectory(null)).doesNotThrowAnyException();
+    if (SystemUtil.isWindows()) {
+      assertThatCode(() -> FileUtil.flushDirectory(null)).doesNotThrowAnyException();
+    } else {
+      assertThatThrownBy(() -> FileUtil.flushDirectory(null))
+          .isInstanceOf(NullPointerException.class);
+    }
   }
 }
