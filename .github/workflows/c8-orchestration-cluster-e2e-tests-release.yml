@@ -21,6 +21,12 @@ jobs:
     outputs:
       release_version: ${{ steps.get-release.outputs.release_version }}
       base: ${{ steps.detect-base.outputs.base }}
+      # Git ref to check out test code / source from. We use the release
+      # *tag* (e.g. "8.8.5") rather than the stable branch (e.g.
+      # "stable/8.8") because the stable branch keeps moving after a
+      # release is cut — it will already contain commits for the next
+      # patch by the time we re-test an older release.
+      ref: ${{ steps.detect-base.outputs.ref }}
     steps:
       - name: Get release version
         id: get-release
@@ -38,7 +44,7 @@ jobs:
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Detect base branch
+      - name: Detect base branch and verify release tag
         id: detect-base
         run: |
           release_version="${{ steps.get-release.outputs.release_version }}"
@@ -49,7 +55,10 @@ jobs:
 
           git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main
 
-          # Determine base branch based on version
+          # Determine base branch based on version. `base` drives routing
+          # decisions (which test directories to run, NON_STANDALONE for
+          # 8.6/8.7, RDBMS matrix gating, etc.). It is *not* used to
+          # check out source code — see `ref` below.
           if [[ "$major_minor" == "8.6" ]]; then
             base="stable/8.6"
           elif [[ "$major_minor" == "8.7" ]]; then
@@ -64,6 +73,20 @@ jobs:
 
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
+
+          # Resolve the release tag — camunda/camunda tags match the
+          # release version exactly (e.g. "8.8.0", "8.8.0-alpha8-rc1").
+          # Pinning every source-code checkout to this tag ensures tests
+          # run against the same revision that produced the release
+          # artifacts, even after the stable branch has moved on.
+          ref="$release_version"
+          echo "Resolving release tag: $ref"
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$ref" >/dev/null; then
+            echo "Error: release tag '$ref' not found on origin."
+            echo "Expected a tag matching the release version on github.com/camunda/camunda."
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
         if: always()
@@ -91,7 +114,9 @@ jobs:
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ needs.validate-release.outputs.base }}
+          # Check out the release tag, not the stable branch — see
+          # validate-release for rationale.
+          ref: ${{ needs.validate-release.outputs.ref }}
 
       - name: Update docker-compose with release version
         shell: bash
@@ -321,7 +346,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ needs.validate-release.outputs.base }}
+          # Check out the release tag, not the stable branch — see
+          # validate-release for rationale.
+          ref: ${{ needs.validate-release.outputs.ref }}
 
       - uses: ./.github/actions/setup-build
         with:
@@ -443,7 +470,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ needs.validate-release.outputs.base }}
+          # Check out the release tag, not the stable branch — see
+          # validate-release for rationale.
+          ref: ${{ needs.validate-release.outputs.ref }}
 
       # If this job needs the docker-compose image tag changed too, keep this step
       - name: Update docker-compose with release version
@@ -691,7 +720,9 @@ jobs:
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ needs.validate-release.outputs.base }}
+          # Check out the release tag, not the stable branch — see
+          # validate-release for rationale.
+          ref: ${{ needs.validate-release.outputs.ref }}
 
       - name: Update docker-compose with release version
         run: |
