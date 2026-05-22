@@ -73,6 +73,10 @@ public class SecurityPathAdapter implements SecurityPathPort {
   private static final Set<String> UNAUTHENTICATED_WEBAPP_PATHS =
       Set.of(
           "/default-ui.css",
+          "/operate/assets/**",
+          "/operate/client-config.js",
+          "/operate/custom.css",
+          "/operate/favicon.ico",
           "/tasklist/assets/**",
           "/tasklist/client-config.js",
           "/tasklist/custom.css",
