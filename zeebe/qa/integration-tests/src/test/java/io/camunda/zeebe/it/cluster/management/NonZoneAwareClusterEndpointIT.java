@@ -13,6 +13,16 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 final class NonZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
+  protected int brokerCount() {
+    return 2;
+  }
+
+  @Override
+  protected int partitionCount() {
+    return 2;
+  }
+
+  @Override
   @SuppressWarnings("resource")
   protected TestCluster createCluster(
       final int brokerCount, final int partitionCount, final int replicationFactor) {

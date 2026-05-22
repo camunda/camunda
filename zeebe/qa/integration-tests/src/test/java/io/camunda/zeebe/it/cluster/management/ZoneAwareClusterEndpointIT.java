@@ -28,6 +28,21 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   private static final String[] ZONES = {"zoneA", "zoneB"};
 
   @Override
+  protected int brokerCount() {
+    return 3;
+  }
+
+  @Override
+  protected int partitionCount() {
+    return 3;
+  }
+
+  @Override
+  protected int minReplicationFactor() {
+    return 2;
+  }
+
+  @Override
   @SuppressWarnings("resource")
   protected TestCluster createCluster(
       final int brokerCount, final int partitionCount, final int replicationFactor) {
@@ -64,11 +79,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected int minReplicationFactor() {
-    return 2;
-  }
-
-  @Override
   protected String zone() {
     return ZONES[0];
   }
@@ -87,7 +97,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Test
   void shouldRejectBareIntegersWhenScaling() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -101,7 +111,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Test
   void shouldRejectAddBrokerWithBareInteger() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -115,7 +125,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Test
   void shouldRejectPartitionJoinOnZoneAwareCluster() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -129,7 +139,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Test
   void shouldRejectPartitionLeaveOnZoneAwareCluster() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -143,7 +153,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Test
   void shouldRejectClusterPatchWithBareIntegers() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());

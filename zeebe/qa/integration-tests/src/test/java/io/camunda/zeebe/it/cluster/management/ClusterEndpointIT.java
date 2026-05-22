@@ -38,14 +38,15 @@ import org.junit.jupiter.api.Timeout;
 @Timeout(2 * 60) // 2 minutes
 abstract class ClusterEndpointIT {
 
-  protected static final int BROKER_COUNT = 3;
-  protected static final int PARTITION_COUNT = 3;
+  protected abstract int brokerCount();
+
+  protected abstract int partitionCount();
 
   protected abstract TestCluster createCluster(
       int brokerCount, int partitionCount, int replicationFactor);
 
   protected TestCluster createCluster(final int replicationFactor) {
-    return createCluster(BROKER_COUNT, PARTITION_COUNT, replicationFactor);
+    return createCluster(brokerCount(), partitionCount(), replicationFactor);
   }
 
   /**
@@ -69,7 +70,7 @@ abstract class ClusterEndpointIT {
   }
 
   protected List<BrokerId> brokerIds(final int... nodeIdxs) {
-    return java.util.stream.IntStream.of(nodeIdxs).mapToObj(this::brokerId).toList();
+    return IntStream.of(nodeIdxs).mapToObj(this::brokerId).toList();
   }
 
   protected static String scaleRequestBody(final TestCluster cluster) {
@@ -131,7 +132,7 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldQueryCurrentClusterTopology() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -141,12 +142,12 @@ abstract class ClusterEndpointIT {
 
       // then - topology is as expected
       assertThat(response.getBrokers())
-          .hasSize(BROKER_COUNT)
+          .hasSize(brokerCount())
           .allSatisfy(
               b ->
                   assertThat(b.getPartitions())
-                      .describedAs("All brokers have two partitions each")
-                      .hasSize(PARTITION_COUNT));
+                      .describedAs("All brokers have all partitions")
+                      .hasSize(partitionCount()));
       assertThat(response.getLastChange()).isNull();
       assertThat(response.getPendingChange()).isNull();
     }
@@ -154,7 +155,6 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestPartitionLeave() {
-    assumeTrue(zone() == null, "Partition leave not supported on zone-aware clusters");
     try (final var cluster = createCluster(minReplicationFactor() + 1)) {
       // given
       cluster.awaitCompleteTopology();
@@ -186,14 +186,14 @@ abstract class ClusterEndpointIT {
       // then
       final int replicationFactor = minReplicationFactor() + 1;
       final var expected = new ArrayList<OperationEnum>();
-      IntStream.range(0, PARTITION_COUNT * replicationFactor)
+      IntStream.range(0, partitionCount() * replicationFactor)
           .forEach(i -> expected.add(OperationEnum.PARTITION_LEAVE));
       expected.addAll(
           List.of(OperationEnum.DELETE_HISTORY, OperationEnum.UPDATE_INCARNATION_NUMBER));
-      IntStream.range(0, PARTITION_COUNT)
+      IntStream.range(0, partitionCount())
           .forEach(i -> expected.add(OperationEnum.PARTITION_BOOTSTRAP));
       expected.addAll(
-          IntStream.range(0, PARTITION_COUNT * (replicationFactor - 1))
+          IntStream.range(0, partitionCount() * (replicationFactor - 1))
               .mapToObj(i -> OperationEnum.PARTITION_JOIN)
               .toList());
       assertThat(response.getPlannedChanges().stream().map(Operation::getOperation))
@@ -234,7 +234,7 @@ abstract class ClusterEndpointIT {
       // Use bare integer brokerId so the request reaches the server on zone-aware clusters too.
       // Non-zone-aware rejects with "partition has no active members";
       // zone-aware rejects with "zone-aware" (join not supported).
-      assertThatCode(() -> actuator.joinPartition(0, PARTITION_COUNT + 1, 3))
+      assertThatCode(() -> actuator.joinPartition(0, partitionCount() + 1, 3))
           .describedAs("Joining should fail with 400 Bad Request")
           .isInstanceOf(FeignException.BadRequest.class);
     }
@@ -248,17 +248,19 @@ abstract class ClusterEndpointIT {
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      // when
-      final var response = actuator.scaleByBrokerIds(brokerIds(0, 1, 2, BROKER_COUNT));
+      // when -- scale up by one broker
+      final var scaleIds =
+          IntStream.rangeClosed(0, brokerCount()).mapToObj(this::brokerId).toList();
+      final var response = actuator.scaleByBrokerIds(scaleIds);
 
       // then
-      assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT + 1);
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
     }
   }
 
   @Test
   void shouldRequestForceScaleDownBrokers() {
-    try (final var cluster = createCluster(BROKER_COUNT)) {
+    try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
       cluster.brokers().get(MemberId.from("1")).close();
@@ -280,11 +282,11 @@ abstract class ClusterEndpointIT {
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      // when
-      final var response = actuator.addBroker(brokerId(2));
+      // when -- add a new broker beyond the current set
+      final var response = actuator.addBroker(brokerId(brokerCount()));
 
       // then
-      assertThat(response.getExpectedTopology()).hasSize(3);
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
     }
   }
 
@@ -295,32 +297,33 @@ abstract class ClusterEndpointIT {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
-      //      // Must move partitions to broker 0 before removing broker 1 from the cluster
-      final var id = brokerId(2);
+      // Must move partitions off the broker before removing it from the cluster
+      final var id = brokerId(brokerCount() - 1);
       movePartition(actuator, id);
 
       // when
-      final var response = actuator.removeBroker(brokerId(2));
+      final var response = actuator.removeBroker(id);
 
       // then
-      assertThat(response.getExpectedTopology()).hasSize(2);
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() - 1);
     }
   }
 
   @Test
   void canDryRunScale() {
-    assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
       final var initialTopology = actuator.getTopology();
 
-      // when
-      final var dryRun = actuator.scaleByBrokerIds(brokerIds(1, 2), true);
+      // when -- dry-run scale: keep all but broker 0, add one new broker
+      final var dryRunIds =
+          IntStream.rangeClosed(1, brokerCount()).mapToObj(this::brokerId).toList();
+      final var dryRun = actuator.scaleByBrokerIds(dryRunIds, true);
 
       // then -- dry run response looks as expected
-      assertThat(dryRun.getExpectedTopology()).hasSize(2);
+      assertThat(dryRun.getExpectedTopology()).hasSize(brokerCount());
       assertThat(dryRun.getPlannedChanges()).isNotEmpty();
       assertThat(dryRun.getCurrentTopology()).isEqualTo(initialTopology.getBrokers());
       // then -- topology did not change
@@ -340,16 +343,16 @@ abstract class ClusterEndpointIT {
         // when
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().count(BROKER_COUNT))
+                .brokers(new ClusterConfigPatchRequestBrokers().count(brokerCount()))
                 .partitions(
                     new ClusterConfigPatchRequestPartitions()
-                        .count(PARTITION_COUNT)
+                        .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
-            .describedAs("ClusterSize is " + BROKER_COUNT)
-            .hasSize(BROKER_COUNT);
+            .describedAs("ClusterSize is " + brokerCount())
+            .hasSize(brokerCount());
         assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
             .describedAs("Partitions are evenly distributed")
             .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
@@ -371,13 +374,13 @@ abstract class ClusterEndpointIT {
                 .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(brokerId(1))))
                 .partitions(
                     new ClusterConfigPatchRequestPartitions()
-                        .count(PARTITION_COUNT)
+                        .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
         final var response = actuator.patchCluster(request, false, false);
         // then
         assertThat(response.getExpectedTopology())
-            .describedAs("Cluster has " + BROKER_COUNT + " brokers")
-            .hasSize(BROKER_COUNT);
+            .describedAs("Cluster has " + brokerCount() + " brokers")
+            .hasSize(brokerCount());
         assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
             .describedAs("Partitions are evenly distributed")
             .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
@@ -401,7 +404,7 @@ abstract class ClusterEndpointIT {
         final var response = actuator.patchCluster(request, false, true);
 
         // then
-        assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT - 1);
+        assertThat(response.getExpectedTopology()).hasSize(brokerCount() - 1);
       }
     }
   }
