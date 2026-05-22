@@ -464,6 +464,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+      # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+        with:
+          tool_versions: |
+            helm 4.2.0
       # Authenticate with Teleport
       - name: Set up Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
@@ -477,6 +483,35 @@ jobs:
             proxy: camunda.teleport.sh:443
             token: ${{ env.TELEPORT_JOIN_TOKEN }}
             kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Print tool versions
+        run: |
+          helm_v=$(helm version --short 2>&1 || true)
+          kubectl_v=$(kubectl version --client -o json 2>/dev/null | jq -r '.clientVersion.gitVersion' || true)
+          tsh_v=$(tsh version --client --format=json 2>/dev/null | jq -r '.version' || tsh version 2>&1 | head -1)
+          git_v=$(git --version)
+          openssl_v=$(openssl version)
+          awk_v=$(awk --version 2>/dev/null | head -1 || awk -W version 2>&1 | head -1)
+          jq_v=$(jq --version)
+
+          {
+            echo "## Tool versions"
+            echo ""
+            echo "| Tool | Version |"
+            echo "|------|---------|"
+            echo "| helm | \`${helm_v}\` |"
+            echo "| kubectl | \`${kubectl_v}\` |"
+            echo "| tsh | \`${tsh_v}\` |"
+            echo "| git | \`${git_v}\` |"
+            echo "| openssl | \`${openssl_v}\` |"
+            echo "| awk | \`${awk_v}\` |"
+            echo "| jq | \`${jq_v}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::group::Tool versions"
+          printf '%-10s %s\n' helm "${helm_v}" kubectl "${kubectl_v}" tsh "${tsh_v}" \
+            git "${git_v}" openssl "${openssl_v}" awk "${awk_v}" jq "${jq_v}"
+          echo "::endgroup::"
 
       - name: Scaffold load-test folder
         run: |
