@@ -188,5 +188,4 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 |    | Checkpoint E — PoC acceptance | ✅ closed |
 | 18 | Operate + Tasklist webapps end-to-end with PT chains | ✅ done |
 | 19 | Investigate broken webapp logout flow on PT chains | ⏳ follow-up |
-| 20 | CSL: install `DefaultLoginPageGeneratingFilter` on OidcWebapp chain ([CSL#269](https://github.com/camunda/camunda-security-library/issues/269)) | ⏳ follow-up (upstream) |
 | 21 | PT CSRF cookie cross-tab invalidation on logout / auth-rotate | ⏳ follow-up |
