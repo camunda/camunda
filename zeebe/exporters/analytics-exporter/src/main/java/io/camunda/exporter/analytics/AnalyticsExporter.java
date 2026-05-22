@@ -46,6 +46,7 @@ public class AnalyticsExporter implements Exporter {
   private HandlerRegistry handlers;
   private int partitionId;
   private String clusterId;
+  private AnalyticsExporterMetadata metadata;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -81,7 +82,12 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    otelSdkManager.initialize(config, clusterId, partitionId);
+    metadata =
+        controller
+            .readMetadata()
+            .map(AnalyticsExporterMetadata::deserialize)
+            .orElse(new AnalyticsExporterMetadata());
+    otelSdkManager.initialize(config, clusterId, partitionId, metadata);
     LOG.info("Analytics exporter opened");
   }
 
@@ -93,8 +99,6 @@ public class AnalyticsExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    controller.updateLastExportedRecordPosition(record.getPosition());
-
     try {
       final var handler = handlers.get(record);
       if (handler != null) {
@@ -103,6 +107,8 @@ public class AnalyticsExporter implements Exporter {
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
     }
+
+    controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
   }
 
   private void handleProcessInstanceCreation(

@@ -79,7 +79,10 @@ class OtelSdkManagerTest {
     final var manager =
         new OtelSdkManager()
             .initialize(
-                new AnalyticsExporterConfig().setEndpoint("http://localhost:1"), "test-cluster", 1);
+                new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
+                "test-cluster",
+                1,
+                new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
     for (int i = 0; i < 10; i++) {
@@ -189,6 +192,68 @@ class OtelSdkManagerTest {
     assertThat(receivedEventNames).contains("after_recovery");
   }
 
+  /** Each logEvent() call increments the sequence number by one. */
+  @Test
+  void shouldIncrementSequenceNumberWithEachLogEvent() {
+    // given
+    final var received = new CopyOnWriteArrayList<LogRecordData>();
+    final var manager =
+        initManager(
+            logs -> {
+              received.addAll(logs);
+              return CompletableResultCode.ofSuccess();
+            },
+            2048,
+            512);
+
+    // when
+    manager.logEvent("test", 0L, log -> {});
+    manager.logEvent("test", 0L, log -> {});
+    manager.logEvent("test", 0L, log -> {});
+    manager.shutdown();
+
+    // then
+    assertThat(received).hasSize(3);
+    assertThat(received.get(0).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .isEqualTo(1L);
+    assertThat(received.get(1).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .isEqualTo(2L);
+    assertThat(received.get(2).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .isEqualTo(3L);
+  }
+
+  /** The sequence number continues from the initial value provided at initialization. */
+  @Test
+  void shouldInitializeSequenceNumberFromGivenValue() {
+    // given — manager initialized with sequence number 5
+    final var received = new CopyOnWriteArrayList<LogRecordData>();
+    final var manager =
+        new OtelSdkManager() {
+          @Override
+          protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig cfg) {
+            return exporterFrom(
+                logs -> {
+                  received.addAll(logs);
+                  return CompletableResultCode.ofSuccess();
+                });
+          }
+        }.initialize(
+            new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
+            "test-cluster",
+            1,
+            new AnalyticsExporterMetadata(5L));
+
+    // when
+    manager.logEvent("test", 0L, log -> {});
+    manager.shutdown();
+
+    // then — sequence continues from 5, so first event gets 6
+    assertThat(received)
+        .singleElement()
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .isEqualTo(6L);
+  }
+
   /** logEvent() and shutdown() are safe to call after shutdown (idempotent, no NPE). */
   @Test
   void shouldHandlePostShutdownCallsGracefully() {
@@ -219,7 +284,8 @@ class OtelSdkManagerTest {
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
         "test-cluster",
-        1);
+        1,
+        new AnalyticsExporterMetadata());
   }
 
   private static LogRecordExporter exporterFrom(

@@ -11,6 +11,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -34,9 +35,14 @@ class OtelSdkManager {
 
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
+  private AnalyticsExporterMetadata metadata;
 
   OtelSdkManager initialize(
-      final AnalyticsExporterConfig config, final String clusterId, final int partitionId) {
+      final AnalyticsExporterConfig config,
+      final String clusterId,
+      final int partitionId,
+      final AnalyticsExporterMetadata metadata) {
+    this.metadata = metadata;
     final var resource = buildResource(clusterId, partitionId);
     final var loggerProvider = createLoggerProvider(config, resource);
 
@@ -54,7 +60,8 @@ class OtelSdkManager {
             .setSeverity(Severity.INFO)
             .setSeverityText("INFO")
             .setAttribute(EVENT_NAME, eventName)
-            .setAttribute(LOG_POSITION, logPosition);
+            .setAttribute(LOG_POSITION, logPosition)
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
     builder.accept(record);
     record.emit();
   }
