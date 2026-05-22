@@ -36,12 +36,12 @@ jobs:
       uses: ./.github/actions/git-environment
     - name: "Read Java / Version Info"
       id: "pom-info"
-      uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+      uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
       with:
         work-dir: ./optimize
     - name: "Read Parent Pom Info"
       id: "parent-pom-info"
-      uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+      uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
       with:
         work-dir: .
     - name: Expose common variables as Env

@@ -73,7 +73,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@main
+        uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
         with:
           work-dir: ./optimize
       - name: Start Elasticsearch - Old
@@ -145,7 +145,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@main
+        uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
         with:
           work-dir: ./optimize
       - name: Start OpenSearch - Old
@@ -223,7 +223,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Read Java/version info
         id: "pom-info"
-        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+        uses: YunaBraska/java-info-action@e397d7569da02e4dadd7e07dc1004a11d6161cfd # 3.0.5
       - name: Start Database
         uses: ./.github/actions/compose
         with:
