@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.management.cluster;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -24,7 +25,11 @@ class BrokerIdDeserializer extends StdDeserializer<BrokerId> {
       throws IOException {
     if (p.currentToken() == JsonToken.VALUE_NUMBER_INT) {
       return new BrokerId.Integer(p.getIntValue());
+    } else if (p.currentToken() == JsonToken.VALUE_STRING) {
+      return new BrokerId.String(p.getText());
+    } else {
+      throw new JsonParseException(
+          p, "Expected integer or string broker ID, got: " + p.currentToken());
     }
-    return new BrokerId.String(p.getText());
   }
 }
