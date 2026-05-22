@@ -67,8 +67,7 @@ public final class PerTenantSecurityChainFactory {
 
     return http.securityMatcher(securityMatcher)
         .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
-        .authorizeHttpRequests(
-            a -> a.requestMatchers(prefix + "/login").permitAll().anyRequest().authenticated())
+        .authorizeHttpRequests(a -> a.anyRequest().authenticated())
         .exceptionHandling(
             eh ->
                 eh.authenticationEntryPoint(
@@ -91,14 +90,16 @@ public final class PerTenantSecurityChainFactory {
   }
 
   /**
-   * Mirrors CSL's {@code OidcWebappSecurityConfiguration.resolveOauthRedirectTarget} — but with the
-   * PT prefix prepended. Single registration: skip the picker, redirect straight to the IdP.
-   * Multiple registrations: redirect to the PT-prefixed picker page rendered by {@code
-   * PhysicalTenantLoginPageController}.
+   * Always sends unauthenticated requests on a prefixed PT chain straight to the FIRST assigned
+   * registration's OAuth2 authorization endpoint — no picker UI on the prefixed access path. The
+   * picker for the unprefixed default tenant is rendered by Spring Security's {@code
+   * DefaultLoginPageGeneratingFilter} on CSL's standard {@code OidcWebapp} chain (its provider list
+   * is unfiltered — CSL does not consult {@code providers.assigned}, see the PoC follow-up).
+   * Multi-IdP selection for a prefixed PT is reachable by navigating directly to {@code prefix +
+   * /oauth2/authorization/<regId>}.
    */
   private static AuthenticationEntryPoint webappAuthenticationEntryPoint(
       final ClientRegistrationRepository repo, final String prefix) {
-    final String pickerUrl = prefix + "/login";
     final String defaultTarget = prefix + "/oauth2/authorization/oidc";
     if (!(repo instanceof final Iterable<?> iterable)) {
       return new LoginUrlAuthenticationEntryPoint(defaultTarget);
@@ -108,9 +109,6 @@ public final class PerTenantSecurityChainFactory {
       return new LoginUrlAuthenticationEntryPoint(defaultTarget);
     }
     final Object first = iterator.next();
-    if (iterator.hasNext()) {
-      return new LoginUrlAuthenticationEntryPoint(pickerUrl);
-    }
     if (first instanceof final ClientRegistration registration) {
       return new LoginUrlAuthenticationEntryPoint(
           prefix + "/oauth2/authorization/" + registration.getRegistrationId());
