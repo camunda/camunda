@@ -200,8 +200,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
    *
    * @param name the zone name (e.g. {@code "us-east1"})
    * @param numberOfReplicas how many replicas of each partition are placed in this zone
-   * @param priority the zone's preferred-leader ranking; higher values are preferred. Must be
-   *     unique across all zones.
+   * @param priority the zone's preferred-leader ranking; higher values are preferred.
    */
   public record ZoneSpec(String name, int numberOfReplicas, int priority) {
     public ZoneSpec {
