@@ -13,6 +13,8 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_RUNNING_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
@@ -30,7 +32,9 @@ public enum ProcessGroupByType {
   VARIABLE(GROUP_BY_VARIABLE_TYPE),
   ASSIGNEE(GROUP_BY_ASSIGNEE),
   CANDIDATE_GROUP(GROUP_BY_CANDIDATE_GROUP),
-  DURATION(GROUP_BY_DURATION);
+  DURATION(GROUP_BY_DURATION),
+  PROCESS_DEFINITION_KEY(GROUP_BY_PROCESS_DEFINITION_KEY),
+  PROCESS_DEFINITION_VERSION(GROUP_BY_PROCESS_DEFINITION_VERSION);
 
   private final String id;
 
