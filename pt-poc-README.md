@@ -19,7 +19,7 @@ For background, rationale, and the full implementation roadmap — both files ar
 
 **Dual API URL scheme (spec D7).** `/physical-tenant/<id>/v2/...` (webapp-aligned, inside the cookie scope, session-or-bearer) and `/v2/physical-tenants/<id>/...` (API-client conventional, bearer-only). Same per-tenant API chain serves both.
 
-**Audience-aware authorization (spec D8).** When the same IdP backs multiple PTs (the PoC's default tenant has both the local realm and the shared tenanta realm assigned), the per-chain authorization manager enforces both `iss ∈ allowed-issuers` AND `aud ∩ expected-audiences ≠ ∅`. Cross-tenant tokens return 403 even when they share an issuer.
+**Audience-aware authorization (spec D8).** When the same IdP backs multiple PTs (the PoC's default tenant has both the local realm and the shared tenanta realm assigned), the per-chain authorization manager enforces both `iss ∈ allowed-issuers` AND `aud ∩ expected-audiences ≠ ∅`. Cross-tenant tokens return 403 even when they share an issuer — provided each PT declares its own distinct audience set on the shared registration (PoC config: tenanta gets `pt-tenanta-aud`, default's view of the tenanta realm gets `pt-default-via-tenanta-aud`). When two PTs share both issuer AND audience, the audience check passes for both and cross-tenant access is not blocked at this layer; audience isolation is a configuration discipline, not an automatic property of registering the same IdP twice.
 
 **Per-PT multi-IdP picker.** Spring Security's `DefaultLoginPageGeneratingFilter` installed explicitly on each PT webapp chain at `prefix + "/login"`, populated from that PT's own `ClientRegistrationRepository` (so the picker shows the PT's `providers.assigned` set, with PT-prefixed authorization URLs).
 
