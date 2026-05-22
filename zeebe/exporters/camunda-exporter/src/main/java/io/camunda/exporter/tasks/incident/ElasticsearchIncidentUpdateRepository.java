@@ -194,6 +194,10 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   @Override
   public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
     final var updates = bulk.stream().map(this::createUpdateOperation).toList();
+    if (updates.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
     final var request =
         new BulkRequest.Builder()
             .operations(updates)
