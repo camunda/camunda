@@ -10,6 +10,8 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -209,6 +211,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonInclude(Include.NON_NULL)
   public String getToolName() {
     final var value = bufferAsString(toolNameProp.getValue());
     return value.isEmpty() ? null : value;
