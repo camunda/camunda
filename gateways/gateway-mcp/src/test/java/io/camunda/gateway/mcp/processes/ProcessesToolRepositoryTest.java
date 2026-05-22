@@ -9,7 +9,7 @@ package io.camunda.gateway.mcp.processes;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -322,7 +322,8 @@ class ProcessesToolRepositoryTest {
       assertThat(reqCaptor.getValue().name()).isEqualTo("deploy.start");
       assertThat(reqCaptor.getValue().tenantId()).isEqualTo("tenant-a");
       assertThat(reqCaptor.getValue().correlationKey()).isNotBlank();
-      assertDoesNotThrow(() -> UUID.fromString(reqCaptor.getValue().correlationKey()));
+      assertThatCode(() -> UUID.fromString(reqCaptor.getValue().correlationKey()))
+          .doesNotThrowAnyException();
       assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
     }
 
@@ -444,7 +445,8 @@ class ProcessesToolRepositoryTest {
       assertThat(captor.getValue().name()).isEqualTo("message");
       assertThat(captor.getValue().tenantId()).isEqualTo("<default>");
       assertThat(captor.getValue().correlationKey()).isNotBlank();
-      assertDoesNotThrow(() -> UUID.fromString(captor.getValue().correlationKey()));
+      assertThatCode(() -> UUID.fromString(captor.getValue().correlationKey()))
+          .doesNotThrowAnyException();
       assertThat(captor.getValue().variables()).isEmpty();
     }
 
