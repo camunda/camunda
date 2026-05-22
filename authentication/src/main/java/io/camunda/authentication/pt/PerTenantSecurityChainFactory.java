@@ -27,7 +27,6 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
@@ -66,53 +65,36 @@ public final class PerTenantSecurityChainFactory {
     final OAuth2AuthorizationRequestResolver resolver =
         prefixAwareResolver(slice.clientRegistrationRepository(), authPrefix);
 
-    final SecurityFilterChain chain =
-        http.securityMatcher(securityMatcher)
-            .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
-            .authorizeHttpRequests(
-                a -> a.requestMatchers(prefix + "/login").permitAll().anyRequest().authenticated())
-            .exceptionHandling(
-                eh ->
-                    eh.authenticationEntryPoint(
-                        webappAuthenticationEntryPoint(
-                            slice.clientRegistrationRepository(), prefix)))
-            .oauth2Login(
-                l ->
-                    l.clientRegistrationRepository(slice.clientRegistrationRepository())
-                        .authorizationEndpoint(
-                            // baseUri drives entry-point link generation (getLoginLinks);
-                            // authorizationRequestResolver replaces the URL→registrationId
-                            // matching that Spring Security 7's PathPatternRequestMatcher
-                            // mishandles for multi-segment prefixes. Both are needed.
-                            ae -> ae.baseUri(authBaseUri).authorizationRequestResolver(resolver))
-                        .redirectionEndpoint(re -> re.baseUri(callbackBaseUri))
-                        // alwaysUse=true overrides any saved request — the PoC wants every
-                        // login to terminate at /app for the demo, not at whatever URL
-                        // triggered the redirect (notably "/" which has no controller).
-                        .defaultSuccessUrl(defaultSuccessUrl, true))
-            .build();
-
-    // Retarget Spring Security's auto-generated multi-IdP picker from /login to prefix + /login.
-    // OAuth2LoginConfigurer.init() only populates the picker filter with this chain's OAuth2
-    // entries when no .loginPage(...) override is set; setting an override flips it into
-    // "host supplies the page" mode and we lose the auto-picker. So we leave the override
-    // off, then mutate the URL on the shared filter after build(). The filter is already
-    // wired with this chain's ClientRegistrationRepository + authorization endpoint baseUri,
-    // so the rendered picker shows exactly this PT's IdPs with PT-prefixed authorization URLs.
-    chain.getFilters().stream()
-        .filter(DefaultLoginPageGeneratingFilter.class::isInstance)
-        .map(DefaultLoginPageGeneratingFilter.class::cast)
-        .findFirst()
-        .ifPresent(f -> f.setLoginPageUrl(prefix + "/login"));
-    return chain;
+    return http.securityMatcher(securityMatcher)
+        .addFilterBefore(slice.sessionRepositoryFilter(), SecurityContextHolderFilter.class)
+        .authorizeHttpRequests(
+            a -> a.requestMatchers(prefix + "/login").permitAll().anyRequest().authenticated())
+        .exceptionHandling(
+            eh ->
+                eh.authenticationEntryPoint(
+                    webappAuthenticationEntryPoint(slice.clientRegistrationRepository(), prefix)))
+        .oauth2Login(
+            l ->
+                l.clientRegistrationRepository(slice.clientRegistrationRepository())
+                    .authorizationEndpoint(
+                        // baseUri drives entry-point link generation (getLoginLinks);
+                        // authorizationRequestResolver replaces the URL→registrationId
+                        // matching that Spring Security 7's PathPatternRequestMatcher
+                        // mishandles for multi-segment prefixes. Both are needed.
+                        ae -> ae.baseUri(authBaseUri).authorizationRequestResolver(resolver))
+                    .redirectionEndpoint(re -> re.baseUri(callbackBaseUri))
+                    // alwaysUse=true overrides any saved request — the PoC wants every
+                    // login to terminate at /app for the demo, not at whatever URL
+                    // triggered the redirect (notably "/" which has no controller).
+                    .defaultSuccessUrl(defaultSuccessUrl, true))
+        .build();
   }
 
   /**
    * Mirrors CSL's {@code OidcWebappSecurityConfiguration.resolveOauthRedirectTarget} — but with the
    * PT prefix prepended. Single registration: skip the picker, redirect straight to the IdP.
-   * Multiple registrations: redirect to the PT-prefixed picker page rendered by Spring Security's
-   * {@link DefaultLoginPageGeneratingFilter} (its URL is reconfigured in {@link
-   * #buildWebappChain}).
+   * Multiple registrations: redirect to the PT-prefixed picker page rendered by {@code
+   * PhysicalTenantLoginPageController}.
    */
   private static AuthenticationEntryPoint webappAuthenticationEntryPoint(
       final ClientRegistrationRepository repo, final String prefix) {
