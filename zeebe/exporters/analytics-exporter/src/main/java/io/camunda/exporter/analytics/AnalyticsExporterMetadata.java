@@ -18,25 +18,25 @@ final class AnalyticsExporterMetadata {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private long sequenceNumber;
+  private long rawEventSequenceNumber;
 
   /** No-arg constructor required by Jackson. */
   AnalyticsExporterMetadata() {}
 
-  AnalyticsExporterMetadata(final long sequenceNumber) {
-    this.sequenceNumber = sequenceNumber;
+  AnalyticsExporterMetadata(final long rawEventSequenceNumber) {
+    this.rawEventSequenceNumber = rawEventSequenceNumber;
   }
 
-  public long getSequenceNumber() {
-    return sequenceNumber;
+  public long getRawEventSequenceNumber() {
+    return rawEventSequenceNumber;
   }
 
-  public void setSequenceNumber(final long sequenceNumber) {
-    this.sequenceNumber = sequenceNumber;
+  public void setRawEventSequenceNumber(final long rawEventSequenceNumber) {
+    this.rawEventSequenceNumber = rawEventSequenceNumber;
   }
 
-  public long incrementAndGetSequenceNumber() {
-    return ++sequenceNumber;
+  public long incrementAndGetRawEventSequenceNumber() {
+    return ++rawEventSequenceNumber;
   }
 
   byte[] serialize() {

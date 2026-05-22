@@ -61,7 +61,7 @@ class OtelSdkManager {
             .setSeverityText("INFO")
             .setAttribute(EVENT_NAME, eventName)
             .setAttribute(LOG_POSITION, logPosition)
-            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetSequenceNumber());
+            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
     builder.accept(record);
     record.emit();
   }

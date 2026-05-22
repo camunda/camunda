@@ -176,7 +176,7 @@ class AnalyticsExporterTest {
         .get()
         .satisfies(
             bytes ->
-                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getSequenceNumber())
+                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getRawEventSequenceNumber())
                     .isEqualTo(3L));
   }
 
