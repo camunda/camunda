@@ -129,6 +129,8 @@ class OperateDecisionsPage {
     // Carbon Design System hides the <input> and overlays a <label>;
     // click the label (the visible interactive element) via the for/id relationship.
     const id = await this.evaluatedCheckbox.getAttribute('id');
+    if (!id)
+      throw new Error('Could not find id attribute on evaluated checkbox');
     await this.page.locator(`label[for="${id}"]`).click();
   }
 
@@ -136,6 +138,7 @@ class OperateDecisionsPage {
     // Carbon Design System hides the <input> and overlays a <label>;
     // click the label (the visible interactive element) via the for/id relationship.
     const id = await this.failedCheckbox.getAttribute('id');
+    if (!id) throw new Error('Could not find id attribute on failed checkbox');
     await this.page.locator(`label[for="${id}"]`).click();
   }
 

@@ -13,6 +13,8 @@ class OperateDecisionInstancePage {
   readonly decisionPanel: Locator;
 
   readonly closeDrdPanelButton: Locator;
+  readonly openDrdButton: Locator;
+  readonly drd: Locator;
   readonly instanceHeader: Locator;
   readonly decisionInstanceIdCell: Locator;
   readonly viewProcessInstanceLink: (processInstanceKey: string) => Locator;
@@ -23,6 +25,10 @@ class OperateDecisionInstancePage {
     this.closeDrdPanelButton = page.getByRole('button', {
       name: /close drd panel/i,
     });
+    this.openDrdButton = page.getByRole('button', {
+      name: 'Open Decision Requirements Diagram',
+    });
+    this.drd = page.getByTestId('drd');
     this.instanceHeader = page.getByTestId('instance-header');
     this.decisionInstanceIdCell = this.instanceHeader
       .locator('tbody td')
@@ -35,6 +41,14 @@ class OperateDecisionInstancePage {
 
   async closeDrdPanel(): Promise<void> {
     await this.closeDrdPanelButton.click();
+  }
+
+  async openDrdPanel(): Promise<void> {
+    await this.openDrdButton.click();
+  }
+
+  async clickDrdDecisionNode(decisionName: string): Promise<void> {
+    await this.drd.getByText(decisionName).first().click();
   }
 
   async getDecisionInstanceId(): Promise<string> {
