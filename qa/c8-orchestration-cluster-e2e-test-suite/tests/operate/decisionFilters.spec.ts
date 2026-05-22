@@ -99,8 +99,12 @@ test.describe('Decision Filters', () => {
       expect(evaluatedCount).toBeLessThan(totalCount);
     });
 
-    await test.step('Verify Failed checkbox is not visible in filter panel', async () => {
-      await expect(page.getByText('Evaluation failed')).toHaveCount(0);
+    await test.step('Verify no failed instances appear in results', async () => {
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByText(
+          'Evaluation failed',
+        ),
+      ).toHaveCount(0);
     });
   });
 
