@@ -1,5 +1,18 @@
 camunda:
   security:
+    # Authorizations are disabled for the PoC walkthrough so OIDC users from the PoC
+    # Keycloak realms (alice@default, bob@tenanta) reach /operate and /tasklist without
+    # any DB-side grant. The mapping-rule + admin-role init path needs the broker engine
+    # to write rules into MAPPING_RULES, but PT broker partitioning creates one
+    # PartitionManager per PT and the RDBMS exporter is wired as a single bean against
+    # the default PT's data source, so both PartitionManagers write to the same H2 row
+    # in EXPORTER_POSITION and the exporter never opens cleanly (see
+    # RdbmsExporterConfiguration#rdbmsExporterFactory + RdbmsDataSources). Making the
+    # exporter PT-aware is a code change beyond the PoC's scope; for Task 18 (real
+    # webapps end-to-end) we only need the PT security chain to route through, so
+    # disabling the WebAppAuthorizationCheckFilter denial is the right pragmatic call.
+    authorizations:
+      enabled: false
     authentication:
       method: oidc
       # Root declares two OIDC providers — the default slot `oidc` (the default IdP at the
@@ -71,6 +84,8 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.security.web.FilterChainProxy: TRACE
+    io.camunda.authentication: DEBUG
+    io.camunda.security: DEBUG
 
 # NOTE: the consolidated-auth profile is pulled in by the spring.profiles.group.pt-poc
 # declaration in application.properties — Spring Boot 2.4+ forbids
