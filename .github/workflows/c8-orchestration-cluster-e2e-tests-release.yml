@@ -26,11 +26,15 @@ jobs:
     outputs:
       release_version: ${{ steps.get-release.outputs.release_version }}
       base: ${{ steps.detect-base.outputs.base }}
-      # Git ref to check out test code / source from. We use the release
-      # *tag* (e.g. "8.8.5") rather than the stable branch (e.g.
-      # "stable/8.8") because the stable branch keeps moving after a
-      # release is cut — it will already contain commits for the next
-      # patch by the time we re-test an older release.
+      # Git ref to check out test code / source from. We prefer the
+      # release branch (e.g. "release-8.10.0-alpha1") over the stable
+      # branch (e.g. "stable/8.10") because stable keeps moving after a
+      # release is cut and naturally contains commits for the next
+      # patch. The release branch is forked from main/stable at the
+      # release point and may carry post-tag commits the team wants
+      # tested (e.g. test stabilization for this specific release). If
+      # the release branch has been cleaned up, fall back to the
+      # release tag, which is immutable.
       ref: ${{ steps.detect-base.outputs.ref }}
     steps:
       - name: Get release version
@@ -79,17 +83,32 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
-          # Resolve the release tag — camunda/camunda tags match the
-          # release version exactly (e.g. "8.8.0", "8.8.0-alpha8-rc1").
-          # Pinning every source-code checkout to this tag ensures tests
-          # run against the same revision that produced the release
-          # artifacts, even after the stable branch has moved on.
-          ref="$release_version"
-          echo "Resolving release tag: $ref"
-          if ! git ls-remote --exit-code --tags origin "refs/tags/$ref" >/dev/null; then
-            echo "Error: release tag '$ref' not found on origin."
-            echo "Expected a tag matching the release version on github.com/camunda/camunda."
-            exit 1
+          # Resolve the git ref to check source code out from:
+          #   1) the release branch `release-<version>` if it exists
+          #      (preferred — picks up post-tag fixes on that branch);
+          #   2) otherwise fall back to the immutable tag `<version>`
+          #      (camunda/camunda tags match the version string exactly,
+          #      e.g. "8.8.0", "8.8.0-alpha8-rc1");
+          #   3) otherwise fail fast.
+          #
+          # This is what the upstream release pipeline produces — see
+          # camunda-platform-release.yml:
+          #   RELEASE_BRANCH = release-${releaseVersion}
+          #   tag            = ${releaseVersion}
+          release_branch="release-$release_version"
+          echo "Looking for release branch: $release_branch"
+          if git ls-remote --exit-code --heads origin "refs/heads/$release_branch" >/dev/null; then
+            ref="$release_branch"
+            echo "Using release branch as ref: $ref"
+          else
+            echo "Release branch '$release_branch' not found; falling back to tag."
+            if git ls-remote --exit-code --tags origin "refs/tags/$release_version" >/dev/null; then
+              ref="$release_version"
+              echo "Using release tag as ref: $ref"
+            else
+              echo "Error: neither branch 'release-$release_version' nor tag '$release_version' exist on origin."
+              exit 1
+            fi
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
