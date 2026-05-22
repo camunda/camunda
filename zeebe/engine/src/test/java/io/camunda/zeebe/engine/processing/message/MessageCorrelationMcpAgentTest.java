@@ -90,11 +90,7 @@ public class MessageCorrelationMcpAgentTest {
   @Test
   public void shouldNotSetAgentInfoWhenToolNameIsAbsent() {
     // when
-    engine
-        .messageCorrelation()
-        .withName(START_MSG_NAME)
-        .withCorrelationKey("")
-        .correlate();
+    engine.messageCorrelation().withName(START_MSG_NAME).withCorrelationKey("").correlate();
 
     // then
     final var processActivatingRecord =
