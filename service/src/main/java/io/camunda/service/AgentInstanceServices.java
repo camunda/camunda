@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.AGENT_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.AgentInstanceSearchClient;
@@ -71,7 +72,10 @@ public final class AgentInstanceServices
             agentInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, AGENT_INSTANCE_READ_AUTHORIZATION))
+                        authentication,
+                        withAuthorization(
+                            AGENT_INSTANCE_READ_AUTHORIZATION,
+                            AgentInstanceEntity::processDefinitionId)))
                 .getAgentInstance(agentInstanceKey));
   }
 }
