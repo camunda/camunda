@@ -281,6 +281,7 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 | 17 | Multi-IdP picker + audience-based PT isolation for shared IdPs     | ✅ done         |
 |    | Checkpoint E — PoC acceptance                                      | ✅ closed       |
 | 18 | Operate + Tasklist webapps end-to-end with PT chains               | ⏳ follow-up    |
+| 19 | Investigate broken webapp logout flow on PT chains                 | ⏳ follow-up    |
 | 14 | `PhysicalTenantSecurityIT` happy path                              | ⏭ skipped       |
 | 15 | `PhysicalTenantSecurityIT` full flow + isolation                   | ⏭ skipped       |
 
@@ -289,6 +290,8 @@ Tracking implementation tasks defined in the [plan](docs/superpowers/plans/2026-
 **Task 18 (real webapps end-to-end) is a follow-up.** The PoC validates the security wiring against the SPA demo controllers — exercising the actual Operate + Tasklist UIs against PT chains is meaningful but mechanical follow-up work that depends on those webapp profiles' specific routing/asset expectations.
 
 **Drop `PhysicalTenantLoginPageController` (follow-up).** PT-prefixed `/login` already uses Spring's auto-generated `DefaultLoginPageGeneratingFilter` (the chain factory retargets its URL after `build()`). The controller exists only to render the unprefixed `/login` because CSL's `OidcWebapp` chain doesn't register that filter. Once CSL's chain wires it — either by leaving the picker auto-registered on `oauth2Login()` or by exposing a host-facing post-build hook — the controller can be deleted entirely. Real production impl should not ship it.
+
+**Task 19 (per-PT logout) is a follow-up.** Logout from Operate/Tasklist on a PT chain does not currently clear the per-tenant Spring session and IdP session cleanly — likely because `PerTenantSecurityChainFactory.buildWebappChain` does not configure `.logout(...)` on the PT chain, so `/logout` either misses the chain entirely or runs without per-tenant cookie/session awareness. To investigate before PT support migrates upstream into CSL.
 
 **What currently works:**
 

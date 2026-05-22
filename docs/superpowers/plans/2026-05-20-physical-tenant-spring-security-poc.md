@@ -2020,6 +2020,35 @@ Bump Task 18 to ✅ done in `pt-poc-README.md`'s Status table when complete.
 
 ---
 
+## Task 19: Investigate broken webapp logout flow on PT chains
+
+**Goal:** During Task 18 manual smoke testing on 2026-05-22 the logout flow on the existing Operate/Tasklist webapp pages did not work correctly under the `pt-poc` profile. Root-cause and fix so logout terminates both the per-PT Spring session and the IdP session cleanly across prefixed and unprefixed access paths.
+
+**Capture before debugging:**
+- Which URL the logout button hits (likely `/logout`) and whether the request lands on a PT-prefixed chain or CSL's standard `OidcWebapp` chain.
+- Whether `CamundaOidcLogoutSuccessHandler` is invoked, and which `ClientRegistrationRepository` it uses to resolve the IdP `end_session_endpoint` (per-tenant repo vs the standard global repo).
+- Cookie state after logout: per-tenant cookie (`camunda-session-<id>` on `Path=/physical-tenant/<id>`) cleared? Unprefixed `camunda-session` surviving?
+- Whether the Spring Security logout filter matcher actually covers `/logout` on the PT chains registered in `PerTenantSecurityChainFactory.buildWebappChain` — we currently do not call `.logout(...)` on the PT chain, so the default logout filter may not be wired the way the host expects.
+
+**Likely root cause:** PT webapp chain has no explicit logout configurer, so `/logout` either misses the chain entirely (falling through to CSL's `OidcWebapp` chain which doesn't know about per-tenant cookies/sessions) or runs without the per-tenant cookie/session awareness needed to clear PT state. Fix is probably to either wire `.logout(...)` on the PT chain explicitly with a per-PT logout URL (`prefix + "/logout"`) and `LogoutSuccessHandler`, or to route the standard `/logout` per-PT via a host-level mapping.
+
+**Files likely to change:**
+- `authentication/src/main/java/io/camunda/authentication/pt/PerTenantSecurityChainFactory.java` — add a logout configurer to `buildWebappChain` that uses `prefix + "/logout"` and the per-tenant `ClientRegistrationRepository`.
+- Possibly the host's existing logout success handler (`CamundaOidcLogoutSuccessHandler`) to ensure it derives the IdP end-session URL from the per-tenant registration when invoked on a PT chain.
+
+**Commit:**
+```
+fix: per-PT logout terminates Spring session and IdP session cleanly
+
+<documented root cause + fix>
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+```
+
+Bump Task 19 to ✅ done in `pt-poc-README.md`'s Status table when complete.
+
+---
+
 ## Self-review checklist (run after the plan is written)
 
 - [x] **Spec coverage** — every spec section has at least one task:
