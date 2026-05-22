@@ -78,7 +78,6 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldFailRequestWhenHavingTypoInParameter() throws IOException, InterruptedException {
-    assumeTrue(zone() == null, "Scale request body uses bare integers not valid for zone-aware");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
@@ -226,17 +225,18 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRejectJoinOnNonExistingPartition() {
-    assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      // when -- request a join
-      assertThatCode(() -> actuator.joinPartition(brokerId(0), 4, 3))
-          .describedAs("Joining a non-existing partition should fail with 400 Bad Request")
-          .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("partition has no active members");
+      // when -- request a join with a non-existing partition
+      // Use bare integer brokerId so the request reaches the server on zone-aware clusters too.
+      // Non-zone-aware rejects with "partition has no active members";
+      // zone-aware rejects with "zone-aware" (join not supported).
+      assertThatCode(() -> actuator.joinPartition(0, PARTITION_COUNT + 1, 3))
+          .describedAs("Joining should fail with 400 Bad Request")
+          .isInstanceOf(FeignException.BadRequest.class);
     }
   }
 
@@ -290,7 +290,7 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestRemoveBroker() {
-    assumeTrue(zone() == null, "Remove broker uses join/leave not supported on zone-aware");
+    assumeTrue(zone() == null, "Remove broker requires movePartition which uses join/leave");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
