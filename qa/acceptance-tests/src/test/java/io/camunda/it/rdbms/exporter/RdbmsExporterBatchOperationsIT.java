@@ -51,6 +51,7 @@ class RdbmsExporterBatchOperationsIT {
       new VendorDatabaseProperties(
           new Properties() {
             {
+              setProperty("databaseId", "h2");
               setProperty("variableValue.previewSize", "100");
               setProperty("userCharColumn.size", "50");
               setProperty("errorMessage.size", "500");
