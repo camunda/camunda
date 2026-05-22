@@ -12,22 +12,22 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class PermissionsService {
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties securityConfiguration;
   private final AuthorizationChecker authorizationChecker;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
 
   public PermissionsService(
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties securityConfiguration,
       final AuthorizationChecker authorizationChecker,
       final ResourceAccessProvider resourceAccessProvider,
       final CamundaAuthenticationProvider authenticationProvider) {

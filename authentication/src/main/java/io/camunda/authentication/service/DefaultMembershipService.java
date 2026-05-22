@@ -16,10 +16,10 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -59,7 +59,7 @@ public class DefaultMembershipService implements MembershipPort {
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     this.mappingRuleServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;

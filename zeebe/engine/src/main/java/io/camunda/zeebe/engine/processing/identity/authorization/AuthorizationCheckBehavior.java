@@ -11,7 +11,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.camunda.security.auth.MappingRuleMatcher;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
@@ -65,7 +65,7 @@ public final class AuthorizationCheckBehavior {
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final EngineConfiguration config) {
     final var authorizationState = processingState.getAuthorizationState();
     final var membershipState = processingState.getMembershipState();

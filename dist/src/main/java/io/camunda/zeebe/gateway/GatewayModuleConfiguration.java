@@ -9,9 +9,11 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -53,7 +55,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayBasedConfiguration configuration;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig engineSecurityConfig;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -71,7 +73,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   @Autowired
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties securityProperties,
+      final IdentifierValidator identifierValidator,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
@@ -84,7 +87,13 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final MeterRegistry meterRegistry,
       final GatewayRestConfiguration gatewayRestConfiguration) {
     this.configuration = configuration;
-    this.securityConfiguration = securityConfiguration;
+    this.engineSecurityConfig =
+        new EngineSecurityConfig(
+            securityProperties.getAuthentication(),
+            securityProperties.getAuthorizations(),
+            securityProperties.getMultiTenancy(),
+            securityProperties.getInitialization(),
+            identifierValidator);
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -119,7 +128,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
-            securityConfiguration,
+            engineSecurityConfig,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

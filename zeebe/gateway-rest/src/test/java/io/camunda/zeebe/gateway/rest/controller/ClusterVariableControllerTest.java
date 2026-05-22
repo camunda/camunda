@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -38,7 +38,8 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = ClusterVariableController.class)
 public class ClusterVariableControllerTest extends RestControllerTest {
 
-  static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   static final String CLUSTER_VARIABLE_PREFIX_URL = "/v2/cluster-variables";
   static final String GLOBAL_URL = CLUSTER_VARIABLE_PREFIX_URL + "/global";
   static final String GLOBAL_WITH_NAME_URL = GLOBAL_URL + "/%s";
@@ -47,7 +48,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
 
   @Captor ArgumentCaptor<ClusterVariableRequest> createRequestCaptor;
   @MockitoBean ClusterVariableServices clusterVariableServices;
-  @MockitoBean SecurityConfiguration securityConfiguration;
+  @MockitoBean CamundaSecurityLibraryProperties securityConfiguration;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach

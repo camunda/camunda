@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -54,7 +54,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final MembershipState membershipState;
 
   public TenantAddEntityProcessor(
@@ -63,7 +63,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();

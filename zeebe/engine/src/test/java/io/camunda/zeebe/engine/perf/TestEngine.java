@@ -8,8 +8,13 @@
 package io.camunda.zeebe.engine.perf;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -89,7 +94,16 @@ public final class TestEngine {
                             featureFlags,
                             JobStreamer.noop(),
                             SearchClientsProxy.noop(),
-                            new BrokerRequestAuthorizationConverter(new SecurityConfiguration()))
+                            new BrokerRequestAuthorizationConverter(
+                                new EngineSecurityConfig(
+                                    new AuthenticationConfiguration(),
+                                    new AuthorizationsConfiguration(),
+                                    new MultiTenancyConfiguration(),
+                                    new InitializationConfiguration(),
+                                    new IdentifierValidator(
+                                        java.util.regex.Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+                                        java.util.regex.Pattern.compile(
+                                            ".*", java.util.regex.Pattern.DOTALL)))))
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

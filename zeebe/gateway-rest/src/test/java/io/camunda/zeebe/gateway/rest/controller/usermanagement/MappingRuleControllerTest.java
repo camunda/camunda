@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -38,11 +38,12 @@ import org.springframework.test.json.JsonCompareMode;
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private CamundaSecurityLibraryProperties securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -247,7 +248,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
+            .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
     verifyNoInteractions(mappingRuleServices);
   }
 

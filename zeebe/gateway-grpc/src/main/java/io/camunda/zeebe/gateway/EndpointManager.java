@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -95,7 +95,7 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final SecurityConfiguration securityConfiguration) {
+      final EngineSecurityConfig securityConfiguration) {
     this(
         brokerClient,
         activateJobsHandler,
@@ -108,7 +108,7 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final int maxVariableNameLength) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;

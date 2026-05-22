@@ -17,7 +17,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -249,7 +249,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
             new SimpleMeterRegistry(),
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null,

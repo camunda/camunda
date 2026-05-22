@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -68,12 +68,12 @@ public class Engine implements RecordProcessor {
   private Writers writers;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
 
   public Engine(
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
     this.securityConfig = securityConfig;

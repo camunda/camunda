@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -30,12 +30,9 @@ public final class IdentitySetupProcessors {
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final EngineConfiguration config) {
-    final IdentifierValidator identifierValidator =
-        new IdentifierValidator(
-            securityConfig.getCompiledIdValidationPattern(),
-            securityConfig.getCompiledGroupIdValidationPattern());
+    final IdentifierValidator identifierValidator = securityConfig.getIdentifierValidator();
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,

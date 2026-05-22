@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -33,7 +34,7 @@ public abstract class GatewayTest {
   protected StubbedBrokerClient brokerClient;
   protected StubbedJobStreamer jobStreamer;
 
-  public GatewayTest(final GatewayCfg config, final SecurityConfiguration securityConfiguration) {
+  public GatewayTest(final GatewayCfg config, final EngineSecurityConfig securityConfiguration) {
     actorClock = new ControlledActorClock();
     actorSchedulerRule = new ActorSchedulerRule(actorClock);
     gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config, securityConfiguration);
@@ -41,17 +42,17 @@ public abstract class GatewayTest {
   }
 
   public GatewayTest() {
-    this(new GatewayCfg(), new SecurityConfiguration());
+    this(new GatewayCfg(), EngineSecurityConfigurations.defaultConfig());
   }
 
   private GatewayTest(
       final Supplier<GatewayCfg> configSupplier,
-      final Supplier<SecurityConfiguration> securitySupplier) {
+      final Supplier<EngineSecurityConfig> securitySupplier) {
     this(configSupplier.get(), securitySupplier.get());
   }
 
   public GatewayTest(
-      final Consumer<GatewayCfg> modifier, final Consumer<SecurityConfiguration> securityModifier) {
+      final Consumer<GatewayCfg> modifier, final Consumer<EngineSecurityConfig> securityModifier) {
     this(
         () -> {
           final GatewayCfg config = new GatewayCfg();
@@ -59,7 +60,8 @@ public abstract class GatewayTest {
           return config;
         },
         () -> {
-          final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
+          final EngineSecurityConfig securityConfiguration =
+              EngineSecurityConfigurations.defaultConfig();
           securityModifier.accept(securityConfiguration);
           return securityConfiguration;
         });

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -133,7 +133,7 @@ public final class EngineRule extends ExternalResource {
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
-  private Consumer<SecurityConfiguration> securityConfigModifier =
+  private Consumer<EngineSecurityConfig> securityConfigModifier =
       cfg -> cfg.getAuthorizations().setEnabled(false);
   private Consumer<EngineConfiguration> engineConfigModifier =
       cfg -> {
@@ -265,7 +265,7 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
+  public EngineRule withSecurityConfig(final Consumer<EngineSecurityConfig> modifier) {
     securityConfigModifier = securityConfigModifier.andThen(modifier);
     return this;
   }

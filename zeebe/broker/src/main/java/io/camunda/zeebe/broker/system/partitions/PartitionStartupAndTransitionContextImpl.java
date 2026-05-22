@@ -11,7 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -114,7 +114,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ControllableStreamClock clock;
   private final HealthTreeMetrics healthGraphMetrics;
   private final BrokerHealthCheckService brokerHealthCheckService;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
@@ -143,7 +143,7 @@ public class PartitionStartupAndTransitionContextImpl
       final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManager topologyManager,
       final BrokerHealthCheckService brokerHealthCheckService,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final MeterRegistry startupMeterRegistry) {
     this.memberId = memberId;
     this.partitionCount = partitionCount;
@@ -322,7 +322,7 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfig() {
+  public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
   }
 

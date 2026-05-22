@@ -8,7 +8,7 @@
 package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
@@ -36,7 +36,7 @@ public final class AuthenticationProperties {
    * that instance. Does nothing if {@code securityConfig} or {@code value} is {@code null}.
    */
   public static void applyToSecurityConfig(
-      final SecurityConfiguration securityConfig, final String key, final Object value) {
+      final CamundaSecurityLibraryProperties securityConfig, final String key, final Object value) {
     if (securityConfig == null || value == null) {
       return;
     }

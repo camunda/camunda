@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -121,7 +121,7 @@ final class PartitionJoinTest {
             atomixCluster,
             brokerClient,
             new SimpleMeterRegistry(),
-            new SecurityConfiguration(),
+            EngineSecurityConfigurations.defaultConfig(),
             null,
             null,
             null,

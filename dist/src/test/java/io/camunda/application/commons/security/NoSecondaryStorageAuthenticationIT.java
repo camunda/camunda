@@ -18,7 +18,7 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
@@ -96,8 +96,8 @@ public class NoSecondaryStorageAuthenticationIT {
   @Configuration
   static class TestOidcAuthConfiguration {
     @Bean
-    public SecurityConfiguration securityConfiguration() {
-      final var config = new SecurityConfiguration();
+    public CamundaSecurityLibraryProperties securityConfiguration() {
+      final var config = new CamundaSecurityLibraryProperties();
       final var authConfig = new AuthenticationConfiguration();
       final var oidcConfig = new OidcConfiguration();
       oidcConfig.setUsernameClaim("preferred_username");
@@ -111,13 +111,13 @@ public class NoSecondaryStorageAuthenticationIT {
 
     @Bean
     public NoDBMembershipService noDBMembershipService(
-        final SecurityConfiguration securityConfiguration) {
+        final CamundaSecurityLibraryProperties securityConfiguration) {
       return new NoDBMembershipService(securityConfiguration);
     }
 
     @Bean
     public LazyTokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
-        final SecurityConfiguration securityConfiguration,
+        final CamundaSecurityLibraryProperties securityConfiguration,
         final NoDBMembershipService noDBMembershipService) {
       return new LazyTokenClaimsConverter(
           securityConfiguration.getAuthentication().getOidc(), noDBMembershipService);

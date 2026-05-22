@@ -21,7 +21,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
@@ -48,14 +48,15 @@ import org.springframework.test.json.JsonCompareMode;
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
   private static final String USER_PATH = BASE_PATH + "/user";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @MockitoBean private UserServices userServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
-  private SecurityConfiguration securityConfiguration;
+  private CamundaSecurityLibraryProperties securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -347,7 +348,7 @@ class SetupControllerTest extends RestControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, USER_PATH));
+            .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, USER_PATH));
     verifyNoInteractions(userServices);
   }
 

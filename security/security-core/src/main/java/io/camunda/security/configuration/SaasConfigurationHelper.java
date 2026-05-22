@@ -7,26 +7,26 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.SaasConfiguration;
 import org.jspecify.annotations.Nullable;
 
 public final class SaasConfigurationHelper {
 
   private SaasConfigurationHelper() {}
 
-  public static @Nullable String organizationId(
-      final @Nullable SecurityConfiguration configuration) {
-    return configuration != null && configuration.getSaas() != null
-        ? configuration.getSaas().getOrganizationId()
+  public static @Nullable String organizationId(final @Nullable SaasConfiguration configuration) {
+    return configuration != null && configuration.getOrganizationId() != null
+        ? configuration.getOrganizationId()
         : null;
   }
 
-  public static @Nullable String clusterId(final @Nullable SecurityConfiguration configuration) {
-    return configuration != null && configuration.getSaas() != null
-        ? configuration.getSaas().getClusterId()
+  public static @Nullable String clusterId(final @Nullable SaasConfiguration configuration) {
+    return configuration != null && configuration.getClusterId() != null
+        ? configuration.getClusterId()
         : null;
   }
 
-  public static boolean isSaas(final @Nullable SecurityConfiguration configuration) {
+  public static boolean isSaas(final @Nullable SaasConfiguration configuration) {
     return clusterId(configuration) != null;
   }
 }

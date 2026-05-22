@@ -16,7 +16,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
 import io.camunda.service.RoleServices;
@@ -46,14 +46,14 @@ public class SetupController {
           .formatted(DefaultRole.ADMIN.getId());
   private final UserServices userServices;
   private final RoleServices roleServices;
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties securityConfiguration,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
     this.userServices = userServices;

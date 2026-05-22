@@ -14,7 +14,6 @@ import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPP
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
@@ -28,6 +27,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -62,7 +62,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
   private final Camunda unifiedConfig;
-  private final CamundaSecurityProperties securityConfig;
+  private final CamundaSecurityLibraryProperties securityConfig;
   private final boolean isGatewayEnabled = true;
 
   public TestCamundaApplication() {
@@ -111,7 +111,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
 
-    securityConfig = new CamundaSecurityProperties();
+    securityConfig = new CamundaSecurityLibraryProperties();
     securityConfig.getAuthorizations().setEnabled(false);
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
@@ -143,7 +143,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                     List.of(DEFAULT_MAPPING_RULE_ID))));
 
     //noinspection resource
-    withBean("security-config", securityConfig, CamundaSecurityProperties.class)
+    withBean("security-config", securityConfig, CamundaSecurityLibraryProperties.class)
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
             securityConfig.getAuthentication().isUnprotectedApi())
@@ -323,7 +323,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
    */
   @Override
   public TestCamundaApplication withSecurityConfig(
-      final Consumer<CamundaSecurityProperties> modifier) {
+      final Consumer<CamundaSecurityLibraryProperties> modifier) {
     modifier.accept(securityConfig);
     return this;
   }

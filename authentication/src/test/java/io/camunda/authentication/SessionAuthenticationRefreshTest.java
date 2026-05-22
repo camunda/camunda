@@ -18,8 +18,8 @@ import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +56,7 @@ public class SessionAuthenticationRefreshTest {
     Duration refreshInterval;
     @MockitoBean RoleServices roleServices;
     @MockitoBean MembershipPort membershipPort;
-    @Autowired private SecurityConfiguration securityConfiguration;
+    @Autowired private CamundaSecurityLibraryProperties securityConfiguration;
 
     @BeforeEach
     public void setup() {

@@ -10,8 +10,6 @@ package io.camunda.webapp.controllers;
 import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
-import io.camunda.security.configuration.SaasConfigurationHelper;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
@@ -19,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,17 +37,19 @@ public class WebappIndexController {
   private final ServletContext context;
 
   private final WebappConfiguration webappConfiguration;
-
-  private final SecurityConfiguration securityConfiguration;
+  private final String saasOrganizationId;
+  private final String saasClusterId;
 
   public WebappIndexController(
       final ServletContext context,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
-      @Autowired(required = false) final SecurityConfiguration securityConfiguration) {
+      @Value("${camunda.security.saas.organizationId:#{null}}") final String saasOrganizationId,
+      @Value("${camunda.security.saas.clusterId:#{null}}") final String saasClusterId) {
     this.context = context;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
-    this.securityConfiguration = securityConfiguration;
+    this.saasOrganizationId = saasOrganizationId;
+    this.saasClusterId = saasClusterId;
   }
 
   @GetMapping({"/webapp", "/webapp/", "/webapp/index.html"})
@@ -60,11 +61,8 @@ public class WebappIndexController {
         "mixpanelToken", nullToEmpty(webappConfiguration.getCloud().getMixpanelToken()));
     model.addAttribute(
         "mixpanelApiHost", nullToEmpty(webappConfiguration.getCloud().getMixpanelApiHost()));
-    model.addAttribute(
-        "organizationId",
-        nullToEmpty(SaasConfigurationHelper.organizationId(securityConfiguration)));
-    model.addAttribute(
-        "clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(securityConfiguration)));
+    model.addAttribute("organizationId", nullToEmpty(saasOrganizationId));
+    model.addAttribute("clusterId", nullToEmpty(saasClusterId));
     return "webapp/index";
   }
 

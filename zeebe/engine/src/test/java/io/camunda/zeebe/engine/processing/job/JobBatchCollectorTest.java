@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -70,7 +70,7 @@ final class JobBatchCollectorTest {
     final var authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
             state,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             new EngineConfiguration());
     collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior, clock);
   }

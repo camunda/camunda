@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -39,12 +39,13 @@ public class AdminClientConfigController {
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
 
-  public AdminClientConfigController(final SecurityConfiguration securityConfiguration) {
+  public AdminClientConfigController(final CamundaSecurityLibraryProperties securityConfiguration) {
     objectMapper = new ObjectMapper();
     clientConfigAsJS = generateClientConfig(securityConfiguration);
   }
 
-  private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
+  private String generateClientConfig(
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     try {
       final Map<String, Object> config = createConfigMap(securityConfiguration);
       final String configJson = objectMapper.writeValueAsString(config);
@@ -55,7 +56,8 @@ public class AdminClientConfigController {
     }
   }
 
-  private Map<String, Object> createConfigMap(final SecurityConfiguration securityConfiguration) {
+  private Map<String, Object> createConfigMap(
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = securityConfiguration.getSaas();
 
@@ -74,11 +76,13 @@ public class AdminClientConfigController {
     return config;
   }
 
-  private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {
+  private boolean isOidcAuthentication(
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     return AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
   }
 
-  private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
+  private boolean isCamundaGroupsEnabled(
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     final var authentication = securityConfiguration.getAuthentication();
     final var oidcConfig = authentication.getOidc();
     return oidcConfig == null

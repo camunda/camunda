@@ -11,7 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -87,7 +87,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
   private ControllableStreamClock clock;
-  private SecurityConfiguration securityConfig;
+  private EngineSecurityConfig securityConfig;
   private MeterRegistry transitionMeterRegistry;
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
@@ -286,7 +286,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfig() {
+  public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
   }
 
@@ -399,7 +399,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
-  public void setBrokerCfg(final SecurityConfiguration securityConfig) {
+  public void setBrokerCfg(final EngineSecurityConfig securityConfig) {
     this.securityConfig = securityConfig;
   }
 

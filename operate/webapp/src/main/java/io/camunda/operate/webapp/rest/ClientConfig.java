@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,7 @@ public class ClientConfig {
   @Autowired private OperateProfileService profileService;
   @Autowired private EnvironmentService environmentService;
   @Autowired private OperateProperties operateProperties;
-  @Autowired private SecurityConfiguration securityConfiguration;
+  @Autowired private CamundaSecurityLibraryProperties securityConfiguration;
   @Autowired private ServletContext context;
 
   public String asJson() {

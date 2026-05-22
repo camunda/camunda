@@ -38,8 +38,10 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -93,8 +95,15 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final SecurityConfiguration securityConfiguration) {
-    return new BrokerRequestAuthorizationConverter(securityConfiguration);
+      final CamundaSecurityLibraryProperties securityConfiguration,
+      final IdentifierValidator identifierValidator) {
+    return new BrokerRequestAuthorizationConverter(
+        new EngineSecurityConfig(
+            securityConfiguration.getAuthentication(),
+            securityConfiguration.getAuthorizations(),
+            securityConfiguration.getMultiTenancy(),
+            securityConfiguration.getInitialization(),
+            identifierValidator));
   }
 
   @Bean
@@ -445,7 +454,7 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationChecker authorizationChecker,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties securityConfiguration,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DocumentServices(
@@ -453,7 +462,7 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
         authorizationChecker,
-        securityConfiguration,
+        securityConfiguration.getAuthorizations(),
         executorProvider,
         brokerRequestAuthorizationConverter);
   }

@@ -9,7 +9,7 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -21,12 +21,12 @@ public class OidcAuthenticationConfigurationRepository {
   private final Map<String, OidcConfiguration> providers;
 
   public OidcAuthenticationConfigurationRepository(
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     providers = initializeProviders(securityConfiguration);
   }
 
   protected Map<String, OidcConfiguration> initializeProviders(
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     final var providers = new HashMap<String, OidcConfiguration>();
     final var authenticationConfiguration = securityConfiguration.getAuthentication();
 

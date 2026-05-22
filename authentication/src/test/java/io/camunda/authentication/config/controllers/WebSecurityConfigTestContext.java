@@ -16,23 +16,19 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.core.context.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.spring.context.DefaultCamundaAuthenticationProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder;
-import io.camunda.security.spring.converter.CamundaSpringAuthenticationDelegatingConverter;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
@@ -56,14 +52,14 @@ import org.springframework.web.context.annotation.RequestScope;
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class
 })
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class WebSecurityConfigTestContext {
 
   @Bean
   @RequestScope
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
-      final HttpServletRequest request, final SecurityConfiguration securityConfiguration) {
-    return new HttpSessionBasedAuthenticationHolder(
-        request, securityConfiguration.getAuthentication());
+      final HttpServletRequest request, final CamundaSecurityLibraryProperties properties) {
+    return new HttpSessionBasedAuthenticationHolder(request, properties.getAuthentication());
   }
 
   /**
@@ -113,15 +109,6 @@ public class WebSecurityConfigTestContext {
         return (CamundaAuthentication) ((TestingAuthenticationToken) authentication).getPrincipal();
       }
     };
-  }
-
-  @Bean
-  public CamundaAuthenticationProvider createCamundaAuthenticationProvider(
-      final List<CamundaAuthenticationHolder> holders,
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
-    return new DefaultCamundaAuthenticationProvider(
-        new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaSpringAuthenticationDelegatingConverter(converters));
   }
 
   @Bean
@@ -179,16 +166,5 @@ public class WebSecurityConfigTestContext {
   @Bean
   public MethodSecurityExpressionHandler createMethodSecurityExpressionHandler() {
     return new DefaultMethodSecurityExpressionHandler();
-  }
-
-  /**
-   * So that camunda.security properties can be used in tests; must be prefixed with
-   * 'camunda.security' because this prefix is hardcoded in AuthenticationProperties.
-   */
-  @SuppressWarnings("ConfigurationProperties")
-  @Bean
-  @ConfigurationProperties("camunda.security")
-  public SecurityConfiguration createSecurityConfiguration() {
-    return new SecurityConfiguration();
   }
 }

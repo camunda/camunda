@@ -27,7 +27,7 @@ import io.camunda.security.api.model.authz.AuthorizationOwnerType;
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -45,15 +45,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(AuthorizationController.class)
-@Import(SecurityConfiguration.class)
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -510,7 +510,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceType", "RESOURCE",
                 "permissionTypes", permissions),
             "The provided resourceId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
         Arguments.of(
             // illegal chars in ownerId
             Map.of(
@@ -520,7 +520,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceType", "RESOURCE",
                 "permissionTypes", permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
             // missing ownerId
@@ -581,7 +581,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceType", "RESOURCE",
                 "permissionTypes", permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)),
         Arguments.of(
             // empty resourcePropertyName
             Map.of(
@@ -600,6 +600,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "resourceType", "RESOURCE",
                 "permissionTypes", permissions),
             "The provided resourcePropertyName contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)));
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX)));
   }
 }

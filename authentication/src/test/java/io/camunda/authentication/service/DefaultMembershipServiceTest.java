@@ -15,9 +15,9 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -49,7 +49,7 @@ class DefaultMembershipServiceTest {
             tenantServices,
             roleServices,
             groupServices,
-            new SecurityConfiguration());
+            new CamundaSecurityLibraryProperties());
   }
 
   private MembershipQuery baseQuery() {

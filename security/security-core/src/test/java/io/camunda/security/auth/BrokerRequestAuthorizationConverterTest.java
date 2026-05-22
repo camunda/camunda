@@ -16,23 +16,49 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.validation.IdentifierValidator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
+
+  private static final IdentifierValidator VALIDATOR =
+      new IdentifierValidator(Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*"));
+
+  private static EngineSecurityConfig defaultConfig() {
+    return new EngineSecurityConfig(
+        new AuthenticationConfiguration(),
+        new AuthorizationsConfiguration(),
+        new MultiTenancyConfiguration(),
+        new InitializationConfiguration(),
+        VALIDATOR);
+  }
 
   @Test
   void shouldOnlyContainAuthenticationClaimsWhenAuthorizationAndMultiTenancyDisabled() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthorizations().setEnabled(false);
-    securityConfiguration.getMultiTenancy().setChecksEnabled(false);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var authz = new AuthorizationsConfiguration();
+    authz.setEnabled(false);
+    final var multiTenancy = new MultiTenancyConfiguration();
+    multiTenancy.setChecksEnabled(false);
+    final var config =
+        new EngineSecurityConfig(
+            new AuthenticationConfiguration(),
+            authz,
+            multiTenancy,
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -48,7 +74,7 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainAnonymousClaim() {
     // given
     final var authentication = CamundaAuthentication.anonymous();
-    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+    final var converter = new BrokerRequestAuthorizationConverter(defaultConfig());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -62,7 +88,7 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainUsername() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
-    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+    final var converter = new BrokerRequestAuthorizationConverter(defaultConfig());
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -76,9 +102,16 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainClientID() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.clientId("foo"));
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var auth = new AuthenticationConfiguration();
+    auth.setMethod(OIDC);
+    final var config =
+        new EngineSecurityConfig(
+            auth,
+            new AuthorizationsConfiguration(),
+            new MultiTenancyConfiguration(),
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -93,9 +126,16 @@ public class BrokerRequestAuthorizationConverterTest {
     // given
     final Map<String, Object> claims = Map.of("sub", "foo");
     final var authentication = CamundaAuthentication.of(b -> b.claims(claims));
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var auth = new AuthenticationConfiguration();
+    auth.setMethod(OIDC);
+    final var config =
+        new EngineSecurityConfig(
+            auth,
+            new AuthorizationsConfiguration(),
+            new MultiTenancyConfiguration(),
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -113,11 +153,17 @@ public class BrokerRequestAuthorizationConverterTest {
 
     final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var auth = new AuthenticationConfiguration();
+    auth.setOidc(oidcConfiguration);
+    auth.setMethod(OIDC);
+    final var config =
+        new EngineSecurityConfig(
+            auth,
+            new AuthorizationsConfiguration(),
+            new MultiTenancyConfiguration(),
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -135,10 +181,16 @@ public class BrokerRequestAuthorizationConverterTest {
 
     final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
-
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var auth = new AuthenticationConfiguration();
+    auth.setOidc(oidcConfiguration);
+    final var config =
+        new EngineSecurityConfig(
+            auth,
+            new AuthorizationsConfiguration(),
+            new MultiTenancyConfiguration(),
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -153,9 +205,16 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var auth = new AuthenticationConfiguration();
+    auth.setMethod(OIDC);
+    final var config =
+        new EngineSecurityConfig(
+            auth,
+            new AuthorizationsConfiguration(),
+            new MultiTenancyConfiguration(),
+            new InitializationConfiguration(),
+            VALIDATOR);
+    final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);

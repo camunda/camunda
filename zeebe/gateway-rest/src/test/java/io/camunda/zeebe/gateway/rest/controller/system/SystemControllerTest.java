@@ -21,7 +21,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -85,7 +85,7 @@ public class SystemControllerTest extends RestControllerTest {
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
-  @MockitoBean SecurityConfiguration securityConfiguration;
+  @MockitoBean CamundaSecurityLibraryProperties securityConfiguration;
   @MockitoBean ServletContext servletContext;
 
   // WebappConfiguration is provided by SystemControllerTestConfiguration
@@ -461,7 +461,7 @@ public class SystemControllerTest extends RestControllerTest {
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
 
-    final var securityCfg = new SecurityConfiguration();
+    final var securityCfg = new CamundaSecurityLibraryProperties();
     when(securityConfiguration.getMultiTenancy()).thenReturn(securityCfg.getMultiTenancy());
     when(securityConfiguration.getSaas()).thenReturn(securityCfg.getSaas());
 
@@ -547,7 +547,7 @@ public class SystemControllerTest extends RestControllerTest {
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
 
-    final var securityCfg = new SecurityConfiguration();
+    final var securityCfg = new CamundaSecurityLibraryProperties();
     final var multiTenancyCfg = new MultiTenancyConfiguration();
     multiTenancyCfg.setChecksEnabled(true);
     securityCfg.setMultiTenancy(multiTenancyCfg);
@@ -579,7 +579,7 @@ public class SystemControllerTest extends RestControllerTest {
     final var jobMetricsCfg = new JobMetricsConfiguration();
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
 
-    final var securityCfg = new SecurityConfiguration();
+    final var securityCfg = new CamundaSecurityLibraryProperties();
     final var saasCfg = new SaasConfiguration();
     saasCfg.setOrganizationId("org-123");
     saasCfg.setClusterId("cluster-456");

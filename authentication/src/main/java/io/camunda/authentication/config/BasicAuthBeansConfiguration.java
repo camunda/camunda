@@ -12,8 +12,8 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.LazyUsernamePasswordAuthenticationTokenConverter;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -35,9 +35,9 @@ import org.springframework.security.core.Authentication;
 @ConditionalOnSecondaryStorageEnabled
 public class BasicAuthBeansConfiguration {
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties securityConfiguration;
 
-  public BasicAuthBeansConfiguration(final SecurityConfiguration securityConfiguration) {
+  public BasicAuthBeansConfiguration(final CamundaSecurityLibraryProperties securityConfiguration) {
     this.securityConfiguration = securityConfiguration;
   }
 
@@ -49,7 +49,8 @@ public class BasicAuthBeansConfiguration {
     }
   }
 
-  protected boolean isOidcConfigurationEnabled(final SecurityConfiguration securityConfiguration) {
+  protected boolean isOidcConfigurationEnabled(
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     final var oidc = securityConfiguration.getAuthentication().getOidc();
     if (oidc != null && oidc.isAnyPropertySet()) {
       return true;

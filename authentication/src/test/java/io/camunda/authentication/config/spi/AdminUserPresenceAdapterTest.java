@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.service.RoleServices;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,17 +30,17 @@ class AdminUserPresenceAdapterTest {
   private static final String USER_MEMBERS = "users";
 
   private final RoleServices roleServices = mock(RoleServices.class);
-  private final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
+  private final InitializationConfiguration initializationConfiguration =
+      new InitializationConfiguration();
   private final AdminUserPresenceAdapter port =
-      new AdminUserPresenceAdapter(roleServices, securityConfiguration);
+      new AdminUserPresenceAdapter(roleServices, initializationConfiguration);
 
   @Test
   void shouldReturnTrueWhenInitializationConfiguresAdminUser() {
     // given
-    final var defaultRoles =
-        new HashMap<>(securityConfiguration.getInitialization().getDefaultRoles());
+    final var defaultRoles = new HashMap<>(initializationConfiguration.getDefaultRoles());
     defaultRoles.put(ADMIN_ROLE_ID, Map.of(USER_MEMBERS, Set.of("admin")));
-    securityConfiguration.getInitialization().setDefaultRoles(defaultRoles);
+    initializationConfiguration.setDefaultRoles(defaultRoles);
 
     // when / then
     assertThat(port.adminUserExists()).isTrue();

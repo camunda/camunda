@@ -10,7 +10,7 @@ package io.camunda.authentication.config.spi;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.service.RoleServices;
 import java.util.Map;
@@ -35,19 +35,19 @@ public class AdminUserPresenceAdapter implements AdminUserPresencePort {
   private static final String USER_MEMBERS = "users";
 
   private final RoleServices roleServices;
-  private final SecurityConfiguration securityConfiguration;
+  private final InitializationConfiguration initializationConfiguration;
 
   public AdminUserPresenceAdapter(
-      final RoleServices roleServices, final SecurityConfiguration securityConfiguration) {
+      final RoleServices roleServices,
+      final InitializationConfiguration initializationConfiguration) {
     this.roleServices = roleServices;
-    this.securityConfiguration = securityConfiguration;
+    this.initializationConfiguration = initializationConfiguration;
   }
 
   @Override
   public boolean adminUserExists() {
     final var hasConfiguredAdminUser =
-        !securityConfiguration
-            .getInitialization()
+        !initializationConfiguration
             .getDefaultRoles()
             .getOrDefault(ADMIN_ROLE_ID, Map.of())
             .getOrDefault(USER_MEMBERS, Set.of())

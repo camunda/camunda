@@ -22,8 +22,7 @@ import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.WebappComponent;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SaasConfigurationHelper;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -47,7 +46,7 @@ public class SystemController {
   private final UsageMetricsServices usageMetricsServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties securityConfiguration;
   private final ServletContext servletContext;
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
@@ -56,7 +55,7 @@ public class SystemController {
       final UsageMetricsServices usageMetricsServices,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
-      @Autowired(required = false) final SecurityConfiguration securityConfiguration,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityConfiguration,
       @Autowired(required = false) final ServletContext servletContext,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
@@ -130,7 +129,11 @@ public class SystemController {
   }
 
   private AuthenticationConfigurationResponse buildAuthenticationConfiguration() {
-    final boolean canLogout = !SaasConfigurationHelper.isSaas(securityConfiguration);
+    final String clusterId =
+        securityConfiguration != null && securityConfiguration.getSaas() != null
+            ? securityConfiguration.getSaas().getClusterId()
+            : null;
+    final boolean canLogout = clusterId == null;
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)
@@ -139,8 +142,14 @@ public class SystemController {
   }
 
   private CloudConfigurationResponse buildCloudConfiguration() {
-    final String organizationId = SaasConfigurationHelper.organizationId(securityConfiguration);
-    final String clusterId = SaasConfigurationHelper.clusterId(securityConfiguration);
+    final String organizationId =
+        securityConfiguration != null && securityConfiguration.getSaas() != null
+            ? securityConfiguration.getSaas().getOrganizationId()
+            : null;
+    final String clusterId =
+        securityConfiguration != null && securityConfiguration.getSaas() != null
+            ? securityConfiguration.getSaas().getClusterId()
+            : null;
 
     return CloudConfigurationResponse.Builder.create()
         .organizationId(organizationId)

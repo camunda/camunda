@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -37,14 +37,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final ControllableStreamClock clock;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final MeterRegistry meterRegistry;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
@@ -112,7 +112,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfig() {
+  public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
   }
 

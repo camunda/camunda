@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -52,7 +52,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
 
   public RoleAddEntityProcessor(
       final ProcessingState processingState,
@@ -60,7 +60,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     roleState = processingState.getRoleState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();

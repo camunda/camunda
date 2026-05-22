@@ -20,7 +20,8 @@ import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -43,6 +44,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.util.regex.Pattern;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -280,7 +282,9 @@ final class StandaloneGatewaySecurityTest {
 
     return new GatewayModuleConfiguration(
         gatewayConfig,
-        new SecurityConfiguration(),
+        new CamundaSecurityLibraryProperties(),
+        new IdentifierValidator(
+            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)),
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,

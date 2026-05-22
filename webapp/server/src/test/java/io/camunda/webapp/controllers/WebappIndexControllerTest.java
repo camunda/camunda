@@ -14,8 +14,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.api.model.config.SaasConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import jakarta.servlet.ServletContext;
@@ -44,7 +42,7 @@ class WebappIndexControllerTest {
     when(servletContext.getContextPath()).thenReturn("/camunda");
     final WebappConfiguration config = new WebappConfiguration();
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
@@ -66,7 +64,7 @@ class WebappIndexControllerTest {
     // given
     final WebappConfiguration config = new WebappConfiguration();
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
 
     // when
     final String result = controller.forwardToWebapp(request);
@@ -81,7 +79,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setLoginDelegated(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
     final Authentication authentication = mock(Authentication.class);
     when(authentication.isAuthenticated()).thenReturn(true);
 
@@ -105,7 +103,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setLoginDelegated(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
     final HttpSession session = mock(HttpSession.class);
     final AnonymousAuthenticationToken anonymous = mock(AnonymousAuthenticationToken.class);
 
@@ -135,7 +133,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setEnterprise(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
@@ -157,7 +155,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setCloud(cloud);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, null);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
@@ -172,7 +170,8 @@ class WebappIndexControllerTest {
   void shouldUseDefaultConfigWhenWebappConfigurationIsNull() {
     // given
     when(servletContext.getContextPath()).thenReturn("");
-    final WebappIndexController controller = new WebappIndexController(servletContext, null, null);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, null, null, null);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
@@ -192,13 +191,8 @@ class WebappIndexControllerTest {
     // given
     when(servletContext.getContextPath()).thenReturn("");
     final WebappConfiguration config = new WebappConfiguration();
-    final SecurityConfiguration securityConfig = new SecurityConfiguration();
-    final SaasConfiguration saasConfig = new SaasConfiguration();
-    saasConfig.setOrganizationId("org-123");
-    saasConfig.setClusterId("cluster-456");
-    securityConfig.setSaas(saasConfig);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, securityConfig);
+        new WebappIndexController(servletContext, config, "org-123", "cluster-456");
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
