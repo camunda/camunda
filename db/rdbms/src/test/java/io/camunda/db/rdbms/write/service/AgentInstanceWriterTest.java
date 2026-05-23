@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
-import io.camunda.db.rdbms.sql.AgentInstanceMapper.UpsertElementInstanceKeyDto;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -55,21 +54,30 @@ class AgentInstanceWriterTest {
             eq(
                 new QueueItem(
                     ContextType.AGENT_INSTANCE,
+                    WriteStatementType.DELETE,
+                    1L,
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
+                    1L)));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.AGENT_INSTANCE,
                     WriteStatementType.INSERT,
                     1L,
-                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.upsertElementInstanceKey",
-                    new UpsertElementInstanceKeyDto(1L, 100L))));
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
+                    model)));
   }
 
   @Test
-  void shouldNotEnqueueUpsertWhenElementInstanceKeysAreNull() {
+  void shouldEnqueueDeleteButNotInsertWhenElementInstanceKeysAreNull() {
     // given
     final var model = buildModel(2L, null);
 
     // when
     writer.create(model);
 
-    // then: only the main INSERT is enqueued; no element-instance-key upsert
+    // then: main INSERT and DELETE are enqueued; no bulk INSERT for empty key list
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -79,11 +87,20 @@ class AgentInstanceWriterTest {
                     2L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
                     model)));
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.AGENT_INSTANCE,
+                    WriteStatementType.DELETE,
+                    2L,
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
+                    2L)));
     verify(executionQueue, never())
         .executeInQueue(
             argThat(
                 item ->
-                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.upsertElementInstanceKey"
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys"
                         .equals(item.statementId())));
   }
 
@@ -97,7 +114,7 @@ class AgentInstanceWriterTest {
     // when
     writer.update(model);
 
-    // then: UPDATE queued
+    // then: UPDATE, DELETE child rows, then bulk INSERT child rows
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -107,7 +124,15 @@ class AgentInstanceWriterTest {
                     3L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
                     model)));
-    // upsert element instance key queued
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.AGENT_INSTANCE,
+                    WriteStatementType.DELETE,
+                    3L,
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
+                    3L)));
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -115,8 +140,8 @@ class AgentInstanceWriterTest {
                     ContextType.AGENT_INSTANCE,
                     WriteStatementType.INSERT,
                     3L,
-                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.upsertElementInstanceKey",
-                    new UpsertElementInstanceKeyDto(3L, 200L))));
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
+                    model)));
   }
 
   private AgentInstanceDbModel buildModel(final long key, final List<Long> elementInstanceKeys) {

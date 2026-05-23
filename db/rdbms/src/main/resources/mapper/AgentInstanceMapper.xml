@@ -84,61 +84,32 @@
     WHERE AGENT_INSTANCE_KEY = #{agentInstanceKey}
   </update>
 
-  <!-- upsert into child table: default (PostgreSQL) -->
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto">
+  <!-- delete all element instance keys for a given agent instance -->
+  <delete id="deleteElementInstanceKeys">
+    DELETE FROM ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE
+    WHERE AGENT_INSTANCE_KEY = #{agentInstanceKey}
+  </delete>
+
+  <!-- bulk-insert element instance keys — default: PostgreSQL, H2, MariaDB, MySQL, MSSQL -->
+  <insert id="insertElementInstanceKeys"
+    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-    VALUES (#{agentInstanceKey}, #{elementInstanceKey})
-    ON CONFLICT DO NOTHING
+    VALUES
+    <foreach collection="elementInstanceKeys" item="elementInstanceKey" separator=", ">
+      (#{agentInstanceKey}, #{elementInstanceKey})
+    </foreach>
   </insert>
 
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto"
-    databaseId="mariadb">
-    INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-    VALUES (#{agentInstanceKey}, #{elementInstanceKey})
-    ON DUPLICATE KEY UPDATE AGENT_INSTANCE_KEY = AGENT_INSTANCE_KEY
-  </insert>
-
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto"
-    databaseId="mysql">
-    INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-    VALUES (#{agentInstanceKey}, #{elementInstanceKey})
-    ON DUPLICATE KEY UPDATE AGENT_INSTANCE_KEY = AGENT_INSTANCE_KEY
-  </insert>
-
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto"
-    databaseId="h2">
-    MERGE INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE ei
-      USING dual
-      ON (ei.AGENT_INSTANCE_KEY = #{agentInstanceKey} AND ei.ELEMENT_INSTANCE_KEY = #{elementInstanceKey})
-    WHEN NOT MATCHED THEN
-      INSERT (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-      VALUES (#{agentInstanceKey}, #{elementInstanceKey})
-  </insert>
-
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto"
+  <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
+  <insert id="insertElementInstanceKeys"
+    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel"
     databaseId="oracle">
-    MERGE INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE ei
-      USING dual
-      ON (ei.AGENT_INSTANCE_KEY = #{agentInstanceKey} AND ei.ELEMENT_INSTANCE_KEY = #{elementInstanceKey})
-    WHEN NOT MATCHED THEN
-      INSERT (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-      VALUES (#{agentInstanceKey}, #{elementInstanceKey})
-  </insert>
-
-  <insert id="upsertElementInstanceKey"
-    parameterType="io.camunda.db.rdbms.sql.AgentInstanceMapper$UpsertElementInstanceKeyDto"
-    databaseId="mssql">
-    MERGE INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE AS target
-    USING (SELECT 1 AS dummy) AS src
-      ON (target.AGENT_INSTANCE_KEY = #{agentInstanceKey} AND target.ELEMENT_INSTANCE_KEY = #{elementInstanceKey})
-    WHEN NOT MATCHED THEN
-      INSERT (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
-      VALUES (#{agentInstanceKey}, #{elementInstanceKey});
+    INSERT ALL
+    <foreach collection="elementInstanceKeys" item="elementInstanceKey">
+      INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
+        VALUES (#{agentInstanceKey}, #{elementInstanceKey})
+    </foreach>
+    SELECT 1 FROM DUAL
   </insert>
 
   <!-- deleteRootProcessInstanceRelatedData cascades to AGENT_INSTANCE_ELEMENT_INSTANCE via FK ON DELETE CASCADE -->

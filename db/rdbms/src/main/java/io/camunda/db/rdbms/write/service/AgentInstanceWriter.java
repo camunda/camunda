@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
-import io.camunda.db.rdbms.sql.AgentInstanceMapper.UpsertElementInstanceKeyDto;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -16,7 +15,6 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.util.List;
 import java.util.function.Function;
 
 public class AgentInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
@@ -38,8 +36,7 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
             "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             agentInstance));
 
-    upsertElementInstanceKeys(
-        agentInstance.agentInstanceKey(), agentInstance.elementInstanceKeys());
+    syncElementInstanceKeys(agentInstance);
   }
 
   public void update(final AgentInstanceDbModel agentInstance) {
@@ -70,23 +67,27 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
               agentInstance));
     }
 
-    upsertElementInstanceKeys(
-        agentInstance.agentInstanceKey(), agentInstance.elementInstanceKeys());
+    syncElementInstanceKeys(agentInstance);
   }
 
-  private void upsertElementInstanceKeys(
-      final long agentInstanceKey, final List<Long> elementInstanceKeys) {
-    if (elementInstanceKeys == null || elementInstanceKeys.isEmpty()) {
-      return;
-    }
-    for (final long elementInstanceKey : elementInstanceKeys) {
+  private void syncElementInstanceKeys(final AgentInstanceDbModel agentInstance) {
+    final long agentInstanceKey = agentInstance.agentInstanceKey();
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.AGENT_INSTANCE,
+            WriteStatementType.DELETE,
+            agentInstanceKey,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
+            agentInstanceKey));
+    if (agentInstance.elementInstanceKeys() != null
+        && !agentInstance.elementInstanceKeys().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.AGENT_INSTANCE,
               WriteStatementType.INSERT,
               agentInstanceKey,
-              "io.camunda.db.rdbms.sql.AgentInstanceMapper.upsertElementInstanceKey",
-              new UpsertElementInstanceKeyDto(agentInstanceKey, elementInstanceKey)));
+              "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
+              agentInstance));
     }
   }
 

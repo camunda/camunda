@@ -8,7 +8,9 @@
 package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
-  AGENT_INSTANCE(false),
+  // delete+insert is used for AGENT_INSTANCE_ELEMENT_INSTANCE child rows, so order must be
+  // preserved to ensure DELETE runs before INSERT
+  AGENT_INSTANCE(true),
   AUDIT_LOG(false),
   AUTHORIZATION(true),
   BATCH_OPERATION(false),

@@ -15,7 +15,7 @@ public interface AgentInstanceMapper extends ProcessInstanceDependantMapper {
 
   void update(AgentInstanceDbModel agentInstance);
 
-  void upsertElementInstanceKey(UpsertElementInstanceKeyDto dto);
+  void deleteElementInstanceKeys(long agentInstanceKey);
 
-  record UpsertElementInstanceKeyDto(long agentInstanceKey, long elementInstanceKey) {}
+  void insertElementInstanceKeys(AgentInstanceDbModel agentInstance);
 }
