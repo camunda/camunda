@@ -45,58 +45,41 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
 
   @Override
   public void export(final Record<AgentInstanceRecordValue> record) {
-    final AgentInstanceIntent intent = (AgentInstanceIntent) record.getIntent();
+    final var intent = (AgentInstanceIntent) record.getIntent();
+    final var model = mapToDbModel(record, intent);
     if (intent == AgentInstanceIntent.CREATED) {
-      writer.create(mapForCreate(record));
+      writer.create(model);
     } else {
-      writer.update(mapForUpdate(record, intent));
+      writer.update(model);
     }
   }
 
-  private AgentInstanceDbModel mapForCreate(final Record<AgentInstanceRecordValue> record) {
-    final AgentInstanceRecordValue value = record.getValue();
-    final var timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-
-    return new Builder()
-        .agentInstanceKey(record.getKey())
-        .elementId(value.getElementId())
-        .processInstanceKey(value.getProcessInstanceKey())
-        // `rootProcessInstanceKey` is not yet available on the record — use -1 sentinel
-        // until https://github.com/camunda/camunda/issues/53236 lands, matching PR-2.
-        .rootProcessInstanceKey(-1L)
-        .processDefinitionId(value.getBpmnProcessId())
-        .processDefinitionKey(value.getProcessDefinitionKey())
-        .processDefinitionVersion(value.getProcessDefinitionVersion())
-        .versionTag(value.getVersionTag())
-        .tenantId(value.getTenantId())
-        .partitionId(record.getPartitionId())
-        .status(mapStatus(value.getStatus()))
-        .model(value.getDefinition().getModel())
-        .provider(value.getDefinition().getProvider())
-        .systemPrompt(value.getDefinition().getSystemPrompt())
-        .maxTokens(value.getLimits().getMaxTokens())
-        .maxModelCalls(value.getLimits().getMaxModelCalls())
-        .maxToolCalls(value.getLimits().getMaxToolCalls())
-        .inputTokens(value.getMetrics().getInputTokens())
-        .outputTokens(value.getMetrics().getOutputTokens())
-        .modelCalls(value.getMetrics().getModelCalls())
-        .toolCalls(value.getMetrics().getToolCalls())
-        .toolValues(toToolDbValues(value.getTools()))
-        .creationDate(timestamp)
-        .lastUpdatedDate(timestamp)
-        .elementInstanceKeys(List.of(value.getElementInstanceKey()))
-        .build();
-  }
-
-  private AgentInstanceDbModel mapForUpdate(
+  private AgentInstanceDbModel mapToDbModel(
       final Record<AgentInstanceRecordValue> record, final AgentInstanceIntent intent) {
-    final AgentInstanceRecordValue value = record.getValue();
+    final var value = record.getValue();
     final var timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
 
     final Builder builder =
         new Builder()
             .agentInstanceKey(record.getKey())
+            .elementId(value.getElementId())
+            .processInstanceKey(value.getProcessInstanceKey())
+            // `rootProcessInstanceKey` is not yet available on the record — use -1 sentinel
+            // until https://github.com/camunda/camunda/issues/53236 lands, matching PR-2.
+            .rootProcessInstanceKey(-1L)
+            .processDefinitionId(value.getBpmnProcessId())
+            .processDefinitionKey(value.getProcessDefinitionKey())
+            .processDefinitionVersion(value.getProcessDefinitionVersion())
+            .versionTag(value.getVersionTag())
+            .tenantId(value.getTenantId())
+            .partitionId(record.getPartitionId())
             .status(mapStatus(value.getStatus()))
+            .model(value.getDefinition().getModel())
+            .provider(value.getDefinition().getProvider())
+            .systemPrompt(value.getDefinition().getSystemPrompt())
+            .maxTokens(value.getLimits().getMaxTokens())
+            .maxModelCalls(value.getLimits().getMaxModelCalls())
+            .maxToolCalls(value.getLimits().getMaxToolCalls())
             .inputTokens(value.getMetrics().getInputTokens())
             .outputTokens(value.getMetrics().getOutputTokens())
             .modelCalls(value.getMetrics().getModelCalls())
@@ -104,6 +87,10 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .toolValues(toToolDbValues(value.getTools()))
             .lastUpdatedDate(timestamp)
             .elementInstanceKeys(List.of(value.getElementInstanceKey()));
+
+    if (intent == AgentInstanceIntent.CREATED) {
+      builder.creationDate(timestamp);
+    }
 
     if (intent == AgentInstanceIntent.COMPLETED) {
       builder.completionDate(timestamp);

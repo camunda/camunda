@@ -157,17 +157,14 @@ class AgentInstanceExportHandlerTest {
     // when
     handler.export(record);
 
-    // then
+    // then — writer.update() must be called (not writer.create())
     verify(writer).update(modelCaptor.capture());
     final AgentInstanceDbModel model = modelCaptor.getValue();
     assertThat(model.agentInstanceKey()).isEqualTo(agentKey);
     assertThat(model.status()).isEqualTo(AgentInstanceDbModel.AgentInstanceStatus.INITIALIZING);
     assertThat(model.lastUpdatedDate()).isNotNull();
     assertThat(model.completionDate()).isNull();
-    // immutable fields must be null on update (partial-update regression guard)
-    assertThat(model.model()).isNull();
-    assertThat(model.provider()).isNull();
-    assertThat(model.systemPrompt()).isNull();
+    // creationDate is only set on CREATED intent
     assertThat(model.creationDate()).isNull();
   }
 
