@@ -552,6 +552,7 @@ components:
             - jobKey
             - kind
             - listenerEventType
+            - priority
             - processDefinitionId
             - processDefinitionKey
             - processInstanceKey
@@ -617,6 +618,12 @@ components:
           description: The listener event type of the job.
           allOf:
             - $ref: '#/components/schemas/JobListenerEventTypeFilterProperty'
+        priority:
+          description: >
+            The priority of the job. Jobs created before 8.10 have no stored priority
+            and are excluded from results when this filter is applied.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
         processDefinitionId:
           description: The process definition ID associated with the job.
           allOf:
@@ -662,6 +669,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: lastUpdateTime
           addedInVersion: "8.9"
+        - propertyName: priority
+          addedInVersion: "8.10"
 
     JobSearchQueryResult:
       description: Job search response.
@@ -687,6 +696,7 @@ components:
         - jobKey
         - kind
         - listenerEventType
+        - priority
         - processDefinitionId
         - processDefinitionKey
         - processInstanceKey
@@ -802,6 +812,14 @@ components:
           nullable: true
           type: string
           format: date-time
+        priority:
+          description: >
+            The priority of the job. Higher values indicate higher priority.
+            Jobs created before 8.10 have no stored priority; they appear last when sorting
+            by this field and are excluded when filtering by this field. The API returns 0
+            for such jobs.
+          type: integer
+          format: int32
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
@@ -809,6 +827,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: lastUpdateTime
           addedInVersion: "8.9"
+        - propertyName: priority
+          addedInVersion: "8.10"
 
     JobFailRequest:
       type: object

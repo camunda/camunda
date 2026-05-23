@@ -434,6 +434,7 @@ public class SearchQuerySortRequestMapper {
         case END_TIME -> builder.endTime();
         case TENANT_ID -> builder.tenantId();
         case RETRIES -> builder.retries();
+        case PRIORITY -> builder.priority();
         case IS_DENIED -> builder.isDenied();
         case DENIED_REASON -> builder.deniedReason();
         case HAS_FAILED_WITH_RETRIES_LEFT -> builder.hasFailedWithRetriesLeft();

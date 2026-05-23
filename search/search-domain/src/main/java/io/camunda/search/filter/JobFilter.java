@@ -34,6 +34,7 @@ public record JobFilter(
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Integer>> retriesOperations,
+    List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> typeOperations,
@@ -51,6 +52,7 @@ public record JobFilter(
     private Boolean hasFailedWithRetriesLeft;
     private Boolean isDenied;
     private List<Operation<Integer>> retriesOperations;
+    private List<Operation<Integer>> priorityOperations;
     private List<Operation<Long>> jobKeyOperations;
     private List<Operation<String>> kindOperations;
     private List<Operation<String>> listenerEventTypeOperations;
@@ -164,6 +166,21 @@ public record JobFilter(
 
     public Builder retries(final Integer value, final Integer... values) {
       return retriesOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder priorityOperations(final List<Operation<Integer>> operations) {
+      priorityOperations = addValuesToList(priorityOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder priorityOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return priorityOperations(collectValues(operation, operations));
+    }
+
+    public Builder priority(final Integer value, final Integer... values) {
+      return priorityOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder jobKeyOperations(final List<Operation<Long>> operations) {
@@ -395,6 +412,7 @@ public record JobFilter(
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(retriesOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(typeOperations, Collections.emptyList()),

@@ -52,6 +52,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "kind": "TASK_LISTENER",
                     "listenerEventType": "COMPLETING",
                     "retries": 3,
+                    "priority": 50,
                     "isDenied": true,
                     "deniedReason": "test denied reason",
                     "hasFailedWithRetriesLeft": false,
@@ -94,6 +95,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .kind(JobKind.TASK_LISTENER)
                       .listenerEventType(ListenerEventType.COMPLETING)
                       .retries(3)
+                      .priority(50)
                       .isDenied(true)
                       .deniedReason("test denied reason")
                       .hasFailedWithRetriesLeft(false)
@@ -172,6 +174,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         "processDefinitionKey": "2",
         "processInstanceKey": "3",
         "retries": 3,
+        "priority": -80,
         "state": "COMPLETED",
         "tenantId": "<default>",
         "type": "testJob",
@@ -219,6 +222,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                             .processDefinitionKeys(2L)
                             .processInstanceKeys(3L)
                             .retries(3)
+                            .priority(-80)
                             .states(JobEntity.JobState.COMPLETED.name())
                             .tenantIds("<default>")
                             .types("testJob")
@@ -352,6 +356,7 @@ public class JobQueryControllerTest extends RestControllerTest {
       { "field": "state", "order": "desc" },
       { "field": "kind", "order": "asc" },
       { "field": "listenerEventType", "order": "desc" },
+      { "field": "priority", "order": "desc" },
       { "field": "retries", "order": "asc" },
       { "field": "isDenied", "order": "desc" },
       { "field": "deniedReason", "order": "asc" },
@@ -403,6 +408,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .asc()
                                 .listenerEventType()
                                 .desc()
+                                .priority()
+                                .desc()
                                 .retries()
                                 .asc()
                                 .isDenied()
@@ -433,5 +440,48 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .desc())
                     .build()),
             any());
+  }
+
+  @Test
+  void shouldReturnPriorityAsZeroWhenJobHasNoPriorityField() {
+    // given
+    final var jobWithNullPriority =
+        new JobEntity.Builder()
+            .jobKey(1L)
+            .type("testJob")
+            .worker("testWorker")
+            .state(JobState.COMPLETED)
+            .kind(JobKind.TASK_LISTENER)
+            .listenerEventType(ListenerEventType.COMPLETING)
+            .retries(3)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("pd")
+            .processDefinitionKey(2L)
+            .processInstanceKey(3L)
+            .elementId("e")
+            .elementInstanceKey(4L)
+            .tenantId("<default>")
+            .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
+            .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+            .build();
+    when(jobServices.search(any(JobQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<JobEntity>()
+                .total(1L)
+                .items(List.of(jobWithNullPriority))
+                .startCursor("123base64")
+                .endCursor("456base64")
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(JOB_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.items[0].priority")
+        .isEqualTo(0);
   }
 }

@@ -90,6 +90,11 @@ public record JobSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public JobSort.Builder priority() {
+      currentOrdering = new FieldSorting("priority", null);
+      return this;
+    }
+
     public JobSort.Builder isDenied() {
       currentOrdering = new FieldSorting("isDenied", null);
       return this;

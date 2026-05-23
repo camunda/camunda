@@ -205,6 +205,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.priorityOperations != null and !filter.priorityOperations.isEmpty()">
+        <foreach collection="filter.priorityOperations" item="operation">
+          AND PRIORITY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.creationTimeOperations != null and !filter.creationTimeOperations.isEmpty()">
         <foreach collection="filter.creationTimeOperations" item="operation">
           AND CREATION_TIME

@@ -23,7 +23,9 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.JobSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
@@ -443,5 +445,115 @@ public class JobIT {
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(JobEntity::jobKey))
         .containsExactlyInAnyOrder(item1.jobKey(), item3.jobKey());
+  }
+
+  @TestTemplate
+  public void shouldFindJobByPriorityFilter(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    final var processDefinitionKey = nextKey();
+    final var target =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.priority(99).processDefinitionKey(processDefinitionKey));
+    for (int i = 0; i < 5; i++) {
+      createAndSaveJob(rdbmsWriters, b -> b.priority(5).processDefinitionKey(processDefinitionKey));
+    }
+
+    // when / then
+    final var exactResult = searchByPriority(jobReader, processDefinitionKey, Operation.eq(99));
+    assertThat(exactResult.total()).isEqualTo(1);
+    assertThat(exactResult.items().getFirst().jobKey()).isEqualTo(target.jobKey());
+    assertThat(exactResult.items().getFirst().priority()).isEqualTo(99);
+
+    // when / then
+    final var rangeResult = searchByPriority(jobReader, processDefinitionKey, Operation.gte(95));
+    assertThat(rangeResult.total()).isEqualTo(1);
+    assertThat(rangeResult.items().getFirst().jobKey()).isEqualTo(target.jobKey());
+  }
+
+  @TestTemplate
+  public void shouldFindJobSortedByPriority(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    final var processDefinitionKey = nextKey();
+    final var low =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.priority(10).processDefinitionKey(processDefinitionKey));
+    final var mid =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.priority(50).processDefinitionKey(processDefinitionKey));
+    final var high =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.priority(90).processDefinitionKey(processDefinitionKey));
+
+    // when / then — descending
+    final var descResult = searchSortedByPriority(jobReader, processDefinitionKey, false);
+    assertThat(descResult.total()).isEqualTo(3);
+    assertThat(descResult.items().stream().map(JobEntity::jobKey))
+        .containsExactly(high.jobKey(), mid.jobKey(), low.jobKey());
+
+    // when / then — ascending
+    final var ascResult = searchSortedByPriority(jobReader, processDefinitionKey, true);
+    assertThat(ascResult.items().stream().map(JobEntity::jobKey))
+        .containsExactly(low.jobKey(), mid.jobKey(), high.jobKey());
+  }
+
+  @TestTemplate
+  public void shouldExcludeNullPriorityJobsFromPriorityFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given — a job with NULL priority (pre-8.10) and a job with explicit priority
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    final var processDefinitionKey = nextKey();
+    createAndSaveJob(
+        rdbmsWriters, b -> b.priority(null).processDefinitionKey(processDefinitionKey));
+    final var explicitPriorityJob =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.priority(5).processDefinitionKey(processDefinitionKey));
+
+    // when — filter includes values that NULL would match if treated as 0 (e.g. lte(0))
+    final var lteZeroResult = searchByPriority(jobReader, processDefinitionKey, Operation.lte(0));
+
+    // then — the NULL-priority job is excluded; only explicit-priority jobs satisfying the
+    // comparison are returned
+    assertThat(lteZeroResult.total()).isEqualTo(0);
+
+    // when — filter that the explicit-priority job satisfies
+    final var gteOneResult = searchByPriority(jobReader, processDefinitionKey, Operation.gte(1));
+
+    // then — only the explicit-priority job is returned
+    assertThat(gteOneResult.total()).isEqualTo(1);
+    assertThat(gteOneResult.items().getFirst().jobKey()).isEqualTo(explicitPriorityJob.jobKey());
+  }
+
+  @SafeVarargs
+  private static SearchQueryResult<JobEntity> searchByPriority(
+      final JobDbReader reader, final long processDefinitionKey, final Operation<Integer>... ops) {
+    return reader.search(
+        JobQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.processDefinitionKeys(processDefinitionKey)
+                                .priorityOperations(List.of(ops)))
+                    .page(p -> p.from(0).size(20))));
+  }
+
+  private static SearchQueryResult<JobEntity> searchSortedByPriority(
+      final JobDbReader reader, final long processDefinitionKey, final boolean ascending) {
+    return reader.search(
+        JobQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                    .sort(s -> ascending ? s.priority().asc() : s.priority().desc())
+                    .page(p -> p.from(0).size(20))));
   }
 }

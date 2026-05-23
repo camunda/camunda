@@ -783,6 +783,7 @@ public final class SearchQueryResponseMapper {
         .jobKey(keyToString(job.jobKey()))
         .kind(JobKindEnum.fromValue(job.kind().name()))
         .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
+        .priority(requireNonNullElse(job.priority(), 0))
         .processDefinitionId(job.processDefinitionId())
         .processDefinitionKey(keyToString(job.processDefinitionKey()))
         .processInstanceKey(keyToString(job.processInstanceKey()))

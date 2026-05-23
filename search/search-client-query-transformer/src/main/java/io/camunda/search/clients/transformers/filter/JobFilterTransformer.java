@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -32,6 +33,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYP
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TENANT_ID;
@@ -41,6 +43,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobFilter;
+import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
@@ -78,6 +81,18 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
     of(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
     of(intOperations(RETRIES, filter.retriesOperations())).ifPresent(queries::addAll);
+    final var priorityOps = filter.priorityOperations();
+    if (!priorityOps.isEmpty()) {
+      queries.addAll(intOperations(PRIORITY, priorityOps));
+      // NOT_EQUALS and NOT_IN match absent-field docs in ES/OS, so pre-8.10 jobs (which have no
+      // stored priority) would wrongly appear. Guard with exists() to enforce the API contract:
+      // "Jobs created before 8.10 are excluded from results when this filter is applied."
+      if (priorityOps.stream()
+          .anyMatch(
+              op -> op.operator() == Operator.NOT_EQUALS || op.operator() == Operator.NOT_IN)) {
+        queries.add(exists(PRIORITY));
+      }
+    }
     of(stringOperations(JOB_STATE, filter.stateOperations())).ifPresent(queries::addAll);
     of(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
     of(stringOperations(JOB_TYPE, filter.typeOperations())).ifPresent(queries::addAll);
