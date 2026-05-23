@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -550,19 +551,4 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
    * string stored in the AGENT_INSTANCE.TOOLS CLOB column.
    */
   public record AgentInstanceToolDbValue(String name, String description, String elementId) {}
-
-  /**
-   * Stored as the enum constant name in the AGENT_INSTANCE.STATUS column via MyBatis' default enum
-   * type handler. UNKNOWN is the fallback for unrecognised protocol statuses (mirrors the
-   * entity-side enum in webapps-schema).
-   */
-  public enum AgentInstanceStatus {
-    UNKNOWN,
-    INITIALIZING,
-    TOOL_DISCOVERY,
-    IDLE,
-    THINKING,
-    TOOL_CALLING,
-    COMPLETED
-  }
 }

@@ -21,6 +21,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.AgentInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -147,7 +148,7 @@ class AgentInstanceWriterTest {
   private AgentInstanceDbModel buildModel(final long key, final List<Long> elementInstanceKeys) {
     return new AgentInstanceDbModel.Builder()
         .agentInstanceKey(key)
-        .status(AgentInstanceDbModel.AgentInstanceStatus.IDLE)
+        .status(AgentInstanceEntity.AgentInstanceStatus.IDLE)
         .inputTokens(0L)
         .outputTokens(0L)
         .modelCalls(0)

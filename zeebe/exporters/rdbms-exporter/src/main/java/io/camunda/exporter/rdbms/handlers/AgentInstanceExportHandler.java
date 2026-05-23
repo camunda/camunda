@@ -8,12 +8,12 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
-import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceStatus;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;

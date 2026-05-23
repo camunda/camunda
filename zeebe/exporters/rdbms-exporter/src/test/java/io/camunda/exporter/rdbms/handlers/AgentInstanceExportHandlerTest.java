@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
+import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -119,7 +120,7 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.tenantId()).isEqualTo("myTenant");
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
     // status
-    assertThat(model.status()).isEqualTo(AgentInstanceDbModel.AgentInstanceStatus.INITIALIZING);
+    assertThat(model.status()).isEqualTo(AgentInstanceEntity.AgentInstanceStatus.INITIALIZING);
     // definition
     assertThat(model.model()).isEqualTo("gpt-4o");
     assertThat(model.provider()).isEqualTo("openai");
@@ -161,7 +162,7 @@ class AgentInstanceExportHandlerTest {
     verify(writer).update(modelCaptor.capture());
     final AgentInstanceDbModel model = modelCaptor.getValue();
     assertThat(model.agentInstanceKey()).isEqualTo(agentKey);
-    assertThat(model.status()).isEqualTo(AgentInstanceDbModel.AgentInstanceStatus.INITIALIZING);
+    assertThat(model.status()).isEqualTo(AgentInstanceEntity.AgentInstanceStatus.INITIALIZING);
     assertThat(model.lastUpdatedDate()).isNotNull();
     assertThat(model.completionDate()).isNull();
     // creationDate is only set on CREATED intent
@@ -222,7 +223,7 @@ class AgentInstanceExportHandlerTest {
     // then
     verify(writer).create(modelCaptor.capture());
     assertThat(modelCaptor.getValue().status())
-        .isEqualTo(AgentInstanceDbModel.AgentInstanceStatus.UNKNOWN);
+        .isEqualTo(AgentInstanceEntity.AgentInstanceStatus.UNKNOWN);
   }
 
   @Test
