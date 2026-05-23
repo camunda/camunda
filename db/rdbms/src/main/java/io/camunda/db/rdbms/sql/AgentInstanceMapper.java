@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.AgentInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
+import java.util.List;
 
 public interface AgentInstanceMapper extends ProcessInstanceDependantMapper {
 
@@ -18,4 +20,8 @@ public interface AgentInstanceMapper extends ProcessInstanceDependantMapper {
   void deleteElementInstanceKeys(long agentInstanceKey);
 
   void insertElementInstanceKeys(AgentInstanceDbModel agentInstance);
+
+  Long count(AgentInstanceDbQuery query);
+
+  List<AgentInstanceDbModel> search(AgentInstanceDbQuery query);
 }

@@ -12,6 +12,8 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.AgentInstanceMapper">
 
+  <!-- ===== WRITE operations ===== -->
+
   <!-- default: PostgreSQL, H2, MariaDB, MySQL -->
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
     INSERT INTO ${prefix}AGENT_INSTANCE (
@@ -124,5 +126,206 @@
     <bind name="primaryKeyColumn" value="'AGENT_INSTANCE_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
+
+  <!-- ===== READ operations ===== -->
+
+  <!--
+    Tools are stored as a JSON CLOB in AGENT_INSTANCE.TOOLS and are deserialized lazily
+    by AgentInstanceDbModel.toolValues(). No separate tool table exists in the schema.
+  -->
+  <resultMap id="searchResultMap"
+    type="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    <id property="agentInstanceKey" column="AGENT_INSTANCE_KEY" javaType="long"/>
+    <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
+    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="long"/>
+    <result property="rootProcessInstanceKey" column="ROOT_PROCESS_INSTANCE_KEY" javaType="long"/>
+    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="long"/>
+    <result property="processDefinitionVersion" column="PROCESS_DEFINITION_VERSION"
+      javaType="java.lang.Integer"/>
+    <result property="versionTag" column="VERSION_TAG" javaType="java.lang.String"/>
+    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+    <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
+    <result property="status" column="STATUS" javaType="java.lang.String"/>
+    <result property="model" column="MODEL" javaType="java.lang.String"/>
+    <result property="provider" column="PROVIDER" javaType="java.lang.String"/>
+    <result property="systemPrompt" column="SYSTEM_PROMPT" javaType="java.lang.String"/>
+    <result property="maxTokens" column="MAX_TOKENS" javaType="long"/>
+    <result property="maxModelCalls" column="MAX_MODEL_CALLS" javaType="java.lang.Integer"/>
+    <result property="maxToolCalls" column="MAX_TOOL_CALLS" javaType="java.lang.Integer"/>
+    <result property="inputTokens" column="INPUT_TOKENS" javaType="long"/>
+    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="long"/>
+    <result property="modelCalls" column="MODEL_CALLS" javaType="java.lang.Integer"/>
+    <result property="toolCalls" column="TOOL_CALLS" javaType="java.lang.Integer"/>
+    <result property="tools" column="TOOLS" javaType="java.lang.String"/>
+    <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="lastUpdatedDate" column="LAST_UPDATED_DATE"
+      javaType="java.time.OffsetDateTime"/>
+    <result property="completionDate" column="COMPLETION_DATE" javaType="java.time.OffsetDateTime"/>
+    <collection property="elementInstanceKeys" ofType="java.lang.Long" javaType="java.util.List">
+      <id column="ELEMENT_INSTANCE_KEY"/>
+    </collection>
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.AgentInstanceDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.AgentInstanceMapper.searchResultMap">
+    SELECT * FROM (
+      SELECT
+        ai.*,
+        eik.ELEMENT_INSTANCE_KEY
+      FROM (
+        SELECT * FROM (
+          SELECT
+            ai.AGENT_INSTANCE_KEY,
+            ai.ELEMENT_ID,
+            ai.PROCESS_INSTANCE_KEY,
+            ai.ROOT_PROCESS_INSTANCE_KEY,
+            ai.PROCESS_DEFINITION_ID,
+            ai.PROCESS_DEFINITION_KEY,
+            ai.PROCESS_DEFINITION_VERSION,
+            ai.VERSION_TAG,
+            ai.TENANT_ID,
+            ai.PARTITION_ID,
+            ai.STATUS,
+            ai.MODEL,
+            ai.PROVIDER,
+            ai.SYSTEM_PROMPT,
+            ai.MAX_TOKENS,
+            ai.MAX_MODEL_CALLS,
+            ai.MAX_TOOL_CALLS,
+            ai.INPUT_TOKENS,
+            ai.OUTPUT_TOKENS,
+            ai.MODEL_CALLS,
+            ai.TOOL_CALLS,
+            ai.TOOLS,
+            ai.CREATION_DATE,
+            ai.LAST_UPDATED_DATE,
+            ai.COMPLETION_DATE
+          FROM ${prefix}AGENT_INSTANCE ai
+          <include refid="io.camunda.db.rdbms.sql.AgentInstanceMapper.searchAndAuthFilter"/>
+        ) filtered
+        <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+        <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+        <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+      ) ai
+      LEFT JOIN ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE eik
+        ON eik.AGENT_INSTANCE_KEY = ai.AGENT_INSTANCE_KEY
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AGENT_INSTANCE ai
+      <include refid="io.camunda.db.rdbms.sql.AgentInstanceMapper.searchAndAuthFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND ai.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND ai.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.AgentInstanceMapper.searchFilter"/>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
+      <if test="filter.agentInstanceKeyOperations != null and !filter.agentInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.agentInstanceKeyOperations" item="operation">
+          AND ai.AGENT_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.processInstanceKeyOperations" item="operation">
+          AND ai.PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND ai.PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND ai.PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionVersionOperations" item="operation">
+          AND ai.PROCESS_DEFINITION_VERSION
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.versionTagOperations != null and !filter.versionTagOperations.isEmpty()">
+        <foreach collection="filter.versionTagOperations" item="operation">
+          AND ai.VERSION_TAG
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
+        <foreach collection="filter.elementIdOperations" item="operation">
+          AND ai.ELEMENT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.statusOperations != null and !filter.statusOperations.isEmpty()">
+        <foreach collection="filter.statusOperations" item="operation">
+          AND ai.STATUS
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+        <foreach collection="filter.tenantIdOperations" item="operation">
+          AND ai.TENANT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.creationDateOperations != null and !filter.creationDateOperations.isEmpty()">
+        <foreach collection="filter.creationDateOperations" item="operation">
+          AND ai.CREATION_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.lastUpdatedDateOperations != null and !filter.lastUpdatedDateOperations.isEmpty()">
+        <foreach collection="filter.lastUpdatedDateOperations" item="operation">
+          AND ai.LAST_UPDATED_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.completionDateOperations != null and !filter.completionDateOperations.isEmpty()">
+        <foreach collection="filter.completionDateOperations" item="operation">
+          AND ai.COMPLETION_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <!-- elementInstanceKey filter uses EXISTS subquery against the junction table -->
+      <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+        AND EXISTS (
+          SELECT 1 FROM ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE eik
+          WHERE eik.AGENT_INSTANCE_KEY = ai.AGENT_INSTANCE_KEY
+          <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+            AND eik.ELEMENT_INSTANCE_KEY
+            <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+          </foreach>
+        )
+      </if>
+  </sql>
 
 </mapper>
