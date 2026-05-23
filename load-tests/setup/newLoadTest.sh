@@ -165,10 +165,11 @@ mkdir -p "$namespace"
 # so the per-namespace Makefile's -f <file>.yaml references resolve as before.
 cp -v  default/Makefile                              "$namespace/"
 cp -rv default/resources/                            "$namespace/"
-cp -v  default/values/camunda-platform-values-elasticsearch.yaml "$namespace/"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
+cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
+cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
 
 # Storage-specific copies. databases/ is created only for mssql/oracle.
 case "$secondaryStorage" in
