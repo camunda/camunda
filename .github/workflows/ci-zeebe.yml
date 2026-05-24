@@ -558,7 +558,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@33a44f8dcb449fb8e08211afc03ae3c010195f75 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@a7d6c6fe9f3a703c754eca7869106811fa738c57 # main
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
