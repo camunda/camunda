@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -195,6 +196,15 @@ public class AgentInstanceDbModel implements Copyable<AgentInstanceDbModel> {
 
   public void provider(final String provider) {
     this.provider = provider;
+  }
+
+  public void truncateDefinitionFields(final int sizeLimit, final Integer byteLimit) {
+    if (TruncateUtil.shouldTruncate(model, sizeLimit, byteLimit)) {
+      model = TruncateUtil.truncateValue(model, sizeLimit, byteLimit);
+    }
+    if (TruncateUtil.shouldTruncate(provider, sizeLimit, byteLimit)) {
+      provider = TruncateUtil.truncateValue(provider, sizeLimit, byteLimit);
+    }
   }
 
   public String systemPrompt() {

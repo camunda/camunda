@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -30,7 +31,15 @@ class AgentInstanceWriterTest {
 
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
   private final AgentInstanceMapper mapper = mock(AgentInstanceMapper.class);
-  private final AgentInstanceWriter writer = new AgentInstanceWriter(executionQueue, mapper);
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      mock(VendorDatabaseProperties.class);
+  private final AgentInstanceWriter writer =
+      new AgentInstanceWriter(executionQueue, mapper, vendorDatabaseProperties);
+
+  AgentInstanceWriterTest() {
+    when(vendorDatabaseProperties.userCharColumnSize()).thenReturn(Integer.MAX_VALUE);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(null);
+  }
 
   @Test
   void shouldEnqueueInsertOnCreate() {

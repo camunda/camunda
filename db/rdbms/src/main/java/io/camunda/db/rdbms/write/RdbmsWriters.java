@@ -182,7 +182,8 @@ public class RdbmsWriters {
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
     writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
     writers.put(
-        AgentInstanceWriter.class, new AgentInstanceWriter(executionQueue, agentInstanceMapper));
+        AgentInstanceWriter.class,
+        new AgentInstanceWriter(executionQueue, agentInstanceMapper, vendorDatabaseProperties));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {

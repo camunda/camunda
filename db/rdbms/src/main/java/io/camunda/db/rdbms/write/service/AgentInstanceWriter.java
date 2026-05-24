@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
@@ -20,14 +21,21 @@ import java.util.function.Function;
 public class AgentInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   public AgentInstanceWriter(
-      final ExecutionQueue executionQueue, final AgentInstanceMapper mapper) {
+      final ExecutionQueue executionQueue,
+      final AgentInstanceMapper mapper,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     super(mapper);
     this.executionQueue = executionQueue;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void create(final AgentInstanceDbModel agentInstance) {
+    agentInstance.truncateDefinitionFields(
+        vendorDatabaseProperties.userCharColumnSize(),
+        vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.AGENT_INSTANCE,
