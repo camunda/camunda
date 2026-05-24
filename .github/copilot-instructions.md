@@ -22,7 +22,16 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 - gRPC API: http://localhost:26500
 - Management API: http://localhost:9600/actuator
 
+<<<<<<< HEAD
 ## Code Style and Conventions
+=======
+1. Read the module's `README.md` (if present) and any documentation in its directory.
+2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`, or
+   documents `docs/data-layer` when there are changes relating to secondary storage).
+3. If working on the workflow engine, read `zeebe/engine/README.md`.
+4. If working on a Spring-based module (e.g., `dist/`, `clients/`, `gateways/`,
+   `authentication/`), read `docs/spring-conventions.md`.
+>>>>>>> 96b22b4e (docs: add spring-conventions.md doc for users and agents)
 
 - Defined via the Maven Spotless plugin, to auto format run `./mvnw spotless:check -T1C`
 - Follow conventions in `CONTRIBUTING.md` and all Markdown files in `docs/`
