@@ -20,6 +20,8 @@ Before modifying code in any module:
 2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`, or
    documents `docs/data-layer` when there are changes relating to secondary storage).
 3. If working on the workflow engine, read `zeebe/engine/README.md`.
+4. If working on a Spring-based module (e.g., `dist/`, `clients/`, `gateways/`,
+   `authentication/`), read `docs/spring-conventions.md`.
 
 Not every module has a README yet — when one exists, treat it as the primary reference for that
 module.
