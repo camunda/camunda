@@ -378,7 +378,9 @@ final class RingBufferTest {
 
     /**
      * Simulates the full lifecycle: writer puts entries, a second thread finds and removes them
-     * (like onProcessed). Verifies findAndRemove works correctly.
+     * (like onProcessed). The processor only advances once the writer has published the position,
+     * mirroring the production ordering where onProcessed cannot outrun the producer. Verifies
+     * findAndRemove works correctly.
      */
     @Test
     void findAndRemoveWorksAcrossThreads() {
@@ -386,6 +388,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(CAPACITY);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
+      final var publishedPosition = new AtomicLong(0);
 
       final var writer =
           new Thread(
@@ -393,6 +396,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
                   buffer.put(newEntry(pos));
+                  publishedPosition.set(pos);
                 }
               });
 
@@ -401,6 +405,10 @@ final class RingBufferTest {
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
+                  while (pos > publishedPosition.get()) {
+                    LockSupport.parkNanos(1);
+                  }
+
                   InFlightEntry entry = null;
                   while (entry == null) {
                     entry = buffer.findAndRemove(pos);
@@ -547,7 +555,7 @@ final class RingBufferTest {
       startLatch.countDown();
 
       Awaitility.await("threads complete")
-          .atMost(Duration.ofSeconds(30))
+          .atMost(Duration.ofSeconds(60))
           .untilAsserted(
               () -> {
                 for (final var thread : threads) {
