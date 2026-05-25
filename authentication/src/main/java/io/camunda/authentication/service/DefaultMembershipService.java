@@ -83,7 +83,9 @@ public class DefaultMembershipService implements MembershipPort {
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
     if (ids.isEmpty()) {
-      LOG.debug("No mappingRules found for these claims: {}", query.tokenClaims());
+      // Log only claim keys — values may contain PII (sub, email, scopes, …) and DEBUG can still
+      // reach log aggregators.
+      LOG.debug("No mappingRules found for claim keys: {}", query.tokenClaims().keySet());
     }
     return List.copyOf(ids);
   }

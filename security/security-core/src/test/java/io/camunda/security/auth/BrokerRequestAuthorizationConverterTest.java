@@ -166,9 +166,13 @@ public class BrokerRequestAuthorizationConverterTest {
 
   @Test
   void shouldNotInvokeGroupsSupplierWhenNoGroupsClaimConfigured() {
-    // given — OIDC with camundaGroupsEnabled=false and authorizations enabled, but no groupsClaim
-    // configured. Groups would otherwise come from a DB lookup, which we don't want on the broker
-    // request path; the engine resolves groups from its own membershipState in that case.
+    // given — OIDC with authorizations enabled and no groupsClaim configured. Groups would
+    // otherwise come from a DB lookup, which we don't want on the broker request path; the engine
+    // resolves groups from its own membershipState in that case. (Note: with OIDC and no
+    // groupsClaim,
+    // SecurityConfiguration derives camundaGroupsEnabled=true; the converter's gate
+    // !camundaGroupsEnabled && groupsClaimConfigured therefore short-circuits on
+    // groupsClaimConfigured.)
     final var invoked = new AtomicBoolean();
     final var oidcConfiguration = new OidcConfiguration();
     // no groupsClaim set
