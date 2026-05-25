@@ -24,6 +24,8 @@ public final class RdbmsTableNames {
    */
   public static final List<String> TABLE_NAMES =
       List.of(
+          "AGENT_INSTANCE_ELEMENT_INSTANCE",
+          "AGENT_INSTANCE",
           "AUDIT_LOG",
           "AUTHORIZATIONS",
           "BATCH_OPERATION_ITEM",

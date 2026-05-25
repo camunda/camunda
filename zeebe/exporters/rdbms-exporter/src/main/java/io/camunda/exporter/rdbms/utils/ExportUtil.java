@@ -62,4 +62,16 @@ public class ExportUtil {
     }
     return tenantId;
   }
+
+  /**
+   * Converts an empty string to {@code null}, leaving non-empty values unchanged.
+   *
+   * <p>Use this when mapping optional string fields from protocol records to DB models. MsgPack
+   * {@code StringProperty} defaults to {@code ""} when a field is not set by the sender, but
+   * nullable DB columns should store {@code null} to correctly represent "absent" rather than an
+   * empty string.
+   */
+  public static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
+  }
 }

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.AgentInstanceMapper">
+
+  <!-- default: PostgreSQL, H2, MariaDB, MySQL -->
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    INSERT INTO ${prefix}AGENT_INSTANCE (
+      AGENT_INSTANCE_KEY,ELEMENT_ID,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_DEFINITION_VERSION,
+      VERSION_TAG,
+      TENANT_ID,
+      PARTITION_ID,
+      STATUS,
+      MODEL,
+      PROVIDER,
+      SYSTEM_PROMPT,
+      MAX_TOKENS,
+      MAX_MODEL_CALLS,
+      MAX_TOOL_CALLS,
+      INPUT_TOKENS,
+      OUTPUT_TOKENS,
+      MODEL_CALLS,
+      TOOL_CALLS,
+      TOOLS,
+      CREATION_DATE,
+      LAST_UPDATED_DATE,
+      COMPLETION_DATE
+    )
+    VALUES (
+      #{agentInstanceKey},
+      #{elementId},
+      #{processInstanceKey},
+      #{rootProcessInstanceKey},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processDefinitionVersion},
+      #{versionTag},
+      #{tenantId},
+      #{partitionId},
+      #{status},
+      #{model},
+      #{provider},
+      #{systemPrompt, jdbcType=CLOB},
+      #{maxTokens},
+      #{maxModelCalls},
+      #{maxToolCalls},
+      #{inputTokens},
+      #{outputTokens},
+      #{modelCalls},
+      #{toolCalls},
+      #{tools, jdbcType=CLOB},
+      #{creationDate, jdbcType=TIMESTAMP},
+      #{lastUpdatedDate, jdbcType=TIMESTAMP},
+      #{completionDate, jdbcType=TIMESTAMP}
+    )
+  </insert>
+
+  <!-- partial update: only mutable fields; immutable fields (definition, limits, identity) are left unchanged -->
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    UPDATE ${prefix}AGENT_INSTANCE
+    SET
+      STATUS              = #{status},
+      INPUT_TOKENS        = #{inputTokens},
+      OUTPUT_TOKENS       = #{outputTokens},
+      MODEL_CALLS         = #{modelCalls},
+      TOOL_CALLS          = #{toolCalls},
+      TOOLS               = #{tools, jdbcType=CLOB},
+      LAST_UPDATED_DATE   = #{lastUpdatedDate, jdbcType=TIMESTAMP}
+      <if test="completionDate != null">, COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP}</if>
+    WHERE AGENT_INSTANCE_KEY = #{agentInstanceKey}
+  </update>
+
+  <!-- delete all element instance keys for a given agent instance -->
+  <delete id="deleteElementInstanceKeys">
+    DELETE FROM ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE
+    WHERE AGENT_INSTANCE_KEY = #{agentInstanceKey}
+  </delete>
+
+  <!-- bulk-insert element instance keys — default: PostgreSQL, H2, MariaDB, MySQL, MSSQL -->
+  <insert id="insertElementInstanceKeys"
+    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel">
+    INSERT INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
+    VALUES
+    <foreach collection="elementInstanceKeys" item="elementInstanceKey" separator=", ">
+      (#{agentInstanceKey}, #{elementInstanceKey})
+    </foreach>
+  </insert>
+
+  <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
+  <insert id="insertElementInstanceKeys"
+    parameterType="io.camunda.db.rdbms.write.domain.AgentInstanceDbModel"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="elementInstanceKeys" item="elementInstanceKey">
+      INTO ${prefix}AGENT_INSTANCE_ELEMENT_INSTANCE (AGENT_INSTANCE_KEY, ELEMENT_INSTANCE_KEY)
+        VALUES (#{agentInstanceKey}, #{elementInstanceKey})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <!-- deleteRootProcessInstanceRelatedData cascades to AGENT_INSTANCE_ELEMENT_INSTANCE via FK ON DELETE CASCADE -->
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AGENT_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'AGENT_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+</mapper>

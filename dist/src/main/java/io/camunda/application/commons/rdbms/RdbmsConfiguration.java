@@ -57,6 +57,7 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
+import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
@@ -455,6 +456,7 @@ public class RdbmsConfiguration {
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper,
+      final AgentInstanceMapper agentInstanceMapper,
       final TransactionRunner transactionRunner) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
@@ -482,6 +484,7 @@ public class RdbmsConfiguration {
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
         historyDeletionMapper,
+        agentInstanceMapper,
         transactionRunner);
   }
 
