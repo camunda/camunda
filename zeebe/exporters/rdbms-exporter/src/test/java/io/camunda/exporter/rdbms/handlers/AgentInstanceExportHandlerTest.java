@@ -253,6 +253,40 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.lastUpdatedDate()).isEqualTo(model.completionDate());
   }
 
+  @Test
+  void shouldMapEmptyStringsToNull() {
+    // given
+    final long agentKey = 45L;
+    final var tool =
+        ImmutableAgentInstanceToolValue.builder()
+            .withName("mcpTool")
+            .withDescription("") // no bpmn:documentation
+            .withElementId("") // MCP tool — no BPMN element
+            .build();
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildRecordValue(agentKey))
+            .withVersionTag("") // process has no version tag
+            .withTools(List.of(tool))
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.UPDATED).withKey(agentKey).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).update(modelCaptor.capture());
+    final AgentInstanceDbModel model = modelCaptor.getValue();
+    assertThat(model.versionTag()).isNull();
+    assertThat(model.toolValues()).hasSize(1);
+    assertThat(model.toolValues().getFirst().description()).isNull();
+    assertThat(model.toolValues().getFirst().elementId()).isNull();
+  }
+
   private AgentInstanceRecordValue buildRecordValue(final long agentInstanceKey) {
     final var tool =
         ImmutableAgentInstanceToolValue.builder()

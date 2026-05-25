@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.exporter.rdbms.utils.ExportUtil;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -70,7 +71,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
             .processDefinitionVersion(value.getProcessDefinitionVersion())
-            .versionTag(value.getVersionTag())
+            .versionTag(ExportUtil.emptyToNull(value.getVersionTag()))
             .tenantId(value.getTenantId())
             .partitionId(record.getPartitionId())
             .status(mapStatus(value.getStatus()))
@@ -123,7 +124,12 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
       return null;
     }
     return tools.stream()
-        .map(t -> new AgentInstanceToolDbValue(t.getName(), t.getDescription(), t.getElementId()))
+        .map(
+            t ->
+                new AgentInstanceToolDbValue(
+                    t.getName(),
+                    ExportUtil.emptyToNull(t.getDescription()),
+                    ExportUtil.emptyToNull(t.getElementId())))
         .toList();
   }
 }
