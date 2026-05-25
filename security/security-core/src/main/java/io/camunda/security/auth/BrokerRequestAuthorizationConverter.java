@@ -64,7 +64,7 @@ public class BrokerRequestAuthorizationConverter {
         authentication.isAnonymous(),
         authentication.authenticatedUsername(),
         authentication.authenticatedClientId(),
-        readGroups ? authentication.authenticatedGroupIds() : null,
+        readGroups ? authentication.authenticatedGroupIds() : List.of(),
         authentication.claims());
   }
 
@@ -90,7 +90,7 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     if (shouldIncludeAuthorizationClaims) {
-      if (!camundaGroupsEnabled && groups != null) {
+      if (!camundaGroupsEnabled && !groups.isEmpty()) {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }
 
