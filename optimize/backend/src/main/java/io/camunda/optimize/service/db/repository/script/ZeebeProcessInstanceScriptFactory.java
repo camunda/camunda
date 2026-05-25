@@ -17,7 +17,8 @@ public interface ZeebeProcessInstanceScriptFactory {
   static String createProcessInstanceUpdateScript() {
     return createUpdateProcessInstancePropertiesScript()
         + createUpdateFlowNodeInstancesScript()
-        + createUpdateIncidentsScript();
+        + createUpdateIncidentsScript()
+        + createUpdateAgentInstancesScript();
   }
 
   private static String createUpdateProcessInstancePropertiesScript() {
@@ -154,6 +155,52 @@ public interface ZeebeProcessInstanceScriptFactory {
                 })
                 .collect(Collectors.toList());
           """;
+  }
+
+  private static String createUpdateAgentInstancesScript() {
+    return """
+      if (existingInstance.agentInstances == null) {
+        existingInstance.agentInstances = new ArrayList();
+      }
+      if (params.instance.agentInstances != null && !params.instance.agentInstances.isEmpty()) {
+        def agentsById = existingInstance.agentInstances.stream()
+          .collect(Collectors.toMap(a -> a.agentInstanceId, a -> a, (a1, a2) -> a1));
+        for (def newAgent : params.instance.agentInstances) {
+          def existingAgent = agentsById.get(newAgent.agentInstanceId);
+          if (existingAgent != null) {
+            if (newAgent.startDate != null) { existingAgent.startDate = newAgent.startDate; }
+            if (newAgent.startDateEpochMs != null) { existingAgent.startDateEpochMs = newAgent.startDateEpochMs; }
+            if (newAgent.endDate != null) { existingAgent.endDate = newAgent.endDate; }
+            if (newAgent.endDateEpochMs != null) { existingAgent.endDateEpochMs = newAgent.endDateEpochMs; }
+            if (existingAgent.startDateEpochMs != null && existingAgent.endDateEpochMs != null) {
+              existingAgent.totalDurationInMs = existingAgent.endDateEpochMs - existingAgent.startDateEpochMs;
+            }
+            if (newAgent.status != null) { existingAgent.status = newAgent.status; }
+            if (newAgent.lastUpdatedDate != null) { existingAgent.lastUpdatedDate = newAgent.lastUpdatedDate; }
+            if (newAgent.definition != null) { existingAgent.definition = newAgent.definition; }
+            if (newAgent.metrics != null) { existingAgent.metrics = newAgent.metrics; }
+            if (newAgent.tools != null && !newAgent.tools.isEmpty()) { existingAgent.tools = newAgent.tools; }
+          } else {
+            agentsById.put(newAgent.agentInstanceId, newAgent);
+          }
+        }
+        existingInstance.agentInstances = agentsById.values();
+        long totalInput = 0; long totalOutput = 0; long totalModel = 0; long totalTool = 0;
+        for (def a : existingInstance.agentInstances) {
+          if (a.metrics != null) {
+            if (a.metrics.inputTokens != null) { totalInput += a.metrics.inputTokens; }
+            if (a.metrics.outputTokens != null) { totalOutput += a.metrics.outputTokens; }
+            if (a.metrics.modelCalls != null) { totalModel += a.metrics.modelCalls; }
+            if (a.metrics.toolCalls != null) { totalTool += a.metrics.toolCalls; }
+          }
+        }
+        existingInstance.agentTotalInputTokens = totalInput;
+        existingInstance.agentTotalOutputTokens = totalOutput;
+        existingInstance.agentTotalModelCalls = totalModel;
+        existingInstance.agentTotalToolCalls = totalTool;
+        existingInstance.agentTotalTokens = totalInput + totalOutput;
+      }
+      """;
   }
 
   private static String createUpdatePropertyIfNotNullScript(
