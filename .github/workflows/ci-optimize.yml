@@ -280,31 +280,8 @@ jobs:
         working-directory: ./optimize/client
         run: yarn start &
 
-      - name: Wait for import to complete
-        run: |
-          while : ; do
-            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 17 ]]; then
-              echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
-              prev="-1"
-              stable=0
-              while [[ $stable -lt 2 ]]; do
-                cur=$(curl -s -X GET "http://localhost:9200/optimize-process-instance/_count" | jq '.count // 0')
-                echo "Process instances: $cur"
-                if [[ "$cur" == "$prev" ]]; then
-                  stable=$((stable + 1))
-                else
-                  stable=0
-                fi
-                prev="$cur"
-                sleep 10
-              done
-              echo "Import stabilized at $cur process instances"
-              break
-            fi
-            echo "Index has $count entities. Waiting for 17..."
-            sleep 10
-          done
+      - name: Wait for backend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
 
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
