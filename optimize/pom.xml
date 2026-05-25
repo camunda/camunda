@@ -76,7 +76,7 @@
     <!-- testing config -->
     <mockito.version>5.23.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <mockserver.version>5.15.0</mockserver.version>
+    <mockserver.version>6.0.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
     <google-java-format.plugin.version>1.35.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
