@@ -112,7 +112,7 @@ record TestTopology(
       if (zone == null) {
         return String.valueOf(nodeId);
       } else {
-        return zone + "/" + nodeId;
+        return zone + ":" + nodeId;
       }
     }
 

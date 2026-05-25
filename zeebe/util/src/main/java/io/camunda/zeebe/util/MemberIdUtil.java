@@ -23,7 +23,7 @@ public final class MemberIdUtil {
    * Returns the canonical string representation of a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
+   * it is {@code "$zone:$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
    *
    * @throws IllegalArgumentException if {@code zone} is blank
    */
@@ -35,6 +35,6 @@ public final class MemberIdUtil {
     if (stripped.isEmpty()) {
       throw new IllegalArgumentException("Expected zone to be non-empty, but was empty");
     }
-    return stripped + "/" + nodeId;
+    return stripped + ":" + nodeId;
   }
 }

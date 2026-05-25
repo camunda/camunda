@@ -44,9 +44,9 @@ public class MemberId extends NodeId {
 
   public MemberId(final String id) {
     super(id);
-    final var parts = id.split("/");
+    final var parts = id.split(":");
     if (parts.length > 2) {
-      throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
+      throw new IllegalArgumentException("Expected id to be of the form $zone:$id, but got " + id);
     } else if (parts.length == 2) {
       zone = parts[0];
       nodeIdx = tryParseInt(parts[1]);
@@ -55,7 +55,7 @@ public class MemberId extends NodeId {
       nodeIdx = tryParseInt(parts[0]);
     } else {
       throw new IllegalArgumentException(
-          "Expected id to be of the form $zone/$id or $id, but got " + id);
+          "Expected id to be of the form $zone:$id or $id, but got " + id);
     }
     validateZone(zone);
     validateNodeIdx(nodeIdx);
@@ -84,7 +84,7 @@ public class MemberId extends NodeId {
    * Creates a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
+   * it is {@code "$zone:$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));

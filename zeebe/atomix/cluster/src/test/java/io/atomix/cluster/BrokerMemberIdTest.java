@@ -35,13 +35,13 @@ final class BrokerMemberIdTest {
     assertThat(brokerMemberId)
         .returns(7, BrokerMemberId::nodeIdx)
         .returns("eu-west", BrokerMemberId::zone)
-        .returns("eu-west/7", BrokerMemberId::id);
+        .returns("eu-west:7", BrokerMemberId::id);
   }
 
   @Test
   void shouldCreateBrokerMemberIdFromMemberId() {
     // given
-    final var memberId = MemberId.from("eu-west/7");
+    final var memberId = MemberId.from("eu-west:7");
 
     // when
     final var brokerMemberId = BrokerMemberId.from(memberId);
@@ -50,7 +50,7 @@ final class BrokerMemberIdTest {
     assertThat(brokerMemberId)
         .returns(7, BrokerMemberId::nodeIdx)
         .returns("eu-west", BrokerMemberId::zone)
-        .returns("eu-west/7", BrokerMemberId::id);
+        .returns("eu-west:7", BrokerMemberId::id);
   }
 
   @Test

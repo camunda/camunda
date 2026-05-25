@@ -550,7 +550,7 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldBackfillNewListenerWithCanonicalZoneAwareMemberId() {
     // given — broker 0 joined with a zone-aware id
-    final var zonedMemberId = BrokerMemberId.from("eu-west/0");
+    final var zonedMemberId = BrokerMemberId.from("eu-west:0");
     final var broker = createBroker(zonedMemberId);
     final var member =
         new Member(new MemberConfig().setId(zonedMemberId.memberId()).setZoneId("eu-west"));

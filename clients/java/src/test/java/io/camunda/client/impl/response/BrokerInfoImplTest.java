@@ -28,7 +28,7 @@ final class BrokerInfoImplTest {
     final GatewayOuterClass.BrokerInfo proto =
         GatewayOuterClass.BrokerInfo.newBuilder()
             .setNodeId(0)
-            .setBrokerId("us-east/0")
+            .setBrokerId("us-east:0")
             .setZone("us-east")
             .setHost("localhost")
             .setPort(26501)
@@ -39,7 +39,7 @@ final class BrokerInfoImplTest {
     final BrokerInfoImpl brokerInfo = new BrokerInfoImpl(proto);
 
     // then
-    assertThat(brokerInfo.getMemberId()).isEqualTo("us-east/0");
+    assertThat(brokerInfo.getMemberId()).isEqualTo("us-east:0");
     assertThat(brokerInfo.getZone()).isEqualTo("us-east");
   }
 

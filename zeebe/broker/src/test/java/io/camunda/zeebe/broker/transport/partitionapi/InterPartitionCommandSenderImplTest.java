@@ -49,7 +49,7 @@ final class InterPartitionCommandSenderImplTest {
   @Test
   void shouldSendCommandToZonedMemberId() {
     // given
-    final var leaderId = MemberId.from("eu-west/2");
+    final var leaderId = MemberId.from("eu-west:2");
     sender.setCurrentLeader(1, leaderId);
 
     // when
