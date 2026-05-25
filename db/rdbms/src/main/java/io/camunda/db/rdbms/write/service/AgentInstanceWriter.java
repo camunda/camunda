@@ -44,7 +44,7 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
             "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             agentInstance));
 
-    syncElementInstanceKeys(agentInstance);
+    insertElementInstanceKeys(agentInstance);
   }
 
   public void update(final AgentInstanceDbModel agentInstance) {
@@ -78,25 +78,38 @@ public class AgentInstanceWriter extends ProcessInstanceDependant implements Rdb
     syncElementInstanceKeys(agentInstance);
   }
 
-  private void syncElementInstanceKeys(final AgentInstanceDbModel agentInstance) {
-    final long agentInstanceKey = agentInstance.agentInstanceKey();
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.AGENT_INSTANCE,
-            WriteStatementType.DELETE,
-            agentInstanceKey,
-            "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
-            agentInstanceKey));
+  /**
+   * Inserts element instance keys without a prior DELETE. Safe to call on the create path where no
+   * child rows can pre-exist (the engine guarantees a CREATED event is emitted at most once per
+   * agent instance key).
+   */
+  private void insertElementInstanceKeys(final AgentInstanceDbModel agentInstance) {
     if (agentInstance.elementInstanceKeys() != null
         && !agentInstance.elementInstanceKeys().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.AGENT_INSTANCE,
               WriteStatementType.INSERT,
-              agentInstanceKey,
+              agentInstance.agentInstanceKey(),
               "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
               agentInstance));
     }
+  }
+
+  /**
+   * Replaces the full set of element instance keys: DELETE existing rows then INSERT the current
+   * set. Required on the update path where the list may have changed since the last write.
+   */
+  private void syncElementInstanceKeys(final AgentInstanceDbModel agentInstance) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.AGENT_INSTANCE,
+            WriteStatementType.DELETE,
+            agentInstance.agentInstanceKey(),
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
+            agentInstance.agentInstanceKey()));
+
+    insertElementInstanceKeys(agentInstance);
   }
 
   private boolean mergeToQueue(final long key, final Function<Builder, Builder> mergeFunction) {

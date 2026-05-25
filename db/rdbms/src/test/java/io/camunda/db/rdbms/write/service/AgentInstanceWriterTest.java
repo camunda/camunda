@@ -49,7 +49,7 @@ class AgentInstanceWriterTest {
     // when
     writer.create(model);
 
-    // then
+    // then: main INSERT + child INSERT enqueued; no DELETE (no pre-existing rows on first creation)
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -59,15 +59,6 @@ class AgentInstanceWriterTest {
                     1L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
                     model)));
-    verify(executionQueue)
-        .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.AGENT_INSTANCE,
-                    WriteStatementType.DELETE,
-                    1L,
-                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
-                    1L)));
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -77,17 +68,23 @@ class AgentInstanceWriterTest {
                     1L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insertElementInstanceKeys",
                     model)));
+    verify(executionQueue, never())
+        .executeInQueue(
+            argThat(
+                item ->
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys"
+                        .equals(item.statementId())));
   }
 
   @Test
-  void shouldEnqueueDeleteButNotInsertWhenElementInstanceKeysAreNull() {
+  void shouldNotEnqueueDeleteOrChildInsertWhenElementInstanceKeysAreNull() {
     // given
     final var model = buildModel(2L, null);
 
     // when
     writer.create(model);
 
-    // then: main INSERT and DELETE are enqueued; no bulk INSERT for empty key list
+    // then: only main INSERT is enqueued; no DELETE, no child INSERT for empty key list
     verify(executionQueue)
         .executeInQueue(
             eq(
@@ -97,15 +94,12 @@ class AgentInstanceWriterTest {
                     2L,
                     "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
                     model)));
-    verify(executionQueue)
+    verify(executionQueue, never())
         .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.AGENT_INSTANCE,
-                    WriteStatementType.DELETE,
-                    2L,
-                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys",
-                    2L)));
+            argThat(
+                item ->
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.deleteElementInstanceKeys"
+                        .equals(item.statementId())));
     verify(executionQueue, never())
         .executeInQueue(
             argThat(
