@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {Search} from '@carbon/react';
 import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 
@@ -15,18 +15,6 @@ const MAX_LENGTH = 200;
 
 const SearchInput: React.FC = observer(() => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [value, setValue] = useState<string>(
-    elementInstanceHistorySearchStore.state.searchText,
-  );
-
-  // Keep local state in sync if the store is reset externally (e.g. on
-  // modification-mode toggle or process-instance change).
-  useEffect(() => {
-    if (elementInstanceHistorySearchStore.state.searchText !== value) {
-      setValue(elementInstanceHistorySearchStore.state.searchText);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementInstanceHistorySearchStore.state.searchText]);
 
   // CMD+F / CTRL+F focuses and selects all text in the search input,
   // matching the keyboard shortcut Modeler uses for its element search.
@@ -51,14 +39,13 @@ const SearchInput: React.FC = observer(() => {
         labelText="Search element instances by name or ID"
         placeholder="Search by name or ID"
         data-testid="instance-history-search-input"
-        value={value}
+        value={elementInstanceHistorySearchStore.state.searchText}
         onChange={(event) => {
-          const next = event.target.value.slice(0, MAX_LENGTH);
-          setValue(next);
-          elementInstanceHistorySearchStore.setSearchText(next);
+          elementInstanceHistorySearchStore.setSearchText(
+            event.target.value.slice(0, MAX_LENGTH),
+          );
         }}
         onClear={() => {
-          setValue('');
           elementInstanceHistorySearchStore.setSearchText('');
         }}
       />

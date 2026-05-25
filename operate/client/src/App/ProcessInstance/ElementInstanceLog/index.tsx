@@ -70,32 +70,23 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       error: businessObjectsError,
     } = useBusinessObjects();
 
-    // Keep the search store's processInstanceKey in sync with the URL.
-    // Changing the key resets all search state (text, items, polling).
+    // Keep the search store's processInstanceKey in sync with the URL, and
+    // drop any active search when modification mode is enabled (modification
+    // mode is incompatible with search).
     const processInstanceKey = processInstance?.processInstanceKey ?? null;
+    const isModificationModeEnabled =
+      modificationsStore.isModificationModeEnabled;
     useEffect(() => {
+      if (isModificationModeEnabled) {
+        elementInstanceHistorySearchStore.reset();
+      }
       elementInstanceHistorySearchStore.setProcessInstanceKey(
         processInstanceKey,
       );
       return () => {
         elementInstanceHistorySearchStore.reset();
       };
-    }, [processInstanceKey]);
-
-    // Modification mode is incompatible with search — drop active search
-    // immediately so toggling the mode doesn't leave a stale flat list.
-    const isModificationModeEnabled =
-      modificationsStore.isModificationModeEnabled;
-    useEffect(() => {
-      if (isModificationModeEnabled) {
-        elementInstanceHistorySearchStore.reset();
-        if (processInstanceKey !== null) {
-          elementInstanceHistorySearchStore.setProcessInstanceKey(
-            processInstanceKey,
-          );
-        }
-      }
-    }, [isModificationModeEnabled, processInstanceKey]);
+    }, [processInstanceKey, isModificationModeEnabled]);
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
