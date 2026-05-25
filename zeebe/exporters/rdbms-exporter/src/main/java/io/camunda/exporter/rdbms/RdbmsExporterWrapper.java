@@ -138,7 +138,8 @@ public class RdbmsExporterWrapper implements Exporter {
               replicationLogStatusProvider,
               config.getAsyncReplication(),
               partitionId,
-              context.clock()));
+              context.clock(),
+              rdbmsWriters.getMetrics()));
     } else {
       builder.replicationControllerFactory(ReplicationControllerFactory.noop());
     }

@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms.replication;
 
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -54,6 +55,7 @@ public class LsnReplicationController implements ReplicationController {
   private final ReplicationConfiguration config;
   private final int partitionId;
   private final InstantSource clock;
+  private final RdbmsWriterMetrics metrics;
 
   private final BlockingQueue<LsnPositionEntry> pendingEntries;
   private final AtomicLong flushedPosition = new AtomicLong(-1);
@@ -68,12 +70,14 @@ public class LsnReplicationController implements ReplicationController {
       final ReplicationLogStatusProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final RdbmsWriterMetrics metrics) {
     this.lsnProvider = lsnProvider;
     this.controller = controller;
     config = replicationConfiguration;
     this.partitionId = partitionId;
     this.clock = clock;
+    this.metrics = metrics;
 
     pendingEntries = new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY);
     replicationCheckTask =
@@ -164,6 +168,9 @@ public class LsnReplicationController implements ReplicationController {
             replicatedPosition.get());
         controller.updateLastExportedRecordPosition(replicatedPosition.get());
       }
+
+      metrics.recordReplicationStatus(
+          statuses, paused.get(), flushedPosition.get(), replicatedPosition.get());
     } catch (final Exception e) {
       LOG.error(
           "[RDBMS Exporter P{}] Error while checking replication status, will retry after {}",

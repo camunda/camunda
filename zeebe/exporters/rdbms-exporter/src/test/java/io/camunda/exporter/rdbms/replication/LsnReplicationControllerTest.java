@@ -9,6 +9,8 @@ package io.camunda.exporter.rdbms.replication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -18,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -40,6 +43,7 @@ class LsnReplicationControllerTest {
   private ReplicationConfiguration replicationConfig;
   private InstantSource clock;
   private ScheduledTask scheduledTask;
+  private RdbmsWriterMetrics metrics;
 
   @BeforeEach
   void setUp() {
@@ -53,6 +57,7 @@ class LsnReplicationControllerTest {
 
     scheduledTask = mock(ScheduledTask.class);
     clock = mock(InstantSource.class);
+    metrics = mock(RdbmsWriterMetrics.class);
 
     when(clock.millis()).thenReturn(0L);
     when(clock.instant()).thenReturn(java.time.Instant.EPOCH);
@@ -63,7 +68,7 @@ class LsnReplicationControllerTest {
 
   private LsnReplicationController createController() {
     return new LsnReplicationController(
-        controller, lsnProvider, replicationConfig, PARTITION_ID, clock);
+        controller, lsnProvider, replicationConfig, PARTITION_ID, clock, metrics);
   }
 
   // -----------------------------------------------------------------------
@@ -285,6 +290,21 @@ class LsnReplicationControllerTest {
 
     // then – reschedule must still happen even after an exception
     verify(controller, times(2)).scheduleCancellableTask(eq(POLLING_INTERVAL), any());
+  }
+
+  @Test
+  void shouldRecordReplicationStatusMetricsOnCheck() {
+    // given
+    final var replicationController = createController();
+    final var statuses = List.of(new ReplicationLogStatus(50L, "replica-1", 100L));
+    when(lsnProvider.getReplicationStatuses()).thenReturn(statuses);
+
+    // when
+    replicationController.checkReplication();
+
+    // then – metrics should be updated with the current replication state
+    verify(metrics, atLeastOnce())
+        .recordReplicationStatus(eq(statuses), anyBoolean(), anyLong(), anyLong());
   }
 
   @Test

@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatus;
 import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
@@ -16,7 +18,14 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class RdbmsWriterMetrics {
 
@@ -28,6 +37,11 @@ public class RdbmsWriterMetrics {
   private final Timer recordExportingLatency;
   private final DistributionSummary queueMemoryDistribution;
   private Sample flushLatencyMeasurement;
+
+  private final AtomicInteger connectedReplicasValue = new AtomicInteger(0);
+  private final AtomicInteger exporterPausedValue = new AtomicInteger(0);
+  private final AtomicLong pendingPositionsValue = new AtomicLong(0);
+  private final Map<String, StatefulGauge> replicaLagGauges = new HashMap<>();
 
   public RdbmsWriterMetrics(final MeterRegistry meterRegistry, final int partitionId) {
     this.meterRegistry = meterRegistry;
@@ -65,6 +79,25 @@ public class RdbmsWriterMetrics {
                 52428800, // 50MB
                 104857600) // 100MB
             .register(meterRegistry);
+
+    Gauge.builder(
+            meterName("replication.connected.replicas"), connectedReplicasValue, AtomicInteger::get)
+        .description("Number of currently connected read replicas")
+        .tag("partitionId", String.valueOf(partitionId))
+        .register(meterRegistry);
+
+    Gauge.builder(meterName("replication.paused"), exporterPausedValue, AtomicInteger::get)
+        .description(
+            "Whether the exporter is currently paused due to replication lag (1 = paused, 0 = running)")
+        .tag("partitionId", String.valueOf(partitionId))
+        .register(meterRegistry);
+
+    Gauge.builder(
+            meterName("replication.pending.positions"), pendingPositionsValue, AtomicLong::get)
+        .description(
+            "Number of exporter positions that have been flushed but not yet confirmed as replicated")
+        .tag("partitionId", String.valueOf(partitionId))
+        .register(meterRegistry);
   }
 
   public ResourceSample measureFlushDuration() {
@@ -238,6 +271,48 @@ public class RdbmsWriterMetrics {
         .description("Count of queue flushes")
         .register(meterRegistry)
         .increment();
+  }
+
+  /**
+   * Records the current replication lag per replica, the connected replica count, the paused state,
+   * and the number of pending (flushed-but-not-yet-replicated) positions.
+   *
+   * @param statuses the current replication statuses returned by the database
+   * @param paused whether the exporter is currently paused due to replication lag
+   * @param flushedPosition the last position flushed to the database by this exporter
+   * @param replicatedPosition the last position confirmed as replicated by the required quorum
+   */
+  public void recordReplicationStatus(
+      final List<ReplicationLogStatus> statuses,
+      final boolean paused,
+      final long flushedPosition,
+      final long replicatedPosition) {
+    connectedReplicasValue.set(statuses.size());
+    exporterPausedValue.set(paused ? 1 : 0);
+    pendingPositionsValue.set(Math.max(0, flushedPosition - replicatedPosition));
+
+    final var currentReplicaIds =
+        statuses.stream().map(ReplicationLogStatus::replicaId).collect(Collectors.toSet());
+
+    final var staleReplicaIds = new ArrayList<>(replicaLagGauges.keySet());
+    staleReplicaIds.removeAll(currentReplicaIds);
+    staleReplicaIds.forEach(id -> meterRegistry.remove(replicaLagGauges.remove(id)));
+
+    for (final var status : statuses) {
+      final var gauge =
+          replicaLagGauges.computeIfAbsent(status.replicaId(), this::registerReplicaLagGauge);
+      final var lag = status.replicationLagMs();
+      gauge.set(lag != null ? lag.doubleValue() : Double.NaN);
+    }
+  }
+
+  private StatefulGauge registerReplicaLagGauge(final String replicaId) {
+    return StatefulGauge.builder(meterName("replication.lag.ms"))
+        .description(
+            "Currently observed replication lag per read replica in milliseconds as reported by the database")
+        .tag("partitionId", String.valueOf(partitionId))
+        .tag("replicaId", replicaId)
+        .register(meterRegistry);
   }
 
   private String meterName(final String name) {
