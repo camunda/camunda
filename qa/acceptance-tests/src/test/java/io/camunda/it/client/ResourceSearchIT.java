@@ -16,7 +16,6 @@ import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
@@ -28,7 +27,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest(DatabaseType.RDBMS_MSSQL)
+@MultiDbTest
 class ResourceSearchIT {
 
   private static CamundaClient camundaClient;
