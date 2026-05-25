@@ -110,9 +110,9 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
             """
-                Cannot delete Backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}'\
-                , must be marked as deleted.""");
+                Cannot delete Backup with id '%s'\
+                , must be marked as deleted."""
+                .formatted(backup.id()));
   }
 
   @ParameterizedTest
@@ -128,9 +128,9 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
             """
-                Expected to restore from completed backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}', \
-                but was in state 'IN_PROGRESS'""");
+                Expected to restore from completed backup with id '%s', \
+                but was in state 'IN_PROGRESS'"""
+                .formatted(backup.id()));
   }
 
   @Test

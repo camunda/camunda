@@ -38,6 +38,7 @@ final class ManifestMetadata {
   static final String CHECKPOINT_POSITION = "checkpoint-position";
   static final String NUMBER_OF_PARTITIONS = "number-of-partitions";
   static final String BROKER_VERSION = "broker-version";
+  static final String ZONE = "zone";
   static final String CHECKPOINT_TIMESTAMP = "checkpoint-timestamp";
   static final String CHECKPOINT_TYPE = "checkpoint-type";
 
@@ -59,6 +60,10 @@ final class ManifestMetadata {
       if (failureReason != null) {
         metadata.put(FAILURE_REASON, failureReason);
       }
+    }
+
+    if (manifest.id().zone() != null) {
+      metadata.put(ZONE, manifest.id().zone());
     }
 
     final var descriptor = manifest.descriptor();
@@ -96,7 +101,7 @@ final class ManifestMetadata {
       return Optional.empty();
     }
 
-    final var id = parseIdentifierFromPath(blob.getName(), basePath, manifestBlobName);
+    final var id = parseIdentifierFromPath(blob.getName(), basePath, manifestBlobName, metadata);
     final var statusCode = BackupStatusCode.valueOf(metadata.get(STATUS_CODE));
     final var failureReason = Optional.ofNullable(metadata.get(FAILURE_REASON));
     final var created = Optional.ofNullable(metadata.get(CREATED_AT)).map(Instant::parse);
@@ -108,7 +113,10 @@ final class ManifestMetadata {
   }
 
   private static BackupIdentifier parseIdentifierFromPath(
-      final String blobName, final String basePath, final String manifestBlobName) {
+      final String blobName,
+      final String basePath,
+      final String manifestBlobName,
+      final Map<String, String> metadata) {
     // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{nodeId}/manifest.json
     final var manifestsPrefix = basePath + "manifests/";
     final var relativePath =
@@ -116,7 +124,10 @@ final class ManifestMetadata {
     // relativePath is now: {partitionId}/{checkpointId}/{nodeId}/
     final var parts = relativePath.split("/");
     return new BackupIdentifierImpl(
-        Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), Long.parseLong(parts[1]));
+        Integer.parseInt(parts[2]),
+        metadata.get(ZONE),
+        Integer.parseInt(parts[0]),
+        Long.parseLong(parts[1]));
   }
 
   private static Optional<BackupDescriptor> parseDescriptor(final Map<String, String> metadata) {

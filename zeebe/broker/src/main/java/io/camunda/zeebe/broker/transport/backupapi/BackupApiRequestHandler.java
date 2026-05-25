@@ -375,7 +375,7 @@ public final class BackupApiRequestHandler
     final var response =
         new BackupStatusResponse()
             .setBackupId(status.id().checkpointId())
-            .setBrokerId(status.id().nodeId())
+            .setBrokerId(status.id().nodeId(), status.id().zone())
             .setPartitionId(status.id().partitionId())
             .setStatus(encodeStatusCode(status.statusCode()));
     status

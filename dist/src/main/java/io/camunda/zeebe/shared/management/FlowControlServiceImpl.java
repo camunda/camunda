@@ -93,8 +93,7 @@ public class FlowControlServiceImpl implements FlowControlService {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
-                  // TODO: https://github.com/camunda/camunda/issues/52807
-                  request.setBrokerId(brokerId.nodeIdx());
+                  request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return client.sendRequest(request);
@@ -111,8 +110,7 @@ public class FlowControlServiceImpl implements FlowControlService {
           new IllegalStateException("No leader for partition " + partitionId));
     }
     final var request = new BrokerAdminRequest();
-    // TODO: https://github.com/camunda/camunda/issues/52807
-    request.setBrokerId(brokerId.nodeIdx());
+    request.setBrokerId(brokerId);
     request.setPartitionId(partitionId);
     request.getFLowControlConfiguration();
 

@@ -208,6 +208,31 @@ final class ManifestMetadataTest {
           .doesNotContainKey(ManifestMetadata.CHECKPOINT_POSITION)
           .doesNotContainKey(ManifestMetadata.BROKER_VERSION);
     }
+
+    @Test
+    void shouldIncludeZoneWhenPresent() {
+      // given
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, "zone-a", 2, 3),
+              new BackupDescriptorImpl(
+                  Optional.of("snap-1"),
+                  OptionalLong.of(100L),
+                  500L,
+                  3,
+                  "8.5.0",
+                  Instant.parse("2025-01-15T10:30:00Z"),
+                  CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of("file1", Path.of("f1"))),
+              new NamedFileSetImpl(Map.of("seg1", Path.of("s1"))));
+      final var manifest = Manifest.createInProgress(backup);
+
+      // when
+      final var metadata = ManifestMetadata.fromManifest(manifest);
+
+      // then
+      assertThat(metadata).containsEntry(ManifestMetadata.ZONE, "zone-a");
+    }
   }
 
   @Nested
@@ -258,6 +283,26 @@ final class ManifestMetadataTest {
       assertThat(status.id().partitionId()).isEqualTo(2);
       assertThat(status.id().checkpointId()).isEqualTo(3L);
       assertThat(status.id().nodeId()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldParseZoneFromMetadata() {
+      // given
+      final var metadata =
+          Map.of(
+              ManifestMetadata.STATUS_CODE, "COMPLETED",
+              ManifestMetadata.CHECKPOINT_POSITION, "500",
+              ManifestMetadata.NUMBER_OF_PARTITIONS, "3",
+              ManifestMetadata.BROKER_VERSION, "8.5.0",
+              ManifestMetadata.ZONE, "zone-a");
+      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
+
+      // when
+      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
+
+      // then
+      assertThat(result).isPresent();
+      assertThat(result.orElseThrow().id().zone()).isEqualTo("zone-a");
     }
 
     @Test

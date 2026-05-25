@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
@@ -39,7 +40,7 @@ public final class BackupService extends Actor implements BackupManager {
   private static final Logger LOG = LoggerFactory.getLogger(BackupService.class);
   private final String actorName;
   private final JournalInfoProvider journalInfoProvider;
-  private final int nodeId;
+  private final BrokerMemberId brokerMemberId;
   private final int partitionId;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
@@ -47,7 +48,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final BackupManagerMetrics metrics;
 
   public BackupService(
-      final int nodeId,
+      final BrokerMemberId brokerMemberId,
       final int partitionId,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
@@ -57,7 +58,7 @@ public final class BackupService extends Actor implements BackupManager {
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
       final DbCheckpointMetadataState checkpointMetadataState) {
-    this.nodeId = nodeId;
+    this.brokerMemberId = brokerMemberId;
     this.partitionId = partitionId;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
@@ -239,6 +240,7 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
-    return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
+    return new BackupIdentifierImpl(
+        brokerMemberId.nodeIdx(), brokerMemberId.zone(), partitionId, checkpointId);
   }
 }
