@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.AgentInstanceEntity;
 
 public enum AgentInstanceSearchColumn implements SearchColumn<AgentInstanceEntity> {
-  KEY("agentInstanceKey"),
+  AGENT_INSTANCE_KEY("agentInstanceKey"),
   CREATION_DATE("creationDate"),
   LAST_UPDATED_DATE("lastUpdatedDate"),
   COMPLETION_DATE("completionDate"),

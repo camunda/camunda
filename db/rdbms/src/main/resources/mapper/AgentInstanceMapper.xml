@@ -146,7 +146,7 @@
     <result property="versionTag" column="VERSION_TAG" javaType="java.lang.String"/>
     <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
     <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
-    <result property="status" column="STATUS" javaType="java.lang.String"/>
+    <result property="status" column="STATUS" javaType="io.camunda.search.entities.AgentInstanceEntity$AgentInstanceStatus"/>
     <result property="model" column="MODEL" javaType="java.lang.String"/>
     <result property="provider" column="PROVIDER" javaType="java.lang.String"/>
     <result property="systemPrompt" column="SYSTEM_PROMPT" javaType="java.lang.String"/>

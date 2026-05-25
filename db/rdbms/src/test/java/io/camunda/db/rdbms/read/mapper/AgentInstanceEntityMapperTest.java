@@ -38,7 +38,7 @@ class AgentInstanceEntityMapperTest {
               key.versionTag("v1");
               key.tenantId("<default>");
               key.partitionId(1);
-              key.status("THINKING");
+              key.status(AgentInstanceStatus.THINKING);
               key.model("gpt-4");
               key.provider("openai");
               key.systemPrompt("You are an assistant.");
@@ -100,7 +100,7 @@ class AgentInstanceEntityMapperTest {
               m.processDefinitionKey(20L);
               m.processDefinitionVersion(1);
               m.tenantId("t");
-              m.status("COMPLETED");
+              m.status(AgentInstanceStatus.COMPLETED);
               m.model("gpt");
               m.provider("openai");
               m.systemPrompt("s");
@@ -151,7 +151,7 @@ class AgentInstanceEntityMapperTest {
               m.processDefinitionKey(20L);
               m.processDefinitionVersion(1);
               m.tenantId("t");
-              m.status("IDLE");
+              m.status(AgentInstanceStatus.IDLE);
               m.model("gpt");
               m.provider("openai");
               m.systemPrompt("s");

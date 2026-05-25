@@ -54,7 +54,7 @@ public class AgentInstanceDbReader extends AbstractEntityReader<AgentInstanceEnt
   @Override
   public SearchQueryResult<AgentInstanceEntity> search(
       final AgentInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    final var dbSort = convertSort(query.sort(), AgentInstanceSearchColumn.KEY);
+    final var dbSort = convertSort(query.sort(), AgentInstanceSearchColumn.AGENT_INSTANCE_KEY);
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
