@@ -10,13 +10,13 @@ package io.camunda.it;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import io.camunda.archunit.IncludeTestClassesAndTestJars;
 import io.camunda.qa.util.multidb.MultiDbTest;
 
-@AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.OnlyIncludeTests.class)
+@AnalyzeClasses(packages = "io.camunda", importOptions = IncludeTestClassesAndTestJars.class)
 final class MultiDbTestArchTest {
 
   /**

@@ -7,21 +7,21 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import io.camunda.archunit.IncludeTestClassesAndTestJars;
 import org.springframework.test.web.reactive.server.WebTestClient.BodyContentSpec;
 
 /**
- * PS: This his arch test specifically tests the condition only for test classes. Since the
- * qa/archunit-tests will not scan test directories in the rest of the codebase, this test should
- * stay in its original location
+ * Scans test classes from {@code zeebe-gateway-rest} (pulled in as a test-jar dependency); the
+ * {@link IncludeTestClassesAndTestJars} import option ensures classes inside {@code *-tests.jar}
+ * entries are picked up alongside this module's own {@code target/test-classes}.
  */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.gateway.rest",
-    importOptions = ImportOption.OnlyIncludeTests.class)
+    importOptions = IncludeTestClassesAndTestJars.class)
 public class ControllerStrictJsonCompareArchTest {
 
   /** This ArchUnit test ensures that any REST API controller tests use JsonCompareMode.STRICT */

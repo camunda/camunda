@@ -1177,11 +1177,13 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
         shell: bash
+        # ArchUnit rules are deterministic; rerunning a violation would only mask it, so this job
+        # runs with surefire.rerunFailingTestsCount=0 to ensure real violations fail the build.
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -B --no-snapshot-updates
-          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=0
           -P skipFrontendBuild,extract-flaky-tests
           -pl :camunda-archunit-tests
           -am
