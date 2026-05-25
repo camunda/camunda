@@ -168,7 +168,7 @@ abstract class ClusterEndpointIT {
           .singleElement()
           .asInstanceOf(InstanceOfAssertFactories.type(Operation.class))
           .returns(OperationEnum.PARTITION_LEAVE, Operation::getOperation)
-          .returns(1, Operation::getBrokerId)
+          .returns(brokerId(1), Operation::getBrokerId)
           .returns(2, Operation::getPartitionId);
     }
   }
@@ -217,7 +217,7 @@ abstract class ClusterEndpointIT {
           .singleElement()
           .asInstanceOf(InstanceOfAssertFactories.type(Operation.class))
           .returns(OperationEnum.PARTITION_JOIN, Operation::getOperation)
-          .returns(0, Operation::getBrokerId)
+          .returns(brokerId(0), Operation::getBrokerId)
           .returns(2, Operation::getPartitionId)
           .returns(3, Operation::getPriority);
     }
