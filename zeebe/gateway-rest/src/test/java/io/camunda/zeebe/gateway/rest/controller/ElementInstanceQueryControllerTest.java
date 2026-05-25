@@ -390,6 +390,58 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchElementInstancesWithOrFilter() {
+    // given
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    final var request =
+        """
+            {
+              "filter":{
+                "processInstanceKey": "2251799813685989",
+                "$or": [
+                  { "elementName": { "$like": "*Order*" } },
+                  { "elementId":   { "$like": "*Order*" } }
+                ]
+              }
+            }
+            """;
+    webClient
+        .post()
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(elementInstanceServices)
+        .search(
+            eq(
+                new FlowNodeInstanceQuery.Builder()
+                    .filter(
+                        new FlowNodeInstanceFilter.Builder()
+                            .processInstanceKeys(2251799813685989L)
+                            .addOrOperation(
+                                new FlowNodeInstanceFilter.Builder()
+                                    .flowNodeNameOperations(Operation.like("*Order*"))
+                                    .build())
+                            .addOrOperation(
+                                new FlowNodeInstanceFilter.Builder()
+                                    .flowNodeIdOperations(Operation.like("*Order*"))
+                                    .build())
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
   public void shouldSearchElementInstancesWithFullSorting() {
     // given
     when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class), any()))

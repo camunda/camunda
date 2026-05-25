@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	API_VERSION,
+	getOrFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	getEnumFilterSchema,
@@ -104,7 +105,7 @@ const queryElementInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'incidentKey',
 		'tenantId',
 	] as const,
-	filter: elementInstanceFilterSchema,
+	filter: getOrFilterSchema(elementInstanceFilterSchema),
 });
 type QueryElementInstancesRequestBody = z.infer<typeof queryElementInstancesRequestBodySchema>;
 

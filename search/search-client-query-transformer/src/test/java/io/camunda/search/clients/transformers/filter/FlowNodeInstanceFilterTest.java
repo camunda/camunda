@@ -462,4 +462,92 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
   }
+
+  @Test
+  public void shouldQueryWithOrConditions() {
+    // given - process instance scope plus an $or over elementName and elementId
+    final var filter =
+        FilterBuilders.flowNodeInstance(
+            f ->
+                f.processInstanceKeys(123L)
+                    .addOrOperation(
+                        new FlowNodeInstanceFilter.Builder()
+                            .flowNodeNameOperations(Operation.like("*Order*"))
+                            .build())
+                    .addOrOperation(
+                        new FlowNodeInstanceFilter.Builder()
+                            .flowNodeIdOperations(Operation.like("*Order*"))
+                            .build()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery outerBool = (SearchBoolQuery) queryVariant;
+
+    // top-level filter (processInstanceKey) plus the OR clause
+    assertThat(outerBool.must()).hasSize(2);
+
+    // first clause: processInstanceKey term
+    assertThat(outerBool.must().get(0).queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(123L);
+            });
+
+    // second clause: $or wrapped in a bool with two should clauses
+    assertThat(outerBool.must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            orBool -> {
+              assertThat(orBool.should()).hasSize(2);
+              assertThat(orBool.should().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class,
+                      w -> {
+                        assertThat(w.field()).isEqualTo("flowNodeName");
+                        assertThat(w.value()).isEqualTo("*Order*");
+                      });
+              assertThat(orBool.should().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class,
+                      w -> {
+                        assertThat(w.field()).isEqualTo("flowNodeId");
+                        assertThat(w.value()).isEqualTo("*Order*");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsNull() {
+    // given - filter with no orFilters set
+    final var filter = FilterBuilders.flowNodeInstance(f -> f.processInstanceKeys(123L));
+
+    // then - no extra OR clause is appended
+    assertThat(filter.orFilters()).isNull();
+  }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsEmpty() {
+    // given - filter with explicitly empty orFilters list
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.processInstanceKeys(123L).orFilters(List.of()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then - the resulting query is just the AND of top-level fields, no OR bool wrapper
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(123L);
+            });
+  }
 }
