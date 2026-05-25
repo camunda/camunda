@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -188,7 +189,12 @@ public class SearchColumnTest {
               GlobalListenerType.class,
               List.of(
                   Tuple.of(GlobalListenerType.USER_TASK, GlobalListenerType.USER_TASK),
-                  Tuple.of(GlobalListenerType.USER_TASK, "USER_TASK"))));
+                  Tuple.of(GlobalListenerType.USER_TASK, "USER_TASK"))),
+          Map.entry(
+              AgentInstanceStatus.class,
+              List.of(
+                  Tuple.of(AgentInstanceStatus.IDLE, AgentInstanceStatus.IDLE),
+                  Tuple.of(AgentInstanceStatus.IDLE, "IDLE"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()
