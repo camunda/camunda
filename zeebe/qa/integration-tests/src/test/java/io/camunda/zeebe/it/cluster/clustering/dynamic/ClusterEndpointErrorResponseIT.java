@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.cluster.clustering.dynamic;
 import static org.assertj.core.api.Assertions.*;
 
 import feign.FeignException;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -93,7 +94,9 @@ final class ClusterEndpointErrorResponseIT {
                   a ->
                       a.patchCluster(
                           new ClusterConfigPatchRequest()
-                              .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(1, 2))),
+                              .brokers(
+                                  new ClusterConfigPatchRequestBrokers()
+                                      .add(Stream.of(1, 2).map(BrokerId::of).toList())),
                           false,
                           true)),
               Tuple.of(
@@ -118,8 +121,8 @@ final class ClusterEndpointErrorResponseIT {
                   a -> {
                     final var brokers = new ClusterConfigPatchRequestBrokers();
                     brokers.setCount(3);
-                    brokers.setAdd(List.of(1, 2));
-                    brokers.setRemove(List.of(3));
+                    brokers.setAdd(Stream.of(1, 2).map(BrokerId::of).toList());
+                    brokers.setRemove(List.of(BrokerId.of(3)));
                     a.patchCluster(new ClusterConfigPatchRequest().brokers(brokers), false, false);
                   }));
       return operations.stream().map(c -> Arguments.of(Named.of(c.getLeft(), c.getRight())));

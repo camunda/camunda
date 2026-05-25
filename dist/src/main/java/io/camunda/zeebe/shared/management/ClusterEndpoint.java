@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
@@ -20,11 +21,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -34,12 +37,17 @@ import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -106,15 +114,17 @@ public class ClusterEndpoint {
   @PostMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> add(
       @PathVariable("resource") final Resource resource,
-      @PathVariable final int id,
+      @PathVariable final String id,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          ClusterApiUtils.mapOperationResponse(
-              requestSender
-                  .addMembers(
-                      new AddMembersRequest(Set.of(new MemberId(String.valueOf(id))), dryRun))
-                  .join());
+          withValidMembers(
+              List.of(id),
+              members ->
+                  ClusterApiUtils.mapOperationResponse(
+                      requestSender
+                          .addMembers(new AddMembersRequest(Set.copyOf(members), dryRun))
+                          .join()));
       case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
       case changes ->
           ResponseEntity.status(501)
@@ -130,10 +140,13 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          ClusterApiUtils.mapOperationResponse(
-              requestSender
-                  .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)), dryRun))
-                  .join());
+          withValidMembers(
+              List.of(id),
+              members ->
+                  ClusterApiUtils.mapOperationResponse(
+                      requestSender
+                          .removeMembers(new RemoveMembersRequest(Set.copyOf(members), dryRun))
+                          .join()));
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
       case changes -> {
         if (dryRun) {
@@ -170,7 +183,7 @@ public class ClusterEndpoint {
   @PostMapping(path = "/{resource}", consumes = "application/json")
   public ResponseEntity<?> scale(
       @PathVariable("resource") final Resource resource,
-      @RequestBody final List<Integer> ids,
+      @RequestBody final List<Object> ids,
       @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestParam(defaultValue = "false") final boolean force,
       @RequestParam final Optional<Integer> replicationFactor) {
@@ -186,23 +199,22 @@ public class ClusterEndpoint {
   }
 
   private ResponseEntity<?> scaleBrokers(
-      final List<Integer> ids,
+      final List<Object> ids,
       final boolean dryRun,
       final boolean force,
       final Optional<Integer> replicationFactor) {
     try {
-      final BrokerScaleRequest scaleRequest =
-          new BrokerScaleRequest(
-              ids.stream().map(String::valueOf).map(MemberId::from).collect(Collectors.toSet()),
-              replicationFactor,
-              dryRun);
-      // here we assume, if it force request it is always force scale down. The coordinator will
-      // reject the request if that is not the case.
-      final var response =
-          force
-              ? requestSender.forceScaleDown(scaleRequest).join()
-              : requestSender.scaleMembers(scaleRequest).join();
-      return ClusterApiUtils.mapOperationResponse(response);
+      return withValidMembers(
+          toBrokerIdStrings(ids),
+          members -> {
+            final BrokerScaleRequest scaleRequest =
+                new BrokerScaleRequest(new HashSet<>(members), replicationFactor, dryRun);
+            final var response =
+                force
+                    ? requestSender.forceScaleDown(scaleRequest).join()
+                    : requestSender.scaleMembers(scaleRequest).join();
+            return ClusterApiUtils.mapOperationResponse(response);
+          });
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
@@ -271,11 +283,17 @@ public class ClusterEndpoint {
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
-    final var patchRequest =
-        new ClusterPatchRequest(
-            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
-
-    return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
+    final var allIds =
+        Stream.concat(brokersToAdd.stream(), brokersToRemove.stream()).collect(Collectors.toSet());
+    return withValidMemberIds(
+        allIds,
+        members -> {
+          final var patchRequest =
+              new ClusterPatchRequest(
+                  brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+          return ClusterApiUtils.mapOperationResponse(
+              requestSender.patchCluster(patchRequest).join());
+        });
   }
 
   private ResponseEntity<?> forceRemoveBrokers(
@@ -307,15 +325,15 @@ public class ClusterEndpoint {
       return invalidRequest("Must provide a set of brokers to force remove.");
     }
 
-    final var forceRemoveRequest =
-        new ForceRemoveBrokersRequest(
-            brokers.getRemove().stream()
-                .map(String::valueOf)
-                .map(MemberId::from)
-                .collect(Collectors.toSet()),
-            dryRun);
-    return ClusterApiUtils.mapOperationResponse(
-        requestSender.forceRemoveBrokers(forceRemoveRequest).join());
+    final var removeIds = brokers.getRemove().stream().map(BrokerId::toString).toList();
+    return withValidMembers(
+        removeIds,
+        members -> {
+          final var forceRemoveRequest =
+              new ForceRemoveBrokersRequest(new HashSet<>(members), dryRun);
+          return ClusterApiUtils.mapOperationResponse(
+              requestSender.forceRemoveBrokers(forceRemoveRequest).join());
+        });
   }
 
   @PostMapping(
@@ -323,9 +341,9 @@ public class ClusterEndpoint {
       consumes = "application/json")
   public ResponseEntity<?> addSubResource(
       @PathVariable("resource") final Resource resource,
-      @PathVariable final int resourceId,
+      @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
-      @PathVariable final int subResourceId,
+      @PathVariable final String subResourceId,
       @RequestBody final PartitionAddRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     final int priority = request.priority();
@@ -334,30 +352,30 @@ public class ClusterEndpoint {
           switch (subResource) {
             // POST /cluster/brokers/1/partitions/2
             case partitions ->
-                ClusterApiUtils.mapOperationResponse(
-                    requestSender
-                        .joinPartition(
-                            new JoinPartitionRequest(
-                                MemberId.from(String.valueOf(resourceId)),
-                                subResourceId,
-                                priority,
-                                dryRun))
-                        .join());
+                withValidMember(
+                    resourceId,
+                    member ->
+                        ClusterApiUtils.mapOperationResponse(
+                            requestSender
+                                .joinPartition(
+                                    new JoinPartitionRequest(
+                                        member, Integer.parseInt(subResourceId), priority, dryRun))
+                                .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
       case partitions ->
           switch (subResource) {
             // POST /cluster/partitions/2/brokers/1
             case brokers ->
-                ClusterApiUtils.mapOperationResponse(
-                    requestSender
-                        .joinPartition(
-                            new JoinPartitionRequest(
-                                MemberId.from(String.valueOf(subResourceId)),
-                                resourceId,
-                                priority,
-                                dryRun))
-                        .join());
+                withValidMember(
+                    subResourceId,
+                    member ->
+                        ClusterApiUtils.mapOperationResponse(
+                            requestSender
+                                .joinPartition(
+                                    new JoinPartitionRequest(
+                                        member, Integer.parseInt(resourceId), priority, dryRun))
+                                .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
@@ -369,31 +387,37 @@ public class ClusterEndpoint {
       consumes = "application/json")
   public ResponseEntity<?> removeSubResource(
       @PathVariable("resource") final Resource resource,
-      @PathVariable final int resourceId,
+      @PathVariable final String resourceId,
       @PathVariable("subResource") final Resource subResource,
-      @PathVariable final int subResourceId,
+      @PathVariable final String subResourceId,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
           switch (subResource) {
             case partitions ->
-                ClusterApiUtils.mapOperationResponse(
-                    requestSender
-                        .leavePartition(
-                            new LeavePartitionRequest(
-                                MemberId.from(String.valueOf(resourceId)), subResourceId, dryRun))
-                        .join());
+                withValidMember(
+                    resourceId,
+                    member ->
+                        ClusterApiUtils.mapOperationResponse(
+                            requestSender
+                                .leavePartition(
+                                    new LeavePartitionRequest(
+                                        member, Integer.parseInt(subResourceId), dryRun))
+                                .join()));
             case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
       case partitions ->
           switch (subResource) {
             case brokers ->
-                ClusterApiUtils.mapOperationResponse(
-                    requestSender
-                        .leavePartition(
-                            new LeavePartitionRequest(
-                                MemberId.from(String.valueOf(subResourceId)), resourceId, dryRun))
-                        .join());
+                withValidMember(
+                    subResourceId,
+                    member ->
+                        ClusterApiUtils.mapOperationResponse(
+                            requestSender
+                                .leavePartition(
+                                    new LeavePartitionRequest(
+                                        member, Integer.parseInt(resourceId), dryRun))
+                                .join()));
             case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
           };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
@@ -451,6 +475,105 @@ public class ClusterEndpoint {
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }
+  }
+
+  /**
+   * Converts a list of broker ID values (which can be either Integer or String from JSON
+   * deserialization) into a list of string identifiers. This supports both non-zone-aware clusters
+   * (integer node IDs like 0) and zone-aware clusters (composite member IDs like "zone-a/0").
+   */
+  static List<String> toBrokerIdStrings(final @Nullable List<Object> items) {
+    if (items == null) {
+      return List.of();
+    }
+    return items.stream().map(BrokerId::of).map(BrokerId::toString).toList();
+  }
+
+  /**
+   * Checks whether the current cluster topology is zone-aware by inspecting the members. A cluster
+   * is zone-aware if any of its members have a zone set.
+   */
+  boolean isClusterZoneAware() {
+    try {
+      final var result = requestSender.getTopology().join();
+      if (result.isRight()) {
+        return isZoneAware(result.get());
+      }
+    } catch (final Exception ignored) {
+      // If we can't determine zone-awareness, assume non-zone-aware for backward compatibility
+    }
+    return false;
+  }
+
+  static boolean isZoneAware(final ClusterConfiguration config) {
+    return config.members().keySet().stream().anyMatch(m -> m.zone() != null);
+  }
+
+  ResponseEntity<?> withValidMember(
+      final String id, final Function<MemberId, ResponseEntity<?>> action) {
+    return withValidMembers(List.of(id), list -> action.apply(list.stream().findFirst().get()));
+  }
+
+  /**
+   * Parses and validates the given member ID strings against the cluster's zone-awareness, then
+   * passes the parsed {@link MemberId}s to the given action. Returns a 400 error response
+   * accumulating all validation errors if any ID is invalid.
+   */
+  ResponseEntity<?> withValidMembers(
+      final Collection<String> ids,
+      final Function<Collection<MemberId>, ResponseEntity<?>> action) {
+    final List<String> errors = new ArrayList<>();
+    final List<MemberId> parsed = new ArrayList<>(ids.size());
+
+    for (final var id : ids) {
+      final MemberId memberId;
+      try {
+        memberId = BrokerMemberId.from(id).memberId();
+      } catch (final Exception e) {
+        errors.add("Invalid member ID '" + id + "': " + e.getMessage());
+        continue;
+      }
+
+      parsed.add(memberId);
+    }
+
+    if (!errors.isEmpty()) {
+      return invalidRequest(String.join("; ", errors));
+    }
+    return withValidMemberIds(parsed, action);
+  }
+
+  /**
+   * Parses and validates the given member ID strings against the cluster's zone-awareness, then
+   * passes the parsed {@link MemberId}s to the given action. Returns a 400 error response
+   * accumulating all validation errors if any ID is invalid.
+   */
+  ResponseEntity<?> withValidMemberIds(
+      final Collection<MemberId> ids,
+      final Function<Collection<MemberId>, ResponseEntity<?>> action) {
+    final boolean clusterIsZoneAware = isClusterZoneAware();
+    final List<String> errors = new ArrayList<>();
+
+    for (final var memberId : ids) {
+      if (clusterIsZoneAware && memberId.zone() == null) {
+        errors.add(
+            "'"
+                + memberId
+                + "' is a bare node ID, but this cluster is zone-aware — "
+                + "use '$zone/$nodeId' (e.g. 'zone-a/0')");
+      } else if (!clusterIsZoneAware && memberId.zone() != null) {
+        errors.add(
+            "'"
+                + memberId
+                + "' is a composite member ID, but this cluster is not zone-aware — "
+                + "use a bare integer node ID (e.g. '0')");
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      return invalidRequest(String.join("; ", errors));
+    }
+    return action.apply(ids);
   }
 
   public record PartitionAddRequest(int priority) {}
