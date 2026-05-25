@@ -45,6 +45,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Provides @MultiDbTest used by MultiDbTestArchTest -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -151,8 +157,8 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:camunda-zeebe</dep>
             <!-- Test-jar deps used only by ArchUnit at runtime to load test classes  -->
-            <dep>io.camunda:camunda-qa-acceptance-tests</dep>
-            <dep>io.camunda:zeebe-gateway-rest</dep>
+            <dep>io.camunda:camunda-qa-acceptance-tests:test-jar</dep>
+            <dep>io.camunda:zeebe-gateway-rest:test-jar</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dep>io.camunda:camunda-gateway-mcp</dep>
