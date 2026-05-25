@@ -27,8 +27,6 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public interface ClusterActuator {
@@ -319,9 +317,7 @@ public interface ClusterActuator {
       final BrokerId brokerId, final int partitionId, final int priority) {
     return switch (brokerId) {
       case final BrokerId.Integer i -> joinPartition(i.value(), partitionId, priority);
-      case final BrokerId.String s ->
-          joinPartition(
-              URLEncoder.encode(s.value(), StandardCharsets.UTF_8), partitionId, priority);
+      case final BrokerId.String s -> joinPartition(s.value(), partitionId, priority);
     };
   }
 
@@ -329,8 +325,7 @@ public interface ClusterActuator {
   default PlannedOperationsResponse leavePartition(final BrokerId brokerId, final int partitionId) {
     return switch (brokerId) {
       case final BrokerId.Integer i -> leavePartition(i.value(), partitionId);
-      case final BrokerId.String s ->
-          leavePartition(URLEncoder.encode(s.value(), StandardCharsets.UTF_8), partitionId);
+      case final BrokerId.String s -> leavePartition(s.value(), partitionId);
     };
   }
 
@@ -338,8 +333,7 @@ public interface ClusterActuator {
   default PlannedOperationsResponse addBroker(final BrokerId brokerId) {
     return switch (brokerId) {
       case final BrokerId.Integer i -> addBroker(i.value());
-      case final BrokerId.String s ->
-          addBroker(URLEncoder.encode(s.value(), StandardCharsets.UTF_8));
+      case final BrokerId.String s -> addBroker(s.value());
     };
   }
 
@@ -347,8 +341,7 @@ public interface ClusterActuator {
   default PlannedOperationsResponse removeBroker(final BrokerId brokerId) {
     return switch (brokerId) {
       case final BrokerId.Integer i -> removeBroker(i.value());
-      case final BrokerId.String s ->
-          removeBroker(URLEncoder.encode(s.value(), StandardCharsets.UTF_8));
+      case final BrokerId.String s -> removeBroker(s.value());
     };
   }
 
