@@ -83,5 +83,10 @@ public class AgentInstanceFieldSortingTransformerTest extends AbstractSortTransf
     public Object[] get() {
       return new Object[] {expectedField, sortOrder, fn};
     }
+
+    @Override
+    public String toString() {
+      return expectedField + " " + sortOrder;
+    }
   }
 }
