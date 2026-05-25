@@ -90,10 +90,11 @@ public class DefaultMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    // OIDC groups-claim extraction is in-memory and eager (done by the converter before wiring
-    // the chain, via OidcGroupsExtractor); this method handles the DB-lookup path.
+    // OIDC groups-claim path: in-memory extraction. distinct() matches NoDBMembershipService and
+    // the previous Set-based semantics.
     if (isGroupsClaimConfigured) {
-      return List.copyOf(oidcGroupsExtractor.extract(query.tokenClaims()));
+      final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
+      return extracted != null ? extracted.stream().distinct().toList() : List.of();
     }
     final var owners = buildOwners(query);
     final var ids =

@@ -175,6 +175,9 @@ public class BrokerRequestAuthorizationConverterTest {
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthentication().setMethod(OIDC);
     securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+    // Authorizations explicitly enabled so shouldIncludeAuthorizationClaims is true; the gate
+    // under test (groupsClaimConfigured) is what must keep the supplier from firing.
+    securityConfiguration.getAuthorizations().setEnabled(true);
 
     final var authentication =
         CamundaAuthentication.of(
