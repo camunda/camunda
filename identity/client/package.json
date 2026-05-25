@@ -62,7 +62,7 @@
     "rollup-plugin-sbom": "3.2.1",
     "sass": "1.99.0",
     "typescript": "5.9.3",
-    "vite": "8.0.13",
+    "vite": "8.0.14",
     "vite-plugin-svgr": "5.2.0"
   },
   "stableVersion": "8.10.0-SNAPSHOT"
