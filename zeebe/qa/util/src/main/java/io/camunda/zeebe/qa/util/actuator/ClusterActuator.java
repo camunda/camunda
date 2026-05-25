@@ -112,6 +112,34 @@ public interface ClusterActuator {
       @Param final int brokerId, @Param final int partitionId, @Param final int priority);
 
   /**
+   * Request that the broker joins the partition with the given priority.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Body("%7B\"priority\": {priority}%7D")
+  PlannedOperationsResponse joinPartition(
+      @Param final String brokerId,
+      @Param final int partitionId,
+      @Param final int priority,
+      @Param boolean dryRun);
+
+  /**
+   * Request that the broker joins the partition with the given priority.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  @Body("%7B\"priority\": {priority}%7D")
+  PlannedOperationsResponse joinPartition(
+      @Param final int brokerId,
+      @Param final int partitionId,
+      @Param final int priority,
+      @Param boolean dryRun);
+
+  /**
    * Request that the broker leaves the partition.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
@@ -246,6 +274,24 @@ public interface ClusterActuator {
   PlannedOperationsResponse addBroker(@Param final int brokerId);
 
   /**
+   * Request that the broker is added to the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse addBroker(@Param final String brokerId, @Param boolean dryRun);
+
+  /**
+   * Request that the broker is added to the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse addBroker(@Param final int brokerId, @Param boolean dryRun);
+
+  /**
    * Request that the broker is removed from the cluster
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
@@ -321,6 +367,18 @@ public interface ClusterActuator {
     };
   }
 
+  /**
+   * Dispatches to {@link #joinPartition(int, int, int, boolean)} or {@link #joinPartition(String,
+   * int, int, boolean)}.
+   */
+  default PlannedOperationsResponse joinPartition(
+      final BrokerId brokerId, final int partitionId, final int priority, final boolean dryRun) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> joinPartition(i.value(), partitionId, priority, dryRun);
+      case final BrokerId.String s -> joinPartition(s.value(), partitionId, priority, dryRun);
+    };
+  }
+
   /** Dispatches to {@link #leavePartition(int, int)} or {@link #leavePartition(String, int)}. */
   default PlannedOperationsResponse leavePartition(final BrokerId brokerId, final int partitionId) {
     return switch (brokerId) {
@@ -334,6 +392,14 @@ public interface ClusterActuator {
     return switch (brokerId) {
       case final BrokerId.Integer i -> addBroker(i.value());
       case final BrokerId.String s -> addBroker(s.value());
+    };
+  }
+
+  /** Dispatches to {@link #addBroker(int, boolean)} or {@link #addBroker(String, boolean)}. */
+  default PlannedOperationsResponse addBroker(final BrokerId brokerId, final boolean dryRun) {
+    return switch (brokerId) {
+      case final BrokerId.Integer i -> addBroker(i.value(), dryRun);
+      case final BrokerId.String s -> addBroker(s.value(), dryRun);
     };
   }
 

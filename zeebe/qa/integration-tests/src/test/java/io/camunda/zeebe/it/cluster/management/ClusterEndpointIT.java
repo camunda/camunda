@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.cluster.management;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
@@ -92,7 +91,7 @@ abstract class ClusterEndpointIT {
     }
   }
 
-  private void movePartition(final ClusterActuator actuator, final BrokerId id) {
+  private void movePartition(final ClusterActuator actuator, final BrokerId id, final int rf) {
     final var topology = actuator.getTopology();
     final var brokerState =
         topology.getBrokers().stream().filter(b -> b.getId().equals(id)).findFirst().orElseThrow();
@@ -105,9 +104,12 @@ abstract class ClusterEndpointIT {
 
     for (final var partition : brokerState.getPartitions()) {
       // First join another broker so the partition keeps at least one replica
-      final var join = actuator.joinPartition(targetBroker, partition.getId(), 1);
-      Awaitility.await()
-          .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(join));
+      if (rf == 1) {
+        final var join = actuator.joinPartition(targetBroker, partition.getId(), 1);
+        Awaitility.await()
+            .untilAsserted(
+                () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(join));
+      }
 
       final var leave = actuator.leavePartition(id, partition.getId());
       Awaitility.await()
@@ -203,14 +205,13 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestPartitionJoin() {
-    assumeTrue(zone() == null, "Partition join not supported on zone-aware clusters");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when -- request a join
-      final var response = actuator.joinPartition(brokerId(0), 2, 3);
+      final var response = actuator.joinPartition(brokerId(0), 2, 3, true);
 
       // then
       assertThat(response.getPlannedChanges())
@@ -242,7 +243,6 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestScaleBrokers() {
-    assumeTrue(zone() == null, "Scale with node-index broker IDs not valid for zone-aware");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
@@ -251,7 +251,7 @@ abstract class ClusterEndpointIT {
       // when -- scale up by one broker
       final var scaleIds =
           IntStream.rangeClosed(0, brokerCount()).mapToObj(this::brokerId).toList();
-      final var response = actuator.scaleByBrokerIds(scaleIds);
+      final var response = actuator.scaleByBrokerIds(scaleIds, true);
 
       // then
       assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
@@ -276,14 +276,13 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestAddBroker() {
-    assumeTrue(zone() == null, "Add broker with zone-index IDs not valid for zone-aware");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when -- add a new broker beyond the current set
-      final var response = actuator.addBroker(brokerId(brokerCount()));
+      final var response = actuator.addBroker(brokerId(brokerCount()), true);
 
       // then
       assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
@@ -292,14 +291,13 @@ abstract class ClusterEndpointIT {
 
   @Test
   void shouldRequestRemoveBroker() {
-    assumeTrue(zone() == null, "Remove broker requires movePartition which uses join/leave");
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
       // Must move partitions off the broker before removing it from the cluster
       final var id = brokerId(brokerCount() - 1);
-      movePartition(actuator, id);
+      movePartition(actuator, id, minReplicationFactor());
 
       // when
       final var response = actuator.removeBroker(id);
@@ -348,7 +346,7 @@ abstract class ClusterEndpointIT {
                     new ClusterConfigPatchRequestPartitions()
                         .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
-        final var response = actuator.patchCluster(request, false, false);
+        final var response = actuator.patchCluster(request, true, false);
         // then
         assertThat(response.getExpectedTopology())
             .describedAs("ClusterSize is " + brokerCount())
@@ -376,7 +374,7 @@ abstract class ClusterEndpointIT {
                     new ClusterConfigPatchRequestPartitions()
                         .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
-        final var response = actuator.patchCluster(request, false, false);
+        final var response = actuator.patchCluster(request, true, false);
         // then
         assertThat(response.getExpectedTopology())
             .describedAs("Cluster has " + brokerCount() + " brokers")

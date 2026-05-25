@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
 import io.atomix.cluster.BrokerMemberId;
-import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.ZoneAware;
@@ -85,14 +84,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
   protected BrokerId brokerId(final int nodeIdx) {
-    return new BrokerId.String(BrokerMemberId.from(zone(), nodeIdx).toString());
-  }
-
-  @Override
-  protected MemberId memberIdForBroker(final int nodeIdx) {
-    // In this zone-aware test, brokerId(nodeIdx) maps to zoneA brokers.
-    // zoneA brokers have localIds 0, 2, 4, ... (even indices in a 2-zone cluster).
-    return MemberId.from(java.lang.String.valueOf(nodeIdx * ZONES.length));
+    return new BrokerId.String(
+        BrokerMemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length).toString());
   }
 
   @Test
