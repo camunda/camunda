@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
-import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.AdminResponseEncoder;
 import io.camunda.zeebe.transport.RequestType;
@@ -64,16 +63,12 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
 
   @Override
   public Optional<BrokerMemberId> getBrokerId() {
-    final var brokerId = request.getBrokerId();
-    if (brokerId != AdminRequestEncoder.brokerIdNullValue()) {
-      return Optional.of(BrokerMemberId.from(null, brokerId));
-    } else {
-      return Optional.empty();
-    }
+    final var brokerId = request.getBrokerIdString();
+    return brokerId != null ? Optional.of(BrokerMemberId.from(brokerId)) : Optional.empty();
   }
 
-  public void setBrokerId(final int brokerId) {
-    request.setBrokerId(brokerId);
+  public void setBrokerId(final BrokerMemberId brokerId) {
+    request.setBrokerId(brokerId.nodeIdx(), brokerId.zone());
   }
 
   @Override

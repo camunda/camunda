@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.management"
-  id="1" version="1"
+  id="1" version="2"
   description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -60,6 +60,7 @@
     <field name="brokerId" id="3" type="uint16" presence="optional"/>
     <field name="key" id="4" type="uint64" presence="optional"/>
     <data name="payload" id="5" type="varDataEncoding"/>
+    <data name="zone" id="6" type="varDataEncoding" sinceVersion="2"/>
   </sbe:message>
 
   <sbe:message name="AdminResponse" id="2">
@@ -92,6 +93,7 @@
     <data name="lastUpdated" id="10" type="varDataEncoding"/>
     <!-- Broker version which created this backup -->
     <data name="brokerVersion" id="11" type="varDataEncoding"/>
+    <data name="zone" id="13" type="varDataEncoding" sinceVersion="2"/>
   </sbe:message>
 
   <sbe:message name="BackupListResponse" id="5">

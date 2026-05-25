@@ -24,6 +24,9 @@ import java.util.function.Function;
 public class BackupQueryStub
     implements RequestStub<BackupStatusRequest, BrokerResponse<BackupStatusResponse>> {
 
+  private static final int BROKER_ID = 1;
+  private static final String BROKER_ZONE = "zone-a";
+
   private final Map<Integer, Function<BackupStatusRequest, BrokerResponse<BackupStatusResponse>>>
       responses = new HashMap<>();
 
@@ -47,7 +50,7 @@ public class BackupQueryStub
         .setSnapshotId("sid")
         .setFailureReason("")
         .setCheckpointPosition(100)
-        .setBrokerId(1)
+        .setBrokerId(BROKER_ID, BROKER_ZONE)
         .setPartitionId(request.getPartitionId())
         .setBrokerVersion("test")
         .setCreatedAt(Instant.now().toString())
@@ -59,7 +62,7 @@ public class BackupQueryStub
         .setBackupId(request.getBackupId())
         .setStatus(BackupStatusCode.FAILED)
         .setFailureReason("FAILED")
-        .setBrokerId(1)
+        .setBrokerId(BROKER_ID, BROKER_ZONE)
         .setPartitionId(request.getPartitionId());
   }
 
@@ -70,7 +73,7 @@ public class BackupQueryStub
         .setSnapshotId("sid")
         .setFailureReason("")
         .setCheckpointPosition(100)
-        .setBrokerId(1)
+        .setBrokerId(BROKER_ID, BROKER_ZONE)
         .setPartitionId(request.getPartitionId())
         .setCreatedAt(Instant.now().toString())
         .setLastUpdated(Instant.now().toString());
@@ -90,7 +93,7 @@ public class BackupQueryStub
         .setSnapshotId("sid")
         .setFailureReason("")
         .setCheckpointPosition(100)
-        .setBrokerId(1)
+        .setBrokerId(BROKER_ID, BROKER_ZONE)
         .setPartitionId(request.getPartitionId())
         .setBrokerVersion("test")
         .setCreatedAt(Instant.now().toString())

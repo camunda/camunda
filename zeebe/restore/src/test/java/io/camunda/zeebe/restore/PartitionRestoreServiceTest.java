@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -114,7 +115,7 @@ class PartitionRestoreServiceTest {
 
     backupService =
         new BackupService(
-            nodeId,
+            BrokerMemberId.from(nodeId),
             partitionId,
             backupStore,
             snapshotStore,

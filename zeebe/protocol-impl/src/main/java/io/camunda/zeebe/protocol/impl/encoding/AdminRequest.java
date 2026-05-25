@@ -7,15 +7,20 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
+import static org.agrona.collections.ArrayUtil.EMPTY_BYTE_ARRAY;
+
 import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
 import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class AdminRequest implements BufferReader, BufferWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -26,8 +31,8 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
   private long key = AdminRequestEncoder.keyNullValue();
-  private byte[] payload = null;
-  private boolean hasPayload = false;
+  private byte[] payload = EMPTY_BYTE_ARRAY;
+  private @Nullable String zone;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -35,7 +40,12 @@ public class AdminRequest implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
-    bodyDecoder.getPayload(payload, 0, length - bodyDecoder.limit());
+    key = bodyDecoder.key();
+
+    payload = new byte[bodyDecoder.payloadLength()];
+    bodyDecoder.getPayload(payload, 0, payload.length);
+
+    zone = emptyStringAsNull(bodyDecoder.zone());
   }
 
   @Override
@@ -43,7 +53,9 @@ public class AdminRequest implements BufferReader, BufferWriter {
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
         + AdminRequestEncoder.payloadHeaderLength()
-        + (hasPayload ? payload.length : 0);
+        + payload.length
+        + AdminRequestEncoder.zoneHeaderLength()
+        + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0);
   }
 
   @Override
@@ -53,11 +65,11 @@ public class AdminRequest implements BufferReader, BufferWriter {
         .brokerId(brokerId)
         .partitionId(partitionId)
         .type(type)
-        .key(key);
+        .key(key)
+        .putPayload(payload, 0, payload.length);
 
-    if (hasPayload) {
-      bodyEncoder.putPayload(payload, 0, payload.length);
-    }
+    bodyEncoder.zone(zone);
+
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
@@ -65,8 +77,20 @@ public class AdminRequest implements BufferReader, BufferWriter {
     return brokerId;
   }
 
-  public void setBrokerId(final int brokerId) {
+  public @Nullable String getZone() {
+    return zone;
+  }
+
+  public @Nullable String getBrokerIdString() {
+    if (brokerId == AdminRequestEncoder.brokerIdNullValue()) {
+      return null;
+    }
+    return MemberIdUtil.memberIdString(zone, brokerId);
+  }
+
+  public void setBrokerId(final int brokerId, final @Nullable String zone) {
     this.brokerId = brokerId;
+    this.zone = zone;
   }
 
   public int getPartitionId() {
@@ -94,7 +118,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
   }
 
   public void setPayload(final byte[] payload) {
-    this.payload = payload;
-    hasPayload = true;
+    this.payload = payload != null ? payload : EMPTY_BYTE_ARRAY;
+  }
+
+  private static @Nullable String emptyStringAsNull(final String value) {
+    return value.isEmpty() ? null : value;
   }
 }

@@ -68,7 +68,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class BackupApiRequestHandlerTest {
+class BackupApiRequestHandlerTest {
 
   private static final Instant NOW = Instant.ofEpochMilli(Instant.now().toEpochMilli());
 
@@ -84,10 +84,13 @@ final class BackupApiRequestHandlerTest {
   @Mock CheckpointState checkpointState;
   @Mock DbCheckpointMetadataState checkpointMetadataState;
   @Mock DbBackupRangeState backupRangeState;
-
   BackupApiRequestHandler handler;
   private ResponseReader serverOutput;
   private CompletableFuture<Either<ErrorResponse, BufferReader>> responseFuture;
+
+  protected String brokerZone() {
+    return null;
+  }
 
   @BeforeEach
   void setup() {
@@ -207,7 +210,7 @@ final class BackupApiRequestHandlerTest {
     final Instant lastModified = Instant.ofEpochMilli(2000);
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, checkpointId),
+            new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
             Optional.of(
                 new BackupDescriptorImpl(
                     "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
@@ -230,6 +233,7 @@ final class BackupApiRequestHandlerTest {
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
+        .returns(brokerZone(), BackupStatusResponse::getZone)
         .returns(100L, BackupStatusResponse::getCheckpointPosition)
         .returns(3, BackupStatusResponse::getNumberOfPartitions)
         .returns("s-id", BackupStatusResponse::getSnapshotId)
@@ -252,7 +256,7 @@ final class BackupApiRequestHandlerTest {
 
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, checkpointId),
+            new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
             Optional.empty(),
             io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
             Optional.of("Expected"),
@@ -273,6 +277,7 @@ final class BackupApiRequestHandlerTest {
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
+        .returns(brokerZone(), BackupStatusResponse::getZone)
         .returns(
             BackupStatusResponseEncoder.backupIdNullValue(),
             BackupStatusResponse::getCheckpointPosition)
@@ -319,7 +324,7 @@ final class BackupApiRequestHandlerTest {
     final Instant lastModified = Instant.ofEpochMilli(2000);
     final BackupStatus status =
         new BackupStatusImpl(
-            new BackupIdentifierImpl(1, 1, 2),
+            new BackupIdentifierImpl(1, brokerZone(), 1, 2),
             Optional.of(
                 new BackupDescriptorImpl(
                     "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
@@ -355,7 +360,7 @@ final class BackupApiRequestHandlerTest {
                 i ->
                     (BackupStatus)
                         new BackupStatusImpl(
-                            new BackupIdentifierImpl(1, 1, i),
+                            new BackupIdentifierImpl(1, brokerZone(), 1, i),
                             Optional.empty(),
                             io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
                             Optional.empty(),

@@ -84,7 +84,7 @@ public class ExportingControlService implements ExportingControlApi {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
-                  request.setBrokerId(brokerId.nodeIdx());
+                  request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return brokerClient.sendRequest(request);

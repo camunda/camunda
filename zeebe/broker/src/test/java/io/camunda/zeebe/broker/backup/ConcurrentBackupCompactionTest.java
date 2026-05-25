@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -118,7 +119,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     backupService =
         manage(
             new BackupService(
-                nodeId,
+                BrokerMemberId.from(nodeId),
                 partitionId,
                 backupStore,
                 snapshotStore,

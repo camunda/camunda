@@ -14,11 +14,13 @@ import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.UnsupportedEncodingException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class BackupStatusResponse implements BufferReader, BufferWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -46,6 +48,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   private byte[] encodedCreatedAt = EMPTY_BYTE_ARRAY;
   private String lastUpdated = "";
   private byte[] encodedLastUpdated = EMPTY_BYTE_ARRAY;
+  private @Nullable String zone;
 
   public long getBackupId() {
     return backupId;
@@ -69,13 +72,25 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return brokerId;
   }
 
-  public BackupStatusResponse setBrokerId(final int brokerId) {
+  public @Nullable String getZone() {
+    return zone;
+  }
+
+  public @Nullable String getBrokerIdString() {
+    if (!hasBrokerId()) {
+      return null;
+    }
+    return MemberIdUtil.memberIdString(zone, brokerId);
+  }
+
+  public BackupStatusResponse setBrokerId(final int brokerId, final @Nullable String zone) {
     this.brokerId = brokerId;
+    this.zone = zone;
     return this;
   }
 
   public boolean hasBrokerId() {
-    return brokerId == BackupStatusResponseEncoder.brokerIdNullValue();
+    return brokerId != BackupStatusResponseEncoder.brokerIdNullValue();
   }
 
   public BackupStatusCode getStatus() {
@@ -220,6 +235,8 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     lastUpdated =
         decodeString(
             encodedLastUpdated, BackupStatusResponseDecoder.lastUpdatedCharacterEncoding());
+
+    zone = emptyStringAsNull(bodyDecoder.zone());
   }
 
   private String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
@@ -243,7 +260,9 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         + BackupStatusResponseEncoder.createdAtHeaderLength()
         + encodedCreatedAt.length
         + BackupStatusResponseEncoder.lastUpdatedHeaderLength()
-        + encodedLastUpdated.length;
+        + encodedLastUpdated.length
+        + BackupStatusResponseEncoder.zoneHeaderLength()
+        + encodeString(zone, BackupStatusResponseEncoder.zoneCharacterEncoding()).length;
   }
 
   @Override
@@ -261,7 +280,8 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         .putFailureReason(encodedFailureReason, 0, encodedFailureReason.length)
         .putBrokerVersion(encodedBrokerVersion, 0, encodedBrokerVersion.length)
         .putCreatedAt(encodedCreatedAt, 0, encodedCreatedAt.length)
-        .putLastUpdated(encodedLastUpdated, 0, encodedLastUpdated.length);
+        .putLastUpdated(encodedLastUpdated, 0, encodedLastUpdated.length)
+        .zone(zone);
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
@@ -271,5 +291,9 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     } catch (final UnsupportedEncodingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static @Nullable String emptyStringAsNull(final String value) {
+    return value.isEmpty() ? null : value;
   }
 }
