@@ -111,7 +111,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withMessageContaining(
             """
                 Cannot delete Backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}'\
+                'BackupId{node=1, zone=null, partition=2, checkpoint=3}'\
                 , must be marked as deleted.""");
   }
 
@@ -129,7 +129,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withMessageContaining(
             """
                 Expected to restore from completed backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}', \
+                'BackupId{node=1, zone=null, partition=2, checkpoint=3}', \
                 but was in state 'IN_PROGRESS'""");
   }
 
