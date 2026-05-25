@@ -356,6 +356,11 @@ class ElementInstanceHistorySearch extends NetworkReconnectionHandler {
       {elementName: {$like: pattern}},
       {elementId: {$like: pattern}},
     ]);
+    // Sliding-window pagination: each request fetches 2× PAGE_SIZE items so the
+    // user sees both the "current" page and a look-ahead page in the scroller,
+    // and reaching the end triggers `fetchNextPage`, which advances `from` by
+    // PAGE_SIZE (i.e. windows overlap by PAGE_SIZE items to preserve context
+    // when navigating forward/backward).
     return {
       filter: {
         processInstanceKey,
