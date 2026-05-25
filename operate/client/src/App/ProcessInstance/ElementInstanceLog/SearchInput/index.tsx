@@ -40,7 +40,11 @@ const SearchInput: React.FC = observer(() => {
         placeholder="Search by name or ID"
         data-testid="instance-history-search-input"
         value={elementInstanceHistorySearchStore.state.searchText}
+        maxLength={MAX_LENGTH}
         onChange={(event) => {
+          // maxLength on the input prevents typing/paste beyond the limit at
+          // the DOM level; the slice is defense-in-depth for edge cases where
+          // a programmatic value could exceed it.
           elementInstanceHistorySearchStore.setSearchText(
             event.target.value.slice(0, MAX_LENGTH),
           );
