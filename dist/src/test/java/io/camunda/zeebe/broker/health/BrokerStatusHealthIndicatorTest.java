@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-
+import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.management.HealthTree;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -22,7 +22,6 @@ import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ final class BrokerStatusHealthIndicatorTest {
   void shouldReportUpWhenBrokerIsHealthy() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
     when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, Map.of()));
+        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, ImmutableMap.of()));
 
     final Health health = indicator.health();
 
@@ -62,7 +61,7 @@ final class BrokerStatusHealthIndicatorTest {
   void shouldReportDownWhenBrokerIsUnhealthy() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
     when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.UNHEALTHY, null, Map.of()));
+        .thenReturn(new HealthReport("Broker-0", HealthStatus.UNHEALTHY, null, ImmutableMap.of()));
 
     final Health health = indicator.health();
 
@@ -82,22 +81,22 @@ final class BrokerStatusHealthIndicatorTest {
   @Test
   void shouldIncludeComponentTreeInDetails() {
     final var raftReport =
-        new HealthReport("Raft-1", HealthStatus.HEALTHY, null, Map.of());
+        new HealthReport("Raft-1", HealthStatus.HEALTHY, null, ImmutableMap.of());
     final var streamProcessorReport =
-        new HealthReport("StreamProcessor-1", HealthStatus.HEALTHY, null, Map.of());
+        new HealthReport("StreamProcessor-1", HealthStatus.HEALTHY, null, ImmutableMap.of());
     final var partitionReport =
         new HealthReport(
             "Partition-1",
             HealthStatus.HEALTHY,
             null,
-            Map.of("Raft-1", raftReport, "StreamProcessor-1", streamProcessorReport));
+            ImmutableMap.of("Raft-1", raftReport, "StreamProcessor-1", streamProcessorReport));
 
     final var brokerReport =
         new HealthReport(
             "Broker-0",
             HealthStatus.HEALTHY,
             null,
-            Map.of("Partition-1", partitionReport));
+            ImmutableMap.of("Partition-1", partitionReport));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -120,14 +119,14 @@ final class BrokerStatusHealthIndicatorTest {
             "StreamProcessor-1",
             HealthStatus.UNHEALTHY,
             HealthIssue.of("Processing is stuck", since),
-            Map.of());
+            ImmutableMap.of());
 
     final var brokerReport =
         new HealthReport(
             "Broker-0",
             HealthStatus.UNHEALTHY,
             null,
-            Map.of("StreamProcessor-1", unhealthyChild));
+            ImmutableMap.of("StreamProcessor-1", unhealthyChild));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -149,10 +148,10 @@ final class BrokerStatusHealthIndicatorTest {
     final var exception = new RuntimeException("Disk full");
     final var deadChild =
         new HealthReport(
-            "Log-1", HealthStatus.DEAD, HealthIssue.of(exception, since), Map.of());
+            "Log-1", HealthStatus.DEAD, HealthIssue.of(exception, since), ImmutableMap.of());
 
     final var brokerReport =
-        new HealthReport("Broker-0", HealthStatus.DEAD, null, Map.of("Log-1", deadChild));
+        new HealthReport("Broker-0", HealthStatus.DEAD, null, ImmutableMap.of("Log-1", deadChild));
 
     when(healthCheckService.isBrokerHealthy()).thenReturn(false);
     when(healthCheckService.getHealthReport()).thenReturn(brokerReport);
@@ -169,7 +168,7 @@ final class BrokerStatusHealthIndicatorTest {
   void shouldHandleEmptyComponentTree() {
     when(healthCheckService.isBrokerHealthy()).thenReturn(true);
     when(healthCheckService.getHealthReport())
-        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, Map.of()));
+        .thenReturn(new HealthReport("Broker-0", HealthStatus.HEALTHY, null, ImmutableMap.of()));
 
     final Health health = indicator.health();
 
