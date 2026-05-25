@@ -80,9 +80,9 @@ final class PartitionLeaveTest {
 
   static Stream<Scenario> testScenarios() {
     return Stream.of(
-        new Scenario(new InitialClusterState(2, 2, 2), new Operation("1", 1)),
-        new Scenario(new InitialClusterState(3, 3, 3), new Operation("0", 1)),
-        new Scenario(new InitialClusterState(3, 3, 3), new Operation("0", 3)));
+        new Scenario(new InitialClusterState(2, 2, 2), new Operation(1, 1)),
+        new Scenario(new InitialClusterState(3, 3, 3), new Operation(0, 1)),
+        new Scenario(new InitialClusterState(3, 3, 3), new Operation(0, 3)));
   }
 
   TestCluster setupCluster(final InitialClusterState conf) {
@@ -100,5 +100,5 @@ final class PartitionLeaveTest {
 
   record InitialClusterState(int clusterSize, int partitionCount, int replicationFactor) {}
 
-  record Operation(String brokerId, int partitionId) {}
+  record Operation(int brokerId, int partitionId) {}
 }

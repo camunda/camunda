@@ -33,7 +33,7 @@ final class CancelChangeTest {
     final var initialTopology = actuator.getTopology();
 
     // broker does not exist, so operation will never complete
-    final var addResponse = actuator.addBroker("1");
+    final var addResponse = actuator.addBroker(1);
     Utils.assertChangeIsPlanned(addResponse);
 
     // when

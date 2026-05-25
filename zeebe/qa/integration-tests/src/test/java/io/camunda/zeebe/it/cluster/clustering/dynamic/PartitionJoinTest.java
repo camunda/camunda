@@ -68,8 +68,8 @@ final class PartitionJoinTest {
 
   static Stream<Scenario> testScenarios() {
     return Stream.of(
-        new Scenario(new InitialClusterState(3, 3, 1), new Operation("1", 1, 2)),
-        new Scenario(new InitialClusterState(2, 2, 1), new Operation("1", 1, 2)));
+        new Scenario(new InitialClusterState(3, 3, 1), new Operation(1, 1, 2)),
+        new Scenario(new InitialClusterState(2, 2, 1), new Operation(1, 1, 2)));
   }
 
   TestCluster setupCluster(final InitialClusterState conf) {
@@ -100,5 +100,5 @@ final class PartitionJoinTest {
 
   record InitialClusterState(int clusterSize, int partitionCount, int replicationFactor) {}
 
-  record Operation(String brokerId, int partitionId, int priority) {}
+  record Operation(int brokerId, int partitionId, int priority) {}
 }

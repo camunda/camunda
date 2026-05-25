@@ -192,7 +192,7 @@ class ScaleResiliencyTest {
     @Test
     void shouldContinueScaleDownAfterRestart() {
       // given  -- partition 1 in broker 0 and 1, and partition 2 in broker 0, 1 and 2
-      ClusterActuator.of(cluster.availableGateway()).joinPartition("0", 2, 1);
+      ClusterActuator.of(cluster.availableGateway()).joinPartition(0, 2, 1);
       // wait until broker 0 has partition 2
       Awaitility.await()
           .untilAsserted(
@@ -204,7 +204,7 @@ class ScaleResiliencyTest {
 
       // when -- restart during leaving
 
-      ClusterActuator.of(cluster.availableGateway()).leavePartition("2", 2);
+      ClusterActuator.of(cluster.availableGateway()).leavePartition(2, 2);
       // wait until partition 2 is marked as leaving
       Awaitility.await()
           .untilAsserted(
