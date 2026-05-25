@@ -10,6 +10,8 @@ package io.camunda.search.clients.transformers.aggregation;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_FIELD_KEY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_LATEST_PROCESS_DEFINITION;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_PAGE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_NAME_VERSION_COUNT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
@@ -86,7 +88,7 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
     final var bucketSort =
         bucketSort()
             .name(AGGREGATION_NAME_PAGE)
-            .sorting(getCountSuffixSortings(aggregation))
+            .sorting(toBucketSortFieldSortings(aggregation))
             .from(aggregation.page() != null ? aggregation.page().from() : null)
             .size(aggregation.page() != null ? aggregation.page().size() : null)
             .build();
@@ -116,10 +118,26 @@ public class ProcessDefinitionInstanceStatisticsAggregationTransformer
         byProcessDefinitionIdAndTenantIdAgg, processDefinitionIdAndTenantIdCardinalityAgg);
   }
 
-  private static List<FieldSorting> getCountSuffixSortings(
+  private static List<FieldSorting> toBucketSortFieldSortings(
       final ProcessDefinitionInstanceStatisticsAggregation aggregation) {
     return aggregation.sort().getFieldSortings().stream()
-        .map(ordering -> new FieldSorting(ordering.field() + "._count", ordering.order()))
+        .map(
+            ordering -> {
+              final String bucketSortField =
+                  switch (ordering.field()) {
+                    // _key is a native bucket_sort field that sorts by the terms bucket key;
+                    // appending ._count would produce an invalid path that ES rejects.
+                    case AGGREGATION_FIELD_KEY -> AGGREGATION_FIELD_KEY;
+                    case AGGREGATION_NAME_TOTAL_WITH_INCIDENT,
+                        AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT ->
+                        ordering.field() + "._count";
+                    default ->
+                        throw new IllegalArgumentException(
+                            "Unsupported sort field for statistics bucket_sort: "
+                                + ordering.field());
+                  };
+              return new FieldSorting(bucketSortField, ordering.order());
+            })
         .toList();
   }
 }
