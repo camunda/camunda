@@ -389,3 +389,24 @@ Incident Commander role as new information becomes available.
 
 As Incident Commander please analyze the slow Unified CI job and figure out how to make it faster,
 e.g. by eliminating bottlenecks, caching, or splitting it into multiple parallel jobs.
+
+---
+
+### Monorepo Docs Site Pages Build Failure
+
+The `Docs Build and Deploy` workflow includes a `Verify Pages build` step that polls the GitHub
+Pages build API after pushing to `gh-pages`. If this step fails, the deploy commit landed but
+GitHub Pages was unable to publish it, leaving https://camunda.github.io/camunda/ stale or broken.
+The Pages build outcome is otherwise not surfaced anywhere in the Actions UI (legacy Pages mode),
+so without this step a failed build leaves no trace in CI. (For PR previews, `Docs PR Preview`
+relies on `rossjrw/pr-preview-action`'s built-in `wait-for-pages-deployment`, which provides the
+same guarantee.)
+
+#### Troubleshooting
+
+1. Check the failed step's log — it prints the gh-pages commit SHA and the API status (`errored`
+   or `building` timeout). Note: the API only exposes the generic `"Page build failed."` message;
+   the underlying reason is not surfaced through the API.
+2. Inspect recent Pages build history
+3. Verify the `gh-pages` branch only contains build artifacts.
+
