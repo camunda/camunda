@@ -10,6 +10,7 @@ package io.camunda.db.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import java.util.Map;
 import org.h2.jdbcx.JdbcDataSource;
@@ -20,11 +21,12 @@ import org.junit.jupiter.api.Test;
 /**
  * H2-based integration tests for the RDBMS schema version compatibility check.
  *
- * <p>These tests run Liquibase against a real in-memory H2 database to validate the version
- * enforcement logic in {@link LiquibaseSchemaManager}.
+ * <p>These tests run Liquibase against a real in-memory H2 database for a single physical tenant to
+ * validate the version enforcement logic in {@link LiquibaseSchemaManager}.
  */
 class LiquibaseSchemaManagerVersionCheckH2Test {
 
+  private static final String TENANT_ID = "default";
   private static final String DB_URL = "jdbc:h2:mem:version-check-test;DB_CLOSE_DELAY=-1";
 
   private JdbcDataSource dataSource;
@@ -63,7 +65,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     manager.afterPropertiesSet();
 
     // then: schema manager starts up successfully
-    assertThat(manager.isInitialized()).isTrue();
+    assertThat(manager.isInitialized(TENANT_ID)).isTrue();
     assertThat(readSchemaVersion()).isEqualTo("8.9.5");
   }
 
@@ -79,7 +81,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     manager.afterPropertiesSet();
 
     // then: schema manager starts up successfully
-    assertThat(manager.isInitialized()).isTrue();
+    assertThat(manager.isInitialized(TENANT_ID)).isTrue();
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -99,7 +101,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
         .hasMessageContaining("8.9.0")
         .hasMessageContaining("8.11.0");
-    assertThat(manager.isInitialized()).isFalse();
+    assertThat(manager.isInitialized(TENANT_ID)).isFalse();
     // Schema version should NOT have been updated
     assertThat(readSchemaVersion()).isEqualTo("8.9.0");
     // Liquibase should NOT have applied any new changesets
@@ -117,7 +119,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     manager.afterPropertiesSet();
 
     // then: schema is created and version is recorded
-    assertThat(manager.isInitialized()).isTrue();
+    assertThat(manager.isInitialized(TENANT_ID)).isTrue();
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -134,7 +136,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     manager.afterPropertiesSet();
 
     // then: schema manager starts up successfully and version is recorded
-    assertThat(manager.isInitialized()).isTrue();
+    assertThat(manager.isInitialized(TENANT_ID)).isTrue();
     assertThat(readSchemaVersion()).isEqualTo("8.10.0");
   }
 
@@ -151,25 +153,16 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
         .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class)
         .hasMessageContaining(LiquibaseSchemaManager.INFERRED_PRE_VERSIONING_SCHEMA_VERSION)
         .hasMessageContaining("8.11.0");
-    assertThat(manager.isInitialized()).isFalse();
+    assertThat(manager.isInitialized(TENANT_ID)).isFalse();
   }
 
   // ---- helpers ----
 
-  private LiquibaseSchemaManager buildSchemaManager(final String appVersion) {
-    final var manager = new LiquibaseSchemaManager();
-    manager.setDataSource(dataSource);
-    manager.setDatabaseChangeLogTable("DATABASECHANGELOG");
-    manager.setDatabaseChangeLogLockTable("DATABASECHANGELOGLOCK");
-    manager.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
-    manager.setParameters(
-        Map.of(
-            "prefix", "",
-            "userCharColumnSize", "256",
-            "errorMessageSize", "4000",
-            "treePathSize", "8191"));
-    manager.setApplicationVersion(appVersion);
-    return manager;
+  private LiquibaseSchemaManager buildSchemaManager(final String appVersion) throws Exception {
+    final var cfg =
+        new PerTenantSchemaConfig(
+            dataSource, VendorDatabasePropertiesLoader.load("h2"), "", true, null);
+    return new LiquibaseSchemaManager(Map.of(TENANT_ID, cfg), appVersion);
   }
 
   /**

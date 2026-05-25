@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -476,7 +477,7 @@ class RdbmsExporterTest {
         .hasMessage("Schema is not ready for use");
 
     // verify schema manager was checked
-    verify(schemaManager).isInitialized();
+    verify(schemaManager).isInitialized("default");
   }
 
   @Test
@@ -671,7 +672,7 @@ class RdbmsExporterTest {
 
     // Mock schema manager
     schemaManager = mock(RdbmsSchemaManager.class);
-    when(schemaManager.isInitialized()).thenReturn(schemaInitialized);
+    when(schemaManager.isInitialized(anyString())).thenReturn(schemaInitialized);
 
     doAnswer(
             (invocation) -> {

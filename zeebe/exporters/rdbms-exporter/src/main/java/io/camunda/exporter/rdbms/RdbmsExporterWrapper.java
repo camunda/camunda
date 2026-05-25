@@ -151,7 +151,13 @@ public class RdbmsExporterWrapper implements Exporter {
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
     createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);
 
-    exporter = builder.rdbmsSchemaManager(rdbmsSchemaManager).build();
+    exporter =
+        builder
+            .rdbmsSchemaManager(rdbmsSchemaManager)
+            // TODO(#51921): replace with context.getPhysicalTenant() once available.
+            // Matches PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.
+            .physicalTenantId("default")
+            .build();
   }
 
   @Override

@@ -18,36 +18,42 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
-import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import liquibase.integration.spring.SpringLiquibase;
 import liquibase.lockservice.LockService;
 import liquibase.lockservice.LockServiceFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Manages the database schema using Liquibase for multi-tenant applications.
+ * Manages the RDBMS database schema using Liquibase, one schema per physical tenant.
  *
- * <p>This class extends {@link MultiTenantSpringLiquibase} to leverage its capabilities for
- * managing database migrations in a multi-tenant environment. It also implements the {@link
- * RdbmsSchemaManager} interface to provide a method for checking if the schema has been
- * initialized.
+ * <p>For each entry in the supplied {@link PerTenantSchemaConfig} map, a dedicated Liquibase
+ * migration is executed against the tenant's own {@link DataSource}, using the tenant's table
+ * prefix and DDL lock-wait timeout. Tenants are processed sequentially in iteration order and a
+ * failure for any single tenant aborts startup — fail-fast preserves the previous behaviour.
  *
- * <p>When auto-DDL is enabled (i.e. this schema manager is active), the upgrade path from the
- * stored schema version to the running application version is validated before applying Liquibase
- * migrations. Only same-minor or next-minor upgrades are permitted (e.g. 8.9.x → 8.9.y or 8.9.x →
- * 8.10.y). Skipping minor versions (e.g. 8.9.x → 8.11.y) is not supported and will cause startup to
- * fail with a {@link RdbmsSchemaVersionIncompatibleException}.
+ * <p>When {@code auto-ddl} is disabled for a tenant, the migration is skipped entirely but the
+ * tenant is still marked as initialized so that {@link #isInitialized(String)} returns {@code true}
+ * and the RDBMS exporter can open against the (externally managed) schema.
  *
- * <p>When auto-DDL is disabled ({@code NoopSchemaManager}), no version check is performed.
+ * <p>When auto-DDL is enabled, the upgrade path from the stored schema version to the running
+ * application version is validated before applying Liquibase migrations. Only same-minor or
+ * next-minor upgrades are permitted (e.g. 8.9.x → 8.9.y or 8.9.x → 8.10.y). Skipping minor versions
+ * (e.g. 8.9.x → 8.11.y) is not supported and will cause startup to fail with a {@link
+ * RdbmsSchemaVersionIncompatibleException}.
  */
-public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
-    implements RdbmsSchemaManager {
+public class LiquibaseSchemaManager implements InitializingBean, RdbmsSchemaManager {
 
   /**
    * The schema version that is inferred when the {@code RDBMS_SCHEMA_VERSION} table does not yet
@@ -59,6 +65,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   private static final Logger LOG = LoggerFactory.getLogger(LiquibaseSchemaManager.class);
   private static final int DEFAULT_MIGRATION_RETRY_ATTEMPTS = 3;
   private static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(200);
+  private static final String CHANGE_LOG = "db/changelog/rdbms-exporter/changelog-master.xml";
 
   /**
    * The table that tracks the RDBMS schema version applied by this application. An entry is
@@ -79,24 +86,82 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
           "40001" // transaction serialization failure #50230
           );
 
-  private volatile boolean initialized = false;
-  private Duration ddlLockWaitTimeout;
+  private final Map<String, PerTenantSchemaConfig> physicalTenantConfigs;
 
   /**
-   * The current application version, injected at startup. Used to validate the upgrade path from
-   * the stored schema version. Must not be {@code null}; a missing value causes startup to be
-   * aborted with an {@link IllegalStateException}.
+   * The current application version, supplied at construction time. Used to validate the upgrade
+   * path from the stored schema version. Must not be {@code null}; a missing value causes startup
+   * to be aborted with an {@link IllegalStateException}.
    */
-  private String applicationVersion;
+  private final String applicationVersion;
+
+  private final ConcurrentHashMap<String, Boolean> initialized = new ConcurrentHashMap<>();
+
+  public LiquibaseSchemaManager(
+      final Map<String, PerTenantSchemaConfig> physicalTenantConfigs,
+      final String applicationVersion) {
+    this.physicalTenantConfigs = physicalTenantConfigs;
+    this.applicationVersion = applicationVersion;
+  }
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    releaseStaleLockIfPresent();
-    checkSchemaVersionCompatibility();
-    performMigrationWithRetry();
-    updateSchemaVersion();
-    initialized = true;
-    LOG.debug("Liquibase migrations completed.");
+    if (applicationVersion == null) {
+      throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
+    }
+    // Tenants are migrated sequentially, fail-fast on first failure. Parallel execution with
+    // per-tenant failure isolation is a deferred follow-up (epic #52027).
+    for (final var entry : physicalTenantConfigs.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      final var cfg = entry.getValue();
+      if (!cfg.autoDdl()) {
+        initialized.put(physicalTenantId, true);
+        LOG.info(
+            "[RDBMS Schema] Skipping Liquibase migration for physical tenant '{}' (auto-ddl=false).",
+            physicalTenantId);
+        continue;
+      }
+      final var tenant = buildPerTenant(physicalTenantId, cfg);
+      LOG.info(
+          "[RDBMS Schema] Running Liquibase migration for physical tenant '{}' with prefix '{}'.",
+          physicalTenantId,
+          tenant.prefix());
+      releaseStaleLockIfPresent(tenant);
+      checkSchemaVersionCompatibility(tenant);
+      performMigrationWithRetry(tenant);
+      updateSchemaVersion(tenant);
+      initialized.put(physicalTenantId, true);
+      LOG.debug(
+          "[RDBMS Schema] Liquibase migration completed for physical tenant '{}'.",
+          physicalTenantId);
+    }
+  }
+
+  @Override
+  public boolean isInitialized(final String physicalTenantId) {
+    return Boolean.TRUE.equals(initialized.get(physicalTenantId));
+  }
+
+  @VisibleForTesting
+  protected PerTenantLiquibase buildPerTenant(
+      final String physicalTenantId, final PerTenantSchemaConfig cfg) {
+    final var prefix = StringUtils.trimToEmpty(cfg.prefix());
+    final var vendor = cfg.vendorDatabaseProperties();
+
+    final var runner = new SpringLiquibase();
+    runner.setDataSource(cfg.dataSource());
+    runner.setChangeLog(CHANGE_LOG);
+    runner.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
+    runner.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
+    runner.setChangeLogParameters(
+        Map.of(
+            "prefix", prefix,
+            "userCharColumnSize", Integer.toString(vendor.userCharColumnSize()),
+            "errorMessageSize", Integer.toString(vendor.errorMessageSize()),
+            "treePathSize", Integer.toString(vendor.treePathSize())));
+
+    return new PerTenantLiquibase(
+        physicalTenantId, runner, cfg.dataSource(), prefix, cfg.ddlLockWaitTimeout());
   }
 
   /**
@@ -104,12 +169,12 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * tests run concurrently with unique table prefixes, causing Liquibase to run multiple migrations
    * in parallel against the same database, which can trigger transient errors such as deadlocks.
    */
-  protected void performMigrationWithRetry() throws Exception {
+  protected void performMigrationWithRetry(final PerTenantLiquibase tenant) throws Exception {
     var retryBackoff = DEFAULT_RETRY_BACKOFF;
 
     for (int attempt = 1; attempt <= DEFAULT_MIGRATION_RETRY_ATTEMPTS; attempt++) {
       try {
-        performMigration();
+        performMigration(tenant);
         return;
       } catch (final Exception e) {
         final boolean shouldRetry =
@@ -119,7 +184,9 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
         }
 
         LOG.warn(
-            "Liquibase migration failed due to a transient, retryable error (attempt {}/{}). Retrying in {}.",
+            "[RDBMS Schema] Liquibase migration for tenant '{}' failed due to a transient, retryable error "
+                + "(attempt {}/{}). Retrying in {}.",
+            tenant.physicalTenantId(),
             attempt,
             DEFAULT_MIGRATION_RETRY_ATTEMPTS,
             retryBackoff,
@@ -132,8 +199,8 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   }
 
   @VisibleForTesting
-  protected void performMigration() throws Exception {
-    super.afterPropertiesSet();
+  protected void performMigration(final PerTenantLiquibase tenant) throws Exception {
+    tenant.runner().afterPropertiesSet();
   }
 
   protected void waitBeforeRetry(final Duration retryBackoff) throws InterruptedException {
@@ -167,25 +234,8 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     return false;
   }
 
-  @Override
-  public boolean isInitialized() {
-    return initialized;
-  }
-
   public String getApplicationVersion() {
     return applicationVersion;
-  }
-
-  public void setApplicationVersion(final String applicationVersion) {
-    this.applicationVersion = applicationVersion;
-  }
-
-  public Duration getDdlLockWaitTimeout() {
-    return ddlLockWaitTimeout;
-  }
-
-  public void setDdlLockWaitTimeout(final Duration ddlLockWaitTimeout) {
-    this.ddlLockWaitTimeout = ddlLockWaitTimeout;
   }
 
   /**
@@ -197,7 +247,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * <ol>
    *   <li>If {@link #applicationVersion} is {@code null}, startup is aborted with an {@link
    *       IllegalStateException}.
-   *   <li>If {@link #getDataSource()} returns {@code null}, startup is aborted with an {@link
+   *   <li>If the tenant's data source is {@code null}, startup is aborted with an {@link
    *       IllegalStateException}.
    *   <li>If the {@code RDBMS_SCHEMA_VERSION} table does not exist or contains no row (fresh DB or
    *       pre-versioning database):
@@ -215,16 +265,19 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    *       IllegalStateException}.
    * </ol>
    */
-  protected void checkSchemaVersionCompatibility() {
+  protected void checkSchemaVersionCompatibility(final PerTenantLiquibase tenant) {
     if (applicationVersion == null) {
       throw new IllegalStateException("[RDBMS Schema] applicationVersion is not configured.");
     }
-    if (getDataSource() == null) {
-      throw new IllegalStateException("[RDBMS Schema] dataSource is not configured.");
+    if (tenant.dataSource() == null) {
+      throw new IllegalStateException(
+          "[RDBMS Schema] dataSource is not configured for tenant '"
+              + tenant.physicalTenantId()
+              + "'.");
     }
 
-    try (final var connection = getDataSource().getConnection()) {
-      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection);
+    try (final var connection = tenant.dataSource().getConnection()) {
+      final var currentSchemaVersion = resolveCurrentSchemaVersion(connection, tenant.prefix());
       if (currentSchemaVersion == null) {
         // Fresh database – no version check needed.
         return;
@@ -243,14 +296,16 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
           VersionCompatibilityCheck.check(currentSchemaVersion, stableAppVersion.get());
       if (result instanceof Compatible) {
         LOG.debug(
-            "[RDBMS Schema] Version check passed: schema={}, app={}, result={}",
+            "[RDBMS Schema] Version check passed for tenant '{}': schema={}, app={}, result={}",
+            tenant.physicalTenantId(),
             currentSchemaVersion,
             stableAppVersion.get(),
             result.getClass().getSimpleName());
       } else if (result instanceof Incompatible) {
         LOG.error(
-            "[RDBMS Schema] Illegal upgrade path: schema={}, app={}. "
+            "[RDBMS Schema] Illegal upgrade path for tenant '{}': schema={}, app={}. "
                 + "Upgrade sequentially ({} → next minor). Skipping minors is not supported.",
+            tenant.physicalTenantId(),
             currentSchemaVersion,
             stableAppVersion.get(),
             currentSchemaVersion);
@@ -258,8 +313,9 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
             currentSchemaVersion, stableAppVersion.get());
       } else if (result instanceof Indeterminate) {
         LOG.error(
-            "[RDBMS Schema] Cannot determine version compatibility: schema={}, app={}. "
+            "[RDBMS Schema] Cannot determine version compatibility for tenant '{}': schema={}, app={}. "
                 + "The stored schema version may be invalid. Startup aborted.",
+            tenant.physicalTenantId(),
             currentSchemaVersion,
             stableAppVersion.get());
         throw new IllegalStateException(
@@ -289,8 +345,8 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * </ul>
    */
   @VisibleForTesting
-  protected String resolveCurrentSchemaVersion(final Connection connection) throws SQLException {
-    final var prefix = getPrefix();
+  protected String resolveCurrentSchemaVersion(final Connection connection, final String prefix)
+      throws SQLException {
     final var versionFromTable = readSchemaVersion(connection, prefix);
     if (versionFromTable != null) {
       return versionFromTable;
@@ -358,8 +414,8 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * Any failure aborts startup with an {@link IllegalStateException} because a missing or incorrect
    * schema-version record would cause the next startup to perform an incorrect compatibility check.
    */
-  protected void updateSchemaVersion() {
-    if (applicationVersion == null || getDataSource() == null) {
+  protected void updateSchemaVersion(final PerTenantLiquibase tenant) {
+    if (applicationVersion == null || tenant.dataSource() == null) {
       return;
     }
 
@@ -372,16 +428,18 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
       return;
     }
 
-    final var prefix = getPrefix();
-    final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    final var tableName = tenant.prefix() + SCHEMA_VERSION_TABLE;
 
-    try (final var connection = getDataSource().getConnection()) {
+    try (final var connection = tenant.dataSource().getConnection()) {
       final var autoCommit = connection.getAutoCommit();
       connection.setAutoCommit(false);
       try {
         upsertSingleSchemaVersionRow(connection, tableName, stableVersion.get());
         connection.commit();
-        LOG.debug("[RDBMS Schema] Updated schema version to {}.", stableVersion.get());
+        LOG.debug(
+            "[RDBMS Schema] Updated schema version to {} for tenant '{}'.",
+            stableVersion.get(),
+            tenant.physicalTenantId());
       } catch (final SQLException e) {
         connection.rollback();
         throw e;
@@ -390,7 +448,10 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
       }
     } catch (final Exception e) {
       LOG.error(
-          "[RDBMS Schema] Failed to update schema version in {}. Startup aborted.", tableName, e);
+          "[RDBMS Schema] Failed to update schema version in {} for tenant '{}'. Startup aborted.",
+          tableName,
+          tenant.physicalTenantId(),
+          e);
       throw new IllegalStateException(
           "[RDBMS Schema] Failed to update schema version in " + tableName + ". Startup aborted.",
           e);
@@ -433,39 +494,6 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     }
   }
 
-  private SchemaVersionState readSchemaVersionState(
-      final Connection connection, final String tableName) throws SQLException {
-    var rowCount = 0;
-    String version = null;
-
-    try (final var selectStmt = connection.prepareStatement("SELECT VERSION FROM " + tableName);
-        final var resultSet = selectStmt.executeQuery()) {
-      while (resultSet.next()) {
-        rowCount++;
-        if (rowCount == 1) {
-          version = resultSet.getString(1);
-        }
-      }
-    }
-
-    return new SchemaVersionState(rowCount, version);
-  }
-
-  private void insertSchemaVersion(
-      final Connection connection, final String tableName, final String stableVersion)
-      throws SQLException {
-    try (final var insertStmt =
-        connection.prepareStatement("INSERT INTO " + tableName + " (VERSION) VALUES (?)")) {
-      insertStmt.setString(1, stableVersion);
-      insertStmt.executeUpdate();
-    }
-  }
-
-  private String getPrefix() {
-    final var params = getParameters();
-    return params != null ? params.getOrDefault("prefix", "") : "";
-  }
-
   /**
    * Normalizes {@code version} to a stable {@code major.minor.patch} string by stripping any
    * pre-release or build-metadata suffix (e.g. {@code 8.11.0-SNAPSHOT} → {@code 8.11.0}).
@@ -480,34 +508,37 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   }
 
   /**
-   * Checks for stale Liquibase locks and forcibly releases them if they are older than the
-   * configured {@link #ddlLockWaitTimeout}. This allows recovery from container crashes that left
-   * the schema locked without being properly cleaned up.
+   * Checks for stale Liquibase locks for the given tenant and forcibly releases them if they are
+   * older than the configured DDL lock wait timeout. This allows recovery from container crashes
+   * that left the schema locked without being properly cleaned up.
    *
-   * <p>If {@link #ddlLockWaitTimeout} is {@code null}, or the lock table does not exist yet (first
-   * run), this method does nothing.
+   * <p>If the tenant's DDL lock wait timeout is {@code null}, or the lock table does not exist yet
+   * (first run), this method does nothing.
    */
-  protected void releaseStaleLockIfPresent() {
-    if (ddlLockWaitTimeout == null || getDataSource() == null) {
+  protected void releaseStaleLockIfPresent(final PerTenantLiquibase tenant) {
+    if (tenant.ddlLockWaitTimeout() == null || tenant.dataSource() == null) {
       return;
     }
-    try (final var connection = getDataSource().getConnection()) {
-      final var database = openDatabase(connection);
+    try (final var connection = tenant.dataSource().getConnection()) {
+      final var database = openDatabase(connection, tenant.prefix() + "DATABASECHANGELOGLOCK");
       try {
         final var lockService = getLockService(database);
-        final var threshold = Instant.now().minus(ddlLockWaitTimeout);
+        final var threshold = Instant.now().minus(tenant.ddlLockWaitTimeout());
         for (final var lock : lockService.listLocks()) {
           if (lock.getLockGranted() != null
               && lock.getLockGranted().toInstant().isBefore(threshold)) {
             LOG.warn(
-                "Detected stale Liquibase lock acquired at {} by '{}' (older than configured"
-                    + " ddl-lock-wait-timeout of {}). Releasing lock to allow migrations to"
-                    + " proceed.",
+                "[RDBMS Schema] Detected stale Liquibase lock for tenant '{}' acquired at {} by '{}' "
+                    + "(older than configured ddl-lock-wait-timeout of {}). Releasing lock to allow "
+                    + "migrations to proceed.",
+                tenant.physicalTenantId(),
                 lock.getLockGranted(),
                 lock.getLockedBy(),
-                ddlLockWaitTimeout);
+                tenant.ddlLockWaitTimeout());
             lockService.forceReleaseLock();
-            LOG.info("Stale Liquibase lock released successfully.");
+            LOG.info(
+                "[RDBMS Schema] Stale Liquibase lock released successfully for tenant '{}'.",
+                tenant.physicalTenantId());
             break;
           }
         }
@@ -515,7 +546,11 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
         database.close();
       }
     } catch (final Exception e) {
-      LOG.warn("Failed to check or release stale Liquibase lock. Proceeding with migration.", e);
+      LOG.warn(
+          "[RDBMS Schema] Failed to check or release stale Liquibase lock for tenant '{}'. "
+              + "Proceeding with migration.",
+          tenant.physicalTenantId(),
+          e);
     }
   }
 
@@ -523,11 +558,11 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * Creates a Liquibase {@link Database} from the given JDBC connection. Protected to allow
    * overriding in tests.
    */
-  protected Database openDatabase(final Connection connection) throws DatabaseException {
+  protected Database openDatabase(final Connection connection, final String lockTableName)
+      throws DatabaseException {
     final var database =
         DatabaseFactory.getInstance()
             .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-    final var lockTableName = getDatabaseChangeLogLockTable();
     if (lockTableName != null) {
       database.setDatabaseChangeLogLockTableName(lockTableName);
     }
@@ -541,5 +576,15 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     return LockServiceFactory.getInstance().getLockService(database);
   }
 
-  private record SchemaVersionState(int rowCount, String version) {}
+  /**
+   * Bundles the per-physical-tenant Liquibase runner with the resolved tenant facts needed by the
+   * helper methods. Created via {@link #buildPerTenant(String, PerTenantSchemaConfig)} once per
+   * tenant.
+   */
+  protected record PerTenantLiquibase(
+      String physicalTenantId,
+      SpringLiquibase runner,
+      DataSource dataSource,
+      String prefix,
+      Duration ddlLockWaitTimeout) {}
 }

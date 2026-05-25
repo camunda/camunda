@@ -86,7 +86,9 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManager, Initializin
   }
 
   @Override
-  public boolean isInitialized() {
+  public boolean isInitialized(final String physicalTenantId) {
+    // ScriptBasedSchemaManager is a test fixture that runs a single migration for the default
+    // physical tenant; #51921 will plumb real per-tenant routing when needed.
     return initialized;
   }
 }

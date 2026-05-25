@@ -44,7 +44,6 @@ public final class RdbmsExporter {
   private final String physicalTenantId;
   private final RdbmsWriters rdbmsWriters;
   private final RdbmsSchemaManager rdbmsSchemaManager;
-
   // services
   private final HistoryCleanupService historyCleanupService;
   private final HistoryDeletionService historyDeletionService;
@@ -104,8 +103,11 @@ public final class RdbmsExporter {
         partitionId,
         controller.getLastExportedRecordPosition());
 
-    if (!rdbmsSchemaManager.isInitialized()) {
-      LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
+    if (!rdbmsSchemaManager.isInitialized(physicalTenantId)) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Schema for physical tenant '{}' is not yet ready for use",
+          partitionId,
+          physicalTenantId);
       throw new ExporterException("Schema is not ready for use");
     }
 
