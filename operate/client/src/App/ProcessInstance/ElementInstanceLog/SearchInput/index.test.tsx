@@ -54,6 +54,14 @@ describe('<SearchInput />', () => {
     expect(input).toHaveValue('Validate');
   });
 
+  it('enforces a max length of 200 characters on the input', () => {
+    render(<SearchInput />);
+    const input = screen.getByLabelText<HTMLInputElement>(
+      'Search element instances by name or ID',
+    );
+    expect(input).toHaveAttribute('maxLength', '200');
+  });
+
   it('focuses the input on CMD+F / CTRL+F', () => {
     render(<SearchInput />);
     const input = screen.getByLabelText(
