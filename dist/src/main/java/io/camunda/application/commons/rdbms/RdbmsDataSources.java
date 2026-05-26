@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +75,10 @@ public final class RdbmsDataSources implements AutoCloseable {
       }
     }
     return new RdbmsDataSources(dataSources, vendorProperties);
+  }
+
+  public Set<String> physicalTenantIds() {
+    return dataSources.keySet();
   }
 
   public DataSource dataSourceFor(final String physicalTenantId) {
