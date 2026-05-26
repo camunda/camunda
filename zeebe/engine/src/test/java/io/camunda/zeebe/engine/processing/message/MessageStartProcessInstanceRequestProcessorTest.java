@@ -15,7 +15,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
@@ -85,11 +84,11 @@ public final class MessageStartProcessInstanceRequestProcessorTest {
     assertThat(newPiKey).isPositive();
 
     final var requested =
-        RecordingExporter.records()
-            .withIntent(MessageStartProcessInstanceRequestIntent.REQUESTED)
+        RecordingExporter.messageStartProcessInstanceRequestRecords(
+                MessageStartProcessInstanceRequestIntent.REQUESTED)
             .getFirst();
     assertThat(requested.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertOriginalRequestPreserved(asRequest(requested), BUSINESS_ID, subscriptionKey);
+    assertOriginalRequestPreserved(requested.getValue(), BUSINESS_ID, subscriptionKey);
 
     final var startReply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.START);
     assertOriginalRequestPreserved(startReply, BUSINESS_ID, subscriptionKey);
@@ -229,12 +228,10 @@ public final class MessageStartProcessInstanceRequestProcessorTest {
 
   private MessageStartProcessInstanceRequestRecordValue firstReplyCommand(
       final MessageStartProcessInstanceRequestIntent intent) {
-    final var record =
-        RecordingExporter.records()
-            .withIntent(intent)
-            .filter(r -> r.getRecordType() == RecordType.COMMAND)
-            .getFirst();
-    return asRequest(record);
+    return RecordingExporter.messageStartProcessInstanceRequestRecords(intent)
+        .filter(r -> r.getRecordType() == RecordType.COMMAND)
+        .getFirst()
+        .getValue();
   }
 
   private void assertNoOtherReply(final MessageStartProcessInstanceRequestIntent expected) {
@@ -256,10 +253,6 @@ public final class MessageStartProcessInstanceRequestProcessorTest {
           .as("no %s reply should be produced when %s is the expected reply", other, expected)
           .isZero();
     }
-  }
-
-  private static MessageStartProcessInstanceRequestRecordValue asRequest(final Record<?> record) {
-    return (MessageStartProcessInstanceRequestRecordValue) record.getValue();
   }
 
   private static void assertOriginalRequestPreserved(
