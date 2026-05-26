@@ -50,13 +50,14 @@ test.describe('Task History Audit Log', () => {
   );
 
   test.afterEach(async ({page, taskDetailsPage}, testInfo) => {
-    await taskDetailsPage.clickUnassignButton();
-    // The Assign-to-me toggle replaces Unassign asynchronously after the
-    // unassign POST resolves; 60s was hit by the May 19 nightly, so allow
-    // 90s to ride out tasklist refresh on a loaded shared cluster.
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
-      timeout: 90000,
-    });
+    // Retry the unassign in case the first click doesn't register or the UI
+    // is slow to reflect the change on a loaded shared cluster.
+    await expect(async () => {
+      if (await taskDetailsPage.unassignButton.isVisible()) {
+        await taskDetailsPage.clickUnassignButton();
+      }
+      await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    }).toPass({timeout: 120000, intervals: [5000]});
 
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
