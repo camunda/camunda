@@ -65,7 +65,7 @@ const parseProcessInstancesSearchFilter = (
   const hasStateFilters =
     filter.active || filter.completed || filter.canceled || filter.incidents;
 
-  if (!hasStateFilters && !filter.batchOperationKey) {
+  if (!hasStateFilters && !filter.batchOperationKey && !filter.elementId) {
     return undefined;
   }
 
