@@ -375,12 +375,6 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public MapperFactoryBean<AgentInstanceMapper> agentInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AgentInstanceMapper.class);
-  }
-
-  @Bean
   public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
