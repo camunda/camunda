@@ -108,9 +108,14 @@ test.describe('task panel page', () => {
   test.skip('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    // usertask_to_be_assigned is completed by the preceding test; wait for ES
+    // to index the change so the first page reflects the expected task counts.
+    await expect(async () => {
+      await page.reload();
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass({timeout: 30000, intervals: [3000]});
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
