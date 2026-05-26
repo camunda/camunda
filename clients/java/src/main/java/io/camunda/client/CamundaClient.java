@@ -142,6 +142,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
@@ -3561,4 +3562,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for fetching an agent instance
    */
   AgentInstanceGetRequest newAgentInstanceGetRequest(long agentInstanceKey);
+
+  /**
+   * Creates a request to search for agent instances.
+   *
+   * <p>Agent instances can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceSearchRequest()
+   *       .filter(f -> f.status(AgentInstanceStatus.COMPLETED))
+   *       .sort(s -> s.creationDate().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching agent instances
+   */
+  AgentInstanceSearchRequest newAgentInstanceSearchRequest();
 }
