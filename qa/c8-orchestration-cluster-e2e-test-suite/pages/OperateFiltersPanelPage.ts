@@ -205,6 +205,9 @@ export class OperateFiltersPanelPage {
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
+    // Type the option name to trigger the server-side option load;
+    // the Carbon combobox may not populate options without user input.
+    await this.flowNodeFilter.fill(option);
     // Flow node options are loaded asynchronously from the API after the
     // process/version is selected; wait up to 30 s before clicking.
     const optionLocator = this.getOptionByName(option, false);

@@ -350,7 +350,11 @@ test.describe.serial('Process Instance Migration', () => {
       // the latest operation state. Budget: 6 attempts × 120 s = 12 minutes.
       await waitForAssertion({
         assertion: async () => {
-          await operateOperationPanelPage.expandOperationsPanel();
+          // Force a fresh collapse+expand on every attempt so the panel
+          // re-renders its content. expandOperationsPanel() is a no-op
+          // when the panel appears expanded-but-empty after a reload.
+          await operateOperationPanelPage.collapseOperationsPanel();
+          await operateOperationPanelPage.expandOperationIdField();
           await expect(operationEntry).toBeVisible({timeout: 120000});
         },
         onFailure: async () => {
@@ -1147,9 +1151,23 @@ test.describe('Parallel job-based user task migration', () => {
         },
       });
 
-      await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(totalV2InstanceCount, {timeout: 30000});
+      // Retry with reload in case the migration result hasn't fully propagated
+      // to Operate's data list yet (Elasticsearch indexing delay).
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.getVersionCells(targetVersion),
+          ).toHaveCount(totalV2InstanceCount, {timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateHomePage.clickProcessesTab();
+          await operateFiltersPanelPage.selectProcess(bpmnProcessId);
+          await sleep(1000);
+          await operateFiltersPanelPage.selectVersion(targetVersion);
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Navigate to Tasklist and verify migrated Camunda user task cards with assignees', async () => {
@@ -1192,14 +1210,14 @@ test.describe('Parallel job-based user task migration', () => {
                 taskDetailsPage.unassignButton.or(
                   taskDetailsPage.assignToMeButton,
                 ),
-              ).toBeVisible({timeout: 15000});
+              ).toBeVisible({timeout: 30000});
             },
             onFailure: async () => {
               // Reload and re-apply the filter so the task list is fresh.
               await page.reload();
               await taskPanelPage.filterBy('All open tasks');
             },
-            maxRetries: 3,
+            maxRetries: 5,
           });
 
           await taskDetailsPage.unassignReassignToMeAndComplete();
