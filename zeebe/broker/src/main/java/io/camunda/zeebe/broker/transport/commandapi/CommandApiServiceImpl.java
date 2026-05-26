@@ -114,6 +114,15 @@ public final class CommandApiServiceImpl extends Actor
     return actor.call(() -> unregisterHandlersActorless(partitionId));
   }
 
+  @Override
+  public ActorFuture<Void> deactivateHandlers(final int partitionId) {
+    return actor.call(
+        () -> {
+          commandHandler.removePartition(partitionId);
+          queryHandler.removePartition(partitionId);
+        });
+  }
+
   private void unregisterHandlersActorless(final int partitionId) {
     commandHandler.removePartition(partitionId);
     queryHandler.removePartition(partitionId);
