@@ -1,0 +1,14 @@
+{
+  "ref": "refs/heads/stable/1.0",
+  "repository": {
+    "html_url": "https://github.com/camunda/camunda"
+  },
+  "pusher": {
+    "name": "test-user"
+  },
+  "head_commit": {
+    "id": "1234567890abcdef",
+    "message": "CI update on stable/1.0",
+    "url": "https://github.com/camunda/camunda/commit/1234567890abcdef"
+  }
+}
