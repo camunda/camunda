@@ -79,6 +79,11 @@ global:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
       contextPath: /auth
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
 
   zeebeClusterName: zeebe-cluster
 
