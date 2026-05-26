@@ -8,7 +8,11 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, cancelProcessInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  cancelProcessInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -57,11 +61,12 @@ const targetTaskCards: TaskCard[] = parseAssignedTasksFromFile(
 
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {
-
-    await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
+    const newProcessMigrationV1: DeployResourceResponse = await deploy([
+      './resources/orderProcessMigration_v_1.bpmn',
+    ]);
     const processV1: ProcessDeployment = {
       bpmnProcessId: 'orderProcessMigration',
-      version: 1,
+      version: newProcessMigrationV1.processes[0].processDefinitionVersion,
     };
 
     processes = await Promise.all(
@@ -163,13 +168,32 @@ test.describe.serial('Process Instance Migration', () => {
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId);
 
+      // Explicitly select the target version to avoid relying on Operate's
+      // auto-selection, which can pick a different version when the cluster
+      // has prior deployments of the same bpmnProcessId.
+      await expect(
+        operateProcessMigrationModePage.targetVersionDropdown,
+      ).toBeVisible();
+      const currentTargetVersion =
+        await operateProcessMigrationModePage.targetVersionDropdown.innerText();
+      const versionChanged = currentTargetVersion.trim() !== targetVersion;
+      if (versionChanged) {
+        await operateProcessMigrationModePage.clickTargetVersionCombo();
+        await operateProcessMigrationModePage.selectTargetVersion(
+          targetVersion,
+        );
+      }
       await expect(
         operateProcessMigrationModePage.targetVersionDropdown,
       ).toHaveText(targetVersion, {
         useInnerText: true,
+        timeout: 10000,
       });
 
-      await operateProcessMigrationModePage.verifyFlowNodeMappings([
+      const flowNodeMappings: Array<{
+        label: string | RegExp;
+        targetValue: string;
+      }> = [
         {
           label: 'target element for check payment',
           targetValue: 'checkPayment',
@@ -280,7 +304,32 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for message start event',
           targetValue: 'MessageStartEvent',
         },
-      ]);
+      ];
+
+      // Operate clears auto-mappings when the target version is changed
+      // manually. If we had to override the auto-selected version, restore the
+      // mappings explicitly so the migration has flow nodes to migrate.
+      if (versionChanged) {
+        for (const {label, targetValue} of flowNodeMappings) {
+          const sourceFlowNodeName = (
+            typeof label === 'string' ? label : label.source
+          )
+            .replace(/^\^?target element for /i, '')
+            .replace(/\$\/?i?$/, '')
+            .trim();
+          const escaped = sourceFlowNodeName.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            '\\$&',
+          );
+          await page
+            .getByLabel(new RegExp(`^Target element for ${escaped}$`, 'i'))
+            .selectOption(targetValue);
+        }
+      }
+
+      await operateProcessMigrationModePage.verifyFlowNodeMappings(
+        flowNodeMappings,
+      );
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
     });
@@ -350,8 +399,7 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('Migrated ad hoc sub processes', async ({
+  test('Migrated ad hoc sub processes', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -372,7 +420,7 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
@@ -401,7 +449,7 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({
@@ -658,7 +706,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();
@@ -901,12 +951,23 @@ test.describe('Parallel job-based user task migration', () => {
 
   test.afterAll(async () => {
     await Promise.all(
-      parallelProcesses.map((p) => cancelProcessInstance(p.processInstanceKey)),
+      parallelProcesses.map(async (p) => {
+        try {
+          await cancelProcessInstance(p.processInstanceKey);
+        } catch (error) {
+          // Ignore 404 — instance may already be completed/cancelled or
+          // migrated to a process that has since finished.
+          const message =
+            error instanceof Error ? error.message : String(error);
+          if (!message.includes('404') && !message.includes('NOT_FOUND')) {
+            throw error;
+          }
+        }
+      }),
     );
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('Migrate parallel job-based user tasks to Camunda user tasks', async ({
+  test('Migrate parallel job-based user tasks to Camunda user tasks', async ({
     page,
     operateHomePage,
     operateFiltersPanelPage,
@@ -996,15 +1057,33 @@ test.describe('Parallel job-based user task migration', () => {
       ).toHaveText(targetVersion, {useInnerText: true});
     });
 
-    await test.step('Map renamed flow node: Embedded → Embedded new', async () => {
+    await test.step('Map renamed flow nodes (all V2 user tasks were renamed)', async () => {
+      // Every V1 user task is renamed in V2 ("Embedded" → "Embedded new",
+      // "camunda form" → "camunda form new", "external form" → "external
+      // form new"). Operate's auto-map matches by NAME, not by ID, so no
+      // node populates automatically even though IDs are identical between
+      // V1 and V2. Map all three explicitly to give the migration something
+      // to submit.
       await operateProcessMigrationModePage.mapFlowNode(
         'Embedded',
         'Embedded new',
       );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'camunda form',
+        'camunda form new',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'external form',
+        'external form new',
+      );
     });
 
-    await test.step('Verify auto-mapped flow nodes', async () => {
+    await test.step('Verify mapped flow node values', async () => {
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
+        {
+          label: /target element for embedded/i,
+          targetValue: 'embedded',
+        },
         {
           label: /target element for camunda form/i,
           targetValue: 'camunda_form',

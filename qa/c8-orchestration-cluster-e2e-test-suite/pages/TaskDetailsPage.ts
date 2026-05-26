@@ -133,9 +133,12 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
-    this.historyTableDetailsHeader = this.historyTable.getByRole('columnheader', {
-      name: 'Details',
-    });
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
       name: 'Actor',
     });
@@ -330,10 +333,25 @@ class TaskDetailsPage {
 
     for (const [index, element] of elements.entries()) {
       const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      const maxRetries = 3;
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          await element.click();
+          await element.fill(expectedValue);
+          await element.blur();
+          await expect(element).toHaveValue(expectedValue);
+          break;
+        } catch (error) {
+          attempt++;
+          if (attempt === maxRetries) {
+            throw new Error(
+              `Failed to set value "${expectedValue}" for label "${label}" row ${index} after ${maxRetries} attempts: ${error}`,
+            );
+          }
+          await sleep(500);
+        }
+      }
     }
   }
 

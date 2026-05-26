@@ -229,12 +229,22 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
-    if (authorization.ownerType !== 'User') {
-      await this.createAuthorizationOwnerComboBox.waitFor({
+    // Wait for the owner input to become visible regardless of owner type.
+    // For User type the combobox appears; for other types it may be a
+    // search input. Try both locators with a short timeout.
+    await Promise.race([
+      this.createAuthorizationOwnerComboBox.waitFor({
         state: 'visible',
         timeout: 5000,
-      });
-    }
+      }),
+      this.createAuthorizationOwnerSearchInput.waitFor({
+        state: 'visible',
+        timeout: 5000,
+      }),
+    ]).catch(() => {
+      // If neither appears within 5 s, proceed anyway — the next step will
+      // fail with a meaningful message.
+    });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
@@ -255,15 +265,30 @@ export class IdentityAuthorizationsPage {
       return;
     }
 
+    // Combobox path: click to open, type to filter (server-driven search),
+    // then wait for the menu item to appear before clicking.
     await this.createAuthorizationOwnerComboBox.click();
+    await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+    const ownerMenuOption = this.createAuthorizationModal
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: authorization.ownerId})
+      .first();
     try {
-      await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-        timeout: 20000,
-      });
+      await expect(ownerMenuOption).toBeVisible({timeout: 60000});
+      await ownerMenuOption.click({timeout: 20000});
     } catch (error) {
-      console.log('Error while selecting owner' + error);
-      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
-      await this.createAuthorizationOwnerComboBox.press('Tab');
+      console.log('Error while selecting owner from menu: ' + error);
+      // Fallback: try clicking a role option directly in case it rendered differently.
+      try {
+        await this.createAuthorizationOwnerOption(authorization.ownerId).click({
+          timeout: 5000,
+        });
+      } catch {
+        // Last resort: leave the typed value in the field.
+        console.log(
+          'Fallback option click also failed; leaving typed value in combobox.',
+        );
+      }
     }
   }
 

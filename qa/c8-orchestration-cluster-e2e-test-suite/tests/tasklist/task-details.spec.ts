@@ -266,8 +266,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Age', '21');
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('task completion with deployed form', async ({
+  test('task completion with deployed form', async ({
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -302,7 +301,10 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
 
-    await taskDetailsPage.completeTaskButton.click();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled({
+      timeout: 15000,
+    });
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
       timeout: 60000,
     });
@@ -345,7 +347,6 @@ test.describe('task details page', () => {
   });
 
   test('task completion with form from assigned to me filter', async ({
-    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -368,25 +369,11 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    await taskPanelPage.openTask('User registration');
 
-    // Multiple "User registration" tasks may be completed across tests in this
-    // file. openTask clicks .nth(0), which can land on an earlier completion
-    // (e.g. Jon/Earth from "task completion with form") before the indexer
-    // surfaces the just-completed task at the top. Re-open and re-assert on
-    // reload so we eventually inspect the right task.
-    await waitForAssertion({
-      assertion: async () => {
-        await taskPanelPage.openTask('User registration');
-        await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
-        await taskDetailsPage.assertFieldValue('Address*', 'Rome');
-        await taskDetailsPage.assertFieldValue('Age', '55');
-      },
-      onFailure: async () => {
-        await page.reload();
-        await taskPanelPage.filterBy('Completed');
-        await taskPanelPage.assertCompletedHeadingVisible();
-      },
-    });
+    await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
+    await taskDetailsPage.assertFieldValue('Address*', 'Rome');
+    await taskDetailsPage.assertFieldValue('Age', '55');
   });
 
   test('task completion with prefilled form', async ({
