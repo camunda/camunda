@@ -176,6 +176,9 @@ public abstract class DatabaseTestService {
       final TermsQueryContainer queryForZeebeRecords,
       final Class<T> zeebeRecordClass);
 
+  /** Indexes an entry into the given raw (unprefixed) index name. Used to seed Zeebe test data. */
+  public abstract void addEntryWithRawIndex(String rawIndexName, String id, Object entry);
+
   public abstract void deleteProcessInstancesFromIndex(final String indexName, final String id);
 
   public abstract DatabaseType getDatabaseVendor();
