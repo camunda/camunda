@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_scope_isolation"
+  targetNamespace="http://bpmn.io/schema/bpmn"
+  exporter="Camunda Modeler"
+  exporterVersion="5.x"
+  modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.10.0">
+
+  <!--
+    E2E-09 — beforeAll variable scope isolation
+    ─────────────────────────────────────────────
+    Purpose : Verify that variables written by the beforeAll listener are
+              accessible (a) during inputCollection evaluation, (b) by inner
+              instances via inherited scope, and (c) by downstream elements
+              after the MI element completes.
+
+    Workers required
+      mi-scope-init          – beforeAll job; sets "items" + "sharedCtx"
+      mi-inner-worker-scope  – task job per inner instance; completes with "result"
+      downstream-worker-scope– task job after MI; validates sharedCtx is visible
+  -->
+
+  <bpmn:process id="mi-el-scope-isolation"
+                name="MI EL — Scope Isolation"
+                isExecutable="true">
+
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_start_to_mi</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!--
+      MI service task
+        beforeAll  → "mi-scope-init"
+          completes with:
+            items      : ["alpha","beta","gamma"]   — drives inputCollection
+            sharedCtx  : {"env":"test","batchId":42} — extra variable under test
+        inner task → "mi-inner-worker-scope"
+          completes with:
+            result: item + "_done"                  — feeds outputCollection
+    -->
+    <bpmn:serviceTask id="miTask" name="MI Task (beforeAll sets items + sharedCtx)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="mi-inner-worker-scope" retries="3" />
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="beforeAll" type="mi-scope-init" retries="3" />
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_to_mi</bpmn:incoming>
+      <bpmn:outgoing>Flow_mi_to_downstream</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics
+            inputCollection="= items"
+            inputElement="item"
+            outputCollection="results"
+            outputElement="= result" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+
+    <!--
+      Downstream service task — token arrives here only after MI fully completes.
+      Worker "downstream-worker-scope" should observe sharedCtx in its job variables
+      if beforeAll-set variables are promoted to (or visible at) process scope.
+    -->
+    <bpmn:serviceTask id="downstreamTask" name="Downstream Task (reads sharedCtx)">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="downstream-worker-scope" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_mi_to_downstream</bpmn:incoming>
+      <bpmn:outgoing>Flow_downstream_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_downstream_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_start_to_mi"
+      sourceRef="StartEvent_1" targetRef="miTask" />
+    <bpmn:sequenceFlow id="Flow_mi_to_downstream"
+      sourceRef="miTask"       targetRef="downstreamTask" />
+    <bpmn:sequenceFlow id="Flow_downstream_to_end"
+      sourceRef="downstreamTask" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+  <!-- ── Diagram layout (minimal) ─────────────────────────────────────────── -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mi-el-scope-isolation">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="158" y="125" width="24" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="miTask_di" bpmnElement="miTask" isMarkerVisible="true">
+        <dc:Bounds x="240" y="60" width="200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="downstreamTask_di" bpmnElement="downstreamTask">
+        <dc:Bounds x="490" y="60" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="722" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="730" y="125" width="20" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_mi_di" bpmnElement="Flow_start_to_mi">
+        <di:waypoint x="188" y="100" /><di:waypoint x="240" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_mi_to_downstream_di" bpmnElement="Flow_mi_to_downstream">
+        <di:waypoint x="440" y="100" /><di:waypoint x="490" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_downstream_to_end_di" bpmnElement="Flow_downstream_to_end">
+        <di:waypoint x="670" y="100" /><di:waypoint x="722" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

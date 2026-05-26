@@ -99,6 +99,7 @@ export {
 } from './global-task-listener-requestHelpers';
 export {type AuditLog} from './audit-log-requestHelpers';
 export {evaluateExpression, EXPRESSION_URL} from './expression-requestHelpers';
+export {searchIncidentByPIK} from './incident-requestHelpers';
 export {
   type VariableRecord,
   isRootScope,

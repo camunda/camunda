@@ -678,6 +678,19 @@ class OperateProcessInstancePage {
     return this.page.getByRole('row').filter({hasText: /listener/i});
   }
 
+  getExecutionListenerRowsByEventType(
+    eventType: 'start' | 'end' | 'beforeAll',
+  ): Locator {
+    const eventTypePatterns: Record<typeof eventType, RegExp> = {
+      start: /\bstart\b/i,
+      end: /\bend\b/i,
+      beforeAll: /before\s+all/i,
+    };
+    return this.getListenerRows('execution').filter({
+      hasText: eventTypePatterns[eventType],
+    });
+  }
+
   getInstanceHistoryElement(elementText: string | RegExp): Locator {
     return this.instanceHistory.getByText(elementText);
   }

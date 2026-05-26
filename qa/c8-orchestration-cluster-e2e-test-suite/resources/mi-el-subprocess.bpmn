@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+  targetNamespace="http://bpmn.io/schema/bpmn"
+  exporter="Camunda Modeler" exporterVersion="5.46.1"
+  modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.10.0"
+  id="Definitions_mi_subprocess">
+  <bpmn:process id="mi-el-subprocess" name="MI EL - Embedded Subprocess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>flow_start_to_sub</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="mi_subprocess" name="Order Subprocess (Parallel MI)">
+      <bpmn:extensionElements>
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="beforeAll" type="mi-sub-init-orders" retries="3" />
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_start_to_sub</bpmn:incoming>
+      <bpmn:outgoing>flow_sub_to_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="= orders" inputElement="order" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="SubStart">
+        <bpmn:outgoing>flow_substart_to_task</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="inner_task" name="Process Single Order">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="process-single-order" retries="3" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow_substart_to_task</bpmn:incoming>
+        <bpmn:outgoing>flow_task_to_subend</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="SubEnd">
+        <bpmn:incoming>flow_task_to_subend</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow_substart_to_task" sourceRef="SubStart" targetRef="inner_task" />
+      <bpmn:sequenceFlow id="flow_task_to_subend" sourceRef="inner_task" targetRef="SubEnd" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>flow_sub_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_sub" sourceRef="StartEvent_1" targetRef="mi_subprocess" />
+    <bpmn:sequenceFlow id="flow_sub_to_end" sourceRef="mi_subprocess" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mi-el-subprocess">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="mi_subprocess_di" bpmnElement="mi_subprocess" isExpanded="true">
+        <dc:Bounds x="250" y="80" width="480" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_di" bpmnElement="SubStart">
+        <dc:Bounds x="302" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="inner_task_di" bpmnElement="inner_task">
+        <dc:Bounds x="400" y="150" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_di" bpmnElement="SubEnd">
+        <dc:Bounds x="562" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="792" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_to_sub_di" bpmnElement="flow_start_to_sub">
+        <di:waypoint x="188" y="190" />
+        <di:waypoint x="250" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_substart_to_task_di" bpmnElement="flow_substart_to_task">
+        <di:waypoint x="338" y="190" />
+        <di:waypoint x="400" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_task_to_subend_di" bpmnElement="flow_task_to_subend">
+        <di:waypoint x="500" y="190" />
+        <di:waypoint x="562" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_sub_to_end_di" bpmnElement="flow_sub_to_end">
+        <di:waypoint x="730" y="190" />
+        <di:waypoint x="792" y="190" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
