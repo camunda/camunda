@@ -1806,6 +1806,8 @@ jobs:
     # annotation. The verifier exits non-zero on findings, and
     # PR authors get early feedback via
     # inline annotations.
+    # KNOWN LIMITATION: this check does not run on fork PRs, as it requires
+    # the ability to clone cross-repo in the Camunda org.
     if: |
       needs.detect-changes.outputs.openapi-changes == 'true'
       && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
