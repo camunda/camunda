@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class SchemaManagerIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
   private static final ElasticsearchExporterConfiguration CONFIG =

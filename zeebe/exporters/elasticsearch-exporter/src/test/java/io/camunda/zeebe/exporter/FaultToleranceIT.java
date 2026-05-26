@@ -56,7 +56,7 @@ final class FaultToleranceIT {
                 .withNetwork(network)
                 .withNetworkAliases("proxy")) {
       try (final ElasticsearchContainer container =
-          TestSearchContainers.createDefeaultElasticsearchContainer()
+          TestSearchContainers.createDefaultElasticsearchContainer()
               .withNetwork(network)
               .withNetworkAliases("elastic")) {
         // fix the ports beforehand - since we don't know the container port until it starts, and we

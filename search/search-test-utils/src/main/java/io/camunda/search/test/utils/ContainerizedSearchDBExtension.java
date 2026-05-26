@@ -38,7 +38,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
   private final LazySearchContainer<ElasticsearchContainer, ElasticsearchClient> elasticsearch =
       new LazySearchContainer<>(
-          TestSearchContainers::createDefeaultElasticsearchContainer,
+          TestSearchContainers::createDefaultElasticsearchContainer,
           ContainerizedSearchDBExtension::createElasticSearchClient,
           ElasticsearchClient::close);
   private final LazySearchContainer<OpenSearchContainer<?>, OpenSearchClient> opensearch =

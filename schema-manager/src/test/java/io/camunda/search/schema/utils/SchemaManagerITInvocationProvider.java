@@ -47,7 +47,7 @@ public class SchemaManagerITInvocationProvider
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withNetwork(Network.SHARED)
           .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS);
   private final OpenSearchContainer<?> osContainer =

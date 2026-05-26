@@ -203,7 +203,7 @@ public class CompatibilityTestExtension
     LOGGER.info("Starting Elasticsearch container");
 
     elasticsearchContainer =
-        TestSearchContainers.createDefeaultElasticsearchContainer()
+        TestSearchContainers.createDefaultElasticsearchContainer()
             .withNetwork(network)
             .withNetworkAliases("elasticsearch")
             .withEnv("indices.lifecycle.poll_interval", "1s");

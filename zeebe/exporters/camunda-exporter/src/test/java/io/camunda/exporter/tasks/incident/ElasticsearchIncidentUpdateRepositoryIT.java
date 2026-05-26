@@ -38,7 +38,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   @AutoClose private final RestClientTransport transport = createTransport();
   private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);

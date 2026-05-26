@@ -39,7 +39,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class BasicAuthOverGrpcIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
   @AutoClose private static CamundaClient defaultUserClient;

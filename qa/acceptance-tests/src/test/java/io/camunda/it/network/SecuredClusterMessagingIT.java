@@ -53,7 +53,7 @@ final class SecuredClusteredMessagingIT {
   @SuppressWarnings("unused")
   @Container
   private static final ElasticsearchContainer ELASTIC =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withNetwork(NETWORK)
           .withNetworkAliases("elastic")
           .withStartupTimeout(Duration.ofMinutes(5));

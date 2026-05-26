@@ -66,7 +66,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
   private static ElasticsearchExporterConfiguration config;

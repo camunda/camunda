@@ -79,7 +79,7 @@ public class UsageMetricsIT {
         switch (config.databaseType) {
           case ELASTICSEARCH -> {
             final var container =
-                TestSearchContainers.createDefeaultElasticsearchContainer()
+                TestSearchContainers.createDefaultElasticsearchContainer()
                     .withStartupTimeout(Duration.ofMinutes(5))
                     // location of the repository that will be used for snapshots
                     .withEnv("path.repo", "~/");
