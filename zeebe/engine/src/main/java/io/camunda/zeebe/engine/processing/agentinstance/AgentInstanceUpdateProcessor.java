@@ -227,8 +227,8 @@ public final class AgentInstanceUpdateProcessor
 
     if (!current.getElementInstanceKeys().contains(newElementInstanceKey)) {
       current.addElementInstanceKey(newElementInstanceKey);
-      current.setElementInstanceKey(newElementInstanceKey);
     }
+    current.setElementInstanceKey(newElementInstanceKey);
 
     current.setChangedAttributes(applyPatch(current, commandValue, changed));
 

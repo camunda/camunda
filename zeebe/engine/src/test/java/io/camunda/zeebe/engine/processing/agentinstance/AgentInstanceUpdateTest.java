@@ -908,6 +908,72 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
+  public void shouldUpdateScalarOnReEntryToAlreadyTrackedElementInstance() {
+    // given — multi-instance produces EI₁ and EI₂. Agent created on EI₁, then re-associated to EI₂.
+    // The plural list ends up as [EI₁, EI₂] with scalar = EI₂.
+    final var multiInstanceProcessId = "scalar-reentry";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(multiInstanceProcessId)
+                .startEvent()
+                .serviceTask(
+                    SERVICE_TASK_ID,
+                    t ->
+                        t.zeebeJobType("agent")
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("items")
+                                        .zeebeInputElement("item")))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(multiInstanceProcessId)
+            .withVariables(Map.of("items", List.of("a", "b")))
+            .create();
+    final var children =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .limit(2)
+            .toList();
+    final var ei1 = children.get(0);
+    final var ei2 = children.get(1);
+
+    final var agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(ei1.getKey())
+            .create()
+            .getValue()
+            .getAgentInstanceKey();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withElementInstanceKey(ei2.getKey())
+        .withStatus(AgentInstanceStatus.THINKING)
+        .update();
+
+    // when — UPDATE re-supplies EI₁, which is already in the plural list
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(ei1.getKey())
+            .update();
+
+    // then — list is unchanged (no duplicates), but scalar moves back to the supplied key
+    // because it represents the currently-active element instance.
+    assertThat(updated.getValue().getElementInstanceKeys())
+        .containsExactly(ei1.getKey(), ei2.getKey());
+    assertThat(updated.getValue().getElementInstanceKey()).isEqualTo(ei1.getKey());
+  }
+
+  @Test
   public void shouldRejectUpdateWhenElementInstanceKeyMissing() {
     // given — agent instance created on a service task.
     ENGINE
