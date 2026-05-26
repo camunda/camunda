@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.cluster.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.MessageCorrelation;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -47,7 +47,7 @@ public class ClusterRoutingEndpointIT {
     final var routingState =
         new RoutingState()
             .requestHandling(new RequestHandlingAllPartitions(2).strategy("AllPartitions"))
-            .messageCorrelation(new MessageCorrelationHashMod("HashMod", 2))
+            .messageCorrelation(new MessageCorrelation("HashMod", 2))
             .version(2L);
     actuator.patchRoutingState(routingState, dryRun);
 

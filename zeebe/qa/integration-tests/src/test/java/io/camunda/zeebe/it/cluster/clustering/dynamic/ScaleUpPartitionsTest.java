@@ -26,7 +26,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
-import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.MessageCorrelation;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -387,7 +387,7 @@ public class ScaleUpPartitionsTest {
     assertThatRoutingStateMatches(
         new RoutingState()
             .requestHandling(new RequestHandlingAllPartitions(3).strategy("AllPartitions"))
-            .messageCorrelation(new MessageCorrelationHashMod("HashMod", 3)));
+            .messageCorrelation(new MessageCorrelation("HashMod", 3)));
   }
 
   @Test

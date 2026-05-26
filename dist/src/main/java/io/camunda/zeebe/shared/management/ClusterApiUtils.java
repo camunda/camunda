@@ -56,7 +56,7 @@ import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.MessageCorrelation;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionConfig;
@@ -84,9 +84,9 @@ import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 
 final class ClusterApiUtils {
+  static final String MESSAGE_CORRELATION_STRATEGY_HASH_MOD = "HashMod";
   private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
       OffsetDateTime.parse("0000-01-01T00:00:00Z");
-  private static final String MESSAGE_CORRELATION_STRATEGY_HASH_MOD = "HashMod";
 
   private ClusterApiUtils() {
     throw new IllegalStateException("Utility class");
@@ -389,11 +389,11 @@ final class ClusterApiUtils {
     };
   }
 
-  private static MessageCorrelationHashMod mapMessageCorrelation(
+  private static MessageCorrelation mapMessageCorrelation(
       final RoutingState.MessageCorrelation messageCorrelation) {
     return switch (messageCorrelation) {
       case HashMod(final var partitionCount) ->
-          new MessageCorrelationHashMod()
+          new MessageCorrelation()
               .strategy(MESSAGE_CORRELATION_STRATEGY_HASH_MOD)
               .partitionCount(partitionCount);
     };
