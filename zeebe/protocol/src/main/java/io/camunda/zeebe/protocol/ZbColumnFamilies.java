@@ -282,7 +282,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   AGENT_INSTANCES(143, PARTITION_LOCAL),
 
   // metadata in a command distribuation record
-  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL);
+  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL),
+
+  // dedup state for the cross-partition message-start handshake on P_B; forward CF is keyed by
+  // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey and a deletion
+  // deadline (epoch millis) set once at insert time as `now + tombstoneWindow`. Lookups treat
+  // `deletionDeadline <= now` as a miss; a scheduled sweeper removes such rows. PI lifecycle is
+  // intentionally not a signal — the deadline bounds P_K's retry window, not the PI's lifetime.
+  CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

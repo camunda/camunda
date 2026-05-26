@@ -112,7 +112,7 @@ public final class EventAppliers implements EventApplier {
     registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
-    registerMessageStartProcessInstanceRequestAppliers();
+    registerMessageStartProcessInstanceRequestAppliers(state);
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
@@ -500,14 +500,37 @@ public final class EventAppliers implements EventApplier {
   }
 
   /**
-   * Acknowledgement event for the cross-partition {@code MessageStartProcessInstanceRequest}
-   * handshake on {@code P_B}; the request itself has no state effect (state is touched by the
-   * triggered process-instance and, in later commits, by the dedup CFs), so the applier is a no-op.
-   * A single V1 applier is appropriate here per the versioned-applier convention because the intent
-   * is introduced together with this feature and has no prior stream history to replay.
+   * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
+   * intents are introduced together with this feature and have no prior stream history, so per the
+   * versioned-applier convention a single V1 applier per intent is sufficient (no V2 alongside).
+   *
+   * <ul>
+   *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
+   *   <li>{@code STARTED}: applied on {@code P_B} on cache miss + success; records the {@code
+   *       (processDefinitionKey, messageKey) → processInstanceKey} dedup entry that lets retries
+   *       from {@code P_K} be re-replied without a second activation.
+   *   <li>{@code TOMBSTONE_DELETED}: removes a dedup entry after its post-completion tombstone
+   *       window has passed; emitted by the scheduled sweep.
+   * </ul>
    */
-  private void registerMessageStartProcessInstanceRequestAppliers() {
+  private void registerMessageStartProcessInstanceRequestAppliers(
+      final MutableProcessingState state) {
     register(MessageStartProcessInstanceRequestIntent.REQUESTED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartProcessInstanceRequestIntent.STARTED,
+        new MessageStartProcessInstanceStartedV1Applier(
+            state.getMessageStartProcessInstanceDedupState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
+        new MessageStartProcessInstanceTombstoneDeletedV1Applier(
+            state.getMessageStartProcessInstanceDedupState()));
+    // P_K-side bookkeeping appliers — registered as NOOP here so the
+    // shouldRegisterApplierForAllIntents test passes. The real V1 implementations land in a later
+    // commit of this feature together with the pending-ask CF that they will clear; per the
+    // versioned-applier convention upgrading a NOOP placeholder in-place is safe because no
+    // committed stream has ever emitted these intents.
+    register(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, NOOP_EVENT_APPLIER);
+    register(MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

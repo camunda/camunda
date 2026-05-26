@@ -163,13 +163,24 @@ public final class MessageEventProcessors {
                 startEventSubscriptionState,
                 elementInstanceState,
                 bannedInstanceState,
+                processingState.getMessageStartProcessInstanceDedupState(),
                 eventScopeInstanceState,
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
                 subscriptionCommandSender,
                 keyGenerator,
+                clock,
                 writers))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.SWEEP_TOMBSTONES,
+            new MessageStartDedupTombstoneSweepProcessor(
+                writers.state(),
+                writers.command(),
+                processingState.getMessageStartProcessInstanceDedupState(),
+                config.getMessageStartDedupTombstoneSweepBatchLimit(),
+                clock))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
@@ -178,6 +189,10 @@ public final class MessageEventProcessors {
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,
-                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()));
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
+        .withListener(
+            new MessageStartDedupTombstoneSweepScheduler(
+                config.getMessageStartDedupTombstoneSweepInterval(),
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()));
   }
 }
