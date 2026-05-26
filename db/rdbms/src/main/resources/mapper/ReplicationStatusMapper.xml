@@ -51,5 +51,40 @@
     WHERE is_local = 0
   </select>
 
+  <!--
+    Detects whether the connected PostgreSQL instance is actually AWS Aurora. The check looks up
+    the aurora_global_db_instance_status function in pg_proc without invoking it, so it is safe
+    to run on any PostgreSQL-compatible database. Returns true only on Aurora.
+  -->
+  <select id="isAurora" resultType="boolean" databaseId="postgresql">
+    SELECT EXISTS(
+      SELECT 1 FROM pg_proc WHERE proname = 'aurora_global_db_instance_status'
+    )
+  </select>
+
+  <!--
+    Returns the primary's current durable LSN for Aurora Global Database.
+    The row with session_id = 'MASTER_SESSION_ID' identifies the primary writer.
+  -->
+  <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
+    SELECT durable_lsn
+    FROM aurora_global_db_instance_status()
+    WHERE session_id = 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns per-replica replication status for Aurora Global Database. Each non-primary
+    instance reports its durable_lsn (the LSN persisted to durable storage on that instance)
+    together with the visibility_lag_in_msec for metrics.
+  -->
+  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="postgresql">
+    SELECT
+      durable_lsn                                           AS logStatus,
+      server_id                                             AS replicaId,
+      COALESCE(visibility_lag_in_msec, 0)                   AS replicationLagMs
+    FROM aurora_global_db_instance_status()
+    WHERE session_id != 'MASTER_SESSION_ID'
+  </select>
+
 </mapper>
 
