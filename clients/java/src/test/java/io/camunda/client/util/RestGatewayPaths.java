@@ -21,6 +21,9 @@ public class RestGatewayPaths {
 
   private static final String URL_AUTHORIZATION = REST_API_PATH + "/authorizations/%s";
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
+  private static final String URL_AGENT_INSTANCE = REST_API_PATH + "/agent-instances/%s";
+  private static final String URL_AGENT_INSTANCES_SEARCH =
+      REST_API_PATH + "/agent-instances/search";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
   private static final String URL_BATCH_OPERATIONS_SEARCH =
       REST_API_PATH + "/batch-operations/search";
@@ -484,6 +487,14 @@ public class RestGatewayPaths {
 
   public static String getJobErrorStatisticsUrl() {
     return URL_JOB_ERROR_STATISTICS;
+  }
+
+  public static String getAgentInstanceUrl(final long agentInstanceKey) {
+    return String.format(URL_AGENT_INSTANCE, agentInstanceKey);
+  }
+
+  public static String getAgentInstancesSearchUrl() {
+    return URL_AGENT_INSTANCES_SEARCH;
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {
