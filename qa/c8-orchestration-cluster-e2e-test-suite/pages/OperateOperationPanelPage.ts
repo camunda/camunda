@@ -141,6 +141,31 @@ export class OperateOperationPanelPage {
     }
   }
 
+  /**
+   * Force a collapse→expand cycle regardless of the current panel state.
+   *
+   * We check the Collapse button visibility (not the region locator) to
+   * determine whether the panel is expanded, because the role-based
+   * `operationsPanel` selector can return `false` even when the panel IS
+   * showing its content. Collapsing then re-expanding forces the panel to
+   * re-render and re-fetch its entries from the API.
+   */
+  async forceRefreshPanel(): Promise<void> {
+    // Collapse if the panel is currently open (Collapse button is visible).
+    const hasCollapseButton = await this.collapseButton.isVisible();
+    if (hasCollapseButton) {
+      await this.collapseButton.click();
+      // Wait for the collapsed-panel sentinel to confirm the panel closed.
+      await this.collapsedOperationsPanel.waitFor({
+        state: 'visible',
+        timeout: 15000,
+      });
+    }
+    // Expand (or re-expand) the panel.
+    await this.expandOperationsButton.click({timeout: 15000});
+    await this.operationList.waitFor({state: 'visible', timeout: 15000});
+  }
+
   async operationIdsEntries(): Promise<{id: string; type: string}[]> {
     await this.expandOperationsPanel();
     const operationEntries = this.getAllOperationEntries();

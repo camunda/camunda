@@ -350,11 +350,12 @@ test.describe.serial('Process Instance Migration', () => {
       // the latest operation state. Budget: 6 attempts × 120 s = 12 minutes.
       await waitForAssertion({
         assertion: async () => {
-          // Force a fresh collapse+expand on every attempt so the panel
+          // Force a collapse→expand cycle on every attempt so the panel
           // re-renders its content. expandOperationsPanel() is a no-op
-          // when the panel appears expanded-but-empty after a reload.
-          await operateOperationPanelPage.collapseOperationsPanel();
-          await operateOperationPanelPage.expandOperationIdField();
+          // when the panel appears expanded-but-empty after a reload;
+          // forceRefreshPanel() uses the Collapse button visibility (not
+          // the role-based region selector) to reliably detect panel state.
+          await operateOperationPanelPage.forceRefreshPanel();
           await expect(operationEntry).toBeVisible({timeout: 120000});
         },
         onFailure: async () => {
