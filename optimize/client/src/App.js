@@ -20,6 +20,7 @@ import {
   Logout,
   Processes,
   ProcessReport,
+  AgenticControlPlane,
 } from './components';
 
 import {ErrorBoundary, ErrorPage} from 'components';
@@ -85,6 +86,10 @@ export default function App({error}) {
                   <DocsProvider>
                     <Switch>
                       <PrivateRoute exact path="/" component={Processes} />
+                      <PrivateRoute
+                        path="/agentic-control-plane"
+                        component={AgenticControlPlane}
+                      />
                       <PrivateRoute path="/analysis" component={Analysis} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute

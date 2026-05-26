@@ -83,7 +83,8 @@ export default React.memo(ReportRenderer, (prevProps, nextProps) => {
   if (
     deepEqual(prevReport, nextReport) &&
     deepEqual(prevProps.error, nextProps.error) &&
-    prevProps.loading === nextProps.loading
+    prevProps.loading === nextProps.loading &&
+    prevProps.badge === nextProps.badge
   ) {
     return true;
   }

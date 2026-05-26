@@ -289,6 +289,11 @@ export interface SingleReportConfiguration {
   logScale: boolean;
   yLabel: string;
   xLabel: string;
+  // Agentic dashboard tile display settings
+  comparisonPeriod?: boolean;
+  deltaGoodDirection?: 'up' | 'down';
+  visibleInL0Only?: boolean;
+  visibleInL1Only?: boolean;
 }
 
 interface SingleReportData {
@@ -305,6 +310,7 @@ export interface SingleProcessReportData extends SingleReportData {
   managementReport: boolean;
   instantPreviewReport: boolean;
   userTaskReport: boolean;
+  agenticReport: boolean;
 }
 
 export interface SingleProcessReportResultData {

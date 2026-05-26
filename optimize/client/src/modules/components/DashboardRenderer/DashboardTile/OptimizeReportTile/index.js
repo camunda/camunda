@@ -7,3 +7,4 @@
  */
 
 export {default as OptimizeReportTile} from './OptimizeReportTile';
+export {default as KpiDeltaBadge} from './KpiDeltaBadge';

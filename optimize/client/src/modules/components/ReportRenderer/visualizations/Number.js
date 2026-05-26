@@ -8,6 +8,7 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 import fitty from 'fitty';
+import classnames from 'classnames';
 
 import {formatters, loadVariables, reportConfig} from 'services';
 import {Loading} from 'components';
@@ -21,7 +22,7 @@ import ProgressBar from './ProgressBar';
 
 import './Number.scss';
 
-export function Number({report, formatter, mightFail}) {
+export function Number({report, formatter, mightFail, badge}) {
   const {data, result} = report;
   const {targetValue, precision} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
@@ -53,6 +54,12 @@ export function Number({report, formatter, mightFail}) {
       );
     }
   }, [data.definitions, processVariableReport, mightFail, data.view.properties, data.filter]);
+
+  // When every measure carries an explicit label the tile is in "fixed" mode
+  // (e.g. agentic KPI tiles). Fitty's auto-scaling makes short values like
+  // "3.3s" render far larger than longer ones like "1,350", so we skip it and
+  // rely on a fixed CSS font-size instead to keep all tiles visually uniform.
+  const hasFixedLabel = result?.measures.every((m) => m.label != null);
 
   const containerRef = useCallback((node) => {
     if (node) {
@@ -96,14 +103,31 @@ export function Number({report, formatter, mightFail}) {
 
   return (
     <div className="Number">
-      <div className="container" ref={containerRef}>
+      <div
+        className={classnames('container', {'fixed-label': hasFixedLabel})}
+        ref={hasFixedLabel ? null : containerRef}
+      >
         {result.measures.map((measure, idx) => {
           let viewString;
+          let displayValue;
 
-          if (processVariableReport) {
+          if (measure.label != null) {
+            // Explicit label on the measure — set by the backend evaluate response or by
+            // mock fixtures. Overrides the auto-generated view string entirely.
+            // Use an empty string to suppress the label row without showing anything.
+            viewString = measure.label;
+            // Duration measures use compact decimal notation (e.g. "3.3s") when an
+            // explicit label is provided; all other properties use the standard formatter.
+            displayValue =
+              measure.property === 'duration'
+                ? formatters.duration(measure.data, precision, false, true)
+                : formatValue(measure.data, measure.property, precision);
+          } else if (processVariableReport) {
             viewString = processVariable.label || data.view.properties[0].name;
+            displayValue = formatValue(measure.data, measure.property, precision);
           } else if (measure.property === 'percentage') {
             viewString = t('report.percentageOfInstances');
+            displayValue = formatValue(measure.data, measure.property, precision);
           } else {
             const view = reportConfig.view.find(({matcher}) => matcher(data));
             let measureString = '';
@@ -115,17 +139,26 @@ export function Number({report, formatter, mightFail}) {
             }
 
             viewString = `${view.label()} ${measureString}`;
-          }
 
-          if (measure.property === 'duration' || data.view.entity === 'variable') {
-            const {type, value} = measure.aggregationType;
-            viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
+            if (measure.property === 'duration' || data.view.entity === 'variable') {
+              const {type, value} = measure.aggregationType;
+              viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
+            }
+
+            displayValue = formatValue(measure.data, measure.property, precision);
           }
 
           return (
             <React.Fragment key={idx}>
-              <div className="data">{formatValue(measure.data, measure.property, precision)}</div>
-              <div className="label">{viewString}</div>
+              {hasFixedLabel ? (
+                <div className="data-badge-row">
+                  <div className="data">{displayValue}</div>
+                  {badge}
+                </div>
+              ) : (
+                <div className="data">{displayValue}</div>
+              )}
+              {viewString && <div className="label">{viewString}</div>}
             </React.Fragment>
           );
         })}

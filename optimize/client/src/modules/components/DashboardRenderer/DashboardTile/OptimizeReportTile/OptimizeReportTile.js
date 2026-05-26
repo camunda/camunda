@@ -24,7 +24,38 @@ import {useErrorHandling} from 'hooks';
 import {track} from 'tracking';
 import {t} from 'translation';
 
+import KpiDeltaBadge from './KpiDeltaBadge';
+
 import './OptimizeReportTile.scss';
+
+// ---------------------------------------------------------------------------
+// Helpers for the comparison-period (delta badge) feature
+// ---------------------------------------------------------------------------
+
+/**
+ * Appends a prior-period marker to the filter array so evaluateAgenticReport
+ * can return the :prior mock fixture (and so the real backend can apply a
+ * shifted date window when that's implemented).
+ */
+function buildPriorPeriodFilter(filter) {
+  return [...(filter ?? []), {type: 'agenticPriorPeriod', value: true}];
+}
+
+/**
+ * Maps a report view property to the unit string expected by KpiDeltaBadge.
+ *   'duration'   → 'ms'
+ *   'percentage' → '%'
+ *   everything else (frequency, count, …) → ''
+ */
+function propertyToUnit(property) {
+  if (property === 'duration') {
+    return 'ms';
+  }
+  if (property === 'percentage') {
+    return '%';
+  }
+  return '';
+}
 
 export default function OptimizeReportTile({
   tile,
@@ -38,6 +69,7 @@ export default function OptimizeReportTile({
   const [data, setData] = useState();
   const [error, setError] = useState(null);
   const [lastParams, setLastParams] = useState({});
+  const [priorData, setPriorData] = useState(null);
   const {mightFail} = useErrorHandling();
   const history = useHistory();
   const prevTile = useRef(tile);
@@ -69,12 +101,23 @@ export default function OptimizeReportTile({
     setLoading(true);
     await loadTileData({});
     setLoading(false);
-  }, [loadTileData]);
+
+    // Fire prior-period call for comparison tiles (e.g. agentic KPI tiles).
+    // Guarded so existing dashboards without comparisonPeriod are unaffected.
+    if (tile.configuration?.comparisonPeriod) {
+      mightFail(
+        loadTile(tile.id ?? tile.report, buildPriorPeriodFilter(filter), {}),
+        setPriorData,
+        () => setPriorData(null)
+      );
+    }
+  }, [loadTileData, tile, filter, mightFail, loadTile]);
 
   useEffect(() => {
     if (!deepEqual(tile, prevTile.current) || !deepEqual(filter, prevFilter.current)) {
       prevTile.current = tile;
       prevFilter.current = filter;
+      setPriorData(null);
       loadInitialTile();
     }
   }, [tile, filter, loadInitialTile]);
@@ -117,6 +160,9 @@ export default function OptimizeReportTile({
     };
   }
 
+  const isNumberViz = data?.data?.visualization === 'number';
+  const showDeltaBadge = isNumberViz && tile.configuration?.comparisonPeriod && priorData;
+
   return (
     <div {...tileProps}>
       {data && (
@@ -148,7 +194,22 @@ export default function OptimizeReportTile({
         </div>
       )}
       <div className="visualization">
-        <ReportRenderer error={error} report={data} context="dashboard" loadReport={loadTileData} />
+        <ReportRenderer
+          error={error}
+          report={data}
+          context="dashboard"
+          loadReport={loadTileData}
+          badge={
+            showDeltaBadge ? (
+              <KpiDeltaBadge
+                currentValue={data.result.measures[0].data}
+                priorValue={priorData.result.measures[0].data}
+                unit={propertyToUnit(data.data.view?.properties?.[0])}
+                deltaGoodDirection={tile.configuration.deltaGoodDirection}
+              />
+            ) : null
+          }
+        />
       </div>
       {children?.({loadTileData: refreshTile})}
     </div>

@@ -69,7 +69,8 @@ export function percentage(number?: number | string | null) {
 export function duration(
   timeObject?: FilterData | number | string | null,
   precision?: number | null,
-  shortNotation?: boolean
+  shortNotation?: boolean,
+  compact?: boolean
 ): string {
   // In case the precision from the report configuration is passed to the function but it is turned off, its value is set to null
   // In this case we want to set the default value of the precision to be 3
@@ -85,6 +86,24 @@ export function duration(
     typeof timeObject === 'object'
       ? +timeObject.value * Number(timeUnits[timeObject.unit]?.value)
       : Number(timeObject);
+
+  // Compact mode: decimal-second notation for sub-hour values.
+  // Produces "3.3s", "450ms", "2m 15.0s" instead of multi-segment strings.
+  // Intended for number tiles that need concise KPI-style display.
+  if (compact) {
+    if (time < 1000) {
+      return `${Math.round(time)}ms`;
+    }
+    if (time < 60_000) {
+      return `${(time / 1000).toFixed(1)}s`;
+    }
+    if (time < 3_600_000) {
+      const mins = Math.floor(time / 60_000);
+      const secs = ((time % 60_000) / 1000).toFixed(1);
+      return secs === '0.0' ? `${mins}m` : `${mins}m ${secs}s`;
+    }
+    // hours and above fall through to standard formatter below
+  }
 
   if (time >= 0 && time < 1) {
     return `${Number(time.toFixed(2)) || 0}ms`;

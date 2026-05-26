@@ -15,3 +15,4 @@ export {Sharing} from './Sharing';
 export {Home, Collection} from './Home';
 export {default as Logout} from './Logout';
 export {Processes, ProcessReport} from './Processes';
+export {default as AgenticControlPlane} from './AgenticControlPlane';
