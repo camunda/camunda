@@ -255,8 +255,7 @@ export class IdentityAuthorizationsPage {
         .locator('.cds--list-box__menu-item')
         .filter({hasText: authorization.ownerId})
         .first();
-      await expect(ownerOption).toBeVisible({timeout: 60000});
-      await ownerOption.click({timeout: 20000});
+      await ownerOption.click({timeout: 60000});
       return;
     }
 
