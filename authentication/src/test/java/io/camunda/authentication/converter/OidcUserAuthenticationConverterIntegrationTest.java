@@ -16,8 +16,8 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
-import io.camunda.security.spring.converter.TokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -73,7 +73,7 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
 
   @Autowired private OidcUserAuthenticationConverter converter;
 
-  @MockitoBean private TokenClaimsConverter tokenClaimsConverter;
+  @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
@@ -134,7 +134,7 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
       RequestContextHolder.resetRequestAttributes();
     }
 
-    // then — TokenClaimsConverter receives the userInfo-merged principal attributes,
+    // then — LazyTokenClaimsConverter receives the userInfo-merged principal attributes,
     // including the userInfo-only claim that mapping rules need to match against.
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);

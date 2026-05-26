@@ -9,58 +9,44 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.api.model.auth.Memberships;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
+import io.camunda.security.core.port.out.MembershipQuery;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class NoDBMembershipServiceTest {
 
-  @Test
-  void resolveMembershipsReturnsGroupsFromClaimsWhenConfigured() {
-    final var config = securityConfigurationWithGroupsClaim("$.groups");
-    final var service = new NoDBMembershipService(config);
-
-    final var memberships =
-        service.resolveMemberships(
-            Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
-
-    assertThat(memberships.groupIds()).containsExactlyInAnyOrder("eng", "ops");
-    assertThat(memberships.roleIds()).isEmpty();
-    assertThat(memberships.tenantIds()).isEmpty();
-    assertThat(memberships.mappingRuleIds()).isEmpty();
+  private static MembershipQuery query(final Map<String, Object> claims) {
+    return new MembershipQuery(claims, "alice", PrincipalType.USER);
   }
 
   @Test
-  void resolveMembershipsReturnsEmptyGroupsWhenNoGroupsClaimConfigured() {
-    final var config = new SecurityConfiguration();
-    final var service = new NoDBMembershipService(config);
-
-    final var memberships =
-        service.resolveMemberships(
-            Map.of("sub", "alice", "groups", List.of("eng", "ops")), "alice", PrincipalType.USER);
-
-    assertThat(memberships.groupIds()).isEmpty();
-    assertThat(memberships.roleIds()).isEmpty();
-    assertThat(memberships.tenantIds()).isEmpty();
-    assertThat(memberships.mappingRuleIds()).isEmpty();
+  void groupIdsExtractsFromClaimsWhenConfigured() {
+    final var service = serviceWithGroupsClaim("$.groups");
+    assertThat(service.groupIds(query(Map.of("sub", "alice", "groups", List.of("eng", "ops")))))
+        .containsExactlyInAnyOrder("eng", "ops");
   }
 
   @Test
-  void resolveMembershipsForUserReturnsEmptyMemberships() {
+  void groupIdsReturnsEmptyWhenNoGroupsClaimConfigured() {
     final var service = new NoDBMembershipService(new SecurityConfiguration());
-
-    final var memberships = service.resolveMembershipsForUser("alice");
-
-    assertThat(memberships).isEqualTo(Memberships.empty());
+    assertThat(service.groupIds(query(Map.of("groups", List.of("eng"))))).isEmpty();
   }
 
-  private static SecurityConfiguration securityConfigurationWithGroupsClaim(
-      final String groupsClaim) {
+  @Test
+  void allOtherMethodsReturnEmpty() {
+    final var service = new NoDBMembershipService(new SecurityConfiguration());
+    final var q = query(Map.of());
+    assertThat(service.mappingRuleIds(q)).isEmpty();
+    assertThat(service.roleIds(q)).isEmpty();
+    assertThat(service.tenantIds(q)).isEmpty();
+  }
+
+  private static NoDBMembershipService serviceWithGroupsClaim(final String claim) {
     final var config = new SecurityConfiguration();
-    config.getAuthentication().getOidc().setGroupsClaim(groupsClaim);
-    return config;
+    config.getAuthentication().getOidc().setGroupsClaim(claim);
+    return new NoDBMembershipService(config);
   }
 }

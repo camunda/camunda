@@ -7,15 +7,19 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.api.model.auth.Memberships;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 
+/**
+ * Host-side {@link MembershipPort} for deployments without secondary storage. Only OIDC
+ * groups-claim extraction is available; roles, tenants, and mapping rules always return empty since
+ * no DB is available.
+ */
 @Service
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipPort {
@@ -32,22 +36,26 @@ public class NoDBMembershipService implements MembershipPort {
   }
 
   @Override
-  public Memberships resolveMemberships(
-      final Map<String, Object> tokenClaims,
-      final String principalId,
-      final PrincipalType principalType) {
-    final List<String> extracted =
-        isGroupsClaimConfigured ? oidcGroupsExtractor.extract(tokenClaims) : List.of();
-    // Dedup and produce an immutable list: matches the previous Set-backed semantics and
-    // shields downstream from a mutable extractor result.
-    final List<String> groups =
-        extracted != null ? extracted.stream().distinct().toList() : List.of();
-    return new Memberships(groups, List.of(), List.of(), List.of());
+  public List<String> mappingRuleIds(final MembershipQuery query) {
+    return List.of();
   }
 
   @Override
-  public Memberships resolveMembershipsForUser(final String username) {
-    // No secondary storage available — username/password flow has no DB-backed lookups.
-    return Memberships.empty();
+  public List<String> groupIds(final MembershipQuery query) {
+    if (!isGroupsClaimConfigured) {
+      return List.of();
+    }
+    final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
+    return extracted != null ? extracted.stream().distinct().toList() : List.of();
+  }
+
+  @Override
+  public List<String> roleIds(final MembershipQuery query) {
+    return List.of();
+  }
+
+  @Override
+  public List<String> tenantIds(final MembershipQuery query) {
+    return List.of();
   }
 }

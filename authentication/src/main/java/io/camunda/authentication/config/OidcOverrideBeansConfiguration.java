@@ -20,9 +20,9 @@ import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
-import io.camunda.security.spring.converter.TokenClaimsConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
@@ -115,15 +115,15 @@ public class OidcOverrideBeansConfiguration {
   }
 
   @Bean
-  public TokenClaimsConverter tokenClaimsConverter(
+  public LazyTokenClaimsConverter tokenClaimsConverter(
       final SecurityConfiguration securityConfiguration, final MembershipPort membershipPort) {
-    return new TokenClaimsConverter(
+    return new LazyTokenClaimsConverter(
         securityConfiguration.getAuthentication().getOidc(), membershipPort);
   }
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
-      final TokenClaimsConverter tokenClaimsConverter,
+      final LazyTokenClaimsConverter tokenClaimsConverter,
       final OidcClaimsProvider hostClaimsProvider) {
     // Bridge host's local OidcClaimsProvider (io.camunda.security.oidc.*) to CSL's
     // (io.camunda.security.api.context.*). Interfaces have identical shape; this small
@@ -230,7 +230,7 @@ public class OidcOverrideBeansConfiguration {
   public CamundaAuthenticationConverter<Authentication> oidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
-      final TokenClaimsConverter tokenClaimsConverter,
+      final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
       final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
     return new OidcUserAuthenticationConverter(

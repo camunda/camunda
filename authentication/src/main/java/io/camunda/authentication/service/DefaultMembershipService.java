@@ -9,28 +9,25 @@ package io.camunda.authentication.service;
 
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
-import static io.camunda.security.api.model.authz.EntityType.ROLE;
-import static io.camunda.security.api.model.authz.EntityType.USER;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.auth.Memberships;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -38,6 +35,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+/**
+ * Host-side {@link MembershipPort} backed by the secondary-storage-driven {@code *Services}. Each
+ * per-entity method is a pure function: given the query context (token claims, principal identity,
+ * and the IDs resolved by prior chain steps), it runs the corresponding DB lookup and returns the
+ * IDs. The lazy evaluation and chain wiring are owned by the CSL converters.
+ */
 @Service
 @Primary
 @ConditionalOnSecondaryStorageEnabled
@@ -69,99 +72,81 @@ public class DefaultMembershipService implements MembershipPort {
   }
 
   @Override
-  public Memberships resolveMemberships(
-      final Map<String, Object> tokenClaims,
-      final String principalId,
-      final PrincipalType principalType) {
-    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
-
-    ownerTypeToIds.put(
-        principalType.equals(PrincipalType.USER) ? USER : EntityType.CLIENT, Set.of(principalId));
-
-    final var mappingRules =
+  public List<String> mappingRuleIds(final MembershipQuery query) {
+    if (query.tokenClaims().isEmpty()) {
+      // BASIC auth has no claims; nothing can match.
+      return List.of();
+    }
+    final var ids =
         mappingRuleServices
-            .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
+            .getMatchingMappingRules(query.tokenClaims(), CamundaAuthentication.anonymous())
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
-
-    if (!mappingRules.isEmpty()) {
-      ownerTypeToIds.put(MAPPING_RULE, mappingRules);
-    } else {
-      LOG.debug("No mappingRules found for these claims: {}", tokenClaims);
+    if (ids.isEmpty()) {
+      // Log only claim keys — values may contain PII (sub, email, scopes, …) and DEBUG can still
+      // reach log aggregators.
+      LOG.debug("No mappingRules found for claim keys: {}", query.tokenClaims().keySet());
     }
-
-    final Set<String> groups;
-    if (isGroupsClaimConfigured) {
-      groups = new HashSet<>(oidcGroupsExtractor.extract(tokenClaims));
-    } else {
-      groups =
-          groupServices
-              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-              .stream()
-              .map(GroupEntity::groupId)
-              .collect(Collectors.toSet());
-    }
-
-    if (!groups.isEmpty()) {
-      ownerTypeToIds.put(GROUP, groups);
-    }
-
-    final var roles =
-        roleServices
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(RoleEntity::roleId)
-            .collect(Collectors.toSet());
-
-    if (!roles.isEmpty()) {
-      ownerTypeToIds.put(ROLE, roles);
-    }
-
-    final var tenants =
-        tenantServices
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(TenantEntity::tenantId)
-            .toList();
-
-    return new Memberships(
-        groups.stream().toList(), roles.stream().toList(), tenants, mappingRules.stream().toList());
+    return List.copyOf(ids);
   }
 
   @Override
-  public Memberships resolveMembershipsForUser(final String username) {
-    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
-    ownerTypeToIds.put(USER, Set.of(username));
-
-    final var groups =
+  public List<String> groupIds(final MembershipQuery query) {
+    // OIDC groups-claim path: in-memory extraction. distinct() matches NoDBMembershipService and
+    // the previous Set-based semantics.
+    if (isGroupsClaimConfigured) {
+      final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
+      return extracted != null ? extracted.stream().distinct().toList() : List.of();
+    }
+    final var owners = buildOwners(query);
+    final var ids =
         groupServices
-            .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
+            .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
+    return List.copyOf(ids);
+  }
 
-    if (!groups.isEmpty()) {
-      ownerTypeToIds.put(GROUP, groups);
+  @Override
+  public List<String> roleIds(final MembershipQuery query) {
+    final var owners = buildOwners(query);
+    if (!query.resolvedGroupIds().isEmpty()) {
+      owners.put(GROUP, new HashSet<>(query.resolvedGroupIds()));
     }
-
-    final var roles =
+    final var ids =
         roleServices
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
+            .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
+    return List.copyOf(ids);
+  }
 
-    if (!roles.isEmpty()) {
-      ownerTypeToIds.put(ROLE, roles);
+  @Override
+  public List<String> tenantIds(final MembershipQuery query) {
+    final var owners = buildOwners(query);
+    if (!query.resolvedGroupIds().isEmpty()) {
+      owners.put(GROUP, new HashSet<>(query.resolvedGroupIds()));
     }
+    if (!query.resolvedRoleIds().isEmpty()) {
+      owners.put(EntityType.ROLE, new HashSet<>(query.resolvedRoleIds()));
+    }
+    return tenantServices
+        .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
+        .stream()
+        .map(TenantEntity::tenantId)
+        .toList();
+  }
 
-    final var tenants =
-        tenantServices
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(TenantEntity::tenantId)
-            .toList();
-
-    return new Memberships(groups.stream().toList(), roles.stream().toList(), tenants, List.of());
+  private EnumMap<EntityType, Set<String>> buildOwners(final MembershipQuery query) {
+    final var owners = new EnumMap<EntityType, Set<String>>(EntityType.class);
+    owners.put(
+        query.principalType() == PrincipalType.USER ? EntityType.USER : EntityType.CLIENT,
+        Set.of(query.principalId()));
+    if (!query.resolvedMappingRuleIds().isEmpty()) {
+      owners.put(MAPPING_RULE, new HashSet<>(query.resolvedMappingRuleIds()));
+    }
+    return owners;
   }
 }
