@@ -1059,7 +1059,7 @@ test.describe('Parallel job-based user task migration', () => {
       });
 
       await expect(
-        operateProcessesPage.versionCells(targetVersion),
+        operateProcessesPage.getVersionCells(targetVersion),
       ).toHaveCount(totalV2InstanceCount, {timeout: 30000});
     });
 

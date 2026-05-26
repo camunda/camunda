@@ -242,11 +242,16 @@ export class IdentityAuthorizationsPage {
       await this.createAuthorizationOwnerSearchInput.fill(
         authorization.ownerId,
       );
-      await this.createAuthorizationModal
+      // The owner search is debounced + server-driven; the menu item for a
+      // just-created user can take longer than 20s to surface under load.
+      // Wait for the option to appear before clicking, with a longer
+      // budget than the previous 20s click timeout.
+      const ownerOption = this.createAuthorizationModal
         .locator('.cds--list-box__menu-item')
         .filter({hasText: authorization.ownerId})
-        .first()
-        .click({timeout: 20000});
+        .first();
+      await expect(ownerOption).toBeVisible({timeout: 60000});
+      await ownerOption.click({timeout: 20000});
       return;
     }
 
