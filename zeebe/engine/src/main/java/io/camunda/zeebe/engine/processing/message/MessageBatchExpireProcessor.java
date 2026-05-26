@@ -34,7 +34,7 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
   private final InstantSource clock;
 
   private final MessageRecord emptyDeleteMessageCommand =
-      new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
+      new MessageRecord();
 
   public MessageBatchExpireProcessor(
       final StateWriter stateWriter,
@@ -59,11 +59,7 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
             clock.millis(),
             null,
             (deadline, messageKey) -> {
-              final var expiredMessageRecord =
-                  appendMessageBodyOnExpired
-                      ? messageState.getMessage(messageKey).getMessage()
-                      : emptyDeleteMessageCommand;
-
+              final var expiredMessageRecord = emptyDeleteMessageCommand;
               final var requiredCapacity =
                   expiredMessageRecord.getLength() + FOLLOWUP_COMMAND_SAFETY_MARGIN;
               if (stateWriter.canWriteEventOfLength(requiredCapacity)
