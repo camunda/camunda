@@ -78,7 +78,7 @@
     The row with session_id = 'MASTER_SESSION_ID' identifies the primary writer.
   -->
   <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
-    SELECT durable_lsn
+    SELECT COALESCE(durable_lsn, 0)
     FROM aurora_global_db_instance_status()
     WHERE session_id = 'MASTER_SESSION_ID'
   </select>
@@ -88,7 +88,7 @@
     The row with SESSION_ID = 'MASTER_SESSION_ID' identifies the primary writer.
   -->
   <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="mysql">
-    SELECT DURABLE_LSN
+    SELECT COALESCE(DURABLE_LSN, 0)
     FROM aurora_global_db_instance_status()
     WHERE SESSION_ID = 'MASTER_SESSION_ID'
   </select>
@@ -100,7 +100,7 @@
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="postgresql">
     SELECT
-      durable_lsn                                           AS logStatus,
+      COALESCE(durable_lsn, 0)                              AS logStatus,
       server_id                                             AS replicaId,
       COALESCE(visibility_lag_in_msec, 0)                   AS replicationLagMs
     FROM aurora_global_db_instance_status()
@@ -113,7 +113,7 @@
   -->
   <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="mysql">
     SELECT
-      DURABLE_LSN                                           AS logStatus,
+      COALESCE(DURABLE_LSN, 0)                              AS logStatus,
       SERVER_ID                                             AS replicaId,
       COALESCE(VISIBILITY_LAG_IN_MSEC, 0)                   AS replicationLagMs
     FROM aurora_global_db_instance_status()
