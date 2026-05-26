@@ -104,7 +104,8 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  test('scrolling', async ({page, taskPanelPage}) => {
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
