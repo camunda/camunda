@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -198,7 +198,7 @@ final class SecurityTest {
     atomix.getMembershipService().addListener(topologyManager);
     return new Gateway(
         gatewayCfg,
-        new SecurityConfiguration(),
+        EngineSecurityConfigurations.defaultConfig(),
         brokerClient,
         actorScheduler,
         jobStreamClient.streamer(),

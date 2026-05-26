@@ -14,7 +14,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -68,7 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -107,7 +107,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
@@ -372,7 +372,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfiguration() {
+  public EngineSecurityConfig getSecurityConfiguration() {
     return securityConfiguration;
   }
 

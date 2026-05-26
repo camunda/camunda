@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -296,7 +296,9 @@ public final class TestStreams {
             .recordProcessors(
                 List.of(
                     new Engine(
-                        wrappedFactory, new EngineConfiguration(), new SecurityConfiguration())))
+                        wrappedFactory,
+                        new EngineConfiguration(),
+                        EngineSecurityConfigurations.defaultConfig())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(isReplay ? null : mock(InterPartitionCommandSender.class))

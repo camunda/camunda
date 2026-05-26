@@ -51,7 +51,7 @@ public final class FailJobTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+          .withSecurityConfig(config -> config.setAuthorizationsEnabled(true));
 
   private static final String PROCESS_ID = "process";
   private static String jobType;

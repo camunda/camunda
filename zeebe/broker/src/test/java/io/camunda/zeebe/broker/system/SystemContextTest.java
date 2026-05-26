@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -385,7 +385,7 @@ final class SystemContextTest {
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
         new SimpleMeterRegistry(),
-        new SecurityConfiguration(),
+        EngineSecurityConfigurations.defaultConfig(),
         mock(UserServices.class),
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),

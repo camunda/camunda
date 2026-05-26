@@ -14,7 +14,7 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -104,7 +104,7 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.partitionGroup = partitionGroup;

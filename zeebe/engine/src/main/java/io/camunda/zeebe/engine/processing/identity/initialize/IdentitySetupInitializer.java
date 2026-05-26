@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
@@ -43,7 +43,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String INVALID_CONFIGURED_ENTITY_MESSAGE =
       "Found invalid %s. Aborting identity initialization! %n- %s";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final boolean enableIdentitySetup;
   private final AuthorizationConfigurer authorizationConfigurer;
   private final TenantConfigurer tenantConfigurer;
@@ -52,7 +52,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   private final RoleConfigurer roleConfigurer;
 
   public IdentitySetupInitializer(
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final boolean enableIdentitySetup,
       final AuthorizationConfigurer authorizationConfigurer,
       final TenantConfigurer tenantConfigurer,

@@ -13,6 +13,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
@@ -63,7 +64,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig engineSecurityConfig;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -101,7 +102,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    this.securityConfiguration = securityConfiguration;
+    this.engineSecurityConfig =
+        new EngineSecurityConfig(
+            securityConfiguration.getAuthentication(),
+            securityConfiguration.getAuthorizations().isEnabled(),
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
+            securityConfiguration.getInitialization(),
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern());
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -134,13 +142,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             cluster,
             brokerClient,
             meterRegistry,
-            securityConfiguration,
+            engineSecurityConfig,
             userServices,
             passwordEncoder,
             jwtDecoder,
             oidcClaimsProvider,
             searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(securityConfiguration),
+            new BrokerRequestAuthorizationConverter(engineSecurityConfig),
             nodeIdProvider,
             List.copyOf(physicalTenantResolver.getAll().keySet()));
     springBrokerBridge.registerShutdownHelper(

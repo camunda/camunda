@@ -45,8 +45,8 @@ public class BrokerRequestWithoutAuthorizationInfoTest extends GatewayTest {
     super(
         config -> {},
         security -> {
-          security.getAuthorizations().setEnabled(false);
-          security.getMultiTenancy().setChecksEnabled(false);
+          security.setAuthorizationsEnabled(false);
+          security.setMultiTenancyChecksEnabled(false);
         });
   }
 

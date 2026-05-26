@@ -33,7 +33,7 @@ public class IncidentResolveRejectionCommandTest {
       EngineRule.singlePartition()
           .withSecurityConfig(
               config -> {
-                config.getMultiTenancy().setChecksEnabled(true);
+                config.setMultiTenancyChecksEnabled(true);
               });
 
   private static final String TENANT = "custom-tenant";

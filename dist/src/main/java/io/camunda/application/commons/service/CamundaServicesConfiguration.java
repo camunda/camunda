@@ -38,6 +38,7 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
@@ -94,7 +95,15 @@ public class CamundaServicesConfiguration {
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
       final SecurityConfiguration securityConfiguration) {
-    return new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var engineSecurityConfig =
+        new EngineSecurityConfig(
+            securityConfiguration.getAuthentication(),
+            securityConfiguration.getAuthorizations().isEnabled(),
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
+            securityConfiguration.getInitialization(),
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern());
+    return new BrokerRequestAuthorizationConverter(engineSecurityConfig);
   }
 
   @Bean

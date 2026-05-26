@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -44,7 +44,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -54,7 +54,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final EngineSecurityConfig securityConfig) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;

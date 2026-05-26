@@ -17,7 +17,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -106,7 +106,7 @@ class UnavailableBrokersTest {
     gateway =
         new Gateway(
             config,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

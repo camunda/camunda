@@ -11,7 +11,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
@@ -77,7 +77,7 @@ public final class StubbedGateway {
   private final StubbedJobStreamer jobStreamer;
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig securityConfiguration;
   private Server server;
 
   public StubbedGateway(
@@ -85,7 +85,7 @@ public final class StubbedGateway {
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
       final GatewayCfg config,
-      final SecurityConfiguration securityConfiguration) {
+      final EngineSecurityConfig securityConfiguration) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;

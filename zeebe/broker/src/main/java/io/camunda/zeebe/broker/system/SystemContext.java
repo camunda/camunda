@@ -13,7 +13,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
@@ -129,7 +129,7 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -148,7 +148,7 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
@@ -491,8 +491,8 @@ public final class SystemContext {
   private void validateInitializationConfig() {
     final IdentifierValidator identifierValidator =
         new IdentifierValidator(
-            securityConfiguration.getCompiledIdValidationPattern(),
-            securityConfiguration.getCompiledGroupIdValidationPattern());
+            securityConfiguration.getIdValidationPattern(),
+            securityConfiguration.getGroupIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
@@ -704,7 +704,7 @@ public final class SystemContext {
     return meterRegistry;
   }
 
-  public SecurityConfiguration getSecurityConfiguration() {
+  public EngineSecurityConfig getSecurityConfiguration() {
     return securityConfiguration;
   }
 

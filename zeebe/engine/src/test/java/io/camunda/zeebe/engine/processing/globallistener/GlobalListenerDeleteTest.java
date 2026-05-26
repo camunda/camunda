@@ -25,8 +25,7 @@ public class GlobalListenerDeleteTest {
 
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+      EngineRule.singlePartition().withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
