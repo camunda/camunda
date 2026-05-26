@@ -20,6 +20,51 @@
       <scope>test</scope>
     </dependency>
 
+    <!--
+      Test-jar dependencies so arch rules can scan test classes from other modules:
+      - camunda-qa-acceptance-tests-tests.jar: classes annotated with @MultiDbTest
+        (covered by MultiDbTestArchTest)
+      - zeebe-gateway-rest-tests.jar: REST controller tests scanned for
+        WebTestClient.BodyContentSpec#json calls (ControllerStrictJsonCompareArchTest)
+      The custom ImportOption (IncludeTestClassesAndTestJars) recognizes -tests.jar
+      entries which ImportOption.OnlyIncludeTests does not.
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-qa-acceptance-tests</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Provides @MultiDbTest used by MultiDbTestArchTest -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-qa-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Provides WebTestClient used by ControllerStrictJsonCompareArchTest -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
@@ -111,9 +156,11 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:camunda-zeebe</dep>
+            <!-- Test-jar deps used only by ArchUnit at runtime to load test classes  -->
+            <dep>io.camunda:camunda-qa-acceptance-tests:test-jar</dep>
+            <dep>io.camunda:zeebe-gateway-rest:test-jar</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
-            <dep>io.camunda:zeebe-gateway-rest</dep>
             <dep>io.camunda:camunda-gateway-mcp</dep>
             <dep>io.camunda:camunda-client-java</dep>
             <dep>io.camunda:camunda-service</dep>

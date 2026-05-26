@@ -11,10 +11,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import org.springframework.stereotype.Controller;
 
 /**
@@ -35,9 +35,12 @@ import org.springframework.stereotype.Controller;
  * As all the REST endpoints will mapped in their own modules, the only endpoints in the packages
  * below should be actuators.
  */
+// DoNotIncludeTestsOrTestJars (not the built-in DoNotIncludeTests) because
+// qa/archunit-tests pulls in zeebe-gateway-rest as a test-jar; without filtering
+// test-jar entries, gateway test classes would be analyzed as production code.
 @AnalyzeClasses(
     packages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"},
-    importOptions = {ImportOption.DoNotIncludeTests.class})
+    importOptions = {DoNotIncludeTestsOrTestJars.class})
 public final class ForbidWebStereotypeArchTest {
   private static final DescribedPredicate<? super JavaAnnotation<?>> WEB_STEREOTYPES =
       new DescribedPredicate<>("spring web annotations") {
