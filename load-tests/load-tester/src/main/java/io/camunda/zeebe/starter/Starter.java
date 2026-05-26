@@ -32,6 +32,7 @@ import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
@@ -42,27 +43,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.availability.AvailabilityChangeEvent;
-import org.springframework.boot.availability.ReadinessState;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("starter")
-public class Starter implements CommandLineRunner {
+public class Starter {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
@@ -78,11 +77,12 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
-  private final ApplicationEventPublisher eventPublisher;
+  private final ConfigurableApplicationContext context;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
+  private final AtomicBoolean shutdownTriggered = new AtomicBoolean(false);
 
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
@@ -95,18 +95,22 @@ public class Starter implements CommandLineRunner {
       final MeterRegistry registry,
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
-      final ApplicationEventPublisher eventPublisher) {
+      final ConfigurableApplicationContext context) {
     this.client = client;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
-    this.eventPublisher = eventPublisher;
+    this.context = context;
   }
 
-  @Override
-  public void run(final String... args) {
+  // Initialization runs as part of bean init (mirrors Worker.awaitTopologyAndLogConfig) so that
+  // Spring proceeds to publish ApplicationReadyEvent only after the starter is fully wired and
+  // scheduling is armed. That flips /health/readiness to UP automatically via Spring Boot's
+  // ApplicationAvailabilityBean — no manual AvailabilityChangeEvent publication needed.
+  @PostConstruct
+  void start() {
     connectionMonitor.awaitAndPrintTopology();
 
     responseLatencyTimer =
@@ -126,25 +130,8 @@ public class Starter implements CommandLineRunner {
       dataReadMeter.start();
     }
 
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
-    final ScheduledFuture<?> scheduledTask =
-        scheduleProcessInstanceCreation(executorService, countDownLatch);
-
-    // Signal readiness so the /health/readiness probe flips to UP. CommandLineRunner.run()
-    // is invoked before ApplicationReadyEvent is published, and this method blocks on the
-    // latch below, so without an explicit signal the readiness state stays REFUSING_TRAFFIC.
-    AvailabilityChangeEvent.publish(eventPublisher, this, ReadinessState.ACCEPTING_TRAFFIC);
-
-    try {
-      countDownLatch.await();
-    } catch (final InterruptedException e) {
-      LOG.error("Awaiting of count down latch was interrupted.", e);
-    }
-
-    LOG.info("Starter finished");
-    scheduledTask.cancel(true);
-    shutdown();
+    scheduleProcessInstanceCreation(executorService);
   }
 
   @PreDestroy
@@ -208,7 +195,7 @@ public class Starter implements CommandLineRunner {
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
-      final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
+      final ScheduledExecutorService executorService) {
 
     final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
     LOG.info(
@@ -226,7 +213,7 @@ public class Starter implements CommandLineRunner {
     return executorService.scheduleAtFixedRate(
         () -> {
           if (!shouldContinue.getAsBoolean()) {
-            countDownLatch.countDown();
+            triggerShutdown();
             return;
           }
 
@@ -371,6 +358,24 @@ public class Starter implements CommandLineRunner {
       }
     }
     return deployCmd;
+  }
+
+  // Spawned on a dedicated thread so that the SpringApplication.exit path can call
+  // context.close() — which joins this executor in @PreDestroy — without the scheduled
+  // task self-joining itself and deadlocking.
+  private void triggerShutdown() {
+    if (shutdownTriggered.compareAndSet(false, true)) {
+      LOG.info("Duration limit reached, shutting down");
+      final Thread shutdownThread =
+          new Thread(
+              () -> {
+                final int code = SpringApplication.exit(context, () -> 0);
+                System.exit(code);
+              },
+              "starter-shutdown");
+      shutdownThread.setDaemon(false);
+      shutdownThread.start();
+    }
   }
 
   private BooleanSupplier createContinuationCondition() {
