@@ -68,8 +68,6 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-console-client-token
-      orchestration:
-        redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
       optimize:
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
         secret:
@@ -79,6 +77,11 @@ global:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
       contextPath: /auth
+      auth:
+        adminUser: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-keycloak-admin-password
 
   zeebeClusterName: zeebe-cluster
 
@@ -129,7 +132,7 @@ camunda-platform:
     #   registry: camunda/console
     # Overrides the default service URL because the preview environment
     # is exposed through its own (separate)ingress controller.
-    overrideConfiguration: |
+    configuration: |
       camunda:
         console:
           managed:
@@ -137,26 +140,44 @@ camunda-platform:
             releases:
             - name: {{ .Release.Name }}
               namespace: {{ .Release.Namespace }}
+              version: 8.10.0-alphax
               components:
               - id: console
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.console.contextPath }}
+                readiness: http://{{ .Values.console.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.console.service.managementPort }}{{ .Values.console.readinessProbe.probePath }}
               - id: keycloak
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.global.identity.keycloak.contextPath }}
               - id: identity
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
+                readiness: http://{{ .Values.identity.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.identity.service.metricsPort }}{{ .Values.identity.readinessProbe.probePath }}
               - id: webModelerWebApp
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.webModeler.contextPath }}
+                readiness: http://{{ .Values.webModeler.fullnameOverride }}-restapi.{{ .Release.Namespace }}:{{ .Values.webModeler.restapi.service.managementPort }}{{ .Values.webModeler.contextPath }}{{ .Values.webModeler.restapi.readinessProbe.probePath }}
               - id: optimize
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.optimize.contextPath }}
+                readiness: http://{{ .Values.optimize.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.optimize.service.port }}{{ .Values.optimize.contextPath }}{{ .Values.optimize.readinessProbe.probePath }}
               - id: operate
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/operate
+                readiness: http://{{ .Values.orchestration.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}{{ .Values.orchestration.readinessProbe.probePath }}
               - id: tasklist
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/tasklist
+                readiness: http://{{ .Values.orchestration.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.orchestration.service.managementPort }}{{ .Values.orchestration.contextPath }}{{ .Values.orchestration.readinessProbe.probePath }}
               - id: coreIdentity
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/identity
               - id: connectors
+                version: 8.10.0-alphax
                 url: https://{{ include "ingress.domain" . }}{{ .Values.connectors.contextPath }}
+                readiness: http://{{ .Values.connectors.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.connectors.service.serverPort }}{{ .Values.connectors.contextPath }}{{ .Values.connectors.readinessProbe.probePath }}
               - id: core
+                version: 8.10.0-alphax
                 urls:
                   http: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}
     env:
@@ -198,6 +219,7 @@ camunda-platform:
       authentication:
         method: oidc
         oidc:
+          redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
           secret:
             existingSecret: camunda-credentials
             existingSecretKey: identity-orchestration-client-token
@@ -374,14 +396,13 @@ camunda-platform:
       clusters:
         - id: "default-cluster"
           name: "Default Cluster"
-          version: "8.9.0"
+          version: "8.10.0-alphax"
           authentication: "BEARER_TOKEN"
           authorizations:
             enabled: true
           url:
             grpc: "grpc://orchestration-gateway:26500"
             rest: "http://orchestration-gateway:8080/orchestration"
-            web-app: "https://{{ include \"ingress.domain\" . }}/orchestration"
       resources:
         limits:
           cpu: "1"
