@@ -54,6 +54,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.availability.AvailabilityChangeEvent;
+import org.springframework.boot.availability.ReadinessState;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -75,6 +78,7 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final ApplicationEventPublisher eventPublisher;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
@@ -90,13 +94,15 @@ public class Starter implements CommandLineRunner {
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.eventPublisher = eventPublisher;
   }
 
   @Override
@@ -124,6 +130,11 @@ public class Starter implements CommandLineRunner {
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch);
+
+    // Signal readiness so the /health/readiness probe flips to UP. CommandLineRunner.run()
+    // is invoked before ApplicationReadyEvent is published, and this method blocks on the
+    // latch below, so without an explicit signal the readiness state stays REFUSING_TRAFFIC.
+    AvailabilityChangeEvent.publish(eventPublisher, this, ReadinessState.ACCEPTING_TRAFFIC);
 
     try {
       countDownLatch.await();
