@@ -279,7 +279,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
 
   // agent instances (scoped to a process instance, which lives on a single partition)
-  AGENT_INSTANCES(143, PARTITION_LOCAL);
+  AGENT_INSTANCES(143, PARTITION_LOCAL),
+
+  // dedup state for the cross-partition message-start handshake on P_B; forward CF is keyed by
+  // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey + status
+  // (ACTIVE / TOMBSTONE+deadline); reverse CF lets the PI-completion applier transition the entry
+  // to TOMBSTONE in O(1) without scanning by processInstanceKey.
+  CROSS_PARTITION_MESSAGE_START_DEDUP(144, PARTITION_LOCAL),
+  CROSS_PARTITION_MESSAGE_START_DEDUP_BY_PI_KEY(145, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

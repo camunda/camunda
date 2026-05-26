@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
@@ -75,6 +76,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
@@ -120,6 +122,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMessageState messageState;
   private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
+  private final MutableMessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
@@ -182,6 +185,8 @@ public class ProcessingDbState implements MutableProcessingState {
             zeebeDb, transactionContext, transientMessageSubscriptionState, clock);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
+    messageStartProcessInstanceDedupState =
+        new DbMessageStartProcessInstanceDedupState(zeebeDb, transactionContext);
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
@@ -256,6 +261,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState() {
     return messageStartEventSubscriptionState;
+  }
+
+  @Override
+  public MutableMessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState() {
+    return messageStartProcessInstanceDedupState;
   }
 
   @Override
