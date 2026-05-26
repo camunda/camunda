@@ -274,7 +274,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
     final var target = file.getFileMarkedForDeletion();
     try {
-      FileUtil.moveDurably(file.file().toPath(), target);
+      FileUtil.moveDurably(file.file(), target);
     } catch (final IOException e) {
       throw new JournalException(e);
     }

@@ -110,7 +110,7 @@ final class SegmentLoader {
           e);
     }
     return new UninitializedSegment(
-        new SegmentFile(segmentFile.toFile()),
+        new SegmentFile(segmentFile),
         descriptor.id(),
         descriptor.maxSegmentSize(),
         mappedSegment,
@@ -155,7 +155,7 @@ final class SegmentLoader {
       final SegmentDescriptorSerializer descriptorSerializer,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
-    final SegmentFile segmentFile = new SegmentFile(file.toFile());
+    final SegmentFile segmentFile = new SegmentFile(file);
     return new Segment(
         segmentFile,
         descriptor,
@@ -216,8 +216,8 @@ final class SegmentLoader {
     }
   }
 
-  private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) {
-    final var available = segmentPath.getParent().toFile().getUsableSpace();
+  private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) throws IOException {
+    final var available = Files.getFileStore(segmentPath.getParent()).getUsableSpace();
     final var required = Math.max(maxSegmentSize, minFreeDiskSpace);
     if (available < required) {
       throw new JournalException.OutOfDiskSpace(

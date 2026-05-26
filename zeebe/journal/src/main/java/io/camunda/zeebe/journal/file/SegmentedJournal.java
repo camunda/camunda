@@ -207,7 +207,7 @@ public final class SegmentedJournal implements Journal {
 
     final var segmentPaths =
         tailSegments.values().stream()
-            .map(segment -> segment.file().file().toPath())
+            .map(segment -> segment.file().file())
             .collect(Collectors.toList());
 
     final var firstAsqn = findFirstAsqn(tailSegments);
