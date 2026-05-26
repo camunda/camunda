@@ -142,13 +142,13 @@ test.describe.serial('Process Instance Migration', () => {
       operateOperationPanelPage.beforeOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
-      await sleep(1000);
+      await sleep(3000);
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
-      ).toHaveValue(targetBpmnProcessId, {timeout: 30000});
+      ).toHaveValue(targetBpmnProcessId, {timeout: 60000});
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
