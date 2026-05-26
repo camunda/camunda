@@ -104,8 +104,7 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('scrolling', async ({page, taskPanelPage}) => {
+  test('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
     // usertask_to_be_assigned is completed by the preceding test; wait for ES
