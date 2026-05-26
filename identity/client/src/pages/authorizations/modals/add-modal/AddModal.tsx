@@ -183,6 +183,7 @@ export const AddModal: FC<
           render={({ field }) => (
             <Dropdown<ResourceType>
               id="resource-type-dropdown"
+              disabled
               label={t("selectResourceType")}
               titleText={t("resourceType")}
               items={resourceTypeItems}
@@ -315,7 +316,7 @@ function createEmptyAuthorization(
     return {
       ownerType: "USER",
       ownerId: "",
-      resourceType: "USER",
+      resourceType,
       resourceId: "",
       resourcePropertyName: null,
       permissionTypes: [],

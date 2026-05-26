@@ -178,6 +178,7 @@ export class IdentityAuthorizationsPage {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        await this.selectResourceTypeTab(authorization.resourceType);
         await this.createAuthorizationButton.click();
         await expect(this.createAuthorizationModal).toBeVisible({
           timeout: 15000,
@@ -188,7 +189,6 @@ export class IdentityAuthorizationsPage {
         await this.selectAuthorizationOwner({
           ownerId: authorization.ownerId,
         });
-        await this.selectResourceType(authorization.resourceType);
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
         await this.createAuthorizationSubmitButton.click({timeout: 15000});
