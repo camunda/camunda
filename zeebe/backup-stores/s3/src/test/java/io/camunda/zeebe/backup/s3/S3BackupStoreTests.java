@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -299,7 +300,8 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
 
     // when
     final var pattern =
-        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.of(2), CheckpointPattern.any());
+        new BackupIdentifierWildcardImpl(
+            Optional.of(BrokerMemberId.from(1)), Optional.of(2), CheckpointPattern.any());
     final var listedBackups = getStore().list(pattern).join();
 
     // then

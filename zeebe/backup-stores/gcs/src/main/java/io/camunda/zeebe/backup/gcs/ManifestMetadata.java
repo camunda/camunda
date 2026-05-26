@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.Blob;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -89,7 +90,7 @@ final class ManifestMetadata {
 
   /**
    * Reconstructs a {@link BackupStatus} from the GCS blob's custom metadata and path. The blob path
-   * encodes the backup identifier (partitionId/checkpointId/nodeId).
+   * encodes the backup identifier (partitionId/checkpointId/memberId).
    *
    * @return the backup status, or empty if the blob has no status metadata (e.g. written by an
    *     older version)
@@ -117,17 +118,18 @@ final class ManifestMetadata {
       final String basePath,
       final String manifestBlobName,
       final Map<String, String> metadata) {
-    // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{nodeId}/manifest.json
+    // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{memberId}/manifest.json
+    // where {memberId} is "zone_nodeId" for zone-aware clusters or bare "nodeId" otherwise.
     final var manifestsPrefix = basePath + "manifests/";
     final var relativePath =
         blobName.substring(manifestsPrefix.length(), blobName.length() - manifestBlobName.length());
-    // relativePath is now: {partitionId}/{checkpointId}/{nodeId}/
+    // relativePath is now: {partitionId}/{checkpointId}/{memberId}/
     final var parts = relativePath.split("/");
+    final var memberId = BrokerMemberId.from(parts[2]);
+    // Fall back to metadata zone for blobs written before zone was encoded in the path segment.
+    final var zone = memberId.zone() != null ? memberId.zone() : metadata.get(ZONE);
     return new BackupIdentifierImpl(
-        Integer.parseInt(parts[2]),
-        metadata.get(ZONE),
-        Integer.parseInt(parts[0]),
-        Long.parseLong(parts[1]));
+        memberId.nodeIdx(), zone, Integer.parseInt(parts[0]), Long.parseLong(parts[1]));
   }
 
   private static Optional<BackupDescriptor> parseDescriptor(final Map<String, String> metadata) {

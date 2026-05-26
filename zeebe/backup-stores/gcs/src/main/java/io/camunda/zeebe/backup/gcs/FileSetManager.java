@@ -184,7 +184,7 @@ final class FileSetManager {
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
     return PATH_FORMAT.formatted(
-        basePath, id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName);
+        basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), fileSetName);
   }
 
   private BlobInfo blobInfo(

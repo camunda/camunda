@@ -199,7 +199,7 @@ public final class ManifestManager {
   Manifest getManifest(final BackupIdentifier id) {
     assureContainerCreated();
     return getManifestWithPath(
-        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.brokerId().id()));
   }
 
   private Manifest getManifestWithPath(final String path) {
@@ -242,7 +242,9 @@ public final class ManifestManager {
 
   private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
     return MANIFEST_PATH_FORMAT.formatted(
-        backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
+        backupIdentifier.partitionId(),
+        backupIdentifier.checkpointId(),
+        backupIdentifier.brokerId().id());
   }
 
   private boolean filterBlobsByWildcard(
@@ -252,7 +254,7 @@ public final class ManifestManager {
                 MANIFEST_PATH_FORMAT.formatted(
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                     wildcard.checkpointPattern().asRegex(),
-                    wildcard.nodeId().map(Number::toString).orElse("\\d+")))
+                    BackupIdentifierWildcard.memberIdRegex(wildcard)))
             .asMatchPredicate();
     return pattern.test(path);
   }

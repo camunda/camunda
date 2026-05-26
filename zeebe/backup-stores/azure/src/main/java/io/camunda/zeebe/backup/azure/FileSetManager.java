@@ -128,6 +128,7 @@ final class FileSetManager {
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName);
+    return PATH_FORMAT.formatted(
+        id.partitionId(), id.checkpointId(), id.brokerId().id(), fileSetName);
   }
 }

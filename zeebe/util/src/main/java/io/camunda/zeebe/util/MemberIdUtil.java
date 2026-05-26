@@ -19,6 +19,8 @@ import org.jspecify.annotations.Nullable;
 public final class MemberIdUtil {
 
   private static final Pattern ZONE_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9-]*$");
+  private static final Pattern MEMBER_ID_PATTERN =
+      Pattern.compile("(?:[A-Za-z0-9][A-Za-z0-9-]+_)?\\d+");
   private static final int MAX_ZONE_LENGTH = 63;
 
   private MemberIdUtil() {}
@@ -67,5 +69,13 @@ public final class MemberIdUtil {
       return Integer.toString(nodeId);
     }
     return zone + "_" + nodeId;
+  }
+
+  public static Pattern regex() {
+    return MEMBER_ID_PATTERN;
+  }
+
+  public static String regexPattern() {
+    return regex().pattern();
   }
 }

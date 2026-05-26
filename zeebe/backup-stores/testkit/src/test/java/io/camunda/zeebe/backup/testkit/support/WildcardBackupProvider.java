@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.testkit.support;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -41,7 +42,9 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary partitions",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.empty(), CheckpointPattern.of(1L)),
+                        Optional.of(BrokerMemberId.from(1)),
+                        Optional.empty(),
+                        CheckpointPattern.of(1L)),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(1, 2, 1),
@@ -53,7 +56,9 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.of(1), CheckpointPattern.any()),
+                        Optional.of(BrokerMemberId.from(1)),
+                        Optional.of(1),
+                        CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(1, 1, 2),
@@ -65,7 +70,9 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups matching checkpoint prefix",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.of(1), CheckpointPattern.of("10*")),
+                        Optional.of(BrokerMemberId.from(1)),
+                        Optional.of(1),
+                        CheckpointPattern.of("10*")),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 10),
                         new BackupIdentifierImpl(1, 1, 100),
@@ -80,7 +87,9 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                 "Backups of arbitrary partitions and checkpoints",
                 new WildcardTestParameter(
                     new BackupIdentifierWildcardImpl(
-                        Optional.of(1), Optional.empty(), CheckpointPattern.any()),
+                        Optional.of(BrokerMemberId.from(1)),
+                        Optional.empty(),
+                        CheckpointPattern.any()),
                     List.of(
                         new BackupIdentifierImpl(1, 1, 3),
                         new BackupIdentifierImpl(1, 2, 2),

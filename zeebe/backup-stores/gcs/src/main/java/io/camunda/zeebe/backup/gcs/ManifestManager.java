@@ -72,7 +72,7 @@ public final class ManifestManager {
    *   <li>{@code "manifests"}
    *   <li>{@code partitionId}
    *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
+   *   <li>{@code memberId}
    *   <li>{@code "manifest.json"}
    * </ul>
    */
@@ -261,7 +261,7 @@ public final class ManifestManager {
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
     final var blobName =
         MANIFEST_PATH_FORMAT.formatted(
-            basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
+            basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), MANIFEST_BLOB_NAME);
     return BlobInfo.newBuilder(bucketInfo, blobName).setContentType("application/json").build();
   }
 
@@ -269,7 +269,7 @@ public final class ManifestManager {
       final BackupIdentifier id, final Manifest manifest) {
     final var blobName =
         MANIFEST_PATH_FORMAT.formatted(
-            basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
+            basePath, id.partitionId(), id.checkpointId(), id.brokerId().id(), MANIFEST_BLOB_NAME);
     return BlobInfo.newBuilder(bucketInfo, blobName)
         .setContentType("application/json")
         .setMetadata(ManifestMetadata.fromManifest(manifest))
@@ -293,7 +293,7 @@ public final class ManifestManager {
                     Pattern.quote(basePath),
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                     wildcard.checkpointPattern().asRegex(),
-                    wildcard.nodeId().map(Number::toString).orElse("\\d+"),
+                    BackupIdentifierWildcard.memberIdRegex(wildcard),
                     Pattern.quote(MANIFEST_BLOB_NAME)))
             .asMatchPredicate();
     return (blob -> pattern.test(blob.getName()));

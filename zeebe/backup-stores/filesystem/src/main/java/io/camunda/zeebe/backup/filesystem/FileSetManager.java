@@ -121,7 +121,7 @@ final class FileSetManager {
     return contentsPath
         .resolve(String.valueOf(id.partitionId()))
         .resolve(String.valueOf(id.checkpointId()))
-        .resolve(String.valueOf(id.nodeId()))
+        .resolve(id.brokerId().id())
         .resolve(fileSetName);
   }
 }
