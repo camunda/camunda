@@ -112,7 +112,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
 
     securityConfig = new CamundaSecurityLibraryProperties();
-    securityConfig.getAuthorizations().setEnabled(false);
+    securityConfig.setAuthorizationsEnabled(false);
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
@@ -148,8 +148,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
             AuthenticationProperties.API_UNPROTECTED,
             securityConfig.getAuthentication().isUnprotectedApi())
         .withProperty(
-            "camunda.security.authorizations.enabled",
-            securityConfig.getAuthorizations().isEnabled())
+            "camunda.security.authorizations.enabled", securityConfig.isAuthorizationsEnabled())
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
@@ -202,24 +201,24 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
     withProperty("camunda.security.authorizations.enabled", true);
-    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+    return withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true));
   }
 
   public TestCamundaApplication withAuthorizationsDisabled() {
     withUnauthenticatedAccess();
-    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(false));
+    return withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(false));
   }
 
   public TestCamundaApplication withMultiTenancyEnabled() {
     withAuthenticatedAccess();
     withProperty("camunda.security.multiTenancy.checksEnabled", true);
-    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+    return withSecurityConfig(cfg -> cfg.setMultiTenancyChecksEnabled(true));
   }
 
   public TestCamundaApplication withMultiTenancyDisabled() {
     withAuthenticatedAccess();
     withProperty("camunda.security.multiTenancy.checksEnabled", false);
-    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(false));
+    return withSecurityConfig(cfg -> cfg.setMultiTenancyChecksEnabled(false));
   }
 
   @Override

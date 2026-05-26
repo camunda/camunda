@@ -15,11 +15,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -83,19 +80,15 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
   @BeforeEach
   void before() {
-    final var authConfig = new AuthorizationsConfiguration();
     final var engineConfig = new EngineConfiguration();
-    authConfig.setEnabled(true);
-    final var multiTenancyConfig = new MultiTenancyConfiguration();
-    multiTenancyConfig.setChecksEnabled(true);
     final var securityConfig =
         new EngineSecurityConfig(
             new AuthenticationConfiguration(),
-            authConfig,
-            multiTenancyConfig,
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ true,
             new InitializationConfiguration(),
-            new IdentifierValidator(
-                Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)));
+            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+            Pattern.compile(".*", Pattern.DOTALL));
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
 

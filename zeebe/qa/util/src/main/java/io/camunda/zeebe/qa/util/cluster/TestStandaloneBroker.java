@@ -81,7 +81,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityLibraryProperties();
-    securityConfig.getAuthorizations().setEnabled(false);
+    securityConfig.setAuthorizationsEnabled(false);
     securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
@@ -116,7 +116,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         AuthenticationProperties.API_UNPROTECTED,
         securityConfig.getAuthentication().isUnprotectedApi());
     withProperty(
-        "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
+        "camunda.security.authorizations.enabled", securityConfig.isAuthorizationsEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -171,12 +171,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
     withProperty("camunda.security.authorizations.enabled", true);
-    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+    return withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true));
   }
 
   public TestStandaloneBroker withAuthorizationsDisabled() {
     withUnauthenticatedAccess();
-    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(false));
+    return withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(false));
   }
 
   @Override
@@ -269,7 +269,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
     withProperty("camunda.security.multiTenancy.checksEnabled", "true");
-    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+    return withSecurityConfig(cfg -> cfg.setMultiTenancyChecksEnabled(true));
   }
 
   /**

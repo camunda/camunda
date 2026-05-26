@@ -55,7 +55,7 @@ public class MultiTenancyActivatableJobsPushTest {
           .withJobStreamer(JOB_STREAMER)
           .withSecurityConfig(
               config -> {
-                config.getMultiTenancy().setChecksEnabled(true);
+                config.setMultiTenancyChecksEnabled(true);
               });
 
   @Rule

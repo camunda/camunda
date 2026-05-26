@@ -14,11 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -305,13 +302,12 @@ public final class TestStreams {
                         new EngineConfiguration(),
                         new EngineSecurityConfig(
                             new AuthenticationConfiguration(),
-                            new AuthorizationsConfiguration(),
-                            new MultiTenancyConfiguration(),
+                            true,
+                            false,
                             new InitializationConfiguration(),
-                            new IdentifierValidator(
-                                java.util.regex.Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
-                                java.util.regex.Pattern.compile(
-                                    ".*", java.util.regex.Pattern.DOTALL))))))
+                            java.util.regex.Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+                            java.util.regex.Pattern.compile(
+                                ".*", java.util.regex.Pattern.DOTALL)))))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(isReplay ? null : mock(InterPartitionCommandSender.class))

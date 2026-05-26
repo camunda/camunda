@@ -48,7 +48,7 @@ public class UpdateClusterVariableAuthorizationTest {
           .withResetRecordingExporterTestWatcherMode(
               ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST)
           .withIdentitySetup(ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP)
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
               cfg -> {

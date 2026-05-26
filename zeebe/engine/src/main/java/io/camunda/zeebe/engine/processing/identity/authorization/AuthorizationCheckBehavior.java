@@ -71,8 +71,8 @@ public final class AuthorizationCheckBehavior {
     final var membershipState = processingState.getMembershipState();
 
     mappingRuleState = processingState.getMappingRuleState();
-    authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
-    multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+    authorizationsEnabled = securityConfig.isAuthorizationsEnabled();
+    multiTenancyEnabled = securityConfig.isMultiTenancyChecksEnabled();
     claimsExtractor = new ClaimsExtractor(membershipState);
     tenantResolver =
         new TenantResolver(membershipState, mappingRuleState, claimsExtractor, multiTenancyEnabled);

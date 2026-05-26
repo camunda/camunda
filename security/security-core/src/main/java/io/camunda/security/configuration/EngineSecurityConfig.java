@@ -8,58 +8,75 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
-import io.camunda.security.validation.IdentifierValidator;
+import java.util.regex.Pattern;
 
 /**
  * Lightweight security config holder for the engine and broker processing chain. Replaces the
  * former {@code SecurityConfiguration} in non-Spring contexts so that the engine and broker modules
- * depend only on {@code camunda-security-library-api} and {@code camunda-security-validation} — not
- * on Spring Boot starter beans.
+ * depend only on {@code camunda-security-library-api} — not on Spring Boot starter beans.
  *
  * <p>Constructed by the Spring entry-point ({@code BrokerModuleConfiguration}) from the canonical
  * {@code CamundaSecurityLibraryProperties} and passed down the non-Spring partition startup chain.
+ *
+ * <p>Note: {@link AuthenticationConfiguration} and {@link InitializationConfiguration} are kept
+ * here as sub-objects as a temporary measure. They will be removed once the gRPC Gateway gets its
+ * own config path (removing the need for auth config here) and identity setup is extracted out of
+ * the engine. See: https://github.com/camunda/camunda-security-library/issues/274
  */
 public final class EngineSecurityConfig {
 
   private final AuthenticationConfiguration authentication;
-  private final AuthorizationsConfiguration authorizations;
-  private final MultiTenancyConfiguration multiTenancy;
+  private boolean authorizationsEnabled;
+  private boolean multiTenancyChecksEnabled;
   private final InitializationConfiguration initialization;
-  private final IdentifierValidator identifierValidator;
+  private final Pattern idValidationPattern;
+  private final Pattern groupIdValidationPattern;
 
   public EngineSecurityConfig(
       final AuthenticationConfiguration authentication,
-      final AuthorizationsConfiguration authorizations,
-      final MultiTenancyConfiguration multiTenancy,
+      final boolean authorizationsEnabled,
+      final boolean multiTenancyChecksEnabled,
       final InitializationConfiguration initialization,
-      final IdentifierValidator identifierValidator) {
+      final Pattern idValidationPattern,
+      final Pattern groupIdValidationPattern) {
     this.authentication = authentication;
-    this.authorizations = authorizations;
-    this.multiTenancy = multiTenancy;
+    this.authorizationsEnabled = authorizationsEnabled;
+    this.multiTenancyChecksEnabled = multiTenancyChecksEnabled;
     this.initialization = initialization;
-    this.identifierValidator = identifierValidator;
+    this.idValidationPattern = idValidationPattern;
+    this.groupIdValidationPattern = groupIdValidationPattern;
   }
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
   }
 
-  public AuthorizationsConfiguration getAuthorizations() {
-    return authorizations;
+  public boolean isAuthorizationsEnabled() {
+    return authorizationsEnabled;
   }
 
-  public MultiTenancyConfiguration getMultiTenancy() {
-    return multiTenancy;
+  public void setAuthorizationsEnabled(final boolean authorizationsEnabled) {
+    this.authorizationsEnabled = authorizationsEnabled;
+  }
+
+  public boolean isMultiTenancyChecksEnabled() {
+    return multiTenancyChecksEnabled;
+  }
+
+  public void setMultiTenancyChecksEnabled(final boolean multiTenancyChecksEnabled) {
+    this.multiTenancyChecksEnabled = multiTenancyChecksEnabled;
   }
 
   public InitializationConfiguration getInitialization() {
     return initialization;
   }
 
-  public IdentifierValidator getIdentifierValidator() {
-    return identifierValidator;
+  public Pattern getIdValidationPattern() {
+    return idValidationPattern;
+  }
+
+  public Pattern getGroupIdValidationPattern() {
+    return groupIdValidationPattern;
   }
 }

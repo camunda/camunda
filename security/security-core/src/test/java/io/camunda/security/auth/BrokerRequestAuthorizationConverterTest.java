@@ -17,12 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.IdentifierValidator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,33 +28,31 @@ import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
 
-  private static final IdentifierValidator VALIDATOR =
-      new IdentifierValidator(Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*"));
+  private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_~@.+-]+$");
+  private static final Pattern GROUP_ID_PATTERN = Pattern.compile(".*");
 
   private static EngineSecurityConfig defaultConfig() {
     return new EngineSecurityConfig(
         new AuthenticationConfiguration(),
-        new AuthorizationsConfiguration(),
-        new MultiTenancyConfiguration(),
+        /* authorizationsEnabled= */ true,
+        /* multiTenancyChecksEnabled= */ false,
         new InitializationConfiguration(),
-        VALIDATOR);
+        ID_PATTERN,
+        GROUP_ID_PATTERN);
   }
 
   @Test
   void shouldOnlyContainAuthenticationClaimsWhenAuthorizationAndMultiTenancyDisabled() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
-    final var authz = new AuthorizationsConfiguration();
-    authz.setEnabled(false);
-    final var multiTenancy = new MultiTenancyConfiguration();
-    multiTenancy.setChecksEnabled(false);
     final var config =
         new EngineSecurityConfig(
             new AuthenticationConfiguration(),
-            authz,
-            multiTenancy,
+            /* authorizationsEnabled= */ false,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
@@ -107,10 +102,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var config =
         new EngineSecurityConfig(
             auth,
-            new AuthorizationsConfiguration(),
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
@@ -131,10 +127,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var config =
         new EngineSecurityConfig(
             auth,
-            new AuthorizationsConfiguration(),
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
@@ -159,10 +156,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var config =
         new EngineSecurityConfig(
             auth,
-            new AuthorizationsConfiguration(),
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
@@ -186,10 +184,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var config =
         new EngineSecurityConfig(
             auth,
-            new AuthorizationsConfiguration(),
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when
@@ -210,10 +209,11 @@ public class BrokerRequestAuthorizationConverterTest {
     final var config =
         new EngineSecurityConfig(
             auth,
-            new AuthorizationsConfiguration(),
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            VALIDATOR);
+            ID_PATTERN,
+            GROUP_ID_PATTERN);
     final var converter = new BrokerRequestAuthorizationConverter(config);
 
     // when

@@ -41,8 +41,8 @@ public class BrokerRequestAuthorizationConverter {
     final var oidc = securityConfiguration.getAuthentication().getOidc();
     groupsClaimConfigured = oidc != null && oidc.isGroupsClaimConfigured();
     shouldIncludeAuthorizationClaims =
-        securityConfiguration.getAuthorizations().isEnabled()
-            || securityConfiguration.getMultiTenancy().isChecksEnabled();
+        securityConfiguration.isAuthorizationsEnabled()
+            || securityConfiguration.isMultiTenancyChecksEnabled();
   }
 
   /** Returns whether authorization claims (token claims, groups) are needed in broker requests. */

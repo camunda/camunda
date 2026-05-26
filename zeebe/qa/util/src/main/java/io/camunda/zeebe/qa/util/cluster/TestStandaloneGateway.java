@@ -42,7 +42,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     securityConfig = new CamundaSecurityLibraryProperties();
     securityConfig.getAuthentication().setUnprotectedApi(true);
-    securityConfig.getAuthorizations().setEnabled(false);
+    securityConfig.setAuthorizationsEnabled(false);
     //noinspection resource
     withBean("securityConfig", securityConfig, CamundaSecurityLibraryProperties.class);
 

@@ -17,7 +17,6 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -87,7 +86,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
       final CamundaSecurityLibraryProperties securityProperties,
-      final IdentifierValidator identifierValidator,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
@@ -107,10 +105,11 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.engineSecurityConfig =
         new EngineSecurityConfig(
             securityProperties.getAuthentication(),
-            securityProperties.getAuthorizations(),
-            securityProperties.getMultiTenancy(),
+            securityProperties.getAuthorizations().isEnabled(),
+            securityProperties.getMultiTenancy().isChecksEnabled(),
             securityProperties.getInitialization(),
-            identifierValidator);
+            securityProperties.getCompiledIdValidationPattern(),
+            securityProperties.getCompiledGroupIdValidationPattern());
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;

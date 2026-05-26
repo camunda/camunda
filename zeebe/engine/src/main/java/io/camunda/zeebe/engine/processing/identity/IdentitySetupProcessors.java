@@ -32,7 +32,9 @@ public final class IdentitySetupProcessors {
       final Writers writers,
       final EngineSecurityConfig securityConfig,
       final EngineConfiguration config) {
-    final IdentifierValidator identifierValidator = securityConfig.getIdentifierValidator();
+    final IdentifierValidator identifierValidator =
+        new IdentifierValidator(
+            securityConfig.getIdValidationPattern(), securityConfig.getGroupIdValidationPattern());
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,

@@ -52,7 +52,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   private final ActivateJobsStub activateJobsStub = new ActivateJobsStub();
 
   public MultiTenancyDisabledTest() {
-    super(cfg -> {}, cfg -> cfg.getMultiTenancy().setChecksEnabled(false));
+    super(cfg -> {}, cfg -> cfg.setMultiTenancyChecksEnabled(false));
   }
 
   @Before

@@ -41,7 +41,6 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -95,15 +94,15 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final CamundaSecurityLibraryProperties securityConfiguration,
-      final IdentifierValidator identifierValidator) {
+      final CamundaSecurityLibraryProperties securityConfiguration) {
     return new BrokerRequestAuthorizationConverter(
         new EngineSecurityConfig(
             securityConfiguration.getAuthentication(),
-            securityConfiguration.getAuthorizations(),
-            securityConfiguration.getMultiTenancy(),
+            securityConfiguration.getAuthorizations().isEnabled(),
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
             securityConfiguration.getInitialization(),
-            identifierValidator));
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern()));
   }
 
   @Bean

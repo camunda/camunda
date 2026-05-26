@@ -489,7 +489,10 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
-    final IdentifierValidator identifierValidator = securityConfiguration.getIdentifierValidator();
+    final IdentifierValidator identifierValidator =
+        new IdentifierValidator(
+            securityConfiguration.getIdValidationPattern(),
+            securityConfiguration.getGroupIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =

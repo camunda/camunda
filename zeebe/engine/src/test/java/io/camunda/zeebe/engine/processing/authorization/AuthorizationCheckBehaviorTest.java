@@ -18,11 +18,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
@@ -85,17 +82,15 @@ final class AuthorizationCheckBehaviorTest {
 
   @BeforeEach
   public void before() {
-    final var authConfig = new AuthorizationsConfiguration();
     final var engineConfig = new EngineConfiguration();
-    authConfig.setEnabled(true);
     final var securityConfig =
         new EngineSecurityConfig(
             new AuthenticationConfiguration(),
-            authConfig,
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            new IdentifierValidator(
-                Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)));
+            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+            Pattern.compile(".*", Pattern.DOTALL));
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
 
@@ -1508,16 +1503,14 @@ final class AuthorizationCheckBehaviorTest {
   @Test
   void shouldExpireAuthorizationCacheAfterConfiguredTtl() {
     // given: authorizations enabled and a very short cache TTL
-    final var authConfig = new AuthorizationsConfiguration();
-    authConfig.setEnabled(true);
     final var securityConfig =
         new EngineSecurityConfig(
             new AuthenticationConfiguration(),
-            authConfig,
-            new MultiTenancyConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ false,
             new InitializationConfiguration(),
-            new IdentifierValidator(
-                Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)));
+            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+            Pattern.compile(".*", Pattern.DOTALL));
 
     final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofSeconds(1));
     authorizationCheckBehavior =

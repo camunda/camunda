@@ -134,7 +134,7 @@ public final class EngineRule extends ExternalResource {
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<EngineSecurityConfig> securityConfigModifier =
-      cfg -> cfg.getAuthorizations().setEnabled(false);
+      cfg -> cfg.setAuthorizationsEnabled(false);
   private Consumer<EngineConfiguration> engineConfigModifier =
       cfg -> {
         // identity setup is disabled by default so we can have deterministic writes

@@ -40,7 +40,7 @@ public class BatchEventsClaimsTest {
           .withIdentitySetup()
           .withSecurityConfig(
               cfg -> {
-                cfg.getAuthorizations().setEnabled(true);
+                cfg.setAuthorizationsEnabled(true);
                 cfg.getInitialization().setUsers(List.of(DEFAULT_USER));
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));

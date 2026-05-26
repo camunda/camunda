@@ -466,7 +466,7 @@ public class TestContainerUtil {
               .withSecurityConfig(
                   cfg -> {
                     cfg.getAuthentication().setUnprotectedApi(true);
-                    cfg.getAuthorizations().setEnabled(false);
+                    cfg.setAuthorizationsEnabled(false);
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));
                   });

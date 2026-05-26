@@ -115,7 +115,7 @@ public final class EndpointManager {
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
+    RequestMapper.setMultiTenancyEnabled(securityConfiguration.isMultiTenancyChecksEnabled());
     RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
     authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfiguration);
   }

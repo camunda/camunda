@@ -9,10 +9,7 @@ package io.camunda.security.configuration;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
-import io.camunda.security.validation.IdentifierValidator;
 import java.util.regex.Pattern;
 
 /** Factory methods for commonly used {@link EngineSecurityConfig} presets. */
@@ -22,24 +19,22 @@ public class EngineSecurityConfigurations {
     final var authentication = new AuthenticationConfiguration();
     authentication.setMethod(AuthenticationMethod.BASIC);
     authentication.setUnprotectedApi(true);
-    final var authorizations = new AuthorizationsConfiguration();
-    authorizations.setEnabled(false);
     return new EngineSecurityConfig(
         authentication,
-        authorizations,
-        new MultiTenancyConfiguration(),
+        /* authorizationsEnabled= */ false,
+        /* multiTenancyChecksEnabled= */ false,
         new InitializationConfiguration(),
-        new IdentifierValidator(
-            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)));
+        Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+        Pattern.compile(".*", Pattern.DOTALL));
   }
 
   public static EngineSecurityConfig defaultConfig() {
     return new EngineSecurityConfig(
         new AuthenticationConfiguration(),
-        new AuthorizationsConfiguration(),
-        new MultiTenancyConfiguration(),
+        /* authorizationsEnabled= */ true,
+        /* multiTenancyChecksEnabled= */ false,
         new InitializationConfiguration(),
-        new IdentifierValidator(
-            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile(".*", Pattern.DOTALL)));
+        Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+        Pattern.compile(".*", Pattern.DOTALL));
   }
 }
