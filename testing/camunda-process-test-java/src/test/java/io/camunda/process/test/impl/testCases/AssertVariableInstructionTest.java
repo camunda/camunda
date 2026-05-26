@@ -27,18 +27,22 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableJudgeAssertion;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.impl.judge.JudgeConfigImpl;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariableInstructionHandler;
 import java.util.function.UnaryOperator;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,7 +52,6 @@ public class AssertVariableInstructionTest {
   private static final String PROCESS_DEFINITION_ID = "process";
   private static final String ELEMENT_ID = "task_A";
   private static final String VARIABLE_NAME = "agentResponse";
-  private static final String EXPECTATION = "should contain a valid summary";
 
   @Mock private CamundaProcessTestContext processTestContext;
   @Mock private CamundaClient camundaClient;
@@ -59,204 +62,351 @@ public class AssertVariableInstructionTest {
   private final AssertVariableInstructionHandler instructionHandler =
       new AssertVariableInstructionHandler();
 
-  @Test
-  void shouldAssertGlobalVariable() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+  @Nested
+  class SatisfiesJudge {
 
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
-            .build();
+    private static final String EXPECTATION = "should contain a valid summary";
 
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+    @Test
+    void shouldAssertGlobalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
 
-    // then
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @Test
+    void shouldAssertLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert)
+          .hasLocalVariableSatisfiesJudge(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyThresholdOverride() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(
+                  ImmutableJudgeAssertion.builder().expectation(EXPECTATION).threshold(0.8).build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigCaptor =
+          ArgumentCaptor.forClass(UnaryOperator.class);
+      verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
+
+      final JudgeConfig updatedConfig =
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+      assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
+
+      verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyCustomPromptOverride() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(
+                  ImmutableJudgeAssertion.builder()
+                      .expectation(EXPECTATION)
+                      .customPrompt("You are a financial data judge")
+                      .build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigCaptor =
+          ArgumentCaptor.forClass(UnaryOperator.class);
+      verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
+
+      final JudgeConfig updatedConfig =
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+      assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
+
+      verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyThresholdAndCustomPromptOverrides() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(
+                  ImmutableJudgeAssertion.builder()
+                      .expectation(EXPECTATION)
+                      .threshold(0.9)
+                      .customPrompt("Custom evaluation criteria")
+                      .build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigCaptor =
+          ArgumentCaptor.forClass(UnaryOperator.class);
+      verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
+
+      final JudgeConfig updatedConfig =
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+      assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
+      assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
+
+      verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyThresholdAndCustomPromptOverridesForLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesJudge(
+                  ImmutableJudgeAssertion.builder()
+                      .expectation(EXPECTATION)
+                      .threshold(0.7)
+                      .customPrompt("Local variable evaluation criteria")
+                      .build())
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigCaptor =
+          ArgumentCaptor.forClass(UnaryOperator.class);
+      verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
+
+      final JudgeConfig updatedConfig =
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+      assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
+      assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
+
+      verify(mockAssert)
+          .hasLocalVariableSatisfiesJudge(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
   }
 
-  @Test
-  void shouldAssertLocalVariableByElementId() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+  @Nested
+  class SemanticSimilarity {
 
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
-            .build();
+    private static final String EXPECTED_VALUE = "the expected answer";
+    private static final double THRESHOLD = 0.85;
 
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+    @Captor private ArgumentCaptor<UnaryOperator<SemanticSimilarityConfig>> similarityConfigCaptor;
 
-    // then
-    verify(mockAssert)
-        .hasLocalVariableSatisfiesJudge(
-            any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
-  }
+    @Test
+    void shouldAssertGlobalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
 
-  @SuppressWarnings("unchecked")
-  @Test
-  void shouldApplyThresholdOverride() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .similarTo(
+                  ImmutableSemanticSimilarityAssertion.builder()
+                      .expectedValue(EXPECTED_VALUE)
+                      .build())
+              .build();
 
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(
-                ImmutableJudgeAssertion.builder().expectation(EXPECTATION).threshold(0.8).build())
-            .build();
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+      // then
+      verify(mockAssert).hasVariableSimilarTo(VARIABLE_NAME, EXPECTED_VALUE);
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
 
-    // then
-    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
-        ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+    @Test
+    void shouldAssertLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
 
-    final JudgeConfig updatedConfig =
-        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
-    assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .similarTo(
+                  ImmutableSemanticSimilarityAssertion.builder()
+                      .expectedValue(EXPECTED_VALUE)
+                      .build())
+              .build();
 
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
-  }
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-  @SuppressWarnings("unchecked")
-  @Test
-  void shouldApplyCustomPromptOverride() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+      // then
+      verify(mockAssert)
+          .hasLocalVariableSimilarTo(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTED_VALUE));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
 
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(
-                ImmutableJudgeAssertion.builder()
-                    .expectation(EXPECTATION)
-                    .customPrompt("You are a financial data judge")
-                    .build())
-            .build();
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyThreshold() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class)))
+          .thenReturn(mockAssert);
 
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .similarTo(
+                  ImmutableSemanticSimilarityAssertion.builder()
+                      .expectedValue(EXPECTED_VALUE)
+                      .threshold(THRESHOLD)
+                      .build())
+              .build();
 
-    // then
-    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
-        ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-    final JudgeConfig updatedConfig =
-        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
-    assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
+      // then
+      verify(mockAssert).withSemanticSimilarityConfig(similarityConfigCaptor.capture());
+      assertThat(
+              similarityConfigCaptor
+                  .getValue()
+                  .apply(SemanticSimilarityConfig.defaults())
+                  .getThreshold())
+          .isEqualTo(THRESHOLD);
+      verify(mockAssert).hasVariableSimilarTo(VARIABLE_NAME, EXPECTED_VALUE);
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
 
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
-  }
+    @SuppressWarnings("unchecked")
+    @Test
+    void shouldApplyThresholdForLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+      when(mockAssert.withSemanticSimilarityConfig(any(UnaryOperator.class)))
+          .thenReturn(mockAssert);
 
-  @SuppressWarnings("unchecked")
-  @Test
-  void shouldApplyBothOverrides() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .similarTo(
+                  ImmutableSemanticSimilarityAssertion.builder()
+                      .expectedValue(EXPECTED_VALUE)
+                      .threshold(THRESHOLD)
+                      .build())
+              .build();
 
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(
-                ImmutableJudgeAssertion.builder()
-                    .expectation(EXPECTATION)
-                    .threshold(0.9)
-                    .customPrompt("Custom evaluation criteria")
-                    .build())
-            .build();
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
-        ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
-
-    final JudgeConfig updatedConfig =
-        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
-    assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
-    assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
-
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
-  void shouldApplyOverridesForLocalVariable() {
-    // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
-
-    final AssertVariableInstruction instruction =
-        ImmutableAssertVariableInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
-            .variableName(VARIABLE_NAME)
-            .satisfiesJudge(
-                ImmutableJudgeAssertion.builder()
-                    .expectation(EXPECTATION)
-                    .threshold(0.7)
-                    .customPrompt("Local variable evaluation criteria")
-                    .build())
-            .build();
-
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
-        ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
-
-    final JudgeConfig updatedConfig =
-        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
-    assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
-    assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
-
-    verify(mockAssert)
-        .hasLocalVariableSatisfiesJudge(
-            any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+      // then
+      verify(mockAssert).withSemanticSimilarityConfig(similarityConfigCaptor.capture());
+      assertThat(
+              similarityConfigCaptor
+                  .getValue()
+                  .apply(SemanticSimilarityConfig.defaults())
+                  .getThreshold())
+          .isEqualTo(THRESHOLD);
+      verify(mockAssert)
+          .hasLocalVariableSimilarTo(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTED_VALUE));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
   }
 }

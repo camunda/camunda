@@ -65,6 +65,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorker
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
@@ -552,6 +553,38 @@ public class PojoCompatibilityTest {
                             .expectation("should be a properly formatted JSON response")
                             .threshold(0.8)
                             .customPrompt("You are evaluating data accuracy")
+                            .build())
+                    .build())),
+        // ===== ASSERT_VARIABLE with similarTo =====
+        Arguments.of(
+            "assert variable similar to: minimal",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variableName("result")
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The order was processed successfully.")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variable similar to: complete",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("review-task").build())
+                    .variableName("reviewComment")
+                    .similarTo(
+                        ImmutableSemanticSimilarityAssertion.builder()
+                            .expectedValue("The product quality meets the required standards.")
+                            .threshold(0.85)
                             .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
