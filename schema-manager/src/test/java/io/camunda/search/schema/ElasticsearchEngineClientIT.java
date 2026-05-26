@@ -43,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ElasticsearchEngineClientIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;

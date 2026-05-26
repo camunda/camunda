@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ReschedulingTaskLoggerIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   @Test
   void shouldSuppressAllShardsFailedTransientError() {

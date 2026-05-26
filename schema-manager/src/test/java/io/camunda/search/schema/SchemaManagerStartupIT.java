@@ -7,7 +7,7 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.createDefeaultElasticsearchContainer;
+import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.createDefaultElasticsearchContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
@@ -72,7 +72,7 @@ class SchemaManagerStartupIT {
 
   @Container
   private final ElasticsearchContainer es =
-      createDefeaultElasticsearchContainer()
+      createDefaultElasticsearchContainer()
           .withNetwork(Network.SHARED)
           .withNetworkAliases("test-elasticsearch");
 

@@ -38,7 +38,7 @@ final class ElasticsearchExporterClientIT {
   // authentication
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefaultElasticsearchContainer()
           .withEnv("xpack.license.self_generated.type", "trial")
           .withEnv("xpack.security.enabled", "true")
           .withEnv("xpack.security.authc.anonymous.username", "anon")

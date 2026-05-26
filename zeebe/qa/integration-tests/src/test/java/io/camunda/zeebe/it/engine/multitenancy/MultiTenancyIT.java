@@ -79,7 +79,7 @@ public class MultiTenancyIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private static final String TENANT_A = "tenantA";

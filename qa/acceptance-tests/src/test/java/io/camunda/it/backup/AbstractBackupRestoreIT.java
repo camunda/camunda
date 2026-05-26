@@ -98,7 +98,7 @@ public abstract class AbstractBackupRestoreIT {
         switch (databaseType) {
           case ELASTICSEARCH -> {
             final var container =
-                TestSearchContainers.createDefeaultElasticsearchContainer()
+                TestSearchContainers.createDefaultElasticsearchContainer()
                     .withStartupTimeout(Duration.ofMinutes(5))
                     .withEnv("path.repo", "~/");
             container.start();

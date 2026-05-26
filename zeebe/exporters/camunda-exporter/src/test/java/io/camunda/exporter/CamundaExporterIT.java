@@ -479,7 +479,7 @@ final class CamundaExporterIT {
 
   private static Stream<Arguments> containerProvider() {
     return Stream.of(
-        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
+        Arguments.of(TestSearchContainers.createDefaultElasticsearchContainer()),
         Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
   }
 

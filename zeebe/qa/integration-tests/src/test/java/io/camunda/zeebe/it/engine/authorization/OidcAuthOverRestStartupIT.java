@@ -30,7 +30,7 @@ public class OidcAuthOverRestStartupIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   private static final String UNREACHABLE_ISSUER_URI =
       "http://localhost:1000/realms/" + KEYCLOAK_REALM;

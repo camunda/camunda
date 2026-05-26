@@ -59,7 +59,7 @@ public class OidcAuthOverRestIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefaultElasticsearchContainer();
 
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();

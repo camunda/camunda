@@ -67,8 +67,13 @@ public final class TestSearchContainers {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
+  public static ElasticsearchContainer createDefaultElasticsearchContainer() {
     return createElasticsearchContainer(ELASTIC_IMAGE);
+  }
+
+  @Deprecated(since = "2026-05", forRemoval = true)
+  public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
+    return createDefaultElasticsearchContainer();
   }
 
   /**

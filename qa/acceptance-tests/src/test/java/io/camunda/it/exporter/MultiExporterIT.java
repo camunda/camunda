@@ -189,7 +189,7 @@ public class MultiExporterIT {
               .withStartupTimeout(Duration.ofMinutes(5));
     } else {
       searchContainer =
-          TestSearchContainers.createDefeaultElasticsearchContainer()
+          TestSearchContainers.createDefaultElasticsearchContainer()
               .withStartupTimeout(Duration.ofMinutes(5))
               .withEnv("path.repo", "~/");
     }
