@@ -87,7 +87,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .toolCalls(value.getMetrics().getToolCalls())
             .toolValues(toToolDbValues(value.getTools()))
             .lastUpdatedDate(timestamp)
-            .elementInstanceKeys(List.of(value.getElementInstanceKey()));
+            .elementInstanceKeys(value.getElementInstanceKeys());
 
     if (intent == AgentInstanceIntent.CREATED) {
       builder.creationDate(timestamp);

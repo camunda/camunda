@@ -140,8 +140,8 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.creationDate()).isNotNull();
     assertThat(model.lastUpdatedDate()).isEqualTo(model.creationDate());
     assertThat(model.completionDate()).isNull();
-    // element instance keys
-    assertThat(model.elementInstanceKeys()).containsExactly(300L);
+    // element instance keys — full history, not just the latest (scalar) key
+    assertThat(model.elementInstanceKeys()).containsExactly(200L, 300L);
   }
 
   @Test
@@ -297,6 +297,7 @@ class AgentInstanceExportHandlerTest {
     return ImmutableAgentInstanceRecordValue.builder()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(300L)
+        .withElementInstanceKeys(List.of(200L, 300L))
         .withElementId("myElement")
         .withProcessInstanceKey(100L)
         .withBpmnProcessId("myProcess")
