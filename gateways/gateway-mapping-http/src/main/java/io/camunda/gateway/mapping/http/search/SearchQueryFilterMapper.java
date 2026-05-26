@@ -1542,6 +1542,15 @@ public class SearchQueryFilterMapper {
             .map(elementInstanceKeyMapper)
             .forEach(builder::elementInstanceKeyOperations);
       }
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getProcessDefinitionVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::versionTagOperations);
     }
 
     return validationErrors.isEmpty()

@@ -246,6 +246,18 @@ components:
             items:
               allOf:
                 - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        processDefinitionId:
+          description: The BPMN process ID of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        processDefinitionVersion:
+          description: The version of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        processDefinitionVersionTag:
+          description: The version tag of the process definition associated with this agent instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     AgentInstanceSearchQueryResult:
       description: Agent instance search response.
