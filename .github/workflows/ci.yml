@@ -208,11 +208,17 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # gradle action is not yet allowed
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e #v6.1.0
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          gradle-version: '9.5.0'
-          cache-provider: basic
+          # Allow cache writes on main and on PRs explicitly labeled for Gradle build iteration.
+          cache-read-only: >-
+            ${{
+              github.ref != 'refs/heads/main' &&
+              (
+                github.event_name != 'pull_request' ||
+                !contains(github.event.pull_request.labels.*.name, 'gradle-build')
+              )
+            }}
       - run: ./gradlew assemble --no-daemon
       - name: Observe build status
         if: always()
