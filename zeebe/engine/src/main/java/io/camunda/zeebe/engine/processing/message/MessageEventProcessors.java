@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -155,6 +156,20 @@ public final class MessageEventProcessors {
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REQUEST,
+            new MessageStartProcessInstanceRequestProcessor(
+                startEventSubscriptionState,
+                elementInstanceState,
+                bannedInstanceState,
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors.eventTriggerBehavior(),
+                bpmnBehaviors.stateBehavior(),
+                subscriptionCommandSender,
+                keyGenerator,
+                writers))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),

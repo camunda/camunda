@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -111,6 +112,7 @@ public final class EventAppliers implements EventApplier {
     registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
+    registerMessageStartProcessInstanceRequestAppliers();
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
@@ -495,6 +497,17 @@ public final class EventAppliers implements EventApplier {
         MessageStartEventSubscriptionIntent.DELETED,
         new MessageStartEventSubscriptionDeletedApplier(
             state.getMessageStartEventSubscriptionState()));
+  }
+
+  /**
+   * Acknowledgement event for the cross-partition {@code MessageStartProcessInstanceRequest}
+   * handshake on {@code P_B}; the request itself has no state effect (state is touched by the
+   * triggered process-instance and, in later commits, by the dedup CFs), so the applier is a no-op.
+   * A single V1 applier is appropriate here per the versioned-applier convention because the intent
+   * is introduced together with this feature and has no prior stream history to replay.
+   */
+  private void registerMessageStartProcessInstanceRequestAppliers() {
+    register(MessageStartProcessInstanceRequestIntent.REQUESTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {
