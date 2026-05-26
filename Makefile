@@ -25,3 +25,24 @@ vscode-settings-sync: ## Merge repository settings with user's VS Code settings
 
 .PHONY: vscode-sync-all
 vscode-sync-all: vscode-mcp-sync vscode-settings-sync ## Sync both MCP and settings configurations
+
+#
+# claude sync targets
+#
+.PHONY: claude-mcp-sync
+claude-mcp-sync: ## Merge repository MCP configuration with user's Claude .mcp.json
+	@echo "Syncing Claude MCP configuration for this repository..."
+	@chmod +x ./scripts/vscode-config-sync/sync-claude-mcp.sh
+	@./scripts/vscode-config-sync/sync-claude-mcp.sh
+
+.PHONY: claude-settings-sync
+claude-settings-sync: ## Merge repository policy into user's .claude/settings.json
+	@echo "Syncing Claude settings for this repository..."
+	@chmod +x ./scripts/vscode-config-sync/sync-claude-settings.sh
+	@./scripts/vscode-config-sync/sync-claude-settings.sh
+
+.PHONY: claude-sync-all
+claude-sync-all: claude-mcp-sync claude-settings-sync ## Sync all Claude configurations
+
+.PHONY: ai-sync-all
+ai-sync-all: vscode-sync-all claude-sync-all ## Sync all AI assistant configurations (VS Code + Claude)
