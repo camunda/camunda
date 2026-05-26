@@ -18,10 +18,12 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import org.jspecify.annotations.Nullable;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
@@ -45,7 +47,7 @@ public class SegmentedJournalBuilder {
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
   private int partitionId = DEFAULT_PARTITION_ID;
 
-  private JournalMetaStore journalMetaStore;
+  private @Nullable JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
   private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
@@ -169,6 +171,7 @@ public class SegmentedJournalBuilder {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
+    final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
     final var segmentsManager =
         new SegmentsManager(
             journalIndex,
@@ -177,8 +180,8 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            journalMetaStore);
+            metaStore);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
   }
 }

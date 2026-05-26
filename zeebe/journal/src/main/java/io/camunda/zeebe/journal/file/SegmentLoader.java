@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
@@ -217,7 +219,11 @@ final class SegmentLoader {
   }
 
   private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) {
-    final var available = segmentPath.getParent().toFile().getUsableSpace();
+    final var parent =
+        requireNonNull(
+            segmentPath.getParent(),
+            () -> String.format("Expected file %s to have a parent but it was null", segmentPath));
+    final var available = parent.toFile().getUsableSpace();
     final var required = Math.max(maxSegmentSize, minFreeDiskSpace);
     if (available < required) {
       throw new JournalException.OutOfDiskSpace(

@@ -17,6 +17,7 @@
 package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
@@ -34,6 +35,7 @@ import java.util.OptionalLong;
 import java.util.SortedMap;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -262,7 +264,7 @@ public final class SegmentedJournal implements Journal {
    */
   Segment getFirstSegment() {
     assertOpen();
-    return segments.getFirstSegment();
+    return requireNonNull(segments.getFirstSegment(), "journal has no first segment");
   }
 
   /**
@@ -272,7 +274,7 @@ public final class SegmentedJournal implements Journal {
    */
   Segment getLastSegment() {
     assertOpen();
-    return segments.getLastSegment();
+    return requireNonNull(segments.getLastSegment(), "journal has no last segment");
   }
 
   /**
@@ -281,7 +283,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The segment index with which to look up the next segment.
    * @return The next segment for the given index.
    */
-  Segment getNextSegment(final long index) {
+  @Nullable Segment getNextSegment(final long index) {
     return segments.getNextSegment(index);
   }
 
@@ -291,7 +293,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The index for which to return the segment.
    * @throws IllegalStateException if the segment manager is not open
    */
-  Segment getSegment(final long index) {
+  @Nullable Segment getSegment(final long index) {
     assertOpen();
     return segments.getSegment(index);
   }
