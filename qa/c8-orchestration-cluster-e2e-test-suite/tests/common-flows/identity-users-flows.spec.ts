@@ -142,7 +142,14 @@ test.describe('Identity User Flows', () => {
         await verifyAccess(page, shouldHaveAccess, appName);
       } catch (e) {
         const message = String(e);
-        if (appName && message.includes('net::ERR_ABORTED')) {
+        // Retry on transient navigation errors: ERR_ABORTED (network-level) or
+        // "interrupted by another navigation" (auth redirect race — the app
+        // briefly redirects to identity/users before authorization propagates).
+        if (
+          appName &&
+          (message.includes('net::ERR_ABORTED') ||
+            message.includes('interrupted by another navigation'))
+        ) {
           await page.waitForTimeout(1000);
           await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/`, {
             waitUntil: 'domcontentloaded',

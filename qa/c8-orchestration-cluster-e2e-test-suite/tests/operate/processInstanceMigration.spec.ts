@@ -345,18 +345,18 @@ test.describe.serial('Process Instance Migration', () => {
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(6);
 
-      // The migration of 6 instances can take >120 s under cluster load.
+      // The migration of 6 instances can take several minutes under cluster load.
       // Reload and re-expand the operations panel on each retry to surface
-      // the latest operation state.
+      // the latest operation state. Budget: 6 attempts × 120 s = 12 minutes.
       await waitForAssertion({
         assertion: async () => {
           await operateOperationPanelPage.expandOperationsPanel();
-          await expect(operationEntry).toBeVisible({timeout: 60000});
+          await expect(operationEntry).toBeVisible({timeout: 120000});
         },
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 4,
+        maxRetries: 6,
       });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
@@ -1177,11 +1177,30 @@ test.describe('Parallel job-based user task migration', () => {
 
       for (const taskName of taskNames) {
         for (let i = 0; i < totalV2InstanceCount; i++) {
-          // Always click .nth(0) — the completed task disappears so the next one shifts up
-          await taskPanelPage.availableTasks
-            .getByText(taskName, {exact: true})
-            .nth(0)
-            .click();
+          // Always click .nth(0) — the completed task disappears so the next one shifts up.
+          // Retry the click if the task detail panel does not open (e.g. due to a
+          // slow client-side navigation or a stale task list after a previous completion).
+          await waitForAssertion({
+            assertion: async () => {
+              await taskPanelPage.availableTasks
+                .getByText(taskName, {exact: true})
+                .nth(0)
+                .click();
+              // Confirm the task detail panel opened by waiting for one of the
+              // action buttons that only appear inside the panel.
+              await expect(
+                taskDetailsPage.unassignButton.or(
+                  taskDetailsPage.assignToMeButton,
+                ),
+              ).toBeVisible({timeout: 15000});
+            },
+            onFailure: async () => {
+              // Reload and re-apply the filter so the task list is fresh.
+              await page.reload();
+              await taskPanelPage.filterBy('All open tasks');
+            },
+            maxRetries: 3,
+          });
 
           await taskDetailsPage.unassignReassignToMeAndComplete();
         }

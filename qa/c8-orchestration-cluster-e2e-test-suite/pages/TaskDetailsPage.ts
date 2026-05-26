@@ -428,8 +428,16 @@ class TaskDetailsPage {
   }
 
   async unassignReassignToMeAndComplete(): Promise<void> {
-    // Unassign from the current assignee
-    await this.clickUnassignButton();
+    // Unassign from the current assignee only if the Unassign button is
+    // visible. Tasks migrated from job-based to Camunda user tasks may be
+    // assigned to a hardcoded assignee (not the logged-in user), in which
+    // case only "Assign to me" is available, not "Unassign".
+    const isUnassignVisible = await this.unassignButton
+      .isVisible({timeout: 2000})
+      .catch(() => false);
+    if (isUnassignVisible) {
+      await this.clickUnassignButton();
+    }
 
     // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
