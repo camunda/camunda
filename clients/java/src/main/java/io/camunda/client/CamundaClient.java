@@ -107,6 +107,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
@@ -3546,4 +3547,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for searching global task listeners
    */
   GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
+
+  /**
+   * Creates a request to fetch an agent instance by its key.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newAgentInstanceGetRequest(agentInstanceKey)
+   *       .send();
+   * </pre>
+   *
+   * @param agentInstanceKey the key of the agent instance to retrieve
+   * @return a builder for fetching an agent instance
+   */
+  AgentInstanceGetRequest newAgentInstanceGetRequest(long agentInstanceKey);
 }
