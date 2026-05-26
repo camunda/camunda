@@ -16,18 +16,36 @@ public final class ReplicationLogStatusProviderFactory {
 
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationStatusMapper replicationStatusMapper;
+  private final AuroraDatabaseDetector auroraDatabaseDetector;
+
+  private volatile ReplicationLogStatusProvider provider;
 
   public ReplicationLogStatusProviderFactory(
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final ReplicationStatusMapper replicationStatusMapper) {
+      final ReplicationStatusMapper replicationStatusMapper,
+      final AuroraDatabaseDetector auroraDatabaseDetector) {
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.replicationStatusMapper = replicationStatusMapper;
+    this.auroraDatabaseDetector = auroraDatabaseDetector;
   }
 
   public ReplicationLogStatusProvider create() {
+    final var existingProvider = provider;
+    if (existingProvider != null) {
+      return existingProvider;
+    }
+
+    synchronized (this) {
+      if (provider == null) {
+        provider = createProvider();
+      }
+      return provider;
+    }
+  }
+
+  private ReplicationLogStatusProvider createProvider() {
     return switch (vendorDatabaseProperties.databaseId()) {
-      case POSTGRESQL_DATABASE_ID ->
-          new PostgresReplicationLogStatusProvider(replicationStatusMapper);
+      case POSTGRESQL_DATABASE_ID -> createPostgresqlProvider();
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLogStatusProvider for null database id");
@@ -36,5 +54,13 @@ public final class ReplicationLogStatusProviderFactory {
               "Cannot create ReplicationLogStatusProvider for unknown database id "
                   + vendorDatabaseProperties.databaseId());
     };
+  }
+
+  private ReplicationLogStatusProvider createPostgresqlProvider() {
+    if (auroraDatabaseDetector.isAurora()) {
+      return new AuroraPostgresqlReplicationLogStatusProvider(replicationStatusMapper);
+    }
+
+    return new PostgresReplicationLogStatusProvider(replicationStatusMapper);
   }
 }

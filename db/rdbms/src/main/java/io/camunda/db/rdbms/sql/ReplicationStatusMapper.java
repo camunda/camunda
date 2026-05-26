@@ -15,4 +15,8 @@ public interface ReplicationStatusMapper {
   long getCurrentLogStatus();
 
   List<ReplicationLogStatus> getReplicationStatus();
+
+  long getCurrentAuroraPostgresqlLogStatus();
+
+  List<ReplicationLogStatus> getAuroraPostgresqlReplicationStatus();
 }

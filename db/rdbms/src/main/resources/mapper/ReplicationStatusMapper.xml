@@ -31,5 +31,20 @@
     WHERE pid IS NOT NULL;
   </select>
 
+  <select id="getCurrentAuroraPostgresqlLogStatus" resultType="java.lang.Long" databaseId="postgresql">
+    SELECT COALESCE(MAX(DURABLE_LSN), 0)::bigint AS last_lsn
+    FROM aurora_global_db_instance_status()
+    WHERE SESSION_ID = 'MASTER_SESSION_ID'
+  </select>
+
+  <select id="getAuroraPostgresqlReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="postgresql">
+    SELECT
+      COALESCE(DURABLE_LSN, 0)::bigint AS logStatus,
+      COALESCE(SERVER_ID, SESSION_ID) AS replicaId,
+      COALESCE(VISIBILITY_LAG_IN_MSEC, 0)::bigint AS replicationLagMs
+    FROM aurora_global_db_instance_status()
+    WHERE SESSION_ID != 'MASTER_SESSION_ID'
+  </select>
+
 </mapper>
 

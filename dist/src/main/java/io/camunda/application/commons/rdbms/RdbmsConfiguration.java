@@ -13,6 +13,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.replication.AuroraDatabaseDetector;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
@@ -399,9 +400,12 @@ public class RdbmsConfiguration {
   @Bean
   public ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory(
       final VendorDatabaseProperties vendorDatabaseProperties,
+      final DataSource dataSource,
       final ReplicationStatusMapper replicationStatusMapper) {
     return new ReplicationLogStatusProviderFactory(
-        vendorDatabaseProperties, replicationStatusMapper);
+        vendorDatabaseProperties,
+        replicationStatusMapper,
+        new AuroraDatabaseDetector(dataSource, vendorDatabaseProperties));
   }
 
   @Bean
