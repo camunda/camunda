@@ -267,17 +267,41 @@ export class IdentityAuthorizationsPage {
 
     // Combobox path: click to open, type to filter (server-driven search),
     // then wait for the menu item to appear before clicking.
+    // The search is debounced + server-driven and can be slow under load, so
+    // we retry the fill every 10 s up to 6 times (60 s total) to ensure the
+    // search request is actually triggered.
     await this.createAuthorizationOwnerComboBox.click();
     await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
     const ownerMenuOption = this.createAuthorizationModal
       .locator('.cds--list-box__menu-item')
       .filter({hasText: authorization.ownerId})
       .first();
-    try {
-      await expect(ownerMenuOption).toBeVisible({timeout: 60000});
-      await ownerMenuOption.click({timeout: 20000});
-    } catch (error) {
-      console.log('Error while selecting owner from menu: ' + error);
+
+    let optionClicked = false;
+    const maxSearchAttempts = 6;
+    for (
+      let attempt = 0;
+      attempt < maxSearchAttempts && !optionClicked;
+      attempt++
+    ) {
+      if (await ownerMenuOption.isVisible()) {
+        await ownerMenuOption.click({timeout: 10000});
+        optionClicked = true;
+      } else if (attempt < maxSearchAttempts - 1) {
+        // Re-trigger the server-side search by clearing and re-filling.
+        console.log(
+          `Owner menu option not visible on attempt ${attempt + 1}, re-triggering search...`,
+        );
+        await this.createAuthorizationOwnerComboBox.fill('');
+        await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+        await this.page.waitForTimeout(10000);
+      }
+    }
+
+    if (!optionClicked) {
+      console.log(
+        'Owner menu option did not appear after retries; trying role-option fallback.',
+      );
       // Fallback: try clicking a role option directly in case it rendered differently.
       try {
         await this.createAuthorizationOwnerOption(authorization.ownerId).click({

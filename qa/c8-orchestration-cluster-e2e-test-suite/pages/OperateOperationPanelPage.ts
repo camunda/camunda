@@ -155,14 +155,12 @@ export class OperateOperationPanelPage {
     const hasCollapseButton = await this.collapseButton.isVisible();
     if (hasCollapseButton) {
       await this.collapseButton.click();
+      // Wait for the Collapse button to disappear — this is the reliable
+      // indicator that the panel has closed. The collapsed-panel sentinel
+      // (`getByTestId('collapsed-panel')`) is NOT reliable: it may never
+      // appear after a click, causing indefinite waits.
+      await expect(this.collapseButton).toBeHidden({timeout: 30000});
     }
-    // Wait for the collapsed-panel sentinel to appear — this also covers the
-    // case where the page was just reloaded and the panel starts collapsed but
-    // hasn't rendered yet. 30 s gives enough headroom after a page.reload().
-    await this.collapsedOperationsPanel.waitFor({
-      state: 'visible',
-      timeout: 30000,
-    });
     // Expand (or re-expand) the panel.
     await this.expandOperationsButton.click({timeout: 30000});
     await this.operationList.waitFor({state: 'visible', timeout: 30000});

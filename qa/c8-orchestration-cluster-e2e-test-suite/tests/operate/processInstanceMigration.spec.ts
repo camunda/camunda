@@ -1212,6 +1212,11 @@ test.describe('Parallel job-based user task migration', () => {
                   taskDetailsPage.assignToMeButton,
                 ),
               ).toBeVisible({timeout: 30000});
+              // Include the full assign+complete cycle in the retry scope so
+              // that if the panel renders but the Assign-to-me button isn't
+              // immediately available (Tasklist v2 async re-render after
+              // unassign), the whole cycle is retried from the task click.
+              await taskDetailsPage.unassignReassignToMeAndComplete();
             },
             onFailure: async () => {
               // Reload and re-apply the filter so the task list is fresh.
@@ -1220,8 +1225,6 @@ test.describe('Parallel job-based user task migration', () => {
             },
             maxRetries: 5,
           });
-
-          await taskDetailsPage.unassignReassignToMeAndComplete();
         }
       }
 

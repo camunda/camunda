@@ -436,7 +436,7 @@ class TaskDetailsPage {
     // assigned to a hardcoded assignee (not the logged-in user), in which
     // case only "Assign to me" is available, not "Unassign".
     const isUnassignVisible = await this.unassignButton
-      .isVisible({timeout: 2000})
+      .isVisible({timeout: 15000})
       .catch(() => false);
     if (isUnassignVisible) {
       await this.clickUnassignButton();
