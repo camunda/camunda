@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -93,6 +94,7 @@ import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -253,6 +255,20 @@ public final class RecordingExporter implements Exporter {
   public static MessageStartEventSubscriptionRecordStream messageStartEventSubscriptionRecords(
       final MessageStartEventSubscriptionIntent intent) {
     return messageStartEventSubscriptionRecords().withIntent(intent);
+  }
+
+  public static MessageStartProcessInstanceRequestRecordStream
+      messageStartProcessInstanceRequestRecords() {
+    return new MessageStartProcessInstanceRequestRecordStream(
+        records(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestRecordValue.class));
+  }
+
+  public static MessageStartProcessInstanceRequestRecordStream
+      messageStartProcessInstanceRequestRecords(
+          final MessageStartProcessInstanceRequestIntent intent) {
+    return messageStartProcessInstanceRequestRecords().withIntent(intent);
   }
 
   public static MessageCorrelationRecordStream messageCorrelationRecords() {
