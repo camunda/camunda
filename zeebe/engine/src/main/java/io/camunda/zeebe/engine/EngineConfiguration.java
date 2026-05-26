@@ -66,6 +66,22 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL =
       Duration.ofSeconds(30);
   public static final int DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT = 100;
+
+  /**
+   * Interval at which the pending message-start ask scheduler runs to check for asks that need
+   * retry.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_CHECK_INTERVAL = Duration.ofSeconds(10);
+
+  /**
+   * How long to wait after sending a cross-partition message-start ask before considering it
+   * eligible for retry. Correctness does not depend on this value relative to any window: every
+   * retry re-emits the same {@code messageDeadline} carried by the original ask, so the {@code P_B}
+   * dedup row that bounds re-replies shares the buffered message's lifetime on {@code P_K}. This
+   * interval only controls retry cadence.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
+
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
@@ -129,6 +145,8 @@ public final class EngineConfiguration {
       DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL;
   private int messageStartDedupTombstoneSweepBatchLimit =
       DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT;
+  private Duration messageStartAskCheckInterval = DEFAULT_MESSAGE_START_ASK_CHECK_INTERVAL;
+  private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -507,6 +525,34 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessageStartDedupTombstoneSweepBatchLimit(
       final int messageStartDedupTombstoneSweepBatchLimit) {
     this.messageStartDedupTombstoneSweepBatchLimit = messageStartDedupTombstoneSweepBatchLimit;
+    return this;
+  }
+
+  /**
+   * Interval at which the pending message-start ask scheduler runs to check for asks that need
+   * retry.
+   */
+  public Duration getMessageStartAskCheckInterval() {
+    return messageStartAskCheckInterval;
+  }
+
+  public EngineConfiguration setMessageStartAskCheckInterval(
+      final Duration messageStartAskCheckInterval) {
+    this.messageStartAskCheckInterval = messageStartAskCheckInterval;
+    return this;
+  }
+
+  /**
+   * How long to wait after sending a cross-partition message-start ask before considering it
+   * eligible for retry.
+   */
+  public Duration getMessageStartAskRetryInterval() {
+    return messageStartAskRetryInterval;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryInterval(
+      final Duration messageStartAskRetryInterval) {
+    this.messageStartAskRetryInterval = messageStartAskRetryInterval;
     return this;
   }
 

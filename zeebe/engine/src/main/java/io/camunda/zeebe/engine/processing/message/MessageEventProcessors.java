@@ -193,6 +193,13 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageStartDedupTombstoneSweepScheduler(
                 config.getMessageStartDedupTombstoneSweepInterval(),
-                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()));
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
+        .withListener(
+            new PendingMessageStartAskCheckScheduler(
+                subscriptionCommandSender,
+                processingState.getMessageStartProcessInstanceAskState(),
+                routingInfo,
+                config::getMessageStartAskRetryInterval,
+                config.getMessageStartAskCheckInterval()));
   }
 }

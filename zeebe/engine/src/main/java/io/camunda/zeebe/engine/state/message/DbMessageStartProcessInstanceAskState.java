@@ -109,6 +109,21 @@ public final class DbMessageStartProcessInstanceAskState
   }
 
   @Override
+  public void removeAllByMessageKey(final long messageKey) {
+    // messageKey is the first component of the composite key, so a prefix scan visits all entries
+    // for this message regardless of processDefinitionKey.
+    this.messageKey.wrapLong(messageKey);
+    final List<Long> processDefinitionKeysToRemove = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        this.messageKey,
+        (final DbCompositeKey<DbLong, DbLong> k, final MessageStartProcessInstanceAsk v) ->
+            processDefinitionKeysToRemove.add(k.second().getValue()));
+    for (final long pdk : processDefinitionKeysToRemove) {
+      remove(messageKey, pdk);
+    }
+  }
+
+  @Override
   public void updateLastSentTime(
       final long messageKey, final long processDefinitionKey, final long lastSentTime) {
     transientState.update(new PendingAskKey(messageKey, processDefinitionKey), lastSentTime);

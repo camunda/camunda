@@ -441,7 +441,10 @@ public final class EventAppliers implements EventApplier {
 
   private void registerMessageAppliers(final MutableProcessingState state) {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
-    register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+    register(
+        MessageIntent.EXPIRED,
+        new MessageExpiredApplier(
+            state.getMessageState(), state.getMessageStartProcessInstanceAskState()));
   }
 
   private void registerMessageCorrelationAppliers(final MutableProcessingState state) {

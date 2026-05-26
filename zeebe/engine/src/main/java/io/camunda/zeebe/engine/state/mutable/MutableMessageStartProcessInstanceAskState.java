@@ -33,4 +33,16 @@ public interface MutableMessageStartProcessInstanceAskState
    * @param processDefinitionKey the key of the process definition the ask targets
    */
   void remove(long messageKey, long processDefinitionKey);
+
+  /**
+   * Removes all pending asks for the given {@code messageKey}, regardless of process definition.
+   * Called from the message-expire applier so that retries never outlive the buffered message they
+   * refer to: when the message TTLs off on {@code P_K}, the dedup row on {@code P_B} (whose
+   * deletion deadline equals the message's own deadline) is also already expired and will be swept,
+   * so any retry would create a duplicate process instance. Removing the pending-ask here ensures
+   * the retry is never emitted.
+   *
+   * @param messageKey the key of the expired buffered message
+   */
+  void removeAllByMessageKey(long messageKey);
 }

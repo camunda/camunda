@@ -51,6 +51,24 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
+  public void shouldRemoveAllPendingAsksForGivenMessageKey() {
+    // given two pending asks for the same messageKey targeting different process definitions, and
+    // one pending ask for a different messageKey that must survive
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 100L, "b1", "p1")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(7L, 200L, "b2", "p2")));
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(8L, 300L, "b3", "p3")));
+
+    // when
+    state.removeAllByMessageKey(7L);
+
+    // then
+    assertThat(state.get(7L, 100L)).isNull();
+    assertThat(state.get(7L, 200L)).isNull();
+    assertThat(state.get(8L, 300L)).isNotNull();
+  }
+
+  @Test
   public void shouldVisitAllPendingAsks() {
     // given
     final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
