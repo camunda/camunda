@@ -27,6 +27,8 @@ public interface ScheduledTaskState {
 
   MessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
 
+  MessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
+
   UserTaskState getUserTaskState();
 
   BatchOperationState getBatchOperationState();

@@ -284,12 +284,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // metadata in a command distribuation record
   COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL),
 
-  // dedup state for the cross-partition message-start handshake on P_B; forward CF is keyed by
+  // dedup state for the cross-partition message-start handshake on P_B; keyed by
   // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey and a deletion
   // deadline (epoch millis) set once at insert time as `now + tombstoneWindow`. Lookups treat
   // `deletionDeadline <= now` as a miss; a scheduled sweeper removes such rows. PI lifecycle is
   // intentionally not a signal — the deadline bounds P_K's retry window, not the PI's lifetime.
-  CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL);
+  CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL),
+
+  // Pending cross-partition message-start asks on P_K. Keyed by (messageKey, processDefinitionKey).
+  // Stores the full ask payload so retries can resend without re-reading the original message.
+  // Used in conjunction with a transient last-sent-timestamp tracker that is rebuilt from this CF
+  // on recovery — entries exist iff an ask is outstanding; cleared when any reply is applied.
+  CROSS_PARTITION_MESSAGE_START_ASK(146, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
