@@ -212,7 +212,7 @@ final class ZeebeIntegrationExtension
     // and not when the broker is shutdown. this allows to introspect or move the data around even
     // after stopping a broker
     if (resource.app() instanceof final TestStandaloneBroker broker) {
-      final var directory = createManagedDirectory(store, "broker-" + broker.nodeId().id());
+      final var directory = createManagedDirectory(store, workingDirectoryName(broker.nodeId()));
       setWorkingDirectory(directory, broker.nodeId(), broker);
     }
 
@@ -256,7 +256,7 @@ final class ZeebeIntegrationExtension
     // With fixed node IDs, each broker gets its own unique directory.
     final Path workingDirectory;
     if (broker.unifiedConfig().getCluster().getNodeIdProvider().getType() == Type.FIXED) {
-      workingDirectory = directory.resolve("broker-" + id.id());
+      workingDirectory = directory.resolve(workingDirectoryName(id));
       try {
         Files.createDirectory(workingDirectory);
       } catch (final IOException e) {
@@ -279,6 +279,10 @@ final class ZeebeIntegrationExtension
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private String workingDirectoryName(final MemberId id) {
+    return "broker-" + id.id().replace("/", "-");
   }
 
   private ClusterResource asClusterResource(final Object testInstance, final Field field) {
