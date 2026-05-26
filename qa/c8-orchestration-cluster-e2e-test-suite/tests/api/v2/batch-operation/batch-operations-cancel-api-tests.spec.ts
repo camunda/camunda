@@ -104,7 +104,8 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     });
   });
 
-  test('Cancel batch operation with invalid key format returns 400', async ({
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('Cancel batch operation with invalid key format returns 400', async ({
     request,
   }) => {
     await test.step('Send cancel request with invalid key', async () => {

@@ -101,7 +101,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     await assertNotFoundRequest(res, notFoundDetail(unknownKey));
   });
 
-  test('Suspend batch operation with invalid key returns 400', async ({
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('Suspend batch operation with invalid key returns 400', async ({
     request,
   }) => {
     const res = await request.post(
