@@ -1016,19 +1016,28 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public void reloadConfiguration(final ApplicationContext context) {
     try {
       esWithTransportOptions()._transport().close();
-      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-      esClient =
-          ElasticsearchClientBuilder.build(
-              configurationService, objectMapper, new PluginRepository());
-      restClient =
-          ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
-      indexNameService = context.getBean(OptimizeIndexNameService.class);
-      transportOptionsProvider = new TransportOptionsProvider(configurationService);
-      elasticsearchAsyncClient =
-          new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+    // Close the standalone restClient separately; its file descriptors (selectors/sockets) are not
+    // released by the transport close above because it is a distinct instance used for low-level
+    // HTTP calls. Leaking it causes "Too many open files" when reloadConfiguration is called
+    // repeatedly (e.g. once per test method via @BeforeEach configureZeebeImport).
+    try {
+      restClient.close();
+    } catch (final IOException e) {
+      LOG.warn("Failed to close old RestClient during configuration reload", e);
+    }
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    esClient =
+        ElasticsearchClientBuilder.build(
+            configurationService, objectMapper, new PluginRepository());
+    restClient =
+        ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
+    indexNameService = context.getBean(OptimizeIndexNameService.class);
+    transportOptionsProvider = new TransportOptionsProvider(configurationService);
+    elasticsearchAsyncClient =
+        new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
   }
 
   public final <T> SearchResponse<T> searchWithoutPrefixing(
