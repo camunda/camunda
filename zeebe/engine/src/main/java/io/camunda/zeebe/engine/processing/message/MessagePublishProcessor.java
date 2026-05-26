@@ -98,7 +98,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             commandSender,
             elementInstanceState,
             bannedInstanceState,
-            businessIdUniquenessEnabled);
+            businessIdUniquenessEnabled,
+            routingInfo,
+            partitionId);
   }
 
   @Override

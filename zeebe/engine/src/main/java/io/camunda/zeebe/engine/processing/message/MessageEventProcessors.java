@@ -155,7 +155,9 @@ public final class MessageEventProcessors {
                 authCheckBehavior,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                routingInfo,
+                partitionId))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,
@@ -185,7 +187,7 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.START,
-            new MessageStartProcessInstanceStartReplyProcessor(writers.state()))
+            new MessageStartProcessInstanceStartReplyProcessor(writers.state(), messageState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,

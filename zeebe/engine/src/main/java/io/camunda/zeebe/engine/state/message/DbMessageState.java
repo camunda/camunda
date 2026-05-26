@@ -118,6 +118,22 @@ public final class DbMessageState implements MutableMessageState {
       activeProcessInstancesByCorrelationKeyColumnFamily;
 
   /**
+   * <pre> bpmn process id | correlation key -> businessId
+   *
+   * Parallel marker CF that flags a process-correlation-key lock entry as cross-partition: the
+   * holding PI was created on {@code P_B = hash(businessId)} via the cross-partition message-start
+   * handshake, not locally on {@code P_K}. The value stores the holder's {@code businessId} so the
+   * pull-based release loop (later increment) can identify which {@code P_B} to query without
+   * having to materialise it on every lock entry. Local-PI lock entries are intentionally absent
+   * from this CF — their presence in the existing lock CF, paired with absence here, is the
+   * discriminator that local cleanup paths use to skip cross-partition entries.
+   */
+  private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbString>
+      crossPartitionStartLockBusinessIdColumnFamily;
+
+  private final DbString crossPartitionLockBusinessId;
+
+  /**
    * <pre> process instance key -> correlation key
    *
    * get correlation key by process instance key
@@ -199,6 +215,14 @@ public final class DbMessageState implements MutableMessageState {
             transactionContext,
             bpmnProcessIdCorrelationKey,
             DbNil.INSTANCE);
+
+    crossPartitionLockBusinessId = new DbString();
+    crossPartitionStartLockBusinessIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_LOCK_BUSINESS_ID,
+            transactionContext,
+            bpmnProcessIdCorrelationKey,
+            crossPartitionLockBusinessId);
 
     processInstanceKey = new DbLong();
     processInstanceCorrelationKeyColumnFamily =
@@ -289,6 +313,25 @@ public final class DbMessageState implements MutableMessageState {
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
     activeProcessInstancesByCorrelationKeyColumnFamily.deleteExisting(bpmnProcessIdCorrelationKey);
+  }
+
+  @Override
+  public void putCrossPartitionStartLockBusinessId(
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+    ensureNotNullOrEmpty("business id", businessId);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    crossPartitionLockBusinessId.wrapBuffer(businessId);
+    // upsert because cross-partition STARTED replies can be retried (P_B's success-only dedup
+    // re-replies the same processInstanceKey); writing the same businessId twice is a no-op rather
+    // than an error.
+    crossPartitionStartLockBusinessIdColumnFamily.upsert(
+        bpmnProcessIdCorrelationKey, crossPartitionLockBusinessId);
   }
 
   @Override

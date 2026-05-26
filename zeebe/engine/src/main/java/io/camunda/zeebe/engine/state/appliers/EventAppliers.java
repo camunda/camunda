@@ -573,12 +573,16 @@ public final class EventAppliers implements EventApplier {
    */
   private void registerMessageStartProcessInstanceRequestAppliers(
       final MutableProcessingState state) {
-    register(MessageStartProcessInstanceRequestIntent.REQUESTED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartProcessInstanceRequestIntent.REQUESTED,
+        new MessageStartProcessInstanceRequestedV1Applier(
+            state.getPartitionId(), state.getMessageStartProcessInstanceAskState()));
     register(
         MessageStartProcessInstanceRequestIntent.STARTED,
         new MessageStartProcessInstanceStartedV1Applier(
             state.getMessageStartProcessInstanceDedupState(),
-            state.getMessageStartProcessInstanceAskState()));
+            state.getMessageStartProcessInstanceAskState(),
+            state.getMessageState()));
     register(
         MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
         new MessageStartProcessInstanceTombstoneDeletedV1Applier(
