@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.exporter.utils.NdJsonSizeUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -129,13 +128,10 @@ class ElasticsearchPayloadSizeIT {
 
   private BulkRequest buildBulkRequest(final int targetMB) {
     final var bulkRequestBuilder = new BulkRequest.Builder().refresh(Refresh.True);
-    final var batchRequest =
-        new ElasticsearchBatchRequest(
-            esClient, bulkRequestBuilder, new ElasticsearchScriptBuilder());
-
     for (int i = 0; i < targetMB; i++) {
       final var entity = new LargeEntity("test" + "-" + targetMB + "-" + i, ONE_MB_PAYLOAD);
-      batchRequest.addWithId(TEST_INDEX, entity.getId(), entity);
+      bulkRequestBuilder.operations(
+          op -> op.index(idx -> idx.index(TEST_INDEX).id(entity.getId()).document(entity)));
     }
     return bulkRequestBuilder.build();
   }

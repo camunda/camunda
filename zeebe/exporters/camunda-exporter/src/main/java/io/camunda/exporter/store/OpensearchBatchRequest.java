@@ -54,6 +54,12 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest withMaxBytes(final long maxBulkBytes) {
+    // no-op: Opensearch implementation does not currently chunk by bytes
+    return this;
+  }
+
+  @Override
   public BatchRequest add(final String index, final ExporterEntity entity) {
     return addWithId(index, entity.getId(), entity);
   }
