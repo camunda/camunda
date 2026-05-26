@@ -114,6 +114,11 @@ public class Worker {
         //
         // On the next job/message published the chances are (partition count - 1 / partition
         // count) that we hit another partition where it works without issues.
+        //
+        // Apply the same completion delay as the success path before returning. Without it the
+        // handler returns immediately, the client re-polls at full speed, and we keep hammering
+        // the struggling partition, defeating the time-out-and-retry strategy above.
+        addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
         return;
       }
     }
