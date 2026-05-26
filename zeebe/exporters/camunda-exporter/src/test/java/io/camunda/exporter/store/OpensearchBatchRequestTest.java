@@ -41,7 +41,6 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.transport.OpenSearchTransport;
-import org.opensearch.client.util.BinaryData;
 
 class OpensearchBatchRequestTest {
 
@@ -515,18 +514,7 @@ class OpensearchBatchRequestTest {
   }
 
   private void assertDocumentEquals(final Object actualDocument, final Object expectedDocument) {
-    assertThat(actualDocument).isInstanceOf(BinaryData.class);
-    final byte[] actualBytes = readAllBytes((BinaryData) actualDocument);
-    final byte[] expectedBytes = readAllBytes(BinaryData.of(expectedDocument, jsonpMapper));
-    assertThat(actualBytes).isEqualTo(expectedBytes);
-  }
-
-  private static byte[] readAllBytes(final BinaryData data) {
-    try (var in = data.asInputStream()) {
-      return in.readAllBytes();
-    } catch (final IOException e) {
-      throw new AssertionError("failed to read BinaryData", e);
-    }
+    assertThat(actualDocument).isEqualTo(expectedDocument);
   }
 
   private static Script realScript(final String source) {

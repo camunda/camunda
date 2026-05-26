@@ -12,7 +12,9 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import jakarta.json.stream.JsonGenerator;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +33,6 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.util.BinaryData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,10 +216,10 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   private void addIndexOp(
       final String index, final String id, final String routing, final ExporterEntity entity) {
-    final BinaryData binaryDoc = BinaryData.of(entity, jsonpMapper);
-    final IndexOperation<BinaryData> indexOp =
-        IndexOperation.of(i -> i.index(index).id(id).routing(routing).document(binaryDoc));
-    addOperation(BulkOperation.of(b -> b.index(indexOp)), binaryDoc.size());
+    final long sizeBytes = measureBytes(entity);
+    final IndexOperation<ExporterEntity> indexOp =
+        IndexOperation.of(i -> i.index(index).id(id).routing(routing).document(entity));
+    addOperation(BulkOperation.of(b -> b.index(indexOp)), sizeBytes);
   }
 
   private void addUpdateOp(
@@ -228,9 +229,19 @@ public class OpensearchBatchRequest implements BatchRequest {
       final Consumer<BinaryUpdateOperationWrapper> wrapperConfigurer) {
     final BinaryUpdateOperationWrapper wrapper = new BinaryUpdateOperationWrapper(jsonpMapper);
     wrapperConfigurer.accept(wrapper);
-    final UpdateOperation<BinaryData> updateOp =
-        wrapper.build(index, id, routing, UPDATE_RETRY_COUNT);
+    final UpdateOperation<Object> updateOp = wrapper.build(index, id, routing, UPDATE_RETRY_COUNT);
     addOperation(BulkOperation.of(b -> b.update(updateOp)), wrapper.payloadBytes());
+  }
+
+  private long measureBytes(final Object value) {
+    if (value == null) {
+      return 0L;
+    }
+    final CountingOutputStream out = new CountingOutputStream();
+    try (JsonGenerator generator = jsonpMapper.jsonProvider().createGenerator(out)) {
+      jsonpMapper.serialize(value, generator);
+    }
+    return out.count();
   }
 
   private void addDeleteOp(final String index, final String id, final String routing) {
@@ -355,6 +366,24 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   record SizedOperation(BulkOperation operation, long sizeBytes) {}
+
+  private static final class CountingOutputStream extends OutputStream {
+    private long count;
+
+    @Override
+    public void write(final int b) {
+      count++;
+    }
+
+    @Override
+    public void write(final byte[] b, final int off, final int len) {
+      count += len;
+    }
+
+    long count() {
+      return count;
+    }
+  }
 
   private record ErrorValues(List<String> indexes, List<String> ids) {}
 

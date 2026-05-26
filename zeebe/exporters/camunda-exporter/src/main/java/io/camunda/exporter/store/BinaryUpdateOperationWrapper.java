@@ -7,29 +7,45 @@
  */
 package io.camunda.exporter.store;
 
+import jakarta.json.stream.JsonGenerator;
+import java.io.OutputStream;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.util.BinaryData;
 
+/**
+ * Adapter for {@link UpdateOperation} that pre-measures the serialized payload size of the
+ * document/upsert fields so that {@link OpensearchBatchRequest} can chunk bulk requests by their
+ * actual on-the-wire NDJSON byte size.
+ *
+ * <p>Note: this is the opensearch-java 2.x compatible variant of the upstream wrapper introduced in
+ * #52536. The 2.x client does not expose {@code BinaryData} on bulk operations, so this wrapper
+ * keeps the original document/upsert objects intact (the OS transport serializes them at request
+ * time) and only performs a separate dry-run serialization through the {@link JsonpMapper} to
+ * compute their byte size.
+ */
 final class BinaryUpdateOperationWrapper {
 
   private final JsonpMapper jsonpMapper;
-  private BinaryData document;
-  private BinaryData upsert;
+  private Object document;
+  private Object upsert;
   private Script script;
+  private long documentBytes;
+  private long upsertBytes;
 
   BinaryUpdateOperationWrapper(final JsonpMapper jsonpMapper) {
     this.jsonpMapper = jsonpMapper;
   }
 
   BinaryUpdateOperationWrapper document(final Object value) {
-    document = BinaryData.of(value, jsonpMapper);
+    document = value;
+    documentBytes = measureBytes(value);
     return this;
   }
 
   BinaryUpdateOperationWrapper upsert(final Object value) {
-    upsert = BinaryData.of(value, jsonpMapper);
+    upsert = value;
+    upsertBytes = measureBytes(value);
     return this;
   }
 
@@ -39,17 +55,10 @@ final class BinaryUpdateOperationWrapper {
   }
 
   long payloadBytes() {
-    long total = 0L;
-    if (document != null) {
-      total += document.size();
-    }
-    if (upsert != null) {
-      total += upsert.size();
-    }
-    return total;
+    return documentBytes + upsertBytes;
   }
 
-  UpdateOperation<BinaryData> build(
+  UpdateOperation<Object> build(
       final String index, final String id, final String routing, final int retryOnConflict) {
     return UpdateOperation.of(
         b -> {
@@ -65,5 +74,34 @@ final class BinaryUpdateOperationWrapper {
           }
           return b;
         });
+  }
+
+  private long measureBytes(final Object value) {
+    if (value == null) {
+      return 0L;
+    }
+    final CountingOutputStream out = new CountingOutputStream();
+    try (JsonGenerator generator = jsonpMapper.jsonProvider().createGenerator(out)) {
+      jsonpMapper.serialize(value, generator);
+    }
+    return out.count();
+  }
+
+  private static final class CountingOutputStream extends OutputStream {
+    private long count;
+
+    @Override
+    public void write(final int b) {
+      count++;
+    }
+
+    @Override
+    public void write(final byte[] b, final int off, final int len) {
+      count += len;
+    }
+
+    long count() {
+      return count;
+    }
   }
 }

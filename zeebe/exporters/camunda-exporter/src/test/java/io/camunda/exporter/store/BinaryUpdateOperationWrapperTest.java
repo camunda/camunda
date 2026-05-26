@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.util.BinaryData;
 
 class BinaryUpdateOperationWrapperTest {
 
@@ -35,7 +34,7 @@ class BinaryUpdateOperationWrapperTest {
     final Map<String, Object> doc = Map.of("name", "alice", "age", 42);
     final BinaryUpdateOperationWrapper wrapper =
         new BinaryUpdateOperationWrapper(jsonpMapper).document(doc);
-    final UpdateOperation<BinaryData> op = wrapper.build("idx", "id-1", null, 3);
+    final UpdateOperation<Object> op = wrapper.build("idx", "id-1", null, 3);
 
     // when
     final String serialized = serialize(op);
@@ -58,7 +57,7 @@ class BinaryUpdateOperationWrapperTest {
     final Map<String, Object> upsert = Map.of("b", 2);
     final BinaryUpdateOperationWrapper wrapper =
         new BinaryUpdateOperationWrapper(jsonpMapper).document(doc).upsert(upsert);
-    final UpdateOperation<BinaryData> op = wrapper.build("idx", "id-1", "route-1", 3);
+    final UpdateOperation<Object> op = wrapper.build("idx", "id-1", "route-1", 3);
 
     // when
     final String serialized = serialize(op);
@@ -76,7 +75,7 @@ class BinaryUpdateOperationWrapperTest {
     final Script script = Script.of(s -> s.inline(i -> i.source("ctx._source.x = 1")));
     final BinaryUpdateOperationWrapper wrapper =
         new BinaryUpdateOperationWrapper(jsonpMapper).script(script);
-    final UpdateOperation<BinaryData> op = wrapper.build("idx", "id-1", null, 3);
+    final UpdateOperation<Object> op = wrapper.build("idx", "id-1", null, 3);
 
     // when
     final String serialized = serialize(op);
@@ -90,8 +89,8 @@ class BinaryUpdateOperationWrapperTest {
     // given
     final Map<String, Object> doc = Map.of("a", 1);
     final Map<String, Object> upsert = Map.of("b", 2);
-    final long expectedDocBytes = BinaryData.of(doc, jsonpMapper).size();
-    final long expectedUpsertBytes = BinaryData.of(upsert, jsonpMapper).size();
+    final long expectedDocBytes = serializedBytes(doc);
+    final long expectedUpsertBytes = serializedBytes(upsert);
 
     // when
     final BinaryUpdateOperationWrapper wrapper =
@@ -114,7 +113,7 @@ class BinaryUpdateOperationWrapperTest {
     assertThat(wrapper.payloadBytes()).isZero();
   }
 
-  private String serialize(final UpdateOperation<BinaryData> op) {
+  private String serialize(final UpdateOperation<Object> op) {
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
     final var serializables = op._serializables();
     while (serializables.hasNext()) {
@@ -125,5 +124,13 @@ class BinaryUpdateOperationWrapperTest {
       baos.write('\n');
     }
     return baos.toString(StandardCharsets.UTF_8);
+  }
+
+  private long serializedBytes(final Object value) {
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (JsonGenerator generator = jsonpMapper.jsonProvider().createGenerator(baos)) {
+      jsonpMapper.serialize(value, generator);
+    }
+    return baos.size();
   }
 }
