@@ -265,6 +265,7 @@ public class AgentInstanceUpdateTest {
           ENGINE
               .agentInstances()
               .withAgentInstanceKey(agentInstanceKey)
+              .withElementInstanceKey(serviceTaskInstance.getKey())
               .withChangedAttributes(List.of(unknownAttr))
               .expectRejection()
               .update();
@@ -303,6 +304,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withChangedAttributes(List.of("limits"))
             .expectRejection()
             .update();
@@ -415,6 +417,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withMetricsDelta(-2L, 0L, 0, 0)
             .withChangedAttributes(List.of("metrics"))
             .expectRejection()
@@ -707,6 +710,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.UNSPECIFIED)
             .withChangedAttributes(List.of("status"))
             .expectRejection()
@@ -769,6 +773,7 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withStatus(AgentInstanceStatus.COMPLETED)
             .withChangedAttributes(List.of("status"))
             .expectRejection()

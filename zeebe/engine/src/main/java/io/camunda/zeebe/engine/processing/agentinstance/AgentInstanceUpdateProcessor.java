@@ -123,47 +123,6 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-    if (changed.isEmpty()) {
-      writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
-      return;
-    }
-
-    final var unknown =
-        changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();
-    if (!unknown.isEmpty()) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, ALLOWED_ATTRIBUTES));
-      return;
-    }
-
-    if (changed.contains(ATTR_METRICS) && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
-      final var metrics = commandValue.getMetrics();
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_INVALID_METRIC_DELTA.formatted(
-              metrics.getInputTokens(),
-              metrics.getOutputTokens(),
-              metrics.getModelCalls(),
-              metrics.getToolCalls()));
-      return;
-    }
-
-    if (changed.contains(ATTR_STATUS)) {
-      final var from = current.getStatus();
-      final var to = commandValue.getStatus();
-      if (!isAllowedTransition(from, to)) {
-        writeRejection(
-            command,
-            RejectionType.INVALID_STATE,
-            ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to));
-        return;
-      }
-    }
-
     final var newElementInstanceKey = commandValue.getElementInstanceKey();
     if (newElementInstanceKey == -1L) {
       writeRejection(
@@ -223,6 +182,47 @@ public final class AgentInstanceUpdateProcessor
           ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
               newElementInstanceKey, existingAgentInstanceKey));
       return;
+    }
+
+    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
+    if (changed.isEmpty()) {
+      writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
+      return;
+    }
+
+    final var unknown =
+        changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();
+    if (!unknown.isEmpty()) {
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_UNKNOWN_ATTRIBUTES.formatted(unknown, ALLOWED_ATTRIBUTES));
+      return;
+    }
+
+    if (changed.contains(ATTR_METRICS) && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
+      final var metrics = commandValue.getMetrics();
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_INVALID_METRIC_DELTA.formatted(
+              metrics.getInputTokens(),
+              metrics.getOutputTokens(),
+              metrics.getModelCalls(),
+              metrics.getToolCalls()));
+      return;
+    }
+
+    if (changed.contains(ATTR_STATUS)) {
+      final var from = current.getStatus();
+      final var to = commandValue.getStatus();
+      if (!isAllowedTransition(from, to)) {
+        writeRejection(
+            command,
+            RejectionType.INVALID_STATE,
+            ERROR_MSG_INVALID_TRANSITION.formatted(agentInstanceKey, from, to));
+        return;
+      }
     }
 
     if (!current.getElementInstanceKeys().contains(newElementInstanceKey)) {
