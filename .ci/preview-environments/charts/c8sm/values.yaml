@@ -68,8 +68,6 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-console-client-token
-      orchestration:
-        redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
       optimize:
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
         secret:
@@ -203,6 +201,7 @@ camunda-platform:
       authentication:
         method: oidc
         oidc:
+          redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
           secret:
             existingSecret: camunda-credentials
             existingSecretKey: identity-orchestration-client-token
