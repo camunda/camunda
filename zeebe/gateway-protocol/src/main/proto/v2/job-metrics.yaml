@@ -532,8 +532,9 @@ components:
           type: string
           example: "UNHANDLED_ERROR_EVENT"
         errorMessage:
-          description: The error message.
+          description: The error message. Can be null when a job fails without an explicit error message.
           type: string
+          nullable: true
           example: "An unexpected error occurred."
         workers:
           description: Number of distinct workers that encountered this error.

@@ -4766,7 +4766,8 @@
                 },
                 {
                   "name": "errorMessage",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "workers",
