@@ -36,6 +36,13 @@ public interface MessageStartProcessInstanceDedupState {
    */
   void visitTombstonesPastDeadline(long now, TombstoneVisitor visitor);
 
+  /**
+   * Returns {@code true} when at least one tombstone entry's deletion deadline is at or before
+   * {@code now}. Intended as the scheduler's cheap leader-side probe before it writes a sweep
+   * trigger command.
+   */
+  boolean hasTombstonePastDeadline(long now);
+
   @FunctionalInterface
   interface TombstoneVisitor {
     void visit(long processDefinitionKey, long messageKey);

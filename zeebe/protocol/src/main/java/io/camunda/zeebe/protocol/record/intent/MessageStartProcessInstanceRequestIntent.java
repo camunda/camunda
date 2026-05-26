@@ -30,6 +30,11 @@ package io.camunda.zeebe.protocol.record.intent;
  * rejection from {@code P_B} reflects live state on the destination partition (uniqueness lock held
  * or deployment not yet distributed), not a programming error on {@code P_K}, and so this intent
  * intentionally does not implement {@link ProcessInstanceRelatedIntent}.
+ *
+ * <p>{@link #SWEEP_TOMBSTONES} and {@link #TOMBSTONE_DELETED} are internal to {@code P_B}: a
+ * scheduled task on {@code P_B} writes a {@code SWEEP_TOMBSTONES} trigger; the matching batch
+ * processor walks the dedup state and emits one {@code TOMBSTONE_DELETED} event per past-deadline
+ * tombstone entry, whose applier removes the entry from both dedup column families.
  */
 public enum MessageStartProcessInstanceRequestIntent implements Intent {
 
@@ -37,7 +42,8 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
   REQUEST((short) 0, false),
   REQUESTED((short) 1, true),
 
-  // success reply half, applied on both P_B (dedup write) and P_K (pending-ask cleanup + commit)
+  // success reply half. STARTED is applied on P_B (dedup write) and, once the P_K-side bookkeeping
+  // lands in a later commit, on P_K (pending-ask cleanup + commit of the started PI).
   START((short) 2, false),
   STARTED((short) 3, true),
 
@@ -47,7 +53,12 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
 
   // no-subscription-rejected reply half, applied on P_K only
   REJECT_NO_SUBSCRIPTION((short) 6, false),
-  NO_SUBSCRIPTION_REJECTED((short) 7, true);
+  NO_SUBSCRIPTION_REJECTED((short) 7, true),
+
+  // tombstone-sweep on P_B: SWEEP_TOMBSTONES is the scheduler trigger, TOMBSTONE_DELETED is the
+  // per-entry deletion event whose applier removes the dedup entry from both column families.
+  SWEEP_TOMBSTONES((short) 8, false),
+  TOMBSTONE_DELETED((short) 9, true);
 
   private final short value;
   private final boolean isEvent;
@@ -85,6 +96,10 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
         return REJECT_NO_SUBSCRIPTION;
       case 7:
         return NO_SUBSCRIPTION_REJECTED;
+      case 8:
+        return SWEEP_TOMBSTONES;
+      case 9:
+        return TOMBSTONE_DELETED;
       default:
         return Intent.UNKNOWN;
     }

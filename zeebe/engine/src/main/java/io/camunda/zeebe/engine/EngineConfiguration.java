@@ -63,6 +63,11 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_WINDOW =
+      Duration.ofSeconds(60);
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL =
+      Duration.ofSeconds(30);
+  public static final int DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT = 100;
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
@@ -121,6 +126,12 @@ public final class EngineConfiguration {
    * </ul>
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+
+  private Duration messageStartDedupTombstoneWindow = DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_WINDOW;
+  private Duration messageStartDedupTombstoneSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL;
+  private int messageStartDedupTombstoneSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -477,6 +488,45 @@ public final class EngineConfiguration {
   public EngineConfiguration setBusinessIdUniquenessEnabled(
       final boolean businessIdUniquenessEnabled) {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    return this;
+  }
+
+  /**
+   * How long {@code P_B} keeps a successful cross-partition message-start dedup entry alive after
+   * the holding PI completes. The window covers the race where {@code P_K} retries an ask between
+   * holder-PI completion and full removal of the dedup entry; retries observed within the window
+   * are re-replied with the original {@code STARTED} outcome. The retry scheduler on {@code P_K}
+   * (lands in a later commit) must use a deadline {@code <=} this window.
+   */
+  public Duration getMessageStartDedupTombstoneWindow() {
+    return messageStartDedupTombstoneWindow;
+  }
+
+  public EngineConfiguration setMessageStartDedupTombstoneWindow(
+      final Duration messageStartDedupTombstoneWindow) {
+    this.messageStartDedupTombstoneWindow = messageStartDedupTombstoneWindow;
+    return this;
+  }
+
+  /** Interval between scheduled tombstone sweeps of the cross-partition message-start dedup. */
+  public Duration getMessageStartDedupTombstoneSweepInterval() {
+    return messageStartDedupTombstoneSweepInterval;
+  }
+
+  public EngineConfiguration setMessageStartDedupTombstoneSweepInterval(
+      final Duration messageStartDedupTombstoneSweepInterval) {
+    this.messageStartDedupTombstoneSweepInterval = messageStartDedupTombstoneSweepInterval;
+    return this;
+  }
+
+  /** Maximum number of dedup tombstones a single sweep cycle deletes. */
+  public int getMessageStartDedupTombstoneSweepBatchLimit() {
+    return messageStartDedupTombstoneSweepBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartDedupTombstoneSweepBatchLimit(
+      final int messageStartDedupTombstoneSweepBatchLimit) {
+    this.messageStartDedupTombstoneSweepBatchLimit = messageStartDedupTombstoneSweepBatchLimit;
     return this;
   }
 

@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
@@ -43,6 +45,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final DeploymentState deploymentState;
   private final PendingMessageSubscriptionState pendingMessageSubscriptionState;
   private final PendingProcessMessageSubscriptionState pendingProcessMessageSubscriptionState;
+  private final MessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
   private final UserTaskState userTaskState;
   private final BatchOperationState batchOperationState;
   private final DbRoutingState routingState;
@@ -65,6 +68,8 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     pendingProcessMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
+    messageStartProcessInstanceDedupState =
+        new DbMessageStartProcessInstanceDedupState(zeebeDb, transactionContext);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
@@ -103,6 +108,11 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return pendingProcessMessageSubscriptionState;
+  }
+
+  @Override
+  public MessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState() {
+    return messageStartProcessInstanceDedupState;
   }
 
   @Override

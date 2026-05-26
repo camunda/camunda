@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -78,10 +79,13 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -94,6 +98,30 @@ public final class EventAppliers implements EventApplier {
       (key, value) -> {};
 
   private final Map<Intent, Map<Integer, TypedEventApplier>> mapping = new HashMap<>();
+  private final InstantSource clock;
+  private final Supplier<Duration> messageStartDedupTombstoneWindow;
+
+  /**
+   * Test-friendly constructor. Uses a system UTC clock and the default tombstone window for the
+   * cross-partition message-start dedup; production callers should use {@link
+   * #EventAppliers(InstantSource, Supplier)} together with the engine clock and a supplier that
+   * reads the currently-configured window from {@link EngineConfiguration} at call time. The
+   * supplier is intentionally evaluated lazily because some test setups mutate the engine
+   * configuration after {@link EventAppliers} has already been constructed (e.g. {@code
+   * EngineRule.withEngineConfig}); reading the value at applier-construction time would freeze the
+   * default value in those scenarios.
+   */
+  public EventAppliers() {
+    this(
+        InstantSource.system(),
+        () -> EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_WINDOW);
+  }
+
+  public EventAppliers(
+      final InstantSource clock, final Supplier<Duration> messageStartDedupTombstoneWindow) {
+    this.clock = clock;
+    this.messageStartDedupTombstoneWindow = messageStartDedupTombstoneWindow;
+  }
 
   public EventAppliers registerEventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
@@ -112,7 +140,7 @@ public final class EventAppliers implements EventApplier {
     registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
-    registerMessageStartProcessInstanceRequestAppliers();
+    registerMessageStartProcessInstanceRequestAppliers(state);
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
@@ -286,6 +314,7 @@ public final class EventAppliers implements EventApplier {
     final var variableState = state.getVariableState();
     final var bufferedStartMessageEventStateApplier =
         new BufferedStartMessageEventStateApplier(processState, state.getMessageState());
+    final var dedupState = state.getMessageStartProcessInstanceDedupState();
     final var multiInstanceState = state.getMultiInstanceState();
 
     register(
@@ -330,6 +359,19 @@ public final class EventAppliers implements EventApplier {
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
     register(
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        3,
+        new ProcessInstanceElementCompletedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier,
+            dedupState,
+            clock,
+            messageStartDedupTombstoneWindow));
+    register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
@@ -348,6 +390,17 @@ public final class EventAppliers implements EventApplier {
             eventScopeInstanceState,
             multiInstanceState,
             bufferedStartMessageEventStateApplier));
+    register(
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        3,
+        new ProcessInstanceElementTerminatedV3Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier,
+            dedupState,
+            clock,
+            messageStartDedupTombstoneWindow));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
@@ -499,14 +552,37 @@ public final class EventAppliers implements EventApplier {
   }
 
   /**
-   * Acknowledgement event for the cross-partition {@code MessageStartProcessInstanceRequest}
-   * handshake on {@code P_B}; the request itself has no state effect (state is touched by the
-   * triggered process-instance and, in later commits, by the dedup CFs), so the applier is a no-op.
-   * A single V1 applier is appropriate here per the versioned-applier convention because the intent
-   * is introduced together with this feature and has no prior stream history to replay.
+   * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
+   * intents are introduced together with this feature and have no prior stream history, so per the
+   * versioned-applier convention a single V1 applier per intent is sufficient (no V2 alongside).
+   *
+   * <ul>
+   *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
+   *   <li>{@code STARTED}: applied on {@code P_B} on cache miss + success; records the {@code
+   *       (processDefinitionKey, messageKey) → processInstanceKey} dedup entry that lets retries
+   *       from {@code P_K} be re-replied without a second activation.
+   *   <li>{@code TOMBSTONE_DELETED}: removes a dedup entry after its post-completion tombstone
+   *       window has passed; emitted by the scheduled sweep.
+   * </ul>
    */
-  private void registerMessageStartProcessInstanceRequestAppliers() {
+  private void registerMessageStartProcessInstanceRequestAppliers(
+      final MutableProcessingState state) {
     register(MessageStartProcessInstanceRequestIntent.REQUESTED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartProcessInstanceRequestIntent.STARTED,
+        new MessageStartProcessInstanceStartedV1Applier(
+            state.getMessageStartProcessInstanceDedupState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
+        new MessageStartProcessInstanceTombstoneDeletedV1Applier(
+            state.getMessageStartProcessInstanceDedupState()));
+    // P_K-side bookkeeping appliers — registered as NOOP here so the
+    // shouldRegisterApplierForAllIntents test passes. The real V1 implementations land in a later
+    // commit of this feature together with the pending-ask CF that they will clear; per the
+    // versioned-applier convention upgrading a NOOP placeholder in-place is safe because no
+    // committed stream has ever emitted these intents.
+    register(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, NOOP_EVENT_APPLIER);
+    register(MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

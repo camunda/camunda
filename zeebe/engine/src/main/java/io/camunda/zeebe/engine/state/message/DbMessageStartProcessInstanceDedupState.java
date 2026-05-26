@@ -94,20 +94,56 @@ public final class DbMessageStartProcessInstanceDedupState
   }
 
   @Override
+  public boolean hasTombstonePastDeadline(final long now) {
+    final var found = new org.agrona.collections.MutableBoolean(false);
+    forwardColumnFamily.whileTrue(
+        (key, value) -> {
+          if (value.getStatus() == MessageStartProcessInstanceDedupStatus.TOMBSTONE
+              && value.getDeletionDeadline() <= now) {
+            found.set(true);
+            return false;
+          }
+          return true;
+        });
+    return found.get();
+  }
+
+  @Override
   public void putActive(
       final long processDefinitionKey, final long messageKey, final long processInstanceKey) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageKey.wrapLong(messageKey);
+
+    // The applier must tolerate a pre-existing entry: a fresh PI may legitimately re-claim the
+    // same (processDefinitionKey, messageKey) when the previously-cached PI was either banned
+    // (lookup-time filter treated the entry as a miss) or its tombstone deadline has passed but
+    // the scheduled sweep has not yet deleted the entry. In both cases the request processor
+    // re-evaluates live state and activates a new PI, and this applier replaces the stale forward
+    // entry and re-points the reverse index at the new PI key. A no-op fast-path covers idempotent
+    // retries that re-apply the same (processDefinitionKey, messageKey) → processInstanceKey
+    // mapping (e.g. command redelivery), so the reverse CF stays consistent.
+    final var existing =
+        forwardColumnFamily.get(
+            processDefinitionAndMessageKey, MessageStartProcessInstanceDedupEntry::new);
+    if (existing != null
+        && existing.getProcessInstanceKey() == processInstanceKey
+        && existing.getStatus() == MessageStartProcessInstanceDedupStatus.ACTIVE) {
+      return;
+    }
+    if (existing != null && existing.getProcessInstanceKey() != processInstanceKey) {
+      this.processInstanceKey.wrapLong(existing.getProcessInstanceKey());
+      reverseColumnFamily.deleteIfExists(this.processInstanceKey);
+    }
     entry
         .setProcessInstanceKey(processInstanceKey)
         .setStatus(MessageStartProcessInstanceDedupStatus.ACTIVE)
         .setDeletionDeadline(-1L);
-    forwardColumnFamily.insert(processDefinitionAndMessageKey, entry);
+    forwardColumnFamily.upsert(processDefinitionAndMessageKey, entry);
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     reverseProcessDefinitionKey.wrapLong(processDefinitionKey);
     reverseMessageKey.wrapLong(messageKey);
-    reverseColumnFamily.insert(this.processInstanceKey, reverseValue);
+    reverseColumnFamily.upsert(this.processInstanceKey, reverseValue);
   }
 
   @Override

@@ -120,7 +120,9 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    eventApplier = new EventAppliers();
+    eventApplier =
+        new EventAppliers(
+            recordProcessorContext.getClock(), config::getMessageStartDedupTombstoneWindow);
     writers = new Writers(resultBuilderMutex, eventApplier);
 
     final var typedProcessorContext =
