@@ -146,6 +146,9 @@
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
 
+# Monitor-dashboard skill
+/.claude/skills/monitor-dashboard/  @kristinkomschow @camunda/core-features
+
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
 
