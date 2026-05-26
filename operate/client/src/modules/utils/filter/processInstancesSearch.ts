@@ -65,7 +65,7 @@ const parseProcessInstancesSearchFilter = (
   const hasStateFilters =
     filter.active || filter.completed || filter.canceled || filter.incidents;
 
-  if (!hasStateFilters && !filter.batchOperationKey) {
+  if (!hasStateFilters && !filter.batchOperationKey && !filter.elementId) {
     return undefined;
   }
 
@@ -130,7 +130,7 @@ const parseProcessInstancesSearchFilter = (
   }
 
   if (filter.batchOperationKey) {
-    apiFilter.batchOperationKey = {$eq: filter.batchOperationKey};
+    apiFilter.batchOperationId = {$eq: filter.batchOperationKey};
   }
 
   if (filter.errorMessage) {
