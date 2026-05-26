@@ -247,6 +247,24 @@ class OrdinalRollover:
         return highest_ordinal + 1
 
 
+def build_run_name(args):
+  parts = [args.mode]
+  if args.run_deleter:
+    parts.append("deleter")
+    if args.deleter_only_if_no_ilm:
+      parts.append("only-if-no-ilm")
+  if args.circular_ordinals:
+    parts.append("circular")
+    if args.circular_reverse:
+      parts.append("reverse")
+  if args.compaction:
+    parts.append("compaction")
+    compaction_style = args.compaction_source + " -> " + args.compaction_target
+    if compaction_style != "oldest -> newest":
+      parts.append(compaction_style)
+  return "-".join(parts)
+
+
 def main(args):
   compaction_callback = None
   if args.compaction:
@@ -290,6 +308,7 @@ def main(args):
 
   output_data = [
     ("Mode", args.mode),
+    ("Run Name", build_run_name(args)),
     ("Retention Period", sim.retention_period),
     ("Duration Min", args.duration_min),
     ("Duration Max", args.duration_max),
