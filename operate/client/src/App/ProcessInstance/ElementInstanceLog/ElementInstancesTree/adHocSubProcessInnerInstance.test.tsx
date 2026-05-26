@@ -29,8 +29,7 @@ import {
   queryElementInstancesRequestBodySchema,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
-// TODO: https://github.com/camunda/camunda/issues/20862
-describe.todo(
+describe(
   'ElementInstancesTree - Ad Hoc Sub Process Inner Instance',
   () => {
     beforeEach(async () => {
