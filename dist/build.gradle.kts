@@ -26,6 +26,14 @@ val openApiGenerateBackups by tasks.registering(org.openapitools.generator.gradl
     outputDir.set(openApiBackupsOutputDir)
     modelPackage.set("io.camunda.management.backups")
 
+    inputs.files(
+        fileTree("$projectDir/src/main/resources/api") {
+            include("backup-management-api.yaml", "**/*.yaml", "**/*.yml")
+        },
+    )
+        .withPropertyName("backupOpenApiSpecs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
     globalProperties.set(
         mapOf(
             "models" to "",
@@ -52,6 +60,14 @@ val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradl
     outputDir.set(openApiClusterOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
     ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
+
+    inputs.files(
+        fileTree("$projectDir/src/main/resources/api/cluster") {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+        .withPropertyName("clusterOpenApiSpecs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 
     globalProperties.set(
         mapOf(
@@ -80,6 +96,14 @@ val openApiGenerateExporter by tasks.registering(org.openapitools.generator.grad
     modelPackage.set("io.camunda.zeebe.management.cluster")
     ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
 
+    inputs.files(
+        fileTree("$projectDir/src/main/resources/api/cluster") {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+        .withPropertyName("exporterOpenApiSpecs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
     globalProperties.set(
         mapOf(
             "models" to "",
@@ -105,8 +129,12 @@ val syncOpenApiGeneratedSources by tasks.registering(Sync::class) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedOpenApiJavaDir)
     from("$openApiBackupsOutputDir/src/main/java")
-    from("$openApiClusterOutputDir/src/main/java")
-    from("$openApiExporterOutputDir/src/main/java")
+    from("$openApiClusterOutputDir/src/main/java") {
+        exclude("**/BrokerId.java")
+    }
+    from("$openApiExporterOutputDir/src/main/java") {
+        exclude("**/BrokerId.java")
+    }
 }
 
 // Add merged generated sources to the source set

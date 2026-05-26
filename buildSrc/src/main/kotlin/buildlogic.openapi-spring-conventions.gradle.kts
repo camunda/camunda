@@ -109,6 +109,15 @@ sourceSets {
     }
 }
 
+tasks.named("openApiGenerate") {
+    inputs.files(
+        fileTree(openapiDir) {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+    .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+}
+
 // Make compileJava depend on openApiGenerate
 tasks.named("compileJava") {
     dependsOn("openApiGenerate")

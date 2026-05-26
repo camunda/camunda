@@ -56,6 +56,14 @@ val openApiGenerateSimple by tasks.registering(org.openapitools.generator.gradle
     outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi-simple")
     modelPackage.set("io.camunda.gateway.protocol.model.simple")
 
+    inputs.files(
+        fileTree(openapiDir) {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+        .withPropertyName("openapiSpecs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
     globalProperties.set(
         mapOf(
             "models" to "",
