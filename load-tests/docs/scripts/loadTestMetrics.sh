@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
-# Run every query in queries.yaml against a Prometheus HTTP endpoint and emit
-# a JSON object on stdout: {name: value, ...} with failed/empty queries
+# Run every query in a queries YAML file against a Prometheus HTTP endpoint and
+# emit a JSON object on stdout: {name: value, ...} with failed/empty queries
 # omitted entirely. Run `./loadTestMetrics.sh --help` for full usage.
 
 set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: loadTestMetrics.sh <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
+Usage: loadTestMetrics.sh [--queries FILE] <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
+
+Options:
+  -q, --queries FILE   Queries YAML file. Relative paths are resolved from this
+                       script's directory. Default: basic.yaml (key metrics).
+                       Use queries.yaml for the full documented metric set.
+  -h, --help           Show this help message.
 
 Arguments:
   namespace          Substituted for $NAMESPACE in queries (required).
@@ -17,12 +23,12 @@ Arguments:
   extra_curl_opts    Free-form curl options string, e.g. `--user "u:p"`.
                      Pass "" if not needed. Default: "".
 
-Options:
-  -h, --help         Show this help message.
-
 Examples:
-  # Local dev, port-forward already open:
+  # Local dev, port-forward already open (key metrics):
   ./loadTestMetrics.sh c8-pgoyal-quicker-pr-1234
+
+  # All documented metrics:
+  ./loadTestMetrics.sh --queries queries.yaml c8-pgoyal-quicker-pr-1234
 
   # CI against the LDAP-protected ingress:
   ./loadTestMetrics.sh \
@@ -32,10 +38,27 @@ Examples:
 EOF
 }
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  usage
-  exit 0
-fi
+QUERIES_OPT=""
+
+# Parse named options before positional args.
+while [[ "${1:-}" == -* ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -q|--queries)
+      [[ -n "${2:-}" ]] || { echo "Error: --queries requires a FILE argument." >&2; exit 1; }
+      QUERIES_OPT="$2"
+      shift 2
+      ;;
+    *)
+      echo "Error: Unknown option '$1'." >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
 
 if [[ -z "${1:-}" ]]; then
   echo "Error: Missing <namespace>." >&2
@@ -60,10 +83,18 @@ if ! [[ "$DURATION_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 DURATION_S="${DURATION_SECONDS}s"
-QUERIES_FILE="$(cd "$(dirname "$0")" && pwd)/queries.yaml"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ -z "$QUERIES_OPT" ]]; then
+  QUERIES_FILE="${SCRIPT_DIR}/basic.yaml"
+elif [[ "$QUERIES_OPT" = /* ]]; then
+  QUERIES_FILE="$QUERIES_OPT"
+else
+  QUERIES_FILE="${SCRIPT_DIR}/${QUERIES_OPT}"
+fi
 
 if [[ ! -f "$QUERIES_FILE" ]]; then
-  echo "Error: queries.yaml not found at $QUERIES_FILE" >&2
+  echo "Error: queries file not found at $QUERIES_FILE" >&2
   exit 1
 fi
 

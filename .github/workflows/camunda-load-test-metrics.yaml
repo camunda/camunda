@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: '600'
+      queries-file:
+        description: 'Queries YAML file in load-tests/docs/scripts/ (basic.yaml = key metrics only, queries.yaml = all metrics)'
+        required: false
+        type: string
+        default: 'basic.yaml'
   workflow_call:
     inputs:
       namespace:
@@ -28,6 +33,11 @@ on:
         required: false
         type: string
         default: '600'
+      queries-file:
+        description: 'Queries YAML file in load-tests/docs/scripts/ (basic.yaml = key metrics only, queries.yaml = all metrics)'
+        required: false
+        type: string
+        default: 'basic.yaml'
     outputs:
       results-json:
         description: 'JSON object {name: number, ...} from loadTestMetrics.sh stdout (queries that scrape no data are omitted)'
@@ -51,10 +61,11 @@ jobs:
     env:
       NAMESPACE: ${{ inputs.namespace }}
       DURATION_SECONDS: ${{ inputs.duration-seconds }}
+      QUERIES_FILE: ${{ inputs.queries-file || 'basic.yaml' }}
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
-      - name: Validate namespace prefix
+      - name: Validate inputs
         env:
           NAMESPACE: ${{ inputs.namespace }}
         run: |
@@ -62,6 +73,10 @@ jobs:
             echo "::error::Namespace '$NAMESPACE' must start with 'c8-' (e.g. c8-pgoyal-quicker-pr-1234)."
             exit 1
           fi
+          case "$QUERIES_FILE" in
+            basic.yaml|queries.yaml) ;;
+            *) echo "::error::queries-file must be one of: basic.yaml, queries.yaml. Got: '$QUERIES_FILE'"; exit 1 ;;
+          esac
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -86,6 +101,7 @@ jobs:
         run: |
           set +e
           bash load-tests/docs/scripts/loadTestMetrics.sh \
+            --queries "$QUERIES_FILE" \
             "$NAMESPACE" \
             "$DURATION_SECONDS" \
             "$PROM_URL" \
@@ -109,9 +125,9 @@ jobs:
             echo "__VQ_EOF__"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Convert queries.yaml to JSON for render step
+      - name: Convert queries YAML to JSON for render step
         run: |
-          yq -o=json '.' load-tests/docs/scripts/queries.yaml > /tmp/queries.json
+          yq -o=json '.' "load-tests/docs/scripts/$QUERIES_FILE" > /tmp/queries.json
 
       - name: Render summary
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -122,7 +138,7 @@ jobs:
             const namespace = process.env.NAMESPACE;
             const durationSeconds = parseInt(process.env.DURATION_SECONDS, 10);
 
-            // queries.yaml drives row order, description, and formatting.
+            // The queries YAML drives row order, description, and formatting.
             const queriesDoc = JSON.parse(
               fs.readFileSync('/tmp/queries.json', 'utf8'),
             );
@@ -145,7 +161,7 @@ jobs:
               const unit = q.unit ?? '';
               switch (q.format) {
                 case 'integer':
-                  return Math.round(n).toLocaleString();
+                  return Math.round(n).toLocaleString() + (unit ? ' ' + unit : '');
                 case 'percent':
                   return n.toFixed(decimals) + (unit || '%');
                 case 'float':

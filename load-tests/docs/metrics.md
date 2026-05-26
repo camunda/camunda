@@ -335,12 +335,22 @@ kubelet_volume_stats_used_bytes{namespace=~"$namespace", persistentvolumeclaim=~
 Percentage of requests dropped due to backpressure. Values above ~0% indicate the system is at
 or near capacity.
 
-- **Unit:** ratio (0–1.0)
+- **Unit:** ratio (0–1.0) in the Grafana dashboard; reported as percent (0–100%) by `loadTestMetrics.sh`
 - **Threshold:** ~0 for sustainable operation
+
+Grafana dashboard (per-partition, instantaneous ratio):
 
 ```promql
 sum(rate(zeebe_dropped_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
 / sum(rate(zeebe_received_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
+```
+
+`loadTestMetrics.sh` / `queries.yaml` (whole-window average, aggregated across partitions, as percent):
+
+```promql
+100 *
+sum(increase(zeebe_dropped_request_count_total{namespace="$namespace"}[$__rate_interval]))
+/ sum(increase(zeebe_received_request_count_total{namespace="$namespace"}[$__rate_interval]))
 ```
 
 ---

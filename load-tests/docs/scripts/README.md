@@ -63,13 +63,23 @@ You can also use the [Profile Load Test workflow](https://github.com/camunda/cam
 ## loadTestMetrics.sh
 
 **Usage:**
-Runs every PromQL query defined in `queries.yaml` against a Prometheus HTTP endpoint and emits a `{name: value, ...}` JSON object on stdout. Failed/empty queries are omitted. Used by the [Camunda Load Test Metrics workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test-metrics.yaml) and runnable locally against any reachable Prometheus.
+Runs every PromQL query defined in a queries YAML file against a Prometheus HTTP endpoint and emits a `{name: value, ...}` JSON object on stdout. Failed/empty queries are omitted. Used by the [Camunda Load Test Metrics workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test-metrics.yaml) and runnable locally against any reachable Prometheus.
+
+Two query files are provided:
+
+|      File      |                                         Contents                                          |
+|----------------|-------------------------------------------------------------------------------------------|
+| `queries.yaml` | **All** documented metrics — throughput, latency (p50 + p99), resources, health (default) |
+| `basic.yaml`   | Key metrics only — starter-side throughput, latency, completion ratio, backpressure       |
 
 **Syntax:**
 
 ```
-./loadTestMetrics.sh <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
+./loadTestMetrics.sh [--queries FILE] <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
 ```
+
+**Options:**
+- `--queries FILE` / `-q FILE` — queries YAML file; relative paths resolve from this script's directory. Default: `queries.yaml`.
 
 **Arguments:**
 - `namespace` — exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
@@ -79,10 +89,16 @@ Runs every PromQL query defined in `queries.yaml` against a Prometheus HTTP endp
 
 **Examples:**
 
-Local dev (port-forward already open):
+Local dev, key metrics (port-forward already open):
 
 ```
 ./loadTestMetrics.sh c8-pgoyal-quicker-pr-1234
+```
+
+All documented metrics:
+
+```
+./loadTestMetrics.sh --queries queries.yaml c8-pgoyal-quicker-pr-1234
 ```
 
 Against the LDAP-protected ingress:

@@ -1,101 +1,346 @@
-# PromQL query definitions for key metrics of load tests.
+# PromQL query definitions for all documented load test metrics.
 #
-# Each entry defines one metric scraped via the cluster's central Prometheus
-# at end-of-run. Adding a new metric = one block here.
+# Default file used by loadTestMetrics.sh. Covers every metric category from
+# docs/metrics.md: throughput, latency (p50 + p99), resources, and health.
+# Use `--queries basic.yaml` for a smaller focused set (starter-side view only).
 #
-# Template variables (substituted by the workflow before each query is sent):
-#   $NAMESPACE   the exact test namespace label, e.g. c8-bot-quicker-pr-1234.
-#                Callers that want to compare against a daily-on-main run
-#                must resolve to a concrete namespace first — regex globs are
-#                no longer supported.
-#   $DURATION_S  the run duration with `s` suffix, e.g. 600s
+# Template variables (substituted by loadTestMetrics.sh before each query is executed):
+#   $NAMESPACE   exact test namespace label, e.g. c8-bot-quicker-pr-1234.
+#   $DURATION_S  run duration with `s` suffix, e.g. 600s (used in range vectors)
 #
 # Fields per entry:
-#   name              machine key — used as the JSON key in loadTestMetrics.sh
-#                     output and as the lookup key in the render step
-#   description       human label — used as the row label in the job summary
-#   query             PromQL string (multi-line OK; trailing whitespace is fine)
-#   higher_is_better  true when a larger value is better (throughput, instances);
-#                     false when a smaller value is better (backpressure)
-#   format            integer | float | percent  — controls summary cell format
+#   name              machine key — JSON output key and summary lookup key
+#   description       human label — row label in the job summary table
+#   query             PromQL string (multi-line OK)
+#   higher_is_better  true = larger is better (throughput); false = smaller is better (latency)
+#   format            integer | float | percent
 #   decimals          decimal places for float / percent (default 2)
 #   unit              optional display suffix appended to the formatted value
 
 queries:
-  - name: process-instances-started
-    description: Process instances submitted by the starter
-    query: |
-      max(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S])
-    higher_is_better: true
-    format: integer
 
-  - name: process-instances-completed
-    description: Root process instances completed by the engine
+  # ── Throughput ─────────────────────────────────────────────────────────────
+
+  - name: pi-per-second
+    description: Process instances per second (PI/s)
     query: |
-      max(zeebe_executed_instances_total{
+      sum(rate(zeebe_element_instance_events_total{
+        namespace="$NAMESPACE",
         action="completed",
-        type="ROOT_PROCESS_INSTANCE",
-        namespace="$NAMESPACE"
-      }[$DURATION_S])
-    higher_is_better: true
-    format: integer
-
-  - name: throughput-per-second
-    description: Client Process Instance Started Rate (avg)
-    query: |
-      sum(rate(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
-    higher_is_better: true
-    format: float
-    decimals: 1
-    unit: PI/s
-
-  - name: completed-pi-rate-per-second
-    description: Completion PI rate (avg)
-    query: |
-      sum(rate(zeebe_executed_instances_total{
-        action="completed",
-        type="ROOT_PROCESS_INSTANCE",
-        namespace="$NAMESPACE"
+        type="PROCESS"
       }[$DURATION_S]))
     higher_is_better: true
     format: float
     decimals: 1
     unit: PI/s
 
-  # Fraction of gateway-accepted submissions that completed end-to-end.
-  # Denominator picks up gRPC and/or HTTP submissions via PromQL `or`. The `!= 0`
-  # guard on the HTTP arm prevents zero-result series from contributing when the
-  # cluster is gRPC-only (or vice versa).
-  - name: completion-ratio
-    description: Completed process instances in %
+  - name: fni-per-second
+    description: Flow node instances per second (FNI/s)
     query: |
-      100 * (
-        sum(rate(zeebe_executed_instances_total{
-          action="completed",
-          type="ROOT_PROCESS_INSTANCE",
-          namespace="$NAMESPACE"
+      sum(rate(zeebe_element_instance_events_total{
+        namespace="$NAMESPACE",
+        type!="PROCESS",
+        action="completed"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: FNI/s
+
+  - name: sti-per-second
+    description: Service task instances per second (STI/s)
+    query: |
+      sum(rate(zeebe_element_instance_events_total{
+        namespace="$NAMESPACE",
+        action="completed",
+        type="SERVICE_TASK"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: STI/s
+
+  - name: jobs-per-second
+    description: Jobs per second (J/s)
+    query: |
+      sum(rate(zeebe_job_events_total{
+        namespace="$NAMESPACE",
+        action="completed"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: J/s
+
+  - name: records-processed-per-second
+    description: Records processed per second
+    query: |
+      sum(rate(zeebe_stream_processor_records_total{
+        namespace="$NAMESPACE",
+        action=~"skipped|processed"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 0
+    unit: records/s
+
+  - name: records-exported-per-second
+    description: Records exported per second
+    query: |
+      sum(rate(zeebe_exporter_events_total{
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 0
+    unit: records/s
+
+  - name: archived-pi-per-second
+    description: Archived process instances per second
+    query: |
+      sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 2
+    unit: PI/s
+
+  - name: es-indexed-docs-per-second
+    description: Elasticsearch indexed documents per second
+    query: |
+      avg(rate(elasticsearch_indices_indexing_index_total{
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+    higher_is_better: true
+    format: float
+    decimals: 0
+    unit: docs/s
+
+  # ── Latency ────────────────────────────────────────────────────────────────
+
+  - name: processing-latency-p50
+    description: Processing latency (P50)
+    query: |
+      histogram_quantile(0.50, sum(rate(
+        zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: processing-latency-p99
+    description: Processing latency (P99)
+    query: |
+      histogram_quantile(0.99, sum(rate(
+        zeebe_stream_processor_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: exporting-latency-p50
+    description: Exporting latency (P50)
+    query: |
+      histogram_quantile(0.50, sum(rate(
+        zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: exporting-latency-p99
+    description: Exporting latency (P99)
+    query: |
+      histogram_quantile(0.99, sum(rate(
+        zeebe_exporting_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: pi-execution-time-p50
+    description: Process instance execution time (P50)
+    query: |
+      histogram_quantile(0.50, sum(rate(
+        zeebe_process_instance_execution_time_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: pi-execution-time-p99
+    description: Process instance execution time (P99)
+    query: |
+      histogram_quantile(0.99, sum(rate(
+        zeebe_process_instance_execution_time_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S]
+      )) by (le))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: data-availability-p50
+    description: Data availability latency (P50)
+    query: |
+      histogram_quantile(0.50, sum by (le) (
+        rate(starter_data_availability_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: data-availability-p99
+    description: Data availability latency (P99)
+    query: |
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_data_availability_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: request-response-latency-p50
+    description: Request-response latency (P50)
+    query: |
+      histogram_quantile(0.50, sum by (le) (
+        rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  - name: request-response-latency-p99
+    description: Request-response latency (P99)
+    query: |
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])
+      ))
+    higher_is_better: false
+    format: float
+    decimals: 3
+    unit: s
+
+  # ── Resources ──────────────────────────────────────────────────────────────
+
+  # Sum across all containers — aggregate capacity consumption.
+  - name: cpu-usage
+    description: CPU usage (total, all containers)
+    query: |
+      sum(rate(container_cpu_usage_seconds_total{
+        namespace="$NAMESPACE",
+        container!=""
+      }[$DURATION_S]))
+    higher_is_better: false
+    format: float
+    decimals: 2
+    unit: cores
+
+  # Worst-case pod: even a single throttled pod caps overall throughput.
+  - name: cpu-throttling
+    description: CPU throttling (worst-case pod)
+    query: |
+      max(
+        sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{
+          namespace="$NAMESPACE",
+          container!=""
         }[$DURATION_S]))
         /
-        (
-          sum(rate(grpc_server_processing_duration_seconds_count{
-            method="CreateProcessInstance",
-            namespace="$NAMESPACE"
-          }[$DURATION_S]))
-          or
-          sum(rate(http_server_requests_seconds_count{
-            method="POST",
-            uri="/v2/process-instances",
-            namespace="$NAMESPACE"
-          }[$DURATION_S]) != 0)
-        )
+        sum by (pod) (rate(container_cpu_cfs_periods_total{
+          namespace="$NAMESPACE",
+          container!=""
+        }[$DURATION_S]))
       )
-    higher_is_better: true
+    higher_is_better: false
     format: percent
     decimals: 2
     unit: '%'
 
+  - name: memory-limit
+    description: Memory limit (Zeebe/Camunda containers, max)
+    query: |
+      max(kube_pod_container_resource_limits_memory_bytes{
+        namespace="$NAMESPACE",
+        container=~".*(orchestration|zeebe|camunda).*"
+      }) / 1073741824
+    higher_is_better: true
+    format: float
+    decimals: 1
+    unit: GiB
+
+  - name: memory-rss
+    description: Memory RSS (total, all containers)
+    query: |
+      sum(container_memory_rss{
+        namespace="$NAMESPACE",
+        container!=""
+      }) / 1073741824
+    higher_is_better: false
+    format: float
+    decimals: 1
+    unit: GiB
+
+  - name: jvm-heap
+    description: JVM heap usage (total, all pods)
+    query: |
+      sum(jvm_memory_bytes_used{
+        namespace="$NAMESPACE",
+        area="heap"
+      }) / 1073741824
+    higher_is_better: false
+    format: float
+    decimals: 1
+    unit: GiB
+
+  # Max ratio across ES PVCs — any disk filling up is a problem.
+  - name: disk-usage
+    description: Disk usage ratio (max ES PVC)
+    query: |
+      max(
+        kubelet_volume_stats_used_bytes{
+          namespace="$NAMESPACE",
+          persistentvolumeclaim=~".*elastic.*"
+        }
+        /
+        kubelet_volume_stats_capacity_bytes{
+          namespace="$NAMESPACE",
+          persistentvolumeclaim=~".*elastic.*"
+        }
+      )
+    higher_is_better: false
+    format: percent
+    decimals: 1
+    unit: '%'
+
+  - name: write-iops
+    description: Write IOPS (total, all containers)
+    query: |
+      sum(rate(container_fs_writes_total{
+        namespace="$NAMESPACE",
+        container!=""
+      }[$DURATION_S]))
+    higher_is_better: false
+    format: float
+    decimals: 0
+    unit: ops/s
+
+  # ── Health indicators ──────────────────────────────────────────────────────
+
+  # Percentage of requests dropped over the full test window. increase() in
+  # numerator and denominator is mathematically equivalent to rate() in a ratio,
+  # but yields a stable whole-window average rather than an instantaneous rate.
+  # Result is multiplied by 100 to express as a percent (vs. the 0–1 ratio form
+  # used in the Grafana dashboard queries in docs/metrics.md).
   - name: backpressure-percent
-    description: Backpressure (rejected / received)
+    description: Backpressure (dropped / received)
     query: |
       100 *
       sum(increase(zeebe_dropped_request_count_total{namespace="$NAMESPACE"}[$DURATION_S]))
@@ -106,56 +351,25 @@ queries:
     decimals: 2
     unit: '%'
 
-  # Gateway-accepted submission rate. Denominator-side counterpart to the
-  # completion-ratio query: gRPC `or` HTTP, with `!= 0` to exclude empty series
-  # on a single-protocol cluster.
-  - name: starter-rate-per-second
-    description: Gateway-accepted submission rate (avg)
+  # Sum across partitions = total pending records across the cluster.
+  - name: processing-backlog
+    description: Processing backlog (total, all partitions)
     query: |
-      sum(rate(grpc_server_processing_duration_seconds_count{
-        namespace="$NAMESPACE",
-        method="CreateProcessInstance"
-      }[$DURATION_S]))
-      or
-      sum(rate(http_server_requests_seconds_count{
-        method="POST",
-        namespace="$NAMESPACE",
-        uri="/v2/process-instances"
-      }[$DURATION_S]) != 0)
-    higher_is_better: true
-    format: float
-    decimals: 1
-    unit: PI/s
-
-  # P99 latency from starter submission to data being durably available. Lower
-  # is better. Baseline is a placeholder until we calibrate against clean main
-  # runs.
-  - name: data-availability
-    description: Data availability latency (P99)
-    query: |
-      histogram_quantile(0.99, sum by (le) (
-        rate(starter_data_availability_latency_seconds_bucket{
-          namespace="$NAMESPACE"
-        }[$DURATION_S])
-      ))
+      sum(
+        max by (partition) (zeebe_log_appender_last_appended_position{namespace="$NAMESPACE"})
+        - max by (partition) (zeebe_stream_processor_last_processed_position{namespace="$NAMESPACE"})
+      )
     higher_is_better: false
-    format: float
-    decimals: 3
-    unit: s
+    format: integer
+    unit: records
 
-  # P99 of round-trip request-response time as observed by the starter:
-  # client send → gateway processing (incl. processing-queue + auth/authz) →
-  # response received. Threshold per spec: p99 < 5s.
-  - name: request-response-latency
-    description: Request-response latency (P99)
+  - name: exporting-backlog
+    description: Exporting backlog (total, all partitions)
     query: |
-      histogram_quantile(0.99, sum by (le) (
-        rate(starter_response_latency_seconds_bucket{
-          namespace="$NAMESPACE"
-        }[$DURATION_S])
-      ))
+      sum(
+        max by (partition) (zeebe_log_appender_last_committed_position{namespace="$NAMESPACE"})
+        - max by (partition) (zeebe_exporter_last_exported_position{namespace="$NAMESPACE"})
+      )
     higher_is_better: false
-    format: float
-    decimals: 3
-    unit: s
-
+    format: integer
+    unit: records
