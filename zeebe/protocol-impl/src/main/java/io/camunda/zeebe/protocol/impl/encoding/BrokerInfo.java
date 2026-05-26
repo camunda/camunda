@@ -534,12 +534,15 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
    */
   public BrokerInfo withPartitionGroup(final String partitionGroup) {
     final BrokerInfo copy = new BrokerInfo();
-    copy.setBrokerId(nodeId, zone);
-    copy.setPartitionsCount(partitionsCount);
-    copy.setClusterSize(clusterSize);
-    copy.setReplicationFactor(replicationFactor);
+    // Direct field assignment avoids validation checks so that null-sentinel values
+    // (e.g. partitionsCount before it has been set) are preserved faithfully.
+    copy.nodeId = nodeId;
+    copy.zone = zone;
+    copy.partitionsCount = partitionsCount;
+    copy.clusterSize = clusterSize;
+    copy.replicationFactor = replicationFactor;
     copy.version = BufferUtil.cloneBuffer(version);
-    copy.setPartitionGroup(partitionGroup);
+    copy.partitionGroup = partitionGroup;
     addresses.forEach(copy::addAddress);
     return copy;
   }
