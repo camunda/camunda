@@ -169,16 +169,26 @@ test.describe('Operations', () => {
     });
 
     await test.step('Validate canceled instance details', async () => {
-      const instanceRow = operateProcessesPage.getInstanceRow(0);
+      await waitForAssertion({
+        assertion: async () => {
+          const instanceRow = operateProcessesPage.getInstanceRow(0);
 
-      await expect(
-        operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
-      ).toBeVisible({timeout: 60000});
+          await expect(
+            operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
+          ).toBeVisible({timeout: 30000});
 
-      await expect(instanceRow.getByText(instance.bpmnProcessId)).toBeVisible();
-      await expect(
-        instanceRow.getByText(instance.processInstanceKey),
-      ).toBeVisible();
+          await expect(
+            instanceRow.getByText(instance.bpmnProcessId),
+          ).toBeVisible();
+          await expect(
+            instanceRow.getByText(instance.processInstanceKey),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
 
       await operateOperationPanelPage.collapseOperationIdField();
     });

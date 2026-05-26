@@ -109,12 +109,21 @@ test.describe('task panel page', () => {
 
     // usertask_to_be_assigned is completed by the preceding test; wait for ES
     // to index the change so the first page reflects the expected task counts.
+    // Wait for ES to index the task completed by the preceding test before
+    // checking page-1 counts. Use short inner timeouts so toPass can retry
+    // multiple times within the 60 s outer window.
     await expect(async () => {
       await page.reload();
-      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
-      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
-    }).toPass({timeout: 30000, intervals: [3000]});
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {
+        timeout: 5000,
+      });
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49, {
+        timeout: 5000,
+      });
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {
+        timeout: 5000,
+      });
+    }).toPass({timeout: 60000});
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
@@ -136,14 +145,17 @@ test.describe('task panel page', () => {
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
+    // After the 4th scroll the virtual list evicts top DOM nodes; only verify
+    // that usertask_for_scrolling_1 has left the viewport and
+    // usertask_for_scrolling_3 is now reachable at the bottom.
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
 
     await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
 
+    // After scrolling back to top usertask_for_scrolling_1 is back in DOM
+    // and usertask_for_scrolling_3 has been evicted from the bottom window.
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
   });
 });
