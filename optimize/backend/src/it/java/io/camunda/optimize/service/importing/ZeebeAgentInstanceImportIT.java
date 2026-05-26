@@ -127,7 +127,7 @@ class ZeebeAgentInstanceImportIT extends AbstractCCSMIT {
     seedRecord(
         agentKey, AgentInstanceIntent.UPDATED, AgentInstanceStatus.THINKING, 500L, 200L, 2, 3);
     seedRecord(
-        agentKey, AgentInstanceIntent.COMPLETED, AgentInstanceStatus.COMPLETED, 300L, 100L, 1, 1);
+        agentKey, AgentInstanceIntent.COMPLETED, AgentInstanceStatus.COMPLETED, 800L, 300L, 3, 4);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -144,10 +144,11 @@ class ZeebeAgentInstanceImportIT extends AbstractCCSMIT {
     assertThat(agent.getStatus()).isEqualTo(AgentInstanceStatus.COMPLETED.name());
     assertThat(agent.getEndDate()).isNotNull();
     assertThat(agent.getTotalDurationInMs()).isNotNull().isPositive();
-    assertThat(agent.getMetrics().getInputTokens()).isEqualTo(1300L);
-    assertThat(agent.getMetrics().getOutputTokens()).isEqualTo(400L);
-    assertThat(agent.getMetrics().getModelCalls()).isEqualTo(4L);
-    assertThat(agent.getMetrics().getToolCalls()).isEqualTo(5L);
+    // Metrics reflect final cumulative totals from the COMPLETED event
+    assertThat(agent.getMetrics().getInputTokens()).isEqualTo(800L);
+    assertThat(agent.getMetrics().getOutputTokens()).isEqualTo(300L);
+    assertThat(agent.getMetrics().getModelCalls()).isEqualTo(3L);
+    assertThat(agent.getMetrics().getToolCalls()).isEqualTo(4L);
   }
 
   @Test
