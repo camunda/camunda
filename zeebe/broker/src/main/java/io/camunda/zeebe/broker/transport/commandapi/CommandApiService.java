@@ -25,7 +25,9 @@ public interface CommandApiService {
   ActorFuture<Void> registerHandlers(
       final int partitionId, final LogStream logStream, final QueryService queryService);
 
+  /** Unregisters command, query and transport handlers for the given partition. */
   ActorFuture<Void> unregisterHandlers(final int partitionId);
 
+  /** Unregisters command and query handlers for the given partition. */
   ActorFuture<Void> deactivateHandlers(final int partitionId);
 }
