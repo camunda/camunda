@@ -153,9 +153,10 @@ class TaskDetailsPage {
   async clickAssignToMeButton() {
     await waitForAssertion({
       assertion: async () => {
-        // Allow 30 s for Tasklist v2 to re-render "Assign to me" after an
-        // unassign operation — the API call and UI update can take several seconds.
-        await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
+        // Allow 60 s for Tasklist v2 to re-render "Assign to me" after an
+        // unassign operation — the API call and UI update can take many seconds
+        // under cluster load.
+        await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
         await this.assignToMeButton.click();
       },
       onFailure: async () => {
@@ -439,6 +440,11 @@ class TaskDetailsPage {
       .catch(() => false);
     if (isUnassignVisible) {
       await this.clickUnassignButton();
+      // Wait for the Unassign button to disappear before looking for "Assign to
+      // me". Tasklist v2 processes unassign asynchronously; without this wait
+      // the subsequent clickAssignToMeButton may time out because the UI hasn't
+      // re-rendered yet.
+      await expect(this.unassignButton).toBeHidden({timeout: 60000});
     }
 
     // Assign to the logged-in user and verify assignment
