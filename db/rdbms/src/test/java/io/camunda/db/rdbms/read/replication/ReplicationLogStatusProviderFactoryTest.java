@@ -67,6 +67,37 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
+  void shouldCreateAuroraReplicationLogStatusProviderWhenMysqlAuroraDetected() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mysql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAurora()).thenReturn(true);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(AuroraReplicationLogStatusProvider.class);
+  }
+
+  @Test
+  void shouldFailForPlainMysqlWithoutAurora() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mysql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAurora()).thenReturn(false);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Replication monitoring requires AWS Aurora MySQL");
+  }
+
+  @Test
   void shouldNotCreateReplicationLogStatusProviderForUnsupportedDatabase() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);

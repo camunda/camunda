@@ -17,10 +17,11 @@ public interface ReplicationStatusMapper {
   List<ReplicationLogStatus> getReplicationStatus();
 
   /**
-   * Returns {@code true} when connected to AWS Aurora PostgreSQL. The detection relies on the
-   * presence of the {@code aurora_global_db_instance_status} function in {@code pg_proc}; this
-   * function is only available on Aurora instances. No exception handling is required because the
-   * query only reads the system catalog and does not invoke the function itself.
+   * Returns {@code true} when connected to AWS Aurora (PostgreSQL or MySQL). For PostgreSQL the
+   * detection relies on the presence of the {@code aurora_global_db_instance_status} function in
+   * {@code pg_proc}. For MySQL the detection checks for the Aurora-only {@code aurora_version}
+   * system variable in {@code performance_schema.global_variables}. Neither check invokes the
+   * Aurora function itself, so both are safe to run on any compatible database.
    */
   boolean isAurora();
 

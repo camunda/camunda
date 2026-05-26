@@ -63,7 +63,18 @@
   </select>
 
   <!--
-    Returns the primary's current durable LSN for Aurora Global Database.
+    Detects whether the connected MySQL instance is AWS Aurora MySQL. Aurora MySQL exposes the
+    aurora_version system variable; plain MySQL does not. Querying
+    performance_schema.global_variables is safe on any MySQL-compatible database.
+  -->
+  <select id="isAurora" resultType="boolean" databaseId="mysql">
+    SELECT EXISTS(
+      SELECT 1 FROM performance_schema.global_variables WHERE variable_name = 'aurora_version'
+    )
+  </select>
+
+  <!--
+    Returns the primary's current durable LSN for Aurora Global Database (PostgreSQL).
     The row with session_id = 'MASTER_SESSION_ID' identifies the primary writer.
   -->
   <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
@@ -73,7 +84,17 @@
   </select>
 
   <!--
-    Returns per-replica replication status for Aurora Global Database. Each non-primary
+    Returns the primary's current durable LSN for Aurora Global Database (MySQL).
+    The row with SESSION_ID = 'MASTER_SESSION_ID' identifies the primary writer.
+  -->
+  <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="mysql">
+    SELECT DURABLE_LSN
+    FROM aurora_global_db_instance_status()
+    WHERE SESSION_ID = 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns per-replica replication status for Aurora Global Database (PostgreSQL). Each non-primary
     instance reports its durable_lsn (the LSN persisted to durable storage on that instance)
     together with the visibility_lag_in_msec for metrics.
   -->
@@ -84,6 +105,19 @@
       COALESCE(visibility_lag_in_msec, 0)                   AS replicationLagMs
     FROM aurora_global_db_instance_status()
     WHERE session_id != 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns per-replica replication status for Aurora Global Database (MySQL). Each non-primary
+    instance reports its DURABLE_LSN together with VISIBILITY_LAG_IN_MSEC for metrics.
+  -->
+  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="mysql">
+    SELECT
+      DURABLE_LSN                                           AS logStatus,
+      SERVER_ID                                             AS replicaId,
+      COALESCE(VISIBILITY_LAG_IN_MSEC, 0)                   AS replicationLagMs
+    FROM aurora_global_db_instance_status()
+    WHERE SESSION_ID != 'MASTER_SESSION_ID'
   </select>
 
 </mapper>
