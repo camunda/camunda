@@ -48,6 +48,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -115,6 +116,7 @@ jobs:
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -169,6 +171,7 @@ jobs:
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -233,6 +236,7 @@ jobs:
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Install and allow strace tests
         run: |
@@ -298,6 +302,7 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
@@ -398,6 +403,7 @@ jobs:
       group:  ${{ needs.utils-get-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -453,6 +459,7 @@ jobs:
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
       IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -512,6 +519,7 @@ jobs:
       checks: read
       pull-requests: write
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Generate GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@75437e16ff99edfa0accbd05115905f1947f4ffc # main
