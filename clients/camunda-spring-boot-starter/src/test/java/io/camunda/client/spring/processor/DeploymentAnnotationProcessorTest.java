@@ -84,7 +84,10 @@ public class DeploymentAnnotationProcessorTest {
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final Resource resource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
 
+    when(resource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
     when(resource.getFilename()).thenReturn("1.bpmn");
 
     when(client.newDeployResourceCommand()).thenReturn(deployStep1);
@@ -114,8 +117,14 @@ public class DeploymentAnnotationProcessorTest {
     final BeanInfo classInfo = beanInfo(new WithDoubleClassPathResource());
 
     final Resource[] resources = {mock(FileSystemResource.class), mock(FileSystemResource.class)};
+    final java.io.File[] mockFiles = {mock(java.io.File.class), mock(java.io.File.class)};
 
+    when(resources[0].getFile()).thenReturn(mockFiles[0]);
+    when(mockFiles[0].isDirectory()).thenReturn(false);
     when(resources[0].getFilename()).thenReturn("1.bpmn");
+
+    when(resources[1].getFile()).thenReturn(mockFiles[1]);
+    when(mockFiles[1].isDirectory()).thenReturn(false);
     when(resources[1].getFilename()).thenReturn("2.bpmn");
 
     when(client.newDeployResourceCommand()).thenReturn(deployStep1);
@@ -151,8 +160,11 @@ public class DeploymentAnnotationProcessorTest {
         .thenAnswer(r -> AnnotationUtil.getDeploymentValues(r.getArgument(0)));
     final BeanInfo classInfo = beanInfo(new WithDoubleClassPathResource());
     final Resource resource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
     final Resource[] resources = {resource, resource};
 
+    when(resource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
     when(resources[0].getFilename()).thenReturn("1.bpmn");
     when(resources[1].getFilename()).thenReturn("1.bpmn");
 
@@ -200,7 +212,10 @@ public class DeploymentAnnotationProcessorTest {
   void shouldNotDeployResourceFromOtherJar() throws IOException {
     // given
     final FileSystemResource resource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
     // the resource is from the spring boot starter while the bean from the java client
+    when(resource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
     when(resource.getURL())
         .thenReturn(
             DeploymentAnnotationProcessor.class
@@ -231,8 +246,11 @@ public class DeploymentAnnotationProcessorTest {
   void shouldOverrideDefaultBehavior() throws IOException {
     // given
     final FileSystemResource resource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
     camundaClientProperties.getDeployment().setOwnJarOnly(true);
     // the resource is from the spring boot starter while the bean from the java client
+    when(resource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
     when(resource.getURL())
         .thenReturn(
             DeploymentAnnotationProcessor.class
@@ -264,6 +282,9 @@ public class DeploymentAnnotationProcessorTest {
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final Resource resource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
+    when(resource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
     when(resource.getFilename()).thenReturn("1.bpmn");
     when(client.newDeployResourceCommand()).thenReturn(deployStep1);
     when(resourcePatternResolver.getResources(anyString())).thenReturn(new Resource[] {resource});
@@ -285,6 +306,42 @@ public class DeploymentAnnotationProcessorTest {
     // then - deploy should have been called exactly once per lifecycle round, not accumulating
     verify(deployStep2, times(2)).execute();
     verify(deployStep1, times(2)).addResourceStream(any(), eq("1.bpmn"));
+  }
+
+  @Test
+  public void shouldFilterDirectoryResources() throws IOException {
+    // given
+    when(deploymentValueExtractor.apply(any()))
+        .thenAnswer(r -> AnnotationUtil.getDeploymentValues(r.getArgument(0)));
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
+
+    final Resource fileResource = mock(FileSystemResource.class);
+    final Resource directoryResource = mock(FileSystemResource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
+    final java.io.File mockDirectory = mock(java.io.File.class);
+
+    when(fileResource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
+    when(fileResource.getFilename()).thenReturn("process.bpmn");
+
+    when(directoryResource.getFile()).thenReturn(mockDirectory);
+    when(mockDirectory.isDirectory()).thenReturn(true);
+
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(resourcePatternResolver.getResources(anyString()))
+        .thenReturn(new Resource[] {fileResource, directoryResource});
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when
+    deploymentAnnotationProcessor.configureFor(classInfo);
+    deploymentAnnotationProcessor.start(client);
+
+    // then - only the file resource should be deployed, not the directory
+    verify(deployStep1).addResourceStream(any(), eq("process.bpmn"));
+    verify(deployStep1, never()).addResourceStream(any(), eq("directory"));
+    verify(deployStep2).execute();
   }
 
   private Process getProcess() {

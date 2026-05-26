@@ -120,6 +120,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     final List<Resource> resources =
         deploymentValue.getResources().stream()
             .flatMap(r -> Arrays.stream(getResources(r)))
+            .filter(this::isFile)
             .filter(r -> !ownJarOnly || comeFromSameJar(deploymentValue.getSource(), r))
             .distinct()
             .toList();
@@ -203,6 +204,17 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       return resourcePatternResolver.getResources(resources);
     } catch (final IOException e) {
       return new Resource[0];
+    }
+  }
+
+  private boolean isFile(final Resource resource) {
+    try {
+      final java.io.File file = resource.getFile();
+      return file != null && !file.isDirectory();
+    } catch (final IOException e) {
+      // If we can't determine if it's a directory (e.g., for classpath resources),
+      // assume it's a file and let the deployment process handle any errors
+      return true;
     }
   }
 }
