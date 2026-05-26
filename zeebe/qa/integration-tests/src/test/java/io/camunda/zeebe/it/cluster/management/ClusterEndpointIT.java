@@ -263,7 +263,7 @@ abstract class ClusterEndpointIT {
     try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
-      cluster.brokers().get(MemberId.from("1")).close();
+      cluster.brokers().get(memberIdForBroker(1)).close();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when - force remove broker 1

@@ -11,9 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
 import io.atomix.cluster.BrokerMemberId;
-import io.camunda.configuration.Partitioning.Scheme;
+import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Zone;
-import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
@@ -45,36 +44,29 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   @SuppressWarnings("resource")
   protected TestCluster createCluster(
       final int brokerCount, final int partitionCount, final int replicationFactor) {
-    final var replicasZoneB = replicationFactor / 2;
-    final var replicasZoneA = replicationFactor - replicasZoneB;
     return TestCluster.builder()
         .withEmbeddedGateway(true)
         .withBrokersCount(brokerCount)
         .withPartitionsCount(partitionCount)
         .withReplicationFactor(replicationFactor)
-        .withoutNodeId()
-        .multiZone()
-        .withBrokerConfig(
-            (id, broker) -> {
-              final int localId = Integer.parseInt(id.id());
-              final String zone = ZONES[localId % ZONES.length];
-              broker.withUnifiedConfig(
-                  uc -> {
-                    uc.getCluster().setZone(zone);
-                    uc.getCluster().setNodeId(localId / 2); // 2 zones: 0->0, 1-> 0, 2 -> 1, 3 -> 1
-                    uc.getCluster().setSize(brokerCount);
-                    final var half = brokerCount / 2;
-                    final var zoneAware =
-                        new ZoneAware(
-                            List.of(
-                                new Zone(ZONES[0], brokerCount - half, replicasZoneA, 100),
-                                new Zone(ZONES[1], half, replicasZoneB, 10)));
-                    uc.getCluster().getPartitioning().setScheme(Scheme.ZONE_AWARE);
-                    uc.getCluster().getPartitioning().setZoneAware(zoneAware);
-                  });
-            })
+        .multiZone(zoneConfigs(brokerCount, replicationFactor))
         .build()
         .start();
+  }
+
+  @Override
+  protected MemberId memberIdForBroker(final int nodeIdx) {
+    return MemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length);
+  }
+
+  private static List<Zone> zoneConfigs(final int brokerCount, final int replicationFactor) {
+    final var replicasZoneB = replicationFactor / 2;
+    final var replicasZoneA = replicationFactor - replicasZoneB;
+    final var brokersZoneB = brokerCount / ZONES.length;
+    final var brokersZoneA = brokerCount - brokersZoneB;
+    return List.of(
+        new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
+        new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
   }
 
   @Override
