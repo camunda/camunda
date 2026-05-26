@@ -134,8 +134,7 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('Admin user can grant and revoke component authorization for user', async ({
+  test('Admin user can grant and revoke component authorization for user', async ({
     page,
     loginPage,
     identityUsersPage,
