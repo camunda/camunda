@@ -147,7 +147,10 @@ class TaskDetailsPage {
           (await this.completeTaskButton.isVisible()) &&
           (await this.completeTaskButton.isEnabled())
         ) {
-          await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
+          // Task did not complete — re-click the button so the retry has a
+          // chance to succeed rather than waiting indefinitely for a banner
+          // that will never appear.
+          await this.completeTaskButton.click();
         }
       },
     });

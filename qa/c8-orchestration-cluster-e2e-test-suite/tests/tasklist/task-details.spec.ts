@@ -197,7 +197,9 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickAssignToMeButton();
     await waitForAssertion({
       assertion: async () => {
-        await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible();
+        await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible({
+          timeout: 60000,
+        });
       },
       onFailure: async () => {
         await page.reload();

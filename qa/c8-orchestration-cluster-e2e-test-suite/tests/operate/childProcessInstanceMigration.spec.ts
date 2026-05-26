@@ -59,6 +59,10 @@ test.beforeAll(async () => {
     processDefinitionKey: '',
   };
 
+  // Wait for the process definitions to propagate before creating instances to
+  // avoid 404 NOT_FOUND errors when the engine hasn't registered them yet.
+  await sleep(2000);
+
   const parentInstances = await createInstances(
     parentProcess.bpmnProcessId,
     parentProcess.version,
