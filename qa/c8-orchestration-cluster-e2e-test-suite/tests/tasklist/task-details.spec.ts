@@ -266,7 +266,8 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Age', '21');
   });
 
-  test('task completion with deployed form', async ({
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('task completion with deployed form', async ({
     taskPanelPage,
     taskDetailsPage,
   }) => {
