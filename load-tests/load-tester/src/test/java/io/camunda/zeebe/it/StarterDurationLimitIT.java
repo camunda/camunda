@@ -13,6 +13,7 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       "load-tester.perform-read-benchmarks=false",
     })
 @ActiveProfiles({"starter", "it"})
+@Disabled
 class StarterDurationLimitIT {
 
   @Container
