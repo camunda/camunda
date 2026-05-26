@@ -20,8 +20,15 @@ const imageDocument: DocumentInfo = {
 const pdfDocument: DocumentInfo = {
   link: '/v2/documents/pdf',
   fileName: 'report.pdf',
-  type: 'unknown',
+  type: 'pdf',
   size: 2048,
+};
+
+const unknownDocument: DocumentInfo = {
+  link: '/v2/documents/archive',
+  fileName: 'archive.zip',
+  type: 'unknown',
+  size: 4096,
 };
 
 describe('<PreviewDocumentButton />', () => {
@@ -36,16 +43,46 @@ describe('<PreviewDocumentButton />', () => {
     expect(button).toBeEnabled();
   });
 
-  it('should render a disabled preview button for unsupported types', () => {
+  it('should render an enabled preview button for pdf documents', () => {
     render(
       <PreviewDocumentButton document={pdfDocument} variableName="myPdf" />,
     );
 
     const button = screen.getByLabelText('Preview document for variable myPdf');
+    expect(button).toBeEnabled();
+  });
+
+  it('should render a disabled preview button for unsupported types', () => {
+    render(
+      <PreviewDocumentButton
+        document={unknownDocument}
+        variableName="myArchive"
+      />,
+    );
+
+    const button = screen.getByLabelText(
+      'Preview document for variable myArchive',
+    );
     expect(button).toBeDisabled();
     expect(
       screen.getByText('Preview not available for this document type'),
     ).toBeInTheDocument();
+  });
+
+  it('should open the modal with the pdf when clicked', async () => {
+    const {user} = render(
+      <PreviewDocumentButton document={pdfDocument} variableName="myPdf" />,
+    );
+
+    await user.click(
+      screen.getByLabelText('Preview document for variable myPdf'),
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    const iframe = screen.getByTitle('report.pdf');
+    expect(iframe.tagName).toBe('IFRAME');
+    expect(iframe).toHaveAttribute('src', '/v2/documents/pdf');
   });
 
   it('should open the modal with the image when clicked', async () => {
