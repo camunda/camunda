@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
-ARG BASE_DIGEST="sha256:991952bbe488d0520a56c3a5923f889fc0e8b3e1bcfc40ac13bd9e39e69ea4a1"
+ARG BASE_DIGEST="sha256:818b3c66647e18e69a7f03eef129d764eff8cdca5d7cbd865e5dac1c4ea08368"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
