@@ -54,7 +54,7 @@ jobs:
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: Login to SaaS image registry
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
