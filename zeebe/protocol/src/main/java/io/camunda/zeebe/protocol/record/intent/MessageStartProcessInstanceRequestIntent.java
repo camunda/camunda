@@ -42,8 +42,8 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
   REQUEST((short) 0, false),
   REQUESTED((short) 1, true),
 
-  // success reply half. STARTED is applied on P_B (dedup write) and, once the P_K-side bookkeeping
-  // lands in a later commit, on P_K (pending-ask cleanup + commit of the started PI).
+  // success reply half. STARTED is applied on P_B (dedup write) and on P_K (pending-ask cleanup;
+  // the CORRELATED event + lock-entry write for the started PI land in commit 9).
   START((short) 2, false),
   STARTED((short) 3, true),
 

@@ -344,8 +344,8 @@ public class SubscriptionCommandSender {
    * businessId uniqueness invariant. The reply is one of {@link
    * MessageStartProcessInstanceRequestIntent#STARTED}, {@link
    * MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED}, or {@link
-   * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED}; the reply handlers and
-   * routing flip land in later commits.
+   * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED}; the routing flip that
+   * dispatches this request from the publish path lands later.
    *
    * <p>The wire payload mirrors the originating publish: {@code messageKey} additionally encodes
    * the source partition (via Zeebe's key-partitioning), so the reply target on {@code P_B} is
@@ -383,7 +383,8 @@ public class SubscriptionCommandSender {
   /**
    * Sends the start-process-instance ask directly to {@code P_B} bypassing the writers' post-commit
    * task. Mirrors {@link #sendDirectOpenMessageSubscription} and exists for the scheduled retry
-   * task on {@code P_K} that drains the pending-ask state; that scheduler lands in a later commit.
+   * task on {@code P_K} that drains the pending-ask state ({@link
+   * io.camunda.zeebe.engine.processing.message.PendingMessageStartAskCheckScheduler}).
    */
   public void sendDirectStartProcessInstanceRequest(
       final int targetPartitionId,

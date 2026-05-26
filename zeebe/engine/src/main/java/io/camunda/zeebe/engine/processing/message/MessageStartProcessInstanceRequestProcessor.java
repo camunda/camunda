@@ -143,7 +143,7 @@ public final class MessageStartProcessInstanceRequestProcessor
     // because that path also writes a MessageStartEventSubscription:CORRELATED event, whose
     // applier dereferences the buffered message in local MessageState — but on P_B the message
     // has never been published locally. The CORRELATED event against the originating
-    // subscription is written on P_K when it applies the STARTED reply (lands in a later commit).
+    // subscription is written on P_K when it applies the STARTED reply.
     eventHandle.activateProcessInstanceForStartEvent(
         request.getProcessDefinitionKey(),
         processInstanceKey,
@@ -153,9 +153,9 @@ public final class MessageStartProcessInstanceRequestProcessor
         request.getBusinessIdBuffer());
 
     // Write a local STARTED follow-up event so the dedup applier records
-    // (processDefinitionKey, messageKey) → processInstanceKey. The cross-partition reply below is
-    // a separate command and has no applier on P_K (until the bookkeeping commits land), so the
-    // local event is what actually populates the dedup state on P_B.
+    // (processDefinitionKey, messageKey) → processInstanceKey. The cross-partition reply
+    // command triggers a second STARTED event on P_K whose applier clears the pending-ask
+    // bookkeeping; this local event is what populates the dedup state on P_B.
     startedEventBuffer.wrap(request);
     startedEventBuffer.setProcessInstanceKey(processInstanceKey);
     stateWriter.appendFollowUpEvent(
