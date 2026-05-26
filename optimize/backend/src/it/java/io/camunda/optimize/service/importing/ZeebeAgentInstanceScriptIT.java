@@ -48,6 +48,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractCCSMIT {
     // given
     final ProcessInstanceDto dto = buildBaseInstance();
     dto.setAgentInstances(List.of(createdAgent(AGENT_ID)));
+    computeAgentTotals(dto);
 
     // when
     importProcessInstances(List.of(dto));
@@ -74,6 +75,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractCCSMIT {
     // given: no prior CREATED — COMPLETED arrives first (out-of-order across batches)
     final ProcessInstanceDto dto = buildBaseInstance();
     dto.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    computeAgentTotals(dto);
 
     // when
     importProcessInstances(List.of(dto));
@@ -260,6 +262,7 @@ class ZeebeAgentInstanceScriptIT extends AbstractCCSMIT {
     // given: COMPLETED arrives first (out-of-order across batches)
     final ProcessInstanceDto completed = buildBaseInstance();
     completed.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    computeAgentTotals(completed);
     importProcessInstances(List.of(completed));
 
     // when: CREATED arrives later — script merges startDate + startDateEpochMs
@@ -310,6 +313,24 @@ class ZeebeAgentInstanceScriptIT extends AbstractCCSMIT {
               assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
               assertThat(saved.getAgentTotalTokens()).isEqualTo(300L);
             });
+  }
+
+  private void computeAgentTotals(final ProcessInstanceDto dto) {
+    long totalInput = 0L, totalOutput = 0L, totalModel = 0L, totalTool = 0L;
+    for (final AgentInstanceDto agent : dto.getAgentInstances()) {
+      final AgentMetricsDto m = agent.getMetrics();
+      if (m != null) {
+        totalInput += m.getInputTokens();
+        totalOutput += m.getOutputTokens();
+        totalModel += m.getModelCalls();
+        totalTool += m.getToolCalls();
+      }
+    }
+    dto.setAgentTotalInputTokens(totalInput);
+    dto.setAgentTotalOutputTokens(totalOutput);
+    dto.setAgentTotalModelCalls(totalModel);
+    dto.setAgentTotalToolCalls(totalTool);
+    dto.setAgentTotalTokens(totalInput + totalOutput);
   }
 
   private void importProcessInstances(final List<ProcessInstanceDto> instances) {

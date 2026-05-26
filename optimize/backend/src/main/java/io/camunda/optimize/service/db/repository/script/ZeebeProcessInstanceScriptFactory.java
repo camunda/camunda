@@ -175,11 +175,18 @@ public interface ZeebeProcessInstanceScriptFactory {
             if (existingAgent.startDateEpochMs != null && existingAgent.endDateEpochMs != null) {
               existingAgent.totalDurationInMs = existingAgent.endDateEpochMs - existingAgent.startDateEpochMs;
             }
-            if (newAgent.status != null) { existingAgent.status = newAgent.status; }
-            if (newAgent.lastUpdatedDate != null) { existingAgent.lastUpdatedDate = newAgent.lastUpdatedDate; }
+            def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
+            long existingTs = existingAgent.lastUpdatedDate != null ?
+              dateFormatter.parse(existingAgent.lastUpdatedDate).getTime() : 0L;
+            long newTs = newAgent.lastUpdatedDate != null ?
+              dateFormatter.parse(newAgent.lastUpdatedDate).getTime() : Long.MAX_VALUE;
+            if (newTs >= existingTs) {
+              if (newAgent.status != null) { existingAgent.status = newAgent.status; }
+              if (newAgent.lastUpdatedDate != null) { existingAgent.lastUpdatedDate = newAgent.lastUpdatedDate; }
+              if (newAgent.metrics != null) { existingAgent.metrics = newAgent.metrics; }
+              if (newAgent.tools != null && !newAgent.tools.isEmpty()) { existingAgent.tools = newAgent.tools; }
+            }
             if (newAgent.definition != null) { existingAgent.definition = newAgent.definition; }
-            if (newAgent.metrics != null) { existingAgent.metrics = newAgent.metrics; }
-            if (newAgent.tools != null && !newAgent.tools.isEmpty()) { existingAgent.tools = newAgent.tools; }
           } else {
             agentsById.put(newAgent.agentInstanceId, newAgent);
           }
