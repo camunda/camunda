@@ -1799,17 +1799,12 @@ jobs:
           user_description: "General"
 
   openapi-x-added-in-version-check:
-    name: "Lint / C8 REST OpenAPI x-added-in-version (non-blocking)"
-    # Non-blocking PR check that runs the in-repo verifier under
+    name: "Lint / C8 REST OpenAPI x-added-in-version"
+    # Blocking PR check that runs the in-repo verifier under
     # .github/scripts/x-added-in-version-check against the spec files in this
     # PR and surfaces each finding as a GitHub Actions `::error::`
-    # annotation. The verifier exits non-zero on findings, and any of the
-    # preparatory steps (checkout, dependency install, artefact build) can
-    # also fail (e.g., missing CROSS_REPO_TOKEN on fork PRs). The job is
-    # marked `continue-on-error: true` at the job level so no failure mode
-    # can block merges — even though it is listed in `check-results.needs`
-    # (as required by Unified CI policy), its result is always reported as
-    # `success` to downstream jobs. PR authors still get early feedback via
+    # annotation. The verifier exits non-zero on findings, and
+    # PR authors get early feedback via
     # inline annotations.
     if: |
       needs.detect-changes.outputs.openapi-changes == 'true'
@@ -1817,7 +1812,6 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -1860,8 +1854,8 @@ jobs:
           RETURN_OF_API_REF: v0.1.1
         run: npm run build:artefacts
       - name: Run PR verifier
-        # Verifier exits non-zero on findings; the job-level
-        # `continue-on-error: true` keeps the overall check non-blocking.
+        # Verifier exits non-zero on findings, which fails the job and
+        # therefore the `check-results` aggregate gate.
         working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
         env:
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2
