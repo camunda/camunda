@@ -57,7 +57,8 @@ test.describe.parallel('Get error metrics for a job type API Tests', () => {
     });
   });
 
-  test('Get error metrics for a job type - success', async ({request}) => {
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('Get error metrics for a job type - success', async ({request}) => {
     let failedItems: string[] = [];
 
     await test.step('General Search', async () => {
