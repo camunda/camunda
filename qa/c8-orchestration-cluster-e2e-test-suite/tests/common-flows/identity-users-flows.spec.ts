@@ -224,6 +224,12 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step(`Logout, login with demo and delete the created authorization`, async () => {
+      // Explicitly log out the current user (testUser) before navigating to
+      // the authorizations page.  Without this, the Identity session stays
+      // active and the page loads directly without showing the login form,
+      // which causes loginPage.login('demo', 'demo') to time out (180 s)
+      // waiting for the username input that never appears.
+      await identityHeader.logout();
       await identityAuthorizationsPage.navigateToAuthorizations();
       await loginPage.login('demo', 'demo');
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
