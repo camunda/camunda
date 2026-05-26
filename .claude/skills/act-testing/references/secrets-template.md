@@ -12,6 +12,6 @@ VAULT_SECRET_ID=mock-secret-id
 Use with:
 
 ```bash
-act pull_request -e .github/skills/act-testing/references/event-payloads/pr-opened-ready.json -W .github/workflows/test-example.yml --secret-file .secrets --reuse
+act pull_request -e .claude/skills/act-testing/references/event-payloads/pr-opened-ready.json -W .github/workflows/test-example.yml --secret-file .secrets --reuse
 ```
 
