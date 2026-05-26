@@ -20,11 +20,11 @@ import java.util.Objects;
  * their C8 equivalents:
  *
  * <table border="1">
- *   <tr><th>Optimize field name</th><th>Zeebe field name</th><th>Meaning</th></tr>
- *   <tr><td>{@link #id}</td><td>{@code processDefinitionKey}</td>
+ *   <tr><th>Optimize field name</th><th>Zeebe reference</th><th>Meaning</th></tr>
+ *   <tr><td>{@link #id}</td><td>{@code process/decision definition Key}</td>
  *       <td>Unique {@code Long} key for a specific definition version (stored as {@code String})</td></tr>
- *   <tr><td>{@link #key}</td><td>{@code bpmnProcessId}</td>
- *       <td>Non-unique BPMN process ID string, e.g. {@code "invoice-process"}</td></tr>
+ *   <tr><td>{@link #key}</td><td>{@code process/decision ID (eg bpmnProcessId)}</td>
+ *       <td>Non-unique BPMN process or decision ID string, e.g. {@code "invoice-process"}</td></tr>
  * </table>
  *
  * <p>This naming is intentional and must not be changed. See {@code
@@ -33,11 +33,15 @@ import java.util.Objects;
 public abstract class DefinitionOptimizeResponseDto implements Serializable, OptimizeDto {
 
   /**
-   * Maps to Zeebe's {@code processDefinitionKey}. See class-level Javadoc for the naming rationale.
+   * Maps to Zeebe's process or decision definition key (for example, {@code processDefinitionKey}
+   * or {@code decisionDefinitionKey}). See class-level Javadoc for the naming rationale.
    */
   private String id;
 
-  /** Maps to Zeebe's {@code bpmnProcessId}. See class-level Javadoc. */
+  /**
+   * Maps to the Zeebe process or decision identifier (for example, {@code bpmnProcessId} or {@code
+   * decisionId}). See class-level Javadoc.
+   */
   private String key;
 
   private String version;

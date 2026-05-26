@@ -72,8 +72,8 @@ CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=[audience]
 Key design decisions are recorded in [`docs/adr/`](docs/adr/):
 
 - [ADR-001: Retain Camunda 7 Naming Conventions](docs/adr/001-c7-naming-conventions.md) — why
-  Optimize's DTO fields and ES/OS index names use C7 terminology (eg `processDefinitionKey`
-  for the BPMN string, `processDefinitionId` for the unique Long) rather than C8/Zeebe
+  Optimize's DTO fields and ES/OS index names use C7 terminology (e.g. `processDefinitionKey`
+  for the BPMN string, `processDefinitionId` for the unique `Long`) rather than C8/Zeebe
   conventions.
 
 ## F.A.Q

@@ -48,7 +48,8 @@ Instead, additional documentation is added to avoid confusion.
 - Engineers and AI coding agents working at the Zeebe import layer must be aware of the C7/C8
   name inversion. Javadoc and inline comments on the import service methods document the mapping at
   the point of translation.
-- `CLAUDE.md` in the `optimize/` module enforces this constraint for AI coding agents.
+- The root `AGENTS.md` is the canonical instruction entry point for AI coding agents, and
+  `optimize/CLAUDE.md` provides module-specific guidance reinforcing this constraint.
 - The naming stays until a future migration is explicitly scoped and resourced.
 
 ## Source
