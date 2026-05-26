@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":zeebe-test-util"))
     implementation(libs.org.springframework.spring.context)
     implementation(libs.org.springframework.spring.core)
+    implementation(libs.org.springframework.spring.beans)
     implementation(libs.org.springframework.boot.spring.boot)
     implementation(project(":camunda-client-java"))
     implementation(libs.com.fasterxml.jackson.core.jackson.core)
@@ -50,6 +51,8 @@ dependencies {
     implementation(libs.org.junit.jupiter.junit.jupiter.api)
     implementation(libs.org.opensearch.client.opensearch.java)
     implementation(libs.org.apache.commons.commons.lang3)
+    implementation(libs.org.liquibase.liquibase.core)
+    implementation(libs.org.jspecify.jspecify)
     implementation(libs.com.github.dasniko.testcontainers.keycloak)
     implementation(libs.org.keycloak.keycloak.admin.client)
     implementation(libs.org.keycloak.keycloak.client.common.synced)
@@ -58,6 +61,7 @@ dependencies {
     implementation(libs.software.amazon.awssdk.http.client.spi)
     implementation(libs.software.amazon.awssdk.regions)
     implementation(project(":configuration"))
+    implementation(project(":camunda-testcontainer"))
     testImplementation(project(":zeebe-bpmn-model"))
 }
 

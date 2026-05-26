@@ -16,6 +16,7 @@ dependencies {
     api(libs.com.github.ben.manes.caffeine.caffeine)
     implementation(libs.org.apache.commons.commons.lang3)
     implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
     testImplementation(project(":zeebe-protocol-impl"))
     testImplementation(project(":zeebe-protocol-test-util"))

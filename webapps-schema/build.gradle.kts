@@ -10,7 +10,7 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(project(":zeebe-protocol"))
-    implementation(libs.io.camunda.security.library.api)
+    api(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-protocol"))
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
     testImplementation(libs.org.reflections.reflections)

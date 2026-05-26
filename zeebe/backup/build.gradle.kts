@@ -6,6 +6,7 @@ plugins { id("buildlogic.server-conventions") }
 
 dependencies {
     implementation(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-atomix-cluster"))
     implementation(project(":zeebe-stream-platform"))
     implementation(project(":zeebe-msgpack-value"))
     implementation(project(":zeebe-db"))

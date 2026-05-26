@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":zeebe-gateway-rest"))
     implementation(project(":webapps-common"))
     implementation(project(":camunda-spring-utils"))
+    implementation(project(":zeebe-gateway-rest"))
+    implementation(project(":camunda-security-core"))
     runtimeOnly(project(":webapp-webjar"))
 
     api(libs.jakarta.annotation.jakarta.annotation.api)

@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.io.camunda.security.library.api)
+    api(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-protocol"))
     implementation(libs.commons.validator.commons.validator)
 }

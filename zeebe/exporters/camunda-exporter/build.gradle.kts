@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":camunda-schema-manager"))
     implementation(project(":webapps-schema"))
     implementation(project(":webapps-common"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.opensearch.client.opensearch.java)
