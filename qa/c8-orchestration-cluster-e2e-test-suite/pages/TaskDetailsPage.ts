@@ -163,7 +163,15 @@ class TaskDetailsPage {
   }
 
   async clickUnassignButton() {
-    await this.unassignButton.click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.unassignButton).toBeVisible();
+        await this.unassignButton.click();
+      },
+      onFailure: async () => {
+        console.log('Click unassign button failed, retrying...');
+      },
+    });
   }
 
   async clickCompleteTaskButton() {

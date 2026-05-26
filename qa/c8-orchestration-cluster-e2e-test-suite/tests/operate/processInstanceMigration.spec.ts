@@ -342,12 +342,22 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
-      await operateOperationPanelPage.expandOperationsPanel();
-
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(6);
 
-      await expect(operationEntry).toBeVisible({timeout: 120000});
+      // The migration of 6 instances can take >120 s under cluster load.
+      // Reload and re-expand the operations panel on each retry to surface
+      // the latest operation state.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateOperationPanelPage.expandOperationsPanel();
+          await expect(operationEntry).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 4,
+      });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
 

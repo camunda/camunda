@@ -175,7 +175,7 @@ test.describe('Identity User Flows', () => {
 
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'User',
-        ownerId: testUser.name,
+        ownerId: testUser.username,
         resourceType: 'Component',
         resourceId: '*',
         accessPermissions: ['Access'],
