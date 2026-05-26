@@ -8,8 +8,7 @@
 
 import {parseProcessInstancesSearchFilter} from './processInstancesSearch';
 
-const params = (obj: Record<string, string>) =>
-  new URLSearchParams(obj);
+const params = (obj: Record<string, string>) => new URLSearchParams(obj);
 
 describe('parseProcessInstancesSearchFilter', () => {
   it('should return undefined when no filters are set', () => {
@@ -28,9 +27,7 @@ describe('parseProcessInstancesSearchFilter', () => {
   });
 
   it('should return a filter with state when only active is set', () => {
-    const result = parseProcessInstancesSearchFilter(
-      params({active: 'true'}),
-    );
+    const result = parseProcessInstancesSearchFilter(params({active: 'true'}));
 
     expect(result).toEqual({
       state: {$eq: 'ACTIVE'},
