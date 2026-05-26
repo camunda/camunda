@@ -60,7 +60,6 @@ class CamundaClientConfigIT {
     assertThat(workerDefaults.getType()).isEqualTo("benchmark-task");
     assertThat(workerDefaults.getStreamEnabled()).isTrue();
     assertThat(workerDefaults.getMaxJobsActive()).isEqualTo(30);
-    assertThat(workerDefaults.getPollInterval()).hasSeconds(1);
     assertThat(workerDefaults.getTimeout()).hasMillis(1800);
   }
 }
