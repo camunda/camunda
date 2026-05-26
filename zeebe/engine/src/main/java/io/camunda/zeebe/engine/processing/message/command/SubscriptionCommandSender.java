@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.message.command;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -334,6 +336,168 @@ public class SubscriptionCommandSender {
             .setMessageKey(messageKey)
             .setInterrupting(false)
             .setTenantId(tenantId));
+  }
+
+  /**
+   * Sends a cross-partition request from {@code P_K = hash(correlationKey)} to {@code P_B =
+   * hash(businessId)} asking {@code P_B} to create a message-start process instance under its
+   * businessId uniqueness invariant. The reply is one of {@link
+   * MessageStartProcessInstanceRequestIntent#STARTED}, {@link
+   * MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED}, or {@link
+   * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED}; the reply handlers and
+   * routing flip land in later commits.
+   *
+   * <p>The wire payload mirrors the originating publish: {@code messageKey} additionally encodes
+   * the source partition (via Zeebe's key-partitioning), so the reply target on {@code P_B} is
+   * derivable without a separate field.
+   */
+  public boolean sendStartProcessInstanceRequest(
+      final int targetPartitionId,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final String tenantId) {
+    return handleFollowUpCommandBasedOnPartition(
+        targetPartitionId,
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.REQUEST,
+        buildStartProcessInstanceRequest(
+            messageKey,
+            messageName,
+            correlationKey,
+            businessId,
+            processDefinitionKey,
+            bpmnProcessId,
+            startEventId,
+            messageStartEventSubscriptionKey,
+            variables,
+            tenantId));
+  }
+
+  /**
+   * Sends the start-process-instance ask directly to {@code P_B} bypassing the writers' post-commit
+   * task. Mirrors {@link #sendDirectOpenMessageSubscription} and exists for the scheduled retry
+   * task on {@code P_K} that drains the pending-ask state; that scheduler lands in a later commit.
+   */
+  public void sendDirectStartProcessInstanceRequest(
+      final int targetPartitionId,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final String tenantId) {
+    interPartitionCommandSender.sendCommand(
+        targetPartitionId,
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.REQUEST,
+        buildStartProcessInstanceRequest(
+            messageKey,
+            messageName,
+            correlationKey,
+            businessId,
+            processDefinitionKey,
+            bpmnProcessId,
+            startEventId,
+            messageStartEventSubscriptionKey,
+            variables,
+            tenantId));
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#STARTED} reply from {@code P_B} back
+   * to {@code P_K}. The target partition is derived from {@code request.getMessageKey()} — the
+   * source partition is encoded in the message key by Zeebe's key-partitioning.
+   *
+   * <p>The reply replays the request payload so the {@code P_K} handler has every field it needs to
+   * commit the correlation locally (subscription-correlated event, local correlationKey lock entry,
+   * buffered-message removal) without any further cross-partition lookup; the {@code
+   * processInstanceKey} of the newly created instance is added on top.
+   */
+  public boolean sendStartProcessInstanceStarted(
+      final MessageStartProcessInstanceRequestRecord request, final long processInstanceKey) {
+    final MessageStartProcessInstanceRequestRecord reply =
+        new MessageStartProcessInstanceRequestRecord();
+    reply.wrap(request);
+    reply.setProcessInstanceKey(processInstanceKey);
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(request.getMessageKey()),
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        MessageStartProcessInstanceRequestIntent.START,
+        reply);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED} reply from
+   * {@code P_B} back to {@code P_K} after the businessId uniqueness check on {@code P_B} found an
+   * active holder. {@code P_K} keeps the message buffered (TTL continues) and waits for the
+   * pull-based release introduced in a later increment.
+   */
+  public boolean sendStartProcessInstanceUniquenessRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS);
+  }
+
+  /**
+   * Sends the {@link MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} reply from
+   * {@code P_B} back to {@code P_K} when {@code P_B} has no message-start-event subscription for
+   * the requested definition yet (deployment-distribution race). {@code P_K} keeps the message
+   * buffered, matching its local "no subscription right now" semantics; this is deliberately not a
+   * discard.
+   */
+  public boolean sendStartProcessInstanceNoSubscriptionRejected(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return sendStartProcessInstanceRejection(
+        request, MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
+  private boolean sendStartProcessInstanceRejection(
+      final MessageStartProcessInstanceRequestRecord request,
+      final MessageStartProcessInstanceRequestIntent intent) {
+    final MessageStartProcessInstanceRequestRecord reply =
+        new MessageStartProcessInstanceRequestRecord();
+    reply.wrap(request);
+    // processInstanceKey stays at -1 for rejection replies; defaults are kept by wrap.
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(request.getMessageKey()),
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        intent,
+        reply);
+  }
+
+  private MessageStartProcessInstanceRequestRecord buildStartProcessInstanceRequest(
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer businessId,
+      final long processDefinitionKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer startEventId,
+      final long messageStartEventSubscriptionKey,
+      final DirectBuffer variables,
+      final String tenantId) {
+    return new MessageStartProcessInstanceRequestRecord()
+        .setMessageKey(messageKey)
+        .setMessageName(messageName)
+        .setCorrelationKey(correlationKey)
+        .setBusinessId(businessId)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setBpmnProcessId(bpmnProcessId)
+        .setStartEventId(startEventId)
+        .setMessageStartEventSubscriptionKey(messageStartEventSubscriptionKey)
+        .setVariables(variables)
+        .setTenantId(tenantId);
   }
 
   /**
