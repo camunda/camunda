@@ -686,6 +686,7 @@ class RdbmsExporterTest {
         new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriters)
             .partitionId(0)
+            .physicalTenantId("default")
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
             .rdbmsSchemaManager(schemaManager)
