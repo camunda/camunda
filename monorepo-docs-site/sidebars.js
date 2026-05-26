@@ -87,6 +87,7 @@ const sidebars = {
               type: 'category',
               label: 'Orchestration Cluster',
               items: [
+                'architecture/components/orchestration-cluster/swim-membership-simulator',
                 {
                   type: 'category',
                   label: 'ADRs',
