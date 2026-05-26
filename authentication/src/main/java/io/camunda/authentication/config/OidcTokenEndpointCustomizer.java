@@ -8,6 +8,7 @@
 package io.camunda.authentication.config;
 
 import com.nimbusds.jose.jwk.JWK;
+import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,13 +32,13 @@ public class OidcTokenEndpointCustomizer
     implements io.camunda.security.spring.oidc.OidcTokenEndpointCustomizer {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcTokenEndpointCustomizer.class);
-  private final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository;
+  private final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository;
   private final AssertionJwkProvider assertionJwkProvider;
   private final Map<String, JWK> resolvedJwks;
   private final RestClient restClient;
 
   public OidcTokenEndpointCustomizer(
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
       final AssertionJwkProvider assertionJwkProvider,
       final RestClient restClient) {
     this.oidcAuthenticationConfigurationRepository = oidcAuthenticationConfigurationRepository;

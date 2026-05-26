@@ -13,6 +13,7 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
@@ -191,7 +192,7 @@ public class OidcOverrideBeansConfiguration {
   public OidcClaimsProvider oidcClaimsProvider(
       final CamundaSecurityLibraryProperties cslProperties,
       final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+      final OidcProviderConfigurationPort oidcProviderRepository,
       @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
       final MeterRegistry meterRegistry) {
     final var oidc = cslProperties.getAuthentication().getOidc();
@@ -233,7 +234,7 @@ public class OidcOverrideBeansConfiguration {
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final OidcProviderConfigurationPort oidcProviderRepository) {
     return new OidcUserAuthenticationConverter(
         authorizedClientRepository,
         oidcAccessTokenDecoderFactory,
@@ -241,12 +242,6 @@ public class OidcOverrideBeansConfiguration {
         request,
         buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
-  }
-
-  @Bean
-  public OidcAuthenticationConfigurationRepository oidcProviderRepository(
-      final CamundaSecurityLibraryProperties cslProperties) {
-    return new OidcAuthenticationConfigurationRepository(cslProperties);
   }
 
   private List<ClientRegistration> extractClientRegistrations(
@@ -266,7 +261,7 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
       final CamundaSecurityLibraryProperties cslProperties,
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
@@ -283,7 +278,7 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
       final ClientRegistrationRepository clientRegistrationRepository) {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
@@ -324,7 +319,7 @@ public class OidcOverrideBeansConfiguration {
   public JwtDecoder jwtDecoder(
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final OidcProviderConfigurationPort oidcProviderRepository) {
     final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
 
     final var additionalJwkSetUrisByIssuer =
@@ -355,7 +350,7 @@ public class OidcOverrideBeansConfiguration {
   }
 
   private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final OidcProviderConfigurationPort oidcProviderRepository) {
     return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
         .filter(
             config ->
@@ -378,7 +373,7 @@ public class OidcOverrideBeansConfiguration {
   }
 
   private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
-      final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final OidcProviderConfigurationPort oidcProviderRepository) {
     return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
         .filter(entry -> entry.getValue().isPreferIdTokenClaims())
         .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
@@ -386,7 +381,7 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
       final AssertionJwkProvider assertionJwkProvider,
       final ObjectProvider<ObservationRegistry> observationRegistry) {
     return new OidcTokenEndpointCustomizer(

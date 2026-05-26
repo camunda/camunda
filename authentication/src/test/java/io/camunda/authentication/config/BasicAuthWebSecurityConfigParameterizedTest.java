@@ -101,8 +101,7 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
 
   private Map<String, Object> getProperties(
       final String property1, final String value1, final String property2, final String value2) {
-    final Map<String, Object> properties = getBasicProperties();
-    properties.put(property1, value1);
+    final Map<String, Object> properties = getProperties(property1, value1);
     properties.put(property2, value2);
     return properties;
   }
