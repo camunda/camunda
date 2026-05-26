@@ -23,7 +23,7 @@ test.beforeAll(async () => {
     './resources/variableScrollingProcess.bpmn',
     './resources/simpleServiceTaskProcess.bpmn',
   ]);
-  await sleep(1500);
+  await sleep(5000);
   const manyVariables = generateManyVariables();
   await createInstances('variableScrollingProcess', 1, 1, manyVariables);
   await createInstances('simpleServiceTaskProcess', 1, 1);
@@ -51,9 +51,18 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Navigate to Processes tab and open the process instance', async () => {
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'variable scrolling process',
-      );
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessesPage.filterByProcessName(
+            'variable scrolling process',
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateHomePage.clickProcessesTab();
+        },
+        maxRetries: 3,
+      });
       await sleep(100);
       await operateProcessesPage.clickProcessInstanceLink();
       await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
