@@ -271,9 +271,6 @@ public class Starter implements CommandLineRunner {
   private BooleanSupplier createContinuationCondition() {
     final int durationLimit = starterCfg.getDurationLimit();
 
-    // durationLimit (in seconds) controls how long the starter keeps creating process instances.
-    // A value <= 0 (the default) means run indefinitely; a positive value stops creation after
-    // that many seconds have elapsed, which is useful for time-boxed load test scenarios.
     if (durationLimit > 0) {
       final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
       return () -> LocalDateTime.now().isBefore(endTime);
