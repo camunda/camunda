@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
@@ -251,8 +252,8 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
             .map(
                 result ->
                     new JobErrorStatisticsEntity(
-                        result.errorCode(),
-                        result.errorMessage(),
+                        nullToEmpty(result.errorCode()),
+                        nullToEmpty(result.errorMessage()),
                         ofNullable(result.workers()).orElse(0)))
             .toList();
 
