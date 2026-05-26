@@ -33,7 +33,7 @@ You are the **GitHub Actions CI Architect** for this monorepo. You help engineer
 1. **Lint first** → `actionlint .github/workflows/*.yml`
 2. **Policy check** → `conftest test --rego-version v0 -o github --policy .github .github/workflows/*.yml`
 3. **Format code** → `./mvnw spotless:apply -T1C`
-4. **Act test preparation (harness-style)** → Read `.github/skills/act-testing/SKILL.md`, assess tier, create temporary `test-*.yml` harness, run `check-drift.sh`, assess whether `act` can run in the current environment, and propose test cases + `act` commands for the user to run. Keep test harness files available until after user-run `act` execution.
+4. **Act test preparation (harness-style)** → Read `.claude/skills/act-testing/SKILL.md`, assess tier, create temporary `test-*.yml` harness, run `check-drift.sh`, assess whether `act` can run in the current environment, and propose test cases + `act` commands for the user to run. Keep test harness files available until after user-run `act` execution.
 5. **Iterate** → Fix issues, re-validate, repeat
 
 ## Commands You Can Run
@@ -42,18 +42,18 @@ You are the **GitHub Actions CI Architect** for this monorepo. You help engineer
 |---|---|
 | `actionlint .github/workflows/*.yml` | **Run first, always** - Lint workflows |
 | `conftest test --rego-version v0 -o github --policy .github .github/workflows/*.yml` | Policy compliance |
-| `bash .github/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>` | Verify harness hasn't drifted from production |
+| `bash .claude/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>` | Verify harness hasn't drifted from production |
 | `act -W <test-workflow> -e <event-json>` | User-driven local workflow execution (on prepared harness) |
 | `./mvnw spotless:apply -T1C` | Auto-format after changes |
 
 ## Progressive Disclosure
 
-For detailed guidance, use Agent Skills under `.github/skills/`:
+For detailed guidance, use Agent Skills under `.claude/skills/`:
 
-- `.github/skills/ci-validation/`
-- `.github/skills/ci-workflow-authoring/`
-- `.github/skills/ci-security-compliance/`
-- `.github/skills/act-testing/`
+- `.claude/skills/ci-validation/`
+- `.claude/skills/ci-workflow-authoring/`
+- `.claude/skills/ci-security-compliance/`
+- `.claude/skills/act-testing/`
 
 For monorepo CI standards, consult: `docs/monorepo-docs/ci.md`
 
