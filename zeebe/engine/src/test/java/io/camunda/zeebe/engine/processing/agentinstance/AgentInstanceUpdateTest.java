@@ -160,10 +160,7 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
-  public void shouldRejectUpdateWithEmptyChangedAttributesAndNoElementInstanceKey() {
-    // Rejection requires BOTH conditions: changedAttributes is empty AND no elementInstanceKey
-    // was supplied (sentinel -1). An empty changedAttributes paired with a valid elementInstanceKey
-    // is a valid pure-dedupe/association call and must NOT be rejected.
+  public void shouldRejectUpdateWithEmptyChangedAttributes() {
     // given
     ENGINE
         .deployment()
@@ -184,11 +181,12 @@ public class AgentInstanceUpdateTest {
             .getValue()
             .getAgentInstanceKey();
 
-    // when — no elementInstanceKey supplied (default sentinel -1), no changedAttributes
+    // when — valid elementInstanceKey supplied, but changedAttributes is empty
     final Record<?> rejection =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
+            .withElementInstanceKey(serviceTaskInstance.getKey())
             .withChangedAttributes(List.of())
             .expectRejection()
             .update();
@@ -958,12 +956,13 @@ public class AgentInstanceUpdateTest {
         .withStatus(AgentInstanceStatus.THINKING)
         .update();
 
-    // when — UPDATE re-supplies EI₁, which is already in the plural list
+    // when — UPDATE re-supplies EI₁ (already in the plural list) alongside a status change
     final var updated =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
             .withElementInstanceKey(ei1.getKey())
+            .withStatus(AgentInstanceStatus.IDLE)
             .update();
 
     // then — list is unchanged (no duplicates), but scalar moves back to the supplied key

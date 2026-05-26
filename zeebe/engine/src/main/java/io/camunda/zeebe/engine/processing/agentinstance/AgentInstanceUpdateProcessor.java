@@ -124,7 +124,7 @@ public final class AgentInstanceUpdateProcessor
     }
 
     final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-    if (changed.isEmpty() && commandValue.getElementInstanceKey() == -1L) {
+    if (changed.isEmpty()) {
       writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
       return;
     }
