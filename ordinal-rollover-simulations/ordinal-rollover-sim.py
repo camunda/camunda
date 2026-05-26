@@ -37,12 +37,13 @@ class ProcessInstance:
 
 
 class Simulation:
-    def __init__(self, ordinal_rollover, retention_period=30):
+    def __init__(self, ordinal_rollover, retention_period=30, compaction_callback=None):
         self.ordinal_rollover = ordinal_rollover
         self.next_id = 1
         self.current_time = 0
         self.current_ordinal = 0
         self.retention_period = retention_period
+        self.compaction_callback = compaction_callback
         self.indexes = {}
         self._main_index = self._ensure_index_exists("main")
         self.indexing_operations = 0
@@ -74,11 +75,35 @@ class Simulation:
         self._archive_process_instances()
         self._check_for_finished_ordinals()
         self._apply_ilm_policies()
-        ordinal_indexes = [index for index in self.indexes.values() if index.is_ordinal]
-        next_ordinal = self.ordinal_rollover.next_ordinal(ordinal_indexes, self.current_ordinal)
+        ordinal_indexes = self.get_ordinal_indexes()
+        next_ordinal = self.ordinal_rollover.next_ordinal(ordinal_indexes, self.current_ordinal, compaction_callback=self.compaction_callback)
         if next_ordinal != self.current_ordinal:
           verbose(f"Rolling over to ordinal index: {next_ordinal} at time {self.current_time}")
         self.current_ordinal = next_ordinal
+
+    def get_ordinal_indexes(self):
+      return [index for index in self.indexes.values() if index.is_ordinal]
+
+    def compact_ordinal_index(self):
+      verbose(f"Running compaction at time {self.current_time}")
+      ordinal_indexes = self.get_ordinal_indexes()
+      ordinal_indexes.sort(key=lambda index: index.ordinal, reverse=False)
+      oldest_ordinal = ordinal_indexes[0]
+      next_oldest_ordinal = ordinal_indexes[1]
+      dropped_docs = 0
+      for process_instance in oldest_ordinal.process_instances.values():
+        if (process_instance.end_date + self.retention_period) <= self.current_time:
+          dropped_docs += 1
+          continue
+        next_oldest_ordinal.add(process_instance)
+        self.indexing_operations += 1
+        self.operations_cost_estimate += len(next_oldest_ordinal.process_instances)
+      self.indexes_dropped_by_ilm += 1
+      self.docs_dropped_by_ilm += dropped_docs
+      del self.indexes[oldest_ordinal.name]
+      ordinal_indexes = self.get_ordinal_indexes()
+      verbose(len(ordinal_indexes), "ordinal indexes remain after compaction")
+      return ordinal_indexes
 
     def run_deleter(self, only_if_no_ilm_deadline=False):
       for index in self.indexes.values():
@@ -158,10 +183,10 @@ class OrdinalRollover:
         self.circular_reverse = circular_reverse
         self.time_since_last_rollover = 0
 
-    def next_ordinal(self, ordinal_indexes, current_ordinal):
+    def next_ordinal(self, ordinal_indexes, current_ordinal, compaction_callback=None):
         self.time_since_last_rollover += 1
         if self.time_since_last_rollover >= self.rollover_interval:
-            return self._rollover(ordinal_indexes, current_ordinal)
+            return self._rollover(ordinal_indexes, current_ordinal, compaction_callback)
         current_index = None
         for index in ordinal_indexes:
           if index.ordinal == current_ordinal:
@@ -169,26 +194,29 @@ class OrdinalRollover:
             break
         if current_index is not None:
           if self.rollover_size and len(current_index.process_instances) >= self.rollover_size:
-              return self._rollover(ordinal_indexes, current_ordinal)
+              return self._rollover(ordinal_indexes, current_ordinal, compaction_callback)
         return current_ordinal
 
-    def _rollover(self, ordinal_indexes, current_ordinal):
+    def _rollover(self, ordinal_indexes, current_ordinal, compaction_callback):
         self.time_since_last_rollover = 0
         if self.max_ordinals is not None and len(ordinal_indexes) >= self.max_ordinals:
-          if self.circular_ordinals:
-            open_ordinals = [index for index in ordinal_indexes if index.ilm_deadline is None]
-            if len(open_ordinals) > 1:
-              open_ordinals.sort(key=lambda index: index.ordinal, reverse=self.circular_reverse)
-              current_ordinal_index = -1
-              for i, index in enumerate(open_ordinals):
-                if index.ordinal == current_ordinal:
-                  current_ordinal_index = i
-                  break
-              if current_ordinal_index != -1:
-                next_ordinal_index = (current_ordinal_index + 1) % len(open_ordinals)
-                self.time_since_last_rollover = 0
-                return open_ordinals[next_ordinal_index].ordinal
-          return current_ordinal
+          if compaction_callback is not None:
+            ordinal_indexes = compaction_callback()
+          else:
+            if self.circular_ordinals:
+              open_ordinals = [index for index in ordinal_indexes if index.ilm_deadline is None]
+              if len(open_ordinals) > 1:
+                open_ordinals.sort(key=lambda index: index.ordinal, reverse=self.circular_reverse)
+                current_ordinal_index = -1
+                for i, index in enumerate(open_ordinals):
+                  if index.ordinal == current_ordinal:
+                    current_ordinal_index = i
+                    break
+                if current_ordinal_index != -1:
+                  next_ordinal_index = (current_ordinal_index + 1) % len(open_ordinals)
+                  self.time_since_last_rollover = 0
+                  return open_ordinals[next_ordinal_index].ordinal
+            return current_ordinal
         highest_ordinal = current_ordinal
         for index in ordinal_indexes:
           if index.ordinal > highest_ordinal:
@@ -197,6 +225,9 @@ class OrdinalRollover:
 
 
 def main(args):
+  compaction_callback = None
+  if args.compaction:
+    compaction_callback = lambda: sim.compact_ordinal_index()
   rollover = OrdinalRollover(
     rollover_interval=args.rollover_interval,
     rollover_size=args.rollover_size,
@@ -204,7 +235,7 @@ def main(args):
     circular_ordinals=args.circular_ordinals,
     circular_reverse=args.circular_reverse
   )
-  sim = Simulation(rollover)
+  sim = Simulation(rollover, compaction_callback=compaction_callback)
   if args.mode == "main":
     start_process_instance = sim.new_main_process_instance
   else:
@@ -248,6 +279,7 @@ def main(args):
     ("Deleter Only If No ILM Deadline", args.deleter_only_if_no_ilm if args.mode == "ordinal" else "N/A"),
     ("Circular Ordinals", args.circular_ordinals if args.mode == "ordinal" else "N/A"),
     ("Circular Reverse", args.circular_reverse if args.mode == "ordinal" else "N/A"),
+    ("Compaction", args.compaction if args.mode == "ordinal" else "N/A"),
     ####
     ("Total indexes", len(sim.indexes)),
     ("Max process instances", max_num_processes),
@@ -277,7 +309,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ticks", type=int, default=100, help="Number of ticks to simulate")
     parser.add_argument("--rate", type=int, default=5, help="Number of new process instances per tick")
-    parser.add_argument("--duration-min", type=int, default=10, help="Minimum of how many ticks process instances last")
+    parser.add_argument("--duration-min", type=int, default=1, help="Minimum of how many ticks process instances last")
     parser.add_argument("--duration-max", type=int, default=10, help="Maximum of how many ticks process instances last")
     parser.add_argument("--duration-random", choices=["uniform", "gauss"], default="uniform", help="How to randomize process instance durations")
     parser.add_argument("--retention-period", type=int, default=30, help="How many ticks finished process instances are retained before deletion")
@@ -287,6 +319,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-ordinals", type=int, default=None, help="Maximum number of ordinal indexes")
     parser.add_argument("--circular-ordinals", action="store_true", help="Whether to reuse ordinal indexes in a circular manner once the maximum number of ordinals is reached")
     parser.add_argument("--circular-reverse", action="store_true", help="Whether circular reuse proceeds in reverse order (starting with the highest ordinal index)")
+    parser.add_argument("--compaction", action="store_true", help="Whether to compact ordinals indexes when we hit max ordinals")
     parser.add_argument("--run-deleter", action="store_true", help="Whether to run the deleter")
     parser.add_argument("--deleter-only-if-no-ilm", action="store_true", help="Whether to run the deleter on indexes that will be dropped by ILM")
     parser.add_argument("--verbose", action="store_true", help="Whether to print detailed output")
