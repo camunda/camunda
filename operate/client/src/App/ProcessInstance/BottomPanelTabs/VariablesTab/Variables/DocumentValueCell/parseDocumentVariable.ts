@@ -13,7 +13,7 @@ import {mergePathname} from 'modules/request/mergePathname';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
-type DocumentType = 'image' | 'pdf' | 'unknown';
+type DocumentType = 'image' | 'pdf' | 'json' | 'unknown';
 
 type DocumentInfo = {
   fileName: string;
@@ -58,6 +58,7 @@ const SUPPORTED_IMAGE_MIME_TYPES = new Set([
   'image/webp',
 ]);
 const SUPPORTED_PDF_MIME_TYPES = new Set(['application/pdf']);
+const SUPPORTED_JSON_MIME_TYPES = new Set(['application/json']);
 
 function getDocumentType(contentType: string | undefined): DocumentType {
   if (!contentType) {
@@ -66,6 +67,8 @@ function getDocumentType(contentType: string | undefined): DocumentType {
     return 'image';
   } else if (SUPPORTED_PDF_MIME_TYPES.has(contentType)) {
     return 'pdf';
+  } else if (SUPPORTED_JSON_MIME_TYPES.has(contentType)) {
+    return 'json';
   } else {
     return 'unknown';
   }

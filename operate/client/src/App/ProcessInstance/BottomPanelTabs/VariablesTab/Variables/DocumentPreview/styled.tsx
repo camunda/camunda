@@ -23,4 +23,8 @@ const PreviewPdf = styled.iframe`
   border: none;
 `;
 
-export {PreviewImage, PreviewPdf};
+const PreviewJSONContainer = styled.div`
+  min-height: 80vh;
+`;
+
+export {PreviewImage, PreviewPdf, PreviewJSONContainer};

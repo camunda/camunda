@@ -78,6 +78,9 @@ const queryKeys = {
       decisionDefinitionKey,
     ],
   },
+  documents: {
+    content: (link: string) => ['documentContent', link],
+  },
   processDefinitionXml: {
     get: (processDefinitionKey?: string) => [
       'processDefinitionXml',
