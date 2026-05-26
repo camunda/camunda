@@ -28436,7 +28436,7 @@
               "refId": "A"
             }
           ],
-          "title": "Process instance variables creation rate. ",
+          "title": "Process instance variables creation rate",
           "type": "timeseries"
         },
         {
