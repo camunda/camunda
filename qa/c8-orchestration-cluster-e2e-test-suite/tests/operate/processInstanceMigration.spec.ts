@@ -350,7 +350,8 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  test('Migrated ad hoc sub processes', async ({
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('Migrated ad hoc sub processes', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
@@ -904,7 +905,8 @@ test.describe('Parallel job-based user task migration', () => {
     );
   });
 
-  test('Migrate parallel job-based user tasks to Camunda user tasks', async ({
+  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
+  test.skip('Migrate parallel job-based user tasks to Camunda user tasks', async ({
     page,
     operateHomePage,
     operateFiltersPanelPage,
