@@ -262,6 +262,9 @@ components:
       allOf:
         - $ref: '#/components/schemas/ElementInstanceFilterFields'
         - type: object
+          x-properties-added-in-version:
+            - propertyName: "$or"
+              addedInVersion: "8.10"
           properties:
             $or:
               description: |
