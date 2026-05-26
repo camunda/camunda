@@ -216,6 +216,7 @@ public class ExporterConfiguration {
 
   public RdbmsWriterConfig createRdbmsWriterConfig(
       final int partitionId,
+      final String physicalTenantId,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final InstantSource clock) {
     final var historyConfig =
@@ -244,6 +245,7 @@ public class ExporterConfiguration {
 
     return new RdbmsWriterConfig.Builder()
         .partitionId(partitionId)
+        .physicalTenantId(physicalTenantId)
         .queueSize(queueSize)
         .queueMemoryLimit(queueMemoryLimit)
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)

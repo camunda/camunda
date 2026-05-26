@@ -41,6 +41,7 @@ public final class RdbmsExporter {
   private Controller controller;
 
   private final int partitionId;
+  private final String physicalTenantId;
   private final RdbmsWriters rdbmsWriters;
   private final RdbmsSchemaManager rdbmsSchemaManager;
 
@@ -68,6 +69,7 @@ public final class RdbmsExporter {
 
   private RdbmsExporter(
       final int partitionId,
+      final String physicalTenantId,
       final Duration flushInterval,
       final int queueSize,
       final RdbmsWriters rdbmsWriters,
@@ -81,6 +83,7 @@ public final class RdbmsExporter {
     registeredHandlers = handlers;
 
     this.partitionId = partitionId;
+    this.physicalTenantId = physicalTenantId;
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
@@ -408,6 +411,7 @@ public final class RdbmsExporter {
   public static final class Builder {
 
     private int partitionId;
+    private String physicalTenantId;
     private Duration flushInterval;
     private int queueSize;
     private RdbmsWriters rdbmsWriters;
@@ -419,6 +423,11 @@ public final class RdbmsExporter {
 
     public Builder partitionId(final int value) {
       partitionId = value;
+      return this;
+    }
+
+    public Builder physicalTenantId(final String value) {
+      physicalTenantId = value;
       return this;
     }
 
@@ -475,6 +484,7 @@ public final class RdbmsExporter {
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
+          physicalTenantId,
           flushInterval,
           queueSize,
           rdbmsWriters,
