@@ -244,21 +244,24 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
-      // Click first to open the Carbon listbox, then type character-by-character
-      // so the debounced server-side search handler fires on each keystroke.
-      // fill() does not open the Carbon FilterableMultiSelect dropdown because
-      // it bypasses the keyboard events that toggle the listbox open state.
+      // The "Search by owner ID" field queries users by username (the login
+      // identifier), not by display name.  The ownerId passed here is typically
+      // the display name (e.g. "Auth Test xyz"); normalise it to the username
+      // format ("authtestxyz") so the server-side search returns results.
+      const usernameSearch = authorization.ownerId
+        .toLowerCase()
+        .replace(/ /g, '');
       await this.createAuthorizationOwnerSearchInput.click();
       await this.createAuthorizationOwnerSearchInput.pressSequentially(
-        authorization.ownerId,
+        usernameSearch,
         {delay: 50},
       );
-      // Separate the visibility wait from the click: just-created users can
-      // take longer than 20s to surface in the debounced search under CI load.
-      // force:true bypasses Carbon's transient re-render actionability blocks.
+      // Typing the exact username yields exactly one result.  Wait up to 60s
+      // for the debounced API call to return — just-created users can be slow
+      // to surface under CI load.  force:true bypasses transient Carbon
+      // re-render actionability blocks after the item is confirmed visible.
       const ownerOption = this.createAuthorizationModal
         .locator('.cds--list-box__menu-item')
-        .filter({hasText: authorization.ownerId})
         .first();
       await expect(ownerOption).toBeVisible({timeout: 60000});
       await ownerOption.click({force: true});
