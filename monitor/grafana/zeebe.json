@@ -28394,7 +28394,7 @@
                   }
                 ]
               },
-              "unit": "bytes"
+              "unit": "Bps"
             }
           },
           "gridPos": {
@@ -28429,7 +28429,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_variable_created_size_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (namespace, partition)",
+              "expr": "sum(rate(zeebe_variable_created_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (namespace, partition)",
               "interval": "",
               "legendFormat": "Partition {{partition}}",
               "range": true,
