@@ -28340,7 +28340,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Shows the process instance variable creation rate per partition.",
+          "description": "Throughput of process instance variable creation, in bytes/second, broken down by partition. Computed as the rate of the sum of variable value sizes on VARIABLE:CREATED events only, variable updates are not included. Useful for spotting partitions ingesting large amounts of variable data.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -28429,14 +28429,14 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_variable_created_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (namespace, partition)",
+              "expr": "sum(rate(zeebe_variable_created_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
               "interval": "",
               "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Process instance variables creation rate",
+          "title": "Process instance variable creation throughput (bytes/s)",
           "type": "timeseries"
         },
         {
@@ -28444,7 +28444,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "This panel shows the process instance variable size creation histogram in bytes.",
+          "description": "Distribution of process instance variable value sizes (in bytes) at the moment of creation, aggregated across the selected partitions. Captures VARIABLE:CREATED events only, variable updates are not included. Use it to identify unusually large variable payloads or shifts in variable size patterns over time.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -28523,7 +28523,7 @@
               "refId": "starter_data_availability_latency_seconds_bucket-heatmap"
             }
           ],
-          "title": "Process Instance Variable Size Creation",
+          "title": "Process instance variable size distribution",
           "type": "heatmap"
         }
       ],
