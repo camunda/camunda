@@ -45,10 +45,12 @@ import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
@@ -76,6 +78,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -123,6 +126,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final MutableMessageStartProcessInstanceDedupState messageStartProcessInstanceDedupState;
+  private final DbMessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
@@ -161,6 +165,7 @@ public class ProcessingDbState implements MutableProcessingState {
       final KeyGenerator keyGenerator,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final TransientPendingMessageStartProcessInstanceAskState transientAskState,
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
@@ -187,6 +192,8 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
     messageStartProcessInstanceDedupState =
         new DbMessageStartProcessInstanceDedupState(zeebeDb, transactionContext);
+    messageStartProcessInstanceAskState =
+        new DbMessageStartProcessInstanceAskState(zeebeDb, transactionContext, transientAskState);
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
@@ -231,6 +238,7 @@ public class ProcessingDbState implements MutableProcessingState {
     processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
+    messageStartProcessInstanceAskState.onRecovered(context);
   }
 
   @Override
@@ -266,6 +274,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState() {
     return messageStartProcessInstanceDedupState;
+  }
+
+  @Override
+  public MutableMessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState() {
+    return messageStartProcessInstanceAskState;
   }
 
   @Override

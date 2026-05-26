@@ -286,7 +286,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // (ACTIVE / TOMBSTONE+deadline); reverse CF lets the PI-completion applier transition the entry
   // to TOMBSTONE in O(1) without scanning by processInstanceKey.
   CROSS_PARTITION_MESSAGE_START_DEDUP(144, PARTITION_LOCAL),
-  CROSS_PARTITION_MESSAGE_START_DEDUP_BY_PI_KEY(145, PARTITION_LOCAL);
+  CROSS_PARTITION_MESSAGE_START_DEDUP_BY_PI_KEY(145, PARTITION_LOCAL),
+
+  // Pending cross-partition message-start asks on P_K. Keyed by (messageKey, processDefinitionKey).
+  // Stores the full ask payload so retries can resend without re-reading the original message.
+  // Used in conjunction with a transient last-sent-timestamp tracker that is rebuilt from this CF
+  // on recovery — entries exist iff an ask is outstanding; cleared when any reply is applied.
+  CROSS_PARTITION_MESSAGE_START_ASK(146, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

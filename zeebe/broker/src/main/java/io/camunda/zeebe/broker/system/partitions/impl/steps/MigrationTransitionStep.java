@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -38,6 +39,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
     // migration
     final var transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     final var transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    final var transientAskState = new TransientPendingMessageStartProcessInstanceAskState();
     final var zeebeDb = context.getZeebeDb();
     final var zeebeDbContext = zeebeDb.createContext();
 
@@ -49,6 +51,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             KeyGenerator.immutable(context.getPartitionId()),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
+            transientAskState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
             InstantSource.system(),
             ExpressionLanguageMetrics.noop());

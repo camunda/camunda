@@ -28,6 +28,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   MessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
 
+  MessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
+
   ProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   MessageCorrelationState getMessageCorrelationState();

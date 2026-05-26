@@ -35,6 +35,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableMessageStartProcessInstanceDedupState getMessageStartProcessInstanceDedupState();
 
   @Override
+  MutableMessageStartProcessInstanceAskState getMessageStartProcessInstanceAskState();
+
+  @Override
   MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   @Override

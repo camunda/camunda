@@ -16,6 +16,7 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -168,6 +169,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
+                new TransientPendingMessageStartProcessInstanceAskState(),
                 new EngineConfiguration(),
                 InstantSource.system(),
                 ExpressionLanguageMetrics.noop());

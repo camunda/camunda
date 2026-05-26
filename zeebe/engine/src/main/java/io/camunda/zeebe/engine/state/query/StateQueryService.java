@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -86,6 +87,7 @@ public final class StateQueryService implements QueryService {
               KeyGenerator.immutable(Protocol.DEPLOYMENT_PARTITION),
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
+              new TransientPendingMessageStartProcessInstanceAskState(),
               new EngineConfiguration(),
               clock,
               ExpressionLanguageMetrics.noop());

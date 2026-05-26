@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -36,6 +37,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final TransientPendingMessageStartProcessInstanceAskState transientAskState;
   private final ControllableStreamClock clock;
   private final SecurityConfiguration securityConfig;
   private final MeterRegistry meterRegistry;
@@ -50,6 +52,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    transientAskState = new TransientPendingMessageStartProcessInstanceAskState();
     clock = Objects.requireNonNull(context.getClock());
     meterRegistry = context.getMeterRegistry();
     processingState =
@@ -60,6 +63,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
+            transientAskState,
             config,
             clock,
             new ExpressionLanguageMetricsImpl(meterRegistry));
@@ -103,6 +107,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             partitionId,
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
+            transientAskState,
             clock);
   }
 
