@@ -570,19 +570,13 @@ final class CamundaExporterIT {
         .untilAsserted(
             () -> {
               final var varDocs =
-                  varDocumentIds.stream()
-                      .map(
-                          id -> {
-                            try {
-                              return clientAdapter.get(
-                                  id, varHandler.getIndexName(), varHandler.getEntityType());
-                            } catch (final IOException e) {
-                              throw new RuntimeException(e);
-                            }
-                          })
-                      .toList();
-
-              assertThat(varDocs).isNotNull().isNotEmpty().doesNotContainNull();
+                  clientAdapter.searchById(
+                      varHandler.getIndexName() + "*", varDocumentIds, varHandler.getEntityType());
+              assertThat(varDocs)
+                  .isNotNull()
+                  .isNotEmpty()
+                  .doesNotContainNull()
+                  .hasSize(varDocumentIds.size());
             });
   }
 
