@@ -128,6 +128,10 @@ public final class TestSearchContainers {
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
+        .withClasspathResourceMapping(
+            "db-init-scripts/oracle-grant-replication-views.sql",
+            "/container-entrypoint-initdb.d/oracle-grant-replication-views.sql",
+            BindMode.READ_ONLY)
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
