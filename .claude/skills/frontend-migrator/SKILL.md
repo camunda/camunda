@@ -50,12 +50,12 @@ Rewrite tests using the new patterns (Vitest browser mode, MSW via worker fixtur
 
 ### 6. Run local checks
 
-```bash
-# From webapp/client/apps/orchestration-cluster-webapp/
-npm run typecheck
-npm run lint
-npm run test:unit
-```
+    # From webapp/client/
+    npm run lint
+
+    # From webapp/client/apps/orchestration-cluster-webapp/
+    npm run typecheck
+    npm run test:unit
 
 ## Pattern transformations
 
