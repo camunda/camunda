@@ -276,12 +276,16 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(
             variableProcessInstanceKey,
+            {timeout: 30000},
           );
-          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
 
@@ -309,11 +313,14 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible();
+          await expect(page.getByText('2 results')).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
 
@@ -372,11 +379,14 @@ test.describe('Process Instances Filters', () => {
         timeout: 30000,
       });
 
+      // Give the table extra time to settle after the operations-panel collapse —
+      // collapsing the panel can trigger a transient re-render.  A longer
+      // timeout is simpler and more reliable than a reload+refilter cycle here.
       await expect(
         page
           .getByTestId('cell-processInstanceKey')
           .getByText(processToCancelInstanceMeowIK),
-      ).toBeVisible({timeout: 30000});
+      ).toBeVisible({timeout: 60000});
 
       await operateProcessesPage.selectProcessCheckboxByPIK(
         processToCancelInstanceMeowIK,

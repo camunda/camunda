@@ -118,109 +118,118 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  //Skipped due to bug 54020: https://github.com/camunda/camunda/issues/54020
-  test.skip('Admin user can grant and revoke component authorization for user', async ({
-  page,
-  loginPage,
-  identityUsersPage,
-  identityHeader,
-  identityAuthorizationsPage,
-  accessDeniedPage,
-}) => {
-  test.slow();
+  test('Admin user can grant and revoke component authorization for user', async ({
+    page,
+    loginPage,
+    identityUsersPage,
+    identityHeader,
+    identityAuthorizationsPage,
+    accessDeniedPage,
+  }) => {
+    test.slow();
 
-  let testUser: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-  };
-  const verifyAccessWithRetry = async (
-    shouldHaveAccess: boolean,
-    appName?: string,
-  ) => {
-    try {
-      await verifyAccess(page, shouldHaveAccess, appName);
-    } catch (e) {
-      const message = String(e);
-      if (appName && message.includes('net::ERR_ABORTED')) {
-        await page.waitForTimeout(1000);
-        await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/`, {
-          waitUntil: 'domcontentloaded',
-          timeout: 120_000,
-        });
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+    const verifyAccessWithRetry = async (
+      shouldHaveAccess: boolean,
+      appName?: string,
+    ) => {
+      try {
         await verifyAccess(page, shouldHaveAccess, appName);
-        return;
+      } catch (e) {
+        const message = String(e);
+        // Retry on transient navigation errors: ERR_ABORTED (network-level) or
+        // "interrupted by another navigation" (auth redirect race — the app
+        // briefly redirects to identity/users before authorization propagates).
+        if (
+          appName &&
+          (message.includes('net::ERR_ABORTED') ||
+            message.includes('interrupted by another navigation'))
+        ) {
+          await page.waitForTimeout(1000);
+          await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 120_000,
+          });
+          await verifyAccess(page, shouldHaveAccess, appName);
+          return;
+        }
+        throw e;
       }
-      throw e;
-    }
-  };
+    };
 
-  await test.step(`Create new user`, async () => {
-    const testData = createTestData({user: true});
-    testUser = testData.user!;
+    await test.step(`Create new user`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
 
-    await identityUsersPage.createUser({
-      username: testUser.username,
-      password: testUser.password,
-      email: testUser.email,
-      name: testUser.name,
+      await identityUsersPage.createUser({
+        username: testUser.username,
+        password: testUser.password,
+        email: testUser.email,
+        name: testUser.name,
+      });
+
+      createdUsernames.push(testUser.username);
     });
 
-    createdUsernames.push(testUser.username);
-  });
-
-  await test.step(`Grant Authorizations to user for all applications`, async () => {
-    await identityAuthorizationsPage.navigateToAuthorizations();
-    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
-
-    await identityAuthorizationsPage.createAuthorization({
-      ownerType: 'User',
-      ownerId: testUser.name,
-      resourceType: 'Component',
-      resourceId: '*',
-      accessPermissions: ['Access'],
-    });
-
-    const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
-      testUser!.username,
-    );
-
-    await waitForItemInList(page, authorizationItem, {
-      shouldBeVisible: true,
-      timeout: 10000,
-      onAfterReload: () =>
-        identityAuthorizationsPage.selectResourceTypeTab('Component'),
-      clickNext: true,
-    });
-  });
-
-  await test.step(`Login with the new user and verify Identity access`, async () => {
-    await identityHeader.logout();
-    await loginPage.login(testUser!.username, testUser!.password);
-    await expect(page).toHaveURL(new RegExp(`identity`), {timeout: 60_000});
-
-    await verifyAccessWithRetry(true);
-  });
-
-  await test.step(`Verify Operate access`, async () => {
-    await verifyAccessWithRetry(true, 'operate');
-  });
-
-  await test.step(`Verify Tasklist access`, async () => {
-    await verifyAccessWithRetry(true, 'tasklist');
-    const usernameField = page.getByLabel('Username');
-    if (await usernameField.isVisible({timeout: 1000}).catch(() => false)) {
-      await loginPage.login(testUser!.username, testUser!.password);
-      await expect(page).toHaveURL(new RegExp(`tasklist`), {timeout: 60_000});
-      await verifyAccessWithRetry(true, 'tasklist');
-    }
-  });
-
-  await test.step(
-    `Logout, login with demo and delete the created authorization`,
-    async () => {
+    await test.step(`Grant Authorizations to user for all applications`, async () => {
       await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.username,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser!.username,
+      );
+
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step(`Login with the new user and verify Identity access`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+      await expect(page).toHaveURL(new RegExp(`identity`), {timeout: 60_000});
+
+      await verifyAccessWithRetry(true);
+    });
+
+    await test.step(`Verify Operate access`, async () => {
+      await verifyAccessWithRetry(true, 'operate');
+    });
+
+    await test.step(`Verify Tasklist access`, async () => {
+      await verifyAccessWithRetry(true, 'tasklist');
+      const usernameField = page.getByLabel('Username');
+      if (await usernameField.isVisible({timeout: 1000}).catch(() => false)) {
+        await loginPage.login(testUser!.username, testUser!.password);
+        await expect(page).toHaveURL(new RegExp(`tasklist`), {timeout: 60_000});
+        await verifyAccessWithRetry(true, 'tasklist');
+      }
+    });
+
+    await test.step(`Logout, login with demo and delete the created authorization`, async () => {
+      // Navigate to Identity first so the header with the settings/logout
+      // button is present (testUser has component access at this point).
+      // Only THEN call logout(); calling it while on the Tasklist page would
+      // time out because the Identity header is not rendered there.
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await identityHeader.logout();
       await loginPage.login('demo', 'demo');
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
 
@@ -229,9 +238,13 @@ test.describe('Identity User Flows', () => {
         testUser!.username,
       );
 
-      await expect(identityAuthorizationsPage.deleteAuthorizationModal).toBeVisible();
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeVisible();
       await identityAuthorizationsPage.clickDeleteAuthorizationSubButton();
-      await expect(identityAuthorizationsPage.deleteAuthorizationModal).toBeHidden();
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeHidden();
 
       const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
         testUser!.username,
@@ -243,21 +256,20 @@ test.describe('Identity User Flows', () => {
         onAfterReload: () =>
           identityAuthorizationsPage.selectResourceTypeTab('Component'),
       });
-    },
-  );
+    });
 
-  await test.step(`Logout and login with the new user`, async () => {
-    await identityHeader.logout();
-    await loginPage.login(testUser!.username, testUser!.password);
-  });
+    await test.step(`Logout and login with the new user`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+    });
 
-  await test.step(`Verify Identity access is denied`, async () => {
-    await verifyAccessWithRetry(false);
-  });
+    await test.step(`Verify Identity access is denied`, async () => {
+      await verifyAccessWithRetry(false);
+    });
 
-  await test.step(`Verify Tasklist access is denied`, async () => {
-    await page.goto(relativizePath(`/tasklist`));
-    await accessDeniedPage.expectAccessDenied();
+    await test.step(`Verify Tasklist access is denied`, async () => {
+      await page.goto(relativizePath(`/tasklist`));
+      await accessDeniedPage.expectAccessDenied();
+    });
   });
-});
 });

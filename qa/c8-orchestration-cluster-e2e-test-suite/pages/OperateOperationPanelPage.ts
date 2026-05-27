@@ -141,6 +141,41 @@ export class OperateOperationPanelPage {
     }
   }
 
+  /**
+   * Force a collapse→expand cycle regardless of the current panel state.
+   *
+   * We check the Collapse button visibility (not the region locator) to
+   * determine whether the panel is expanded, because the role-based
+   * `operationsPanel` selector can return `false` even when the panel IS
+   * showing its content. Collapsing then re-expanding forces the panel to
+   * re-render and re-fetch its entries from the API.
+   */
+  async forceRefreshPanel(): Promise<void> {
+    // After a page.reload() the Operate page can take many seconds to render
+    // the panel toggle buttons.  Wait for either the Collapse or Expand button
+    // to become visible before we try to interact with them; this prevents
+    // the subsequent click from timing out on a page that hasn't painted yet.
+    await Promise.race([
+      this.collapseButton.waitFor({state: 'visible', timeout: 60000}),
+      this.expandOperationsButton.waitFor({state: 'visible', timeout: 60000}),
+    ]).catch(() => {
+      // If neither appears within 60 s the next step will fail with a clear
+      // message rather than a confusing "element not found" error.
+    });
+
+    // Collapse if the panel is currently open (Collapse button is visible).
+    const hasCollapseButton = await this.collapseButton.isVisible();
+    if (hasCollapseButton) {
+      await this.collapseButton.click();
+      // Wait for the Collapse button to disappear — reliable indicator that
+      // the panel closed.  The collapsed-panel testId sentinel is NOT reliable.
+      await expect(this.collapseButton).toBeHidden({timeout: 30000});
+    }
+    // Expand (or re-expand) the panel.
+    await this.expandOperationsButton.click({timeout: 30000});
+    await this.operationList.waitFor({state: 'visible', timeout: 30000});
+  }
+
   async operationIdsEntries(): Promise<{id: string; type: string}[]> {
     await this.expandOperationsPanel();
     const operationEntries = this.getAllOperationEntries();

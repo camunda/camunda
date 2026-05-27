@@ -229,12 +229,22 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
-    if (authorization.ownerType !== 'User') {
-      await this.createAuthorizationOwnerComboBox.waitFor({
+    // Wait for the owner input to become visible regardless of owner type.
+    // For User type the combobox appears; for other types it may be a
+    // search input. Try both locators with a short timeout.
+    await Promise.race([
+      this.createAuthorizationOwnerComboBox.waitFor({
         state: 'visible',
         timeout: 5000,
-      });
-    }
+      }),
+      this.createAuthorizationOwnerSearchInput.waitFor({
+        state: 'visible',
+        timeout: 5000,
+      }),
+    ]).catch(() => {
+      // If neither appears within 5 s, proceed anyway — the next step will
+      // fail with a meaningful message.
+    });
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
@@ -242,23 +252,62 @@ export class IdentityAuthorizationsPage {
       await this.createAuthorizationOwnerSearchInput.fill(
         authorization.ownerId,
       );
-      await this.createAuthorizationModal
+      // The owner search is debounced + server-driven; the menu item for a
+      // just-created user can take longer than 20s to surface under load.
+      // Wait for the option to appear before clicking, with a longer
+      // budget than the previous 20s click timeout.
+      const ownerOption = this.createAuthorizationModal
         .locator('.cds--list-box__menu-item')
         .filter({hasText: authorization.ownerId})
-        .first()
-        .click({timeout: 20000});
+        .first();
+      await expect(ownerOption).toBeVisible({timeout: 60000});
+      await ownerOption.click({timeout: 20000});
       return;
     }
 
-    await this.createAuthorizationOwnerComboBox.click();
+    // Combobox path: click to open, type to filter (server-driven search),
+    // then wait up to 60 s for the menu item to appear before clicking.
+    // If the option still isn't visible after the wait, clear and re-fill
+    // to re-trigger the debounced server-side search, then try again.
+    // Throw when all attempts fail so the outer createAuthorization retry
+    // loop can reload the page and start fresh — without a throw the outer
+    // loop never triggers and the form is submitted with an empty owner.
+    const ownerMenuOption = this.createAuthorizationModal
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: authorization.ownerId})
+      .first();
+
+    const maxSearchAttempts = 3;
+    for (let attempt = 1; attempt <= maxSearchAttempts; attempt++) {
+      // Click to open the dropdown, then fill to trigger the server-side search.
+      await this.createAuthorizationOwnerComboBox.click();
+      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+      try {
+        await expect(ownerMenuOption).toBeVisible({timeout: 60000});
+        await ownerMenuOption.click({timeout: 10000});
+        return;
+      } catch {
+        if (attempt < maxSearchAttempts) {
+          console.log(
+            `Owner menu option not visible on attempt ${attempt}, re-triggering search...`,
+          );
+          await this.createAuthorizationOwnerComboBox.fill('');
+        }
+      }
+    }
+
+    // Role-option fallback in case the menu item rendered with a different
+    // ARIA role than '.cds--list-box__menu-item'.
     try {
       await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-        timeout: 20000,
+        timeout: 5000,
       });
-    } catch (error) {
-      console.log('Error while selecting owner' + error);
-      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
-      await this.createAuthorizationOwnerComboBox.press('Tab');
+      return;
+    } catch {
+      // Throw so the outer createAuthorization retry loop reloads and retries.
+      throw new Error(
+        `Owner dropdown option for '${authorization.ownerId}' did not appear after ${maxSearchAttempts} attempts.`,
+      );
     }
   }
 

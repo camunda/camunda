@@ -133,9 +133,12 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
-    this.historyTableDetailsHeader = this.historyTable.getByRole('columnheader', {
-      name: 'Details',
-    });
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
       name: 'Actor',
     });
@@ -150,7 +153,10 @@ class TaskDetailsPage {
   async clickAssignToMeButton() {
     await waitForAssertion({
       assertion: async () => {
-        await expect(this.assignToMeButton).toBeVisible();
+        // Allow 60 s for Tasklist v2 to re-render "Assign to me" after an
+        // unassign operation — the API call and UI update can take many seconds
+        // under cluster load.
+        await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
         await this.assignToMeButton.click();
       },
       onFailure: async () => {
@@ -160,7 +166,15 @@ class TaskDetailsPage {
   }
 
   async clickUnassignButton() {
-    await this.unassignButton.click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.unassignButton).toBeVisible();
+        await this.unassignButton.click();
+      },
+      onFailure: async () => {
+        console.log('Click unassign button failed, retrying...');
+      },
+    });
   }
 
   async clickCompleteTaskButton() {
@@ -330,10 +344,25 @@ class TaskDetailsPage {
 
     for (const [index, element] of elements.entries()) {
       const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      const maxRetries = 3;
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          await element.click();
+          await element.fill(expectedValue);
+          await element.blur();
+          await expect(element).toHaveValue(expectedValue);
+          break;
+        } catch (error) {
+          attempt++;
+          if (attempt === maxRetries) {
+            throw new Error(
+              `Failed to set value "${expectedValue}" for label "${label}" row ${index} after ${maxRetries} attempts: ${error}`,
+            );
+          }
+          await sleep(500);
+        }
+      }
     }
   }
 
@@ -402,8 +431,21 @@ class TaskDetailsPage {
   }
 
   async unassignReassignToMeAndComplete(): Promise<void> {
-    // Unassign from the current assignee
-    await this.clickUnassignButton();
+    // Unassign from the current assignee only if the Unassign button is
+    // visible. Tasks migrated from job-based to Camunda user tasks may be
+    // assigned to a hardcoded assignee (not the logged-in user), in which
+    // case only "Assign to me" is available, not "Unassign".
+    const isUnassignVisible = await this.unassignButton
+      .isVisible({timeout: 15000})
+      .catch(() => false);
+    if (isUnassignVisible) {
+      await this.clickUnassignButton();
+      // Wait for the Unassign button to disappear before looking for "Assign to
+      // me". Tasklist v2 processes unassign asynchronously; without this wait
+      // the subsequent clickAssignToMeButton may time out because the UI hasn't
+      // re-rendered yet.
+      await expect(this.unassignButton).toBeHidden({timeout: 60000});
+    }
 
     // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
