@@ -45,7 +45,7 @@ jobs:
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@5d0095dcb0217292b19ed09d219651ece1c7b098 # 3.0.6
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
         with:
           work-dir: ./optimize
 
