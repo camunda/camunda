@@ -18,6 +18,7 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity.AgentInstanceToolValue;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceStatus;
@@ -96,7 +97,7 @@ public class AgentInstanceHandler
         .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
-        .setVersionTag(value.getVersionTag())
+        .setVersionTag(ExporterUtil.emptyToNull(value.getVersionTag()))
         .setTenantId(value.getTenantId())
         .setStatus(mapStatus(value.getStatus()))
         .setModel(value.getDefinition().getModel())
@@ -166,7 +167,12 @@ public class AgentInstanceHandler
   private static List<AgentInstanceToolValue> mapTools(
       final List<? extends AgentInstanceRecordValue.AgentInstanceToolValue> protocolTools) {
     return protocolTools.stream()
-        .map(t -> new AgentInstanceToolValue(t.getName(), t.getDescription(), t.getElementId()))
+        .map(
+            t ->
+                new AgentInstanceToolValue(
+                    t.getName(),
+                    ExporterUtil.emptyToNull(t.getDescription()),
+                    ExporterUtil.emptyToNull(t.getElementId())))
         .toList();
   }
 }
