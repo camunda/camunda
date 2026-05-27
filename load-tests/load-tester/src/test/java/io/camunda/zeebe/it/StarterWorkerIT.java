@@ -57,6 +57,7 @@ class StarterWorkerIT {
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
 
+  @Autowired private MeterRegistry meterRegistry;
   @Autowired private CamundaClient client;
 
   @DynamicPropertySource

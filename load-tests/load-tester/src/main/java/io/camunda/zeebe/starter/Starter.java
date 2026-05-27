@@ -31,6 +31,8 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
@@ -48,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -78,10 +81,12 @@ public class Starter implements CommandLineRunner {
   private final ConnectionMonitor connectionMonitor;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
+  private final AtomicInteger runFinished = new AtomicInteger(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
+  private Counter processInstancesStartedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -141,7 +146,10 @@ public class Starter implements CommandLineRunner {
       LOG.error("Awaiting of count down latch was interrupted.", e);
     }
 
-    LOG.info("Starter finished");
+    runFinished.set(1);
+    LOG.info(
+        "Starter finished. Total process instance start requests submitted: {}",
+        processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
     scheduledTask.cancel(true);
     shutdown();
   }
@@ -232,6 +240,7 @@ public class Starter implements CommandLineRunner {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+            processInstancesStartedCounter.increment();
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
