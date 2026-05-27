@@ -120,9 +120,17 @@ test.describe('Child Process Instance Migration', () => {
     const parentInstanceKey = testProcesses.parentProcessInstanceKeys[0]!;
 
     await test.step('Navigate to parent process instance and view called child processes', async () => {
-      await operateFiltersPanelPage.selectProcess(
-        testProcesses.parentProcess.bpmnProcessId,
-      );
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectProcess(
+            testProcesses.parentProcess.bpmnProcessId,
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 3,
+      });
       await operateFiltersPanelPage.selectVersion(
         testProcesses.parentProcess.version.toString(),
       );

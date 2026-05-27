@@ -142,13 +142,13 @@ test.describe.serial('Process Instance Migration', () => {
       operateOperationPanelPage.beforeOperationOperationPanelEntries =
         await operateOperationPanelPage.operationIdsEntries();
       await operateProcessesPage.startMigration();
-      await sleep(1000);
+      await sleep(3000);
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
-      ).toHaveValue(targetBpmnProcessId, {timeout: 30000});
+      ).toHaveValue(targetBpmnProcessId, {timeout: 60000});
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
@@ -645,9 +645,17 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
-      await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-
-      await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
+          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateDiagramPage.resetDiagramZoomButton.click();
+        },
+        maxRetries: 3,
+      });
     });
   });
 

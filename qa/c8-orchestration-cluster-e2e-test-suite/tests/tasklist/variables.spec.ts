@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
+import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 
@@ -18,6 +19,8 @@ test.beforeAll(async () => {
     './resources/usertask_without_variables.bpmn',
     './resources/usertask_with_variables_for_completion.bpmn',
   ]);
+  // Allow process definitions to propagate before creating instances.
+  await sleep(2000);
   await createInstances('usertask_without_variables', 1, 1);
   await createInstances('usertask_with_variables', 1, 3, {
     testData: 'something',
@@ -25,6 +28,8 @@ test.beforeAll(async () => {
   await createInstances('usertask_with_variables_to_complete', 1, 1, {
     testData: 'something',
   });
+  // Allow ES time to index the newly created tasks before tests start.
+  await sleep(2000);
 });
 
 test.describe('variables page', () => {

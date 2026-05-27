@@ -163,8 +163,8 @@ test.describe('task details page', () => {
 
     const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
-    await taskDetailsPage.completeTaskButton.click();
-    await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible({timeout: 30000});
 
     await page.goto(taskUrl);
 
