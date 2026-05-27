@@ -22,6 +22,7 @@ import type {
   QueryJobsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
+  QueryUserTasksRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
@@ -202,6 +203,12 @@ const queryKeys = {
   },
   currentUser: {
     get: () => ['currentUser'],
+  },
+  userTasks: {
+    queryUserTasks: (payload: QueryUserTasksRequestBody) => [
+      'userTasks',
+      payload,
+    ],
   },
   variable: {
     get: (variableKey: string) => ['variable', variableKey],
