@@ -27,28 +27,30 @@ public final class AnalyticsAttributes {
   // OTel semantic convention for events (until Event API is stable)
   public static final AttributeKey<String> EVENT_NAME = AttributeKey.stringKey("event.name");
 
-  // Common
+  // Log domain
   public static final AttributeKey<Long> LOG_POSITION =
       AttributeKey.longKey("camunda.log.position");
-  public static final AttributeKey<Long> SEQUENCE_NUMBER =
-      AttributeKey.longKey("camunda.sequence_number");
-  public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
+  public static final AttributeKey<Long> LOG_SEQUENCE_NUMBER =
+      AttributeKey.longKey("camunda.log.sequence_number");
 
-  // Process instance
+  // Tenant domain
+  public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant.id");
+
+  // Process domain
   public static final AttributeKey<String> BPMN_PROCESS_ID =
-      AttributeKey.stringKey("camunda.bpmn_process_id");
+      AttributeKey.stringKey("camunda.process.id");
   public static final AttributeKey<Long> PROCESS_VERSION =
-      AttributeKey.longKey("camunda.process_version");
+      AttributeKey.longKey("camunda.process.version");
   public static final AttributeKey<Long> PROCESS_DEFINITION_KEY =
-      AttributeKey.longKey("camunda.process_definition_key");
+      AttributeKey.longKey("camunda.process.definition_key");
   public static final AttributeKey<Long> PROCESS_INSTANCE_KEY =
-      AttributeKey.longKey("camunda.process_instance_key");
+      AttributeKey.longKey("camunda.process.instance_key");
   public static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
-      AttributeKey.longKey("camunda.root_process_instance_key");
+      AttributeKey.longKey("camunda.process.root_instance_key");
 
-  // Adhoc subprocess
+  // Element domain
   public static final AttributeKey<String> ELEMENT_ID =
-      AttributeKey.stringKey("camunda.element_id");
+      AttributeKey.stringKey("camunda.element.id");
 
   // Event names
   public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";
