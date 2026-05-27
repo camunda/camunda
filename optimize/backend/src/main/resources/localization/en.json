@@ -1,6 +1,11 @@
 {
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
+  "agenticControlPlane": {
+    "title": "Agentic control plane",
+    "description": "Monitor AI agent adoption, token spend, behavior, and reliability across your processes.",
+    "dateRange": "Date range"
+  },
   "navigation": {
     "analysis": "Analysis",
     "logout": "Logout",
@@ -13,6 +18,7 @@
     "appSwitcher": "App switcher",
     "dashboards": "Dashboards",
     "collections": "Collections",
+    "agenticControlPlane": "Agentic Control Plane",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",

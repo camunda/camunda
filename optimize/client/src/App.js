@@ -10,6 +10,7 @@ import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
 import {
+  AgenticControlPlane,
   PrivateRoute,
   Home,
   Collection,
@@ -92,6 +93,11 @@ export default function App({error}) {
                         render={renderEntity}
                       />
                       <PrivateRoute exact path="/collections" component={Home} />
+                      <PrivateRoute
+                        exact
+                        path="/agentic-control-plane"
+                        component={AgenticControlPlane}
+                      />
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>

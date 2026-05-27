@@ -7,12 +7,3 @@
  */
 
 export {AgenticControlPlane} from './AgenticControlPlane';
-export {Analysis} from './Analysis';
-export {Header} from './Header';
-export {PrivateRoute} from './PrivateRoute';
-export {Dashboard} from './Dashboards';
-export {Report} from './Reports';
-export {Sharing} from './Sharing';
-export {Home, Collection} from './Home';
-export {default as Logout} from './Logout';
-export {Processes, ProcessReport} from './Processes';
