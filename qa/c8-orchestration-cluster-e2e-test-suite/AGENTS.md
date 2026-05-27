@@ -58,7 +58,7 @@ Ensure the ports in your `.env` match those used in the local stack (e.g., 8080,
 ## Running Tests
 
 ```bash
-# All UI tests (headless, reads .env)
+# Interactive local test runner (reads .env and prompts for category, browser, and headed/headless mode)
 npm run test:local
 
 # Single spec file
