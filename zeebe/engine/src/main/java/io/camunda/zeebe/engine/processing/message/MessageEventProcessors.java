@@ -181,6 +181,19 @@ public final class MessageEventProcessors {
                 processingState.getMessageStartProcessInstanceDedupState(),
                 config.getMessageStartDedupTombstoneSweepBatchLimit(),
                 clock))
+        // Reply command processors on P_K - these handle the cross-partition replies from P_B
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.START,
+            new MessageStartProcessInstanceStartReplyProcessor(writers.state(), messageState))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
+            new MessageStartProcessInstanceUniquenessRejectReplyProcessor(writers.state()))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
+            new MessageStartProcessInstanceNoSubscriptionRejectReplyProcessor(writers.state()))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),

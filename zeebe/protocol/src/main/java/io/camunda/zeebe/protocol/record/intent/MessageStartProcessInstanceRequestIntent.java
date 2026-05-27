@@ -36,8 +36,8 @@ package io.camunda.zeebe.protocol.record.intent;
  * processor walks the dedup state and emits one {@code TOMBSTONE_DELETED} event per dedup entry
  * whose {@code deletionDeadline} has passed, and the applier removes the entry from the dedup
  * column family. The naming reflects the role the entries play for {@code P_K}'s retries (they
- * exist to bound the retry window); the deletion is purely deadline-driven and is unrelated to
- * the holder PI's lifecycle.
+ * exist to bound the retry window); the deletion is purely deadline-driven and is unrelated to the
+ * holder PI's lifecycle.
  */
 public enum MessageStartProcessInstanceRequestIntent implements Intent {
 
@@ -45,8 +45,8 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
   REQUEST((short) 0, false),
   REQUESTED((short) 1, true),
 
-  // success reply half. STARTED is applied on P_B (dedup write) and, once the P_K-side bookkeeping
-  // lands in a later commit, on P_K (pending-ask cleanup + commit of the started PI).
+  // success reply half. STARTED is applied on P_B (dedup write) and on P_K (pending-ask cleanup;
+  // the CORRELATED event + lock-entry write for the started PI land in commit 9).
   START((short) 2, false),
   STARTED((short) 3, true),
 

@@ -511,29 +511,40 @@ public final class EventAppliers implements EventApplier {
    *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
    *   <li>{@code STARTED}: applied on {@code P_B} on cache miss + success; records the {@code
    *       (processDefinitionKey, messageKey) → processInstanceKey} dedup entry that lets retries
-   *       from {@code P_K} be re-replied without a second activation.
+   *       from {@code P_K} be re-replied without a second activation. Also applied on {@code P_K}
+   *       when the success reply is processed; removes the pending-ask entry so the scheduler stops
+   *       retrying.
+   *   <li>{@code UNIQUENESS_REJECTED}: applied on {@code P_K} when the rejection reply is
+   *       processed; removes the pending-ask entry.
+   *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
+   *       processed; removes the pending-ask entry.
    *   <li>{@code TOMBSTONE_DELETED}: removes a dedup entry after its post-completion tombstone
    *       window has passed; emitted by the scheduled sweep.
    * </ul>
    */
   private void registerMessageStartProcessInstanceRequestAppliers(
       final MutableProcessingState state) {
-    register(MessageStartProcessInstanceRequestIntent.REQUESTED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartProcessInstanceRequestIntent.REQUESTED,
+        new MessageStartProcessInstanceRequestedV1Applier(
+            state.getPartitionId(), state.getMessageStartProcessInstanceAskState()));
     register(
         MessageStartProcessInstanceRequestIntent.STARTED,
         new MessageStartProcessInstanceStartedV1Applier(
-            state.getMessageStartProcessInstanceDedupState()));
+            state.getMessageStartProcessInstanceDedupState(),
+            state.getMessageStartProcessInstanceAskState()));
     register(
         MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
         new MessageStartProcessInstanceTombstoneDeletedV1Applier(
             state.getMessageStartProcessInstanceDedupState()));
-    // P_K-side bookkeeping appliers — registered as NOOP here so the
-    // shouldRegisterApplierForAllIntents test passes. The real V1 implementations land in a later
-    // commit of this feature together with the pending-ask CF that they will clear; per the
-    // versioned-applier convention upgrading a NOOP placeholder in-place is safe because no
-    // committed stream has ever emitted these intents.
-    register(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED, NOOP_EVENT_APPLIER);
-    register(MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED,
+        new MessageStartProcessInstanceUniquenessRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
+        new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {
