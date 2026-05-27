@@ -9,6 +9,8 @@ package io.camunda.document.store;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -30,6 +32,16 @@ public class InputStreamHashCalculator {
   public static String streamAndCalculateHash(final InputStream inputStream) throws Exception {
     return streamAndCalculateHash(
         inputStream, stream -> stream.transferTo(OutputStream.nullOutputStream()));
+  }
+
+  public static String spoolToFileAndCalculateHash(final InputStream inputStream, final Path target)
+      throws Exception {
+    final MessageDigest md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+    try (final DigestInputStream digestStream = new DigestInputStream(inputStream, md);
+        final OutputStream out = Files.newOutputStream(target)) {
+      digestStream.transferTo(out);
+    }
+    return HexFormat.of().formatHex(md.digest());
   }
 
   @FunctionalInterface
