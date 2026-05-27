@@ -84,7 +84,7 @@ export class OperateDiagramPage {
         await this.page.reload();
       },
     });
-    return flowNode.click({timeout: 20000});
+    return flowNode.click({timeout: 20000, force: true});
   }
 
   clickSubProcess(subProcessName: string) {

@@ -65,7 +65,10 @@ test.describe.serial('Process Instance Migration', () => {
     // Use a run-unique suffix so each test run deploys a fresh, isolated set
     // of process definitions. This avoids Operate's auto-migration picking up
     // stale versions from prior runs (which share the same bpmnProcessId).
-    const runId = Date.now().toString(36);
+    // The random suffix guards against v1-mode and v2-mode running concurrently
+    // and calling Date.now() within the same millisecond.
+    const runId =
+      Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const orderProcessId = `orderProcessMigration_${runId}`;
     const newOrderProcessId = `newOrderProcessMigration_${runId}`;
 
@@ -325,8 +328,9 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Verify 6 instances migrated to target version', async () => {
       await operateOperationPanelPage.expandOperationsPanel();
 
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(6).first();
+      const operationEntry = operateOperationPanelPage
+        .getMigrationOperationEntry(6)
+        .first();
 
       await expect(operationEntry).toBeVisible({timeout: 120000});
 
@@ -657,8 +661,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(3).first();
+      const operationEntry = operateOperationPanelPage
+        .getMigrationOperationEntry(3)
+        .first();
 
       await expect(operationEntry).toBeVisible({
         timeout: 120000,
@@ -724,7 +729,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();
