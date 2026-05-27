@@ -32,6 +32,7 @@ const DownloadDocumentButton: React.FC<Props> = ({
       renderIcon={Download}
       iconDescription="Download"
       tooltipPosition="top"
+      tooltipAlignment="end"
       aria-label={`Download document for variable ${variableName}`}
     />
   );
