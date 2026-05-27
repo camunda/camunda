@@ -8,8 +8,7 @@
 
 import { FC, useEffect, useState } from "react";
 import { FormLabel, Tag } from "@carbon/react";
-import { useApi } from "src/utility/api";
-import { searchUser } from "src/utility/api/users";
+import { useSearchUsers } from "src/utility/api/users/hooks";
 import useTranslate from "src/utility/localization";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -53,8 +52,8 @@ const OwnerSelectionSearch: FC<OwnerSelectionSearchProps> = ({
     });
   };
 
-  const { data: userSearchResults } = useApi(searchUser, search, {
-    paramsValid: hasSearchText,
+  const { data: userSearchResults } = useSearchUsers(search, {
+    enabled: hasSearchText,
   });
 
   const handleSelect = (user: User) => {

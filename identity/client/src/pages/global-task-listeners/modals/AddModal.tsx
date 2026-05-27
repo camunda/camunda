@@ -11,12 +11,9 @@ import { Controller, useForm } from "react-hook-form";
 import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
+import { useCreateGlobalTaskListener } from "src/utility/api/global-task-listeners/hooks";
 import TextField from "src/components/form/TextField";
-import {
-  createGlobalTaskListener,
-  LISTENER_EVENT_TYPES,
-} from "src/utility/api/global-task-listeners";
+import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
   getEventTypeLabel,
@@ -31,12 +28,7 @@ import type {
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const [callCreateGlobalTaskListener, { loading, error }] = useApiCall(
-    createGlobalTaskListener,
-    {
-      suppressErrorNotification: true,
-    },
-  );
+  const { mutate, isPending: loading, error } = useCreateGlobalTaskListener();
 
   const { control, handleSubmit, watch, setValue } =
     useForm<CreateGlobalTaskListenerRequestBody>({
@@ -94,28 +86,31 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     setValue("eventTypes", selectedItems);
   };
 
-  const onSubmit = async (data: CreateGlobalTaskListenerRequestBody) => {
+  const onSubmit = (data: CreateGlobalTaskListenerRequestBody) => {
     const eventTypes = data.eventTypes.includes("all")
       ? ["all" as const]
       : data.eventTypes.filter((type) => type !== "all");
 
-    const { success } = await callCreateGlobalTaskListener({
-      id: data.id,
-      type: data.type,
-      eventTypes: eventTypes,
-      retries: data.retries,
-      afterNonGlobal: data.afterNonGlobal,
-      priority: data.priority,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("globalTaskListenerCreated"),
-        subtitle: data.type,
-      });
-      onSuccess();
-    }
+    mutate(
+      {
+        id: data.id,
+        type: data.type,
+        eventTypes: eventTypes,
+        retries: data.retries,
+        afterNonGlobal: data.afterNonGlobal,
+        priority: data.priority,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("globalTaskListenerCreated"),
+            subtitle: data.type,
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   const afterNonGlobalOptions = [

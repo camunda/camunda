@@ -13,8 +13,7 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
-import { deleteClusterVariable } from "src/utility/api/cluster-variables";
+import { useDeleteClusterVariable } from "src/utility/api/cluster-variables/hooks";
 import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<
@@ -22,21 +21,21 @@ const DeleteModal: FC<
 > = ({ open, onClose, onSuccess, entity: deleteClusterVariableParams }) => {
   const { t, Translate } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteClusterVariable);
+  const { mutate, isPending: loading } = useDeleteClusterVariable();
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall(deleteClusterVariableParams);
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("clusterVariableHasBeenDeleted"),
-        subtitle: t("deleteClusterVariableSuccess", {
-          name: deleteClusterVariableParams.name,
-        }),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(deleteClusterVariableParams, {
+      onSuccess: () => {
+        enqueueNotification({
+          kind: "success",
+          title: t("clusterVariableHasBeenDeleted"),
+          subtitle: t("deleteClusterVariableSuccess", {
+            name: deleteClusterVariableParams.name,
+          }),
+        });
+        onSuccess();
+      },
+    });
   };
 
   return (

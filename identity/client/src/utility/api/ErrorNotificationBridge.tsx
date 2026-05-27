@@ -7,6 +7,7 @@
  */
 
 import { FC, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
 import { isLoggedIn } from "src/utility/auth";
@@ -16,6 +17,7 @@ import { ApiError, isDetailedError } from "./request";
 const ErrorNotificationBridge: FC = () => {
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("components");
+  const navigate = useNavigate();
 
   useEffect(() => {
     setErrorNotifier((error: ApiError) => {
@@ -29,6 +31,9 @@ const ErrorNotificationBridge: FC = () => {
               title: t("unauthorized"),
               subtitle: t("sessionExpired"),
             });
+          }
+          if (!window.location.pathname.includes("/login")) {
+            void navigate(`/login?next=${window.location.pathname}`);
           }
           return;
         case 403:
@@ -63,7 +68,7 @@ const ErrorNotificationBridge: FC = () => {
           }
       }
     });
-  }, [enqueueNotification, t]);
+  }, [enqueueNotification, t, navigate]);
 
   return null;
 };

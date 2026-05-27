@@ -12,8 +12,7 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { beautify, isValid } from "src/utility/components/editor/jsonUtils.ts";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
-import { useApiCall } from "src/utility/api";
-import { updateClusterVariable } from "src/utility/api/cluster-variables";
+import { useUpdateClusterVariable } from "src/utility/api/cluster-variables/hooks";
 import { useNotifications } from "src/components/notifications";
 import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -29,10 +28,7 @@ const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
 }) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const [callUpdateClusterVariable, { loading, error }] = useApiCall(
-    updateClusterVariable,
-    { suppressErrorNotification: true },
-  );
+  const { mutate, isPending: loading, error } = useUpdateClusterVariable();
   const initialValue = beautify(clusterVariable.value);
 
   const {
@@ -51,24 +47,27 @@ const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
   const hasChanged = currentValue !== initialValue;
   const isSubmitDisabled = !isFormValid || !hasChanged;
 
-  const handleSave = async (data: FormData) => {
-    const { success } = await callUpdateClusterVariable({
-      name: clusterVariable.name,
-      scope: clusterVariable.scope,
-      tenantId: clusterVariable.tenantId,
-      value: JSON.parse(data.value.trim()),
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("clusterVariableUpdated"),
-        subtitle: t("clusterVariableUpdatedSuccessfully", {
-          name: clusterVariable.name,
-        }),
-      });
-      onSuccess();
-    }
+  const handleSave = (data: FormData) => {
+    mutate(
+      {
+        name: clusterVariable.name,
+        scope: clusterVariable.scope,
+        tenantId: clusterVariable.tenantId,
+        value: JSON.parse(data.value.trim()),
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("clusterVariableUpdated"),
+            subtitle: t("clusterVariableUpdatedSuccessfully", {
+              name: clusterVariable.name,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

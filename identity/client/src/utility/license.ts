@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { checkLicense } from "src/utility/api/headers";
-import { useApi } from "src/utility/api";
+import { useLicense as useLicenseQuery } from "src/utility/api/headers/hooks";
 import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export function useLicense(): License | null {
-  const { data } = useApi(checkLicense);
-  return data;
+  const { data } = useLicenseQuery();
+  return data ?? null;
 }

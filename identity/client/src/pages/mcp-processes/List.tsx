@@ -24,8 +24,13 @@ const List: FC<ListProps> = ({ isTenantsApiEnabled }) => {
   const { t } = useTranslate("mcpProcesses");
   const { t: tComponents } = useTranslate();
 
-  const { processTools, loading, success, reload, ...paginationProps } =
-    useMcpProcessTools();
+  const {
+    processTools,
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+    ...paginationProps
+  } = useMcpProcessTools();
 
   const headers = useMemo<DataTableHeader<McpProcessTool>[]>(() => {
     const columns: DataTableHeader<McpProcessTool>[] = [
@@ -61,7 +66,12 @@ const List: FC<ListProps> = ({ isTenantsApiEnabled }) => {
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("mcpProcessesCouldNotLoad")}
-          actionButton={{ label: tComponents("retry"), onClick: reload }}
+          actionButton={{
+            label: tComponents("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </Page>

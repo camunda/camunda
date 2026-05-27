@@ -24,7 +24,7 @@ import type {
 
 type AuthorizationListProps = {
   tab: ResourceType;
-  data: SearchResponse<Authorization> | null;
+  data: SearchResponse<Authorization> | null | undefined;
   loading: boolean;
   reload: () => unknown;
   paginationProps: Omit<

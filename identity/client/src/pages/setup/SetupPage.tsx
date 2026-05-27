@@ -22,9 +22,8 @@ import {
   Button,
 } from "src/pages/setup/styled.ts";
 import Divider from "src/components/form/Divider";
-import { useApiCall } from "src/utility/api";
-import { createAdminUser } from "src/utility/api/setup";
-import { ErrorResponse } from "src/utility/api/request";
+import { useCreateAdminUser } from "src/utility/api/setup/hooks";
+import { ApiError, isDetailedError } from "src/utility/api/request";
 import { isValidEmail } from "src/utility/validate";
 
 interface SetupFormProps {
@@ -33,9 +32,7 @@ interface SetupFormProps {
 
 const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
-  const [apiCall] = useApiCall(createAdminUser, {
-    suppressErrorNotification: true,
-  });
+  const { mutateAsync: apiCall } = useCreateAdminUser();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -62,17 +59,14 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async () => {
     if (username && password && confirmPassword) {
-      const { success, error } = await apiCall({
-        name,
-        email,
-        username,
-        password,
-      });
-
-      if (success) {
+      try {
+        await apiCall({ name, email, username, password });
         onSuccess();
-      } else {
-        const detail = (error as ErrorResponse<"detailed">)?.detail;
+      } catch (error) {
+        const detail =
+          error instanceof ApiError && error.body && isDetailedError(error.body)
+            ? error.body.detail
+            : undefined;
         setSubmitError(detail || t("setupCreateAdminUserGenericError"));
       }
     }
