@@ -3,14 +3,111 @@
  */
 
 plugins {
-    id("buildlogic.openapi-java-client-conventions")
+    id("buildlogic.server-conventions")
     id("buildlogic.netty-tcnative-runtime-conventions")
+    id("org.openapi.generator")
 }
 
-// Configure OpenAPI generation for this module
+val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
+
 openApiGenerate {
+    generatorName.set("java")
+    inputSpec.set("$openapiDir/rest-api.yaml")
+    outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi")
     modelPackage.set("io.camunda.client.protocol.rest")
     templateDir.set("${project.projectDir}/src/main/resources/templates")
+
+    generateModelTests.set(false)
+    generateModelDocumentation.set(false)
+    generateApiTests.set(false)
+    generateApiDocumentation.set(false)
+
+    globalProperties.set(
+        mapOf(
+            "models" to "",
+            "apis" to "false",
+            "supportingFiles" to "false",
+        ),
+    )
+
+    typeMappings.set(
+        mapOf(
+            // map OffsetDateTime to String to avoid timezone issues and do validation manually
+            "OffsetDateTime" to "String",
+            // map complex String schemas to String
+            "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+            "ResourceKey" to "String",
+            "ScopeKey" to "String",
+            "ElementInstanceKey" to "String",
+            // map specific filter properties to basic filter types
+            "AuditLogEntityKeyFilterProperty" to "BasicStringFilterProperty",
+            "AuditLogKeyFilterProperty" to "BasicStringFilterProperty",
+            "DecisionDefinitionKeyFilterProperty" to "BasicStringFilterProperty",
+            "DecisionEvaluationInstanceKeyFilterProperty" to "BasicStringFilterProperty",
+            "DecisionEvaluationKeyFilterProperty" to "BasicStringFilterProperty",
+            "DecisionRequirementsKeyFilterProperty" to "BasicStringFilterProperty",
+            "DeploymentKeyFilterProperty" to "BasicStringFilterProperty",
+            "ElementIdFilterProperty" to "StringFilterProperty",
+            "ElementInstanceKeyFilterProperty" to "BasicStringFilterProperty",
+            "FormKeyFilterProperty" to "BasicStringFilterProperty",
+            "JobKeyFilterProperty" to "BasicStringFilterProperty",
+            "MessageSubscriptionKeyFilterProperty" to "BasicStringFilterProperty",
+            "ProcessDefinitionIdFilterProperty" to "StringFilterProperty",
+            "ProcessDefinitionKeyFilterProperty" to "BasicStringFilterProperty",
+            "ProcessInstanceKeyFilterProperty" to "BasicStringFilterProperty",
+            "ResourceKeyFilterProperty" to "BasicStringFilterProperty",
+            "ScopeKeyFilterProperty" to "BasicStringFilterProperty",
+            "VariableKeyFilterProperty" to "BasicStringFilterProperty",
+        ),
+    )
+
+    // map type-mapped keys to String to avoid missing class errors in generated imports
+    importMappings.set(
+        mapOf(
+            "ElementInstanceKey" to "java.lang.String",
+            "ResourceKey" to "java.lang.String",
+            "ScopeKey" to "java.lang.String",
+        ),
+    )
+
+    // validation already happens in zeebe-gateway-rest
+    skipValidateSpec.set(true)
+
+    configOptions.set(
+        mapOf(
+            "additionalModelTypeAnnotations" to
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "documentationProvider" to "none",
+            "enumUnknownDefaultCase" to "true",
+            "library" to "google-api-client",
+            "java8" to "true",
+            "openApiNullable" to "false",
+            "serializationLibrary" to "jackson",
+            "useReflectionEqualsHashCode" to "false",
+            "sourceFolder" to "src/main/java",
+        ),
+    )
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("${project.layout.buildDirectory.get()}/generated/openapi/src/main/java")
+        }
+    }
+}
+
+tasks.named("openApiGenerate") {
+    inputs.files(
+        fileTree(openapiDir) {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+    .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+}
+
+tasks.named("compileJava") {
+    dependsOn("openApiGenerate")
 }
 
 dependencies {
