@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.core.http.rest.Response;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.batch.BlobBatchClient;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -89,10 +91,15 @@ final class FileSetManager {
     final int size = blobUrls.size();
     for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
       final var batch = blobBatchClient.getBlobBatch();
+      final List<Response<Void>> responses = new ArrayList<>();
       for (final var url : blobUrls.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size))) {
-        batch.deleteBlob(url);
+        responses.add(batch.deleteBlob(url));
       }
       blobBatchClient.submitBatch(batch);
+      final var failure = responses.stream().filter(r -> r.getStatusCode() / 100 != 2).findFirst();
+      if (failure.isPresent()) {
+        throw new RuntimeException("Failures detected in the blob batch deletion");
+      }
     }
   }
 
