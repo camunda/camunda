@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -36,8 +37,13 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
   // aim for roughly 1 hours worth at 300 PI/s (across 3 partitions)
   private static final long IDS_PER_ORDINAL =
       100 * 60 * 60 * APPROX_IDS_BETWEEN_ROOT_PROCESS_INSTANCES;
+  private final Set<String> ordinalBasedIndexes;
   private final NoopIndexLocator noopIndexLocator = new NoopIndexLocator();
   private final Map<Integer, String> ordinalSuffixes = new ConcurrentHashMap<>();
+
+  public FakeOrdinalIndexLocatorProvider(final Set<String> ordinalBasedIndexes) {
+    this.ordinalBasedIndexes = ordinalBasedIndexes;
+  }
 
   @Override
   public IndexLocator createIndexLocator(final Record<?> record) {
@@ -129,7 +135,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     }
   }
 
-  static class SingleSuffixOrdinalIndexLocator implements IndexLocator {
+  class SingleSuffixOrdinalIndexLocator implements IndexLocator {
     private final String suffix;
 
     public SingleSuffixOrdinalIndexLocator(final String suffix) {
@@ -138,11 +144,14 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
     @Override
     public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
+      if (!ordinalBasedIndexes.contains(baseIndexName)) {
+        return baseIndexName;
+      }
       return baseIndexName + suffix;
     }
   }
 
-  static class MultiSuffixOrdinalIndexLocator implements IndexLocator {
+  class MultiSuffixOrdinalIndexLocator implements IndexLocator {
     private final Map<String, String> suffixesById;
 
     public MultiSuffixOrdinalIndexLocator(final Map<String, String> suffixesById) {
@@ -151,6 +160,9 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
     @Override
     public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
+      if (!ordinalBasedIndexes.contains(baseIndexName)) {
+        return baseIndexName;
+      }
       return baseIndexName + Objects.requireNonNull(suffixesById.get(entity.getId()));
     }
   }
