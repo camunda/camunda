@@ -245,7 +245,7 @@ Load extra context on demand — only when relevant, only if the files exist.
 
 ### Pull request conventions
 
-- PR title should clearly describe the change type (e.g., `feat: add user validation`, `fix: correct timeout handling`)
+- PR title should be clear and descriptive
 - Reference the issue number in the description (e.g., `Closes #1234`)
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
