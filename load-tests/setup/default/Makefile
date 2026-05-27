@@ -1,11 +1,3 @@
-# Workaround to prevent the Kubernetes client SDK from failing while
-# https://github.com/gravitational/teleport/issues/64188 is opened.
-# See https://app.incident.io/camunda/incidents/5624 for more details.
-# Consider removing this once
-# https://github.com/gravitational/teleport/issues/64188 has been fixed and
-# deployed.
-export KUBE_FEATURE_WatchListClient = false
-
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.8
