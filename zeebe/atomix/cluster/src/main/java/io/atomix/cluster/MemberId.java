@@ -47,18 +47,15 @@ public class MemberId extends NodeId {
 
   public MemberId(final String id) {
     super(id);
-    final var parts = id.split("_");
-    if (parts.length > 2) {
-      throw new IllegalArgumentException("Expected id to be of the form $zone_$id, but got " + id);
-    } else if (parts.length == 2) {
-      zone = parts[0];
-      nodeIdx = tryParseInt(parts[1]);
-    } else if (parts.length == 1) {
-      zone = null;
-      nodeIdx = tryParseInt(parts[0]);
+    // The underscore separator is safe because validateZone forbids underscores in zone names.
+    final int sep = id.lastIndexOf('_');
+    final Integer suffixIdx = sep > 0 ? tryParseInt(id.substring(sep + 1)) : null;
+    if (suffixIdx != null) {
+      zone = id.substring(0, sep);
+      nodeIdx = suffixIdx;
     } else {
-      throw new IllegalArgumentException(
-          "Expected id to be of the form $zone_$id or $id, but got " + id);
+      zone = null;
+      nodeIdx = tryParseInt(id);
     }
     validateZone(zone);
     validateNodeIdx(nodeIdx);

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,7 +34,6 @@ final class MemberIdTest {
     final var memberId = MemberId.from(7);
 
     // then
-
     assertThat(memberId)
         .returns(7, MemberId::nodeIdx)
         .returns(null, MemberId::zone)
@@ -41,54 +41,23 @@ final class MemberIdTest {
     assertEncodeDecode(memberId);
   }
 
-  @Test
-  void shouldThrowWhenZoneIsEmpty() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("", 7)).isInstanceOf(IllegalArgumentException.class);
+  static Stream<Named<String>> illegalZones() {
+    return Stream.of(
+        Named.of("empty", ""),
+        Named.of("blank", "   "),
+        Named.of("contains underscore", "zone_a"),
+        Named.of("contains slash", "zone/a"),
+        Named.of("contains dot", "zone.a"),
+        Named.of("starts with hyphen", "-zone"),
+        Named.of("exceeds max length", "a".repeat(64)),
+        Named.of("contains whitespace", "  eu-west  "));
   }
 
-  @Test
-  void shouldThrowWhenZoneIsBlank() {
+  @ParameterizedTest
+  @MethodSource("illegalZones")
+  void shouldThrowWhenZoneIsIllegal(final String zone) {
     // given / when / then
-    assertThatThrownBy(() -> MemberId.from("   ", 7)).isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowWhenZoneContainsUnderscore() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("zone_a", 7))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowWhenZoneContainsSlash() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("zone/a", 7))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowWhenZoneContainsSpecialChars() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("zone.a", 7))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowWhenZoneStartsWithHyphen() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("-zone", 7))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowWhenZoneExceedsMaxLength() {
-    // given
-    final var longZone = "a".repeat(64);
-
-    // when / then
-    assertThatThrownBy(() -> MemberId.from(longZone, 7))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> MemberId.from(zone, 7)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -107,13 +76,6 @@ final class MemberIdTest {
 
     // then
     assertThat(memberId).returns("eu-west-1", MemberId::zone);
-  }
-
-  @Test
-  void shouldThrowWhenZoneContainsWhitespace() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("  eu-west  ", 7))
-        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -165,6 +127,26 @@ final class MemberIdTest {
   void shouldNotThrowForAnonymous() {
     // given / when / then
     assertThatNoException().isThrownBy(MemberId::anonymous);
+  }
+
+  @Test
+  void shouldNotClassifyTrailingUnderscoreAsZonedId() {
+    // given — "eu-west_" looks like a zoned form but has no nodeIdx
+    final var memberId = MemberId.from("eu-west_");
+
+    // when / then — treated as bare non-integer id, not a zoned id
+    assertThat(memberId).returns(null, MemberId::zone);
+    assertThatThrownBy(memberId::nodeIdx).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotClassifyNonNumericSuffixAsZonedId() {
+    // given — "eu-west_abc" has an underscore but the suffix is not a number
+    final var memberId = MemberId.from("eu-west_abc");
+
+    // when / then — treated as bare non-integer id, not a zoned id
+    assertThat(memberId).returns(null, MemberId::zone);
+    assertThatThrownBy(memberId::nodeIdx).isInstanceOf(IllegalStateException.class);
   }
 
   static Stream<Arguments> isInZoneCases() {
