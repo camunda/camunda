@@ -61,20 +61,19 @@
   <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="oracle">
     SELECT
       COALESCE(
-        (SELECT al.next_change#
+        (SELECT MAX(al.next_change#)
          FROM   v$archived_log al
-         WHERE  al.sequence# = ad.log_sequence
-           AND  al.thread#   = 1
-           AND  al.dest_id   = 1
-           AND  ROWNUM       = 1),
+         WHERE  al.thread#   = ads.applied_thread#
+           AND  al.sequence# = ads.applied_seq#
+           AND  al.dest_id   = ads.dest_id),
         0
-      )                   AS logStatus,
-      TO_CHAR(ad.dest_id) AS replicaId,
-      0                   AS replicationLagMs
-    FROM v$archive_dest ad
-    WHERE ad.target = 'STANDBY'
-      AND ad.status NOT IN ('INACTIVE', 'DEFERRED', 'FAILED', 'ERROR', 'BAD PARAM', 'DISABLED')
-      AND ad.log_sequence > 0
+      )                    AS logStatus,
+      TO_CHAR(ads.dest_id) AS replicaId,
+      0                    AS replicationLagMs
+    FROM v$archive_dest_status ads
+    WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+      AND ads.status = 'VALID'
+      AND ads.applied_seq# > 0
   </select>
 
   <!--
@@ -166,4 +165,3 @@
   </select>
 
 </mapper>
-
