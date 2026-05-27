@@ -357,6 +357,84 @@ public class DeleteProcessDefinitionHistoryIT {
     assertThat(remainingSubscriptions).hasSize(1);
   }
 
+  @Test
+  void shouldNotDeleteStartEventSubscriptionsOfOtherProcessDefinition() {
+    // given - two process definitions each with a message start event
+    final var processIdA = Strings.newRandomValidBpmnId();
+    final var messageNameA = "start-" + processIdA;
+    final var processA =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processIdA)
+                .startEvent()
+                .message(m -> m.name(messageNameA).id("startMessage"))
+                .endEvent()
+                .done(),
+            processIdA + ".bpmn");
+    final var processDefinitionKeyA = processA.getProcessDefinitionKey();
+
+    final var processIdB = Strings.newRandomValidBpmnId();
+    final var messageNameB = "start-" + processIdB;
+    final var processB =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processIdB)
+                .startEvent()
+                .message(m -> m.name(messageNameB).id("startMessage"))
+                .endEvent()
+                .done(),
+            processIdB + ".bpmn");
+    final var processDefinitionKeyB = processB.getProcessDefinitionKey();
+
+    waitForMessageSubscriptions(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(processDefinitionKeyA)
+                .messageSubscriptionType(MessageSubscriptionType.START_EVENT),
+        1);
+    waitForMessageSubscriptions(
+        camundaClient,
+        f ->
+            f.processDefinitionKey(processDefinitionKeyB)
+                .messageSubscriptionType(MessageSubscriptionType.START_EVENT),
+        1);
+
+    // when - delete only process definition A with history
+    camundaClient.newDeleteResourceCommand(processDefinitionKeyA).deleteHistory(true).send().join();
+
+    // then - A's subscriptions are deleted, B's subscriptions remain untouched
+    assertProcessDefinitionDeleted(camundaClient, processDefinitionKeyA);
+    Awaitility.await("Start event subscriptions of A should be deleted")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newMessageSubscriptionSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processDefinitionKey(processDefinitionKeyA)
+                                        .messageSubscriptionType(
+                                            MessageSubscriptionType.START_EVENT))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
+
+    final var remainingSubscriptions =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKeyB)
+                        .messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+            .send()
+            .join()
+            .items();
+    assertThat(remainingSubscriptions).hasSize(1);
+  }
+
   /** Asserts that a process definition has been deleted from secondary storage. */
   private void assertProcessDefinitionDeleted(
       final CamundaClient client, final long processDefinitionKey) {
