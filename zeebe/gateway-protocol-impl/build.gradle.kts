@@ -6,6 +6,14 @@ plugins {
     id("buildlogic.protobuf-conventions")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 // Point to the proto files in the gateway-protocol module
 sourceSets {
     main {

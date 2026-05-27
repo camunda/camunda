@@ -6,6 +6,14 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)

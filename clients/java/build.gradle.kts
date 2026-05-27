@@ -8,6 +8,14 @@ plugins {
     id("org.openapi.generator")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
 
 openApiGenerate {

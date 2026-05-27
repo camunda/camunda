@@ -8,6 +8,14 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 tasks.named<ProcessResources>("processResources") {
     filter(
         mapOf(

@@ -6,12 +6,20 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 dependencies {
     implementation(project(":camunda-process-test-json-test-cases"))
     api(libs.org.testcontainers.testcontainers)
     api(libs.org.testcontainers.testcontainers.elasticsearch)
     api(libs.org.junit.jupiter.junit.jupiter.api.x1)
-    api(libs.org.junit.platform.junit.platform.commons)
+    api(libs.org.junit.platform.junit.platform.commons.x1)
     api(libs.org.junit.jupiter.junit.jupiter.params.x1)
     implementation(libs.org.slf4j.slf4j.api)
     implementation(project(":camunda-client-java"))

@@ -6,6 +6,14 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+java {
+    disableAutoTargetJvm()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
+}
+
 sourceSets {
     main {
         resources {
