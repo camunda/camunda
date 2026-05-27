@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_AGENT_INSTANCE_ENTITY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FLOW_NODE_ENTITY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INCIDENT_ENTITY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
@@ -20,7 +21,8 @@ public enum ProcessViewEntity {
   USER_TASK(VIEW_USER_TASK_ENTITY),
   PROCESS_INSTANCE(VIEW_PROCESS_INSTANCE_ENTITY),
   VARIABLE(VIEW_VARIABLE_ENTITY),
-  INCIDENT(VIEW_INCIDENT_ENTITY);
+  INCIDENT(VIEW_INCIDENT_ENTITY),
+  AGENT_INSTANCE(VIEW_AGENT_INSTANCE_ENTITY);
 
   private final String id;
 
