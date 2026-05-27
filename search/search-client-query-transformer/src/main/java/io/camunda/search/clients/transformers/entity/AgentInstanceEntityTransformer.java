@@ -42,9 +42,6 @@ public class AgentInstanceEntityTransformer
 
     final var tools = toTools(source.getTools());
 
-    final Long rootProcessInstanceKey =
-        source.getRootProcessInstanceKey() == -1L ? null : source.getRootProcessInstanceKey();
-
     return new AgentInstanceEntity(
         source.getKey(),
         source.getElementInstanceKeys(),
@@ -55,7 +52,7 @@ public class AgentInstanceEntityTransformer
         tools,
         source.getElementId(),
         source.getProcessInstanceKey(),
-        rootProcessInstanceKey,
+        source.getRootProcessInstanceKey(),
         source.getProcessDefinitionKey(),
         source.getBpmnProcessId(),
         source.getProcessDefinitionVersion(),

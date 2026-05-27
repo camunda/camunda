@@ -93,16 +93,6 @@ class AgentInstanceEntityTransformerTest {
   }
 
   @Test
-  void shouldMapRootProcessInstanceKeyMinusOneToNull() {
-    final var source = buildSource();
-    source.setRootProcessInstanceKey(-1L);
-
-    final var result = transformer.apply(source);
-
-    assertThat(result.rootProcessInstanceKey()).isNull();
-  }
-
-  @Test
   void shouldMapNullToolsToEmptyList() {
     final var source = buildSource();
     source.setTools(null);

@@ -38,7 +38,7 @@ public class AgentInstanceEntityMapper {
         toTools(dbModel.toolValues()),
         dbModel.elementId(),
         dbModel.processInstanceKey(),
-        dbModel.rootProcessInstanceKey() == -1L ? null : dbModel.rootProcessInstanceKey(),
+        dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
         dbModel.processDefinitionId(),
         dbModel.processDefinitionVersion(),

@@ -89,32 +89,6 @@ class AgentInstanceEntityMapperTest {
   }
 
   @Test
-  void shouldMapRootProcessInstanceKeySentinelToNull() {
-    final var dbModel =
-        buildModel(
-            m -> {
-              m.agentInstanceKey(1L);
-              m.processDefinitionId("p");
-              m.elementId("e");
-              m.processInstanceKey(10L);
-              m.processDefinitionKey(20L);
-              m.processDefinitionVersion(1);
-              m.tenantId("t");
-              m.status(AgentInstanceStatus.COMPLETED);
-              m.model("gpt");
-              m.provider("openai");
-              m.systemPrompt("s");
-              m.creationDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
-              m.lastUpdatedDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"));
-              m.rootProcessInstanceKey(-1L);
-            });
-
-    final AgentInstanceEntity entity = AgentInstanceEntityMapper.toEntity(dbModel);
-
-    assertThat(entity.rootProcessInstanceKey()).isNull();
-  }
-
-  @Test
   void shouldMapNullToolsToEmptyList() {
     final var dbModel =
         buildModel(
