@@ -212,9 +212,15 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       final java.io.File file = resource.getFile();
       return file != null && !file.isDirectory();
     } catch (final IOException e) {
-      // If we can't determine if it's a directory (e.g., for classpath resources),
-      // assume it's a file and let the deployment process handle any errors
-      return true;
+      // getFile() is unsupported for jar/classpath* resources; fall back to URL check.
+      // Directory entries in jar and classpath resources end with '/'.
+      try {
+        return !resource.getURL().toString().endsWith("/");
+      } catch (final IOException urlException) {
+        // If we can't determine if it's a directory, assume it's a file and let the
+        // deployment process handle any errors
+        return true;
+      }
     }
   }
 }

@@ -340,7 +340,7 @@ public class DeploymentAnnotationProcessorTest {
 
     // then - only the file resource should be deployed, not the directory
     verify(deployStep1).addResourceStream(any(), eq("process.bpmn"));
-    verify(deployStep1, never()).addResourceStream(any(), eq("directory"));
+    verify(deployStep1, times(1)).addResourceStream(any(), anyString());
     verify(deployStep2).execute();
   }
 
