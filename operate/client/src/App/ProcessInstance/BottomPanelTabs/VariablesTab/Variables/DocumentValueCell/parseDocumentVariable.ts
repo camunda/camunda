@@ -9,9 +9,13 @@
 import {z} from 'zod';
 import {safeJsonParse} from 'modules/utils';
 import {untruncateJson} from 'modules/utils/editor/untruncateJSON';
+import {mergePathname} from 'modules/request/mergePathname';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type DocumentInfo = {
   fileName: string;
+  link: string;
   size: number | undefined;
 };
 
@@ -23,6 +27,8 @@ const documentReferenceSchema = z
   .object({
     'camunda.document.type': z.literal('camunda'),
     documentId: z.string(),
+    storeId: z.string().optional(),
+    contentHash: z.string(),
     metadata: z
       .object({
         fileName: z.string().optional(),
@@ -42,7 +48,12 @@ function isDocumentReference(
 }
 
 function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
+  const link = mergePathname(
+    getClientConfig().contextPath,
+    endpoints.getDocument.getUrl(ref),
+  );
   return {
+    link,
     fileName: ref.metadata?.fileName ?? ref.documentId,
     size: ref.metadata?.size,
   };
