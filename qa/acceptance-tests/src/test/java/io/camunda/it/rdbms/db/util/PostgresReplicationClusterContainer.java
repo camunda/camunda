@@ -28,7 +28,8 @@ import org.testcontainers.utility.DockerImageName;
  */
 @SuppressWarnings("resource")
 public final class PostgresReplicationClusterContainer
-    extends GenericContainer<PostgresReplicationClusterContainer> {
+    extends GenericContainer<PostgresReplicationClusterContainer>
+    implements ReplicationClusterContainer {
 
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("bitnamilegacy/postgresql").withTag("15");
