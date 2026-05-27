@@ -513,8 +513,46 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return brokerInfo;
   }
 
+  /**
+   * Returns the member-property key under which a broker publishes its {@link BrokerInfo} for the
+   * given partition group. The default group uses the legacy {@value #BROKER_INFO_PROPERTY_NAME}
+   * key so that older readers continue to work during rolling upgrades. Non-default groups use a
+   * namespaced key of the form {@code "brokerInfo:<partitionGroup>"}.
+   */
+  public static String brokerInfoPropertyName(final String partitionGroup) {
+    if (Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionGroup)) {
+      return BROKER_INFO_PROPERTY_NAME;
+    }
+    return BROKER_INFO_PROPERTY_NAME + ":" + partitionGroup;
+  }
+
+  /**
+   * Creates a copy of this {@link BrokerInfo} carrying only the broker-level fields (node ID, zone,
+   * cluster config, version, addresses) with the given {@code partitionGroup} set. The returned
+   * instance has empty partition-role, leader-term, and health maps so it can be used as the
+   * starting point for a per-tenant {@code TopologyManagerImpl}.
+   */
+  public BrokerInfo withPartitionGroup(final String partitionGroup) {
+    final BrokerInfo copy = new BrokerInfo();
+    // Direct field assignment avoids validation checks so that null-sentinel values
+    // (e.g. partitionsCount before it has been set) are preserved faithfully.
+    copy.nodeId = nodeId;
+    copy.zone = zone;
+    copy.partitionsCount = partitionsCount;
+    copy.clusterSize = clusterSize;
+    copy.replicationFactor = replicationFactor;
+    copy.version = BufferUtil.cloneBuffer(version);
+    copy.partitionGroup = partitionGroup;
+    addresses.forEach(copy::addAddress);
+    return copy;
+  }
+
   public void writeIntoProperties(final Properties memberProperties) {
-    memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
+    writeIntoProperties(memberProperties, brokerInfoPropertyName(getPartitionGroup()));
+  }
+
+  public void writeIntoProperties(final Properties memberProperties, final String propertyKey) {
+    memberProperties.setProperty(propertyKey, writeToString());
   }
 
   private String writeToString() {

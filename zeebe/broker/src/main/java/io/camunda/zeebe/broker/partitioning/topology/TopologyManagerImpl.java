@@ -36,17 +36,17 @@ public final class TopologyManagerImpl extends Actor
 
   private final Int2ObjectHashMap<BrokerInfo> partitionLeaders = new Int2ObjectHashMap<>();
   private final ClusterMembershipService membershipService;
-  private final BrokerInfo localBroker;
+  private final BrokerInfo localPartitionGroupInfo;
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
   private final String actorName;
 
   public TopologyManagerImpl(
-      final ClusterMembershipService membershipService, final BrokerInfo localBroker) {
+      final ClusterMembershipService membershipService, final BrokerInfo partitionGroupInfo) {
     this.membershipService = membershipService;
-    this.localBroker = localBroker;
+    localPartitionGroupInfo = partitionGroupInfo;
 
-    actorName = "TopologyManager";
+    actorName = "TopologyManager-" + partitionGroupInfo.getPartitionGroup();
   }
 
   @Override
@@ -86,18 +86,18 @@ public final class TopologyManagerImpl extends Actor
   public ActorFuture<Void> setLeader(final long term, final int partitionId) {
     return actor.call(
         () -> {
-          partitionLeaders.put(partitionId, localBroker);
-          localBroker.setLeaderForPartition(partitionId, term);
+          partitionLeaders.put(partitionId, localPartitionGroupInfo);
+          localPartitionGroupInfo.setLeaderForPartition(partitionId, term);
           publishTopologyChanges();
-          notifyPartitionLeaderUpdated(partitionId, localBroker);
+          notifyPartitionLeaderUpdated(partitionId, localPartitionGroupInfo);
         });
   }
 
   public ActorFuture<Void> setFollower(final int partitionId) {
     return actor.call(
         () -> {
-          removeIfLeader(localBroker, partitionId);
-          localBroker.setFollowerForPartition(partitionId);
+          removeIfLeader(localPartitionGroupInfo, partitionId);
+          localPartitionGroupInfo.setFollowerForPartition(partitionId);
           publishTopologyChanges();
         });
   }
@@ -105,8 +105,8 @@ public final class TopologyManagerImpl extends Actor
   public ActorFuture<Void> setInactive(final int partitionId) {
     return actor.call(
         () -> {
-          removeIfLeader(localBroker, partitionId);
-          localBroker.setInactiveForPartition(partitionId);
+          removeIfLeader(localPartitionGroupInfo, partitionId);
+          localPartitionGroupInfo.setInactiveForPartition(partitionId);
           publishTopologyChanges();
         });
   }
@@ -117,7 +117,7 @@ public final class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
-    if (brokerInfo != null && !memberIdOf(brokerInfo).equals(memberIdOf(localBroker))) {
+    if (brokerInfo != null && !memberIdOf(brokerInfo).equals(memberIdOf(localPartitionGroupInfo))) {
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
@@ -211,7 +211,7 @@ public final class TopologyManagerImpl extends Actor
   // Propagate local partition info to other nodes through Atomix member properties
   private void publishTopologyChanges() {
     final Properties memberProperties = membershipService.getLocalMember().properties();
-    localBroker.writeIntoProperties(memberProperties);
+    localPartitionGroupInfo.writeIntoProperties(memberProperties);
   }
 
   @Override
@@ -239,11 +239,11 @@ public final class TopologyManagerImpl extends Actor
     actor.run(
         () -> {
           if (status == HealthStatus.HEALTHY) {
-            localBroker.setPartitionHealthy(partitionId);
+            localPartitionGroupInfo.setPartitionHealthy(partitionId);
           } else if (status == HealthStatus.UNHEALTHY) {
-            localBroker.setPartitionUnhealthy(partitionId);
+            localPartitionGroupInfo.setPartitionUnhealthy(partitionId);
           } else if (status == HealthStatus.DEAD) {
-            localBroker.setPartitionDead(partitionId);
+            localPartitionGroupInfo.setPartitionDead(partitionId);
           }
           publishTopologyChanges();
         });
@@ -253,8 +253,8 @@ public final class TopologyManagerImpl extends Actor
   public void removePartition(final int partitionId) {
     actor.run(
         () -> {
-          removeIfLeader(localBroker, partitionId);
-          localBroker.removePartition(partitionId);
+          removeIfLeader(localPartitionGroupInfo, partitionId);
+          localPartitionGroupInfo.removePartition(partitionId);
         });
   }
 
