@@ -7,6 +7,8 @@ plugins {
 }
 
 dependencies {
+    api(libs.org.junit.jupiter.junit.jupiter.api)
+    api(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-backup"))
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(project(":zeebe-protocol"))

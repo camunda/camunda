@@ -6,4 +6,14 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+sourceSets {
+    main {
+        resources {
+            srcDir("src/main/proto")
+            include("**/*.proto")
+            include("v2/*.yaml")
+        }
+    }
+}
+
 description = "Zeebe Gateway Protocol"
