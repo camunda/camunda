@@ -131,8 +131,9 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public AgentInstanceDbReader agentInstanceReader(final RdbmsReaderConfig readerConfig) {
-    return new AgentInstanceDbReader(readerConfig);
+  public AgentInstanceDbReader agentInstanceReader(
+      final AgentInstanceMapper agentInstanceMapper, final RdbmsReaderConfig readerConfig) {
+    return new AgentInstanceDbReader(agentInstanceMapper, readerConfig);
   }
 
   @Bean
@@ -491,6 +492,7 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      final AgentInstanceDbReader agentInstanceDbReader,
       final VariableDbReader variableReader,
       final ClusterVariableDbReader clusterVariableDbReader,
       final AuditLogDbReader auditLogReader,
@@ -536,6 +538,7 @@ public class RdbmsConfiguration {
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     return new RdbmsService(
         rdbmsWriterFactory,
+        agentInstanceDbReader,
         auditLogReader,
         authorizationReader,
         decisionDefinitionReader,

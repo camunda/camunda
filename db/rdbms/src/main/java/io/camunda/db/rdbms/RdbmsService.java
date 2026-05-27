@@ -9,6 +9,7 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
+import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
@@ -57,6 +58,7 @@ import java.util.function.Consumer;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final AgentInstanceDbReader agentInstanceDbReader;
   private final AuditLogDbReader auditLogReader;
   private final AuthorizationDbReader authorizationReader;
   private final DecisionDefinitionDbReader decisionDefinitionReader;
@@ -104,6 +106,7 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      final AgentInstanceDbReader agentInstanceDbReader,
       final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
@@ -148,6 +151,7 @@ public class RdbmsService {
       final DeployedResourceDbReader deployedResourceDbReader,
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
+    this.agentInstanceDbReader = agentInstanceDbReader;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -344,6 +348,10 @@ public class RdbmsService {
   public IncidentProcessInstanceStatisticsByDefinitionDbReader
       getIncidentProcessInstanceStatisticsByDefinitionReader() {
     return incidentProcessInstanceStatisticsByDefinitionDbReader;
+  }
+
+  public AgentInstanceDbReader getAgentInstanceDbReader() {
+    return agentInstanceDbReader;
   }
 
   public GlobalListenerDbReader getGlobalListenerDbReader() {
