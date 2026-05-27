@@ -119,6 +119,7 @@ export default defineConfig({
 				'8.10/global-task-listener': resolve(__dirname, 'lib/8.10/global-task-listener.ts'),
 				'8.10/agent-instance': resolve(__dirname, 'lib/8.10/agent-instance.ts'),
 				'8.10/system-configuration': resolve(__dirname, 'lib/8.10/system-configuration.ts'),
+				'8.10/element-instance-inspection': resolve(__dirname, 'lib/8.10/element-instance-inspection.ts'),
 			},
 			formats: ['es'],
 		},

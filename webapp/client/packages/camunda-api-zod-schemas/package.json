@@ -594,6 +594,12 @@
 				"default": "./dist/8.10/system-configuration.js"
 			}
 		},
+		"./8.10/element-instance-inspection": {
+			"import": {
+				"types": "./dist/8.10/element-instance-inspection.d.ts",
+				"default": "./dist/8.10/element-instance-inspection.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
