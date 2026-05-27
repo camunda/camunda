@@ -122,19 +122,19 @@ create-credentials:
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-rdbms.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-postgresql.yaml
 	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
-	# Install MySQL database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-mysql.yaml
+	# Install MySQL database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mariadb)
 	@echo "Installing MariaDB database for namespace $(namespace)..."
-	# Install MariaDB database - configuration provided via camunda-platform-values-elasticsearch.yaml and camunda-platform-values-mariadb.yaml
+	# Install MariaDB database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mariadb.yaml
 	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
 		$(platform_values)
