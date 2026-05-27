@@ -51,6 +51,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      pages: read
     environment:
       name: github-pages
       url: https://camunda.github.io/camunda/
@@ -81,6 +82,49 @@ jobs:
           publish_dir: ./monorepo-docs-site/build
           keep_files: true
           enable_jekyll: false
+
+      # The deploy step above only confirms the push to gh-pages — the server-side Pages
+      # build runs separately and its outcome is not surfaced anywhere in the Actions UI
+      # (legacy Pages mode). Poll the Pages build API so a failed build becomes a visible
+      # job failure rather than a green workflow with a dead docs site.
+      - name: Verify Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected_sha=$(gh api "repos/${GITHUB_REPOSITORY}/branches/gh-pages" --jq '.commit.sha')
+          echo "Expecting Pages build for gh-pages HEAD: ${expected_sha}"
+          deadline=$(( $(date +%s) + 300 ))
+          while :; do
+            response=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest")
+            status=$(jq -r '.status' <<< "${response}")
+            commit=$(jq -r '.commit' <<< "${response}")
+            error=$(jq -r '.error.message // ""' <<< "${response}")
+            if [[ "${commit}" != "${expected_sha}" ]]; then
+              echo "Latest build is for ${commit:0:12} (status=${status}); waiting for ${expected_sha:0:12}..."
+            else
+              echo "Pages build for ${commit:0:12}: status=${status}"
+              case "${status}" in
+                built)
+                  echo "::notice::Pages build succeeded for ${commit}"
+                  exit 0 ;;
+                errored)
+                  echo "::error::Pages build FAILED for ${commit}: ${error}"
+                  echo "::error::The API only exposes the generic message above; check Settings → Pages in the repo UI for any additional detail."
+                  exit 1 ;;
+                building|queued|"")
+                  : ;;
+                *)
+                  echo "::warning::Unknown Pages build status: ${status} — treating as failure"
+                  exit 1 ;;
+              esac
+            fi
+            if (( $(date +%s) >= deadline )); then
+              echo "::error::Timed out after 300s waiting for Pages build to complete."
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: Observe build status
         if: always()
