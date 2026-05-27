@@ -9,28 +9,67 @@ contribution workflow and be cross-linked to any related Helm or cross-component
 
 - **Framework**: `@playwright/test` ^1.51.0
 - **Language**: TypeScript 5.9
+- **Node.js**: 24.16.0 (pinned in `.nvmrc` / `.tool-versions` — use `nvm use` or `asdf install`)
 - **Pattern**: Page Object Model (POM) with Playwright fixtures
 - **API client**: `@camunda8/sdk`
 - **Linting**: ESLint + Prettier (enforced via `npm run lint`)
+
+> Unlike the sibling `c8-cross-component-e2e-tests` repo, tests here are **not** version-segregated
+> (no `SM-8.x/` or `c8Run-8.x/` directories). Versions are validated by running the suite against
+> the matching nightly branch of `camunda/camunda`.
 
 ## Directory Structure
 
 ```
 tests/
-  api/v2/          # REST API v2 tests (stateful; run as api-tests project)
+  api/             # API tests
+    v2/            # REST API v2 tests by resource (stateful; run as api-tests project)
+    *.spec.ts      # Top-level API spec files (e.g. authentication, cluster, license)
   common-flows/    # Cross-component flow tests
   identity/        # Identity UI tests
   operate/         # Operate UI tests
   tasklist/        # Tasklist UI tests
 v2-stateless-tests/
-  tests/request-validation/  # Stateless request-validation tests (no cluster state)
+  tests/request-validation/        # ⚠️ AUTO-GENERATED — do not edit by hand
+  request-validation-test-generator/  # Generator that emits the specs above from the OpenAPI spec
+fixtures.ts        # Playwright fixture definitions (page object DI) — note: at root, not in fixtures/
+test-setup.ts      # Shared setup helpers (captureScreenshot, captureFailureVideo)
 pages/             # Page Object Model classes (one file per page)
 utils/             # Helpers: zeebeClient, waitForAssertion, requestHelpers, cleanup utils, etc.
 resources/         # Test data: BPMN files, forms, connector templates
+json-body-assertions/    # OpenAPI-driven response assertions (regenerated via npm run responses:regenerate)
 config/
-  docker-compose.yml   # Local Elasticsearch + Camunda stack
-  application.yaml     # RDBMS config template (copy to dist before starting)
-  envs/                # Per-environment .env templates
+  docker-compose.yml         # Local Elasticsearch + Camunda stack
+  application.yaml           # RDBMS config template (copy to dist before starting)
+  envs/                      # Per-database .env templates (e.g. .env.database.elasticsearch)
+```
+
+The request-validation specs under `v2-stateless-tests/tests/request-validation/` are produced by
+`request-validation-test-generator/` from `zeebe/gateway-protocol/.../rest-api.yaml`. Each file
+carries a `GENERATED FILE - DO NOT EDIT MANUALLY` header. **To change behaviour, edit the
+generator (`scripts/`, `src/`) and re-run `npm run regenerate` from the generator directory** —
+never patch the generated `.spec.ts` files directly.
+
+## TypeScript Path Aliases
+
+Defined in `tsconfig.json`. Use these consistently in new tests and page objects:
+
+| Alias | Resolves to | Use for |
+|---|---|---|
+| `@fixtures` | `fixtures.ts` | `import {test} from 'fixtures';` (page-object-injecting test) |
+| `@setup` | `./test-setup.ts` | `captureScreenshot`, `captureFailureVideo` |
+| `@pages/*` | `pages/*` | Page object classes — `import {OperateProcessesPage} from '@pages/OperateProcessesPage';` |
+| `@requestHelpers` | `utils/requestHelpers/index.ts` | Typed REST API helpers |
+
+Example test imports (from `tests/operate/batchOperations.spec.ts`):
+
+```typescript
+import {test} from 'fixtures';
+import {expect} from '@playwright/test';
+import {deploy} from 'utils/zeebeClient';
+import {captureScreenshot, captureFailureVideo} from '@setup';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
+import {createCancellationBatch, expectBatchState} from '@requestHelpers';
 ```
 
 ## Setup
@@ -55,6 +94,18 @@ DATABASE_CONTAINER=<Service name from db/docker-compose.yml>
 
 Ensure the ports in your `.env` match those used in the local stack (e.g., 8080, 8081, 8089).
 
+### Other environment variables read by the suite
+
+| Variable | Purpose |
+|---|---|
+| `LOCAL_TEST` | Required by `npm run test:local` — gates the interactive runner in `runTest.js` |
+| `PLAYWRIGHT_BASE_URL` | Overrides default `http://localhost:8080` for all projects |
+| `DATABASE` | Selects backing database (`elasticsearch`, `opensearch`, `RDBMS`, ...); used by docker compose and `api-tests` |
+| `V2_STATELESS_TESTS` | When `true`, switches Playwright to the stateless `request-validation-tests` project set |
+| `API_TESTS_ONLY` | Reporter label flag for nightly API-only runs |
+| `VERSION`, `DB_NAME` | Reporter labels (used in Slack title from `playwright.config.ts`) |
+| `INCLUDE_SLACK_REPORTER` | `true` activates the Slack reporter (set by CI only) |
+
 ## Running Tests
 
 ```bash
@@ -76,6 +127,18 @@ npx playwright test --ui
 # View the HTML report after a run
 npx playwright show-report html-report
 ```
+
+### Output artifacts
+
+| Path | Contents |
+|---|---|
+| `html-report/` | Latest Playwright HTML report (open `index.html`) |
+| `test-results/` | Per-test traces (`trace.zip`), screenshots, videos — only retained on failure |
+| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail) |
+| `json-report/results.json` | JSON results (parsed by the flakiness agent and CI) |
+
+Inspect a failing test's trace with `npx playwright show-trace test-results/<test-dir>/trace.zip`,
+or upload the `.zip` to https://trace.playwright.dev.
 
 ## Playwright Projects
 
