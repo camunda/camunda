@@ -31,7 +31,7 @@ public final class AgentInstanceUpdatedApplier
     agentInstanceState.update(key, value);
 
     final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());
-    if (elementInstance != null) {
+    if (elementInstance != null && elementInstance.getAgentInstanceKey() != key) {
       elementInstance.setAgentInstanceKey(key);
       elementInstanceState.updateInstance(elementInstance);
     }
