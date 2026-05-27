@@ -103,6 +103,16 @@ public class ZeebeProcessDefinitionImportService
     return procDefImportJob;
   }
 
+  /**
+   * Maps a single Zeebe process definition record to an Optimize DTO.
+   *
+   * <p><b>Terminology note:</b> Optimize uses C7 conventions where {@code id} is the unique
+   * identifier and {@code key} is the non-unique BPMN string. This is the <em>inverse</em> of C8
+   * conventions.
+   *
+   * <p>Do not rename the DTO fields or swap these assignments. See {@code
+   * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+   */
   private ProcessDefinitionOptimizeDto mapZeebeRecordsToOptimizeEntities(
       final ZeebeProcessDefinitionRecordDto zeebeProcessDefinitionRecord) {
     final ZeebeProcessDefinitionDataDto recordData = zeebeProcessDefinitionRecord.getValue();

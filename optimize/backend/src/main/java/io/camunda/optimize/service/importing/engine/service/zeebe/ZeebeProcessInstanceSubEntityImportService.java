@@ -68,6 +68,24 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     return databaseImportJobExecutor;
   }
 
+  /**
+   * Creates a skeleton {@link ProcessInstanceDto} from Zeebe identifiers, translating them into
+   * Optimize's C7-based field naming convention.
+   *
+   * <p><b>Terminology note:</b> Optimize uses C7 naming throughout its data model and ES/OS
+   * indices, which is the <em>inverse</em> of C8 conventions.
+   *
+   * <p>This mapping is intentional. Do not rename the DTO fields. See {@code
+   * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+   *
+   * @param processDefinitionKey the Zeebe {@code bpmnProcessId} — the non-unique BPMN process ID
+   *     string (e.g. {@code "invoice-process"})
+   * @param processInstanceId the Zeebe {@code processInstanceKey} — the unique {@code Long} key for
+   *     this process instance
+   * @param processDefinitionId the Zeebe {@code processDefinitionKey} — the unique {@code Long} key
+   *     for the process definition version
+   * @param tenantId the tenant identifier
+   */
   protected ProcessInstanceDto createSkeletonProcessInstance(
       final String processDefinitionKey,
       final Long processInstanceId,

@@ -19,12 +19,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Represents a process instance as stored in Optimize's ES/OS index.
+ *
+ * <p><b>Terminology note:</b> Optimize retains C7 identifier conventions, which are the
+ * <em>inverse</em> of C8 / Zeebe conventions. The table below shows how Optimize field names map to
+ * their C8 equivalents:
+ *
+ * <table border="1">
+ *   <tr><th>Optimize field name</th><th>Zeebe field name</th><th>Meaning</th></tr>
+ *   <tr><td>{@link #processDefinitionKey}</td><td>{@code bpmnProcessId}</td>
+ *       <td>Non-unique BPMN process ID string, e.g. {@code "invoice-process"}</td></tr>
+ *   <tr><td>{@link #processDefinitionId}</td><td>{@code processDefinitionKey}</td>
+ *       <td>Unique {@code Long} key for a specific definition version (stored as {@code String})</td></tr>
+ *   <tr><td>{@link #processInstanceId}</td><td>{@code processInstanceKey}</td>
+ *       <td>Unique {@code Long} key for this process instance (stored as {@code String})</td></tr>
+ * </table>
+ *
+ * <p>This naming is intentional and must not be changed. See {@code
+ * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+ */
 public class ProcessInstanceDto implements OptimizeDto {
 
+  /** Maps to Zeebe's {@code bpmnProcessId}. See class-level Javadoc for the naming rationale. */
   private String processDefinitionKey;
+
   private String processDefinitionVersion;
+
+  /** Maps to Zeebe's {@code processDefinitionKey}. See class-level Javadoc. */
   private String processDefinitionId;
+
+  /** Maps to Zeebe's {@code processInstanceKey}. See class-level Javadoc. */
   private String processInstanceId;
+
   private String businessKey;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;

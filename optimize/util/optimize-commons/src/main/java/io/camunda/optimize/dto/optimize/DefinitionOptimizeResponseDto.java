@@ -12,10 +12,38 @@ import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Base DTO for process and decision definitions as stored in Optimize's ES/OS index.
+ *
+ * <p><b>Terminology note:</b> Optimize retains C7 identifier conventions, which are the
+ * <em>inverse</em> of C8 / Zeebe conventions. The table below shows how Optimize field names map to
+ * their C8 equivalents:
+ *
+ * <table border="1">
+ *   <tr><th>Optimize field name</th><th>Zeebe reference</th><th>Meaning</th></tr>
+ *   <tr><td>{@link #id}</td><td>{@code process/decision definition Key}</td>
+ *       <td>Unique {@code Long} key for a specific definition version (stored as {@code String})</td></tr>
+ *   <tr><td>{@link #key}</td><td>{@code process/decision ID (eg bpmnProcessId)}</td>
+ *       <td>Non-unique BPMN process or decision ID string, e.g. {@code "invoice-process"}</td></tr>
+ * </table>
+ *
+ * <p>This naming is intentional and must not be changed. See {@code
+ * optimize/docs/adr/001-c7-naming-conventions.md} for the full rationale.
+ */
 public abstract class DefinitionOptimizeResponseDto implements Serializable, OptimizeDto {
 
+  /**
+   * Maps to Zeebe's process or decision definition key (for example, {@code processDefinitionKey}
+   * or {@code decisionDefinitionKey}). See class-level Javadoc for the naming rationale.
+   */
   private String id;
+
+  /**
+   * Maps to the Zeebe process or decision identifier (for example, {@code bpmnProcessId} or {@code
+   * decisionId}). See class-level Javadoc.
+   */
   private String key;
+
   private String version;
   private String versionTag;
   private String name;
