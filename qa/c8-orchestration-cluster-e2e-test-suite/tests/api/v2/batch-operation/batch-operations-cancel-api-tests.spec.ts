@@ -45,14 +45,18 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 10);
+        // Use 30 instances so the batch takes long enough to process that the
+        // cancel command can arrive while the batch is still ACTIVE. With only
+        // 10 instances the engine finishes the batch before the cancel HTTP
+        // request arrives, causing a permanent NOT_FOUND (not an indexing lag).
+        return createCancellationBatch(request, 30);
       });
 
     await test.step('Cancel batch operation', async () => {
-      // The batch operation may not be visible to the cancel endpoint
-      // immediately after creation; retry on 404 until it is. The default
-      // 30s budget is too tight on a loaded shared cluster, so reuse the
-      // shared lifecycle options that suspend/resume already use.
+      // A batch that just started may also return 404 briefly if the cancel
+      // command races ahead of the batch-creation record on the engine
+      // partition. Retry with the shared lifecycle budget to absorb both
+      // scenarios (engine lag AND the narrow ACTIVE window).
       await expect(async () => {
         const res = await cancelBatchOperation(request, key);
         await assertStatusCode(res, 204);
