@@ -260,8 +260,9 @@ test.describe('Delete Operations', () => {
       instances.map((instance) => instance.processInstanceKey),
     );
   });
+
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
+    await navigateToAppHome(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
@@ -299,7 +300,9 @@ test.describe('Delete Operations', () => {
     });
 
     await test.step('Click Delete batch operation button', async () => {
-      await expect(operateProcessesPage.deleteBatchOperationButton).toBeEnabled();
+      await expect(
+        operateProcessesPage.deleteBatchOperationButton,
+      ).toBeEnabled();
       await operateProcessesPage.deleteBatchOperationButton.click();
     });
 
