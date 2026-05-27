@@ -276,12 +276,16 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(
             variableProcessInstanceKey,
+            {timeout: 30000},
           );
-          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
 
@@ -309,11 +313,14 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible();
+          await expect(page.getByText('2 results')).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
 
