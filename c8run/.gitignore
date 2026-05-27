@@ -9,6 +9,7 @@ connectors.process
 
 /c8run
 /c8run.exe
+/jre
 /main
 /main.exe
 /packager
