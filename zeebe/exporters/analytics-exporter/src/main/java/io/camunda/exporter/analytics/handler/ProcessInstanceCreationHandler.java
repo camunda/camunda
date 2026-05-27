@@ -11,7 +11,6 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
 
 import io.camunda.exporter.analytics.AnalyticsHandler;
@@ -43,7 +42,9 @@ public final class ProcessInstanceCreationHandler
                 .setAttribute(PROCESS_VERSION, (long) value.getVersion())
                 .setAttribute(PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
                 .setAttribute(PROCESS_INSTANCE_KEY, record.getKey())
-                .setAttribute(ROOT_PROCESS_INSTANCE_KEY, value.getRootProcessInstanceKey())
+                // TODO: re-enable once 8.8 brokers are no longer supported —
+                //  getRootProcessInstanceKey() does not exist on 8.8
+                // .setAttribute(ROOT_PROCESS_INSTANCE_KEY, value.getRootProcessInstanceKey())
                 .setAttribute(TENANT_ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
