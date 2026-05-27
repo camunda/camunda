@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public record Metadata(Optional<String> task, Version version, boolean acquirable) {
   // KEYS MUST BE LOWERCASE
@@ -54,7 +55,7 @@ public record Metadata(Optional<String> task, Version version, boolean acquirabl
         ACQUIRABLE_KEY, Boolean.toString(acquirable));
   }
 
-  public static Metadata fromMap(final Map<String, String> map) {
+  public static @Nullable Metadata fromMap(final Map<String, String> map) {
     if (map.isEmpty()) {
       return null;
     }
