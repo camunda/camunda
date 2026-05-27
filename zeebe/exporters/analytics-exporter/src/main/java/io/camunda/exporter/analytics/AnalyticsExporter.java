@@ -9,6 +9,7 @@ package io.camunda.exporter.analytics;
 
 import io.camunda.exporter.analytics.handler.AdHocSubProcessHandler;
 import io.camunda.exporter.analytics.handler.ProcessInstanceCreationHandler;
+import io.camunda.exporter.analytics.handler.UsageMetricHandler;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -64,6 +66,10 @@ public class AnalyticsExporter implements Exporter {
                 ValueType.PROCESS_INSTANCE,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 new AdHocSubProcessHandler(otelSdkManager))
+            .register(
+                ValueType.USAGE_METRIC,
+                UsageMetricIntent.EXPORTED,
+                new UsageMetricHandler(otelSdkManager))
             .apply(context);
 
     LOG.info(

@@ -50,5 +50,15 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> ELEMENT_ID =
       AttributeKey.stringKey("camunda.element_id");
 
+  // Usage metrics
+  public static final AttributeKey<String> USAGE_METRIC_EVENT_TYPE =
+      AttributeKey.stringKey("camunda.usage_metric.event_type");
+  public static final AttributeKey<Long> USAGE_METRIC_COUNT =
+      AttributeKey.longKey("camunda.usage_metric.count");
+  public static final AttributeKey<Long> USAGE_METRIC_INTERVAL_START =
+      AttributeKey.longKey("camunda.usage_metric.interval_start");
+  public static final AttributeKey<Long> USAGE_METRIC_INTERVAL_END =
+      AttributeKey.longKey("camunda.usage_metric.interval_end");
+
   private AnalyticsAttributes() {}
 }

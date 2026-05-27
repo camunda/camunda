@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -27,8 +28,14 @@ class AnalyticsRecordFilterTest {
 
   private final AnalyticsRecordFilter filter =
       new AnalyticsRecordFilter(
-          Set.of(ValueType.PROCESS_INSTANCE_CREATION, ValueType.PROCESS_INSTANCE),
-          Set.of(ProcessInstanceCreationIntent.CREATED, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+          Set.of(
+              ValueType.PROCESS_INSTANCE_CREATION,
+              ValueType.PROCESS_INSTANCE,
+              ValueType.USAGE_METRIC),
+          Set.of(
+              ProcessInstanceCreationIntent.CREATED,
+              ProcessInstanceIntent.ELEMENT_ACTIVATED,
+              UsageMetricIntent.EXPORTED),
           TEST_PARTITION_ID);
 
   @Test
@@ -50,13 +57,14 @@ class AnalyticsRecordFilterTest {
   void shouldAcceptAllRegisteredValueTypes() {
     assertThat(filter.acceptValue(ValueType.PROCESS_INSTANCE_CREATION)).isTrue();
     assertThat(filter.acceptValue(ValueType.PROCESS_INSTANCE)).isTrue();
+    assertThat(filter.acceptValue(ValueType.USAGE_METRIC)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(
       value = ValueType.class,
       mode = EnumSource.Mode.EXCLUDE,
-      names = {"PROCESS_INSTANCE_CREATION", "PROCESS_INSTANCE"})
+      names = {"PROCESS_INSTANCE_CREATION", "PROCESS_INSTANCE", "USAGE_METRIC"})
   void shouldRejectUnregisteredValueType(final ValueType type) {
     assertThat(filter.acceptValue(type)).isFalse();
   }
@@ -65,6 +73,7 @@ class AnalyticsRecordFilterTest {
   void shouldAcceptAllRegisteredIntents() {
     assertThat(filter.acceptIntent(ProcessInstanceCreationIntent.CREATED)).isTrue();
     assertThat(filter.acceptIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)).isTrue();
+    assertThat(filter.acceptIntent(UsageMetricIntent.EXPORTED)).isTrue();
   }
 
   @Test

@@ -37,29 +37,9 @@ filtering layers and the rationale behind partition-based deduplication.
 
 ## What it exports
 
-|                Event                | OTel Signal |
-|-------------------------------------|-------------|
-| `PROCESS_INSTANCE_CREATION` (event) | Log Record  |
-
 Events follow the [OTel Events semantic convention](https://opentelemetry.io/docs/specs/semconv/general/events/) —
-identified by the `event.name` attribute. Body is not set (per spec: "Events SHOULD NOT use
-body except to represent a string display message").
-
-### Log record attributes
-
-|              Attribute              |  Type  |                   Description                    |
-|-------------------------------------|--------|--------------------------------------------------|
-| `event.name`                        | string | Event type identifier (OTel semantic convention) |
-| `camunda.bpmn_process_id`           | string | BPMN process ID                                  |
-| `camunda.process_version`           | long   | Process definition version                       |
-| `camunda.process_definition_key`    | long   | Process definition key                           |
-| `camunda.process_instance_key`      | long   | Process instance key                             |
-| `camunda.root_process_instance_key` | long   | Root process instance key (for call activities)  |
-| `camunda.tenant_id`                 | string | Tenant ID                                        |
-| `camunda.log.position`              | long   | Log stream position (de-duplication key)         |
-
-Attribute names follow [OTel naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/) —
-dot-delimited namespaces, snake_case for multi-word components.
+identified by the `event.name` attribute. See handler classes in `handler/` and
+`AnalyticsAttributes` for the specific events and their attributes.
 
 ### OTel resource attributes
 
@@ -93,25 +73,13 @@ zeebe:
 
 ## Architecture
 
-```
-Zeebe actor thread                          Background thread
-─────────────────                          ─────────────────
-export(record)
-  ├── updatePosition (always, unconditionally)
-  ├── EnumMap lookup → handler or null
-  └── handler → OtelSdkManager.logEvent(eventName, logPosition, builder)
-       └── BatchLogRecordProcessor.onEmit()   ──→  queue  ──→  OTLP/HTTP POST
-           (non-blocking, drops if full)                       to analytics endpoint
-```
+See source Javadocs for component details. Key files:
 
-Key components:
-
-- **`AnalyticsExporter`** — Zeebe exporter. Owns handler registry and record routing.
-  Handlers build OTel log records directly via the `logEvent()` lambda API.
-- **`OtelSdkManager`** — Manages the OTel SDK lifecycle (Resource, LoggerProvider, SDK).
-  Provides `logEvent(eventName, logPosition, builder)` — sets `event.name`, severity,
-  and log position automatically; the builder lambda adds event-specific attributes.
-- **`AnalyticsAttributes`** — Shared OTel attribute key constants following naming conventions.
+- **`AnalyticsExporter`** — Zeebe exporter lifecycle and handler wiring.
+- **`HandlerRegistry`** — Routes records by (ValueType, Intent) to handlers.
+- **`AnalyticsRecordFilter`** — Broker-level filtering (type, value, intent, partition).
+- **`OtelSdkManager`** — OTel SDK lifecycle (Resource, LoggerProvider, BatchProcessor).
+- **`handler/`** — Individual event handlers (one per analytics event type).
 
 ## Building
 
