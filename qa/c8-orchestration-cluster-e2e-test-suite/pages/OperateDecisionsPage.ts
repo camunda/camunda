@@ -103,20 +103,17 @@ class OperateDecisionsPage {
   }
 
   async clickEvaluatedCheckbox(): Promise<void> {
-    // Carbon Design System hides the <input> and overlays a <label>;
-    // click the label (the visible interactive element) via the for/id relationship.
-    const id = await this.evaluatedCheckbox.getAttribute('id');
-    if (!id)
-      throw new Error('Could not find id attribute on evaluated checkbox');
-    await this.page.locator(`label[for="${id}"]`).click();
+    await this.filterRegion
+      .locator('label')
+      .filter({hasText: 'Evaluated'})
+      .click();
   }
 
   async clickFailedCheckbox(): Promise<void> {
-    // Carbon Design System hides the <input> and overlays a <label>;
-    // click the label (the visible interactive element) via the for/id relationship.
-    const id = await this.failedCheckbox.getAttribute('id');
-    if (!id) throw new Error('Could not find id attribute on failed checkbox');
-    await this.page.locator(`label[for="${id}"]`).click();
+    await this.filterRegion
+      .locator('label')
+      .filter({hasText: 'Failed'})
+      .click();
   }
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
