@@ -23,7 +23,8 @@ public interface SnapshotTransferService extends AsyncClosable {
    * @param lastProcessedPosition the minimum value of lastProcessedPosition that the snapshot must
    *     have
    * @param transferId an identifier to trace the transfer
-   * @return the first {@link SnapshotChunk}. It must be used in subsequent calls to {@link
+   * @return the first {@link SnapshotChunk}, or {@code null} if no snapshot is available. The
+   *     returned chunk must be used in subsequent calls to {@link
    *     SnapshotTransferService#getNextChunk}
    */
   ActorFuture<@Nullable SnapshotChunk> getLatestSnapshot(
@@ -36,7 +37,8 @@ public interface SnapshotTransferService extends AsyncClosable {
    * @param snapshotId the snapshotId of the snapshot being transferred
    * @param previousChunkName the chunkName of the previous chunk, so that the next one can be
    *     identified
-   * @return null if there is no other chunk or the SnapshotChunk after {@param previousChunkName}
+   * @return {@code null} if there is no other chunk, or the {@link SnapshotChunk} after {@code
+   *     previousChunkName}
    */
   ActorFuture<@Nullable SnapshotChunk> getNextChunk(
       int partition, String snapshotId, String previousChunkName, UUID transferId);
@@ -44,8 +46,8 @@ public interface SnapshotTransferService extends AsyncClosable {
   interface TakeSnapshot {
 
     /**
-     * Take a snapshot of a partition. The snapshot returned must have processed at least {@param
-     * lastProcessedPosition}
+     * Take a snapshot of a partition. The snapshot returned must have processed at least {@code
+     * lastProcessedPosition}.
      *
      * @param lastProcessedPosition the minimum value for lastProcessedPosition in the snapshot
      * @return a future with the persisted snapshot

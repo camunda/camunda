@@ -137,59 +137,59 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
             });
   }
 
-  private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(
+  private ActorFuture<@Nullable PersistedSnapshot> getLatestSnapshotForBootstrap(
       final long lastProcessedPosition) {
-    final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
-
-    final var lastSnapshot = snapshotStore.getBootstrapSnapshot();
-    if (lastSnapshot.isEmpty()) {
-      createSnapshotForBootstrap(lastProcessedPosition).onComplete(lastSnapshotFuture, concurrency);
-    } else {
-      lastSnapshotFuture.complete(lastSnapshot.get());
-    }
-    return lastSnapshotFuture;
+    return snapshotStore
+        .getBootstrapSnapshot()
+        .<ActorFuture<@Nullable PersistedSnapshot>>map(
+            snapshot -> CompletableActorFuture.completed(snapshot).asNullable())
+        .orElseGet(() -> createSnapshotForBootstrap(lastProcessedPosition));
   }
 
-  private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(
+  private ActorFuture<@Nullable PersistedSnapshot> createSnapshotForBootstrap(
       final long lastProcessedPosition) {
-    final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
-    final ActorFuture<PersistedSnapshot> lastSnapshot =
-        lastPersistedSnapshot.isEmpty()
-                || Objects.requireNonNull(lastPersistedSnapshot.get().getMetadata(), "metadata")
-                        .processedPosition()
-                    < lastProcessedPosition
-            ? takeSnapshot.takeSnapshot(lastProcessedPosition)
-            : CompletableActorFuture.completed(lastPersistedSnapshot.get());
+    final ActorFuture<@Nullable PersistedSnapshot> lastSnapshot =
+        snapshotStore
+            .getLatestSnapshot()
+            .filter(snapshot -> metadataProcessedPosition(snapshot) >= lastProcessedPosition)
+            .<ActorFuture<@Nullable PersistedSnapshot>>map(
+                snapshot -> CompletableActorFuture.completed(snapshot).asNullable())
+            .orElseGet(() -> takeSnapshot.takeSnapshot(lastProcessedPosition).asNullable());
 
     return lastSnapshot.andThen(
-        persistedSnapshot ->
-            withReservation(
-                persistedSnapshot,
-                () ->
-                    snapshotStore
-                        .copyForBootstrap(persistedSnapshot, copyForBootstrap)
-                        .andThen(
-                            (snapshot, error) -> {
-                              if (error != null) {
-                                if (error instanceof SnapshotAlreadyExistsException) {
-                                  final var bootstrapSnapshot =
-                                      snapshotStore.getBootstrapSnapshot();
-                                  return bootstrapSnapshot
-                                      .map(CompletableActorFuture::completed)
-                                      .orElseGet(
-                                          () ->
-                                              CompletableActorFuture.completedExceptionally(
-                                                  new IllegalStateException(
-                                                      "Bootstrap snapshot already exists but cannot be found")));
-                                } else {
-                                  return CompletableActorFuture.completedExceptionally(error);
-                                }
+        persistedSnapshot -> {
+          if (persistedSnapshot == null) {
+            return CompletableActorFuture.completed(null);
+          }
+          return withReservation(
+              persistedSnapshot,
+              () ->
+                  snapshotStore
+                      .copyForBootstrap(persistedSnapshot, copyForBootstrap)
+                      .andThen(
+                          (snapshot, error) -> {
+                            if (error != null) {
+                              if (error instanceof SnapshotAlreadyExistsException) {
+                                return CompletableActorFuture.completed(
+                                    snapshotStore.getBootstrapSnapshot().orElse(null));
                               } else {
-                                return CompletableActorFuture.completed(snapshot);
+                                return CompletableActorFuture.completedExceptionally(error);
                               }
-                            },
-                            concurrency)),
+                            } else {
+                              return CompletableActorFuture.completed(snapshot);
+                            }
+                          },
+                          concurrency));
+        },
         concurrency);
+  }
+
+  private static long metadataProcessedPosition(final PersistedSnapshot snapshot) {
+    final var metadata = snapshot.getMetadata();
+    if (metadata == null) {
+      throw new NullPointerException();
+    }
+    return metadata.processedPosition();
   }
 
   /**
@@ -197,7 +197,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
    * that the reservation is released even in case of errors
    */
   @VisibleForTesting
-  <A> ActorFuture<A> withReservation(
+  <A extends @Nullable Object> ActorFuture<A> withReservation(
       final PersistedSnapshot persistedSnapshot, final Supplier<ActorFuture<A>> supplier) {
     return persistedSnapshot
         .reserve()

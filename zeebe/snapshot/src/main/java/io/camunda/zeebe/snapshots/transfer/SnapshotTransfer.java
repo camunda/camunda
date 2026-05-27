@@ -14,10 +14,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Receive a complete snapshot from a {@link SnapshotTransferService} by repeatedly asking for the
- * next chunk until all chunks are received. No retry is done on the futures, if you want support
- * for retry, wrap {@param service} with retries.
+ * next chunk until all chunks are received. No retry is done on the futures; if you want retry
+ * support, wrap the service with retries.
  *
- * <p>Snapshots are received in the {@param snapshotStore}.
+ * <p>Snapshots are received in the configured snapshot store.
  */
 public interface SnapshotTransfer extends AsyncClosable {
 
