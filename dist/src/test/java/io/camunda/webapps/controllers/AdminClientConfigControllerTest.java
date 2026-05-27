@@ -188,7 +188,7 @@ public class AdminClientConfigControllerTest {
   }
 
   @Test
-  void shouldExposeProtectedRoleIdsFromSharedConstant() throws Exception {
+  void shouldExposeDefaultRoleIdsFromSharedConstant() throws Exception {
     // given
     final var controller =
         new AdminClientConfigController(
@@ -201,7 +201,7 @@ public class AdminClientConfigControllerTest {
     final var config = extractConfigFromResponse(response);
 
     // then
-    assertThat(config.get("protectedRoleIds"))
+    assertThat(config.get("defaultRoleIds"))
         .asInstanceOf(list(String.class))
         .containsExactlyInAnyOrderElementsOf(DefaultRole.ids());
   }

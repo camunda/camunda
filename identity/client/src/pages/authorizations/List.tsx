@@ -36,6 +36,7 @@ type ListProps = {
   isOIDC: boolean;
   isCamundaGroupsEnabled: boolean;
   resourcePermissions: Record<ResourceType, PermissionType[]>;
+  defaultRoleIds: string[];
 };
 
 const List: FC<ListProps> = ({
@@ -43,6 +44,7 @@ const List: FC<ListProps> = ({
   isOIDC,
   isCamundaGroupsEnabled,
   resourcePermissions,
+  defaultRoleIds,
 }) => {
   const { t } = useTranslate("authorizations");
   const navigate = useNavigate();
@@ -135,6 +137,7 @@ const List: FC<ListProps> = ({
                   isCamundaGroupsEnabled={isCamundaGroupsEnabled}
                   isTenantsApiEnabled={isTenantsApiEnabled}
                   resourcePermissions={resourcePermissions}
+                  defaultRoleIds={defaultRoleIds}
                 />
               </CustomTabPanel>
             ))}

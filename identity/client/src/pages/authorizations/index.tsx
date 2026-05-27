@@ -19,6 +19,7 @@ type AuthorizationsProps = {
   isCamundaGroupsEnabled: boolean;
   isTenantsApiEnabled: boolean;
   resourcePermissions: Record<ResourceType, PermissionType[]>;
+  defaultRoleIds: string[];
 };
 
 const Authorizations: FC<AuthorizationsProps> = ({
@@ -26,6 +27,7 @@ const Authorizations: FC<AuthorizationsProps> = ({
   isCamundaGroupsEnabled,
   isTenantsApiEnabled,
   resourcePermissions,
+  defaultRoleIds,
 }) => (
   <PageRoutes
     indexElement={
@@ -36,6 +38,7 @@ const Authorizations: FC<AuthorizationsProps> = ({
           isCamundaGroupsEnabled,
           isTenantsApiEnabled,
           resourcePermissions,
+          defaultRoleIds,
         }}
       />
     }
@@ -47,6 +50,7 @@ const Authorizations: FC<AuthorizationsProps> = ({
           isCamundaGroupsEnabled,
           isTenantsApiEnabled,
           resourcePermissions,
+          defaultRoleIds,
         }}
       />
     }

@@ -32,7 +32,7 @@ public class AdminClientConfigController {
   private static final String CLUSTER_ID = "clusterId";
   private static final String ID_PATTERN = "idPattern";
   private static final String RESOURCE_PERMISSIONS = "resourcePermissions";
-  private static final String PROTECTED_ROLE_IDS = "protectedRoleIds";
+  private static final String DEFAULT_ROLE_IDS = "defaultRoleIds";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
@@ -69,7 +69,7 @@ public class AdminClientConfigController {
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, securityConfiguration.getIdValidationPattern());
     config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
-    config.put(PROTECTED_ROLE_IDS, DefaultRole.ids());
+    config.put(DEFAULT_ROLE_IDS, DefaultRole.ids());
 
     return config;
   }

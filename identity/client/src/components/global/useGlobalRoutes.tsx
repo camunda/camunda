@@ -23,6 +23,7 @@ import {
   isOIDC,
   isSaaS,
   isTenantsApiEnabled,
+  defaultRoleIds,
   resourcePermissions,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
@@ -89,6 +90,7 @@ export const useGlobalRoutes = () => {
         <Roles
           isOIDC={isOIDC}
           isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+          defaultRoleIds={defaultRoleIds}
         />
       ),
     },
@@ -103,6 +105,7 @@ export const useGlobalRoutes = () => {
           isCamundaGroupsEnabled={isCamundaGroupsEnabled}
           isTenantsApiEnabled={isTenantsApiEnabled}
           resourcePermissions={resourcePermissions}
+          defaultRoleIds={defaultRoleIds}
         />
       ),
     },
