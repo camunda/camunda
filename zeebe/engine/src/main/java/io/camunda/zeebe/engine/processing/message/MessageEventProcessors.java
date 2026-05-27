@@ -161,7 +161,7 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,
-            new MessageStartProcessInstanceRequestProcessor(
+            new MessageStartProcessInstanceRequestRequestProcessor(
                 startEventSubscriptionState,
                 elementInstanceState,
                 bannedInstanceState,
@@ -177,7 +177,7 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
-            new MessageStartDedupExpirationSweepProcessor(
+            new MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
                 writers.state(),
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
@@ -187,15 +187,15 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.START,
-            new MessageStartProcessInstanceStartReplyProcessor(writers.state(), messageState))
+            new MessageStartProcessInstanceRequestStartProcessor(writers.state(), messageState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
-            new MessageStartProcessInstanceUniquenessRejectReplyProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(writers.state()))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
-            new MessageStartProcessInstanceNoSubscriptionRejectReplyProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),

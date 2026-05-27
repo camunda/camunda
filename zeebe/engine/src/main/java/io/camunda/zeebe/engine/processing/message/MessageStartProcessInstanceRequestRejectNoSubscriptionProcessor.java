@@ -15,22 +15,23 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Handles the {@link MessageStartProcessInstanceRequestIntent#REJECT_UNIQUENESS} command on {@code
- * P_K}, which is the rejection reply from {@code P_B} indicating that an active process instance
- * with the same {@code businessId} already exists.
+ * Handles the {@link MessageStartProcessInstanceRequestIntent#REJECT_NO_SUBSCRIPTION} command on
+ * {@code P_K}, which is the rejection reply from {@code P_B} indicating that no matching start
+ * event subscription exists on {@code P_B} (deployment-distribution race).
  *
- * <p>This processor writes the {@link MessageStartProcessInstanceRequestIntent#UNIQUENESS_REJECTED}
- * follow-up event whose applier does the bookkeeping cleanup (pending-ask state removal). The
- * message stays buffered on {@code P_K}, waiting for the pull-based release mechanism in Increment
- * 4.
+ * <p>This processor writes the {@link
+ * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} follow-up event whose applier
+ * does the bookkeeping cleanup (pending-ask state removal). The message stays buffered on {@code
+ * P_K}, preserving the same semantics as when a local start-event subscription is missing.
  */
 @ExcludeAuthorizationCheck
-public final class MessageStartProcessInstanceUniquenessRejectReplyProcessor
+public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final StateWriter stateWriter;
 
-  public MessageStartProcessInstanceUniquenessRejectReplyProcessor(final StateWriter stateWriter) {
+  public MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
+      final StateWriter stateWriter) {
     this.stateWriter = stateWriter;
   }
 
@@ -38,7 +39,7 @@ public final class MessageStartProcessInstanceUniquenessRejectReplyProcessor
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
     stateWriter.appendFollowUpEvent(
         record.getKey(),
-        MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED,
+        MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
         record.getValue());
   }
 }

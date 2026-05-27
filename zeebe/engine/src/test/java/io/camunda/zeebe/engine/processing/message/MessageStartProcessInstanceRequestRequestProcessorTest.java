@@ -40,7 +40,7 @@ import org.junit.Test;
  * RecordingExporter}. No reply-side processor is registered yet (lands in a later commit), so the
  * reply command stays a recorded command — exactly what we want to assert on here.
  */
-public final class MessageStartProcessInstanceRequestProcessorTest {
+public final class MessageStartProcessInstanceRequestRequestProcessorTest {
 
   private static final String PROCESS_ID = "wf";
   private static final String MESSAGE_NAME = "start-msg";

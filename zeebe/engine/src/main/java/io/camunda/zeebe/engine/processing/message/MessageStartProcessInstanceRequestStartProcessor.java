@@ -65,7 +65,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * are unconditionally idempotent via {@code deleteIfExists} and {@code upsert}.
  */
 @ExcludeAuthorizationCheck
-public final class MessageStartProcessInstanceStartReplyProcessor
+public final class MessageStartProcessInstanceRequestStartProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final StateWriter stateWriter;
@@ -74,7 +74,7 @@ public final class MessageStartProcessInstanceStartReplyProcessor
       new MessageStartEventSubscriptionRecord();
   private final MessageRecord expiredMessageRecord = new MessageRecord();
 
-  public MessageStartProcessInstanceStartReplyProcessor(
+  public MessageStartProcessInstanceRequestStartProcessor(
       final StateWriter stateWriter, final MessageState messageState) {
     this.stateWriter = stateWriter;
     this.messageState = messageState;

@@ -81,7 +81,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     void shouldWriteCorrelatedStartedAndExpiredFollowUpEvents() {
       // given a fresh reply, no prior correlation, and the buffered message still present
       final var processor =
-          new MessageStartProcessInstanceStartReplyProcessor(mockStateWriter, mockMessageState);
+          new MessageStartProcessInstanceRequestStartProcessor(mockStateWriter, mockMessageState);
       final var record = createMockReplyRecord();
       when(mockMessageState.existMessageCorrelation(eq(MESSAGE_KEY), any())).thenReturn(false);
       when(mockMessageState.getMessage(MESSAGE_KEY)).thenReturn(createStoredMessage());
@@ -114,7 +114,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     void shouldSkipCorrelatedWhenAlreadyCorrelated() {
       // given a retried reply: the correlation marker is already present
       final var processor =
-          new MessageStartProcessInstanceStartReplyProcessor(mockStateWriter, mockMessageState);
+          new MessageStartProcessInstanceRequestStartProcessor(mockStateWriter, mockMessageState);
       final var record = createMockReplyRecord();
       when(mockMessageState.existMessageCorrelation(eq(MESSAGE_KEY), any())).thenReturn(true);
       when(mockMessageState.getMessage(MESSAGE_KEY)).thenReturn(null);
@@ -139,7 +139,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       // given the buffered message no longer exists (TTL already fired, or a previous reply's
       // EXPIRED applier already removed it)
       final var processor =
-          new MessageStartProcessInstanceStartReplyProcessor(mockStateWriter, mockMessageState);
+          new MessageStartProcessInstanceRequestStartProcessor(mockStateWriter, mockMessageState);
       final var record = createMockReplyRecord();
       when(mockMessageState.existMessageCorrelation(eq(MESSAGE_KEY), any())).thenReturn(false);
       when(mockMessageState.getMessage(MESSAGE_KEY)).thenReturn(null);
@@ -172,7 +172,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     void shouldWriteUniquenessRejectedFollowUpEvent() {
       // given
       final var processor =
-          new MessageStartProcessInstanceUniquenessRejectReplyProcessor(mockStateWriter);
+          new MessageStartProcessInstanceRequestRejectUniquenessProcessor(mockStateWriter);
       final var record = createMockReplyRecord();
 
       // when
@@ -194,7 +194,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     void shouldWriteNoSubscriptionRejectedFollowUpEvent() {
       // given
       final var processor =
-          new MessageStartProcessInstanceNoSubscriptionRejectReplyProcessor(mockStateWriter);
+          new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(mockStateWriter);
       final var record = createMockReplyRecord();
 
       // when

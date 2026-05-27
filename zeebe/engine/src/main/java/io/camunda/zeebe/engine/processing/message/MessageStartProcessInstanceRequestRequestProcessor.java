@@ -68,7 +68,7 @@ import java.time.InstantSource;
  * idempotent, so re-evaluation is always safe.
  */
 @ExcludeAuthorizationCheck
-public final class MessageStartProcessInstanceRequestProcessor
+public final class MessageStartProcessInstanceRequestRequestProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
@@ -83,7 +83,7 @@ public final class MessageStartProcessInstanceRequestProcessor
   private final MessageStartProcessInstanceRequestRecord startedEventBuffer =
       new MessageStartProcessInstanceRequestRecord();
 
-  public MessageStartProcessInstanceRequestProcessor(
+  public MessageStartProcessInstanceRequestRequestProcessor(
       final MessageStartEventSubscriptionState startEventSubscriptionState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,

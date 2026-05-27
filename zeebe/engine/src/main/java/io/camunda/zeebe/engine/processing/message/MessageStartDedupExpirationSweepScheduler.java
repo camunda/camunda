@@ -25,7 +25,7 @@ import java.time.InstantSource;
  * MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger command. The actual
  * deletion work (scanning state and writing one {@link
  * MessageStartProcessInstanceRequestIntent#EXPIRED_DEDUP_DELETED} event per past-deadline entry) is
- * done by {@link MessageStartDedupExpirationSweepProcessor}.
+ * done by {@link MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor}.
  *
  * <p>The trigger-then-batch split mirrors {@link MessageTimeToLiveCheckScheduler} / {@link
  * MessageBatchExpireProcessor}: the scheduler runs on the leader only, makes a cheap read-only

@@ -32,7 +32,7 @@ import org.agrona.collections.MutableLong;
  * iteration. Mirrors the trigger-then-batch pattern of {@link MessageBatchExpireProcessor}.
  */
 @ExcludeAuthorizationCheck
-public final class MessageStartDedupExpirationSweepProcessor
+public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final StateWriter stateWriter;
@@ -41,7 +41,7 @@ public final class MessageStartDedupExpirationSweepProcessor
   private final int batchLimit;
   private final InstantSource clock;
 
-  public MessageStartDedupExpirationSweepProcessor(
+  public MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
       final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final MessageStartProcessInstanceDedupState dedupState,
