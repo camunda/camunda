@@ -55,7 +55,7 @@ type QueryElementInstanceInspectionResponseBody = z.infer<typeof queryElementIns
 const queryElementInstanceInspection: Endpoint = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/element-instances/inspection`;
+		return `/${API_VERSION}/element-instances/wait-states/search`;
 	},
 };
 
