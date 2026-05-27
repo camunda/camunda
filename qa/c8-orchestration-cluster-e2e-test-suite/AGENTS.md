@@ -81,14 +81,18 @@ npx playwright show-report html-report
 
 | Project | Test match | Notes |
 |---|---|---|
-| `chromium` | `tests/**/*.spec.ts` | Main UI tests; excludes task-panel and api |
-| `chromium-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown of chromium; sequential (`workers: 1`) |
-| `firefox` / `msedge` | Same as chromium | Cross-browser variants |
-| `api-tests` | `tests/api/v2/**/*.spec.ts` | Stateful REST API tests; excludes clock/metrics/audit-log/job-stats/optimize |
-| `api-tests-subset` | clock, metrics, audit-log, job-stats | Sequential teardown of api-tests |
+| `chromium` | `tests/**/*.spec.ts` | Main UI tests; excludes `task-panel.spec.ts`, `tests/api/**`, and `v2-stateless-tests/**` |
+| `chromium-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of chromium |
+| `firefox` | Same as chromium | Cross-browser variant |
+| `firefox-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of firefox |
+| `msedge` | Same as chromium | Cross-browser variant |
+| `msedge-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of msedge |
+| `api-tests` | `tests/api/v2/**/*.spec.ts` | Stateful REST API tests; excludes `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `optimize/**` |
+| `api-tests-subset` | `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*` | Sequential teardown of api-tests (`workers: 1`) |
 | `tasklist-e2e` | `tests/tasklist/*.spec.ts` | Tasklist-scoped run |
 | `identity-e2e` | `tests/identity/*.spec.ts` | Identity-scoped run |
 | `operate-e2e` | `tests/operate/*.spec.ts` | Operate-scoped run |
+| `optimize-default-config` | `tests/api/v2/optimize/default-config.spec.ts` | Single Optimize config test |
 | `request-validation-tests` | `v2-stateless-tests/tests/request-validation/*.spec.ts` | Stateless; set `V2_STATELESS_TESTS=true` |
 
 Global settings: timeout 12 min, 4 workers, 1 retry, trace/screenshot/video retained on failure.
@@ -107,11 +111,13 @@ Ensure `.env` ports match (default `CORE_APPLICATION_URL=http://localhost:8080`)
 ### RDBMS (Oracle, PostgreSQL, etc.)
 
 ```bash
-# 1. Build distribution
-./mvnw install -Dquickly -T1C -PskipFrontendBuild   # from monorepo root
+# All commands run from the monorepo root unless noted otherwise
 
-# 2. Unpack
-cd dist/target && tar -xzf camunda-orchestration-cluster-*.tar.gz
+# 1. Build distribution
+./mvnw install -Dquickly -T1C -PskipFrontendBuild
+
+# 2. Unpack (stay in monorepo root)
+tar -xzf dist/target/camunda-orchestration-cluster-*.tar.gz -C dist/target/
 
 # 3. Copy RDBMS config
 cp qa/c8-orchestration-cluster-e2e-test-suite/config/application.yaml \
