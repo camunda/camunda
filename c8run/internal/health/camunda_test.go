@@ -134,3 +134,30 @@ func TestShouldMarkQuickstartAsSeenAfterSuccessfulStartup(t *testing.T) {
 		t.Fatalf("expected marker file to be created: %v", err)
 	}
 }
+
+func TestShouldShowConnectorsAsDisabledInStatusOutput(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get wd: %v", err)
+	}
+	root := filepath.Clean(filepath.Join(cwd, "../.."))
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to module root: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+
+	settings := types.C8RunSettings{
+		DisableConnectors: true,
+	}
+
+	// when
+	out := captureOutput(t, func() {
+		if err := PrintStatus(settings); err != nil {
+			t.Fatalf("PrintStatus failed: %v", err)
+		}
+	})
+
+	// then
+	assertEndpointForLabel(t, out, "Inbound Connectors API", "disabled (--disable-connectors)")
+}

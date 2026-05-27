@@ -17,6 +17,7 @@ type C8RunSettings struct {
 	Config               string
 	ResolvedConfigPath   string
 	Detached             bool
+	DisableConnectors    bool
 	Port                 int
 	Keystore             string
 	KeystorePassword     string
