@@ -122,7 +122,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
       try {
         await expectJobsByType(request, piKey, beforeAllJobType, 1);
-        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+        await expectJobsByType(request, piKey, innerJobType, 0);
 
         workers.push(
           createWorker(beforeAllJobType, false, {
@@ -184,7 +184,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
       try {
         await expectJobsByType(request, piKey, beforeAllJobType, 1);
-        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+        await expectJobsByType(request, piKey, innerJobType, 0);
 
         workers.push(
           createWorker(beforeAllJobType, false, {
@@ -260,7 +260,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         );
 
         await expectProcessState(request, piKey, 'ACTIVE');
-        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+        await expectJobsByType(request, piKey, innerJobType, 0);
 
         // ── Recovery: resolve the incident and verify MI proceeds ────────────
         // Update retries to re-enable activation, then resolve the incident
@@ -344,7 +344,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         expect(beforeAllJobs).toHaveLength(1);
 
         // While beforeAll is still pending, no inner instances must exist
-        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+        await expectJobsByType(request, piKey, innerJobType, 0);
 
         // Complete beforeAll with items (drives inputCollection) + sharedCtx (scope-isolation var)
         await completeJob(request, beforeAllJobs[0].jobKey, {
@@ -443,7 +443,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
       try {
         await expectJobsByType(request, piKey, beforeAllJobType, 1);
-        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+        await expectJobsByType(request, piKey, innerJobType, 0);
 
         workers.push(createWorker(beforeAllJobType, false, {}));
 

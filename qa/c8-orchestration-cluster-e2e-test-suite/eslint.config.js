@@ -60,6 +60,16 @@ export default [
     files: ['tests/**', 'pages/**/*'],
     rules: {
       ...playwright.configs['flat/recommended'].rules,
+      'playwright/expect-expect': [
+        'warn',
+        {
+          assertFunctionNames: [
+            'expect',
+            'expectJobsByType',
+            'expectProcessState',
+          ],
+        },
+      ],
     },
   },
 
