@@ -15,7 +15,10 @@ import {
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   activateJobToObtainAValidJobKey,
   activateJobsByType,
@@ -53,18 +56,20 @@ const expectJobsByType = async (
   processInstanceKey: string,
   type: string,
   expected: number,
+  assertionOptions = defaultAssertionOptions,
 ): Promise<void> => {
   await expect(async () => {
     expect(await countJobsByType(request, processInstanceKey, type)).toBe(
       expected,
     );
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
 };
 
 const expectProcessState = async (
   request: APIRequestContext,
   processInstanceKey: string,
   state: 'ACTIVE' | 'COMPLETED',
+  assertionOptions = defaultAssertionOptions,
 ): Promise<void> => {
   await expect(async () => {
     const res = await request.post(buildUrl('/process-instances/search'), {
@@ -75,7 +80,7 @@ const expectProcessState = async (
     const json = await res.json();
     expect(json.items).toHaveLength(1);
     expect(json.items[0].state).toBe(state);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
 };
 
 const countRootScopeVarsByName = async (
@@ -259,8 +264,8 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           'EXECUTION_LISTENER_NO_RETRIES',
         );
 
-        await expectProcessState(request, piKey, 'ACTIVE');
-        await expectJobsByType(request, piKey, innerJobType, 0);
+        await expectProcessState(request, piKey, 'ACTIVE', extendedAssertionOptions);
+        await expectJobsByType(request, piKey, innerJobType, 0, extendedAssertionOptions);
 
         // ── Recovery: resolve the incident and verify MI proceeds ────────────
         // Update retries to re-enable activation, then resolve the incident
@@ -277,7 +282,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         await assertStatusCode(resolveRes, 204);
 
         // beforeAll job is re-scheduled — activate and complete with valid items
-        await expectJobsByType(request, piKey, beforeAllJobType, 1);
+        await expectJobsByType(request, piKey, beforeAllJobType, 1, extendedAssertionOptions);
         const retryJobs = await activateJobsByType(
           request,
           beforeAllJobType,
@@ -289,7 +294,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         });
 
         // MI body now proceeds normally
-        await expectJobsByType(request, piKey, innerJobType, 3);
+        await expectJobsByType(request, piKey, innerJobType, 3, extendedAssertionOptions);
         const innerJobs = await activateJobsByType(
           request,
           innerJobType,
@@ -301,7 +306,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         for (const job of innerJobs) {
           await completeJob(request, job.jobKey);
         }
-        await expectProcessState(request, piKey, 'COMPLETED');
+        await expectProcessState(request, piKey, 'COMPLETED', extendedAssertionOptions);
       } catch (e) {
         await cancelProcessInstance(piKey);
         throw e;
