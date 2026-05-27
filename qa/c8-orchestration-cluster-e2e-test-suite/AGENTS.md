@@ -2,8 +2,13 @@
 
 Playwright + TypeScript end-to-end tests for the Camunda 8 orchestration cluster
 (Zeebe/Operate/Tasklist/Identity). Lives inside the `camunda/camunda` monorepo at
-`qa/c8-orchestration-cluster-e2e-test-suite/`. PRs must follow the `camunda/camunda`
-contribution workflow and be cross-linked to any related Helm or cross-component E2E PRs.
+`qa/c8-orchestration-cluster-e2e-test-suite/`. PRs follow the `camunda/camunda`
+contribution workflow; cross-link related Helm or cross-component E2E PRs when applicable.
+
+**Scope:** orchestration-cluster apps only — Zeebe, Operate, Tasklist, Identity.
+For multi-app journeys that span Modeler, Optimize, Connectors, or Console (SaaS/SM/C8Run),
+use the sibling [`c8-cross-component-e2e-tests`](https://github.com/camunda/c8-cross-component-e2e-tests)
+repository instead.
 
 ## Tech Stack
 
@@ -14,9 +19,10 @@ contribution workflow and be cross-linked to any related Helm or cross-component
 - **API client**: `@camunda8/sdk`
 - **Linting**: ESLint + Prettier (enforced via `npm run lint`)
 
-> Unlike the sibling `c8-cross-component-e2e-tests` repo, tests here are **not** version-segregated
-> (no `SM-8.x/` or `c8Run-8.x/` directories). Versions are validated by running the suite against
-> the matching nightly branch of `camunda/camunda`.
+> Tests are **not** version-segregated inside a single checkout (no `SM-8.x/` or `c8Run-8.x/`
+> directories). Instead, each `camunda/camunda` branch (`main`, `stable/8.10`, `stable/8.9`,
+> `stable/8.8`, `stable/8.7`) carries its own copy of this directory, and the nightly workflow
+> runs each branch's copy against its own build.
 
 ## Directory Structure
 
@@ -233,6 +239,26 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
 
+## Branching and Backports
+
+Each supported version lives on its own branch in `camunda/camunda`:
+
+| Version | Branch |
+|---|---|
+| Next | `main` |
+| 8.10 | `stable/8.10` |
+| 8.9 | `stable/8.9` |
+| 8.8 | `stable/8.8` |
+| 8.7 | `stable/8.7` |
+
+- **New tests / refactors** — land on `main` first, then backport to each affected `stable/8.x` branch
+  using the repo's standard backport label (`backport stable/8.x`) once the original PR merges.
+- **Nightly failure fixes** — branch off the **affected** stable branch, fix there first, then
+  forward-port to newer branches up to `main` so the fix doesn't regress. If the failure also
+  reproduces on `main`, land there first and backport instead.
+- Each PR should reference the originating nightly run URL in the description so the next on-call
+  can audit the trail.
+
 ## Contributing
 
 - Follow the Page Object Model: page interactions belong in `pages/`, not in spec files.
@@ -241,6 +267,9 @@ Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and T
 - **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
+- Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
+  (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
+  rationale comment, and a plan to re-enable it must be tracked on the project board.
 
 ## Commit Conventions
 
@@ -250,5 +279,3 @@ Follows the monorepo standard (Conventional Commits, no scope):
 test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
-
-Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a rationale comment, and a plan to re-enable it must be tracked on the project board.
