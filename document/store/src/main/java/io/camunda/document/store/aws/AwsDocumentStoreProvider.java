@@ -10,6 +10,8 @@ package io.camunda.document.store.aws;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -25,6 +27,9 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
   private static final String BUCKET_TTL = "BUCKET_TTL";
   private static final String BUCKET_PATH = "BUCKET_PATH";
+  private static final String ENDPOINT = "ENDPOINT";
+  private static final String FORCE_PATH_STYLE = "FORCE_PATH_STYLE";
+  private static final String CHUNKED_ENCODING_ENABLED = "CHUNKED_ENCODING_ENABLED";
 
   @Override
   public DocumentStore createDocumentStore(
@@ -41,7 +46,13 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
                             + "'"));
 
     return AwsDocumentStoreFactory.create(
-        bucketName, getDefaultTTL(configuration), getBucketPath(configuration), executorService);
+        bucketName,
+        getDefaultTTL(configuration),
+        getBucketPath(configuration),
+        executorService,
+        getEndpoint(configuration),
+        getForcePathStyle(configuration),
+        getChunkedEncodingEnabled(configuration));
   }
 
   private static Long getDefaultTTL(final DocumentStoreConfigurationRecord configuration) {
@@ -81,5 +92,35 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     }
 
     return bucketPath;
+  }
+
+  private static URI getEndpoint(final DocumentStoreConfigurationRecord configuration) {
+    final String endpoint = configuration.properties().get(ENDPOINT);
+    if (endpoint == null || endpoint.isBlank()) {
+      return null;
+    }
+    try {
+      return new URI(endpoint);
+    } catch (final URISyntaxException e) {
+      throw new IllegalArgumentException(
+          "Failed to configure document store with id '"
+              + configuration.id()
+              + "': '"
+              + ENDPOINT
+              + "' is not a valid URI: "
+              + endpoint,
+          e);
+    }
+  }
+
+  private static Boolean getForcePathStyle(final DocumentStoreConfigurationRecord configuration) {
+    final String value = configuration.properties().get(FORCE_PATH_STYLE);
+    return value == null ? null : Boolean.parseBoolean(value);
+  }
+
+  private static Boolean getChunkedEncodingEnabled(
+      final DocumentStoreConfigurationRecord configuration) {
+    final String value = configuration.properties().get(CHUNKED_ENCODING_ENABLED);
+    return value == null ? null : Boolean.parseBoolean(value);
   }
 }
