@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: '600'
+      at:
+        description: 'Optional Prometheus `time` anchor (RFC3339, e.g. 2026-05-09T12:00:00Z, or Unix timestamp). Queries end at this instant instead of "now" — use to snapshot a run whose namespace TTL has already expired.'
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       namespace:
@@ -28,6 +33,11 @@ on:
         required: false
         type: string
         default: '600'
+      at:
+        description: 'Optional Prometheus `time` anchor (RFC3339 or Unix timestamp). When set, queries end at this instant instead of "now".'
+        required: false
+        type: string
+        default: ''
     outputs:
       results-json:
         description: 'JSON object {name: number, ...} from loadTestMetrics.sh stdout (queries that scrape no data are omitted)'
@@ -51,6 +61,7 @@ jobs:
     env:
       NAMESPACE: ${{ inputs.namespace }}
       DURATION_SECONDS: ${{ inputs.duration-seconds }}
+      AT: ${{ inputs.at }}
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
@@ -90,6 +101,7 @@ jobs:
             "$DURATION_SECONDS" \
             "$PROM_URL" \
             "--user $PROM_USER:$PROM_PASS" \
+            "$AT" \
             > /tmp/results-raw.json
           rc=$?
           if [[ $rc -ne 0 ]]; then
@@ -121,6 +133,7 @@ jobs:
 
             const namespace = process.env.NAMESPACE;
             const durationSeconds = parseInt(process.env.DURATION_SECONDS, 10);
+            const at = process.env.AT || '';
 
             // queries.yaml drives row order, description, and formatting.
             const queriesDoc = JSON.parse(
@@ -173,7 +186,7 @@ jobs:
             const body = [
               `## 🔍 Load Test Metrics`,
               '',
-              `Namespace: \`${namespace}\` · Window: ${durationSeconds}s`,
+              `Namespace: \`${namespace}\` · Window: ${durationSeconds}s${at ? ` ending at \`${at}\`` : ''}`,
               '',
               ...tableLines,
               '',
