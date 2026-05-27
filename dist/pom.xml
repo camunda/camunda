@@ -1133,7 +1133,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.21.0</version>
+        <version>7.22.0</version>
         <executions>
           <execution>
             <id>backups</id>
@@ -1159,6 +1159,7 @@
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
               <minimalUpdate>true</minimalUpdate>
               <ignoreFileOverride>${project.basedir}/src/main/resources/api/cluster/.openapi-generator-ignore</ignoreFileOverride>
+              <openapiNormalizer>REPLACE_ONE_OF_BY_DISCRIMINATOR_MAPPING=false</openapiNormalizer>
               <configOptions>
                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
               </configOptions>
