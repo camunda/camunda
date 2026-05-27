@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.spring-boot-3-conventions")
 }
 
 dependencies {

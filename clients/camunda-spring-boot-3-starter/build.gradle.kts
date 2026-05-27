@@ -4,13 +4,11 @@
 
 plugins {
     id("buildlogic.client-conventions")
+    id("buildlogic.spring-boot-3-conventions")
 }
 
 dependencies {
-    implementation(enforcedPlatform("org.springframework.boot:spring-boot-dependencies:3.5.14"))
-    implementation(project(":camunda-spring-boot-starter")) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-health")
-    }
+    implementation(project(":camunda-spring-boot-starter"))
     api(project(":camunda-client-java"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.org.springframework.spring.beans)
