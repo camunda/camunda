@@ -1754,7 +1754,7 @@ jobs:
       # spectral-rulesets >= 1.22.3 against null example values in the spec.
       # Revisit once nimma releases past 0.7.2 or spectral-rulesets ships a fix.
       # renovate: datasource=npm depName=@stoplight/spectral-rulesets
-      SPECTRAL_RULESETS_VERSION: '1.22.2'
+      SPECTRAL_RULESETS_VERSION: '1.22.3'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
