@@ -114,6 +114,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
   }
 
+  public void deleteAllOptimizeData() {
+    databaseTestService.deleteAllOptimizeData();
+  }
+
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     databaseTestService.deleteAllZeebeRecordsForPrefix(zeebeRecordPrefix);
   }
