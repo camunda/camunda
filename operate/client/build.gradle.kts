@@ -3,7 +3,12 @@
  */
 
 plugins {
-    id("buildlogic.server-conventions")
+    id("buildlogic.frontend-webjar-conventions")
+}
+
+frontendWebjar {
+    frontendBuildDirectory.set(layout.projectDirectory.dir("build"))
+    resourceTargetPath.set("META-INF/resources/operate")
 }
 
 description = "Operate Webjar"

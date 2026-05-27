@@ -3,13 +3,12 @@
  */
 
 plugins {
-    id("buildlogic.server-conventions")
+    id("buildlogic.frontend-webjar-conventions")
 }
 
-tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
-    from("apps/orchestration-cluster-webapp/dist") {
-        into("META-INF/resources/webapp")
-    }
+frontendWebjar {
+    frontendBuildDirectory.set(layout.projectDirectory.dir("apps/orchestration-cluster-webapp/dist"))
+    resourceTargetPath.set("META-INF/resources/webapp")
 }
 
 description = "Webapp Webjar"

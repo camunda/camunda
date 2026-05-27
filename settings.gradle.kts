@@ -54,6 +54,20 @@ dependencyResolutionManagement {
         // and the Artifactory repos above may require authentication.
         mavenCentral()
 
+        ivy {
+            name = "NodeJsDist"
+            url = uri("https://nodejs.org/dist")
+            patternLayout {
+                artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
+            }
+            metadataSources {
+                artifact()
+            }
+            content {
+                includeModule("org.nodejs", "node")
+            }
+        }
+
         // Zeebe IO releases
         maven {
             name = "ZeebeIO"
