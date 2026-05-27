@@ -9,8 +9,7 @@
 import { C3UserConfigurationProvider } from "@camunda/camunda-composite-components";
 import { C3ThemePersister } from "src/common/theme/C3ThemePersister";
 import { useEffect } from "react";
-import { useApiCall } from "src/utility/api";
-import { getSaasUserToken } from "src/utility/api/authentication";
+import { useSaasUserToken } from "src/utility/api/authentication/hooks";
 import { getStage } from "src/utility/getStage";
 
 const STAGE = getStage(window.location.host);
@@ -20,15 +19,15 @@ type Props = {
 };
 
 const C3Provider: React.FC<Props> = ({ children }) => {
-  const [getToken, { data: token }] = useApiCall(getSaasUserToken);
+  const { mutate, mutateAsync, data: token } = useSaasUserToken();
   const organizationId = window.clientConfig?.organizationId;
   const clusterId = window.clientConfig?.clusterId;
 
   useEffect(() => {
     if (typeof organizationId === "string") {
-      void getToken();
+      mutate();
     }
-  }, [getToken, organizationId]);
+  }, [mutate, organizationId]);
 
   if (
     !token ||
@@ -43,10 +42,7 @@ const C3Provider: React.FC<Props> = ({ children }) => {
       activeOrganizationId={organizationId}
       currentClusterUuid={clusterId}
       userToken={token}
-      getNewUserToken={async () => {
-        const { data } = await getToken();
-        return data || "";
-      }}
+      getNewUserToken={async () => (await mutateAsync()) || ""}
       currentApp="identity"
       stage={STAGE === "unknown" ? "dev" : STAGE}
       handleTheme

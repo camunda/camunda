@@ -8,13 +8,12 @@
 
 import { FC } from "react";
 import type { ClusterVariableScope } from "@camunda/camunda-api-zod-schemas/8.10";
-import { createClusterVariable } from "src/utility/api/cluster-variables";
+import { useCreateClusterVariable } from "src/utility/api/cluster-variables/hooks";
 import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField.tsx";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { isValid } from "src/utility/components/editor/jsonUtils.ts";
@@ -37,12 +36,7 @@ export const AddModal: FC<AddModalProps> = ({
 }) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const [callAddClusterVariable, { loading, error }] = useApiCall(
-    createClusterVariable,
-    {
-      suppressErrorNotification: true,
-    },
-  );
+  const { mutate, isPending: loading, error } = useCreateClusterVariable();
 
   const { control, handleSubmit, watch } = useForm<FormData>({
     defaultValues: {
@@ -57,24 +51,27 @@ export const AddModal: FC<AddModalProps> = ({
   const watchedScope = watch("scope");
   const isTenantScoped = watchedScope === "TENANT";
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddClusterVariable({
-      name: data.name.trim(),
-      value: JSON.parse(data.value.trim()),
-      scope: data.scope,
-      tenantId: isTenantScoped ? (data.tenantId ?? null) : "",
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("clusterVariableCreated"),
-        subtitle: t("clusterVariableCreatedSuccessfully", {
-          clusterVariableName: data.name,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.name.trim(),
+        value: JSON.parse(data.value.trim()),
+        scope: data.scope,
+        tenantId: isTenantScoped ? (data.tenantId ?? null) : "",
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("clusterVariableCreated"),
+            subtitle: t("clusterVariableCreatedSuccessfully", {
+              clusterVariableName: data.name,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

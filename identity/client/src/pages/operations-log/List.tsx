@@ -11,8 +11,8 @@ import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useApi, usePagination, SortConfig } from "src/utility/api";
-import { searchAuditLogs } from "src/utility/api/audit-logs";
+import { usePagination, SortConfig } from "src/utility/api";
+import { useSearchAuditLogs } from "src/utility/api/audit-logs/hooks";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
 import {
   OperationLogName,
@@ -104,10 +104,10 @@ const List: FC = () => {
 
   const {
     data: auditLogs,
-    loading,
-    success,
-    reload,
-  } = useApi(searchAuditLogs, {
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useSearchAuditLogs({
     sort: transformedSort,
     filter: {
       category: {
@@ -350,7 +350,12 @@ const List: FC = () => {
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("operationsLogCouldNotLoad")}
-          actionButton={{ label: tComponents("retry"), onClick: reload }}
+          actionButton={{
+            label: tComponents("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </Page>

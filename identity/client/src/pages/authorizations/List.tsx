@@ -10,12 +10,12 @@ import { FC, useMemo, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useSearchAuthorizations } from "src/utility/api/authorizations/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
   ALL_RESOURCE_TYPES,
   RESOURCE_TYPES_WITHOUT_TENANT,
-  searchAuthorization,
 } from "src/utility/api/authorizations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import {
@@ -70,16 +70,21 @@ const List: FC<ListProps> = ({
     }
   }, [authorizationTabs, id, navigate]);
 
+  const { pageParams, page, resetPagination, ...paginationCallbacks } =
+    usePagination();
   const {
     data,
-    loading,
-    reload,
-    success,
-    resetPagination,
-    ...paginationProps
-  } = usePaginatedApi(searchAuthorization, {
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useSearchAuthorizations({
+    ...pageParams,
     filter: { resourceType: activeTab },
   });
+  const paginationProps = {
+    page: { ...page, ...data?.page },
+    ...paginationCallbacks,
+  };
 
   const sortPermissionTypesAlphabetically = useCallback(
     (authorizationData: typeof data) => {
@@ -147,7 +152,12 @@ const List: FC<ListProps> = ({
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("authorizationLoadError")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </Page>
