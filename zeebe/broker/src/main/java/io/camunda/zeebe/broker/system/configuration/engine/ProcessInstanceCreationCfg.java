@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
-import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_CHECK_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL;
@@ -23,7 +22,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
       DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL;
   private int messageStartDedupTombstoneSweepBatchLimit =
       DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT;
-  private Duration messageStartAskCheckInterval = DEFAULT_MESSAGE_START_ASK_CHECK_INTERVAL;
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
   public boolean isBusinessIdUniquenessEnabled() {
@@ -52,13 +50,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
     this.messageStartDedupTombstoneSweepBatchLimit = messageStartDedupTombstoneSweepBatchLimit;
   }
 
-  public Duration getMessageStartAskCheckInterval() {
-    return messageStartAskCheckInterval;
-  }
-
-  public void setMessageStartAskCheckInterval(final Duration messageStartAskCheckInterval) {
-    this.messageStartAskCheckInterval = messageStartAskCheckInterval;
-  }
 
   public Duration getMessageStartAskRetryInterval() {
     return messageStartAskRetryInterval;
@@ -77,8 +68,6 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
         + messageStartDedupTombstoneSweepInterval
         + ", messageStartDedupTombstoneSweepBatchLimit="
         + messageStartDedupTombstoneSweepBatchLimit
-        + ", messageStartAskCheckInterval="
-        + messageStartAskCheckInterval
         + ", messageStartAskRetryInterval="
         + messageStartAskRetryInterval
         + '}';

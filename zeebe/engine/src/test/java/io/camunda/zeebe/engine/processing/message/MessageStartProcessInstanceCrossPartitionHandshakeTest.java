@@ -65,7 +65,6 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
 
   private static final Duration TOMBSTONE_WINDOW = Duration.ofSeconds(5);
   private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
-  private static final Duration ASK_CHECK_INTERVAL = Duration.ofMillis(500);
   private static final Duration ASK_RETRY_INTERVAL = Duration.ofSeconds(1);
 
   /** Message-start-only process. */
@@ -117,7 +116,6 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setMessageStartDedupTombstoneSweepInterval(SWEEP_INTERVAL)
-                      .setMessageStartAskCheckInterval(ASK_CHECK_INTERVAL)
                       .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
@@ -344,7 +342,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
 
     // and the retry scheduler fires (advance past one askRetryInterval + askCheckInterval so the
     // first eligible scan sees the past-deadline entry and re-dispatches)
-    engine.increaseTime(ASK_RETRY_INTERVAL.plus(ASK_CHECK_INTERVAL).plusSeconds(1));
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
 
     // then a STARTED reply eventually reaches P_K (the second attempt is not dropped) and exactly
     // one PI is activated; P_B's success-only dedup re-replies the same processInstanceKey on
@@ -425,7 +423,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
 
     // and the ask retry scheduler fires within the tombstone window (advance only past the
     // retry+check interval; tombstoneWindow is 5s so we stay safely inside it)
-    engine.increaseTime(ASK_RETRY_INTERVAL.plus(ASK_CHECK_INTERVAL).plusSeconds(1));
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
 
     // then the re-dispatched REQUEST hits the TOMBSTONE entry within the window and P_B
     // re-replies STARTED with the original PI key; no second PI is ever activated
@@ -521,7 +519,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
     engine.banInstanceInNewTransaction(partitionFor(BUSINESS_ID), bannedPiKey);
 
     // and the ask retry scheduler fires
-    engine.increaseTime(ASK_RETRY_INTERVAL.plus(ASK_CHECK_INTERVAL).plusSeconds(1));
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
 
     // then the re-dispatched REQUEST hits the dedup entry, the banned-holder filter treats it
     // as a miss, live uniqueness re-evaluation excludes the banned PI, and a fresh PI is

@@ -24,8 +24,9 @@ import org.slf4j.LoggerFactory;
  * whose last-sent time is before the configured retry interval are re-sent to {@code P_B} via
  * {@link SubscriptionCommandSender#sendDirectStartProcessInstanceRequest}.
  *
- * <p>The scheduler uses a deadline of {@code now - retryInterval} to identify entries eligible for
- * re-send. After sending, the entry's timestamp is updated via {@link
+ * <p>The scheduler ticks every {@code retryInterval} and re-sends every ask whose last-sent time
+ * is older than {@code now - retryInterval}, so the same value bounds both the scheduler cadence
+ * and the per-ask retry frequency. After sending, the entry's timestamp is updated via {@link
  * MessageStartProcessInstanceAskState#updateLastSentTime}.
  *
  * <p>Entries are removed from the state when any of the three reply intents ({@code STARTED},
@@ -49,7 +50,6 @@ public final class PendingMessageStartAskCheckScheduler
   private final MessageStartProcessInstanceAskState state;
   private final RoutingInfo routingInfo;
   private final Supplier<Duration> retryInterval;
-  private final Duration checkInterval;
 
   private InstantSource clock;
 
@@ -57,22 +57,20 @@ public final class PendingMessageStartAskCheckScheduler
    * @param commandSender sender used to dispatch asks to {@code P_B}
    * @param state the pending ask state from which to read and update entries
    * @param routingInfo used to derive the target partition for a business ID
-   * @param retryInterval supplier returning how long to wait before retrying an ask; retries always
-   *     re-emit the original {@code messageDeadline}, so correctness does not depend on this
-   *     interval relative to any window — it only controls the retry cadence
-   * @param checkInterval how often to run the check
+   * @param retryInterval supplier returning how long to wait before retrying an ask; also used as
+   *     the scheduler tick cadence. Retries always re-emit the original {@code messageDeadline},
+   *     so correctness does not depend on this interval relative to any window — it only controls
+   *     the retry cadence
    */
   public PendingMessageStartAskCheckScheduler(
       final SubscriptionCommandSender commandSender,
       final MessageStartProcessInstanceAskState state,
       final RoutingInfo routingInfo,
-      final Supplier<Duration> retryInterval,
-      final Duration checkInterval) {
+      final Supplier<Duration> retryInterval) {
     this.commandSender = commandSender;
     this.state = state;
     this.routingInfo = routingInfo;
     this.retryInterval = retryInterval;
-    this.checkInterval = checkInterval;
   }
 
   @Override
@@ -116,6 +114,6 @@ public final class PendingMessageStartAskCheckScheduler
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     clock = context.getClock();
-    context.getScheduleService().runAtFixedRate(checkInterval, this);
+    context.getScheduleService().runAtFixedRate(retryInterval.get(), this);
   }
 }

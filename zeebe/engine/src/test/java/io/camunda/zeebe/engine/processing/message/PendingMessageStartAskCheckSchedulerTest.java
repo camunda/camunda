@@ -36,7 +36,6 @@ import org.mockito.ArgumentCaptor;
 public final class PendingMessageStartAskCheckSchedulerTest {
 
   private static final Duration RETRY_INTERVAL = Duration.ofSeconds(10);
-  private static final Duration CHECK_INTERVAL = Duration.ofSeconds(10);
   private static final long NOW = 100_000L;
 
   private SubscriptionCommandSender mockCommandSender;
@@ -62,7 +61,7 @@ public final class PendingMessageStartAskCheckSchedulerTest {
 
     scheduler =
         new PendingMessageStartAskCheckScheduler(
-            mockCommandSender, mockState, mockRoutingInfo, () -> RETRY_INTERVAL, CHECK_INTERVAL);
+            mockCommandSender, mockState, mockRoutingInfo, () -> RETRY_INTERVAL);
   }
 
   @Nested
@@ -74,7 +73,7 @@ public final class PendingMessageStartAskCheckSchedulerTest {
       scheduler.onRecovered(mockContext);
 
       // then
-      verify(mockScheduleService).runAtFixedRate(eq(CHECK_INTERVAL), eq(scheduler));
+      verify(mockScheduleService).runAtFixedRate(eq(RETRY_INTERVAL), eq(scheduler));
     }
   }
 

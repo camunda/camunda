@@ -221,7 +221,6 @@ public final class EngineCfg implements ConfigurationEntry {
             processInstanceCreation.getMessageStartDedupTombstoneSweepInterval())
         .setMessageStartDedupTombstoneSweepBatchLimit(
             processInstanceCreation.getMessageStartDedupTombstoneSweepBatchLimit())
-        .setMessageStartAskCheckInterval(processInstanceCreation.getMessageStartAskCheckInterval())
         .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());

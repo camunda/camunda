@@ -214,7 +214,6 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 processingState.getMessageStartProcessInstanceAskState(),
                 routingInfo,
-                config::getMessageStartAskRetryInterval,
-                config.getMessageStartAskCheckInterval()));
+                config::getMessageStartAskRetryInterval));
   }
 }
