@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-atomix-utils"))
     implementation(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-auth"))
     implementation(project(":zeebe-protocol"))
     implementation(project(":zeebe-protocol-impl"))
     implementation(project(":camunda-security-core"))
