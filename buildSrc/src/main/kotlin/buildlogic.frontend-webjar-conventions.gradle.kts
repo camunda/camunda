@@ -9,11 +9,13 @@ plugins {
 
 interface FrontendWebjarExtension {
     val frontendBuildDirectory: DirectoryProperty
+    val frontendPackagedDirectory: DirectoryProperty
     val resourceTargetPath: Property<String>
 }
 
 val frontendWebjar = extensions.create<FrontendWebjarExtension>("frontendWebjar")
 val frontendBuildDirectory = frontendWebjar.frontendBuildDirectory
+val frontendPackagedDirectory = frontendWebjar.frontendPackagedDirectory
 val resourceTargetPath = frontendWebjar.resourceTargetPath
 
 extensions.configure<NodeExtension> {
@@ -26,7 +28,7 @@ extensions.configure<NodeExtension> {
     nodeProjectDir.set(layout.projectDirectory)
 }
 
-val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(false)
+val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(true)
 
 val npmVersionPackage by tasks.registering(NpmTask::class) {
     enabled = !skipFrontendBuild.get()
@@ -50,7 +52,7 @@ tasks.named<ProcessResources>("processResources") {
     if (!skipFrontendBuild.get()) {
         dependsOn(npmBuild)
     }
-    from(frontendBuildDirectory) {
+    from(frontendPackagedDirectory.orElse(frontendBuildDirectory)) {
         into(resourceTargetPath)
     }
 }
