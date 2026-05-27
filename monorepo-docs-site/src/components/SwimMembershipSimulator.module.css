@@ -139,7 +139,7 @@
   border-right: 1px solid var(--ifm-color-emphasis-300);
 }
 
-.graph { display: block; width: 100%; height: 380px; }
+.graph { display: block; width: 100%; }
 
 .eventLog {
   padding: 8px;
@@ -335,8 +335,8 @@
 }
 .btn:not(.btnActive):hover { background: var(--ifm-color-emphasis-200); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btnActive:hover { filter: brightness(0.85); }
-.btnActive {
+.btn.btnActive:hover { filter: brightness(0.85); }
+.btn.btnActive {
   background: var(--viz-leader);
   color: white;
   border-color: var(--viz-leader);
@@ -359,7 +359,7 @@
 }
 .speedBtn:first-child { border-radius: 4px 0 0 4px; }
 .speedBtn:last-child  { border-radius: 0 4px 4px 0; }
-.speedBtnActive { background: var(--viz-leader); color: white; border-color: var(--viz-leader); }
+.speedBtn.speedBtnActive { background: var(--viz-leader); color: white; border-color: var(--viz-leader); }
 
 .injectSelect {
   padding: 4px 8px;
@@ -388,6 +388,10 @@
   .graphWrap {
     border-right: none;
     border-bottom: 1px solid var(--ifm-color-emphasis-300);
+    overflow: auto; /* allow scroll if SVG overflows on very small screens */
+  }
+  .graph {
+    min-width: 280px; /* prevent graph from becoming unusably narrow */
   }
 
   /* On mobile, collapsed state is vertical — restore normal width */
@@ -414,8 +418,8 @@
     grid-template-columns: 1fr;
   }
 
-  /* Smaller event log on mobile */
+  /* Event log height matches the smaller mobile graph */
   .eventLog {
-    max-height: 200px;
+    max-height: 260px;
   }
 }

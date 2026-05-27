@@ -8,19 +8,25 @@ import {
 
 // ── SVG node graph ────────────────────────────────────────────────────────────
 
-const GRAPH_H = 380;
-const NODE_R = 22;
+function graphMetrics(svgWidth) {
+  const mobile = svgWidth > 0 && svgWidth < 500;
+  return {
+    graphH: mobile ? 260 : 380,
+    nodeR:  mobile ? 14  : 22,
+  };
+}
 
-function nodePositions(count, width) {
+function nodePositions(count, width, graphH) {
   const cx = width / 2;
-  const cy = GRAPH_H / 2;
-  const r = Math.min(cx, cy) * (count <= 4 ? 0.5 : count <= 8 ? 0.62 : 0.72);
+  const cy = graphH / 2;
+  // Slightly tighter radius on mobile (higher factor) to fill the smaller canvas
+  const r = Math.min(cx, cy) * (count <= 4 ? 0.58 : count <= 8 ? 0.68 : 0.76);
   return Array.from({ length: count }, (_, i) => {
     const angle = (2 * Math.PI * i / count) - Math.PI / 2;
     return {
       x: cx + r * Math.cos(angle),
       y: cy + r * Math.sin(angle),
-      ux: Math.cos(angle), // outward unit vector — opposite to where edges come from
+      ux: Math.cos(angle),
       uy: Math.sin(angle),
     };
   });
@@ -55,10 +61,11 @@ const LEGEND_ENTRIES = [
 
 function NodeGraph({ snapshot, svgWidth }) {
   const nodeCount = snapshot?.nodes.length ?? 0;
-  const positions = nodePositions(nodeCount, svgWidth);
+  const { graphH, nodeR } = graphMetrics(svgWidth);
+  const positions = nodePositions(nodeCount, svgWidth, graphH);
 
   return (
-    <svg width={svgWidth} height={GRAPH_H} className={styles.graph}>
+    <svg width={svgWidth} height={graphH} className={styles.graph}>
 
       {/* Normal edges */}
       {Array.from({ length: nodeCount }, (_, i) =>
@@ -113,10 +120,10 @@ function NodeGraph({ snapshot, svgWidth }) {
         return (
           <g key={n.id} transform={`translate(${pos.x},${pos.y})`}>
             {n.gossipExcluded && (
-              <circle r={NODE_R + 5} fill="none"
+              <circle r={nodeR + 5} fill="none"
                 stroke="var(--viz-gossip-exclude)" strokeWidth="2" strokeDasharray="4,3" />
             )}
-            <circle r={NODE_R}
+            <circle r={nodeR}
               fill={nodeColor(n.state)}
               stroke={nodeBorderColor(n.state)}
               strokeWidth="2"
@@ -135,7 +142,7 @@ function NodeGraph({ snapshot, svgWidth }) {
               </text>
             )}
             {n.incarnationNumber > 0 && (
-              <g transform={`translate(${Math.round(pos.ux * (NODE_R + 10))},${Math.round(pos.uy * (NODE_R + 10))})`}>
+              <g transform={`translate(${Math.round(pos.ux * (nodeR + 10))},${Math.round(pos.uy * (nodeR + 10))})`}>
                 <title>Incarnation {n.incarnationNumber} — bumps each time this node refutes a suspicion or restarts. Peers with a lower incarnation number will accept this node&apos;s alive state as more recent.</title>
                 <circle r="9" fill="var(--ifm-background-surface-color)"
                   stroke="var(--ifm-color-emphasis-400)" strokeWidth="1.5" />
