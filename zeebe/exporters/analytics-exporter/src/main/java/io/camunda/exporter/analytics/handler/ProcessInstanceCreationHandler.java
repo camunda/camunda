@@ -8,6 +8,7 @@
 package io.camunda.exporter.analytics.handler;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
@@ -35,7 +36,7 @@ public final class ProcessInstanceCreationHandler
     final var value = record.getValue();
 
     otelSdkManager.logEvent(
-        "process_instance_created",
+        EVENT_PROCESS_INSTANCE_CREATED,
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())

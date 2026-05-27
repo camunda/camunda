@@ -9,6 +9,7 @@ package io.camunda.exporter.analytics.handler;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.ELEMENT_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_ADHOC_SUBPROCESS_ACTIVATED;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
@@ -41,7 +42,7 @@ public final class AdHocSubProcessHandler implements AnalyticsHandler<ProcessIns
     }
 
     otelSdkManager.logEvent(
-        "adhoc_subprocess_activated",
+        EVENT_ADHOC_SUBPROCESS_ACTIVATED,
         record.getPosition(),
         log ->
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())

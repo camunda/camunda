@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,7 +88,7 @@ class AnalyticsExporterTest {
             logRecord -> {
               assertThat(logRecord.getSeverity()).isEqualTo(Severity.INFO);
               assertThat(logRecord.getAttributes().asMap())
-                  .containsEntry(AnalyticsAttributes.EVENT_NAME, "process_instance_created")
+                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_PROCESS_INSTANCE_CREATED)
                   .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, value.getBpmnProcessId())
                   .containsEntry(AnalyticsAttributes.PROCESS_VERSION, (long) value.getVersion())
                   .containsEntry(

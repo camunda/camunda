@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -66,7 +67,7 @@ class AnalyticsExporterOtelIT {
 
     // then
     awaitCollectorLogs(
-        "process_instance_created",
+        EVENT_PROCESS_INSTANCE_CREATED,
         "camunda.cluster.id",
         "test-cluster",
         "camunda.bpmn_process_id");

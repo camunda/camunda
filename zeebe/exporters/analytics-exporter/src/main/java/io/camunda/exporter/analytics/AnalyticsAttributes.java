@@ -50,6 +50,11 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> ELEMENT_ID =
       AttributeKey.stringKey("camunda.element_id");
 
+  // Event names
+  public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";
+  public static final String EVENT_ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
+  public static final String EVENT_USAGE_METRIC_EXPORTED = "usage_metric_exported";
+
   // Usage metrics
   public static final AttributeKey<String> USAGE_METRIC_EVENT_TYPE =
       AttributeKey.stringKey("camunda.usage_metric.event_type");

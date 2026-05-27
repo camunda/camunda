@@ -52,7 +52,9 @@ class UsageMetricHandlerTest {
         .satisfies(
             logRecord ->
                 assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(AnalyticsAttributes.EVENT_NAME, "usage_metric_exported")
+                    .containsEntry(
+                        AnalyticsAttributes.EVENT_NAME,
+                        AnalyticsAttributes.EVENT_USAGE_METRIC_EXPORTED)
                     .containsEntry(AnalyticsAttributes.USAGE_METRIC_EVENT_TYPE, "RPI")
                     .containsEntry(AnalyticsAttributes.USAGE_METRIC_COUNT, 30L)
                     .containsEntry(AnalyticsAttributes.USAGE_METRIC_INTERVAL_START, 1000L)

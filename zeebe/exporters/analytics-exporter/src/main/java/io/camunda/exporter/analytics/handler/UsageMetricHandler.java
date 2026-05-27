@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics.handler;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_USAGE_METRIC_EXPORTED;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_COUNT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_EVENT_TYPE;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_INTERVAL_END;
@@ -46,7 +47,7 @@ public final class UsageMetricHandler implements AnalyticsHandler<UsageMetricRec
         };
 
     otelSdkManager.logEvent(
-        "usage_metric_exported",
+        EVENT_USAGE_METRIC_EXPORTED,
         record.getPosition(),
         log ->
             log.setAttribute(USAGE_METRIC_EVENT_TYPE, value.getEventType().name())

@@ -65,7 +65,9 @@ class AdHocSubProcessHandlerTest {
         .satisfies(
             logRecord ->
                 assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(AnalyticsAttributes.EVENT_NAME, "adhoc_subprocess_activated")
+                    .containsEntry(
+                        AnalyticsAttributes.EVENT_NAME,
+                        AnalyticsAttributes.EVENT_ADHOC_SUBPROCESS_ACTIVATED)
                     .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, "my-process")
                     .containsEntry(AnalyticsAttributes.PROCESS_DEFINITION_KEY, 42L)
                     .containsEntry(AnalyticsAttributes.PROCESS_INSTANCE_KEY, 99L)
