@@ -133,6 +133,9 @@
             },
             "rootProcessInstanceKey": {
               "type": "long"
+            },
+            "ordinalKey": {
+              "type": "integer"
             }
           }
         }

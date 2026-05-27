@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
+import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.LongNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.ObjectProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -219,6 +220,9 @@ final class TemplateReaderTest {
             Map.entry(
                 "rootProcessInstanceKey",
                 Property.builder().long_(LongNumberProperty.builder().build()).build()),
+            Map.entry(
+                "ordinalKey",
+                Property.builder().integer(IntegerNumberProperty.builder().build()).build()),
             Map.entry(
                 "elementInstanceKey",
                 Property.builder().long_(LongNumberProperty.builder().build()).build()),
