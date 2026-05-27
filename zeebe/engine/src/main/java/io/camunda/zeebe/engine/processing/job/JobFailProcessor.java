@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,7 +58,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
-  private final JobBackoffCheckScheduler jobBackoffChecker;
+  private final ManagedScheduledTask jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -72,7 +73,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final JobBackoffCheckScheduler jobBackoffChecker,
+      final ManagedScheduledTask jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior,
       final IncidentMetrics incidentMetrics) {
@@ -129,7 +130,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       failedJob.setRecurringTime(receivedTime + retryBackOff);
       sideEffectWriter.appendSideEffect(
           () -> {
-            jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
+            jobBackoffChecker.requestRun(retryBackOff + receivedTime);
             return true;
           });
     }

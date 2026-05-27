@@ -10,228 +10,106 @@ package io.camunda.zeebe.engine.processing.timer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.TriggerTimersSideEffect;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.YieldingDecorator;
+import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Instant;
-import java.time.InstantSource;
-import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
-class DueDateTimerCheckSchedulerTest {
+final class DueDateTimerCheckSchedulerTest {
 
-  @Nested
-  final class TriggerTimersSideEffectTest {
+  @Test
+  void shouldReturnAwaitDueAtForNextTimer() {
+    // given
+    final var state = mock(TimerInstanceState.class);
+    when(state.processTimersWithDueDateBefore(anyLong(), any())).thenReturn(2_500L);
+    final var scheduler = new DueDateTimerCheckScheduler(state);
 
-    @Test
-    void shouldAbortIterationAndGiveYieldAfterSomeTimeHasPassed() {
-      /* This test verifies that the class will yield control at some point. This is related to
-       * https://github.com/camunda/camunda/issues/8991 where one issue was that the list of due timers
-       * grew substantially to millions of entries. The algorithm iterated over each entry and blocked
-       * the execution of any other work on that thread during that time.
-       */
+    // when
+    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
-      // given
-      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
-      when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
-
-      final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
-      final var timerKey = 42L;
-      when(mockTimer.getKey()).thenReturn(timerKey);
-      when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-      final var testActorClock = new TestActorClock();
-
-      final var testTimerInstanceState =
-          new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
-              mockTimer, testActorClock);
-
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
-
-      // when
-      sut.apply(mockTaskResultBuilder);
-
-      // then
-      verify(mockTaskResultBuilder, times(4))
-          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
-      /*
-       * Why 4 times? The actor clock is advanced by 10 units before the timer visitor is called, and
-       * thus before a trigger event command is written.
-       *
-       * Internally, the threshold to give yield is calculated by
-       * final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR) == 50
-       *
-       * So in the fifth iteration, the mechanism will yield
-       */
-    }
-
-    @Test
-    void shouldAbortIterationWhenRecordBatchReturnsFalseOnAppend() {
-      /* This test verifies that the class will yield at some point, and will not add endless records
-       * to a batch.
-       */
-
-      // given
-      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
-      when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any()))
-          .thenReturn(true)
-          .thenReturn(false);
-
-      final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
-      final var timerKey = 42L;
-      when(mockTimer.getKey()).thenReturn(timerKey);
-      when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-      final var testActorClock = new TestActorClock();
-
-      final var testTimerInstanceState =
-          new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
-              mockTimer, testActorClock);
-
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
-
-      // when
-      sut.apply(mockTaskResultBuilder);
-
-      // then
-      verify(mockTaskResultBuilder, times(2))
-          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
-    }
+    // then
+    assertThat(outcome).isInstanceOf(Outcome.AwaitDueAt.class);
+    assertThat(((Outcome.AwaitDueAt) outcome).timestampMs()).isEqualTo(2_500L);
   }
 
-  @Nested
-  final class YieldingDecoratorTest {
+  @Test
+  void shouldReturnIdleWhenNoTimersAndNoYield() {
+    // given
+    final var state = mock(TimerInstanceState.class);
+    when(state.processTimersWithDueDateBefore(anyLong(), any())).thenReturn(-1L);
+    final var scheduler = new DueDateTimerCheckScheduler(state);
 
-    private static final int TIME_TO_YIELD = 100;
+    // when
+    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
-    private TimerInstance mockTimer;
-    private TimerVisitor mockDelegate;
-    private final TestActorClock testActorClock = new TestActorClock();
-
-    @BeforeEach
-    void setUpMocks() {
-      // given
-      mockTimer = mock(TimerInstance.class);
-
-      mockDelegate = mock(TimerVisitor.class);
-      when(mockDelegate.visit(any())).thenReturn(true);
-    }
-
-    @Test
-    void shouldForwardCallToDelegateWhenTimeToYieldIsNotYetReached() {
-      // given
-      testActorClock.setTime(TIME_TO_YIELD - 50);
-
-      final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
-
-      // when
-      final var actual = sut.visit(mockTimer);
-
-      // then
-      assertThat(actual).isTrue();
-      verify(mockDelegate).visit(mockTimer);
-    }
-
-    @Test
-    void shouldNotForwardCallToDelegateWhenTimeToYieldIsReached() {
-      // given
-      testActorClock.setTime(TIME_TO_YIELD);
-
-      final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
-
-      // when
-      final var actual = sut.visit(mockTimer);
-
-      // then
-      assertThat(actual).isFalse();
-      verifyNoInteractions(mockDelegate);
-    }
-
-    @Test
-    void shouldNotForwardCallToDelegateWhenTimeToYieldHasPassed() {
-      // given
-      testActorClock.setTime(TIME_TO_YIELD + 50);
-
-      final var sut = new YieldingDecorator(testActorClock, TIME_TO_YIELD, mockDelegate);
-
-      // when
-      final var actual = sut.visit(mockTimer);
-
-      // then
-      assertThat(actual).isFalse();
-      verifyNoInteractions(mockDelegate);
-    }
+    // then
+    assertThat(outcome).isEqualTo(Outcome.IDLE);
   }
 
-  private final class TestActorClock implements InstantSource {
+  @Test
+  void shouldYieldWhenContextSignalsYieldAndNoNextDueDate() {
+    // given
+    final var state = mock(TimerInstanceState.class);
+    when(state.processTimersWithDueDateBefore(anyLong(), any())).thenReturn(-1L);
+    final var scheduler = new DueDateTimerCheckScheduler(state);
+    final var ctx = FakeTaskContext.create().withClockMillis(1_000L).withShouldYield(true);
 
-    private long time = 0;
+    // when
+    final Outcome outcome = scheduler.run(ctx);
 
-    public void setTime(final long time) {
-      this.time = time;
-    }
-
-    public boolean update() {
-      time = time + 10;
-      return true;
-    }
-
-    @Override
-    public Instant instant() {
-      return Instant.ofEpochMilli(time);
-    }
-
-    @Override
-    public long millis() {
-      return time;
-    }
+    // then
+    assertThat(outcome).isEqualTo(Outcome.YIELD_NOW);
   }
 
-  private final class TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers
-      implements TimerInstanceState {
+  @Test
+  void shouldEmitTimerTriggerCommandsForVisitedTimers() {
+    // given
+    final var state = mock(TimerInstanceState.class);
+    final ArgumentCaptor<TimerVisitor> visitor = ArgumentCaptor.forClass(TimerVisitor.class);
+    when(state.processTimersWithDueDateBefore(anyLong(), visitor.capture())).thenReturn(-1L);
+    final var scheduler = new DueDateTimerCheckScheduler(state);
+    final var ctx = FakeTaskContext.create().withClockMillis(1_000L);
 
-    private final TimerInstance timer;
-    private final TestActorClock testActorClock;
+    // when
+    scheduler.run(ctx);
+    final TimerInstance timer = new TimerInstance();
+    timer.setKey(7L);
+    timer.setElementInstanceKey(11L);
+    timer.setProcessInstanceKey(13L);
+    timer.setDueDate(900L);
+    timer.setRepetitions(1);
+    timer.setProcessDefinitionKey(17L);
+    final boolean accepted = visitor.getValue().visit(timer);
 
-    private TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
-        final TimerInstance timer, final TestActorClock testActorClock) {
-      this.timer = timer;
-      this.testActorClock = testActorClock;
-    }
+    // then
+    assertThat(accepted).isTrue();
+    assertThat(ctx.appended()).hasSize(1);
+    assertThat(ctx.appended().get(0).key()).isEqualTo(7L);
+    assertThat(ctx.appended().get(0).intent()).isEqualTo(TimerIntent.TRIGGER);
+  }
 
-    @Override
-    public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
-      var yield = false;
+  @Test
+  void shouldStopVisitingWhenYieldRequested() {
+    // given
+    final var state = mock(TimerInstanceState.class);
+    final ArgumentCaptor<TimerVisitor> visitor = ArgumentCaptor.forClass(TimerVisitor.class);
+    when(state.processTimersWithDueDateBefore(anyLong(), visitor.capture())).thenReturn(-1L);
+    final var scheduler = new DueDateTimerCheckScheduler(state);
+    final var ctx = FakeTaskContext.create().withClockMillis(1_000L).withShouldYield(true);
 
-      while (!yield) {
-        testActorClock.update();
-        yield = !consumer.visit(timer);
-      }
-      return 0;
-    }
+    // when
+    scheduler.run(ctx);
+    final boolean accepted = visitor.getValue().visit(new TimerInstance());
 
-    @Override
-    public void forEachTimerForElementInstance(
-        final long elementInstanceKey, final Consumer<TimerInstance> action) {}
-
-    @Override
-    public TimerInstance get(final long elementInstanceKey, final long timerKey) {
-      return null;
-    }
+    // then
+    assertThat(accepted).isFalse();
+    assertThat(ctx.appended()).isEmpty();
   }
 }

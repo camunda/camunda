@@ -19,11 +19,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -82,7 +82,7 @@ public final class CatchEventBehavior {
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
   private final ConditionalSubscriptionRecord conditionalSubscription =
       new ConditionalSubscriptionRecord();
-  private final DueDateTimerCheckScheduler timerChecker;
+  private final ManagedScheduledTask timerChecker;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
@@ -93,7 +93,7 @@ public final class CatchEventBehavior {
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerCheckScheduler timerChecker,
+      final ManagedScheduledTask timerChecker,
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -467,7 +467,7 @@ public final class CatchEventBehavior {
         () -> {
           /* timerChecker implements onRecovered to recover from restart, so no need to schedule
           this in TimerCreatedApplier.*/
-          timerChecker.scheduleTimer(dueDate);
+          timerChecker.requestRun(dueDate);
           return true;
         });
 

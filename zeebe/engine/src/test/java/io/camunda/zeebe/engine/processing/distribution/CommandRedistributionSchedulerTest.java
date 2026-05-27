@@ -7,274 +7,108 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.DistributionMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
+import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
-import io.camunda.zeebe.engine.state.routing.RoutingInfo.StaticRoutingInfo;
-import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
-import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import java.time.Duration;
-import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
-public class CommandRedistributionSchedulerTest {
+final class CommandRedistributionSchedulerTest {
 
-  /** Injected by {@link ProcessingStateExtension} */
-  private MutableProcessingState processingState;
+  private static final int RECEIVER_PARTITION = 2;
+  private static final long DISTRIBUTION_KEY = 123L;
 
-  private MutableRoutingState routingState;
-  @Mock private DistributionMetrics mockDistributionMetrics;
-  @Mock private InterPartitionCommandSender mockCommandSender;
-  @Mock private ReadonlyStreamProcessorContext mockContext;
+  @Test
+  void shouldNotRetryOnFirstVisit() {
+    // given — first cycle is 0; bitCount(0) != 1 -> no retry
+    final var distributionBehavior = mock(CommandDistributionBehavior.class);
+    final var record = newRecord();
+    stubBehaviorToVisit(distributionBehavior, record);
+    final var scheduler = newScheduler(distributionBehavior, /* scaling */ false);
 
-  private CommandRedistributionScheduler commandRedistributor;
-  private long distributionKey;
-  private UserRecord recordValue;
-  private MutableDistributionState distributionState;
+    // when
+    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
-  @BeforeEach
-  public void setUp() {
-    distributionState = processingState.getDistributionState();
-    routingState = processingState.getRoutingState();
-    routingState.initializeRoutingInfo(2);
-
-    final var commandDistributionPaused = false;
-    commandRedistributor =
-        getCommandRedistributor(
-            commandDistributionPaused,
-            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
-            EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
-
-    recordValue =
-        new UserRecord()
-            .setUserKey(1L)
-            .setEmail("test@test.com")
-            .setName("foo")
-            .setPassword("bar")
-            .setUsername("foobar");
-
-    final var distributionRecord =
-        new CommandDistributionRecord()
-            .setPartitionId(1)
-            .setValueType(ValueType.USER)
-            .setIntent(UserIntent.CREATE)
-            .setCommandValue(recordValue);
-
-    distributionKey = Protocol.encodePartitionId(1, 100);
-
-    distributionState.addCommandDistribution(distributionKey, distributionRecord);
-    // Add pending command distributions for partitions
-    routingState
-        .desiredPartitions()
-        .forEach(
-            partition -> distributionState.addRetriableDistribution(distributionKey, partition));
+    // then
+    assertThat(outcome).isEqualTo(Outcome.IDLE);
+    verify(distributionBehavior, never()).onScheduledRetry(eq(DISTRIBUTION_KEY), any());
   }
 
   @Test
-  public void shouldNotRetryOnFirstCycle() {
-    // given
+  void shouldRetryOnSecondVisit() {
+    // given — second visit -> cycle=1; bitCount(1)==1 -> retry
+    final var distributionBehavior = mock(CommandDistributionBehavior.class);
+    final var record = newRecord();
+    stubBehaviorToVisit(distributionBehavior, record);
+    final var scheduler = newScheduler(distributionBehavior, /* scaling */ false);
+    scheduler.run(FakeTaskContext.create().withClockMillis(1_000L)); // priming visit
+
     // when
-    commandRedistributor.runRetryCycle();
+    scheduler.run(FakeTaskContext.create().withClockMillis(2_000L));
 
     // then
-    verify(mockCommandSender, never())
-        .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
-    verify(mockCommandSender, never())
-        .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+    verify(distributionBehavior, times(1)).onScheduledRetry(eq(DISTRIBUTION_KEY), eq(record));
   }
 
   @Test
-  public void shouldRetryOnSecondCycle() {
+  void shouldSkipDistributionsForScalingPartition() {
     // given
-    // when
-    commandRedistributor.runRetryCycle();
-    commandRedistributor.runRetryCycle();
+    final var distributionBehavior = mock(CommandDistributionBehavior.class);
+    final var record = newRecord();
+    stubBehaviorToVisit(distributionBehavior, record);
+    final var scheduler = newScheduler(distributionBehavior, /* scaling */ true);
+
+    // when — second visit would normally retry, but partition is scaling
+    scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    scheduler.run(FakeTaskContext.create().withClockMillis(2_000L));
 
     // then
-    verify(mockCommandSender, times(1))
-        .sendCommand(
-            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
+    verify(distributionBehavior, never()).onScheduledRetry(anyLong(), any());
   }
 
-  private CommandRedistributionScheduler getCommandRedistributor(
-      final boolean commandDistributionPaused,
-      final Duration redistributionInterval,
-      final Duration maxBackoffDuration) {
-    final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
-    final var keyGenerator = new AtomicKeyGenerator(1);
-    final Writers writers =
-        new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
-    writers.setKeyValidator(keyGenerator);
+  private static CommandDistributionRecord newRecord() {
+    return new CommandDistributionRecord()
+        .setPartitionId(RECEIVER_PARTITION)
+        .setValueType(ValueType.DEPLOYMENT)
+        .setIntent(DeploymentIntent.CREATE);
+  }
 
-    final RoutingInfo routingInfo =
-        RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
+  private static void stubBehaviorToVisit(
+      final CommandDistributionBehavior behavior, final CommandDistributionRecord record) {
+    doAnswer(
+            inv -> {
+              final PendingDistributionVisitor visitor = inv.getArgument(0);
+              visitor.visit(DISTRIBUTION_KEY, record);
+              return null;
+            })
+        .when(behavior)
+        .foreachRetriableDistribution(any());
+  }
 
-    final CommandDistributionBehavior behavior =
-        new CommandDistributionBehavior(
-            processingState.getDistributionState(),
-            writers,
-            1,
-            routingInfo,
-            mockCommandSender,
-            mockDistributionMetrics);
-
+  private static CommandRedistributionScheduler newScheduler(
+      final CommandDistributionBehavior distributionBehavior, final boolean scaling) {
+    final var routing = mock(RoutingInfo.class);
+    when(routing.isPartitionScaling(RECEIVER_PARTITION)).thenReturn(scaling);
     final var config =
         new EngineConfiguration()
-            .setCommandDistributionPaused(commandDistributionPaused)
-            .setCommandRedistributionInterval(redistributionInterval)
-            .setCommandRedistributionMaxBackoff(maxBackoffDuration);
-
-    return new CommandRedistributionScheduler(behavior, routingInfo, config);
-  }
-
-  @Nested
-  class ScalingUpPartitions {
-
-    @BeforeEach
-    void setUp() {
-      // Simulate scaling up partition 3
-      routingState.setDesiredPartitions(Set.of(1, 2, 3), 111L);
-
-      distributionState.addRetriableDistribution(distributionKey, 3);
-    }
-
-    @Test
-    void shouldNotRedistributeToScalingPartitions() {
-      // given
-      // when
-      // run cycle twice, since first one always does not try distributing the records
-      commandRedistributor.runRetryCycle();
-      commandRedistributor.runRetryCycle();
-
-      // then
-      verify(mockCommandSender, times(1))
-          .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-      verify(mockCommandSender, times(1))
-          .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-      verify(mockCommandSender, never())
-          .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-    }
-
-    @Test
-    void shouldRedistributeToScaledPartition() {
-      // given
-      // when
-      // run cycle twice, since first one always does not try distributing the records
-      commandRedistributor.runRetryCycle();
-      commandRedistributor.runRetryCycle();
-
-      // then
-      verify(mockCommandSender, times(1))
-          .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-      verify(mockCommandSender, times(1))
-          .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-      verify(mockCommandSender, never())
-          .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-
-      // then
-      // Partition 3 is now scaled up, so it should be redistributed to
-      routingState.activatePartition(3);
-
-      // run cycle twice, since first one always does not try distributing the records
-      commandRedistributor.runRetryCycle();
-      commandRedistributor.runRetryCycle();
-      verify(mockCommandSender, times(1))
-          .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-    }
-  }
-
-  @Nested
-  class PausedCommandRedistribution {
-
-    @BeforeEach
-    void setUp() {
-      // Simulate command distribution paused
-      final var commandDistributionPaused = true;
-      commandRedistributor =
-          getCommandRedistributor(
-              commandDistributionPaused,
-              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
-              EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
-    }
-
-    @Test
-    void shouldNotRetryOnPausedCommandDistribution() {
-      // given
-      // when
-      commandRedistributor.onRecovered(mockContext);
-
-      // then
-      verify(mockContext, never()).getScheduleService();
-    }
-  }
-
-  @Nested
-  class ConfigurableRetryIntervals {
-
-    @BeforeEach
-    void setUp() {
-      // Set up routing state for configuration tests
-      final var customInterval = Duration.ofSeconds(2);
-      final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
-      commandRedistributor = getCommandRedistributor(false, customInterval, customMaxBackoff);
-    }
-
-    @Test
-    void shouldUseConfigurableMaxBackoff() {
-      // given
-      // when - run enough cycles to reach max backoff
-      for (int i = 0; i < 10; i++) {
-        commandRedistributor.runRetryCycle();
-      }
-
-      // then - verify retries occurred based on exponential backoff and then fixed intervals
-      // Cycle 0: no retry
-      // Cycle 1: retry (bitCount(1) == 1)
-      // Cycle 2: retry (bitCount(2) == 1)
-      // Cycle 3: no retry (bitCount(3) == 2)
-      // Cycle 4: retry (4 >= maxRetryCycles=4 and 4 % 4 == 0)
-      // Cycle 5-7: no retry (not multiple of 4)
-      // Cycle 8: retry (8 % 4 == 0)
-      // Cycle 9: no retry
-
-      verify(mockCommandSender, times(4))
-          .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-      verify(mockCommandSender, times(4))
-          .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
-    }
+            .setCommandRedistributionInterval(Duration.ofSeconds(10))
+            .setCommandRedistributionMaxBackoff(Duration.ofMinutes(5));
+    return new CommandRedistributionScheduler(distributionBehavior, routing, config);
   }
 }

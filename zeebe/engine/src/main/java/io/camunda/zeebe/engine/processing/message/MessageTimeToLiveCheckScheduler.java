@@ -7,66 +7,41 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
+import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResult;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
-import java.time.InstantSource;
 
 /**
- * Periodically checks for expired message deadlines and writes a {@link MessageBatchIntent#EXPIRE}
- * trigger command when any are found. The actual expiry work (querying state and writing {@code
- * EXPIRED} events) is done by the {@link MessageBatchExpireProcessor}.
+ * Detects expired message deadlines and writes a single {@link MessageBatchIntent#EXPIRE} command
+ * when any are found. The actual expiry work is done by {@code MessageBatchExpireProcessor}.
+ *
+ * <p>Lifecycle, scheduling cadence (default fallback interval 1 minute), error handling, logging
+ * and metrics are provided by {@code ManagedScheduledTask}.
  */
-public final class MessageTimeToLiveCheckScheduler implements Task, StreamProcessorLifecycleAware {
+public final class MessageTimeToLiveCheckScheduler implements ScheduledTask {
 
-  private final Duration executionInterval;
-  private final boolean enableMessageTtlCheckerAsync;
   private final MessageState messageState;
 
-  private ProcessingScheduleService scheduleService;
-  private InstantSource clock;
-
-  public MessageTimeToLiveCheckScheduler(
-      final Duration executionInterval,
-      final boolean enableMessageTtlCheckerAsync,
-      final MessageState messageState) {
-    this.executionInterval = executionInterval;
-    this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
+  public MessageTimeToLiveCheckScheduler(final MessageState messageState) {
     this.messageState = messageState;
   }
 
   @Override
-  public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    final boolean hasExpired =
-        messageState.visitMessagesWithDeadlineBeforeTimestamp(
-            clock.millis(), null, (deadline, key) -> false);
-    if (hasExpired) {
-      taskResultBuilder.appendCommandRecord(MessageBatchIntent.EXPIRE, new MessageBatchRecord());
-    }
-    reschedule(executionInterval);
-    return taskResultBuilder.build();
-  }
-
-  private void reschedule(final Duration idleInterval) {
-    final var timestamp = clock.millis() + idleInterval.toMillis();
-    if (enableMessageTtlCheckerAsync) {
-      scheduleService.runAtAsync(timestamp, this);
-    } else {
-      scheduleService.runAt(timestamp, this);
-    }
+  public String name() {
+    return "message-ttl-check";
   }
 
   @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    scheduleService = context.getScheduleService();
-    clock = context.getClock();
-    reschedule(executionInterval);
+  public Outcome run(final TaskContext ctx) {
+    final boolean hasExpired =
+        messageState.visitMessagesWithDeadlineBeforeTimestamp(
+            ctx.clock().millis(), null, (deadline, key) -> false);
+    if (hasExpired) {
+      ctx.sink().append(MessageBatchIntent.EXPIRE, new MessageBatchRecord());
+    }
+    return Outcome.IDLE;
   }
 }
