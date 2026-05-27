@@ -15,6 +15,11 @@ on:
         description: "Branch to test (e.g. stable/8.9, main)"
         required: true
         type: string
+      camunda_mode:
+        description: "Camunda deployment mode: 'profiles' (default Spring profiles) or 'all-in-one'"
+        required: false
+        type: string
+        default: profiles
 
 permissions:
   contents: read
@@ -61,14 +66,14 @@ jobs:
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
 
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: camunda-dist-${{ steps.sanitize.outputs.safe_branch }}
           path: dev-dist/
           retention-days: 1
 
   nightly-api-tests-rdbms:
-    name: API Tests (RDBMS) (${{ inputs.branch }} / ${{ matrix.database.database-name }})
+    name: API Tests (RDBMS) (${{ inputs.branch }} / ${{ matrix.database.database-name }} - Mode ${{ inputs.camunda_mode }})
     needs: nightly-build-rdbms-dist
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
@@ -77,7 +82,13 @@ jobs:
       fail-fast: false
       matrix:
         database:
-          # PostgreSQL - Supported versions: 15, 16, 17, 18
+          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
+          - database-name: "Postgres 14"
+            database-type: "postgres"
+            database-image-version: "14-alpine"
+            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
           - database-name: "Postgres 15"
             database-type: "postgres"
             database-image-version: "15-alpine"
@@ -128,7 +139,13 @@ jobs:
             jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          # Microsoft SQL Server - Supported versions: 2022, 2025
+          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
+          - database-name: "MSSQL 2019"
+            database-type: "mssql"
+            database-image-version: "2019-latest"
+            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+            jdbc-username: "sa"
+            jdbc-password: "Camunda#8_demo"
           - database-name: "MSSQL 2022"
             database-type: "mssql"
             database-image-version: "2022-latest"
@@ -141,10 +158,10 @@ jobs:
             jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
             jdbc-username: "sa"
             jdbc-password: "Camunda#8_demo"
-          # Oracle - Supported versions: 21c, 26ai
-          - database-name: "Oracle 26ai"
+          # Oracle - Supported versions: 21c, 23ai
+          - database-name: "Oracle 23ai"
             database-type: "oracle"
-            database-image-version: "23.26.1-slim-faststart"
+            database-image-version: "23-slim-faststart"
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
@@ -270,7 +287,14 @@ jobs:
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
       - name: Start Camunda with ${{ inputs.branch }} / ${{ matrix.database.database-name }}
         run: |
-          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
+          if [[ "${{ inputs.camunda_mode }}" == "all-in-one" ]]; then
+            export CAMUNDA_MODE="all-in-one"
+            echo "Starting with CAMUNDA_MODE=all-in-one"
+          else
+            unset CAMUNDA_MODE
+            export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
+            echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+          fi
           export ZEEBE_CLOCK_CONTROLLED="true"
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
@@ -327,7 +351,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -385,15 +409,15 @@ jobs:
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
             parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}
+          name: json-report-nightly-api-rdbms-${{ steps.sanitize.outputs.safe_branch }}-${{ matrix.database.database-name }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
@@ -402,7 +426,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests/(${{ inputs.branch }} / ${{ matrix.database.database-name }})"
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests/(${{ inputs.branch }} / ${{ matrix.database.database-name }} / ${{ inputs.camunda_mode }})"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
