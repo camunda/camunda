@@ -47,14 +47,10 @@ public class ClusterIdInitializer implements ClusterConfigurationModifier {
     }
 
     final var withClusterId =
-        new ClusterConfiguration(
-            configuration.version(),
-            configuration.members(),
-            configuration.lastChange(),
-            configuration.pendingChanges(),
-            configuration.routingState(),
-            Optional.of(clusterId),
-            configuration.incarnationNumber());
+        ClusterConfiguration.builder()
+            .from(configuration)
+            .clusterId(Optional.of(clusterId))
+            .build();
     return CompletableActorFuture.completed(withClusterId);
   }
 }

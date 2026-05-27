@@ -50,14 +50,13 @@ public final class ConfigurationUtil {
     final var routingState =
         Optional.of(RoutingState.initializeWithPartitionCount(partitionDistribution.size()));
 
-    return new ClusterConfiguration(
-        ClusterConfiguration.INITIAL_VERSION,
-        Map.copyOf(memberStates),
-        Optional.empty(),
-        Optional.empty(),
-        routingState,
-        Optional.ofNullable(clusterId),
-        ClusterConfiguration.INITIAL_INCARNATION_NUMBER);
+    return ClusterConfiguration.builder()
+        .version(ClusterConfiguration.INITIAL_VERSION)
+        .members(Map.copyOf(memberStates))
+        .routingState(routingState)
+        .clusterId(Optional.ofNullable(clusterId))
+        .incarnationNumber(ClusterConfiguration.INITIAL_INCARNATION_NUMBER)
+        .build();
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(

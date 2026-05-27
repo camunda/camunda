@@ -11,7 +11,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Optional;
 
 /**
  * Initializes the routing state of the cluster configuration if the partition scaling feature is
@@ -33,15 +32,7 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
     }
 
     final var routingState = RoutingState.initializeWithPartitionCount(staticPartitionCount);
-    final var withRoutingState =
-        new ClusterConfiguration(
-            configuration.version(),
-            configuration.members(),
-            configuration.lastChange(),
-            configuration.pendingChanges(),
-            Optional.of(routingState),
-            configuration.clusterId(),
-            configuration.incarnationNumber());
+    final var withRoutingState = configuration.setRoutingState(routingState);
     return CompletableActorFuture.completed(withRoutingState);
   }
 }

@@ -277,17 +277,11 @@ public class RestoreManager implements CloseableSilently {
     final var initializer = new StaticInitializer(staticConfiguration);
     // it's ok to block, it's not really async
     final var base = initializer.initialize().get();
+    final var changePlan =
+        ClusterChangePlan.initForRestore(
+            List.of(new UpdateRoutingState(coordinatorId, Optional.empty())));
     final var configuration =
-        new ClusterConfiguration(
-            base.version(),
-            base.members(),
-            base.lastChange(),
-            Optional.of(
-                ClusterChangePlan.initForRestore(
-                    List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
-            base.routingState(),
-            base.clusterId(),
-            base.incarnationNumber());
+        ClusterConfiguration.builder().from(base).pendingChanges(Optional.of(changePlan)).build();
     final var persistedConfiguration =
         PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());
     persistedConfiguration.update(configuration);

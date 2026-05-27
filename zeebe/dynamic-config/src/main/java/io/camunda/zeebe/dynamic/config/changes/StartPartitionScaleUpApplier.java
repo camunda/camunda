@@ -108,15 +108,11 @@ final class StartPartitionScaleUpApplier implements ClusterOperationApplier {
                 result.completeExceptionally(error);
               } else {
                 result.complete(
-                    config ->
-                        new ClusterConfiguration(
-                            config.version(),
-                            config.members(),
-                            config.lastChange(),
-                            config.pendingChanges(),
-                            config.routingState().map(this::updateRoutingState),
-                            config.clusterId(),
-                            config.incarnationNumber()));
+                    config -> {
+                      final var updatedRoutingState =
+                          config.routingState().map(this::updateRoutingState);
+                      return updatedRoutingState.map(config::setRoutingState).orElse(config);
+                    });
               }
             });
 

@@ -17,7 +17,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 public class AwaitRedistributionCompletionApplier implements ClusterOperationApplier {
@@ -78,14 +77,7 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
             .routingState()
             .map(state -> state.withRequestHandling(this::updateRequestHandling))
             .orElseThrow(() -> new IllegalStateException("Missing routingState"));
-    return new ClusterConfiguration(
-        config.version(),
-        config.members(),
-        config.lastChange(),
-        config.pendingChanges(),
-        Optional.of(routingState),
-        config.clusterId(),
-        config.incarnationNumber());
+    return config.setRoutingState(routingState);
   }
 
   private RequestHandling updateRequestHandling(final RequestHandling requestHandling) {
