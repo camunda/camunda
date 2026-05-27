@@ -10,13 +10,12 @@ import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchRoles } from "src/utility/api/roles";
+import { useSearchRoles } from "src/utility/api/roles/hooks";
+import { useAssignGroupRole } from "src/utility/api/groups/hooks";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignGroupRole } from "src/utility/api/groups";
 import { useNotifications } from "src/components/notifications";
 import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -44,10 +43,10 @@ const AssignRolesModal: FC<
 
   const {
     data: roleSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchRoles, search);
+  } = useSearchRoles(search);
 
   const unassignedFilter = useCallback(
     ({ roleId }: Role) =>
@@ -56,7 +55,7 @@ const AssignRolesModal: FC<
     [assignedRoles, selectedRoles],
   );
 
-  const [callAssignRole] = useApiCall(assignGroupRole);
+  const { mutateAsync: callAssignRole } = useAssignGroupRole();
 
   const onSelectRole = (role: Role) => {
     setSelectedRoles([...selectedRoles, role]);
@@ -74,16 +73,12 @@ const AssignRolesModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignRole(true);
-
-    const results = await Promise.all(
-      selectedRoles.map(({ roleId }) =>
-        callAssignRole({ roleId, groupId: group.id }),
-      ),
-    );
-
-    setLoadingAssignRole(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedRoles.map(({ roleId }) =>
+          callAssignRole({ roleId, groupId: group.id }),
+        ),
+      );
       if (selectedRoles.length === 1) {
         enqueueNotification({
           kind: "success",
@@ -98,6 +93,10 @@ const AssignRolesModal: FC<
         });
       }
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignRole(false);
     }
   };
 
@@ -152,7 +151,12 @@ const AssignRolesModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("rolesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

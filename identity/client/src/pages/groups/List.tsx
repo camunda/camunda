@@ -9,10 +9,10 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useSearchGroups } from "src/utility/api/groups/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchGroups } from "src/utility/api/groups";
 import { useNavigate } from "react-router-dom";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -25,19 +25,19 @@ import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 const List: FC = () => {
   const { t } = useTranslate("groups");
   const navigate = useNavigate();
+  const noop = () => {};
 
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: groupSearchResults,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchGroups);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useSearchGroups(pageParams);
 
-  const [addGroup, addModal] = useModal(AddModal, reload);
-  const [updateGroup, editModal] = useEntityModal(EditModal, reload);
-  const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
+  const [addGroup, addModal] = useModal(AddModal, noop);
+  const [updateGroup, editModal] = useEntityModal(EditModal, noop);
+  const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, noop);
   const showDetails = ({ groupId }: Group) => navigate(groupId);
 
   const shouldShowEmptyState =
@@ -89,12 +89,18 @@ const List: FC = () => {
         ]}
         searchPlaceholder={t("searchByGroupId")}
         searchKey="groupId"
-        {...paginationProps}
+        page={{ ...page, ...groupSearchResults?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("groupsListCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       <>

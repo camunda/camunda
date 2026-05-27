@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteTenant } from "src/utility/api/tenants";
+import { useDeleteTenant } from "src/utility/api/tenants/hooks";
 import { useNotifications } from "src/components/notifications";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -25,21 +24,22 @@ const DeleteTenantModal: FC<UseEntityModalProps<Tenant>> = ({
 }) => {
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteTenant);
+  const { mutate, isPending: loading } = useDeleteTenant();
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall({ tenantId });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("tenantDeleted"),
-        subtitle: t("deleteTenantSuccess", {
-          name,
-        }),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { tenantId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("tenantDeleted"),
+            subtitle: t("deleteTenantSuccess", { name }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

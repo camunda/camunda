@@ -10,10 +10,10 @@ import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useSearchRoles } from "src/utility/api/roles/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchRoles } from "src/utility/api/roles";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/roles/modals/AddModal";
@@ -29,18 +29,19 @@ type ListProps = {
 const List: FC<ListProps> = ({ defaultRoleIds }) => {
   const { t } = useTranslate("roles");
   const navigate = useNavigate();
+  const noop = () => {};
+
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: roles,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchRoles);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useSearchRoles(pageParams);
 
-  const [addRole, addRoleModal] = useModal(AddModal, reload);
-  const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
-  const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
+  const [addRole, addRoleModal] = useModal(AddModal, noop);
+  const [editRole, editRoleModal] = useEntityModal(EditModal, noop);
+  const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, noop);
 
   const showDetails = ({ roleId }: Role) => navigate(roleId);
 
@@ -99,12 +100,18 @@ const List: FC<ListProps> = ({ defaultRoleIds }) => {
         ]}
         searchPlaceholder={t("searchByRoleId")}
         searchKey="roleId"
-        {...paginationProps}
+        page={{ ...page, ...roles?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("rolesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {addRoleModal}

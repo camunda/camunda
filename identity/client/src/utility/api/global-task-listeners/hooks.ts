@@ -23,12 +23,17 @@ import {
 } from ".";
 
 export const useSearchGlobalTaskListeners = (
-  params?: QueryGlobalTaskListenersRequestBody,
+  params?: QueryGlobalTaskListenersRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.globalTaskListeners.search(params),
-    queryFn: () => unwrap(searchGlobalTaskListeners(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchGlobalTaskListeners(
+          params as QueryGlobalTaskListenersRequestBody,
+        )(getApiBaseUrl()),
+      ),
     enabled: options?.enabled,
   });
 

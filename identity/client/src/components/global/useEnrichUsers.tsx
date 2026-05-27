@@ -6,22 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useApiCall, usePaginatedApiCall } from "src/utility/api";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type {
   User,
   QueryUsersResponseBody,
   QueryUsersByGroupResponseBody,
 } from "@camunda/camunda-api-zod-schemas/8.10";
-import { ApiDefinition } from "src/utility/api/request";
+import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchUser } from "src/utility/api/users";
+import { usePagination } from "src/utility/api";
+import { getApiBaseUrl } from "src/configuration/urlConfig";
+import { mergeParams } from "src/utility/api/hooks/utils";
 
 type UseEnrichedUsersResult = {
   users: User[];
   loading: boolean;
   success: boolean;
   reload: () => void;
-  paginationProps: ReturnType<typeof usePaginatedApiCall>[1];
+  paginationProps: {
+    page: { pageNumber: number; pageSize: number; totalItems?: number };
+    setPageNumber: (page: number) => void;
+    setPageSize: (size: number) => void;
+    setSort: ReturnType<typeof usePagination>["setSort"];
+    setSearch: ReturnType<typeof usePagination>["setSearch"];
+  };
 };
 
 export function useEnrichedUsers<P>(
@@ -32,76 +41,71 @@ export function useEnrichedUsers<P>(
   params: P,
   isOIDC: boolean,
 ): UseEnrichedUsersResult {
-  const [callSearchMembers, paginationProps] =
-    usePaginatedApiCall(apiDefinition);
-  const [callSearchUser] = useApiCall(searchUser);
+  const { pageParams, page, setPageNumber, setPageSize, setSort, setSearch } =
+    usePagination();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const mergedParams = mergeParams(
+    params as Record<string, unknown>,
+    pageParams,
+  ) as P;
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setSuccess(false);
+  const membersQuery = useQuery({
+    queryKey: ["enrichedMembers", apiDefinition.name, mergedParams],
+    queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
+  });
 
-    try {
-      const result = await callSearchMembers(params);
-      const members = result.data?.items || [];
+  const memberItems = membersQuery.data?.items ?? [];
+  const usernames = memberItems.map(({ username }) => username);
 
-      if (members.length === 0) {
-        setUsers([]);
-        setSuccess(true);
-        return;
-      }
+  const usersQuery = useQuery({
+    queryKey: ["enrichedMembers", "userDetails", usernames],
+    queryFn: () => unwrap(searchUser({ usernames })(getApiBaseUrl())),
+    enabled: !isOIDC && usernames.length > 0,
+  });
 
-      if (isOIDC) {
-        setUsers(
-          members.map(({ username }) => ({
-            username,
-            name: "",
-            email: "",
-          })),
-        );
-        setSuccess(true);
-        return;
-      }
-
-      const usernames = members.map(({ username }) => username);
-      const userResult = await callSearchUser({ usernames });
-
-      const fullUsers = userResult.data?.items || [];
-
-      // Hydrate members while keeping order from original request
-      const orderedUsers = members.map((member) => {
-        // Inefficient, but we don't care as we search <100 items
-        const user = fullUsers.find((u) => u.username === member.username);
-        return {
-          username: member.username,
-          name: user?.name || "",
-          email: user?.email || "",
-        };
-      });
-
-      setUsers(orderedUsers);
-      setSuccess(true);
-    } catch {
-      setUsers([]);
-      setSuccess(false);
-    } finally {
-      setLoading(false);
+  const users = useMemo<User[]>(() => {
+    const items = membersQuery.data?.items ?? [];
+    if (items.length === 0) return [];
+    if (isOIDC) {
+      return items.map(({ username }) => ({
+        username,
+        name: "",
+        email: "",
+      }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
-  }, [callSearchMembers, callSearchUser, isOIDC, JSON.stringify(params)]);
+    const fullUsers = usersQuery.data?.items ?? [];
+    return items.map((member) => {
+      const user = fullUsers.find((u) => u.username === member.username);
+      return {
+        username: member.username,
+        name: user?.name || "",
+        email: user?.email || "",
+      };
+    });
+  }, [membersQuery.data, isOIDC, usersQuery.data]);
 
-  useEffect(() => {
-    void fetch();
-  }, [fetch]);
+  const loading =
+    membersQuery.isLoading ||
+    (!isOIDC && usernames.length > 0 && usersQuery.isLoading);
+
+  const success =
+    membersQuery.isSuccess &&
+    (isOIDC || usernames.length === 0 || usersQuery.isSuccess);
 
   return {
     users,
     loading,
     success,
-    reload: fetch,
-    paginationProps,
+    reload: () => {
+      void membersQuery.refetch();
+      if (!isOIDC) void usersQuery.refetch();
+    },
+    paginationProps: {
+      page: { ...page, ...membersQuery.data?.page },
+      setPageNumber,
+      setPageSize,
+      setSort,
+      setSearch,
+    },
   };
 }

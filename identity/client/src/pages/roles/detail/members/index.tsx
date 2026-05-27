@@ -35,17 +35,18 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
     },
     isOIDC,
   );
+  const noop = () => {};
 
   const isUsersListEmpty = !users || users?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
-    reload,
+    noop,
     { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ roleId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       roleId,
     },

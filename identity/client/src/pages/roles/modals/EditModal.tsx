@@ -9,9 +9,8 @@
 import { FC, useState } from "react";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { updateRole } from "src/utility/api/roles";
+import { useUpdateRole } from "src/utility/api/roles/hooks";
 import TextField from "src/components/form/TextField";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -24,27 +23,24 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
   const { t } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const [callUpdateRole, { error, loading }] = useApiCall(updateRole, {
-    suppressErrorNotification: true,
-  });
+  const { mutate, isPending: loading, error } = useUpdateRole();
 
   const [roleName, setRoleName] = useState(role.name ?? "");
   const [description, setDescription] = useState(role.description ?? "");
 
-  const handleSubmit = async () => {
-    const { success } = await callUpdateRole({
-      roleId: role.roleId,
-      name: roleName,
-      description,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("roleHasBeenUpdated"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { roleId: role.roleId, name: roleName, description },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("roleHasBeenUpdated"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

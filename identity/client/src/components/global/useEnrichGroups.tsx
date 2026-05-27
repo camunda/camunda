@@ -6,10 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useApiCall, usePaginatedApiCall } from "src/utility/api";
-import { ApiDefinition } from "src/utility/api/request";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
+import { usePagination } from "src/utility/api";
+import { mergeParams } from "src/utility/api/hooks/utils";
+import { getApiBaseUrl } from "src/configuration/urlConfig";
 import type {
   QueryGroupsResponseBody,
   QueryGroupsByRoleResponseBody,
@@ -21,7 +24,13 @@ type UseEnrichedGroupsResult = {
   loading: boolean;
   success: boolean;
   reload: () => void;
-  paginationProps: ReturnType<typeof usePaginatedApiCall>[1];
+  paginationProps: {
+    page: { pageNumber: number; pageSize: number; totalItems?: number };
+    setPageNumber: (page: number) => void;
+    setPageSize: (size: number) => void;
+    setSort: ReturnType<typeof usePagination>["setSort"];
+    setSearch: ReturnType<typeof usePagination>["setSearch"];
+  };
 };
 
 export function useEnrichedGroups<P>(
@@ -32,85 +41,71 @@ export function useEnrichedGroups<P>(
   params: P,
   isCamundaGroupsEnabled: boolean,
 ): UseEnrichedGroupsResult {
-  const [callSearchMembers, paginationProps] =
-    usePaginatedApiCall(apiDefinition);
-  const [callSearchGroups] = useApiCall(searchGroups);
+  const { pageParams, page, setPageNumber, setPageSize, setSort, setSearch } =
+    usePagination();
 
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const mergedParams = mergeParams(
+    params as Record<string, unknown>,
+    pageParams,
+  ) as P;
 
-  const fetch = useCallback(
-    async () => {
-      setLoading(true);
-      setSuccess(false);
+  const membersQuery = useQuery({
+    queryKey: ["enrichedGroups", apiDefinition.name, mergedParams],
+    queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
+  });
 
-      try {
-        const result = await callSearchMembers(params);
-        const members = result.data?.items || [];
+  const members = membersQuery.data?.items ?? [];
+  const groupIds = members.map(({ groupId }) => groupId);
 
-        if (members.length === 0) {
-          setGroups([]);
-          setSuccess(true);
-          return;
-        }
+  const groupsQuery = useQuery({
+    queryKey: ["enrichedGroups", "groupDetails", groupIds],
+    queryFn: () => unwrap(searchGroups({ groupIds })(getApiBaseUrl())),
+    enabled: isCamundaGroupsEnabled && groupIds.length > 0,
+  });
 
-        if (!isCamundaGroupsEnabled) {
-          setGroups(
-            members.map(({ groupId }) => ({
-              groupId,
-              name: "",
-              description: "",
-            })),
-          );
-          setSuccess(true);
-          return;
-        }
+  const groups = useMemo<Group[]>(() => {
+    const items = membersQuery.data?.items ?? [];
+    if (items.length === 0) return [];
+    if (!isCamundaGroupsEnabled) {
+      return items.map(({ groupId }) => ({
+        groupId,
+        name: "",
+        description: "",
+      }));
+    }
+    const fullGroups = groupsQuery.data?.items ?? [];
+    return items.map((member) => {
+      const group = fullGroups.find((g) => g.groupId === member.groupId);
+      return {
+        groupId: member.groupId,
+        name: group?.name || "",
+        description: group?.description || "",
+      };
+    });
+  }, [membersQuery.data, isCamundaGroupsEnabled, groupsQuery.data]);
 
-        const groupIds = members.map(({ groupId }) => groupId);
-        const groupResult = await callSearchGroups({ groupIds });
+  const loading =
+    membersQuery.isLoading ||
+    (isCamundaGroupsEnabled && groupIds.length > 0 && groupsQuery.isLoading);
 
-        const fullGroups = groupResult.data?.items || [];
-
-        // Hydrate members while keeping order from original request
-        const orderedGroups = members.map((member) => {
-          // Inefficient, but we don't care as we search <100 items
-          const group = fullGroups.find((u) => u.groupId === member.groupId);
-          return {
-            groupId: member.groupId,
-            name: group?.name || "",
-            description: group?.description || "",
-          };
-        });
-
-        setGroups(orderedGroups || []);
-        setSuccess(true);
-      } catch {
-        setGroups([]);
-        setSuccess(false);
-      } finally {
-        setLoading(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
-    [
-      callSearchMembers,
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- using the stringified version to avoid unnecessary calls
-      JSON.stringify(params),
-      isCamundaGroupsEnabled,
-      callSearchGroups,
-    ],
-  );
-
-  useEffect(() => {
-    void fetch();
-  }, [fetch]);
+  const success =
+    membersQuery.isSuccess &&
+    (!isCamundaGroupsEnabled || groupIds.length === 0 || groupsQuery.isSuccess);
 
   return {
     groups,
     loading,
     success,
-    reload: fetch,
-    paginationProps,
+    reload: () => {
+      void membersQuery.refetch();
+      if (isCamundaGroupsEnabled) void groupsQuery.refetch();
+    },
+    paginationProps: {
+      page: { ...page, ...membersQuery.data?.page },
+      setPageNumber,
+      setPageSize,
+      setSort,
+      setSearch,
+    },
   };
 }

@@ -10,11 +10,10 @@ import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { useTenantDetails } from "src/utility/api/tenants/hooks";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import PageHeadline from "src/components/layout/PageHeadline";
-import { getTenantDetails } from "src/utility/api/tenants";
 import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
@@ -38,20 +37,15 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("tenants");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
-  const {
-    data: tenantSearchResults,
-    loading,
-    reload,
-  } = useApi(getTenantDetails, {
+  const { data: tenantSearchResults, isLoading: loading } = useTenantDetails({
     tenantId: id,
   });
-  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, () => {});
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
 
-  const tenant =
-    tenantSearchResults !== null ? tenantSearchResults.items[0] : null;
+  const tenant = tenantSearchResults ? tenantSearchResults.items[0] : null;
 
   if (!loading && !tenant) return <NotFound />;
 

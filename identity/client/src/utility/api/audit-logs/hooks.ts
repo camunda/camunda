@@ -14,11 +14,14 @@ import { queryKeys } from "../queryKeys";
 import { searchAuditLogs } from ".";
 
 export const useSearchAuditLogs = (
-  params?: QueryAuditLogsRequestBody,
+  params?: QueryAuditLogsRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.auditLogs.search(params),
-    queryFn: () => unwrap(searchAuditLogs(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchAuditLogs(params as QueryAuditLogsRequestBody)(getApiBaseUrl()),
+      ),
     enabled: options?.enabled,
   });

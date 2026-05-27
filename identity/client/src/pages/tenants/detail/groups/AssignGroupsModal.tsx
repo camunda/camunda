@@ -11,12 +11,11 @@ import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchGroups } from "src/utility/api/groups";
+import { useSearchGroups } from "src/utility/api/groups/hooks";
+import { useAssignTenantGroup } from "src/utility/api/tenants/hooks";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantGroup } from "src/utility/api/tenants";
 import type { Group, Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedGroups = styled.div`
@@ -45,12 +44,12 @@ const AssignGroupsModal: FC<
 
   const {
     data: groupSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchGroups, search);
+  } = useSearchGroups(search);
 
-  const [callAssignGroup] = useApiCall(assignTenantGroup);
+  const { mutateAsync: callAssignGroup } = useAssignTenantGroup();
 
   const unassignedFilter = useCallback(
     ({ groupId }: Group) =>
@@ -82,17 +81,17 @@ const AssignGroupsModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignGroup(true);
-
-    const results = await Promise.all(
-      selectedGroups.map(({ groupId }) =>
-        callAssignGroup({ groupId, tenantId }),
-      ),
-    );
-
-    setLoadingAssignGroup(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedGroups.map(({ groupId }) =>
+          callAssignGroup({ groupId, tenantId }),
+        ),
+      );
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignGroup(false);
     }
   };
 
@@ -144,7 +143,12 @@ const AssignGroupsModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("groupsCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

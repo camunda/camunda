@@ -9,7 +9,11 @@
 import { FC, FormEvent, useState } from "react";
 import { Form, Stack, Loading, InlineNotification } from "@carbon/react";
 import styled from "styled-components";
-import { ErrorResponse } from "src/utility/api/request";
+import {
+  ApiError,
+  ErrorResponse,
+  isDetailedError,
+} from "src/utility/api/request";
 import Modal, { ModalProps } from "./Modal";
 
 // carbon element z-indexes can only be imported using scss modules
@@ -32,7 +36,7 @@ const LoadingLabel = styled.div`
 `;
 
 type FormModalProps = {
-  error?: ErrorResponse<"detailed"> | null;
+  error?: ApiError | Error | ErrorResponse<"detailed"> | null;
 } & ModalProps;
 
 const FormModal: FC<FormModalProps> = ({
@@ -47,6 +51,15 @@ const FormModal: FC<FormModalProps> = ({
     e.preventDefault();
     onSubmit?.();
   };
+
+  const apiErrorBody = (() => {
+    if (!error) return null;
+    if (error instanceof ApiError) {
+      return error.body && isDetailedError(error.body) ? error.body : null;
+    }
+    if (error instanceof Error) return null;
+    return isDetailedError(error) ? error : null;
+  })();
 
   return (
     <Modal
@@ -65,13 +78,13 @@ const FormModal: FC<FormModalProps> = ({
       <Form onSubmit={formSubmitHandler}>
         <Stack gap="6">
           <>{children}</>
-          {error && showError && (
+          {apiErrorBody && showError && (
             <InlineNotification
               kind="error"
               role="alert"
               lowContrast
-              title={error.title}
-              subtitle={error.detail}
+              title={apiErrorBody.title}
+              subtitle={apiErrorBody.detail}
               onClose={() => {
                 setShowError(false);
               }}

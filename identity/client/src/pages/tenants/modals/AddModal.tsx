@@ -21,8 +21,7 @@ import { ArrowRight, InformationFilled } from "@carbon/react/icons";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
-import { useApiCall } from "src/utility/api";
-import { createTenant } from "src/utility/api/tenants";
+import { useCreateTenant } from "src/utility/api/tenants/hooks";
 import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
 import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
@@ -73,9 +72,7 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
     name: string;
     tenantId: string;
   } | null>(null);
-  const [callAddTenant, { loading, error }] = useApiCall(createTenant, {
-    suppressErrorNotification: true,
-  });
+  const { mutate, isPending: loading, error } = useCreateTenant();
 
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {
@@ -86,16 +83,19 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddTenant({
-      name: data.name,
-      tenantId: data.tenantId,
-      description: data.description,
-    });
-
-    if (success) {
-      setCreatedTenant({ name: data.name, tenantId: data.tenantId });
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.name,
+        tenantId: data.tenantId,
+        description: data.description,
+      },
+      {
+        onSuccess: () => {
+          setCreatedTenant({ name: data.name, tenantId: data.tenantId });
+        },
+      },
+    );
   };
 
   if (createdTenant) {

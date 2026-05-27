@@ -10,14 +10,13 @@ import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { useGroupDetails } from "src/utility/api/groups/hooks";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
-import { getGroupDetails } from "src/utility/api/groups";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
@@ -39,12 +38,8 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
     tab: string;
   }>();
 
-  const {
-    data: group,
-    loading,
-    reload,
-  } = useApi(getGroupDetails, { groupId: id });
-  const [editGroup, editModal] = useEntityModal(EditModal, reload);
+  const { data: group, isLoading: loading } = useGroupDetails(id);
+  const [editGroup, editModal] = useEntityModal(EditModal, () => {});
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );

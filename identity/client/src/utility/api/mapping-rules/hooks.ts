@@ -23,12 +23,17 @@ import {
 } from ".";
 
 export const useSearchMappingRules = (
-  params?: QueryMappingRulesRequestBody,
+  params?: QueryMappingRulesRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.mappingRules.search(params),
-    queryFn: () => unwrap(searchMappingRule(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchMappingRule(params as QueryMappingRulesRequestBody)(
+          getApiBaseUrl(),
+        ),
+      ),
     enabled: options?.enabled,
   });
 

@@ -22,12 +22,17 @@ import {
 } from ".";
 
 export const useSearchAuthorizations = (
-  params: QueryAuthorizationsRequestBody,
+  params: QueryAuthorizationsRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.authorizations.search(params),
-    queryFn: () => unwrap(searchAuthorization(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchAuthorization(params as QueryAuthorizationsRequestBody)(
+          getApiBaseUrl(),
+        ),
+      ),
     enabled: options?.enabled,
   });
 

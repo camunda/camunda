@@ -35,17 +35,18 @@ const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
     },
     isOIDC,
   );
+  const noop = () => {};
 
   const isAssignedUsersListEmpty = !users || users.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
-    reload,
+    noop,
     { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ tenantId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       tenant: tenantId,
     },

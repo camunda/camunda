@@ -10,8 +10,8 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
-import { searchRolesByGroupId } from "src/utility/api/groups";
+import { usePagination } from "src/utility/api";
+import { useGroupRoles } from "src/utility/api/groups/hooks";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
@@ -24,34 +24,29 @@ type RolesProps = {
 
 const Roles: FC<RolesProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+  const noop = () => {};
 
+  const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
     data: roles,
-    loading,
-    success,
-    reload,
-    ...paginationProps
-  } = usePaginatedApi(searchRolesByGroupId, {
-    groupId: groupId,
-  });
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useGroupRoles(groupId, pageParams);
 
   const isRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
     AssignRolesModal,
-    reload,
+    noop,
     {
       assignedRoles: roles?.items || [],
     },
   );
   const openAssignModal = () => assignRoles({ id: groupId });
-  const [unassignRole, unassignRoleModal] = useEntityModal(
-    DeleteModal,
-    reload,
-    {
-      groupId,
-    },
-  );
+  const [unassignRole, unassignRoleModal] = useEntityModal(DeleteModal, noop, {
+    groupId,
+  });
 
   if (!loading && !success)
     return (
@@ -60,7 +55,12 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
         description={t("unableToLoadResource", {
           resourceType: t("role").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        button={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -97,7 +97,8 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
             onClick: unassignRole,
           },
         ]}
-        {...paginationProps}
+        page={{ ...page, ...roles?.page }}
+        {...paginationCallbacks}
       />
       {assignRolesModal}
       {unassignRoleModal}
