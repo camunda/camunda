@@ -8,9 +8,8 @@
 
 import {render, screen} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {http, HttpResponse} from 'msw';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockServer} from 'modules/mock-server/node';
+import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 
@@ -131,13 +130,7 @@ describe('<PreviewDocumentButton />', () => {
   });
 
   it('should open the modal and render pretty-printed JSON when clicked', async () => {
-    mockServer.use(
-      http.get(
-        '/v2/documents/json',
-        () => HttpResponse.text('{"foo":"bar","nested":{"baz":1}}'),
-        {once: true},
-      ),
-    );
+    mockDownloadDocument().withSuccess('{"foo":"bar","nested":{"baz":1}}');
 
     const {user} = render(
       <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
@@ -155,13 +148,7 @@ describe('<PreviewDocumentButton />', () => {
   });
 
   it('should show an error notification when the JSON document fails to load', async () => {
-    mockServer.use(
-      http.get(
-        '/v2/documents/json',
-        () => new HttpResponse(null, {status: 500}),
-        {once: true},
-      ),
-    );
+    mockDownloadDocument().withServerError();
 
     const {user} = render(
       <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
