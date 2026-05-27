@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpSpringAiSchemaModule;
-import org.springframework.lang.Nullable;
+import org.springframework.core.Nullness;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -206,8 +206,7 @@ public class CamundaJsonSchemaGenerator {
           || schemaAnnotation.required();
     }
 
-    if (parameter.getAnnotation(Nullable.class) != null
-        || parameter.getAnnotation(org.jspecify.annotations.Nullable.class) != null) {
+    if (Nullness.forParameter(parameter) == Nullness.NULLABLE) {
       return false;
     }
 
