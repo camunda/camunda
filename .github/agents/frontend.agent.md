@@ -54,13 +54,13 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 
 **Follow this sequence when making changes:**
 
-1. **Lint** → `npm run lint`
+1. **Lint** → `npm run lint` (from `webapp/client/`)
 2. **Typecheck** → `npm run typecheck`
 3. **Unit test** → `npm run test:unit`
 4. **Integration test** → `npm run test:integration` (when touching user flows)
 5. **Iterate** → Fix issues, re-validate, repeat
 
-Run all commands from `webapp/client/apps/orchestration-cluster-webapp/`.
+Run lint from `webapp/client/`. Run the remaining commands from `webapp/client/apps/orchestration-cluster-webapp/`.
 
 ## Commands You Can Run
 
@@ -68,7 +68,7 @@ Run all commands from `webapp/client/apps/orchestration-cluster-webapp/`.
 | -------------------------- | --------------------------------------------- |
 | `npm ci`                   | Install dependencies (from `webapp/client/`)  |
 | `npm run dev:oc`           | Dev server on `:3000` (from `webapp/client/`) |
-| `npm run lint`             | ESLint + Prettier                             |
+| `npm run lint`             | ESLint + Prettier (from `webapp/client/`)     |
 | `npm run typecheck`        | TypeScript check across all tsconfigs         |
 | `npm run test:unit`        | Unit tests — Vitest in headless Chromium      |
 | `npm run test:unit:ui`     | Unit tests — visible browser for debugging    |
