@@ -73,7 +73,7 @@
       to confirm the process reaches the end event normally.  sharedCtx must NOT
       appear in the root-scope variables at this point (verified by the E2E spec).
     -->
-    <bpmn:serviceTask id="downstreamTask" name="Downstream Task (reads sharedCtx)">
+    <bpmn:serviceTask id="downstreamTask" name="Downstream Task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="downstream-worker-scope" retries="3" />
       </bpmn:extensionElements>

@@ -58,10 +58,12 @@ export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
   activateJobAndGetHeaders,
+  activateJobsByType,
   completeJob,
   getLast24HoursRange,
   type StatisticsJobItem,
   type ActivatedJob,
+  type ActivatedJobWithVars,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,

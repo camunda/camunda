@@ -16,7 +16,11 @@ import {
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {activateJobToObtainAValidJobKey} from '@requestHelpers';
+import {
+  activateJobToObtainAValidJobKey,
+  activateJobsByType,
+  completeJob,
+} from '@requestHelpers';
 import {searchIncidentByPIK} from '../../../../utils/requestHelpers/incident-requestHelpers';
 
 type Worker = {close: () => Promise<unknown> | unknown};
@@ -38,7 +42,7 @@ const countJobsByType = async (
 ): Promise<number> => {
   const res = await request.post(buildUrl('/jobs/search'), {
     headers: jsonHeaders(),
-    data: {filter: {processInstanceKey, type}},
+    data: {filter: {processInstanceKey, type}, page: {limit: 100}},
   });
   await assertStatusCode(res, 200);
   return (await res.json()).items.length;
@@ -128,7 +132,23 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
         await expectJobsByType(request, piKey, innerJobType, 3);
 
-        workers.push(createWorker(innerJobType));
+        // Each inner job must carry its own item (one of alpha/beta/gamma)
+        const innerJobs = await activateJobsByType(
+          request,
+          innerJobType,
+          piKey,
+          ['item'],
+          3,
+        );
+        expect(innerJobs).toHaveLength(3);
+        const items = innerJobs
+          .map((j) => j.variables['item'] as string)
+          .sort();
+        expect(items).toEqual(['alpha', 'beta', 'gamma']);
+        for (const job of innerJobs) {
+          await completeJob(request, job.jobKey);
+        }
+
         await expectProcessState(request, piKey, 'COMPLETED');
       } catch (e) {
         await cancelProcessInstance(piKey);
@@ -241,8 +261,50 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
         await expectProcessState(request, piKey, 'ACTIVE');
         expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
-      } finally {
+
+        // ── Recovery: resolve the incident and verify MI proceeds ────────────
+        // Update retries to re-enable activation, then resolve the incident
+        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
+          headers: jsonHeaders(),
+          data: {changeset: {retries: 1}},
+        });
+        await assertStatusCode(updateRes, 204);
+
+        const resolveRes = await request.post(
+          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
+          {headers: jsonHeaders()},
+        );
+        await assertStatusCode(resolveRes, 204);
+
+        // beforeAll job is re-scheduled — activate and complete with valid items
+        await expectJobsByType(request, piKey, beforeAllJobType, 1);
+        const retryJobs = await activateJobsByType(
+          request,
+          beforeAllJobType,
+          piKey,
+        );
+        expect(retryJobs).toHaveLength(1);
+        await completeJob(request, retryJobs[0].jobKey, {
+          items: ['alpha', 'beta', 'gamma'],
+        });
+
+        // MI body now proceeds normally
+        await expectJobsByType(request, piKey, innerJobType, 3);
+        const innerJobs = await activateJobsByType(
+          request,
+          innerJobType,
+          piKey,
+          [],
+          3,
+        );
+        expect(innerJobs).toHaveLength(3);
+        for (const job of innerJobs) {
+          await completeJob(request, job.jobKey);
+        }
+        await expectProcessState(request, piKey, 'COMPLETED');
+      } catch (e) {
         await cancelProcessInstance(piKey);
+        throw e;
       }
     });
   });
@@ -253,7 +315,6 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
     const beforeAllJobType = `mi-scope-init-${suffix}`;
     const innerJobType = `mi-inner-worker-scope-${suffix}`;
     const downstreamJobType = `downstream-worker-scope-${suffix}`;
-    const workers: Worker[] = [];
 
     test.beforeAll(async () => {
       await deployWithSubstitutions('./resources/mi-el-scope-isolation.bpmn', {
@@ -264,10 +325,6 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
       });
     });
 
-    test.afterAll(async () => {
-      await closeAll(workers);
-    });
-
     test('Variables set by beforeAll stay MI-body-local; never leak to process root scope', async ({
       request,
     }) => {
@@ -275,26 +332,79 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
       const piKey = String(instance.processInstanceKey);
 
       try {
-        workers.push(
-          createWorker(beforeAllJobType, false, {
-            items: ['alpha', 'beta', 'gamma'],
-            sharedCtx: {env: 'test', batchId: 42},
-          }),
-        );
+        // ── Step 1: beforeAll EL is blocking ────────────────────────────────
+        await expectJobsByType(request, piKey, beforeAllJobType, 1);
 
+        // Manually activate the beforeAll job — do NOT complete yet
+        const beforeAllJobs = await activateJobsByType(
+          request,
+          beforeAllJobType,
+          piKey,
+        );
+        expect(beforeAllJobs).toHaveLength(1);
+
+        // While beforeAll is still pending, no inner instances must exist
+        expect(await countJobsByType(request, piKey, innerJobType)).toBe(0);
+
+        // Complete beforeAll with items (drives inputCollection) + sharedCtx (scope-isolation var)
+        await completeJob(request, beforeAllJobs[0].jobKey, {
+          items: ['alpha', 'beta', 'gamma'],
+          sharedCtx: {env: 'test', batchId: 42},
+        });
+
+        // ── Step 2: inner instances — verify scope inheritance ──────────────
         await expectJobsByType(request, piKey, innerJobType, 3);
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
         ).toBe(0);
 
-        workers.push(createWorker(innerJobType, false, {result: 'done'}));
+        // Activate all 3 inner jobs, fetching item + sharedCtx
+        const innerJobs = await activateJobsByType(
+          request,
+          innerJobType,
+          piKey,
+          ['item', 'sharedCtx'],
+          3,
+        );
+        expect(innerJobs).toHaveLength(3);
 
+        // Each inner instance must carry its own item (one of alpha/beta/gamma)
+        const items = innerJobs
+          .map((j) => j.variables['item'] as string)
+          .sort();
+        expect(items).toEqual(['alpha', 'beta', 'gamma']);
+
+        // sharedCtx must be visible to every inner instance via MI body scope
+        for (const job of innerJobs) {
+          expect(job.variables['sharedCtx']).toEqual({
+            env: 'test',
+            batchId: 42,
+          });
+          // Complete with item-specific result per spec
+          await completeJob(request, job.jobKey, {
+            result: `${job.variables['item'] as string}_done`,
+          });
+        }
+
+        // ── Step 3: downstream job — sharedCtx must be absent ───────────────
         await expectJobsByType(request, piKey, downstreamJobType, 1);
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
         ).toBe(0);
 
-        workers.push(createWorker(downstreamJobType));
+        // Activate downstream job fetching sharedCtx — must not be present
+        const downstreamJobs = await activateJobsByType(
+          request,
+          downstreamJobType,
+          piKey,
+          ['sharedCtx'],
+        );
+        expect(downstreamJobs).toHaveLength(1);
+        expect(downstreamJobs[0].variables['sharedCtx']).toBeUndefined();
+
+        await completeJob(request, downstreamJobs[0].jobKey);
+
+        // ── Step 4: process completion — final root scope check ─────────────
         await expectProcessState(request, piKey, 'COMPLETED');
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
@@ -338,7 +448,27 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         workers.push(createWorker(beforeAllJobType, false, {}));
 
         await expectJobsByType(request, piKey, innerJobType, 3);
-        workers.push(createWorker(innerJobType));
+
+        // Each inner job must see count=3 (inherited from process scope) and
+        // its own i value (1, 2, or 3 from inputCollection = for i in 1..count)
+        const innerJobs = await activateJobsByType(
+          request,
+          innerJobType,
+          piKey,
+          ['count', 'i'],
+          3,
+        );
+        expect(innerJobs).toHaveLength(3);
+        for (const job of innerJobs) {
+          expect(job.variables['count']).toBe(3);
+        }
+        const loopIndexes = innerJobs
+          .map((j) => j.variables['i'] as number)
+          .sort((a, b) => a - b);
+        expect(loopIndexes).toEqual([1, 2, 3]);
+        for (const job of innerJobs) {
+          await completeJob(request, job.jobKey);
+        }
 
         await expectProcessState(request, piKey, 'COMPLETED');
 

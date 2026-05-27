@@ -93,7 +93,7 @@ test.describe('Operate — Multi-Instance beforeAll listener visibility', () => 
       ).toHaveCount(1);
       await expect(
         operateProcessInstancePage.getExecutionListenerRowsByEventType(
-          'beforeAll',
+          'Before all',
         ),
       ).toHaveCount(1);
     });
