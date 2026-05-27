@@ -79,13 +79,14 @@ When a feature is not ready for users but code needs to merge to `main`, gate it
 
 ## Local checks before commit
 
-Run from `webapp/client/apps/orchestration-cluster-webapp/`:
+Run these commands:
 
-```bash
-npm run typecheck        # TypeScript across all tsconfigs
-npm run lint             # ESLint + Prettier
-npm run test:unit        # Vitest browser mode (headless Chromium)
-```
+    # From webapp/client/
+    npm run lint             # ESLint + Prettier (workspace)
+
+    # From webapp/client/apps/orchestration-cluster-webapp/
+    npm run typecheck        # TypeScript across all tsconfigs
+    npm run test:unit        # Vitest browser mode (headless Chromium)
 
 ## Canonical docs
 
