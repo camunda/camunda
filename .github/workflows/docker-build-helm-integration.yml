@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-stable-8.7-run<run_id>-a<attempt> for push to stable/8.7)'
+        description: 'Docker image version tag (defaults to ...-mq<PR_NUMBER>-run<run_id>-a<attempt> for merge queue, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt> for push to stable/8.7 — the mq prefix is required by the Harbor replication filter `**-mq**-run**`)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -247,8 +247,24 @@ jobs:
             # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.7.0-SNAPSHOT-dispatch-run12345678-a1)
             echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For push to stable/8.7: <maven-version>-stable-8.7-run<run_id>-a<run_attempt> (e.g., 8.7.0-SNAPSHOT-stable-8.7-run12345678-a1)
-            echo "tag=${MAVEN_VERSION}-stable-8.7-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            # For push to stable/8.7 (typically a backport): synthesize an
+            # `-mq<N>-run<id>-a<n>` tag from the original PR number carried in
+            # the commit subject's "(#NNNN)" suffix so the SRE Harbor
+            # replication filter `**-mq**-run**` accepts the image. Without
+            # this prefix, stable backport pushes produced `-stable-8.7-run`
+            # tags that the replication rule silently dropped.
+            # Fall back to a 7-char SHA-based mq tag if the subject doesn't
+            # carry a PR number (manual squash, rebase, force-push).
+            SUBJECT=$(git log -1 --format=%s)
+            PR_NUM=$(sed -nE 's|.*\(#([0-9]+)\).*|\1|p' <<< "${SUBJECT}")
+            if [[ -n "${PR_NUM}" ]]; then
+              # e.g. 8.7.0-SNAPSHOT-mq53787-run12345678-a1
+              echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            else
+              SHA_SHORT="${GITHUB_SHA::7}"
+              echo "::warning::Could not derive PR number from commit subject '${SUBJECT}'; using SHA-based mq tag instead."
+              echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Download Operate frontend artifact
