@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessIn
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
+import org.agrona.collections.MutableLong;
 
 /**
  * Consumes a {@link MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger and
@@ -55,28 +56,27 @@ public final class MessageStartDedupExpirationSweepProcessor
 
   @Override
   public void processRecord(final TypedRecord<MessageStartProcessInstanceRequestRecord> record) {
-    final var counter = new int[] {0};
+    final var visited = new MutableLong(0);
     final var entry = new MessageStartProcessInstanceRequestRecord();
-    dedupState.visitExpiredEntries(
-        clock.millis(),
-        (processDefinitionKey, messageKey) -> {
-          if (counter[0] >= batchLimit) {
-            return;
-          }
-          entry.reset();
-          entry.setProcessDefinitionKey(processDefinitionKey).setMessageKey(messageKey);
-          stateWriter.appendFollowUpEvent(
-              record.getKey(),
-              MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
-              entry);
-          counter[0]++;
-        });
+    final boolean hasMore =
+        dedupState.visitExpiredEntries(
+            clock.millis(),
+            (processDefinitionKey, messageKey) -> {
+              if (visited.getAndIncrement() >= batchLimit) {
+                return false;
+              }
+              entry.reset();
+              entry.setProcessDefinitionKey(processDefinitionKey).setMessageKey(messageKey);
+              stateWriter.appendFollowUpEvent(
+                  record.getKey(),
+                  MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
+                  entry);
+              return true;
+            });
 
-    if (counter[0] >= batchLimit) {
-      // Hit the batch ceiling: there may be more past-deadline dedup entries. Schedule the next
-      // cycle via a follow-up trigger command rather than waiting for the next scheduler tick.
-      // A spurious follow-up when nothing remains is harmless — the processor visits nothing and
-      // writes no events.
+    if (hasMore) {
+      // Past-deadline dedup entries remain beyond what fit in this batch. Schedule the next cycle
+      // via a follow-up trigger command rather than waiting for the next scheduler tick.
       commandWriter.appendFollowUpCommand(
           record.getKey(),
           MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,

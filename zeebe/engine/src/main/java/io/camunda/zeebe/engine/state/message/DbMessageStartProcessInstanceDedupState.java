@@ -14,8 +14,6 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.collections.MutableBoolean;
 
 /**
@@ -67,19 +65,24 @@ public final class DbMessageStartProcessInstanceDedupState
   }
 
   @Override
-  public void visitExpiredEntries(final long now, final ExpiredEntryVisitor visitor) {
-    // Collect first, then visit, so the visitor is free to mutate the column family (e.g. delete
-    // the entry it just observed) without invalidating the iterator.
-    final List<long[]> toVisit = new ArrayList<>();
-    columnFamily.forEach(
+  public boolean visitExpiredEntries(final long now, final ExpiredEntryVisitor visitor) {
+    // Iterate the CF directly with early-exit so per-tick work is bounded by the visitor's batch
+    // limit rather than the full CF size. The visitor must not mutate the column family — any
+    // deletions are deferred to event appliers that run after this call returns.
+    final var stoppedEarly = new MutableBoolean(false);
+    columnFamily.whileTrue(
         (key, value) -> {
-          if (value.getDeletionDeadline() <= now) {
-            toVisit.add(new long[] {key.first().getValue(), key.second().getValue()});
+          if (value.getDeletionDeadline() > now) {
+            // Keep scanning: ordering is by (processDefinitionKey, messageKey), not deadline.
+            return true;
           }
+          if (!visitor.visit(key.first().getValue(), key.second().getValue())) {
+            stoppedEarly.set(true);
+            return false;
+          }
+          return true;
         });
-    for (final long[] pair : toVisit) {
-      visitor.visit(pair[0], pair[1]);
-    }
+    return stoppedEarly.get();
   }
 
   @Override

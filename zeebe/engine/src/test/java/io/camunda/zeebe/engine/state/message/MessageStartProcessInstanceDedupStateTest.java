@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceD
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,13 +86,53 @@ final class MessageStartProcessInstanceDedupStateTest {
 
     // when
     final var visited = new ArrayList<long[]>();
-    final ExpiredEntryVisitor collector = (pdk, mk) -> visited.add(new long[] {pdk, mk});
-    state.visitExpiredEntries(5_000L, collector);
+    final ExpiredEntryVisitor collector =
+        (pdk, mk) -> {
+          visited.add(new long[] {pdk, mk});
+          return true;
+        };
+    final var hasMore = state.visitExpiredEntries(5_000L, collector);
 
     // then — `deletionDeadline <= now` includes the entry at exactly now
+    assertThat(hasMore).isFalse();
     assertThat(visited)
         .extracting(pair -> tuple(pair[0], pair[1]))
         .containsExactlyInAnyOrder(tuple(10L, 20L), tuple(10L, 22L));
+  }
+
+  @Test
+  void shouldReportHasMoreWhenVisitorStopsEarly() {
+    // given — three past-deadline entries
+    state.put(10L, 20L, 30L, 1_000L);
+    state.put(10L, 21L, 31L, 1_000L);
+    state.put(10L, 22L, 32L, 1_000L);
+
+    // when — visitor stops after the first entry
+    final var visited = new ArrayList<long[]>();
+    final var hasMore =
+        state.visitExpiredEntries(
+            5_000L,
+            (pdk, mk) -> {
+              visited.add(new long[] {pdk, mk});
+              return false;
+            });
+
+    // then
+    assertThat(visited).hasSize(1);
+    assertThat(hasMore).isTrue();
+  }
+
+  @Test
+  void shouldReportNoHasMoreWhenVisitorConsumesAllEntries() {
+    // given
+    state.put(10L, 20L, 30L, 1_000L);
+    state.put(10L, 21L, 31L, 1_000L);
+
+    // when
+    final var hasMore = state.visitExpiredEntries(5_000L, (pdk, mk) -> true);
+
+    // then
+    assertThat(hasMore).isFalse();
   }
 
   @Test
@@ -113,27 +152,6 @@ final class MessageStartProcessInstanceDedupStateTest {
 
     // when / then
     assertThat(state.hasExpiredEntry(5_000L)).isTrue();
-  }
-
-  @Test
-  void shouldAllowVisitorToDeleteWhileIterating() {
-    // given
-    state.put(10L, 20L, 30L, 1_000L);
-    state.put(10L, 21L, 31L, 1_000L);
-
-    // when
-    final List<long[]> visited = new ArrayList<>();
-    state.visitExpiredEntries(
-        5_000L,
-        (pdk, mk) -> {
-          visited.add(new long[] {pdk, mk});
-          state.delete(pdk, mk);
-        });
-
-    // then
-    assertThat(visited).hasSize(2);
-    assertThat(state.get(10L, 20L)).isNull();
-    assertThat(state.get(10L, 21L)).isNull();
   }
 
   @Test

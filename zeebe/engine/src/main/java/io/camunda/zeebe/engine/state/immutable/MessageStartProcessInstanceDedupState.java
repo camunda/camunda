@@ -36,10 +36,16 @@ public interface MessageStartProcessInstanceDedupState {
   MessageStartProcessInstanceDedupEntry get(long processDefinitionKey, long messageKey);
 
   /**
-   * Visits all entries whose {@code deletionDeadline} is at or before {@code now}. Intended for the
-   * scheduled sweeper introduced together with the consumer.
+   * Visits entries whose {@code deletionDeadline} is at or before {@code now}. The visitor returns
+   * {@code true} to continue or {@code false} to stop early (e.g. on hitting a batch limit). Do not
+   * mutate the column family from within the visitor — iteration is performed directly over the
+   * underlying CF; deletions must be enqueued and applied after this call returns.
+   *
+   * @return {@code true} iff iteration stopped early because the visitor returned {@code false}
+   *     (i.e. more past-deadline entries may exist beyond what was visited); {@code false} when the
+   *     visitor consumed every past-deadline entry.
    */
-  void visitExpiredEntries(long now, ExpiredEntryVisitor visitor);
+  boolean visitExpiredEntries(long now, ExpiredEntryVisitor visitor);
 
   /**
    * Returns {@code true} when at least one entry's {@code deletionDeadline} is at or before {@code
@@ -50,6 +56,9 @@ public interface MessageStartProcessInstanceDedupState {
 
   @FunctionalInterface
   interface ExpiredEntryVisitor {
-    void visit(long processDefinitionKey, long messageKey);
+    /**
+     * @return {@code true} to continue iteration, {@code false} to stop early.
+     */
+    boolean visit(long processDefinitionKey, long messageKey);
   }
 }
