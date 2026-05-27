@@ -21,8 +21,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
-import io.opentelemetry.sdk.logs.SdkLoggerProvider;
-import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -233,18 +231,7 @@ class AnalyticsExporterTest {
 
   private static AnalyticsExporter exporterWithInMemory(
       final InMemoryLogRecordExporter memoryExporter, final ExporterTestController controller) {
-    return newExporter(
-        new OtelSdkManager() {
-          @Override
-          protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
-            return SdkLoggerProvider.builder()
-                .setResource(OtelSdkManager.buildResource(context))
-                .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
-                .build();
-          }
-        },
-        controller);
+    return newExporter(TestOtelSdkManager.inMemory(memoryExporter), controller);
   }
 
   private static AnalyticsExporter exporterWithThrowingOtel(
@@ -252,7 +239,7 @@ class AnalyticsExporterTest {
     return newExporter(
         new OtelSdkManager() {
           @Override
-          void logEvent(
+          public void logEvent(
               final String eventName,
               final long logPosition,
               final Consumer<LogRecordBuilder> builder) {

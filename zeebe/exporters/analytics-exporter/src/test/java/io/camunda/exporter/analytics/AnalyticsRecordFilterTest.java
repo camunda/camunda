@@ -25,7 +25,10 @@ class AnalyticsRecordFilterTest {
   private static final ProtocolFactory FACTORY = new ProtocolFactory();
 
   private final AnalyticsRecordFilter filter =
-      new AnalyticsRecordFilter(Set.of(ValueType.PROCESS_INSTANCE_CREATION), TEST_PARTITION_ID);
+      new AnalyticsRecordFilter(
+          Set.of(ValueType.PROCESS_INSTANCE_CREATION),
+          Set.of(ProcessInstanceCreationIntent.CREATED),
+          TEST_PARTITION_ID);
 
   @Test
   void shouldAcceptEventRecordType() {
@@ -42,22 +45,28 @@ class AnalyticsRecordFilterTest {
     assertThat(filter.acceptType(RecordType.COMMAND_REJECTION)).isFalse();
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = ValueType.class,
-      mode = EnumSource.Mode.INCLUDE,
-      names = "PROCESS_INSTANCE_CREATION")
-  void shouldAcceptRegisteredValueType(final ValueType type) {
-    assertThat(filter.acceptValue(type)).isTrue();
+  @Test
+  void shouldAcceptAllRegisteredValueTypes() {
+    assertThat(filter.acceptValue(ValueType.PROCESS_INSTANCE_CREATION)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(
       value = ValueType.class,
       mode = EnumSource.Mode.EXCLUDE,
-      names = "PROCESS_INSTANCE_CREATION")
+      names = {"PROCESS_INSTANCE_CREATION"})
   void shouldRejectUnregisteredValueType(final ValueType type) {
     assertThat(filter.acceptValue(type)).isFalse();
+  }
+
+  @Test
+  void shouldAcceptAllRegisteredIntents() {
+    assertThat(filter.acceptIntent(ProcessInstanceCreationIntent.CREATED)).isTrue();
+  }
+
+  @Test
+  void shouldRejectUnregisteredIntent() {
+    assertThat(filter.acceptIntent(ProcessInstanceCreationIntent.CREATE)).isFalse();
   }
 
   @Test

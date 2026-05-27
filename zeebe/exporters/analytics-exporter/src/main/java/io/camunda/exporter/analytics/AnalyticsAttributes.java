@@ -15,30 +15,35 @@ import io.opentelemetry.api.common.AttributeKey;
  *
  * @see <a href="https://opentelemetry.io/docs/specs/semconv/general/naming/">OTel Naming</a>
  */
-final class AnalyticsAttributes {
+public final class AnalyticsAttributes {
 
   // Resource-level
-  static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
-  static final AttributeKey<String> CLUSTER_ID = AttributeKey.stringKey("camunda.cluster.id");
-  static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("camunda.partition.id");
+  public static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
+  public static final AttributeKey<String> CLUSTER_ID =
+      AttributeKey.stringKey("camunda.cluster.id");
+  public static final AttributeKey<Long> PARTITION_ID =
+      AttributeKey.longKey("camunda.partition.id");
 
   // OTel semantic convention for events (until Event API is stable)
-  static final AttributeKey<String> EVENT_NAME = AttributeKey.stringKey("event.name");
+  public static final AttributeKey<String> EVENT_NAME = AttributeKey.stringKey("event.name");
 
   // Common
-  static final AttributeKey<Long> LOG_POSITION = AttributeKey.longKey("camunda.log.position");
-  static final AttributeKey<Long> SEQUENCE_NUMBER = AttributeKey.longKey("camunda.sequence_number");
-  static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
+  public static final AttributeKey<Long> LOG_POSITION =
+      AttributeKey.longKey("camunda.log.position");
+  public static final AttributeKey<Long> SEQUENCE_NUMBER =
+      AttributeKey.longKey("camunda.sequence_number");
+  public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
 
   // Process instance
-  static final AttributeKey<String> BPMN_PROCESS_ID =
+  public static final AttributeKey<String> BPMN_PROCESS_ID =
       AttributeKey.stringKey("camunda.bpmn_process_id");
-  static final AttributeKey<Long> PROCESS_VERSION = AttributeKey.longKey("camunda.process_version");
-  static final AttributeKey<Long> PROCESS_DEFINITION_KEY =
+  public static final AttributeKey<Long> PROCESS_VERSION =
+      AttributeKey.longKey("camunda.process_version");
+  public static final AttributeKey<Long> PROCESS_DEFINITION_KEY =
       AttributeKey.longKey("camunda.process_definition_key");
-  static final AttributeKey<Long> PROCESS_INSTANCE_KEY =
+  public static final AttributeKey<Long> PROCESS_INSTANCE_KEY =
       AttributeKey.longKey("camunda.process_instance_key");
-  static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
+  public static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
       AttributeKey.longKey("camunda.root_process_instance_key");
 
   private AnalyticsAttributes() {}
