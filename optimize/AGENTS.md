@@ -25,14 +25,11 @@ C8 (Zeebe) world **inverts** the meaning of "Key" and "Id":
 This naming is **intentionally kept** and must not be changed. The decision is documented in
 [`docs/adr/001-c7-naming-conventions.md`](docs/adr/001-c7-naming-conventions.md).
 
-This convention applies to Optimize fields that represent Zeebe-derived process, decision, and
-instance identifiers, not to every `...Id` / `...Key` field in the codebase. In those cases,
-`...Id` typically holds the unique Zeebe `Long` key (often stored as `String`), while `...Key`
-holds the non-unique BPMN/DMN identifier string. For example, `flowNodeInstanceId` is the unique
-Long key for a flow node instance, not a human-readable string. Generic identifiers such as
-`tenantId`, `userId`, and similar fields are exceptions and must be interpreted according to their
-own domain semantics. When in doubt, verify the specific field usage instead of assuming the C7
-convention always applies.
+This convention applies across the entire Optimize codebase, not just process definitions. Any
+field whose name ends in `...Id` holds a unique identifier, and any field whose name ends in
+`...Key` holds a non-unique string — regardless of entity type. For example,
+`flowNodeInstanceId` is the unique Long key for a flow node instance, not a human-readable string.
+When in doubt, assume the C7 convention applies.
 
 When you see `processDefinitionKey` holding a string like `"invoice-process"`, that is **correct**
 C7 usage. Do **not** rename it to `processDefinitionId` or add
