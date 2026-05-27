@@ -28,6 +28,9 @@ public final class MemberIdUtil {
    * alphanumeric character, and containing only alphanumeric characters and hyphens {@code
    * [A-Za-z0-9-]}. The zone must start with an alphanumeric character.
    *
+   * <p>Underscores are intentionally excluded because {@code _} is used as the separator in
+   * composite member IDs (see {@link #memberIdString}).
+   *
    * @throws IllegalArgumentException if {@code zone} is non-null and violates any constraint
    */
   public static @Nullable String validateZone(final @Nullable String zone) {
@@ -55,7 +58,9 @@ public final class MemberIdUtil {
    * Returns the canonical string representation of a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone_$nodeId"}. The zone must already be validated (see {@link #validateZone}).
+   * it is {@code "$zone_$nodeId"}. The underscore is the separator because {@link #validateZone}
+   * forbids underscores in zone names, making it unambiguous. The zone must already be validated
+   * (see {@link #validateZone}).
    */
   public static String memberIdString(final @Nullable String zone, final int nodeId) {
     if (zone == null) {
