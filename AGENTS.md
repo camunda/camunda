@@ -80,13 +80,12 @@ module.
 
 Architecture overview: `docs/architecture/overview.md`.
 
-Before making any architectural change, consult the relevant ADR indexes in order:
+Before making any architectural change, consult the relevant ADR indexes in order (see
+`docs/adr/README.md` for the full tier structure):
 
 1. `docs/adr/` — cross-cutting decisions affecting multiple modules
-2. `<module>/docs/adr/` — decisions scoped to the module you are working in (if the directory
-   exists)
-3. For sub-modules (e.g. `zeebe/engine`), also walk up each parent module to the repo root and
-   check for `docs/adr/` at each level (e.g. `zeebe/docs/adr/`)
+2. `<module>/docs/adr/` — decisions scoped to the module you are working in
+3. For sub-modules, walk up each parent module to the repo root
 
 If the decision is not covered by an existing ADR, draft a new one using the
 `create-architecture-decision` skill before proceeding.
