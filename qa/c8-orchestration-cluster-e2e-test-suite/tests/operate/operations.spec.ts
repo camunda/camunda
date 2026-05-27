@@ -261,9 +261,8 @@ test.describe('Delete Operations', () => {
     );
   });
 
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  test.beforeEach(async ({page, operateHomePage}) => {
     await navigateToAppHome(page, 'operate');
-    await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
