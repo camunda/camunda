@@ -160,7 +160,7 @@ IDENTITY_ZEEBE_CLIENT_TOKEN=$(gen_token)
 # a new namespace via ./newLoadTest.sh <new-name> <newStorage>.
 mkdir -p "$namespace"
 
-# Always-copied: Makefile + the resources/ manifests (PR #52882) + four
+# Always-copied: Makefile + the resources/ manifests + four
 # storage-agnostic values files. Flatten values/ into the namespace folder root
 # so the per-namespace Makefile's -f <file>.yaml references resolve as before.
 cp -v  default/Makefile                              "$namespace/"
