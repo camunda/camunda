@@ -103,15 +103,15 @@ Auto-approve rules (`true`) become `permissions.allow`, deny rules (`false`) bec
 
 ## Individual targets
 
-|             Command             |                    What it does                     |
-|---------------------------------|-----------------------------------------------------|
-| `make ai-sync-all`              | Sync everything (VS Code + Claude) — recommended    |
-| `make vscode-sync-all`          | Sync both VS Code MCP and settings                  |
-| `make vscode-mcp-sync`          | Sync VS Code MCP servers only                       |
-| `make vscode-settings-sync`     | Sync VS Code terminal settings only                 |
-| `make claude-sync-all`          | Sync both Claude MCP and settings                   |
-| `make claude-mcp-sync`          | Sync Claude MCP servers only                        |
-| `make claude-settings-sync`     | Sync Claude permissions only                        |
+|           Command           |                   What it does                   |
+|-----------------------------|--------------------------------------------------|
+| `make ai-sync-all`          | Sync everything (VS Code + Claude) — recommended |
+| `make vscode-sync-all`      | Sync both VS Code MCP and settings               |
+| `make vscode-mcp-sync`      | Sync VS Code MCP servers only                    |
+| `make vscode-settings-sync` | Sync VS Code terminal settings only              |
+| `make claude-sync-all`      | Sync both Claude MCP and settings                |
+| `make claude-mcp-sync`      | Sync Claude MCP servers only                     |
+| `make claude-settings-sync` | Sync Claude permissions only                     |
 
 Or run the scripts directly from the repo root:
 
@@ -124,11 +124,11 @@ Or run the scripts directly from the repo root:
 
 ## Canonical Sources
 
-| Script | Source (committed) | Target (gitignored) |
-|--------|-------------------|---------------------|
-| `sync-mcp.sh` | `.github/mcp.json.template` | `.vscode/mcp.json` |
-| `sync-settings.sh` | `.github/settings.json.template` | `.vscode/settings.json` |
-| `sync-claude-mcp.sh` | `.github/mcp.json.template` | `.mcp.json` |
+|          Script           |        Source (committed)        |   Target (gitignored)   |
+|---------------------------|----------------------------------|-------------------------|
+| `sync-mcp.sh`             | `.github/mcp.json.template`      | `.vscode/mcp.json`      |
+| `sync-settings.sh`        | `.github/settings.json.template` | `.vscode/settings.json` |
+| `sync-claude-mcp.sh`      | `.github/mcp.json.template`      | `.mcp.json`             |
 | `sync-claude-settings.sh` | `.github/settings.json.template` | `.claude/settings.json` |
 
 ## How the merge works
