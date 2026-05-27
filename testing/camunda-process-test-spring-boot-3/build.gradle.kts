@@ -5,6 +5,7 @@
 plugins {
     id("buildlogic.server-conventions")
     id("buildlogic.spring-boot-3-conventions")
+    id("com.gradleup.shadow")
 }
 
 dependencies {
@@ -27,6 +28,20 @@ dependencies {
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
 }
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    archiveClassifier.set("")
+    dependencies {
+        include(project(":camunda-process-test-spring"))
+    }
+    mergeServiceFiles()
+}
+
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
+(publishing.publications["maven"] as MavenPublication).artifact(tasks.named("shadowJar"))
 
 sourceSets {
     test {

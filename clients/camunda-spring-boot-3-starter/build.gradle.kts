@@ -5,6 +5,44 @@
 plugins {
     id("buildlogic.client-conventions")
     id("buildlogic.spring-boot-3-conventions")
+    id("com.gradleup.shadow")
+}
+
+val baseStarterProjectDir = project(":camunda-spring-boot-starter").projectDir
+val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
+
+val testSourceGenerator by sourceSets.creating {
+    java.srcDir(baseStarterProjectDir.resolve("src/test/test-source-generator"))
+    compileClasspath += sourceSets["main"].output + sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath
+}
+
+sourceSets.named("test") {
+    java.srcDir(baseStarterProjectDir.resolve("src/test/java"))
+    java.srcDir(generatedTestSourcesDir)
+    resources.srcDir(baseStarterProjectDir.resolve("src/test/resources"))
+    compileClasspath += testSourceGenerator.output
+    runtimeClasspath += testSourceGenerator.output
+}
+
+val generateJobWorkerPermutations by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.named(testSourceGenerator.classesTaskName))
+    inputs.dir(baseStarterProjectDir.resolve("src/test/test-source-generator"))
+    outputs.dir(generatedTestSourcesDir)
+    classpath = testSourceGenerator.runtimeClasspath
+    mainClass.set("io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator")
+    args(generatedTestSourcesDir.get().asFile.absolutePath)
+}
+
+tasks.named("compileTestJava") {
+    dependsOn(generateJobWorkerPermutations)
+}
+
+tasks.named<JavaCompile>("compileTestJava") {
+    exclude(
+        "io/camunda/client/impl/CamundaObjectMapperTest.java",
+        "io/camunda/client/spring/configuration/JsonMapperConfigurationTest.java",
+    )
 }
 
 dependencies {
@@ -24,6 +62,31 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
+
+    compileOnly(libs.org.jboss.forge.roaster.roaster.api)
+    add(testSourceGenerator.implementationConfigurationName, libs.org.jboss.forge.roaster.roaster.api)
+    add(testSourceGenerator.runtimeOnlyConfigurationName, libs.org.jboss.forge.roaster.roaster.jdt)
 }
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    archiveClassifier.set("")
+    dependencies {
+        include(project(":camunda-spring-boot-starter"))
+    }
+    exclude(
+        "io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class",
+        "io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class",
+        "io/camunda/client/spring/configuration/CamundaAutoConfiguration.class",
+        "io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class",
+        "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports",
+    )
+    mergeServiceFiles()
+}
+
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
+(publishing.publications["maven"] as MavenPublication).artifact(tasks.named("shadowJar"))
 
 description = "Camunda Spring Boot 3 Starter"

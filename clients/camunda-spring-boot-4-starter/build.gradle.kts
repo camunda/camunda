@@ -6,8 +6,27 @@ plugins {
     id("buildlogic.client-conventions")
 }
 
-dependencies {
-    implementation(project(":camunda-spring-boot-starter"))
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
+publishing {
+    publications.named<MavenPublication>("maven") {
+        pom.withXml {
+            val root = asNode()
+            root.children().removeIf { child ->
+                child is groovy.util.Node && child.name() in setOf("dependencies", "packaging")
+            }
+            root.appendNode("packaging", "pom")
+            val distributionManagement = root.appendNode("distributionManagement")
+            val relocation = distributionManagement.appendNode("relocation")
+            relocation.appendNode("artifactId", "camunda-spring-boot-starter")
+            relocation.appendNode(
+                "message",
+                "camunda-spring-boot-4-starter is an alias for camunda-spring-boot-starter (Spring Boot 4.x). Use camunda-spring-boot-3-starter for Spring Boot 3.5.x compatibility.",
+            )
+        }
+    }
 }
 
 description = "Camunda Spring Boot 4 Starter"
