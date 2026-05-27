@@ -115,20 +115,21 @@ test.describe.serial('Process Instance Migration', () => {
     const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-
-      // Wait for the process to be selected and version dropdown to be populated
-      await sleep(1000);
-
-      // Ensure we're selecting the correct source version (version 1)
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
-
-      await expect
-        .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
-        .toBe(sourceVersion);
-
-      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await sleep(1000);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+          await expect
+            .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
+            .toBe(sourceVersion);
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+            timeout: 10000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
 
