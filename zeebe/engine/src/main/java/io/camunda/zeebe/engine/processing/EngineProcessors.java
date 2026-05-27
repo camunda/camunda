@@ -62,6 +62,8 @@ import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProce
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
+import io.camunda.zeebe.engine.processing.scheduled.api.Schedule;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -69,7 +71,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -127,9 +128,15 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
-    final DueDateTimerCheckScheduler timerChecker =
-        new DueDateTimerCheckScheduler(
-            scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
+    final ManagedScheduledTask timerChecker =
+        new ManagedScheduledTask<>(
+            new io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler(
+                scheduledTaskStateFactory.get().getTimerState()),
+            Schedule.onDemand(java.time.Duration.ofMillis(100))
+                .withYieldBudget(java.time.Duration.ofMillis(50))
+                .withAsync(featureFlags.enableTimerDueDateCheckerAsync()),
+            interPartitionCommandSender,
+            typedRecordProcessorContext.getMeterRegistry());
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
@@ -218,7 +225,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         clock,
         authCheckBehavior,
-        routingInfo);
+        routingInfo,
+        interPartitionCommandSender,
+        typedRecordProcessorContext.getMeterRegistry());
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -252,7 +261,9 @@ public final class EngineProcessors {
         config,
         clock,
         authCheckBehavior,
-        incidentMetrics);
+        incidentMetrics,
+        interPartitionCommandSender,
+        typedRecordProcessorContext.getMeterRegistry());
 
     final var userTaskProcessor =
         createUserTaskProcessor(
@@ -292,7 +303,9 @@ public final class EngineProcessors {
         writers,
         processingState,
         partitionsCount,
-        config);
+        config,
+        interPartitionCommandSender,
+        typedRecordProcessorContext.getMeterRegistry());
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -451,7 +464,7 @@ public final class EngineProcessors {
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
       final RoutingInfo routingInfo,
-      final DueDateTimerCheckScheduler timerChecker,
+      final ManagedScheduledTask timerChecker,
       final JobStreamer jobStreamer,
       final JobProcessingMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
@@ -485,7 +498,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerCheckScheduler timerChecker,
+      final ManagedScheduledTask timerChecker,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
@@ -606,7 +619,9 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final InterPartitionCommandSender interPartitionCommandSender,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
     MessageEventProcessors.addMessageProcessors(
         partitionId,
         bpmnBehaviors,
@@ -620,7 +635,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         clock,
         authCheckBehavior,
-        routingInfo);
+        routingInfo,
+        interPartitionCommandSender,
+        meterRegistry);
   }
 
   private static void addDecisionProcessors(
@@ -742,23 +759,30 @@ public final class EngineProcessors {
       final Writers writers,
       final ProcessingState processingState,
       final int staticPartitionsCount,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InterPartitionCommandSender interPartitionCommandSender,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
 
-    {
+    if (!config.isCommandDistributionPaused()) {
       final var scheduledTaskState = scheduledTaskStateSupplier.get();
-      // periodically retries command distribution
+      // periodically retries command distribution.
       // Note that the CommandRedistributionScheduler runs in a separate actor, so it must not use
-      // the same
-      // state as the StreamProcessors as it runs in another RocksDB transaction as well.
+      // the same state as the StreamProcessors as it runs in another RocksDB transaction as well.
       // It can only use the state from scheduledTaskStateSupplier.
-      typedRecordProcessors.withListener(
+      final var task =
           new CommandRedistributionScheduler(
               commandDistributionBehavior.withScheduledState(
                   scheduledTaskState.getDistributionState()),
               RoutingInfo.dynamic(
                   scheduledTaskState.getRoutingState(),
                   RoutingInfo.forStaticPartitions(staticPartitionsCount)),
-              config));
+              config);
+      typedRecordProcessors.withListener(
+          new ManagedScheduledTask<>(
+              task,
+              Schedule.fixedRate(config.getCommandRedistributionInterval()),
+              interPartitionCommandSender,
+              meterRegistry));
     }
 
     final var distributionState = processingState.getDistributionState();

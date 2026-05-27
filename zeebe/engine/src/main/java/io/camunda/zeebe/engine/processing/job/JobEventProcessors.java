@@ -13,6 +13,8 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.scheduled.api.Schedule;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.function.Supplier;
 
@@ -35,7 +39,9 @@ public final class JobEventProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final InterPartitionCommandSender interPartitionCommandSender,
+      final MeterRegistry meterRegistry) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -49,7 +55,20 @@ public final class JobEventProcessors {
             bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker =
-        new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());
+        new ManagedScheduledTask<>(
+            new JobBackoffCheckScheduler(scheduledTaskStateFactory.get().getJobState()),
+            Schedule.onDemand(
+                java.time.Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)),
+            interPartitionCommandSender,
+            meterRegistry);
+    final var jobTimeoutChecker =
+        new ManagedScheduledTask<>(
+            new JobTimeoutCheckScheduler(
+                scheduledTaskStateFactory.get().getJobState(),
+                config.getJobsTimeoutCheckerBatchLimit()),
+            Schedule.fixedRate(config.getJobsTimeoutCheckerPollingInterval()),
+            interPartitionCommandSender,
+            meterRegistry);
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -126,12 +145,7 @@ public final class JobEventProcessors {
                 authCheckBehavior,
                 clock,
                 incidentMetrics))
-        .withListener(
-            new JobTimeoutCheckScheduler(
-                scheduledTaskStateFactory.get().getJobState(),
-                config.getJobsTimeoutCheckerPollingInterval(),
-                config.getJobsTimeoutCheckerBatchLimit(),
-                clock))
+        .withListener(jobTimeoutChecker)
         .withListener(jobBackoffChecker);
   }
 }

@@ -7,60 +7,47 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
+import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import java.time.Duration;
-import java.time.InstantSource;
 
-public final class JobBackoffCheckScheduler implements StreamProcessorLifecycleAware {
+/**
+ * Re-activates jobs whose backoff period has elapsed by writing a {@link
+ * JobIntent#RECUR_AFTER_BACKOFF} command for each.
+ *
+ * <p>On-demand: returns {@link Result.Builder#awaitDueAt} for the next due-date so the runtime
+ * sleeps until then. External callers (e.g. {@code JobFailProcessor}) call {@code
+ * managed.requestRun(dueDate)} when a new job enters backoff to wake the task earlier if needed.
+ */
+public final class JobBackoffCheckScheduler implements ScheduledTask<Void> {
 
-  static final long BACKOFF_RESOLUTION = Duration.ofMillis(100).toMillis();
+  /**
+   * Minimum resolution in millis between consecutive runs of this scheduler. Used by the runtime's
+   * {@code minResolution} and exposed for tests that need to time-travel past it.
+   */
+  public static final long BACKOFF_RESOLUTION = 100L;
 
-  private final DueDateCheckScheduler backOffDueDateChecker;
+  private final JobState jobState;
 
-  public JobBackoffCheckScheduler(final InstantSource clock, final JobState jobState) {
-    backOffDueDateChecker =
-        new DueDateCheckScheduler(
-            BACKOFF_RESOLUTION,
-            false,
-            taskResultBuilder ->
-                jobState.findBackedOffJobs(
-                    clock.millis(),
-                    (key, record) ->
-                        taskResultBuilder.appendCommandRecord(
-                            key, JobIntent.RECUR_AFTER_BACKOFF, record)),
-            clock);
-  }
-
-  public void scheduleBackOff(final long dueDate) {
-    backOffDueDateChecker.schedule(dueDate);
+  public JobBackoffCheckScheduler(final JobState jobState) {
+    this.jobState = jobState;
   }
 
   @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    backOffDueDateChecker.onRecovered(context);
+  public String name() {
+    return "job-backoff-check";
   }
 
   @Override
-  public void onClose() {
-    backOffDueDateChecker.onClose();
-  }
+  public Result run(final TaskContext<Void> ctx) {
+    final Result.Builder<Void> result = ctx.result();
+    final long nextDueDate =
+        jobState.findBackedOffJobs(
+            ctx.clock().millis(),
+            (key, record) -> result.append(key, JobIntent.RECUR_AFTER_BACKOFF, record));
 
-  @Override
-  public void onFailed() {
-    backOffDueDateChecker.onFailed();
-  }
-
-  @Override
-  public void onPaused() {
-    backOffDueDateChecker.onPaused();
-  }
-
-  @Override
-  public void onResumed() {
-    backOffDueDateChecker.onResumed();
+    return nextDueDate > 0 ? result.awaitDueAt(nextDueDate) : result.idle();
   }
 }

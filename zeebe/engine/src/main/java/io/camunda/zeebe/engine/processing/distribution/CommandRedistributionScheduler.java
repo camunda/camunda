@@ -8,10 +8,11 @@
 package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
+import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,42 +22,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Command Redistributor provides a mechanism to retry sending {@link
- * CommandDistributionRecord}s to other partitions. This is needed because the communication between
- * partitions is unreliable.
+ * Retries sending {@link CommandDistributionRecord}s to other partitions, using exponential backoff
+ * per distribution.
  *
- * <p>A simple exponential backoff is used for retrying these retriable distributions. This
- * exponential backoff is configurable through the {@link EngineConfiguration}, with defaults of 10
- * seconds and 5 minutes respectively. The backoff starts at the initial interval and doubles every
- * retry until it reaches the maximum backoff duration. This backoff is tracked for each retriable
- * distribution individually.
+ * <p>Periodic, fixed cadence: returns {@link Result.Builder#idle()} on every run; the runtime fires
+ * us again at the configured fallback interval. Inter-partition sends go through the (legacy)
+ * {@link io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior}, which
+ * retains its own {@link io.camunda.zeebe.stream.api.InterPartitionCommandSender} reference for
+ * historical reasons.
+ *
+ * <p>{@code retryCyclesPerDistribution} is accumulated state across runs, not a resume cursor — it
+ * survives between runs as an instance field rather than via {@code TaskContext.resumeCursor()}.
+ *
+ * <p>Whether to skip running entirely (operator pause) is enforced at wiring time: when {@code
+ * config.isCommandDistributionPaused()} is set, the runtime is simply not registered.
  */
-public final class CommandRedistributionScheduler implements StreamProcessorLifecycleAware {
+public final class CommandRedistributionScheduler implements ScheduledTask<Void> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributionScheduler.class);
 
-  /**
-   * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
-   * to specify the initial interval for retrying a specific retriable distribution.
-   */
-  private final Duration commandRedistributionInterval;
-
-  /**
-   * This calculated value specifies the maximum number of retry cycles until the maximum backoff
-   * duration is reached by the exponential backoff.
-   */
-  private final long maxRetryCycles;
-
   private final CommandDistributionBehavior distributionBehavior;
   private final RoutingInfo routingInfo;
-
-  private boolean isDistributionPaused = false;
-
-  /**
-   * Tracks the number of attempted retry cycles for each retriable distribution. Note that this
-   * includes retry cycles where the retriable distribution was not resend due to exponential
-   * backoff.
-   */
+  private final long maxRetryCycles;
   private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
   public CommandRedistributionScheduler(
@@ -65,26 +52,21 @@ public final class CommandRedistributionScheduler implements StreamProcessorLife
       final EngineConfiguration config) {
     this.distributionBehavior = distributionBehavior;
     this.routingInfo = routingInfo;
-    isDistributionPaused = config.isCommandDistributionPaused();
-    commandRedistributionInterval = config.getCommandRedistributionInterval();
-    maxRetryCycles =
-        config.getCommandRedistributionMaxBackoff().dividedBy(commandRedistributionInterval);
+    final Duration interval = config.getCommandRedistributionInterval();
+    maxRetryCycles = config.getCommandRedistributionMaxBackoff().dividedBy(interval);
   }
 
   @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (isDistributionPaused) {
-      LOG.debug("Command distribution is paused, skipping retry scheduling.");
-      return;
-    }
-    context.getScheduleService().runAtFixedRate(commandRedistributionInterval, this::runRetryCycle);
+  public String name() {
+    return "command-redistribution";
   }
 
-  public void runRetryCycle() {
-    final var retriableDistributions = new HashSet<RetriableDistribution>();
+  @Override
+  public Result run(final TaskContext<Void> ctx) {
+    final Result.Builder<Void> result = ctx.result();
+    final HashSet<RetriableDistribution> visited = new HashSet<>();
     distributionBehavior.foreachRetriableDistribution(
         (distributionKey, record) -> {
-          // If the partition is currently being scaled up, we won't yet try distributing to it.
           if (routingInfo.isPartitionScaling(record.getPartitionId())) {
             LOG.debug(
                 "Excluding distribution {} for partition {} as it is currently scaling up.",
@@ -93,63 +75,45 @@ public final class CommandRedistributionScheduler implements StreamProcessorLife
             return true;
           }
 
-          final var retriable = RetriableDistribution.from(distributionKey, record);
-          final Long retryCycle = updateRetryCycle(retriable);
+          final RetriableDistribution retriable =
+              RetriableDistribution.from(distributionKey, record);
+          final long retryCycle = updateRetryCycle(retriable);
 
           if (retriable.shouldRetryNow(retryCycle, maxRetryCycles)) {
-            retryDistribution(retriable, record, retryCycle);
+            LOG.info(
+                "Retrying to distribute retriable command {} ({}.{}) to partition {} (Cycle: #{})",
+                distributionKey,
+                record.getValueType(),
+                record.getIntent(),
+                record.getPartitionId(),
+                retryCycle);
+            distributionBehavior.onScheduledRetry(distributionKey, record);
           }
 
-          retriableDistributions.add(retriable);
+          visited.add(retriable);
           return true;
         });
 
-    // Remove retry cycle tracking for completed distributions, i.e. those not visited in this cycle
-    retryCyclesPerDistribution.keySet().removeIf(Predicate.not(retriableDistributions::contains));
+    // Drop tracking for distributions that have been completed since the last run.
+    retryCyclesPerDistribution.keySet().removeIf(Predicate.not(visited::contains));
+
+    return result.idle();
   }
 
-  private Long updateRetryCycle(final RetriableDistribution retriable) {
+  private long updateRetryCycle(final RetriableDistribution retriable) {
     return retryCyclesPerDistribution.compute(
         retriable, (k, retryCycles) -> retryCycles != null ? retryCycles + 1 : 0L);
   }
 
-  private void retryDistribution(
-      final RetriableDistribution retriable,
-      final CommandDistributionRecord commandDistributionRecord,
-      final Long retryCycle) {
-
-    LOG.info(
-        "Retrying to distribute retriable command {} ({}.{}) to partition {} (Cycle: #{})",
-        retriable.distributionKey,
-        commandDistributionRecord.getValueType(),
-        commandDistributionRecord.getIntent(),
-        retriable.partitionId,
-        retryCycle);
-
-    distributionBehavior.onScheduledRetry(retriable.distributionKey, commandDistributionRecord);
-  }
-
   private record RetriableDistribution(long distributionKey, int partitionId) {
-    /**
-     * Returns whether a retriable distribution should be retried now, or not in the given cycle.
-     *
-     * <p>The number of cycles is used to implement a simple exponential backoff.
-     */
-    private boolean shouldRetryNow(final Long retryCycle, final long maxRetryCycles) {
-      // retryCycles starts off at 0, ensuring that we wait between commandRedistributionInterval
-      // and 2 * commandRedistributionInterval before retrying distribution.
-
+    boolean shouldRetryNow(final long retryCycle, final long maxRetryCycles) {
       if (retryCycle >= maxRetryCycles) {
-        // Retry in intervals of retryMaxBackoffDuration
         return retryCycle % maxRetryCycles == 0;
-      } else {
-        // Retry in intervals of commandRedistributionInterval
-        // The interval is doubling until we reached retryMaxBackoffDuration
-        return Long.bitCount(retryCycle) == 1;
       }
+      return Long.bitCount(retryCycle) == 1;
     }
 
-    public static RetriableDistribution from(
+    static RetriableDistribution from(
         final long distributionKey, final CommandDistributionRecord record) {
       return new RetriableDistribution(distributionKey, record.getPartitionId());
     }

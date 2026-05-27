@@ -7,180 +7,116 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIME_OUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
-import java.time.InstantSource;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.util.function.BiPredicate;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 
-public class JobTimeoutCheckSchedulerTest {
-  public static final int NUMBER_OF_ACTIVE_JOBS = 10;
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
+final class JobTimeoutCheckSchedulerTest {
 
-  private MutableProcessingState processingState;
-  private MutableJobState jobState;
-  private ReadonlyStreamProcessorContext mockContext;
-  private ProcessingScheduleService mockScheduleService;
-  private TaskResultBuilder mockTaskResultBuilder;
+  @Test
+  void shouldReturnIdleWhenQueueDrains() {
+    // given
+    final JobState state = mock(JobState.class);
+    when(state.forEachTimedOutEntry(anyLong(), any(), any())).thenReturn(null);
+    final var scheduler = new JobTimeoutCheckScheduler(state, 100);
 
-  @Before
-  public void setUp() {
-    processingState = stateRule.getProcessingState();
-    jobState = processingState.getJobState();
+    // when
+    final Result result =
+        scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L));
 
-    for (int i = 1; i <= NUMBER_OF_ACTIVE_JOBS; i++) {
-      createAndActivateJobRecord(i, newJobRecord().setDeadline(i));
-    }
-
-    mockContext = mock(ReadonlyStreamProcessorContext.class);
-    mockScheduleService = mock(ProcessingScheduleService.class);
-    when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
-    mockTaskResultBuilder = mock(TaskResultBuilder.class);
-  }
-
-  private void createAndActivateJobRecord(final long key, final JobRecord record) {
-    jobState.create(key, record);
-    jobState.activate(key, record);
-  }
-
-  private JobRecord newJobRecord() {
-    return newJobRecord(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  private JobRecord newJobRecord(final String tenantId) {
-    final JobRecord jobRecord = new JobRecord();
-
-    jobRecord.setRetries(2).setDeadline(256L).setType("test").setTenantId(tenantId);
-
-    return jobRecord;
+    // then
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
   }
 
   @Test
-  public void shouldRescheduleWithPollingIntervalAfterSuccessfulExecution() {
-    // Given
-    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
-    final ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
+  void shouldYieldAndKeepCursorWhenStoppedEarly() {
+    // given
+    final JobState state = mock(JobState.class);
+    final DeadlineIndex resumeFrom = new DeadlineIndex(2_000L, 99L);
+    when(state.forEachTimedOutEntry(anyLong(), any(), any())).thenReturn(resumeFrom);
+    final var scheduler = new JobTimeoutCheckScheduler(state, 100);
 
-    final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
-    final int batchLimit = Integer.MAX_VALUE;
-
-    final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
-
-    // When
-    task.execute(mockTaskResultBuilder);
+    // when — first run yields and produces a cursor
+    final Result first =
+        scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L));
 
     // then
-    final var inOrder = inOrder(mockTaskResultBuilder);
-    for (long i = 1; i <= NUMBER_OF_ACTIVE_JOBS; i++) {
-      inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(i), eq(TIME_OUT), any());
-    }
-    inOrder.verify(mockTaskResultBuilder).build();
-    verifyNoMoreInteractions(mockTaskResultBuilder);
+    assertThat(first.decision()).isInstanceOf(Decision.YieldNow.class);
+    final JobTimeoutCursor cursor =
+        (JobTimeoutCursor) ((Decision.YieldNow) first.decision()).cursor();
+    assertThat(cursor.resumeFrom()).isEqualTo(resumeFrom);
+    assertThat(cursor.executionTimestamp()).isEqualTo(1_000L);
 
-    verify(mockScheduleService, times(1))
-        .runAt(timestampCaptor.capture(), ArgumentMatchers.<Task>any());
-    assertThat(timestampCaptor.getValue())
-        .isLessThanOrEqualTo(ActorClock.currentTimeMillis() + pollingInterval.toMillis());
+    // and a follow-up run started with that cursor resumes at the saved index, preserving the
+    // original executionTimestamp even when the wall-clock has advanced
+    final ArgumentCaptor<Long> tsCaptor = ArgumentCaptor.forClass(Long.class);
+    final ArgumentCaptor<DeadlineIndex> startAt = ArgumentCaptor.forClass(DeadlineIndex.class);
+    when(state.forEachTimedOutEntry(tsCaptor.capture(), startAt.capture(), any())).thenReturn(null);
+
+    scheduler.run(
+        FakeTaskContext.createFor(JobTimeoutCursor.class)
+            .withClockMillis(5_000L)
+            .withResumeCursor(cursor));
+
+    assertThat(startAt.getValue()).isEqualTo(resumeFrom);
+    assertThat(tsCaptor.getValue()).isEqualTo(1_000L);
   }
 
   @Test
-  public void shouldRescheduleImmediatelyIfYieldedDueToBatchLimit() {
-    // Given
-    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
-    final ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
+  void shouldEmitTimeOutCommandsUpToBatchLimit() {
+    // given
+    final JobState state = mock(JobState.class);
+    final ArgumentCaptor<BiPredicate<Long, JobRecord>> visitor = visitorCaptor();
+    when(state.forEachTimedOutEntry(anyLong(), any(), visitor.capture())).thenReturn(null);
+    final var scheduler = new JobTimeoutCheckScheduler(state, 2);
+    final var ctx = FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L);
 
-    final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
-    final int batchLimit = 3;
+    // when
+    scheduler.run(ctx);
+    final var record = new JobRecord();
+    final boolean firstAccepted = visitor.getValue().test(1L, record);
+    final boolean secondAccepted = visitor.getValue().test(2L, record);
+    final boolean thirdAccepted = visitor.getValue().test(3L, record);
 
-    final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
-
-    // When
-    task.execute(mockTaskResultBuilder);
-
-    // then
-    final var inOrder = inOrder(mockTaskResultBuilder);
-    for (long i = 1; i <= batchLimit; i++) {
-      inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(i), eq(TIME_OUT), any());
-    }
-    inOrder.verify(mockTaskResultBuilder).build();
-    verifyNoMoreInteractions(mockTaskResultBuilder);
-
-    verify(mockScheduleService, times(1))
-        .runAt(timestampCaptor.capture(), ArgumentMatchers.<Task>any());
-    assertThat(timestampCaptor.getValue()).isLessThanOrEqualTo(ActorClock.currentTimeMillis());
-
-    /* TEST verify next execute will start where left off */
-
-    // When
-    task.execute(mockTaskResultBuilder);
-
-    // then
-    for (long i = batchLimit + 1; i <= 2 * batchLimit; i++) {
-      inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(i), eq(TIME_OUT), any());
-    }
-    inOrder.verify(mockTaskResultBuilder).build();
-    verifyNoMoreInteractions(mockTaskResultBuilder);
+    // then — first two commands appended, third rejected because batch limit was reached
+    assertThat(firstAccepted).isTrue();
+    assertThat(secondAccepted).isTrue();
+    assertThat(thirdAccepted).isFalse();
+    assertThat(ctx.lastResult().appendedCommands()).hasSize(2);
+    assertThat(ctx.lastResult().appendedCommands()).allMatch(c -> c.intent() == JobIntent.TIME_OUT);
   }
 
   @Test
-  public void shouldRescheduleImmediatelyIfFailedToAppendTimeoutCommand() {
-    // Given
-    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any()))
-        .thenReturn(true)
-        .thenReturn(false);
-    final ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
+  void shouldUseClockNowAsExecutionTimestampOnFirstRun() {
+    // given — no resume cursor on the context
+    final JobState state = mock(JobState.class);
+    final ArgumentCaptor<Long> tsCaptor = ArgumentCaptor.forClass(Long.class);
+    when(state.forEachTimedOutEntry(tsCaptor.capture(), eq(null), any())).thenReturn(null);
+    final var scheduler = new JobTimeoutCheckScheduler(state, 10);
 
-    final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
-    final int batchLimit = Integer.MAX_VALUE;
-
-    final var task =
-        new JobTimeoutCheckScheduler(jobState, pollingInterval, batchLimit, InstantSource.system());
-    task.setProcessingContext(mockContext);
-    task.setShouldReschedule(true);
-
-    // When
-    task.execute(mockTaskResultBuilder);
+    // when
+    scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(7_500L));
 
     // then
-    final var inOrder = inOrder(mockTaskResultBuilder);
+    assertThat(tsCaptor.getValue()).isEqualTo(7_500L);
+  }
 
-    inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(1L), eq(TIME_OUT), any());
-    inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(2L), eq(TIME_OUT), any());
-    inOrder.verify(mockTaskResultBuilder).build();
-
-    verifyNoMoreInteractions(mockTaskResultBuilder);
-    verify(mockScheduleService, times(1))
-        .runAt(timestampCaptor.capture(), ArgumentMatchers.<Task>any());
-    assertThat(timestampCaptor.getValue()).isLessThanOrEqualTo(ActorClock.currentTimeMillis());
+  @SuppressWarnings("unchecked")
+  private static ArgumentCaptor<BiPredicate<Long, JobRecord>> visitorCaptor() {
+    return ArgumentCaptor.forClass(BiPredicate.class);
   }
 }

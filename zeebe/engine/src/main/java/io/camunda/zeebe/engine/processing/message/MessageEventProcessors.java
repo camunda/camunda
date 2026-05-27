@@ -47,7 +47,9 @@ public final class MessageEventProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final io.camunda.zeebe.stream.api.InterPartitionCommandSender interPartitionCommandSender,
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -156,10 +158,14 @@ public final class MessageEventProcessors {
                 bannedInstanceState,
                 businessIdUniquenessEnabled))
         .withListener(
-            new MessageTimeToLiveCheckScheduler(
-                config.getMessagesTtlCheckerInterval(),
-                featureFlags.enableMessageTTLCheckerAsync(),
-                scheduledTaskStateFactory.get().getMessageState()))
+            new io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask<>(
+                new MessageTimeToLiveCheckScheduler(
+                    scheduledTaskStateFactory.get().getMessageState()),
+                io.camunda.zeebe.engine.processing.scheduled.api.Schedule.fixedRate(
+                        config.getMessagesTtlCheckerInterval())
+                    .withAsync(featureFlags.enableMessageTTLCheckerAsync()),
+                interPartitionCommandSender,
+                meterRegistry))
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,
