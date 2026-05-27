@@ -124,8 +124,6 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     handler.activateJobs(
         brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
 
-    actorScheduler.workUntilDone();
-
     // Cancel the request while it's active
     cancelledFlag.set(true);
     if (cancelHandler[0] != null) {
@@ -176,8 +174,6 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     handler.activateJobs(
         brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
 
-    actorScheduler.workUntilDone();
-
     // Cancel the request
     cancelledFlag.set(true);
     if (cancelHandler[0] != null) {
@@ -199,11 +195,11 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     // given
     submitHandlerActor(handler);
 
-    final var cancelledFlag = new AtomicBoolean(false);
     final var completedCount = new AtomicInteger(0);
 
     // when - activate multiple requests and cancel them all
     for (int i = 0; i < 10; i++) {
+      final var cancelledFlag = new AtomicBoolean(false);
       final var observer =
           new ResponseObserver<Object>() {
             @Override
@@ -236,7 +232,6 @@ final class LongPollingActivateJobsHandlerCancellationTest {
         cancelHandler[0].run();
       }
       actorScheduler.workUntilDone();
-      cancelledFlag.set(false); // Reset for next iteration
     }
 
     // then - verify no requests were erroneously completed

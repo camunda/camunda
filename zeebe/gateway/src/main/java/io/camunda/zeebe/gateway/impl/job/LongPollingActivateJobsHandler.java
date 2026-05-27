@@ -394,7 +394,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
    */
   boolean hasInflightRequestsForJobType(final String jobType) {
     final var state = jobTypeState.get(jobType);
-    return state != null && state.hasActiveRequests();
+    return state != null && (state.hasActiveRequests() || state.hasPendingRequests());
   }
 
   private InflightActivateJobsRequest<T> getNextOpenPendingRequest(
