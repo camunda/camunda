@@ -198,6 +198,13 @@ mwnw*                       @camunda/monorepo-devops-team
 # Engine-expert skill
 /.claude/skills/engine-expert/ @korthout @camunda/core-features
 
+# Frontend skills
+/.claude/skills/frontend-feature/          @camunda/core-features
+/.claude/skills/frontend-integration-test/ @camunda/core-features
+/.claude/skills/frontend-migrator/         @camunda/core-features
+/.claude/skills/frontend-unit-test/        @camunda/core-features
+/.claude/skills/operate-frontend/          @camunda/core-features
+
 # optimize / BI team
 /zeebe/exporter-filter/        @camunda/core-features
 
