@@ -44,7 +44,6 @@ public final class TestClusterBuilder {
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
   private boolean setNodeId = true;
-  private boolean multiZone = false;
   private List<Zone> multiZoneConfigs = List.of();
 
   /**
@@ -304,7 +303,7 @@ public final class TestClusterBuilder {
   }
 
   private void validate() {
-    if (!multiZone && replicationFactor > brokersCount) {
+    if (multiZoneConfigs.isEmpty() && replicationFactor > brokersCount) {
       throw new IllegalStateException(
           "Expected replicationFactor to be less than or equal to brokersCount, but was "
               + replicationFactor
@@ -431,21 +430,11 @@ public final class TestClusterBuilder {
   }
 
   /**
-   * Marks this cluster as part of a multiple zone cluster. There are other brokers are configured
-   * in another TestCluster.
-   */
-  public TestClusterBuilder multiZone() {
-    multiZone = true;
-    return this;
-  }
-
-  /**
    * Configures this cluster as a zone-aware cluster where the brokers are distributed round-robin
    * across the configured zones.
    */
   public TestClusterBuilder multiZone(final List<Zone> zoneConfigs) {
     multiZoneConfigs = List.copyOf(zoneConfigs);
-    multiZone = !multiZoneConfigs.isEmpty();
     return this;
   }
 }
