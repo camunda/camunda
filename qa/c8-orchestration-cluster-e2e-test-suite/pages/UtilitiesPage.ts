@@ -36,7 +36,7 @@ export async function navigateToAppHome(
   appName: string,
 ): Promise<void> {
   await page.goto(
-    `${process.env.CORE_APPLICATION_URL}/${appName.toLowerCase()}/`,
+    `${process.env.CORE_APPLICATION_URL}/${appName.toLowerCase()}`,
   );
 }
 
