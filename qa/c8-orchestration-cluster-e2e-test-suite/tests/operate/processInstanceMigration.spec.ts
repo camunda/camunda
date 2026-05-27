@@ -347,7 +347,7 @@ test.describe.serial('Process Instance Migration', () => {
 
       // The migration of 6 instances can take several minutes under cluster load.
       // Reload and re-expand the operations panel on each retry to surface
-      // the latest operation state. Budget: 6 attempts × 120 s = 12 minutes.
+      // the latest operation state. Budget: 10 attempts × 120 s = 20 minutes.
       await waitForAssertion({
         assertion: async () => {
           // Force a collapse→expand cycle on every attempt so the panel
@@ -361,7 +361,7 @@ test.describe.serial('Process Instance Migration', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 6,
+        maxRetries: 10,
       });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);

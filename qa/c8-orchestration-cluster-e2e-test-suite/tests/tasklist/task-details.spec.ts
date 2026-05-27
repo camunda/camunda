@@ -261,9 +261,18 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('User registration');
 
-    await taskDetailsPage.assertFieldValue('Name*', 'Jon');
-    await taskDetailsPage.assertFieldValue('Address*', 'Earth');
-    await taskDetailsPage.assertFieldValue('Age', '21');
+    // The completed task form loads asynchronously; retry by re-opening the
+    // task if any field value hasn't propagated within the per-field timeout.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskDetailsPage.assertFieldValue('Name*', 'Jon');
+        await taskDetailsPage.assertFieldValue('Address*', 'Earth');
+        await taskDetailsPage.assertFieldValue('Age', '21');
+      },
+      onFailure: async () => {
+        await taskPanelPage.openTask('User registration');
+      },
+    });
   });
 
   test('task completion with deployed form', async ({
