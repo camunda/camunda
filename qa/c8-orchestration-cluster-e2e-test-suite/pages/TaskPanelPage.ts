@@ -104,14 +104,24 @@ class TaskPanelPage {
       | 'Custom',
   ) {
     await this.expandSidePanelButton.click();
-    await this.page.getByRole('link', {name: option, exact: true}).click();
+    const filterLink = this.page.getByRole('link', {name: option, exact: true});
+    await filterLink.click();
     const expectedSegment =
       option === 'All open tasks'
         ? 'all-open'
         : option === 'Assigned to me'
           ? 'assigned-to-me'
           : option.toLowerCase().replace(/\s+/g, '-');
-    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`));
+    const urlPattern = new RegExp(`${expectedSegment}`);
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.page).toHaveURL(urlPattern, {timeout: 5000});
+      },
+      onFailure: async () => {
+        await filterLink.click();
+      },
+      maxRetries: 3,
+    });
     await this.collapseSidePanelButton.click();
   }
 
