@@ -46,5 +46,9 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
       AttributeKey.longKey("camunda.root_process_instance_key");
 
+  // Adhoc subprocess
+  public static final AttributeKey<String> ELEMENT_ID =
+      AttributeKey.stringKey("camunda.element_id");
+
   private AnalyticsAttributes() {}
 }
