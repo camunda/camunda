@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -236,7 +236,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
     final BrokerFailJobRequest brokerFailJobRequest =
         new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
-    brokerFailJobRequest.setAuthorization(CamundaAuthentication.anonymous().claims());
+    brokerFailJobRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     return brokerFailJobRequest;
   }
 
