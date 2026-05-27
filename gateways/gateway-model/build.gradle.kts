@@ -159,32 +159,20 @@ val openApiGenerateSimple by tasks.registering(org.openapitools.generator.gradle
 
     skipValidateSpec.set(true)
 
-    // Map ElementInstanceKey import to String (see convention plugin for explanation)
-    importMappings.set(
-        mapOf(
-            "ElementInstanceKey" to "java.lang.String",
-            "ScopeKey" to "java.lang.String",
-        ),
-    )
-
-    openapiNormalizer.set(
-        mapOf(
-            "REF_AS_PARENT_IN_ALLOF" to "true",
-        ),
-    )
+    templateDir.set("${project.projectDir}/src/main/resources/templates/java-spring/simple")
 
     configOptions.set(
         mapOf(
             "additionalModelTypeAnnotations" to
-                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)" +
+                ";@org.jspecify.annotations.NullMarked",
             "serializationLibrary" to "jackson",
             "library" to "spring-boot",
             "jdk8" to "true",
             "openApiNullable" to "false",
             "useEnumCaseInsensitive" to "true",
             "useOneOfInterfaces" to "false",
-            "useSpringBoot3" to "true",
-            "sourceFolder" to "src/main/java",
+            "hideGenerationTimestamp" to "true",
         ),
     )
 }
