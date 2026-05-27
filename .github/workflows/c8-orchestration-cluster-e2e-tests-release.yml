@@ -11,6 +11,11 @@ on:
         description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1, 8.8.0-alpha8, 8.8.0-alpha8-rc1)"
         required: true
         type: string
+      skip_slack_notification:
+        description: "Skip sending the Slack notification after tests complete"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -1073,6 +1078,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send Slack notification
+        if: ${{ !inputs.skip_slack_notification }}
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
