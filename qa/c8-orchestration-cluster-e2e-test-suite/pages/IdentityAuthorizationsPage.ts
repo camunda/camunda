@@ -266,53 +266,48 @@ export class IdentityAuthorizationsPage {
     }
 
     // Combobox path: click to open, type to filter (server-driven search),
-    // then wait for the menu item to appear before clicking.
-    // The search is debounced + server-driven and can be slow under load, so
-    // we retry the fill every 10 s up to 6 times (60 s total) to ensure the
-    // search request is actually triggered.
-    await this.createAuthorizationOwnerComboBox.click();
-    await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+    // then wait up to 60 s for the menu item to appear before clicking.
+    // If the option still isn't visible after the wait, clear and re-fill
+    // to re-trigger the debounced server-side search, then try again.
+    // Throw when all attempts fail so the outer createAuthorization retry
+    // loop can reload the page and start fresh — without a throw the outer
+    // loop never triggers and the form is submitted with an empty owner.
     const ownerMenuOption = this.createAuthorizationModal
       .locator('.cds--list-box__menu-item')
       .filter({hasText: authorization.ownerId})
       .first();
 
-    let optionClicked = false;
-    const maxSearchAttempts = 6;
-    for (
-      let attempt = 0;
-      attempt < maxSearchAttempts && !optionClicked;
-      attempt++
-    ) {
-      if (await ownerMenuOption.isVisible()) {
+    const maxSearchAttempts = 3;
+    for (let attempt = 1; attempt <= maxSearchAttempts; attempt++) {
+      // Click to open the dropdown, then fill to trigger the server-side search.
+      await this.createAuthorizationOwnerComboBox.click();
+      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+      try {
+        await expect(ownerMenuOption).toBeVisible({timeout: 60000});
         await ownerMenuOption.click({timeout: 10000});
-        optionClicked = true;
-      } else if (attempt < maxSearchAttempts - 1) {
-        // Re-trigger the server-side search by clearing and re-filling.
-        console.log(
-          `Owner menu option not visible on attempt ${attempt + 1}, re-triggering search...`,
-        );
-        await this.createAuthorizationOwnerComboBox.fill('');
-        await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
-        await this.page.waitForTimeout(10000);
+        return;
+      } catch {
+        if (attempt < maxSearchAttempts) {
+          console.log(
+            `Owner menu option not visible on attempt ${attempt}, re-triggering search...`,
+          );
+          await this.createAuthorizationOwnerComboBox.fill('');
+        }
       }
     }
 
-    if (!optionClicked) {
-      console.log(
-        'Owner menu option did not appear after retries; trying role-option fallback.',
+    // Role-option fallback in case the menu item rendered with a different
+    // ARIA role than '.cds--list-box__menu-item'.
+    try {
+      await this.createAuthorizationOwnerOption(authorization.ownerId).click({
+        timeout: 5000,
+      });
+      return;
+    } catch {
+      // Throw so the outer createAuthorization retry loop reloads and retries.
+      throw new Error(
+        `Owner dropdown option for '${authorization.ownerId}' did not appear after ${maxSearchAttempts} attempts.`,
       );
-      // Fallback: try clicking a role option directly in case it rendered differently.
-      try {
-        await this.createAuthorizationOwnerOption(authorization.ownerId).click({
-          timeout: 5000,
-        });
-      } catch {
-        // Last resort: leave the typed value in the field.
-        console.log(
-          'Fallback option click also failed; leaving typed value in combobox.',
-        );
-      }
     }
   }
 
