@@ -29,28 +29,6 @@ import org.junit.jupiter.api.Test;
 public class GroupQueryTransformerTest extends AbstractTransformerTest {
 
   @Test
-  public void shouldQueryByGroupKey() {
-    // given
-    final var filter = FilterBuilders.group((f) -> f.groupKey(12345L));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    assertThat(searchRequest)
-        .isEqualTo(
-            SearchQuery.of(
-                q ->
-                    q.bool(
-                        b ->
-                            b.must(
-                                List.of(
-                                    SearchQuery.of(q1 -> q.term(t -> t.field("key").value(12345L))),
-                                    SearchQuery.of(
-                                        q1 -> q.term(t -> t.field("join").value("group"))))))));
-  }
-
-  @Test
   public void shouldQueryByGroupId() {
     // given
     final var filter = FilterBuilders.group((f) -> f.groupIdOperations(Operation.eq("group1")));
@@ -181,8 +159,7 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
   public void shouldQueryByMultipleGroupFields() {
     // given
     final var filter =
-        FilterBuilders.group(
-            (f) -> f.groupKey(12345L).groupIdOperations(Operation.eq("group1")).name("TestGroup"));
+        FilterBuilders.group((f) -> f.groupIdOperations(Operation.eq("group1")).name("TestGroup"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -196,7 +173,6 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
                         b ->
                             b.must(
                                 List.of(
-                                    SearchQuery.of(q -> q.term(t -> t.field("key").value(12345L))),
                                     SearchQuery.of(
                                         q -> q.term(t -> t.field("groupId").value("group1"))),
                                     SearchQuery.of(

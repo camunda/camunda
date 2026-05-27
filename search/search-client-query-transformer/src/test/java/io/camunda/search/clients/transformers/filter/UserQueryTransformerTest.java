@@ -59,7 +59,6 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
 
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
-        Arguments.of((Function<Builder, ObjectBuilder<UserFilter>>) f -> f.key(1L), "key", 1L),
         Arguments.of(
             (Function<Builder, ObjectBuilder<UserFilter>>)
                 f -> f.usernameOperations(List.of(Operation.eq("username1"))),

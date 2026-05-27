@@ -46,7 +46,7 @@ public class UserIT {
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
 
-    final var instance = userReader.findOne(user.userKey()).orElse(null);
+    final var instance = userReader.findOneByUsername(user.username()).orElse(null);
 
     compareUsers(instance, user);
   }
@@ -65,7 +65,7 @@ public class UserIT {
     rdbmsWriters.getUserWriter().update(userUpdate);
     rdbmsWriters.flush();
 
-    final var instance = userReader.findOne(user.userKey()).orElse(null);
+    final var instance = userReader.findOneByUsername(user.username()).orElse(null);
 
     compareUsers(instance, userUpdate);
   }
@@ -78,13 +78,13 @@ public class UserIT {
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
-    final var instance = userReader.findOne(user.userKey()).orElse(null);
+    final var instance = userReader.findOneByUsername(user.username()).orElse(null);
     compareUsers(instance, user);
 
     rdbmsWriters.getUserWriter().delete(user.username());
     rdbmsWriters.flush();
 
-    final var deletedInstance = userReader.findOne(user.userKey()).orElse(null);
+    final var deletedInstance = userReader.findOneByUsername(user.username()).orElse(null);
     assertThat(deletedInstance).isNull();
   }
 
@@ -222,7 +222,6 @@ public class UserIT {
         userReader.search(
             new UserQuery(
                 new UserFilter.Builder()
-                    .key(user.userKey())
                     .usernames(user.username())
                     .names(user.name())
                     .emails(user.email())

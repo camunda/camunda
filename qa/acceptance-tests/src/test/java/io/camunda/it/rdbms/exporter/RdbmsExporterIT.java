@@ -497,7 +497,7 @@ class RdbmsExporterIT {
     exporter.export(userRecord);
 
     // then
-    final var user = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    final var user = rdbmsService.getUserReader().findOneByUsername(userRecordValue.getUsername());
     assertThat(user).isNotEmpty();
     assertThat(user.get().userKey()).isEqualTo(userRecordValue.getUserKey());
     assertThat(user.get().username()).isEqualTo(userRecordValue.getUsername());
@@ -513,7 +513,8 @@ class RdbmsExporterIT {
     exporter.export(updateUserRecord);
 
     // then
-    final var updatedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    final var updatedUser =
+        rdbmsService.getUserReader().findOneByUsername(updateUserRecordValue.getUsername());
     assertThat(updatedUser).isNotEmpty();
     assertThat(updatedUser.get().userKey()).isEqualTo(updateUserRecordValue.getUserKey());
     assertThat(updatedUser.get().username()).isEqualTo(updateUserRecordValue.getUsername());
@@ -525,7 +526,8 @@ class RdbmsExporterIT {
     exporter.export(FIXTURES.getUserRecord(42L, "test", UserIntent.DELETED));
 
     // then
-    final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    final var deletedUser =
+        rdbmsService.getUserReader().findOneByUsername(userRecordValue.getUsername());
     assertThat(deletedUser).isEmpty();
   }
 
