@@ -87,7 +87,6 @@ SELECT
       </foreach>
     </if>
 
-    <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
     <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
       <foreach collection="filter.groupIdOperations" item="operation">
         AND g.GROUP_ID
