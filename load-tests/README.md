@@ -56,6 +56,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
@@ -75,7 +76,8 @@ graph TD
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "after 15min wait" --> PROFILE
+    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "metrics path:<br/>after 30min wait,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
@@ -84,7 +86,8 @@ graph TD
     PROFILE -- "async-profiler" --> GKE
     VERIFY -- "kubectl wait" --> GKE
     VERIFY -- "delegate cleanup" --> DELETE
-    PR -- "delegate cleanup on label removal / PR close" --> DELETE
+    PR -- "auto cleanup after<br/>metrics comment posts" --> DELETE
+    PR -- "cleanup on label removal / PR close" --> DELETE
     DELETE -- "kubectl delete ns" --> GKE
     CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
@@ -304,6 +307,18 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+
+Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. Both paths fan out from a single 30-minute warm-up:
+
+- **Profile path:** after the 30-minute warm-up, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
+- **Metrics path:**
+  1. Reads metrics over the prior 30-minute window so PromQL `rate`/`increase` numbers cover an apples-to-apples slice of benchmark traffic.
+  2. Resolves the most recent active daily-on-main namespace (`c8-medic-daily-*-test`) via `kubectl`.
+  3. Calls the reusable [`camunda-load-test-metrics.yaml`](../.github/workflows/camunda-load-test-metrics.yaml) workflow against the PR's namespace and the resolved daily namespace, both over an 1800s window.
+  4. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). Missing daily values render as `-` so the comment still posts when no daily run is live.
+  5. Tears the PR namespace down once the comparison comment is posted, so namespaces no longer linger after the metrics window closes. Event-driven cleanup on label removal / PR close is unchanged.
+
+A new commit on the PR cancels the in-flight run — including a mid-sleep 30-min wait — and redeploys fresh. This is handled by job-level concurrency in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml), keyed per-DB and per-PR.
 
 #### Trigger Camunda load test GitHub workflow (recommended)
 
