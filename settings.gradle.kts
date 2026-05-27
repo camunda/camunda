@@ -525,7 +525,6 @@ dependencyResolutionManagement {
             library("org-junit-jupiter-junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").withoutVersion()
             library("org-junit-jupiter-junit-jupiter-params-x1", "org.junit.jupiter", "junit-jupiter-params").versionRef("org-junit-jupiter-junit-jupiter-params-x1")
             library("org-junit-platform-junit-platform-commons", "org.junit.platform", "junit-platform-commons").withoutVersion()
-            library("org-junit-platform-junit-platform-launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
             library("org-junit-platform-junit-platform-commons-x1", "org.junit.platform", "junit-platform-commons").versionRef("org-junit-platform-junit-platform-commons-x1")
             library("org-junit-platform-junit-platform-launcher", "org.junit.platform", "junit-platform-launcher").versionRef("org-junit-platform-junit-platform-commons-x1")
             library("org-junit-platform-junit-platform-suite", "org.junit.platform", "junit-platform-suite").withoutVersion()
