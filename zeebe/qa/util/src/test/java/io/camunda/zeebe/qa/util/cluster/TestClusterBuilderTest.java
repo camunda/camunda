@@ -8,9 +8,12 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.Zone;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.assertj.core.api.Condition;
@@ -129,6 +132,38 @@ final class TestClusterBuilderTest {
           .as("every broker has a unique node ID configured")
           .isEqualTo(nodeId);
     }
+  }
+
+  @Test
+  void shouldConfigureZoneAwareBrokers() {
+    // given
+    final var builder = new TestClusterBuilder();
+
+    // when
+    builder
+        .withEmbeddedGateway(false)
+        .withBrokersCount(3)
+        .withReplicationFactor(2)
+        .multiZone(List.of(new Zone("zoneA", 2, 1, 100), new Zone("zoneB", 1, 1, 10)));
+    final var cluster = builder.build();
+
+    // then
+    assertThat(cluster.brokers().keySet())
+        .containsExactlyInAnyOrder(
+            MemberId.from("zoneA", 0), MemberId.from("zoneB", 0), MemberId.from("zoneA", 1));
+    assertThat(cluster.brokers())
+        .allSatisfy((memberId, broker) -> assertThat(broker.nodeId()).isEqualTo(memberId));
+
+    final var partitioning =
+        cluster
+            .brokers()
+            .get(MemberId.from("zoneA", 0))
+            .unifiedConfig()
+            .getCluster()
+            .getPartitioning();
+    assertThat(partitioning.getZoneAware().zones())
+        .extracting(Zone::name, Zone::numberOfBrokers, Zone::numberOfReplicas, Zone::priority)
+        .containsExactly(tuple("zoneA", 2, 1, 100), tuple("zoneB", 1, 1, 10));
   }
 
   @Test
