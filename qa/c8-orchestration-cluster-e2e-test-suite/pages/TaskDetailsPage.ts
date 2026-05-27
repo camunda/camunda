@@ -133,9 +133,12 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
-    this.historyTableDetailsHeader = this.historyTable.getByRole('columnheader', {
-      name: 'Details',
-    });
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
       name: 'Actor',
     });
@@ -321,19 +324,27 @@ class TaskDetailsPage {
 
   async fillDynamicList(label: string, value: string) {
     const locator = this.page.getByLabel(label);
-    const elements = await locator.all();
-    if (elements.length === 0) {
+    const count = await locator.count();
+    if (count === 0) {
       throw new Error(
         `No elements found for label "${label}" in the dynamic list`,
       );
     }
 
-    for (const [index, element] of elements.entries()) {
+    for (let index = 0; index < count; index++) {
       const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      await waitForAssertion({
+        assertion: async () => {
+          const element = locator.nth(index);
+          await element.click();
+          await element.fill(expectedValue);
+          await expect(element).toHaveValue(expectedValue, {timeout: 5000});
+        },
+        onFailure: async () => {
+          console.log(`Retrying fill for "${label}" index ${index}...`);
+        },
+        maxRetries: 3,
+      });
     }
   }
 
