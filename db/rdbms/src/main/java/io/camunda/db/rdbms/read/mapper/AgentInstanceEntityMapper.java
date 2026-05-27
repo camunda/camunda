@@ -13,7 +13,6 @@ import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceDefinition;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceLimits;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceMetrics;
-import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceTool;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +26,7 @@ public class AgentInstanceEntityMapper {
     return new AgentInstanceEntity(
         dbModel.agentInstanceKey(),
         dbModel.elementInstanceKeys() != null ? dbModel.elementInstanceKeys() : List.of(),
-        toStatus(dbModel.status()),
+        dbModel.status(),
         new AgentInstanceDefinition(dbModel.model(), dbModel.provider(), dbModel.systemPrompt()),
         new AgentInstanceMetrics(
             dbModel.inputTokens(),
@@ -48,10 +47,6 @@ public class AgentInstanceEntityMapper {
         dbModel.creationDate(),
         dbModel.lastUpdatedDate(),
         dbModel.completionDate());
-  }
-
-  private static AgentInstanceStatus toStatus(final AgentInstanceStatus status) {
-    return status != null ? status : AgentInstanceStatus.UNKNOWN;
   }
 
   private static List<AgentInstanceTool> toTools(final List<AgentInstanceToolDbValue> tools) {
