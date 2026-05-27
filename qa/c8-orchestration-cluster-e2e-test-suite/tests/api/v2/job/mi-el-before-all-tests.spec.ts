@@ -264,8 +264,19 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           'EXECUTION_LISTENER_NO_RETRIES',
         );
 
-        await expectProcessState(request, piKey, 'ACTIVE', extendedAssertionOptions);
-        await expectJobsByType(request, piKey, innerJobType, 0, extendedAssertionOptions);
+        await expectProcessState(
+          request,
+          piKey,
+          'ACTIVE',
+          extendedAssertionOptions,
+        );
+        await expectJobsByType(
+          request,
+          piKey,
+          innerJobType,
+          0,
+          extendedAssertionOptions,
+        );
 
         // ── Recovery: resolve the incident and verify MI proceeds ────────────
         // Update retries to re-enable activation, then resolve the incident
@@ -282,7 +293,13 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         await assertStatusCode(resolveRes, 204);
 
         // beforeAll job is re-scheduled — activate and complete with valid items
-        await expectJobsByType(request, piKey, beforeAllJobType, 1, extendedAssertionOptions);
+        await expectJobsByType(
+          request,
+          piKey,
+          beforeAllJobType,
+          1,
+          extendedAssertionOptions,
+        );
         const retryJobs = await activateJobsByType(
           request,
           beforeAllJobType,
@@ -294,7 +311,13 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         });
 
         // MI body now proceeds normally
-        await expectJobsByType(request, piKey, innerJobType, 3, extendedAssertionOptions);
+        await expectJobsByType(
+          request,
+          piKey,
+          innerJobType,
+          3,
+          extendedAssertionOptions,
+        );
         const innerJobs = await activateJobsByType(
           request,
           innerJobType,
@@ -306,7 +329,12 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         for (const job of innerJobs) {
           await completeJob(request, job.jobKey);
         }
-        await expectProcessState(request, piKey, 'COMPLETED', extendedAssertionOptions);
+        await expectProcessState(
+          request,
+          piKey,
+          'COMPLETED',
+          extendedAssertionOptions,
+        );
       } catch (e) {
         await cancelProcessInstance(piKey);
         throw e;
