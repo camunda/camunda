@@ -33,7 +33,9 @@ import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientDeploymentProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -341,6 +343,72 @@ public class DeploymentAnnotationProcessorTest {
     // then - only the file resource should be deployed, not the directory
     verify(deployStep1).addResourceStream(any(), eq("process.bpmn"));
     verify(deployStep1, times(1)).addResourceStream(any(), any());
+    verify(deployStep2).execute();
+  }
+
+  @Test
+  public void shouldFilterNonFilesystemDirectoryResourceByUrl() throws IOException {
+    // given
+    when(deploymentValueExtractor.apply(any()))
+        .thenAnswer(r -> AnnotationUtil.getDeploymentValues(r.getArgument(0)));
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
+
+    final Resource fileResource = mock(Resource.class);
+    final Resource urlDirectoryResource = mock(Resource.class);
+    final java.io.File mockFile = mock(java.io.File.class);
+
+    when(fileResource.getFile()).thenReturn(mockFile);
+    when(mockFile.isDirectory()).thenReturn(false);
+    when(fileResource.getFilename()).thenReturn("process.bpmn");
+    when(fileResource.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+
+    when(urlDirectoryResource.getFile()).thenThrow(new IOException("not a file system resource"));
+    when(urlDirectoryResource.getURL()).thenReturn(URI.create("file:///camunda/").toURL());
+
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(resourcePatternResolver.getResources(anyString()))
+        .thenReturn(new Resource[] {fileResource, urlDirectoryResource});
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when
+    deploymentAnnotationProcessor.configureFor(classInfo);
+    deploymentAnnotationProcessor.start(client);
+
+    // then - URL ending with '/' is treated as directory and filtered out
+    verify(deployStep1, times(1)).addResourceStream(any(), any());
+    verify(deployStep1).addResourceStream(any(), eq("process.bpmn"));
+    verify(deployStep2).execute();
+  }
+
+  @Test
+  public void shouldNotFilterNonFilesystemFileResourceByUrl() throws IOException {
+    // given
+    when(deploymentValueExtractor.apply(any()))
+        .thenAnswer(r -> AnnotationUtil.getDeploymentValues(r.getArgument(0)));
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
+
+    final Resource urlFileResource = mock(Resource.class);
+
+    when(urlFileResource.getFile()).thenThrow(new IOException("not a file system resource"));
+    when(urlFileResource.getURL()).thenReturn(URI.create("file:///process.bpmn").toURL());
+    when(urlFileResource.getFilename()).thenReturn("process.bpmn");
+    when(urlFileResource.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
+
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(resourcePatternResolver.getResources(anyString()))
+        .thenReturn(new Resource[] {urlFileResource});
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when
+    deploymentAnnotationProcessor.configureFor(classInfo);
+    deploymentAnnotationProcessor.start(client);
+
+    // then - URL not ending with '/' is treated as a file and deployed
+    verify(deployStep1).addResourceStream(any(), eq("process.bpmn"));
     verify(deployStep2).execute();
   }
 
