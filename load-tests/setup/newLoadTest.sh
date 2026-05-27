@@ -162,9 +162,38 @@ ORCHESTRATION_SECRET=$(gen_password)
 IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
 IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 
-# Copy default folder (incl. resources/) and the parent platform values files.
-cp -rv default/ "$namespace"
-cp -v ../*.yaml "$namespace/"
+# Scaffold the namespace folder with only the files this $secondaryStorage uses.
+# A namespace is bound to its storage at create time; to switch storage, create
+# a new namespace via ./newLoadTest.sh <new-name> <newStorage>.
+mkdir -p "$namespace"
+
+# Scaffold the always-copied files into the namespace folder root: the
+# Makefile, the resources/ manifests, four storage-agnostic values files
+# (defaults + override + load-test + stable), and the matching
+# camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
+# per-namespace Makefile's -f <file>.yaml references resolve unchanged.
+cp -v  default/Makefile                              "$namespace/"
+cp -rv default/resources/                            "$namespace/"
+cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
+cp -v  default/values/load-test-values.yaml                 "$namespace/"
+cp -v  default/values/values-stable.yaml                    "$namespace/"
+cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
+cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+
+# Storage-specific copies. databases/ is created only for mssql/oracle.
+case "$secondaryStorage" in
+  elasticsearch)
+    cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+    ;;
+  postgresql|mysql|mariadb)
+    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    ;;
+  mssql|oracle)
+    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    mkdir -p "$namespace/databases"
+    cp -v "default/databases/${secondaryStorage}.yaml"                       "$namespace/databases/"
+    ;;
+esac
 
 cd "$namespace"
 
@@ -179,8 +208,10 @@ sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml databases/*.yaml resources/namespace.yaml
-sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml databases/*.yaml resources/namespace.yaml
+sed_targets=(*.yaml resources/namespace.yaml)
+[[ -d databases ]] && sed_targets+=(databases/*.yaml)
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
+sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
 
 # When single-zone is disabled the topology annotation has no useful value;

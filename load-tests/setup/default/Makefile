@@ -44,7 +44,9 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+# Starting with the defaults, which are always applied and set common baseline configuration for all
+# set ups. The other values files are focused and only contain the necessary overrides for each storage type.
+platform_values := -f camunda-platform-values-defaults.yaml
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
@@ -52,13 +54,11 @@ _secondary_storage_load_test_flags :=
 
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
-	platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-$(secondary_storage).yaml
-else ifeq ($(secondary_storage),opensearch)
-	platform_values += -f camunda-platform-values-opensearch.yaml
+	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
 	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
+platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
@@ -122,19 +122,19 @@ create-credentials:
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-postgresql.yaml
 	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
-	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
+	# Install MySQL database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mariadb)
 	@echo "Installing MariaDB database for namespace $(namespace)..."
-	# Install MariaDB database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mariadb.yaml
+	# Install MariaDB database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mariadb.yaml
 	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
 		$(platform_values)
@@ -184,7 +184,6 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
@@ -232,7 +231,6 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
 		--output-dir .
