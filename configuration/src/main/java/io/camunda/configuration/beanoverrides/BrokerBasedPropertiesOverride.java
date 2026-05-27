@@ -1099,15 +1099,18 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {
-    override
-        .getExperimental()
-        .getEngine()
-        .getProcessInstanceCreation()
-        .setBusinessIdUniquenessEnabled(
-            unifiedConfiguration
-                .getCamunda()
-                .getProcessInstanceCreation()
-                .isBusinessIdUniquenessEnabled());
+    final var processInstanceCreation =
+        unifiedConfiguration.getCamunda().getProcessInstanceCreation();
+    final var processInstanceCreationCfg =
+        override.getExperimental().getEngine().getProcessInstanceCreation();
+    processInstanceCreationCfg.setBusinessIdUniquenessEnabled(
+        processInstanceCreation.isBusinessIdUniquenessEnabled());
+    processInstanceCreationCfg.setMessageStartDedupExpirationSweepInterval(
+        processInstanceCreation.getMessageStartDedupExpirationSweepInterval());
+    processInstanceCreationCfg.setMessageStartDedupExpirationSweepBatchLimit(
+        processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit());
+    processInstanceCreationCfg.setMessageStartAskRetryInterval(
+        processInstanceCreation.getMessageStartAskRetryInterval());
   }
 
   private void populateFromJobs(final BrokerBasedProperties override) {
