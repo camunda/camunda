@@ -27,6 +27,9 @@ const StatusItem = styled.div`
   align-items: center;
   gap: var(--cds-spacing-03);
   font-size: var(--cds-body-01-font-size);
+  font-weight: var(--cds-body-01-font-weight);
+  line-height: var(--cds-body-01-line-height);
+  letter-spacing: var(--cds-body-01-letter-spacing);
 `;
 
 export {StatusContainer, StatusHeading, StatusItem};
