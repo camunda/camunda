@@ -407,9 +407,9 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
-      - name: Install Google Chrome
-        # Required for TestCafe headless browser tests on self-hosted runners
-        # gcp-perf-core-8-default does not ship with Chrome preinstalled
+      - name: Install Google Chrome and ffmpeg
+        # Required for TestCafe headless browser tests on self-hosted runners.
+        # gcp-perf-core-8-default does not ship with Chrome or ffmpeg preinstalled.
         run: |
           set -euo pipefail
           if ! command -v google-chrome >/dev/null 2>&1; then
@@ -423,6 +423,10 @@ jobs:
             sudo apt-get install -y --no-install-recommends google-chrome-stable
           fi
           google-chrome --version
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
