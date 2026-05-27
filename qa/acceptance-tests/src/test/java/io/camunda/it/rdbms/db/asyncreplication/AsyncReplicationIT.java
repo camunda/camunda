@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.asyncreplication;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.it.rdbms.db.util.MSSQLReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import java.time.Duration;
@@ -22,12 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 // Tests in this class form a lifecycle sequence and must run in order:
 // (1) replica removed → exporter pauses; (2) replica restored → exporter resumes.
 @TestMethodOrder(OrderAnnotation.class)
-public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
-
-  @Override
-  protected ReplicationClusterContainer createCluster() {
-    return new PostgresReplicationClusterContainer();
-  }
+public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
   @Test
   void shouldAcknowledgeExportedRecordsWhenReplicated() {
@@ -85,5 +81,21 @@ public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
     awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
     awaitAcknowledgedPositionAdvances(acknowledgedPositionBeforeRecovery);
     exporterAcknowledgedAll();
+  }
+}
+
+class PostgresAsyncReplicationIT extends AsyncReplicationIT {
+
+  @Override
+  protected ReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer();
+  }
+}
+
+class MssqlAsyncReplicationIT extends AsyncReplicationIT {
+
+  @Override
+  protected ReplicationClusterContainer createCluster() {
+    return new MSSQLReplicationClusterContainer();
   }
 }
