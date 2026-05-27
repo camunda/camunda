@@ -14,6 +14,24 @@ dependencies {
     implementation(project(":camunda-client-java"))
 
     testImplementation(project(":zeebe-bpmn-model"))
+    testImplementation(project(":camunda-spring-boot-starter"))
+    testImplementation(project(":camunda-process-test-langchain4j"))
+    testImplementation(libs.org.awaitility.awaitility)
+    testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
+    testImplementation(libs.org.wiremock.wiremock.standalone)
+    testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter.x1)
+    testImplementation(libs.org.testcontainers.testcontainers)
+    testImplementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+    testImplementation(libs.org.springframework.spring.test)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
+}
+
+sourceSets {
+    test {
+        java.srcDir("../camunda-process-test-spring/src/test/java")
+        resources.srcDir("../camunda-process-test-spring/src/test/resources")
+    }
 }
 
 description = "Camunda Process Test Spring Boot 3"
