@@ -229,6 +229,24 @@
     </bpmn:sendTask>
     <bpmn:sequenceFlow id="Flow_1waofjt" sourceRef="Gateway_2" targetRef="SendTask" />
     <bpmn:sequenceFlow id="Flow_1l6mtqy" sourceRef="SendTask" targetRef="Gateway_3" />
+    <bpmn:serviceTask id="AIAgentTask" name="AI Agent Task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="foo" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_aiagent_in</bpmn:incoming>
+      <bpmn:outgoing>Flow_aiagent_out</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_aiagent_in" sourceRef="Gateway_2" targetRef="AIAgentTask" />
+    <bpmn:sequenceFlow id="Flow_aiagent_out" sourceRef="AIAgentTask" targetRef="Gateway_3" />
+    <bpmn:serviceTask id="AIAgentsubprocess" name="AI Agent subprocess">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="foo" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_aiagentsub_in</bpmn:incoming>
+      <bpmn:outgoing>Flow_aiagentsub_out</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_aiagentsub_in" sourceRef="Gateway_2" targetRef="AIAgentsubprocess" />
+    <bpmn:sequenceFlow id="Flow_aiagentsub_out" sourceRef="AIAgentsubprocess" targetRef="Gateway_3" />
     <bpmn:exclusiveGateway id="ExclusiveGateway" name="Exclusive gateway">
       <bpmn:incoming>Flow_1fo0rfs</bpmn:incoming>
       <bpmn:outgoing>Flow_126yu9s</bpmn:outgoing>

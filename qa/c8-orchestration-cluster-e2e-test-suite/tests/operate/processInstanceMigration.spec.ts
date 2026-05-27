@@ -302,6 +302,14 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for message start event',
           targetValue: 'MessageStartEvent',
         },
+        {
+          label: 'target element for ai agent task',
+          targetValue: 'AIAgentTask',
+        },
+        {
+          label: 'target element for ai agent subprocess',
+          targetValue: 'AIAgentsubprocess',
+        },
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
@@ -318,7 +326,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateOperationPanelPage.expandOperationsPanel();
 
       const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(6);
+        operateOperationPanelPage.getMigrationOperationEntry(6).first();
 
       await expect(operationEntry).toBeVisible({timeout: 120000});
 
@@ -441,7 +449,7 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         // AIAgentTask/AIAgentsubprocess can take longer than other elements
@@ -596,6 +604,14 @@ test.describe.serial('Process Instance Migration', () => {
         'Send Task',
         'Send Task 2',
       );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent Task',
+        'AI Agent Task 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent subprocess',
+        'AI Agent subprocess 2',
+      );
 
       await operateProcessMigrationModePage.mapFlowNode(
         'Event based gateway',
@@ -642,7 +658,7 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify 3 instances migrated to target version', async () => {
       const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(3);
+        operateOperationPanelPage.getMigrationOperationEntry(3).first();
 
       await expect(operationEntry).toBeVisible({
         timeout: 120000,
