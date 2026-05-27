@@ -17,7 +17,6 @@ import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.search.core.SearchQueryService;
@@ -81,10 +80,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final CamundaAuthentication authentication) {
     final var query =
         RoleMemberQuery.of(
-            builder ->
-                builder.filter(
-                    filter ->
-                        filter.roleId(DefaultRole.ADMIN.getId()).memberType(EntityType.USER)));
+            builder -> builder.filter(filter -> filter.roleId(roleId).memberType(entityType)));
     final var members = searchMembers(query, authentication);
     return members.total() > 0;
   }
