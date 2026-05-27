@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.ai.mcp.annotation.method.tool.utils.SpringAiSchemaModule;
+import org.springframework.ai.mcp.annotation.method.tool.utils.McpSpringAiSchemaModule;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import tools.jackson.databind.ObjectMapper;
@@ -92,9 +92,9 @@ public class CamundaJsonSchemaGenerator {
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
         CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT
-            ? new SpringAiSchemaModule()
-            : new SpringAiSchemaModule(
-                SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
+            ? new McpSpringAiSchemaModule()
+            : new McpSpringAiSchemaModule(
+                McpSpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
     final var builder =
         new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
