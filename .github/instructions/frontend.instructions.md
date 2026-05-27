@@ -69,9 +69,9 @@ see `docs/monorepo-docs/frontend/`.
 # From webapp/client/
 npm ci                    # Install dependencies (workspace)
 npm run dev:oc            # Dev server on :3000
+npm run lint              # ESLint + Prettier
 
 # From webapp/client/apps/orchestration-cluster-webapp/
-npm run lint              # ESLint + Prettier
 npm run typecheck         # TypeScript across all tsconfigs
 npm run test:unit         # Vitest browser mode (headless Chromium)
 npm run test:integration  # Playwright integration tests (MSW-mocked)
