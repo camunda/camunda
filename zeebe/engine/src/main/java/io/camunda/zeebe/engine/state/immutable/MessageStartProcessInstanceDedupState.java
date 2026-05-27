@@ -19,10 +19,11 @@ import io.camunda.zeebe.engine.state.message.MessageStartProcessInstanceDedupEnt
  * deliberately not part of the key because deployments are tenant-scoped — a {@code
  * processDefinitionKey} lives in exactly one tenant — so adding it would be redundant.
  *
- * <p>Retention model: the value carries a {@code deletionDeadline} (epoch millis) set once at
- * insert time as {@code now + tombstoneWindow}. The read path treats an entry whose deadline has
- * passed as a cache miss; a scheduled sweeper removes such rows. The deadline is never updated —
- * the row exists to bound {@code P_K}'s retry window, not to track PI lifecycle.
+ * <p>Retention model: the value carries a {@code deletionDeadline} (epoch millis) taken directly
+ * from the request's {@code messageDeadline} (= {@code publishTime + ttl} on {@code P_K}). The read
+ * path treats an entry whose deadline has passed as a cache miss; a scheduled sweeper removes such
+ * rows. The deadline is never updated — the row exists to bound {@code P_K}'s retry window, not to
+ * track PI lifecycle.
  */
 public interface MessageStartProcessInstanceDedupState {
 

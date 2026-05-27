@@ -20,12 +20,13 @@ public interface MutableMessageStartProcessInstanceDedupState
 
   /**
    * Persists a dedup entry for the given {@code (processDefinitionKey, messageKey)} with the
-   * supplied {@code processInstanceKey} and {@code deletionDeadline} (epoch millis). The deadline
-   * is set once at insert time as {@code now + tombstoneWindow} and is never updated by this state;
-   * callers compute it from the configured tombstone window. {@code upsert} semantics: a fresh
-   * {@code STARTED} reply replaces any prior entry for the same key (covers re-claim by a new PI
-   * after the previous holder was banned, or after the previous deadline passed but the sweep had
-   * not yet run).
+   * supplied {@code processInstanceKey} and {@code deletionDeadline} (epoch millis). Callers source
+   * the deadline directly from the request's {@code messageDeadline} (= {@code publishTime + ttl}
+   * on {@code P_K}), so the dedup row on {@code P_B} and the buffered message on {@code P_K} share
+   * the same lifetime without any engine-internal time coupling. The deadline is never updated by
+   * this state. {@code upsert} semantics: a fresh {@code STARTED} reply replaces any prior entry
+   * for the same key (covers re-claim by a new PI after the previous holder was banned, or after
+   * the previous deadline passed but the sweep had not yet run).
    */
   void put(
       long processDefinitionKey, long messageKey, long processInstanceKey, long deletionDeadline);

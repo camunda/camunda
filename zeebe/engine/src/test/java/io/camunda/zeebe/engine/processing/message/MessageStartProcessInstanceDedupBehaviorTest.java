@@ -52,7 +52,7 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   private static final String CORRELATION_KEY = "ck";
   private static final String BUSINESS_ID = "biz-1";
   private static final long SOURCE_MESSAGE_KEY = Protocol.encodePartitionId(1, 42);
-  private static final Duration TOMBSTONE_WINDOW = Duration.ofSeconds(5);
+  private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
   private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
 
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
@@ -70,7 +70,7 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
               config ->
                   config
                       .setBusinessIdUniquenessEnabled(true)
-                      .setMessageStartDedupTombstoneSweepInterval(SWEEP_INTERVAL));
+                      .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL));
 
   @Test
   public void shouldReReplyStartedWithCachedKeyOnActiveDedupHit() {
@@ -100,10 +100,10 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   }
 
   @Test
-  public void shouldReReplyStartedWithCachedKeyAfterHolderPiCompletionWithinWindow() {
+  public void shouldReReplyStartedWithCachedKeyAfterHolderPiCompletionWithinDeadline() {
     // given a PI was started via REQUEST and has since completed; the dedup entry's
-    // deletionDeadline (set once at STARTED-apply time as now + tombstoneWindow) has not yet
-    // passed, so the entry is still present on P_B and still satisfies the dedup hit check
+    // deletionDeadline (sourced from the request's messageDeadline) has not yet passed, so the
+    // entry is still present on P_B and still satisfies the dedup hit check
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
     writeRequest(subscriptionKey);
@@ -129,15 +129,16 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   }
 
   @Test
-  public void shouldReEvaluateAfterTombstoneDeadlineHasPassed() {
-    // given a PI was started, completed, and the tombstone window has elapsed
+  public void shouldReEvaluateAfterDedupDeletionDeadlineHasPassed() {
+    // given a PI was started, completed, and the dedup entry's deletionDeadline (= the request's
+    // messageDeadline) has elapsed
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
     writeRequest(subscriptionKey);
     final long firstPiKey = firstStartReplyPiKey();
     completeServiceTask(firstPiKey);
     waitForRootProcessCompletion(firstPiKey);
-    engine.increaseTime(TOMBSTONE_WINDOW.plus(SWEEP_INTERVAL).plusSeconds(1));
+    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
 
     // when a fresh REQUEST arrives after the window has passed
     writeRequest(subscriptionKey);
@@ -185,8 +186,9 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
   }
 
   @Test
-  public void shouldDeletePastDeadlineTombstoneViaScheduledSweep() {
-    // given a PI was started, completed, the tombstone window has elapsed
+  public void shouldDeleteExpiredDedupEntryViaScheduledSweep() {
+    // given a PI was started, completed, the dedup entry's deletionDeadline (= the request's
+    // messageDeadline) has elapsed
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
     writeRequest(subscriptionKey);
@@ -194,13 +196,13 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
     completeServiceTask(firstPiKey);
     waitForRootProcessCompletion(firstPiKey);
 
-    // when the scheduler observes a past-deadline tombstone and the processor sweeps it
-    engine.increaseTime(TOMBSTONE_WINDOW.plus(SWEEP_INTERVAL).plusSeconds(1));
+    // when the scheduler observes a past-deadline dedup entry and the processor sweeps it
+    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
 
-    // then a TOMBSTONE_DELETED event is written and its applier removes the entry; a subsequent
+    // then a EXPIRED_DEDUP_DELETED event is written and its applier removes the entry; a subsequent
     // REQUEST is a cache miss and a fresh PI is created
     RecordingExporter.records()
-        .withIntent(MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED)
+        .withIntent(MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED)
         .getFirst();
     writeRequest(subscriptionKey);
     final long freshPiKey =
@@ -284,7 +286,7 @@ public final class MessageStartProcessInstanceDedupBehaviorTest {
     // deadline directly, so advancing the engine clock past it expires the dedup row exactly the
     // way the buffered message on P_K would expire on a real cluster.
     final long messageDeadline =
-        engine.getClock().getCurrentTimeInMillis() + TOMBSTONE_WINDOW.toMillis();
+        engine.getClock().getCurrentTimeInMillis() + MESSAGE_TTL.toMillis();
     return new MessageStartProcessInstanceRequestRecord()
         .setMessageKey(SOURCE_MESSAGE_KEY)
         .setMessageName(BufferUtil.wrapString(MESSAGE_NAME))

@@ -31,9 +31,9 @@ package io.camunda.zeebe.protocol.record.intent;
  * or deployment not yet distributed), not a programming error on {@code P_K}, and so this intent
  * intentionally does not implement {@link ProcessInstanceRelatedIntent}.
  *
- * <p>{@link #SWEEP_TOMBSTONES} and {@link #TOMBSTONE_DELETED} are internal to {@code P_B}: a
- * scheduled task on {@code P_B} writes a {@code SWEEP_TOMBSTONES} trigger; the matching batch
- * processor walks the dedup state and emits one {@code TOMBSTONE_DELETED} event per dedup entry
+ * <p>{@link #SWEEP_EXPIRED_DEDUPS} and {@link #EXPIRED_DEDUP_DELETED} are internal to {@code P_B}:
+ * a scheduled task on {@code P_B} writes a {@code SWEEP_EXPIRED_DEDUPS} trigger; the matching batch
+ * processor walks the dedup state and emits one {@code EXPIRED_DEDUP_DELETED} event per dedup entry
  * whose {@code deletionDeadline} has passed, and the applier removes the entry from the dedup
  * column family. The naming reflects the role the entries play for {@code P_K}'s retries (they
  * exist to bound the retry window); the deletion is purely deadline-driven and is unrelated to the
@@ -58,10 +58,11 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
   REJECT_NO_SUBSCRIPTION((short) 6, false),
   NO_SUBSCRIPTION_REJECTED((short) 7, true),
 
-  // tombstone-sweep on P_B: SWEEP_TOMBSTONES is the scheduler trigger, TOMBSTONE_DELETED is the
-  // per-entry deletion event whose applier removes the dedup entry from both column families.
-  SWEEP_TOMBSTONES((short) 8, false),
-  TOMBSTONE_DELETED((short) 9, true);
+  // expired-dedup sweep on P_B: SWEEP_EXPIRED_DEDUPS is the scheduler trigger,
+  // EXPIRED_DEDUP_DELETED is the per-entry deletion event whose applier removes the dedup entry
+  // from both column families.
+  SWEEP_EXPIRED_DEDUPS((short) 8, false),
+  EXPIRED_DEDUP_DELETED((short) 9, true);
 
   private final short value;
   private final boolean isEvent;
@@ -100,9 +101,9 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
       case 7:
         return NO_SUBSCRIPTION_REJECTED;
       case 8:
-        return SWEEP_TOMBSTONES;
+        return SWEEP_EXPIRED_DEDUPS;
       case 9:
-        return TOMBSTONE_DELETED;
+        return EXPIRED_DEDUP_DELETED;
       default:
         return Intent.UNKNOWN;
     }

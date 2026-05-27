@@ -518,8 +518,8 @@ public final class EventAppliers implements EventApplier {
    *       processed; removes the pending-ask entry.
    *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
    *       processed; removes the pending-ask entry.
-   *   <li>{@code TOMBSTONE_DELETED}: removes a dedup entry after its post-completion tombstone
-   *       window has passed; emitted by the scheduled sweep.
+   *   <li>{@code EXPIRED_DEDUP_DELETED}: removes a dedup entry after its post-completion expired
+   *       dedup entry window has passed; emitted by the scheduled sweep.
    * </ul>
    */
   private void registerMessageStartProcessInstanceRequestAppliers(
@@ -535,8 +535,8 @@ public final class EventAppliers implements EventApplier {
             state.getMessageStartProcessInstanceAskState(),
             state.getMessageState()));
     register(
-        MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
-        new MessageStartProcessInstanceTombstoneDeletedV1Applier(
+        MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
+        new MessageStartProcessInstanceExpiredDedupDeletedV1Applier(
             state.getMessageStartProcessInstanceDedupState()));
     register(
         MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED,

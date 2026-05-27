@@ -22,17 +22,17 @@ import java.time.InstantSource;
 /**
  * Periodically checks whether the cross-partition message-start dedup state on {@code P_B} holds
  * any entry whose {@code deletionDeadline} has passed and, if so, writes a single {@link
- * MessageStartProcessInstanceRequestIntent#SWEEP_TOMBSTONES} trigger command. The actual deletion
- * work (scanning state and writing one {@link
- * MessageStartProcessInstanceRequestIntent#TOMBSTONE_DELETED} event per past-deadline entry) is
- * done by {@link MessageStartDedupTombstoneSweepProcessor}.
+ * MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger command. The actual
+ * deletion work (scanning state and writing one {@link
+ * MessageStartProcessInstanceRequestIntent#EXPIRED_DEDUP_DELETED} event per past-deadline entry) is
+ * done by {@link MessageStartDedupExpirationSweepProcessor}.
  *
  * <p>The trigger-then-batch split mirrors {@link MessageTimeToLiveCheckScheduler} / {@link
  * MessageBatchExpireProcessor}: the scheduler runs on the leader only, makes a cheap read-only
  * probe, and produces a single command that the regular stream-processor pipeline turns into the
  * deterministic state-change events.
  */
-public final class MessageStartDedupTombstoneSweepScheduler
+public final class MessageStartDedupExpirationSweepScheduler
     implements Task, StreamProcessorLifecycleAware {
 
   private final Duration executionInterval;
@@ -41,7 +41,7 @@ public final class MessageStartDedupTombstoneSweepScheduler
   private ProcessingScheduleService scheduleService;
   private InstantSource clock;
 
-  public MessageStartDedupTombstoneSweepScheduler(
+  public MessageStartDedupExpirationSweepScheduler(
       final Duration executionInterval, final MessageStartProcessInstanceDedupState dedupState) {
     this.executionInterval = executionInterval;
     this.dedupState = dedupState;
@@ -51,7 +51,7 @@ public final class MessageStartDedupTombstoneSweepScheduler
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     if (dedupState.hasExpiredEntry(clock.millis())) {
       taskResultBuilder.appendCommandRecord(
-          MessageStartProcessInstanceRequestIntent.SWEEP_TOMBSTONES,
+          MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
           new MessageStartProcessInstanceRequestRecord());
     }
     reschedule(executionInterval);

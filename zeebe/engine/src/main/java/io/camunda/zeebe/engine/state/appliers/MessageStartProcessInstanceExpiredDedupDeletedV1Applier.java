@@ -14,19 +14,20 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 
 /**
  * Removes the cross-partition message-start dedup entry once its {@code deletionDeadline} has
- * passed. Emitted by the dedup tombstone sweep on {@code P_B}; deletes the dedup column-family
+ * passed. Emitted by the dedup expiration sweep on {@code P_B}; deletes the dedup column-family
  * entry for the given {@code (processDefinitionKey, messageKey)} pair. The deletion is purely
  * deadline-driven and unrelated to the holder PI's lifecycle — the entry exists to bound {@code
  * P_K}'s retry window, and the sole correctness contract is {@code retryDeadline <=
- * tombstoneWindow}.
+ * messageDeadline}, enforced on {@code P_K} by the {@link MessageExpiredApplier}-driven pending-ask
+ * cleanup.
  */
-final class MessageStartProcessInstanceTombstoneDeletedV1Applier
+final class MessageStartProcessInstanceExpiredDedupDeletedV1Applier
     implements TypedEventApplier<
         MessageStartProcessInstanceRequestIntent, MessageStartProcessInstanceRequestRecord> {
 
   private final MutableMessageStartProcessInstanceDedupState dedupState;
 
-  MessageStartProcessInstanceTombstoneDeletedV1Applier(
+  MessageStartProcessInstanceExpiredDedupDeletedV1Applier(
       final MutableMessageStartProcessInstanceDedupState dedupState) {
     this.dedupState = dedupState;
   }

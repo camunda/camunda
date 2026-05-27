@@ -63,9 +63,9 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
-  public static final Duration DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL =
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL =
       Duration.ofSeconds(30);
-  public static final int DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT = 100;
+  public static final int DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT = 100;
 
   /**
    * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
@@ -137,10 +137,10 @@ public final class EngineConfiguration {
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
-  private Duration messageStartDedupTombstoneSweepInterval =
-      DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_INTERVAL;
-  private int messageStartDedupTombstoneSweepBatchLimit =
-      DEFAULT_MESSAGE_START_DEDUP_TOMBSTONE_SWEEP_BATCH_LIMIT;
+  private Duration messageStartDedupExpirationSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+  private int messageStartDedupExpirationSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
@@ -501,25 +501,28 @@ public final class EngineConfiguration {
     return this;
   }
 
-  /** Interval between scheduled tombstone sweeps of the cross-partition message-start dedup. */
-  public Duration getMessageStartDedupTombstoneSweepInterval() {
-    return messageStartDedupTombstoneSweepInterval;
+  /**
+   * Interval between scheduled expired dedup entry sweeps of the cross-partition message-start
+   * dedup.
+   */
+  public Duration getMessageStartDedupExpirationSweepInterval() {
+    return messageStartDedupExpirationSweepInterval;
   }
 
-  public EngineConfiguration setMessageStartDedupTombstoneSweepInterval(
-      final Duration messageStartDedupTombstoneSweepInterval) {
-    this.messageStartDedupTombstoneSweepInterval = messageStartDedupTombstoneSweepInterval;
+  public EngineConfiguration setMessageStartDedupExpirationSweepInterval(
+      final Duration messageStartDedupExpirationSweepInterval) {
+    this.messageStartDedupExpirationSweepInterval = messageStartDedupExpirationSweepInterval;
     return this;
   }
 
-  /** Maximum number of dedup tombstones a single sweep cycle deletes. */
-  public int getMessageStartDedupTombstoneSweepBatchLimit() {
-    return messageStartDedupTombstoneSweepBatchLimit;
+  /** Maximum number of dedup expired dedup entries a single sweep cycle deletes. */
+  public int getMessageStartDedupExpirationSweepBatchLimit() {
+    return messageStartDedupExpirationSweepBatchLimit;
   }
 
-  public EngineConfiguration setMessageStartDedupTombstoneSweepBatchLimit(
-      final int messageStartDedupTombstoneSweepBatchLimit) {
-    this.messageStartDedupTombstoneSweepBatchLimit = messageStartDedupTombstoneSweepBatchLimit;
+  public EngineConfiguration setMessageStartDedupExpirationSweepBatchLimit(
+      final int messageStartDedupExpirationSweepBatchLimit) {
+    this.messageStartDedupExpirationSweepBatchLimit = messageStartDedupExpirationSweepBatchLimit;
     return this;
   }
 

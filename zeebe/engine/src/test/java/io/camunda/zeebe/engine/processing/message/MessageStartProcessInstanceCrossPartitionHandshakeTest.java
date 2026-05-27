@@ -32,11 +32,11 @@ import org.junit.Test;
 
 /**
  * Multi-partition behavioural pin for the cross-partition message-start handshake. The unit-level
- * coverage of the individual components (request processor outcomes, dedup hit / miss / tombstone,
- * banned-PI filter, pending-ask scheduler, reply-applier bookkeeping) lives with their respective
- * code commits; this class only asserts the end-to-end observable outcomes that exist because all
- * three pieces — routing on {@code P_K}, the {@code P_B}-side processor with dedup, and the reply
- * processors on {@code P_K} — are wired together.
+ * coverage of the individual components (request processor outcomes, dedup hit / miss / expired
+ * dedup entry, banned-PI filter, pending-ask scheduler, reply-applier bookkeeping) lives with their
+ * respective code commits; this class only asserts the end-to-end observable outcomes that exist
+ * because all three pieces — routing on {@code P_K}, the {@code P_B}-side processor with dedup, and
+ * the reply processors on {@code P_K} — are wired together.
  *
  * <p>The tests deliberately pick {@code correlationKey} and {@code businessId} values whose hashes
  * route them to <em>different</em> partitions so the routing flip in {@link
@@ -63,7 +63,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
   private static final String MESSAGE_NAME = "start-msg";
   private static final String START_EVENT_ID = "msgStart";
 
-  private static final Duration TOMBSTONE_WINDOW = Duration.ofSeconds(5);
+  private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
   private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
   private static final Duration ASK_RETRY_INTERVAL = Duration.ofSeconds(1);
 
@@ -77,9 +77,9 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
           .done();
 
   /**
-   * Auto-completing message-start process used by the tombstone tests so the PI can complete on
-   * {@code P_B} without requiring a cross-partition job-complete command (the engine's job client
-   * writes to the primary partition and would not reach a job that lives on {@code P_B}).
+   * Auto-completing message-start process used by the dedup expiration tests so the PI can complete
+   * on {@code P_B} without requiring a cross-partition job-complete command (the engine's job
+   * client writes to the primary partition and would not reach a job that lives on {@code P_B}).
    */
   private static final String AUTO_PROCESS_ID = "wf-cross-auto";
 
@@ -115,7 +115,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
               config ->
                   config
                       .setBusinessIdUniquenessEnabled(true)
-                      .setMessageStartDedupTombstoneSweepInterval(SWEEP_INTERVAL)
+                      .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
                       .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
@@ -381,13 +381,14 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
   }
 
   @Test
-  public void shouldReReplyStartedWithCachedKeyWhenRetryArrivesAfterPiCompletedWithinTombstone() {
-    // Pins the multi-partition tombstone-within-window outcome: P_B's success-only dedup keeps
-    // re-replying STARTED with the original PI key for the entire tombstoneWindow after the PI
-    // has completed, so a P_K retry that loses a race with the holder's lifecycle is still a
-    // no-op on P_B. The unit-level coverage of the dedup state transitions lives in
-    // MessageStartProcessInstanceDedupBehaviorTest; this test exercises the same outcome
-    // through the real inter-partition transport and ask retry scheduler.
+  public void
+      shouldReReplyStartedWithCachedKeyWhenRetryArrivesAfterPiCompletedWithinMessageDeadline() {
+    // Pins the multi-partition expired-dedup-entry-within-deadline outcome: P_B's success-only
+    // dedup keeps re-replying STARTED with the original PI key until the dedup row's
+    // deletionDeadline (= messageDeadline) passes, so a P_K retry that loses a race with the
+    // holder's lifecycle is still a no-op on P_B. The unit-level coverage of the dedup state
+    // transitions lives in MessageStartProcessInstanceDedupBehaviorTest; this test exercises the
+    // same outcome through the real inter-partition transport and ask retry scheduler.
     //
     // We deploy an auto-completing process so the holder PI on P_B completes on its own; the
     // engine's job client writes to the primary partition and could not reach a job on P_B.
@@ -408,11 +409,11 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
         .withName(AUTO_MESSAGE_NAME)
         .withCorrelationKey(CORRELATION_KEY)
         .withBusinessId(BUSINESS_ID)
-        .withTimeToLive(TOMBSTONE_WINDOW.toMillis())
+        .withTimeToLive(MESSAGE_TTL.toMillis())
         .publish();
 
-    // the holder PI auto-completes on P_B and the V3 applier transitions the dedup entry to
-    // TOMBSTONE(now + tombstoneWindow)
+    // the holder PI auto-completes on P_B and the V3 applier leaves the dedup entry in place
+    // (the dedup's deletionDeadline is the messageDeadline, independent of PI lifecycle)
     final long firstPiKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .withBpmnProcessId(AUTO_PROCESS_ID)
@@ -421,16 +422,16 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
             .getValue()
             .getProcessInstanceKey();
 
-    // and the ask retry scheduler fires within the tombstone window (advance only past the
-    // retry+check interval; tombstoneWindow is 5s so we stay safely inside it)
+    // and the ask retry scheduler fires while the dedup row is still valid (advance only past the
+    // retry+check interval; messageDeadline = MESSAGE_TTL = 5s so we stay safely inside it)
     engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
 
-    // then the re-dispatched REQUEST hits the TOMBSTONE entry within the window and P_B
+    // then the re-dispatched REQUEST hits the dedup entry within its deadline and P_B
     // re-replies STARTED with the original PI key; no second PI is ever activated
     final long secondStartedPiKey = retryStartedReplyPiKey();
     assertThat(secondStartedPiKey)
         .as(
-            "the tombstoned dedup entry re-replies the cached PI key within the window; this"
+            "the dedup entry re-replies the cached PI key while its deletionDeadline holds; this"
                 + " alone implies no second PI was activated, because P_B only writes STARTED"
                 + " with the cached key on a dedup short-circuit, never together with a fresh"
                 + " PROCESS_INSTANCE_CREATION")
@@ -438,12 +439,12 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
   }
 
   @Test
-  public void shouldStartFreshPiWhenRetryArrivesAfterTombstoneWindowHasPassed() {
-    // Pins the multi-partition tombstone-past-window outcome: once the tombstoneWindow has
-    // elapsed and the scheduled sweep has removed the dedup entry, a retry from P_K is treated
-    // as a fresh ask — live uniqueness check passes (the original PI is gone) and a brand-new
-    // PI is created. Symmetric counterpart to the within-window test above; pins that the
-    // success-only dedup eventually releases.
+  public void shouldStartFreshPiWhenRetryArrivesAfterMessageDeadlineHasPassed() {
+    // Pins the multi-partition expired-dedup-entry-past-deadline outcome: once the
+    // messageDeadline has elapsed and the scheduled sweep has removed the dedup entry, a retry
+    // from P_K is treated as a fresh ask — live uniqueness check passes (the original PI is
+    // gone) and a brand-new PI is created. Symmetric counterpart to the within-deadline test
+    // above; pins that the success-only dedup eventually releases.
     deployAndAwaitStartEventSubscriptionsOnAllPartitions(
         AUTO_COMPLETE_MESSAGE_START_PROCESS, AUTO_MESSAGE_NAME);
 
@@ -459,7 +460,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
         .withName(AUTO_MESSAGE_NAME)
         .withCorrelationKey(CORRELATION_KEY)
         .withBusinessId(BUSINESS_ID)
-        .withTimeToLive(TOMBSTONE_WINDOW.toMillis())
+        .withTimeToLive(MESSAGE_TTL.toMillis())
         .publish();
 
     final long firstPiKey =
@@ -470,15 +471,15 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
             .getValue()
             .getProcessInstanceKey();
 
-    // and time advances past tombstoneWindow + sweep interval so the sweep deletes the dedup
+    // and time advances past messageDeadline + sweep interval so the sweep deletes the dedup
     // entry before the next retry arrives
-    engine.increaseTime(TOMBSTONE_WINDOW.plus(SWEEP_INTERVAL).plusSeconds(1));
+    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
 
     // then the re-dispatched REQUEST is a cache miss on P_B; live uniqueness passes (the
     // original PI is completed); a brand-new PI is created and STARTED carries its key
     final long secondStartedPiKey = retryStartedReplyPiKey();
     assertThat(secondStartedPiKey)
-        .as("after the tombstone window, P_B starts a fresh PI on retry")
+        .as("after the messageDeadline has passed, P_B starts a fresh PI on retry")
         .isPositive()
         .isNotEqualTo(firstPiKey);
   }

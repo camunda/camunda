@@ -18,20 +18,20 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 /**
- * Consumes a {@link MessageStartProcessInstanceRequestIntent#SWEEP_TOMBSTONES} trigger and emits
- * one {@link MessageStartProcessInstanceRequestIntent#TOMBSTONE_DELETED} event per past-deadline
- * dedup entry in the cross-partition message-start dedup state on {@code P_B}. Each event's applier
- * removes the dedup column-family entry for its {@code (processDefinitionKey, messageKey)} pair.
- * Deletion is purely deadline-driven; the naming uses "tombstone" to reflect the role the entries
- * play for {@code P_K}'s retries (they exist to bound the retry window), not a post-completion
- * lifecycle state.
+ * Consumes a {@link MessageStartProcessInstanceRequestIntent#SWEEP_EXPIRED_DEDUPS} trigger and
+ * emits one {@link MessageStartProcessInstanceRequestIntent#EXPIRED_DEDUP_DELETED} event per
+ * past-deadline dedup entry in the cross-partition message-start dedup state on {@code P_B}. Each
+ * event's applier removes the dedup column-family entry for its {@code (processDefinitionKey,
+ * messageKey)} pair. Deletion is purely deadline-driven; the naming uses "expired dedup entry" to
+ * reflect the role the entries play for {@code P_K}'s retries (they exist to bound the retry
+ * window), not a post-completion lifecycle state.
  *
  * <p>Each cycle is bounded by {@code batchLimit}; if more past-deadline entries remain, a follow-up
- * {@code SWEEP_TOMBSTONES} command is written to continue draining on the next stream iteration.
- * Mirrors the trigger-then-batch pattern of {@link MessageBatchExpireProcessor}.
+ * {@code SWEEP_EXPIRED_DEDUPS} command is written to continue draining on the next stream
+ * iteration. Mirrors the trigger-then-batch pattern of {@link MessageBatchExpireProcessor}.
  */
 @ExcludeAuthorizationCheck
-public final class MessageStartDedupTombstoneSweepProcessor
+public final class MessageStartDedupExpirationSweepProcessor
     implements TypedRecordProcessor<MessageStartProcessInstanceRequestRecord> {
 
   private final StateWriter stateWriter;
@@ -40,7 +40,7 @@ public final class MessageStartDedupTombstoneSweepProcessor
   private final int batchLimit;
   private final InstantSource clock;
 
-  public MessageStartDedupTombstoneSweepProcessor(
+  public MessageStartDedupExpirationSweepProcessor(
       final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final MessageStartProcessInstanceDedupState dedupState,
@@ -66,18 +66,20 @@ public final class MessageStartDedupTombstoneSweepProcessor
           entry.reset();
           entry.setProcessDefinitionKey(processDefinitionKey).setMessageKey(messageKey);
           stateWriter.appendFollowUpEvent(
-              record.getKey(), MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED, entry);
+              record.getKey(),
+              MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
+              entry);
           counter[0]++;
         });
 
     if (counter[0] >= batchLimit) {
-      // Hit the batch ceiling: there may be more past-deadline tombstones. Schedule the next
+      // Hit the batch ceiling: there may be more past-deadline dedup entries. Schedule the next
       // cycle via a follow-up trigger command rather than waiting for the next scheduler tick.
       // A spurious follow-up when nothing remains is harmless — the processor visits nothing and
       // writes no events.
       commandWriter.appendFollowUpCommand(
           record.getKey(),
-          MessageStartProcessInstanceRequestIntent.SWEEP_TOMBSTONES,
+          MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
           new MessageStartProcessInstanceRequestRecord());
     }
   }

@@ -39,9 +39,13 @@ import java.time.InstantSource;
  * retry from {@code P_K}'s pending-ask state never produces a second PI. A hit is treated as valid
  * when its {@code deletionDeadline} has not yet passed <em>and</em> the cached PI is not banned;
  * otherwise (no entry, expired entry, or banned holder) the request falls through to live-state
- * evaluation. The deadline is set once at insert time as {@code now + tombstoneWindow} and is never
- * updated; the entry exists to bound {@code P_K}'s retry window — the sole correctness contract
- * that prevents duplicate creates is {@code retryDeadline <= tombstoneWindow}.
+ * evaluation. The dedup entry's {@code deletionDeadline} is taken directly from the request's
+ * {@code messageDeadline} (= {@code publishTime + ttl} on {@code P_K}), so the dedup row on {@code
+ * P_B} and the buffered message on {@code P_K} share the same lifetime without any engine-internal
+ * time coupling; the entry exists to bound {@code P_K}'s retry window — the sole correctness
+ * contract that prevents duplicate creates is {@code retryDeadline <= messageDeadline}, enforced on
+ * {@code P_K} by the {@link io.camunda.zeebe.engine.state.appliers.MessageExpiredApplier}-driven
+ * pending-ask cleanup.
  *
  * <p>On a cache miss the three live-state outcomes are the same as before:
  *

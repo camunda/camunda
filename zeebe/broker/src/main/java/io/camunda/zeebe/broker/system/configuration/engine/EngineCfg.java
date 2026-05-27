@@ -217,10 +217,10 @@ public final class EngineCfg implements ConfigurationEntry {
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
-        .setMessageStartDedupTombstoneSweepInterval(
-            processInstanceCreation.getMessageStartDedupTombstoneSweepInterval())
-        .setMessageStartDedupTombstoneSweepBatchLimit(
-            processInstanceCreation.getMessageStartDedupTombstoneSweepBatchLimit())
+        .setMessageStartDedupExpirationSweepInterval(
+            processInstanceCreation.getMessageStartDedupExpirationSweepInterval())
+        .setMessageStartDedupExpirationSweepBatchLimit(
+            processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit())
         .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());

@@ -14,9 +14,9 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 /**
  * Value of the cross-partition message-start dedup column family on {@code P_B}. Stores the
  * process-instance key the original {@code REQUEST} produced together with the row's deletion
- * deadline (epoch millis). The deadline is set once at insert time as {@code now + tombstoneWindow}
- * and is never updated; the read path treats {@code deletionDeadline <= now} as a miss and the
- * sweeper deletes such rows.
+ * deadline (epoch millis). The deadline is taken directly from the request's {@code
+ * messageDeadline} (= {@code publishTime + ttl} on {@code P_K}) and is never updated; the read path
+ * treats {@code deletionDeadline <= now} as a miss and the sweeper deletes such rows.
  */
 public final class MessageStartProcessInstanceDedupEntry extends UnpackedObject implements DbValue {
 

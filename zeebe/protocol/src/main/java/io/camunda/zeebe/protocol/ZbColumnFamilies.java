@@ -286,9 +286,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // dedup state for the cross-partition message-start handshake on P_B; keyed by
   // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey and a deletion
-  // deadline (epoch millis) set once at insert time as `now + tombstoneWindow`. Lookups treat
-  // `deletionDeadline <= now` as a miss; a scheduled sweeper removes such rows. PI lifecycle is
-  // intentionally not a signal — the deadline bounds P_K's retry window, not the PI's lifetime.
+  // deadline (epoch millis) taken directly from the request's messageDeadline (= publishTime + ttl
+  // on P_K), so the dedup row on P_B and the buffered message on P_K share the same lifetime
+  // without any engine-internal time coupling. Lookups treat `deletionDeadline <= now` as a miss;
+  // a scheduled sweeper removes such rows. PI lifecycle is intentionally not a signal — the
+  // deadline bounds P_K's retry window, not the PI's lifetime.
   CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL),
 
   // Pending cross-partition message-start asks on P_K. Keyed by (messageKey, processDefinitionKey).

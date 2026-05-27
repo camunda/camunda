@@ -24,12 +24,16 @@ import org.agrona.collections.MutableBoolean;
  * <p>A single column family — {@link ZbColumnFamilies#CROSS_PARTITION_MESSAGE_START_DEDUP} — holds
  * {@code (processDefinitionKey, messageKey) → MessageStartProcessInstanceDedupEntry}. The entry
  * carries the originally-replied {@code processInstanceKey} and a {@code deletionDeadline} (epoch
- * millis) computed once at insert time as {@code now + tombstoneWindow}.
+ * millis) taken directly from the request's {@code messageDeadline} (= {@code publishTime + ttl} on
+ * {@code P_K}), so the dedup row on {@code P_B} and the buffered message on {@code P_K} share the
+ * same lifetime without any engine-internal time coupling.
  *
  * <p>The retention contract is intentionally PI-lifecycle-free: the row exists to bound {@code
  * P_K}'s retry window, and {@code P_K}'s retry scheduler enforces {@code retryDeadline <=
- * tombstoneWindow}. There is no PI-completion hook on this state and no reverse mapping by
- * process-instance key — both are unnecessary under write-time expiry.
+ * messageDeadline} via the {@link
+ * io.camunda.zeebe.engine.state.appliers.MessageExpiredApplier}-driven pending-ask cleanup. There
+ * is no PI-completion hook on this state and no reverse mapping by process-instance key — both are
+ * unnecessary under write-time expiry.
  */
 public final class DbMessageStartProcessInstanceDedupState
     implements MutableMessageStartProcessInstanceDedupState {

@@ -176,12 +176,12 @@ public final class MessageEventProcessors {
                 writers))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
-            MessageStartProcessInstanceRequestIntent.SWEEP_TOMBSTONES,
-            new MessageStartDedupTombstoneSweepProcessor(
+            MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
+            new MessageStartDedupExpirationSweepProcessor(
                 writers.state(),
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
-                config.getMessageStartDedupTombstoneSweepBatchLimit(),
+                config.getMessageStartDedupExpirationSweepBatchLimit(),
                 clock))
         // Reply command processors on P_K - these handle the cross-partition replies from P_B
         .onCommand(
@@ -206,8 +206,8 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
         .withListener(
-            new MessageStartDedupTombstoneSweepScheduler(
-                config.getMessageStartDedupTombstoneSweepInterval(),
+            new MessageStartDedupExpirationSweepScheduler(
+                config.getMessageStartDedupExpirationSweepInterval(),
                 scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
         .withListener(
             new PendingMessageStartAskCheckScheduler(

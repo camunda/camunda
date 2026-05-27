@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
  * whose last-sent time is before the configured retry interval are re-sent to {@code P_B} via
  * {@link SubscriptionCommandSender#sendDirectStartProcessInstanceRequest}.
  *
- * <p>The scheduler ticks every {@code retryInterval} and re-sends every ask whose last-sent time
- * is older than {@code now - retryInterval}, so the same value bounds both the scheduler cadence
- * and the per-ask retry frequency. After sending, the entry's timestamp is updated via {@link
+ * <p>The scheduler ticks every {@code retryInterval} and re-sends every ask whose last-sent time is
+ * older than {@code now - retryInterval}, so the same value bounds both the scheduler cadence and
+ * the per-ask retry frequency. After sending, the entry's timestamp is updated via {@link
  * MessageStartProcessInstanceAskState#updateLastSentTime}.
  *
  * <p>Entries are removed from the state when any of the three reply intents ({@code STARTED},
@@ -58,9 +58,9 @@ public final class PendingMessageStartAskCheckScheduler
    * @param state the pending ask state from which to read and update entries
    * @param routingInfo used to derive the target partition for a business ID
    * @param retryInterval supplier returning how long to wait before retrying an ask; also used as
-   *     the scheduler tick cadence. Retries always re-emit the original {@code messageDeadline},
-   *     so correctness does not depend on this interval relative to any window — it only controls
-   *     the retry cadence
+   *     the scheduler tick cadence. Retries always re-emit the original {@code messageDeadline}, so
+   *     correctness does not depend on this interval relative to any window — it only controls the
+   *     retry cadence
    */
   public PendingMessageStartAskCheckScheduler(
       final SubscriptionCommandSender commandSender,
