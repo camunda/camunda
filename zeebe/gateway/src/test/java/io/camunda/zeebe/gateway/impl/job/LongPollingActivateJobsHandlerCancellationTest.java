@@ -136,6 +136,10 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     // then - verify no errors or completions occurred after cancellation
     assertThat(completedCount.get()).isZero();
     assertThat(errorCount.get()).isZero();
+    // verify the actual invariant: handler has no tracked state for this job type
+    assertThat(handler.hasInflightRequestsForJobType(TYPE))
+        .as("handler should have no tracked state after cancellation")
+        .isFalse();
   }
 
   @Test
@@ -184,6 +188,10 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     // then - verify the cancelled request is not resubmitted
     // The completeOrResubmitRequest should exit early due to isCanceled() check
     assertThat(completedCount.get()).isZero();
+    // verify the actual invariant: handler has no tracked state for this job type
+    assertThat(handler.hasInflightRequestsForJobType(TYPE))
+        .as("handler should have no tracked state after cancellation")
+        .isFalse();
   }
 
   @Test
@@ -233,6 +241,10 @@ final class LongPollingActivateJobsHandlerCancellationTest {
 
     // then - verify no requests were erroneously completed
     assertThat(completedCount.get()).isZero();
+    // verify the actual invariant: handler has no tracked state for this job type
+    assertThat(handler.hasInflightRequestsForJobType(TYPE))
+        .as("handler should have no tracked state after all cancellations")
+        .isFalse();
   }
 
   @Test
@@ -285,6 +297,10 @@ final class LongPollingActivateJobsHandlerCancellationTest {
     // Should not cause any errors to be sent to observer
     assertThat(errorCount.get()).isZero();
     assertThat(completedCount.get()).isZero();
+    // verify the actual invariant: handler has no tracked state for this job type
+    assertThat(handler.hasInflightRequestsForJobType(TYPE))
+        .as("handler should have no tracked state after race condition cancellation")
+        .isFalse();
   }
 
   // -- helpers --

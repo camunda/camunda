@@ -388,6 +388,15 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
         });
   }
 
+  /**
+   * Package-private for testing. Returns true if the handler has any tracked state (pending or
+   * active requests) for the given job type.
+   */
+  boolean hasInflightRequestsForJobType(final String jobType) {
+    final var state = jobTypeState.get(jobType);
+    return state != null && state.hasActiveRequests();
+  }
+
   private InflightActivateJobsRequest<T> getNextOpenPendingRequest(
       final InFlightLongPollingActivateJobsRequestsState<T> state) {
     InflightActivateJobsRequest<T> request;
