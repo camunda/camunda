@@ -35,6 +35,22 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
+  void shouldCreateMssqlReplicationLogStatusProvider() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
+    final var factory =
+        new ReplicationLogStatusProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
+    // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(MssqlReplicationLogStatusProvider.class);
+  }
+
+  @Test
   void shouldNotCreateReplicationLogStatusProviderForUnsupportedDatabase() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);

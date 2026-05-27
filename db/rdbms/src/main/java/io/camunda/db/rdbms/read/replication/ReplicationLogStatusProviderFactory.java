@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 public final class ReplicationLogStatusProviderFactory {
 
   public static final String POSTGRESQL_DATABASE_ID = "postgresql";
+  public static final String MSSQL_DATABASE_ID = "mssql";
 
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationStatusMapper replicationStatusMapper;
@@ -28,6 +29,7 @@ public final class ReplicationLogStatusProviderFactory {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID ->
           new PostgresReplicationLogStatusProvider(replicationStatusMapper);
+      case MSSQL_DATABASE_ID -> new MssqlReplicationLogStatusProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLogStatusProvider for null database id");
