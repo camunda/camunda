@@ -106,7 +106,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
 
   public CommandDistributionRecord() {
-    super(5);
+    super(7);
     declareProperty(partitionIdProperty)
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
