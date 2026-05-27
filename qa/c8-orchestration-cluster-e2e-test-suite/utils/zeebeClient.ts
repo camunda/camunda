@@ -8,6 +8,7 @@
 
 import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
+import {DeployResourceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
@@ -48,6 +49,27 @@ const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
     return results;
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const deployWithProcessId = async (
+  filePath: string,
+  processId: string,
+): Promise<DeployResourceResponse> => {
+  let content = readFileSync(filePath, 'utf-8');
+  // Replace id="..." and name="..." on the <bpmn:process> element so each
+  // test run creates an isolated process definition that won't collide with
+  // prior runs or interfere with Operate's auto-migration version selection.
+  content = content.replace(
+    /(<bpmn:process\s+id=")[^"]*("\s+name=")[^"]*/,
+    `$1${processId}$2${processId}`,
+  );
+  const name = basename(filePath);
+  try {
+    return await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
@@ -162,6 +184,7 @@ async function checkUpdateOnVersion(
 
 export {
   deploy,
+  deployWithProcessId,
   deployWithSubstitutions,
   createInstances,
   generateManyVariables,

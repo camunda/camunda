@@ -9,7 +9,7 @@
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {
-  deploy,
+  deployWithProcessId,
   createInstances,
   cancelProcessInstance,
 } from 'utils/zeebeClient';
@@ -17,10 +17,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {
-  CreateProcessInstanceResponse,
-  DeployResourceResponse,
-} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {CreateProcessInstanceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -42,10 +39,20 @@ let processes: CreateProcessInstanceResponse[][] = [];
 
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {
-    await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
+    // Use a run-unique suffix so each test run deploys a fresh, isolated set
+    // of process definitions. This avoids Operate's auto-migration picking up
+    // stale versions from prior runs (which share the same bpmnProcessId).
+    const runId = Date.now().toString(36);
+    const orderProcessId = `orderProcessMigration_${runId}`;
+    const newOrderProcessId = `newOrderProcessMigration_${runId}`;
+
+    const newProcessMigrationV1 = await deployWithProcessId(
+      './resources/orderProcessMigration_v_1.bpmn',
+      orderProcessId,
+    );
     const processV1: ProcessDeployment = {
-      bpmnProcessId: 'orderProcessMigration',
-      version: 1,
+      bpmnProcessId: newProcessMigrationV1.processes[0].processDefinitionId,
+      version: newProcessMigrationV1.processes[0].processDefinitionVersion,
     };
 
     processes = await Promise.all(
@@ -58,20 +65,25 @@ test.describe.serial('Process Instance Migration', () => {
       ),
     );
 
-    const newProcessMigrationV2: DeployResourceResponse = await deploy([
+    // Deploy v2 under the same process ID as v1 so Operate treats it as
+    // version 2 of the same process — the intended migration target.
+    const newProcessMigrationV2 = await deployWithProcessId(
       './resources/orderProcessMigration_v_2.bpmn',
-    ]);
+      orderProcessId,
+    );
     const processV2: ProcessDeployment = {
-      bpmnProcessId: 'orderProcessMigration',
+      bpmnProcessId: newProcessMigrationV2.processes[0].processDefinitionId,
       version: newProcessMigrationV2.processes[0].processDefinitionVersion,
     };
-    const newProcessMigrationV3: DeployResourceResponse = await deploy([
+
+    const newProcessMigrationV3 = await deployWithProcessId(
       './resources/orderProcessMigration_v_3.bpmn',
-    ]);
+      newOrderProcessId,
+    );
     expect(processV2.version).toBeGreaterThan(processV1.version);
 
     const processV3: ProcessDeployment = {
-      bpmnProcessId: 'newOrderProcessMigration',
+      bpmnProcessId: newProcessMigrationV3.processes[0].processDefinitionId,
       version: newProcessMigrationV3.processes[0].processDefinitionVersion,
     };
 
@@ -121,7 +133,9 @@ test.describe.serial('Process Instance Migration', () => {
           await sleep(1000);
           await operateFiltersPanelPage.selectVersion(sourceVersion);
           await expect
-            .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
             .toBe(sourceVersion);
           await expect(operateProcessesPage.resultsText.first()).toBeVisible({
             timeout: 10000,
@@ -347,7 +361,16 @@ test.describe.serial('Process Instance Migration', () => {
         `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=TaskF`,
       );
 
-      await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('6 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
   });
 
@@ -375,7 +398,16 @@ test.describe.serial('Process Instance Migration', () => {
           `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
         );
 
-        await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(page.getByText('6 results')).toBeVisible({
+              timeout: 30000,
+            });
+          },
+          onFailure: async () => {
+            await page.reload();
+          },
+        });
       });
     }
   });
