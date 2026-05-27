@@ -10,6 +10,8 @@ package io.camunda.it.rdbms.db.asyncreplication;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
+import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -21,6 +23,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 // (1) replica removed → exporter pauses; (2) replica restored → exporter resumes.
 @TestMethodOrder(OrderAnnotation.class)
 public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
+
+  @Override
+  protected ReplicationClusterContainer createCluster() {
+    return new PostgresReplicationClusterContainer();
+  }
 
   @Test
   void shouldAcknowledgeExportedRecordsWhenReplicated() {
@@ -44,7 +51,7 @@ public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
     final long acknowledgedPositionBeforeRemoval = getCurrentAcknowledgedExporterPosition();
 
     // when - the required read replica is removed
-    postgresCluster.stopReplica();
+    cluster.stopReplica();
     startProcessInstances(10);
 
     // then - the exporter still exports records but never acknowledges them
@@ -72,7 +79,7 @@ public class AsyncReplicationIT extends AbstractAsyncReplicationIT {
     final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
 
     // when - the replica is brought back, re-establishing the replication quorum
-    postgresCluster.startReplica();
+    cluster.startReplica();
 
     // then - the exporter resumes and fully catches up
     awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
