@@ -16,8 +16,10 @@ const waitStateBadge = {
 
 const Container = styled(Stack)<{$theme: 'dark' | 'light'}>`
   align-items: center;
-  font-weight: 400;
-  font-size: 12px;
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
   border-radius: 11px;
   border: 1px solid ${waitStateBadge.color};
   background-color: color-mix(
