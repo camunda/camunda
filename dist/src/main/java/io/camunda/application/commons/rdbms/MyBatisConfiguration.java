@@ -49,9 +49,11 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -61,6 +63,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,12 +161,60 @@ public class MyBatisConfiguration {
 
   @Bean
   public SqlSessionFactory sqlSessionFactory(
+      final Map<String, SqlSessionFactory> sqlSessionFactories) {
+    return sqlSessionFactories.get(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public Map<String, SqlSessionFactory> sqlSessionFactories(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver,
+      final DatabaseIdProvider databaseIdProvider)
+      throws Exception {
+    final var factories = new LinkedHashMap<String, SqlSessionFactory>();
+    for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
+      final var prefix =
+          physicalTenantResolver
+              .forPhysicalTenant(tenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms()
+              .getPrefix();
+      factories.put(
+          tenantId,
+          buildSqlSessionFactory(
+              rdbmsDataSources.dataSourceFor(tenantId),
+              databaseIdProvider,
+              rdbmsDataSources.vendorPropertiesFor(tenantId),
+              prefix));
+    }
+    return Map.copyOf(factories);
+  }
+
+  @Bean
+  public Map<String, RdbmsMapperBundle> rdbmsMapperBundles(
+      final Map<String, SqlSessionFactory> sqlSessionFactories,
+      final RdbmsDataSources rdbmsDataSources) {
+    final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
+    for (final var entry : sqlSessionFactories.entrySet()) {
+      final var physicalTenantId = entry.getKey();
+      final var factory = entry.getValue();
+      bundles.put(
+          physicalTenantId,
+          RdbmsMapperBundle.from(
+              factory,
+              new SqlSessionTemplate(factory),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
+    }
+    return Map.copyOf(bundles);
+  }
+
+  private SqlSessionFactory buildSqlSessionFactory(
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+      final String prefix)
       throws Exception {
-
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);

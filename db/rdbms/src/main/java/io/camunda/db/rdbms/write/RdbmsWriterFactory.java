@@ -7,128 +7,40 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.AgentInstanceMapper;
-import io.camunda.db.rdbms.sql.AuditLogMapper;
-import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.ClusterVariableMapper;
-import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
-import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
-import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
-import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
-import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
-import io.camunda.db.rdbms.sql.IncidentMapper;
-import io.camunda.db.rdbms.sql.JobMapper;
-import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
-import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
-import io.camunda.db.rdbms.sql.PurgeMapper;
-import io.camunda.db.rdbms.sql.SequenceFlowMapper;
-import io.camunda.db.rdbms.sql.UsageMetricMapper;
-import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
-import io.camunda.db.rdbms.sql.UserTaskMapper;
-import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.apache.ibatis.session.SqlSessionFactory;
+import java.util.Map;
 
 public class RdbmsWriterFactory {
 
-  private final SqlSessionFactory sqlSessionFactory;
-  private final ExporterPositionMapper exporterPositionMapper;
-  private final VendorDatabaseProperties vendorDatabaseProperties;
-  private final AuditLogMapper auditLogMapper;
-  private final DecisionInstanceMapper decisionInstanceMapper;
-  private final DecisionDefinitionMapper decisionDefinitionMapper;
-  private final DecisionRequirementsMapper decisionRequirementsMapper;
-  private final FlowNodeInstanceMapper flowNodeInstanceMapper;
-  private final IncidentMapper incidentMapper;
-  private final ProcessInstanceMapper processInstanceMapper;
-  private final ProcessDefinitionMapper processDefinitionMapper;
-  private final PurgeMapper purgeMapper;
-  private final UserTaskMapper userTaskMapper;
-  private final VariableMapper variableMapper;
+  private final Map<String, RdbmsMapperBundle> mapperBundles;
   private final MeterRegistry meterRegistry;
-  private final JobMapper jobMapper;
-  private final JobMetricsBatchMapper jobMetricsBatchMapper;
-  private final SequenceFlowMapper sequenceFlowMapper;
-  private final UsageMetricMapper usageMetricMapper;
-  private final UsageMetricTUMapper usageMetricTUMapper;
-  private final BatchOperationMapper batchOperationMapper;
-  private final MessageSubscriptionMapper messageSubscriptionMapper;
-  private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
-  private final ClusterVariableMapper clusterVariableMapper;
-  private final HistoryDeletionMapper historyDeletionMapper;
-  private final AgentInstanceMapper agentInstanceMapper;
   private final TransactionRunner transactionRunner;
 
   public RdbmsWriterFactory(
-      final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      final AuditLogMapper auditLogMapper,
-      final DecisionInstanceMapper decisionInstanceMapper,
-      final DecisionDefinitionMapper decisionDefinitionMapper,
-      final DecisionRequirementsMapper decisionRequirementsMapper,
-      final FlowNodeInstanceMapper flowNodeInstanceMapper,
-      final IncidentMapper incidentMapper,
-      final ProcessInstanceMapper processInstanceMapper,
-      final ProcessDefinitionMapper processDefinitionMapper,
-      final PurgeMapper purgeMapper,
-      final UserTaskMapper userTaskMapper,
-      final VariableMapper variableMapper,
+      final Map<String, RdbmsMapperBundle> mapperBundles,
       final MeterRegistry meterRegistry,
-      final JobMapper jobMapper,
-      final JobMetricsBatchMapper jobMetricsBatchMapper,
-      final SequenceFlowMapper sequenceFlowMapper,
-      final UsageMetricMapper usageMetricMapper,
-      final UsageMetricTUMapper usageMetricTUMapper,
-      final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper,
-      final AgentInstanceMapper agentInstanceMapper,
       final TransactionRunner transactionRunner) {
-    this.sqlSessionFactory = sqlSessionFactory;
-    this.exporterPositionMapper = exporterPositionMapper;
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
-    this.auditLogMapper = auditLogMapper;
-    this.decisionInstanceMapper = decisionInstanceMapper;
-    this.decisionDefinitionMapper = decisionDefinitionMapper;
-    this.decisionRequirementsMapper = decisionRequirementsMapper;
-    this.flowNodeInstanceMapper = flowNodeInstanceMapper;
-    this.incidentMapper = incidentMapper;
-    this.processInstanceMapper = processInstanceMapper;
-    this.processDefinitionMapper = processDefinitionMapper;
-    this.purgeMapper = purgeMapper;
-    this.userTaskMapper = userTaskMapper;
-    this.variableMapper = variableMapper;
-    this.jobMapper = jobMapper;
-    this.jobMetricsBatchMapper = jobMetricsBatchMapper;
+    this.mapperBundles = mapperBundles;
     this.meterRegistry = meterRegistry;
-    this.sequenceFlowMapper = sequenceFlowMapper;
-    this.usageMetricMapper = usageMetricMapper;
-    this.usageMetricTUMapper = usageMetricTUMapper;
-    this.batchOperationMapper = batchOperationMapper;
-    this.messageSubscriptionMapper = messageSubscriptionMapper;
-    this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
-    this.clusterVariableMapper = clusterVariableMapper;
-    this.historyDeletionMapper = historyDeletionMapper;
-    this.agentInstanceMapper = agentInstanceMapper;
     this.transactionRunner = transactionRunner;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
+    final var bundle = mapperBundles.get(config.physicalTenantId());
+    if (bundle == null) {
+      throw new IllegalArgumentException(
+          "No RdbmsMapperBundle registered for physical tenant '"
+              + config.physicalTenantId()
+              + "'. Known tenants: "
+              + mapperBundles.keySet());
+    }
     final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
     final var executionQueue =
         new DefaultExecutionQueue(
-            sqlSessionFactory,
+            bundle.sqlSessionFactory(),
             config.partitionId(),
             config.queueSize(),
             config.queueMemoryLimit(),
@@ -137,30 +49,30 @@ public class RdbmsWriterFactory {
     return new RdbmsWriters(
         config,
         executionQueue,
-        new ExporterPositionService(executionQueue, exporterPositionMapper),
+        new ExporterPositionService(executionQueue, bundle.exporterPositionMapper()),
         metrics,
-        auditLogMapper,
-        decisionInstanceMapper,
-        decisionDefinitionMapper,
-        decisionRequirementsMapper,
-        flowNodeInstanceMapper,
-        incidentMapper,
-        processInstanceMapper,
-        processDefinitionMapper,
-        purgeMapper,
-        userTaskMapper,
-        variableMapper,
-        vendorDatabaseProperties,
-        jobMapper,
-        jobMetricsBatchMapper,
-        sequenceFlowMapper,
-        usageMetricMapper,
-        usageMetricTUMapper,
-        batchOperationMapper,
-        messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper,
-        clusterVariableMapper,
-        historyDeletionMapper,
-        agentInstanceMapper);
+        bundle.auditLogMapper(),
+        bundle.decisionInstanceMapper(),
+        bundle.decisionDefinitionMapper(),
+        bundle.decisionRequirementsMapper(),
+        bundle.flowNodeInstanceMapper(),
+        bundle.incidentMapper(),
+        bundle.processInstanceMapper(),
+        bundle.processDefinitionMapper(),
+        bundle.purgeMapper(),
+        bundle.userTaskMapper(),
+        bundle.variableMapper(),
+        bundle.vendorDatabaseProperties(),
+        bundle.jobMapper(),
+        bundle.jobMetricsBatchMapper(),
+        bundle.sequenceFlowMapper(),
+        bundle.usageMetricMapper(),
+        bundle.usageMetricTUMapper(),
+        bundle.batchOperationMapper(),
+        bundle.messageSubscriptionMapper(),
+        bundle.correlatedMessageSubscriptionMapper(),
+        bundle.clusterVariableMapper(),
+        bundle.historyDeletionMapper(),
+        bundle.agentInstanceMapper());
   }
 }

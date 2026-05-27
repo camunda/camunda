@@ -67,7 +67,6 @@ import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.DeployedResourceMapper;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GlobalListenerMapper;
@@ -81,7 +80,6 @@ import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
-import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -92,6 +90,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
@@ -99,8 +98,8 @@ import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStat
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.util.Map;
 import javax.sql.DataSource;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -432,61 +431,10 @@ public class RdbmsConfiguration {
 
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
-      final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      final AuditLogMapper auditLogMapper,
-      final DecisionInstanceMapper decisionInstanceMapper,
-      final DecisionDefinitionMapper decisionDefinitionMapper,
-      final DecisionRequirementsMapper decisionRequirementsMapper,
-      final FlowNodeInstanceMapper flowNodeInstanceMapper,
-      final IncidentMapper incidentMapper,
-      final ProcessInstanceMapper processInstanceMapper,
-      final ProcessDefinitionMapper processDefinitionMapper,
-      final PurgeMapper purgeMapper,
-      final UserTaskMapper userTaskMapper,
-      final VariableMapper variableMapper,
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final MeterRegistry meterRegistry,
-      final JobMapper jobMapper,
-      final JobMetricsBatchMapper jobMetricsBatchMapper,
-      final SequenceFlowMapper sequenceFlowMapper,
-      final UsageMetricMapper usageMetricMapper,
-      final UsageMetricTUMapper usageMetricTUMapper,
-      final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper,
-      final AgentInstanceMapper agentInstanceMapper,
       final TransactionRunner transactionRunner) {
-    return new RdbmsWriterFactory(
-        sqlSessionFactory,
-        exporterPositionMapper,
-        vendorDatabaseProperties,
-        auditLogMapper,
-        decisionInstanceMapper,
-        decisionDefinitionMapper,
-        decisionRequirementsMapper,
-        flowNodeInstanceMapper,
-        incidentMapper,
-        processInstanceMapper,
-        processDefinitionMapper,
-        purgeMapper,
-        userTaskMapper,
-        variableMapper,
-        meterRegistry,
-        jobMapper,
-        jobMetricsBatchMapper,
-        sequenceFlowMapper,
-        usageMetricMapper,
-        usageMetricTUMapper,
-        batchOperationMapper,
-        messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper,
-        clusterVariableMapper,
-        historyDeletionMapper,
-        agentInstanceMapper,
-        transactionRunner);
+    return new RdbmsWriterFactory(rdbmsMapperBundles, meterRegistry, transactionRunner);
   }
 
   @Bean
