@@ -195,6 +195,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           final var state = jobTypeState.get(type);
           if (state != null) {
             state.removeRequest(longPollingRequest);
+            state.removeActiveRequest(longPollingRequest);
           }
         });
   }
@@ -271,6 +272,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
     if (request.isTimedOut()) {
       // already timed out, nothing to do here
+      return;
+    }
+
+    if (request.isCanceled()) {
+      // already cancelled, nothing to do here
       return;
     }
 
