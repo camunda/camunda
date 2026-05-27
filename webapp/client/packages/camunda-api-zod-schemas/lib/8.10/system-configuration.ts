@@ -25,9 +25,7 @@ const componentsConfigurationSchema = z.object({
 type ComponentsConfiguration = z.infer<typeof componentsConfigurationSchema>;
 
 const deploymentConfigurationSchema = z.object({
-	isEnterprise: z.boolean(),
 	isMultiTenancyEnabled: z.boolean(),
-	contextPath: z.string(),
 	maxRequestSize: z.number(),
 });
 type DeploymentConfiguration = z.infer<typeof deploymentConfigurationSchema>;
@@ -39,11 +37,7 @@ const authenticationConfigurationSchema = z.object({
 type AuthenticationConfiguration = z.infer<typeof authenticationConfigurationSchema>;
 
 const cloudConfigurationSchema = z.object({
-	organizationId: z.string().nullable(),
-	clusterId: z.string().nullable(),
 	stage: z.string().nullable(),
-	mixpanelToken: z.string().nullable(),
-	mixpanelAPIHost: z.string().nullable(),
 });
 type CloudConfiguration = z.infer<typeof cloudConfigurationSchema>;
 
