@@ -80,9 +80,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final CamundaAuthentication authentication) {
     final var query =
         RoleMemberQuery.of(
-            builder ->
-                builder.filter(
-                    filter -> filter.roleId(roleId).memberType(entityType)));
+            builder -> builder.filter(filter -> filter.roleId(roleId).memberType(entityType)));
     final var members = searchMembers(query, authentication);
     return members.total() > 0;
   }
