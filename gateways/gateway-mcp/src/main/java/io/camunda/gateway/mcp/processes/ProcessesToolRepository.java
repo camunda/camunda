@@ -24,7 +24,6 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import java.util.Map;
@@ -175,11 +174,9 @@ public class ProcessesToolRepository implements ToolRepository {
   private static Tool buildTool(final MessageSubscriptionEntity entity) {
     final var name = buildToolName(entity);
     final var description = buildDescription(entity.toolProperties());
-    return Tool.builder()
-        .name(name)
+    return Tool.builder(name, Map.of("type", "object"))
         .title(entity.toolName())
         .description(description)
-        .inputSchema(new JsonSchema("object", Map.of(), List.of(), false, Map.of(), Map.of()))
         .outputSchema(TOOL_OUTPUT_SCHEMA)
         .build();
   }

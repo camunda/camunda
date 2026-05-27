@@ -102,8 +102,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinition")
+              CallToolRequest.builder("getProcessDefinition")
                   .arguments(Map.of("processDefinitionKey", 5L))
                   .build());
 
@@ -123,7 +122,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getProcessDefinition").arguments(Map.of()).build());
+              CallToolRequest.builder("getProcessDefinition").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -145,7 +144,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       arguments.put("processDefinitionKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getProcessDefinition").arguments(arguments).build());
+              CallToolRequest.builder("getProcessDefinition").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -165,8 +164,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinition")
+              CallToolRequest.builder("getProcessDefinition")
                   .arguments(Map.of("processDefinitionKey", -3L))
                   .build());
 
@@ -197,8 +195,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessDefinitions")
+              CallToolRequest.builder("searchProcessDefinitions")
                   .arguments(
                       Map.of(
                           "filter",
@@ -252,10 +249,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchProcessDefinitions")
-                  .arguments(Map.of())
-                  .build());
+              CallToolRequest.builder("searchProcessDefinitions").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -278,8 +272,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
 
       // when (tenantId passed in arguments should be ignored by MCP filter schema)
       mcpClient.callTool(
-          CallToolRequest.builder()
-              .name("searchProcessDefinitions")
+          CallToolRequest.builder("searchProcessDefinitions")
               .arguments(Map.of("filter", Map.of("tenantId", "tenantId")))
               .build());
 
@@ -298,10 +291,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinitionXml")
-                  .arguments(Map.of())
-                  .build());
+              CallToolRequest.builder("getProcessDefinitionXml").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -323,10 +313,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       arguments.put("processDefinitionKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinitionXml")
-                  .arguments(arguments)
-                  .build());
+              CallToolRequest.builder("getProcessDefinitionXml").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -346,8 +333,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinitionXml")
+              CallToolRequest.builder("getProcessDefinitionXml")
                   .arguments(Map.of("processDefinitionKey", -3L))
                   .build());
 
@@ -374,8 +360,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinitionXml")
+              CallToolRequest.builder("getProcessDefinitionXml")
                   .arguments(Map.of("processDefinitionKey", 5L))
                   .build());
 
@@ -399,8 +384,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getProcessDefinitionXml")
+              CallToolRequest.builder("getProcessDefinitionXml")
                   .arguments(Map.of("processDefinitionKey", 5L))
                   .build());
 

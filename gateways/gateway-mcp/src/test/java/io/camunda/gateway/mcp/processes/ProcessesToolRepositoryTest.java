@@ -31,7 +31,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import java.util.Map;
@@ -190,12 +189,7 @@ class ProcessesToolRepositoryTest {
           "title": "orderProcess",
           "description": "Core purpose",
           "inputSchema": {
-            "type": "object",
-            "properties": {},
-            "required": [],
-            "additionalProperties":false,
-            "$defs":{},
-            "definitions":{}
+            "type": "object"
           },
           "outputSchema": {
             "type": "object",
@@ -314,7 +308,7 @@ class ProcessesToolRepositoryTest {
           .callHandler()
           .apply(
               transportContext,
-              CallToolRequest.builder().name("deploy_77").arguments(Map.of("foo", "bar")).build());
+              CallToolRequest.builder("deploy_77").arguments(Map.of("foo", "bar")).build());
 
       final var reqCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
       verify(messageServices).correlateMessage(reqCaptor.capture(), any());
@@ -428,7 +422,7 @@ class ProcessesToolRepositoryTest {
               .callHandler()
               .apply(
                   transportContext,
-                  CallToolRequest.builder().name("myTool_88").arguments(Map.of()).build());
+                  CallToolRequest.builder("myTool_88").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -471,15 +465,13 @@ class ProcessesToolRepositoryTest {
       final var callHandler = tool.get().callHandler();
 
       callHandler.apply(
-          transportContext,
-          CallToolRequest.builder().name("myTool_88").arguments(Map.of()).build());
+          transportContext, CallToolRequest.builder("myTool_88").arguments(Map.of()).build());
       final var firstCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
       verify(messageServices).correlateMessage(firstCaptor.capture(), any());
 
       // when
       callHandler.apply(
-          transportContext,
-          CallToolRequest.builder().name("myTool_88").arguments(Map.of()).build());
+          transportContext, CallToolRequest.builder("myTool_88").arguments(Map.of()).build());
 
       // then
       final var secondCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
@@ -502,11 +494,8 @@ class ProcessesToolRepositoryTest {
       mockStaticTool =
           SyncToolSpecification.builder()
               .tool(
-                  Tool.builder()
-                      .name("getProcessInstance")
+                  Tool.builder("getProcessInstance", Map.of("type", "object"))
                       .description("Get process instance by key.")
-                      .inputSchema(
-                          new JsonSchema("object", Map.of(), List.of(), false, Map.of(), Map.of()))
                       .build())
               .callHandler((ctx, req) -> null)
               .build();

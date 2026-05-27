@@ -178,10 +178,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getUserTask")
-                  .arguments(Map.of("userTaskKey", 5L))
-                  .build());
+              CallToolRequest.builder("getUserTask").arguments(Map.of("userTaskKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -205,10 +202,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getUserTask")
-                  .arguments(Map.of("userTaskKey", 5L))
-                  .build());
+              CallToolRequest.builder("getUserTask").arguments(Map.of("userTaskKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -227,8 +221,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     void shouldFailGetUserTaskByKeyOnMissingKey() {
       // when
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getUserTask").arguments(Map.of()).build());
+          mcpClient.callTool(CallToolRequest.builder("getUserTask").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -249,8 +242,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       final var arguments = new HashMap<String, Object>();
       arguments.put("userTaskKey", null);
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getUserTask").arguments(arguments).build());
+          mcpClient.callTool(CallToolRequest.builder("getUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -270,10 +262,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getUserTask")
-                  .arguments(Map.of("userTaskKey", -3L))
-                  .build());
+              CallToolRequest.builder("getUserTask").arguments(Map.of("userTaskKey", -3L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -301,8 +290,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(
                       Map.of(
                           "filter",
@@ -366,8 +354,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(
                       Map.of(
                           "filter",
@@ -402,8 +389,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(
                       Map.of(
                           "filter",
@@ -435,8 +421,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(
                       Map.of(
                           "filter",
@@ -479,8 +464,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(
                       Map.of(
                           "filter",
@@ -523,8 +507,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when (tenantId, candidateGroup, candidateUser passed in arguments should be ignored by MCP
       // filter schema)
       mcpClient.callTool(
-          CallToolRequest.builder()
-              .name("searchUserTasks")
+          CallToolRequest.builder("searchUserTasks")
               .arguments(
                   Map.of(
                       "filter",
@@ -554,7 +537,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchUserTasks").arguments(Map.of()).build());
+              CallToolRequest.builder("searchUserTasks").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -574,8 +557,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -598,8 +580,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTasks")
+              CallToolRequest.builder("searchUserTasks")
                   .arguments(Map.of("filter", Map.of("creationDate", Map.of("from", "not-a-date"))))
                   .build());
 
@@ -631,8 +612,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(Map.of("userTaskKey", 5L, "assignee", "jane.doe"))
                   .build());
 
@@ -661,8 +641,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(
                       Map.of(
                           "userTaskKey",
@@ -697,8 +676,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(Map.of("userTaskKey", 5L))
                   .build());
 
@@ -729,7 +707,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
 
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
+              CallToolRequest.builder("assignUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -756,8 +734,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(Map.of("userTaskKey", 5L, "assignee", "jane.doe"))
                   .build());
 
@@ -779,8 +756,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(Map.of("assignee", "jane.doe"))
                   .build());
 
@@ -805,7 +781,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       arguments.put("assignee", "jane.doe");
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
+              CallToolRequest.builder("assignUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -825,8 +801,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("assignUserTask")
+              CallToolRequest.builder("assignUserTask")
                   .arguments(Map.of("userTaskKey", -3L, "assignee", "jane.doe"))
                   .build());
 
@@ -857,8 +832,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
+              CallToolRequest.builder("searchUserTaskVariables")
                   .arguments(
                       Map.of(
                           "userTaskKey",
@@ -903,8 +877,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
+              CallToolRequest.builder("searchUserTaskVariables")
                   .arguments(Map.of("userTaskKey", 5L, "truncateValues", false))
                   .build());
 
@@ -940,8 +913,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
+              CallToolRequest.builder("searchUserTaskVariables")
                   .arguments(
                       Map.of(
                           "userTaskKey",
@@ -983,8 +955,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
+              CallToolRequest.builder("searchUserTaskVariables")
                   .arguments(Map.of("userTaskKey", 5L))
                   .build());
 
@@ -1006,10 +977,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
-                  .arguments(Map.of())
-                  .build());
+              CallToolRequest.builder("searchUserTaskVariables").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -1031,10 +999,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       arguments.put("userTaskKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
-                  .arguments(arguments)
-                  .build());
+              CallToolRequest.builder("searchUserTaskVariables").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -1054,8 +1019,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchUserTaskVariables")
+              CallToolRequest.builder("searchUserTaskVariables")
                   .arguments(Map.of("userTaskKey", -3L))
                   .build());
 

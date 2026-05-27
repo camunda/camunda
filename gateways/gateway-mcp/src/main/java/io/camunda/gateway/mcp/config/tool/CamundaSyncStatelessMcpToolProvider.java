@@ -133,10 +133,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
     final String inputSchema = jsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
 
     final var toolBuilder =
-        McpSchema.Tool.builder()
-            .name(toolName)
-            .description(toolDescription)
-            .inputSchema(getJsonMapper(), inputSchema);
+        McpSchema.Tool.builder(toolName, getJsonMapper(), inputSchema).description(toolDescription);
 
     if (toolAnnotation.annotations() != null) {
       final var toolAnnotations = toolAnnotation.annotations();
