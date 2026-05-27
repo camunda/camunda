@@ -96,6 +96,11 @@ abstract class GenerateAssertjAssertionsTask : DefaultTask() {
                 AssertionsEntryPointType.STANDARD,
                 null,
             )
+            generator.generateAssertionsEntryPointClassFor(
+                descriptions,
+                AssertionsEntryPointType.SOFT,
+                null,
+            )
         } finally {
             loader.close()
         }
