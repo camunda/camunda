@@ -31,12 +31,9 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
-// TODO: Remove @DisabledIfSystemProperty once RDBMS AgentInstance search is implemented (PR #53922)
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 public class AgentInstanceFetchIT {
 
   private static final String AGENT_ELEMENT_ID = "agentAhsp";
