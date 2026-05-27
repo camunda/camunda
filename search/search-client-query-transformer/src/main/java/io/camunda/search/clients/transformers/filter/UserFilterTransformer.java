@@ -10,9 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
-import static io.camunda.webapps.schema.descriptors.index.UserIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 
@@ -31,9 +29,6 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   @Override
   public SearchQuery toSearchQuery(final UserFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    if (filter.key() != null) {
-      queries.add(term(KEY, filter.key()));
-    }
     queries.addAll(stringOperations(USERNAME, filter.usernameOperations()));
     queries.addAll(stringOperations(NAME, filter.nameOperations()));
     queries.addAll(stringOperations(EMAIL, filter.emailOperations()));

@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 public record GroupFilter(
-    Long groupKey,
     List<Operation<String>> groupIdOperations,
     String name,
     String description,
@@ -38,7 +37,6 @@ public record GroupFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .groupKey(groupKey)
         .groupIdOperations(groupIdOperations)
         .name(name)
         .description(description)
@@ -50,7 +48,6 @@ public record GroupFilter(
   }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
-    private Long groupKey;
     private List<Operation<String>> groupIdOperations;
     private String name;
     private String description;
@@ -59,11 +56,6 @@ public record GroupFilter(
     private EntityType childMemberType;
     private String roleId;
     private Map<EntityType, Set<String>> memberIdsByType;
-
-    public Builder groupKey(final Long value) {
-      groupKey = value;
-      return this;
-    }
 
     public Builder groupIdOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -136,7 +128,6 @@ public record GroupFilter(
     @Override
     public GroupFilter build() {
       return new GroupFilter(
-          groupKey,
           groupIdOperations,
           name,
           description,

@@ -15,7 +15,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
-import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
@@ -38,9 +37,6 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
       return createMultipleMemberTypeQuery(filter);
     }
     final var queries = new ArrayList<SearchQuery>();
-    if (filter.groupKey() != null) {
-      queries.add(term(KEY, filter.groupKey()));
-    }
     if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
       queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
     }
