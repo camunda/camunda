@@ -100,6 +100,18 @@ public class CamundaRdbmsInvocationContextProviderExtension
                 })
             .withDatabaseContainer(createDefaultMSSQLServerContainer()));
     applications.put(
+        "camundaWithMssqlReplicationCluster",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(
+                c -> {
+                  c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
+                  final var rdbms = c.getData().getSecondaryStorage().getRdbms();
+                  rdbms.getAsyncReplication().setEnabled(true);
+                  rdbms.getAsyncReplication().setMinSyncReplicas(1);
+                })
+            .withDatabaseContainer(new MSSQLReplicationClusterContainer()));
+    applications.put(
         "camundaWithManualMssqlDB",
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
             .withRdbms()
