@@ -146,6 +146,13 @@
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
 
+# Frontend skills
+/.claude/skills/frontend-feature/          @camunda/core-features
+/.claude/skills/frontend-integration-test/ @camunda/core-features
+/.claude/skills/frontend-migrator/         @camunda/core-features
+/.claude/skills/frontend-unit-test/        @camunda/core-features
+/.claude/skills/operate-frontend/          @camunda/core-features
+
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
 

@@ -1,11 +1,13 @@
 ---
-applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/client/**"
+applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/client/**,webapp/client/**"
 ---
 
 # Frontend Development Conventions
 
-The webapps (Operate, Tasklist, Identity, Optimize) each have a separate frontend under their
-`client/` directory. Read the module's `client/README.md` before making changes.
+The frontends live under `client/` directories. The orchestration cluster webapp at `webapp/client/`
+is the unified frontend replacing the legacy apps. Read `webapp/client/README.md` and
+`docs/monorepo-docs/frontend/frontend.md` before working on the unified app. For the legacy apps
+(Operate, Tasklist, Identity, Optimize), read the module's `client/README.md` before making changes.
 
 ## Tech Stack
 
@@ -57,3 +59,28 @@ yarn start            # Start dev server
   conventions despite sharing the same tech stack.
 - Tasklist uses Stylelint for CSS/SCSS; run `npm run stylelint` before committing style changes.
 - Frontends are built as part of the Maven build by default. Skip with `-PskipFrontendBuild`.
+
+## Orchestration Cluster Webapp (npm)
+
+The unified frontend at `webapp/client/apps/orchestration-cluster-webapp/`. For full conventions,
+see `docs/monorepo-docs/frontend/`.
+
+```bash
+# From webapp/client/
+npm ci                    # Install dependencies (workspace)
+npm run dev:oc            # Dev server on :3000
+npm run lint              # ESLint + Prettier
+
+# From webapp/client/apps/orchestration-cluster-webapp/
+npm run typecheck         # TypeScript across all tsconfigs
+npm run test:unit         # Vitest browser mode (headless Chromium)
+npm run test:integration  # Playwright integration tests (MSW-mocked)
+npm run test:a11y         # Playwright accessibility (light + dark)
+npm run test:visual       # Playwright visual regression (needs Docker)
+```
+
+- Tech stack: React 19, TypeScript, Vite, TanStack Router, TanStack Query, Carbon, MSW
+- Unit tests use Vitest Browser Mode (real Chromium), not jsdom. See `.claude/skills/frontend-unit-test/`.
+- Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
+- Follow the modules/pages/routes architecture. See `.claude/skills/frontend-feature/`.
+- For migrating legacy Operate/Tasklist code to the unified app, see `.claude/skills/frontend-migrator/`.
