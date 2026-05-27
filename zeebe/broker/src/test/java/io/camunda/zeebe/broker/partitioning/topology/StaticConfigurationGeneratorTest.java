@@ -168,7 +168,7 @@ fixed:
     assertThat(partitionDistribution).hasSize(2);
     partitionDistribution.forEach(p -> assertThat(p.members()).hasSize(3));
 
-    // All members use zone/nodeId format
+    // All members use zone_nodeId format
     partitionDistribution.forEach(
         p -> p.members().forEach(m -> assertThat(m.zone()).isNotNull().isIn("us-east", "us-west")));
 

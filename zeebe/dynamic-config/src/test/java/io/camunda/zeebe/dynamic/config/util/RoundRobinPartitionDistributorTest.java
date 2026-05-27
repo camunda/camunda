@@ -104,7 +104,7 @@ final class RoundRobinPartitionDistributorTest {
   void shouldDistributePartitionsAcrossZoneAwareMembers() {
     // given
     final var members =
-        Set.of(MemberId.from("eu-west/0"), MemberId.from("eu-west/1"), MemberId.from("eu-west/2"));
+        Set.of(MemberId.from("eu-west_0"), MemberId.from("eu-west_1"), MemberId.from("eu-west_2"));
 
     // when
     final var distribution =

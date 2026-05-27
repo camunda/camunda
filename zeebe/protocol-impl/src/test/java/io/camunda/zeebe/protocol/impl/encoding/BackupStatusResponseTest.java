@@ -37,7 +37,7 @@ class BackupStatusResponseTest {
 
     // then
     assertThat(decoded.getBrokerId()).isEqualTo(1);
-    assertThat(decoded.getBrokerIdString()).isEqualTo("zone-a/1");
+    assertThat(decoded.getBrokerIdString()).isEqualTo("zone-a_1");
     assertThat(decoded.hasBrokerId()).isTrue();
   }
 }

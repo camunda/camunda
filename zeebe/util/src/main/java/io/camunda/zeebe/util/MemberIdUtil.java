@@ -55,12 +55,12 @@ public final class MemberIdUtil {
    * Returns the canonical string representation of a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}. The zone must already be validated (see {@link #validateZone}).
+   * it is {@code "$zone_$nodeId"}. The zone must already be validated (see {@link #validateZone}).
    */
   public static String memberIdString(final @Nullable String zone, final int nodeId) {
     if (zone == null) {
       return Integer.toString(nodeId);
     }
-    return zone + "/" + nodeId;
+    return zone + "_" + nodeId;
   }
 }

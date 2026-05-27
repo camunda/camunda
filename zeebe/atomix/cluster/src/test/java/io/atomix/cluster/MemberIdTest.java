@@ -125,7 +125,7 @@ final class MemberIdTest {
     assertThat(memberId)
         .returns(7, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
-        .returns("us-east/7", MemberId::id);
+        .returns("us-east_7", MemberId::id);
     assertEncodeDecode(memberId);
   }
 
@@ -142,13 +142,13 @@ final class MemberIdTest {
   @Test
   void shouldExtractComponentsFromZonedForm() {
     // given
-    final var memberId = MemberId.from("us-east/12");
+    final var memberId = MemberId.from("us-east_12");
 
     // when / then
     assertThat(memberId)
         .returns(12, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
-        .returns("us-east/12", MemberId::id);
+        .returns("us-east_12", MemberId::id);
     assertEncodeDecode(memberId);
   }
 
@@ -169,11 +169,11 @@ final class MemberIdTest {
 
   static Stream<Arguments> isInZoneCases() {
     return Stream.of(
-        Arguments.of("us-east/7", "us-east", true), // matching zone
-        Arguments.of("us-east/7", "eu-west", false), // different zone
+        Arguments.of("us-east_7", "us-east", true), // matching zone
+        Arguments.of("us-east_7", "eu-west", false), // different zone
         Arguments.of("7", "us-east", false), // zone set but id is bare
         Arguments.of("7", null, true), // null zone, bare id
-        Arguments.of("us-east/1", null, false) // null zone, zoned id
+        Arguments.of("us-east_1", null, false) // null zone, zoned id
         );
   }
 
@@ -187,7 +187,7 @@ final class MemberIdTest {
   @Test
   void shouldThrowWhenMemberZoneDoesNotMatchMemberIdPrefix() {
     // given
-    final var memberId = MemberId.from("us-east/0");
+    final var memberId = MemberId.from("us-east_0");
 
     // then
     assertThatThrownBy(() -> Member.builder(memberId).withZoneId("us").build())

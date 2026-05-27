@@ -122,7 +122,7 @@ final class ClusterApiUtilsTest {
     final var encoded = ClusterApiUtils.mapOperation(operation);
 
     // then
-    assertThat(encoded.getBrokerId()).isEqualTo("zone-a/0");
+    assertThat(encoded.getBrokerId()).isEqualTo("zone-a_0");
   }
 
   @Test
@@ -137,7 +137,7 @@ final class ClusterApiUtilsTest {
             new CompletedOperation(operation, Instant.ofEpochSecond(17172371723L)));
 
     // then
-    assertThat(encoded.getBrokerId()).isEqualTo("zone-b/2");
+    assertThat(encoded.getBrokerId()).isEqualTo("zone-b_2");
   }
 
   @Test
@@ -163,7 +163,7 @@ final class ClusterApiUtilsTest {
     assertThat(body).isNotNull();
     assertThat(body.getBrokers())
         .extracting(b -> b.getId().value())
-        .containsExactlyInAnyOrder("zone-a/0", "zone-b/0");
+        .containsExactlyInAnyOrder("zone-a_0", "zone-b_0");
   }
 
   @Test

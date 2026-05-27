@@ -16,7 +16,7 @@ import java.util.Objects;
 
 /**
  * A broker ID that is either an integer (non-zone-aware clusters) or a string (zone-aware clusters,
- * e.g. "zone-a/0").
+ * e.g. "zone-a_0").
  *
  * <p>This is used to deserialize BrokerId from openAPI spec, to allow deserializing it from an
  * integer or from a string.

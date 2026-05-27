@@ -112,7 +112,7 @@ public final class StaticConfigurationGenerator {
 
   /**
    * Generates composite {@link MemberId}s for all brokers in a zone-aware cluster. The format is
-   * {@code "zone/localNodeId"} (e.g. {@code "us-east1/0"}). Local node IDs are 0-indexed within
+   * {@code "zone_localNodeId"} (e.g. {@code "us-east1_0"}). Local node IDs are 0-indexed within
    * each zone, derived from the {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg} configuration in the
    * same insertion order used by each broker to determine its own member ID.

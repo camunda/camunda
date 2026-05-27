@@ -690,7 +690,7 @@ message TopologyResponse {
 message BrokerInfo {
   // unique (within a cluster) node ID for the broker
   // Deprecated: Use memberId instead, which carries the composite member
-  // identifier (e.g. "us-east/0" in zone-aware setups, or "0" otherwise).
+  // identifier (e.g. "us-east_0" in zone-aware setups, or "0" otherwise).
   int32 nodeId = 1 [deprecated = true];
   // hostname of the broker
   string host = 2;
@@ -700,8 +700,8 @@ message BrokerInfo {
   repeated Partition partitions = 4;
   // broker version
   string version = 5;
-  // composite broker identifier: "$zone/$nodeId" in zone-aware setups (e.g.
-  // "us-east/0"), or the bare node ID as a string otherwise (e.g. "0")
+  // composite broker identifier: "$zone_$nodeId" in zone-aware setups (e.g.
+  // "us-east_0"), or the bare node ID as a string otherwise (e.g. "0")
   string brokerId = 6;
   // zone where this broker is running
   string zone = 7;

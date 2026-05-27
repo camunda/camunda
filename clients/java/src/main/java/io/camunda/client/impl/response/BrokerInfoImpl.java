@@ -27,7 +27,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   private final int nodeId;
   private final String zone;
-  // memberId always represents $zone/$nodeId or $nodeId if zone is unset.
+  // memberId always represents $zone_$nodeId or $nodeId if zone is unset.
   // however, it's constructed in the server, hence the "duplication"
   private final String memberId;
   private final String host;
