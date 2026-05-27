@@ -18,9 +18,8 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
@@ -28,12 +27,20 @@ import org.springframework.util.unit.DataSize;
 @MultiDbTest
 public class ActivateJobIT {
 
-  // Numbers to test ResponseMapper.toActivateJobsResponse() method's if check where the actual
-  // response size is bigger than the max message size when the response is built with metadata.
-  // When we set jobVariableSize to 144, it produces ActivatedJob of size 1020 bytes.
-  // 5 jobs of 1020 bytes equals to 5100 bytes (the configured maxMessageSize).
-  // But when we build the actual response it exceeds 5100 bytes and fall into our case.
-  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofBytes(5100);
+  // Each variable value is a string of literal `"` characters. The broker stores variables
+  // as MsgPack (~7 KB per JobRecord) but the gRPC gateway re-encodes them as JSON in the
+  // ActivateJobsResponse proto, escaping each `"` to `\"` and doubling the byte count
+  // (~14 KB per ActivatedJob). With maxMessageSize = 64 KB:
+  //   - the broker can fit all 5 jobs into a single JobBatchRecord
+  //     (5 * 7.5 KB + 8 KB safety buffer <= 64 KB)
+  //   - but the gateway response (5 * ~14 KB) cannot fit within 64 KB, so at least one job
+  //     is deferred and FAILed through RoundRobinActivateJobsHandler.toFailJobRequest.
+  // The gRPC path is required: the REST gateway's defer check compares against the broker
+  // record size, not the REST response size, so it cannot trigger this path under unified
+  // config that ties broker and gateway maxMessageSize together.
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(64);
+  private static final int QUOTE_PAYLOAD_LENGTH = 7000;
+  private static final int JOBS_TO_CREATE = 5;
   private static final String JOB_TYPE = "foo";
   private static final String PROCESS_ID = JOB_TYPE;
   private static final BpmnModelInstance BPMN_MODEL_INSTANCE =
@@ -49,77 +56,69 @@ public class ActivateJobIT {
       new TestStandaloneBroker()
           .withBasicAuth()
           .withAuthorizationsEnabled()
-          .withClusterConfig(
-              c -> {
-                c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
-              })
-          .withApiConfig(c -> c.getLongPolling().setEnabled(true));
+          .withRecordingExporter(true)
+          .withClusterConfig(c -> c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
 
-  private static CamundaClient camundaClient;
+  private static CamundaClient grpcClient;
 
   @BeforeAll
   static void setup() {
-    camundaClient
+    grpcClient = BROKER.newClientBuilder().preferRestOverGrpc(false).build();
+    grpcClient
         .newDeployResourceCommand()
         .addProcessModel(BPMN_MODEL_INSTANCE, "foo.bpmn")
         .send()
         .join();
   }
 
+  @AfterAll
+  static void tearDown() {
+    if (grpcClient != null) {
+      grpcClient.close();
+    }
+  }
+
   @Test
-  void shouldDeferActivatedJobsWithAuthenticationClaims() {
+  void shouldFailDeferredJobsWithAnonymousAuthorizationClaims() {
     // given
-    final int jobVariableSize = 144;
-    final var byteArray = new byte[jobVariableSize];
-    final var message = new String(byteArray, StandardCharsets.UTF_8);
-    final int numberOfJobsToActivate = 5;
-    for (int i = 0; i < numberOfJobsToActivate; i++) {
-      camundaClient
+    final var quoteHeavyPayload = "\"".repeat(QUOTE_PAYLOAD_LENGTH);
+    for (int i = 0; i < JOBS_TO_CREATE; i++) {
+      grpcClient
           .newCreateInstanceCommand()
           .bpmnProcessId(PROCESS_ID)
           .latestVersion()
-          .variables(Map.of("message_content", message))
+          .variables(Map.of("message_content", quoteHeavyPayload))
           .send()
           .join();
     }
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withType(JOB_TYPE)
-                .limit(numberOfJobsToActivate))
-        .describedAs("Expect that all jobs are created.")
-        .hasSize(numberOfJobsToActivate);
+                .limit(JOBS_TO_CREATE))
+        .as("all jobs are created before activation")
+        .hasSize(JOBS_TO_CREATE);
 
     // when
-    final var response =
-        camundaClient
-            .newActivateJobsCommand()
-            .jobType(JOB_TYPE)
-            .maxJobsToActivate(numberOfJobsToActivate)
-            .send()
-            .join();
+    grpcClient
+        .newActivateJobsCommand()
+        .jobType(JOB_TYPE)
+        .maxJobsToActivate(JOBS_TO_CREATE)
+        .send()
+        .join();
 
-    // then
-    // Some jobs should be deferred due to message size limits
-    final var activatedJobs = response.getJobs().size();
-    Assertions.assertThat(activatedJobs)
-        .describedAs("Expect that not all jobs can be activated due to message size limits")
-        .isLessThan(numberOfJobsToActivate);
-
-    // Wait for deferred jobs to be failed back
-    final var failedJobs =
+    // then — the gateway response cannot include all activated jobs (5 * ~14 KB > 64 KB),
+    // so at least one is FAILed back to the broker via toFailJobRequest. The fix in
+    // RoundRobinActivateJobsHandler attaches the anonymous authorization claim so the
+    // broker bypasses authorization for the gateway-internal FAIL command; the resulting
+    // FAILED event carries the same claim and is what we assert on.
+    final var failedJob =
         RecordingExporter.jobRecords(JobIntent.FAILED)
             .withType(JOB_TYPE)
-            .limit(numberOfJobsToActivate - activatedJobs)
-            .toList();
-
-    Assertions.assertThat(failedJobs)
-        .describedAs("Expect that deferred jobs are failed back to broker")
-        .isNotEmpty();
-
-    // Check that failed jobs contain authorization claims
-    final var failedJob = failedJobs.getFirst();
-    final var failedJobAuthorizations = failedJob.getAuthorizations();
-    assertThat(failedJobAuthorizations).isNotEmpty();
-    assertThat(failedJobAuthorizations).containsKey(Authorization.AUTHORIZED_ANONYMOUS_USER);
+            .limit(1)
+            .findFirst()
+            .orElseThrow();
+    assertThat(failedJob.getAuthorizations())
+        .as("gateway-issued FAIL command carries the anonymous authorization claim")
+        .containsEntry(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
   }
 }
