@@ -7,7 +7,7 @@
  */
 
 import {VariablesTab} from '../index';
-import {render, screen, waitFor, within} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {createVariable, searchResult} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -44,9 +44,7 @@ describe('VariablesTab document variables', () => {
     );
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const downloadButton = variableRow.getByLabelText(
@@ -73,9 +71,7 @@ describe('VariablesTab document variables', () => {
     );
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
@@ -101,9 +97,7 @@ describe('VariablesTab document variables', () => {
     );
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myImage'));
     const previewButton = variableRow.getByLabelText(
@@ -130,9 +124,7 @@ describe('VariablesTab document variables', () => {
     );
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const previewButton = variableRow.getByLabelText(
@@ -155,9 +147,7 @@ describe('VariablesTab document variables', () => {
     );
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
@@ -169,10 +159,7 @@ describe('VariablesTab document variables', () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     render(<VariablesTab />, {wrapper: getWrapper()});
-
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
+    await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-testVariableName'));
     expect(
