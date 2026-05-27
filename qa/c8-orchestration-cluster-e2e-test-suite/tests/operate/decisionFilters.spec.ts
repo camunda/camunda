@@ -66,7 +66,6 @@ test.describe('Decision Filters', () => {
 
   test('Evaluated filter shows only evaluated instances', async ({
     operateDecisionsPage,
-    page,
   }) => {
     let totalCount: number;
 
