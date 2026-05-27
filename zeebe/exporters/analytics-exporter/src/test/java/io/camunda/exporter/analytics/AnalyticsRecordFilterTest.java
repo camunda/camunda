@@ -12,14 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AnalyticsRecordFilterTest {
 
@@ -43,14 +47,13 @@ class AnalyticsRecordFilterTest {
     assertThat(filter.acceptType(RecordType.EVENT)).isTrue();
   }
 
-  @Test
-  void shouldRejectCommandRecordType() {
-    assertThat(filter.acceptType(RecordType.COMMAND)).isFalse();
-  }
-
-  @Test
-  void shouldRejectCommandRejectionRecordType() {
-    assertThat(filter.acceptType(RecordType.COMMAND_REJECTION)).isFalse();
+  @ParameterizedTest
+  @EnumSource(
+      value = RecordType.class,
+      mode = EnumSource.Mode.EXCLUDE,
+      names = {"EVENT"})
+  void shouldRejectNonEventRecordType(final RecordType type) {
+    assertThat(filter.acceptType(type)).isFalse();
   }
 
   @Test
@@ -76,9 +79,17 @@ class AnalyticsRecordFilterTest {
     assertThat(filter.acceptIntent(UsageMetricIntent.EXPORTED)).isTrue();
   }
 
-  @Test
-  void shouldRejectUnregisteredIntent() {
-    assertThat(filter.acceptIntent(ProcessInstanceCreationIntent.CREATE)).isFalse();
+  @ParameterizedTest
+  @MethodSource("unregisteredIntents")
+  void shouldRejectUnregisteredIntent(final Intent intent) {
+    assertThat(filter.acceptIntent(intent)).isFalse();
+  }
+
+  private static Stream<Intent> unregisteredIntents() {
+    return Stream.of(
+        ProcessInstanceCreationIntent.CREATE,
+        ProcessInstanceIntent.ELEMENT_COMPLETING,
+        DeploymentIntent.CREATED);
   }
 
   @Test
