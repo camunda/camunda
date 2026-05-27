@@ -131,10 +131,29 @@ test.describe
         extendedSearchRes,
       );
       const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+      // Sum counts across ALL time buckets — with PT1M resolution and a 24h
+      // window jobs can be spread across multiple 1-minute buckets, so
+      // items[0] alone is not guaranteed to match the by-types total.
+      const extendedItems = extendedResponseBody.items as Array<{
+        created: {count: number};
+        completed: {count: number};
+        failed: {count: number};
+      }>;
+      const totalCreated = extendedItems.reduce(
+        (sum, i) => sum + i.created.count,
+        0,
+      );
+      const totalCompleted = extendedItems.reduce(
+        (sum, i) => sum + i.completed.count,
+        0,
+      );
+      const totalFailed = extendedItems.reduce(
+        (sum, i) => sum + i.failed.count,
+        0,
+      );
+      expect(totalCreated).toBe(item.created.count);
+      expect(totalCompleted).toBe(item.completed.count);
+      expect(totalFailed).toBe(item.failed.count);
     });
   });
 
@@ -270,10 +289,29 @@ test.describe
         extendedSearchRes,
       );
       const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+      // Sum counts across ALL time buckets — without a resolution parameter
+      // the engine may still split data into multiple buckets, so items[0]
+      // alone is not guaranteed to match the by-types total.
+      const extendedItems = extendedResponseBody.items as Array<{
+        created: {count: number};
+        completed: {count: number};
+        failed: {count: number};
+      }>;
+      const totalCreated = extendedItems.reduce(
+        (sum, i) => sum + i.created.count,
+        0,
+      );
+      const totalCompleted = extendedItems.reduce(
+        (sum, i) => sum + i.completed.count,
+        0,
+      );
+      const totalFailed = extendedItems.reduce(
+        (sum, i) => sum + i.failed.count,
+        0,
+      );
+      expect(totalCreated).toBe(item.created.count);
+      expect(totalCompleted).toBe(item.completed.count);
+      expect(totalFailed).toBe(item.failed.count);
     });
   });
 

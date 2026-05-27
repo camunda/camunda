@@ -13,11 +13,13 @@ import {validateResponse} from 'json-body-assertions';
 
 // A freshly created batch operation can take longer than the default 30s
 // to be visible to the cancel/suspend/resume commands on a loaded shared
-// cluster (404 → 204). Use a more generous budget for batch operation
-// lifecycle actions while the engine catches up.
+// cluster (404 → 204). Use a more generous budget here for batch operation
+// lifecycle actions while the engine catches up. The 90s budget proved tight
+// when multiple cancellation batches (10 instances each) accumulate within a
+// single spec file, so allow up to 240s with a longer tail interval.
 export const batchOperationLifecycleOptions = {
-  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000],
-  timeout: 90_000,
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000, 45_000],
+  timeout: 240_000,
 };
 
 export async function cancelBatchOperation(
