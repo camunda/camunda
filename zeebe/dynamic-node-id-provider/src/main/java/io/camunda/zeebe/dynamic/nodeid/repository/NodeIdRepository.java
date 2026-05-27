@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public interface NodeIdRepository extends AutoCloseable {
 
@@ -72,14 +73,14 @@ public interface NodeIdRepository extends AutoCloseable {
    * @param restoreStatus the new restore status
    * @param etag the etag of the current restore status in the repository
    */
-  void updateRestoreStatus(StoredRestoreStatus.RestoreStatus restoreStatus, String etag);
+  void updateRestoreStatus(StoredRestoreStatus.RestoreStatus restoreStatus, @Nullable String etag);
 
   /**
    * Get the current restore status from the repository
    *
    * @return the current restore status, or null if none exists
    */
-  StoredRestoreStatus getRestoreStatus(final String restoreId);
+  @Nullable StoredRestoreStatus getRestoreStatus(final String restoreId);
 
   /**
    * Get the count of available leases in the repository. This can be used to refresh the available
@@ -153,7 +154,10 @@ public interface NodeIdRepository extends AutoCloseable {
     }
 
     static StoredLease of(
-        final int nodeId, final Lease lease, final Metadata metadata, final String eTag) {
+        final int nodeId,
+        final @Nullable Lease lease,
+        final @Nullable Metadata metadata,
+        final @Nullable String eTag) {
       if (eTag == null || eTag.isEmpty()) {
         throw new IllegalArgumentException("eTag cannot be null or empty:" + eTag);
       }
@@ -165,6 +169,9 @@ public interface NodeIdRepository extends AutoCloseable {
             Optional.ofNullable(metadata).map(Metadata::version).orElse(Version.zero());
         return new StoredLease.Uninitialized(new NodeInstance(nodeId, version), eTag);
       } else {
+        if (metadata == null) {
+          throw new IllegalArgumentException("metadata cannot be null when lease is initialized");
+        }
         return new StoredLease.Initialized(metadata, lease, eTag);
       }
     }
