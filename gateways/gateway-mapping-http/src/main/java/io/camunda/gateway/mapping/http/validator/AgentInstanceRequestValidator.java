@@ -7,7 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
@@ -83,12 +82,6 @@ public class AgentInstanceRequestValidator {
             validateKeyFormat(request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
-          if (request.getStatus() == null
-              && !hasMetricsDelta(request)
-              && request.getTools() == null) {
-            violations.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("status, metrics, tools"));
-          }
-
           if (request.getMetrics() != null) {
             final var metrics = request.getMetrics();
             violations.addAll(validateDelta("metrics.inputTokens", metrics.getInputTokens()));
@@ -122,13 +115,5 @@ public class AgentInstanceRequestValidator {
       return List.of(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(fieldName, value, ">= 0"));
     }
     return Collections.emptyList();
-  }
-
-  private boolean hasMetricsDelta(final AgentInstanceUpdateRequest request) {
-    return request.getMetrics() != null
-        && (request.getMetrics().getInputTokens() != null
-            || request.getMetrics().getOutputTokens() != null
-            || request.getMetrics().getModelCalls() != null
-            || request.getMetrics().getToolCalls() != null);
   }
 }

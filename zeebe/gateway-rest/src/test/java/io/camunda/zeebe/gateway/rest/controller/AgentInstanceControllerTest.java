@@ -535,14 +535,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 + " Did you pass an entity id instead of an entity key?."),
         Arguments.of(
             named(
-                "no mutable fields provided",
-                """
-                { "elementInstanceKey": "%d" }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "At least one of status, metrics, tools is required."),
-        Arguments.of(
-            named(
                 "negative inputTokens delta",
                 """
                 { "elementInstanceKey": "%d", "metrics": { "inputTokens": -1 } }
@@ -573,14 +565,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 """
                     .formatted(ELEMENT_INSTANCE_KEY)),
             "The value for metrics.toolCalls is '-2' but must be >= 0."),
-        Arguments.of(
-            named(
-                "only empty metrics object",
-                """
-                { "elementInstanceKey": "%d", "metrics": {} }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "At least one of status, metrics, tools is required."),
         Arguments.of(
             named(
                 "tool without name",

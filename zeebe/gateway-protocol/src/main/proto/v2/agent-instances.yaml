@@ -95,8 +95,7 @@ paths:
       description: |
         Updates the mutable fields of an agent instance: status, metric counters, and
         tools. Metric values are treated as deltas and applied immediately to the
-        aggregate counters. Tool updates replace the existing tool list. At least one of
-        status, metrics, or tools must be provided.
+        aggregate counters. Tool updates replace the existing tool list.
       parameters:
         - name: agentInstanceKey
           in: path
@@ -537,8 +536,7 @@ components:
 
     AgentInstanceUpdateRequest:
       description: |
-        Request to update the mutable state of an agent instance. At least one of
-        status, metrics, or tools must be provided.
+        Request to update the mutable state of an agent instance.
       type: object
       required:
         - elementInstanceKey
