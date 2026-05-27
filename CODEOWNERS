@@ -141,7 +141,9 @@
 #################
 
 # AI Assistant Instructions
-/CLAUDE.md  @camunda/orchestration-cluster
+/CLAUDE.md      @camunda/orchestration-cluster
+/AGENTS.md      @camunda/orchestration-cluster
+/skills/        @camunda/orchestration-cluster
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
