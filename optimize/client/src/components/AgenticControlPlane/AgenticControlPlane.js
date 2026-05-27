@@ -52,13 +52,8 @@ export function AgenticControlPlane() {
   return (
     <div className="AgenticControlPlane">
       <div className="AgenticControlPlane__header">
-        <h1 className="AgenticControlPlane__title">
-          {t('agenticControlPlane.title') || 'Agentic control plane'}
-        </h1>
-        <p className="AgenticControlPlane__description">
-          {t('agenticControlPlane.description') ||
-            'Monitor AI agent adoption, token spend, behavior, and reliability across your processes.'}
-        </p>
+        <h1 className="AgenticControlPlane__title">{t('agenticControlPlane.title')}</h1>
+        <p className="AgenticControlPlane__description">{t('agenticControlPlane.description')}</p>
       </div>
       <FilterBar preset={preset} onPresetChange={setPreset} />
       <DashboardRenderer loadTile={evaluateReport} tiles={dashboard.tiles} filter={filter} />

@@ -159,9 +159,12 @@ function createNavBarProps(
     },
     {
       key: 'agentic-control-plane',
-      label: (t('navigation.agenticControlPlane') || 'Agentic Control Plane').toString(),
+      label: t('navigation.agenticControlPlane').toString(),
       routeProps: {to: '/agentic-control-plane'},
-      isCurrentPage: isCurrentPage(['/agentic-control-plane'], pathname),
+      isCurrentPage: isCurrentPage(
+        ['/agentic-control-plane', '/agentic-control-plane/*'],
+        pathname,
+      ),
     },
   ];
 

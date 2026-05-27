@@ -14,11 +14,11 @@ import {t} from 'translation';
 import './FilterBar.scss';
 
 export const DATE_PRESETS = [
-  {id: '7d', label: 'Last 7 days', value: 7, unit: 'days'},
-  {id: '30d', label: 'Last 30 days', value: 30, unit: 'days'},
-  {id: '3m', label: 'Last 3 months', value: 3, unit: 'months'},
-  {id: '6m', label: 'Last 6 months', value: 6, unit: 'months'},
-  {id: '12m', label: 'Last 12 months', value: 12, unit: 'months'},
+  {id: '7d', translationKey: 'agenticControlPlane.presets.last7Days', value: 7, unit: 'days'},
+  {id: '30d', translationKey: 'agenticControlPlane.presets.last30Days', value: 30, unit: 'days'},
+  {id: '3m', translationKey: 'agenticControlPlane.presets.last3Months', value: 3, unit: 'months'},
+  {id: '6m', translationKey: 'agenticControlPlane.presets.last6Months', value: 6, unit: 'months'},
+  {id: '12m', translationKey: 'agenticControlPlane.presets.last12Months', value: 12, unit: 'months'},
 ];
 
 export function FilterBar({preset, onPresetChange}) {
@@ -27,14 +27,12 @@ export function FilterBar({preset, onPresetChange}) {
   return (
     <div className="FilterBar">
       <div className="FilterBar__dateRange">
-        <span className="FilterBar__label">
-          {t('agenticControlPlane.dateRange') || 'Date range'}
-        </span>
-        <MenuDropdown label={selected.label} size="sm">
+        <span className="FilterBar__label">{t('agenticControlPlane.dateRange')}</span>
+        <MenuDropdown label={t(selected.translationKey)} size="sm">
           {DATE_PRESETS.map((p) => (
             <MenuItemSelectable
               key={p.id}
-              label={p.label}
+              label={t(p.translationKey)}
               selected={p.id === preset}
               onChange={() => onPresetChange(p.id)}
             />
