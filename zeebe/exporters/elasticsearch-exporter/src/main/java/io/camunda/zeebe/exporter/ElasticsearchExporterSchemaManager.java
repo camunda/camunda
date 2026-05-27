@@ -148,6 +148,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.messageStartEventSubscription) {
         createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, version);
       }
+      if (index.messageStartProcessInstanceRequest) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST, version);
+      }
       if (index.processEvent) {
         createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
       }

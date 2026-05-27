@@ -53,6 +53,8 @@ final class TestSupport {
       case CHECKPOINT -> config.checkpoint = value;
       case TIMER -> config.timer = value;
       case MESSAGE_START_EVENT_SUBSCRIPTION -> config.messageStartEventSubscription = value;
+      case MESSAGE_START_PROCESS_INSTANCE_REQUEST ->
+          config.messageStartProcessInstanceRequest = value;
       case PROCESS_EVENT -> config.processEvent = value;
       case DEPLOYMENT_DISTRIBUTION -> config.deploymentDistribution = value;
       case ESCALATION -> config.escalation = value;
