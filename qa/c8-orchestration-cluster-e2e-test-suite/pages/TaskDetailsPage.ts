@@ -338,6 +338,7 @@ class TaskDetailsPage {
           const element = locator.nth(index);
           await element.click();
           await element.fill(expectedValue);
+          await element.blur();
           await expect(element).toHaveValue(expectedValue, {timeout: 5000});
         },
         onFailure: async () => {
