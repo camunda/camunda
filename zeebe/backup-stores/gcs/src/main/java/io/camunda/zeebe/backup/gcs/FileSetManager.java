@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.BatchResult.Callback;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
+import com.google.cloud.storage.StorageBatch;
+import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
@@ -29,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -153,7 +157,16 @@ final class FileSetManager {
   void deleteBlobs(final List<BlobId> blobIds) {
     final int size = blobIds.size();
     for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
-      client.delete(blobIds.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size)));
+      final StorageBatch batch = client.batch();
+      final List<StorageException> errors = new ArrayList<>();
+      for (final var blobId : blobIds.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size))) {
+        batch.delete(blobId).notify(new BooleanStorageExceptionCallback(errors::add));
+      }
+      batch.submit();
+      if (!errors.isEmpty()) {
+        throw new RuntimeException(
+            "Failures detected in the blob batch deletion", errors.getFirst());
+      }
     }
   }
 
@@ -206,5 +219,17 @@ final class FileSetManager {
     return BlobInfo.newBuilder(bucketInfo, fileSetPath(id, fileSetName) + fileName)
         .setContentType("application/octet-stream")
         .build();
+  }
+
+  private record BooleanStorageExceptionCallback(Consumer<StorageException> onError)
+      implements Callback<Boolean, StorageException> {
+
+    @Override
+    public void success(final Boolean deleted) {}
+
+    @Override
+    public void error(final StorageException exception) {
+      onError.accept(exception);
+    }
   }
 }

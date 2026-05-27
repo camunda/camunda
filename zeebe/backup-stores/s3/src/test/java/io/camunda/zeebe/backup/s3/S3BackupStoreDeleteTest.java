@@ -93,7 +93,7 @@ final class S3BackupStoreDeleteTest {
     // when
     store.delete(id).join();
 
-    // then - deleteObjects called twice: batch of 1000 then batch of 1
+    // then - deleteObjects called thrice: two batches of 1000 then batch of 1
     verify(client, times(3)).deleteObjects(any(Consumer.class));
   }
 
