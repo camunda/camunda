@@ -44,12 +44,13 @@ import {
 } from ".";
 
 export const useSearchTenants = (
-  params: QueryTenantsRequestBody,
+  params: QueryTenantsRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.search(params),
-    queryFn: () => unwrap(searchTenant(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(searchTenant(params as QueryTenantsRequestBody)(getApiBaseUrl())),
     enabled: options?.enabled,
   });
 
@@ -95,12 +96,17 @@ export const useDeleteTenant = () => {
 
 export const useTenantGroups = (
   tenantId: string,
-  params?: QueryGroupsByTenantRequestBody,
+  params?: QueryGroupsByTenantRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.groups(tenantId, params),
     queryFn: () =>
-      unwrap(getGroupsByTenantId({ tenantId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getGroupsByTenantId({
+          tenantId,
+          ...(params as QueryGroupsByTenantRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!tenantId,
   });
 
@@ -132,12 +138,17 @@ export const useUnassignTenantGroup = () => {
 
 export const useTenantRoles = (
   tenantId: string,
-  params?: QueryRolesByTenantRequestBody,
+  params?: QueryRolesByTenantRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.roles(tenantId, params),
     queryFn: () =>
-      unwrap(getRolesByTenantId({ tenantId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getRolesByTenantId({
+          tenantId,
+          ...(params as QueryRolesByTenantRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!tenantId,
   });
 
@@ -169,13 +180,16 @@ export const useUnassignTenantRole = () => {
 
 export const useTenantMappingRules = (
   tenantId: string,
-  params?: QueryMappingRulesByTenantRequestBody,
+  params?: QueryMappingRulesByTenantRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.mappingRules(tenantId, params),
     queryFn: () =>
       unwrap(
-        getMappingRulesByTenantId({ tenantId, ...params })(getApiBaseUrl()),
+        getMappingRulesByTenantId({
+          tenantId,
+          ...(params as QueryMappingRulesByTenantRequestBody),
+        })(getApiBaseUrl()),
       ),
     enabled: !!tenantId,
   });
@@ -210,12 +224,17 @@ export const useUnassignTenantMappingRule = () => {
 
 export const useTenantClients = (
   tenantId: string,
-  params?: QueryClientsByTenantRequestBody,
+  params?: QueryClientsByTenantRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.clients(tenantId, params),
     queryFn: () =>
-      unwrap(getClientsByTenantId({ tenantId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getClientsByTenantId({
+          tenantId,
+          ...(params as QueryClientsByTenantRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!tenantId,
   });
 

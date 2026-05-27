@@ -7,13 +7,12 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteUser } from "src/utility/api/users";
+import { useDeleteUser } from "src/utility/api/users/hooks";
 import { useNotifications } from "src/components/notifications";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -25,20 +24,21 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
 }) => {
   const { t, Translate } = useTranslate("users");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteUser);
+  const { mutate, isPending: loading } = useDeleteUser();
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall({
-      username: username!,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("userDeleted"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { username: username! },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("userDeleted"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

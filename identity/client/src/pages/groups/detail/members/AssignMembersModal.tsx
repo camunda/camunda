@@ -9,10 +9,9 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { assignGroupMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchUser } from "src/utility/api/users";
+import { useSearchUsers } from "src/utility/api/users/hooks";
+import { useAssignGroupMember } from "src/utility/api/membership/hooks";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -35,7 +34,7 @@ const AssignMembersModal: FC<
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
-  const [search, setSearch] = useState<Record<string, unknown>>({});
+  const [search, setSearch] = useState<{ filter?: object }>({});
 
   const handleSearchChange = (search: string) => {
     if (search === "") {
@@ -48,12 +47,12 @@ const AssignMembersModal: FC<
 
   const {
     data: userSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchUser, search);
+  } = useSearchUsers(search);
 
-  const [callAssignUser] = useApiCall(assignGroupMember);
+  const { mutateAsync: callAssignUser } = useAssignGroupMember();
 
   const unassignedFilter = useCallback(
     ({ username }: User) =>
@@ -80,16 +79,12 @@ const AssignMembersModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignUser(true);
-
-    const results = await Promise.all(
-      selectedUsers.map(({ username }) =>
-        callAssignUser({ username, groupId }),
-      ),
-    );
-
-    setLoadingAssignUser(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedUsers.map(({ username }) =>
+          callAssignUser({ username, groupId }),
+        ),
+      );
       if (selectedUsers.length === 1) {
         enqueueNotification({
           kind: "success",
@@ -104,6 +99,10 @@ const AssignMembersModal: FC<
         });
       }
       onSuccess();
+    } catch {
+      // error notification handled globally
+    } finally {
+      setLoadingAssignUser(false);
     }
   };
 
@@ -155,7 +154,12 @@ const AssignMembersModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("usersCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

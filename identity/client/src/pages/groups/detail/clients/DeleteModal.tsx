@@ -7,14 +7,13 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignGroupClient } from "src/utility/api/groups";
+import { useUnassignGroupClient } from "src/utility/api/groups/hooks";
 import type {
   Group,
   TenantClient,
@@ -37,22 +36,22 @@ const DeleteModal: FC<RemoveGroupClientModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignClient, { loading }] = useApiCall(unassignGroupClient);
+  const { mutate, isPending: loading } = useUnassignGroupClient();
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (groupId && client) {
-      const { success } = await callUnassignClient({
-        groupId,
-        clientId: client.clientId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("groupClientRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { groupId, clientId: client.clientId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("groupClientRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

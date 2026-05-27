@@ -10,13 +10,12 @@ import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
+import { useSearchMappingRules } from "src/utility/api/mapping-rules/hooks";
+import { useAssignTenantMappingRule } from "src/utility/api/tenants/hooks";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantMappingRule } from "src/utility/api/tenants";
 import type {
   MappingRule,
   Tenant,
@@ -50,12 +49,12 @@ const AssignMappingRulesModal: FC<
 
   const {
     data: mappingRuleSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchMappingRule, mappingRuleFilter);
+  } = useSearchMappingRules(mappingRuleFilter);
 
-  const [callAssignMappingRule] = useApiCall(assignTenantMappingRule);
+  const { mutateAsync: callAssignMappingRule } = useAssignTenantMappingRule();
 
   const unassignedFilter = useCallback(
     ({ mappingRuleId }: MappingRule) =>
@@ -88,20 +87,20 @@ const AssignMappingRulesModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignMappingRule(true);
-
-    const results = await Promise.all(
-      selectedMappingRules.map(({ mappingRuleId }) =>
-        callAssignMappingRule({
-          mappingRuleId: mappingRuleId,
-          tenantId: tenant.id,
-        }),
-      ),
-    );
-
-    setLoadingAssignMappingRule(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedMappingRules.map(({ mappingRuleId }) =>
+          callAssignMappingRule({
+            mappingRuleId: mappingRuleId,
+            tenantId: tenant.id,
+          }),
+        ),
+      );
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignMappingRule(false);
     }
   };
 
@@ -156,7 +155,12 @@ const AssignMappingRulesModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("mappingRulesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

@@ -38,12 +38,13 @@ import {
 } from ".";
 
 export const useSearchRoles = (
-  params?: QueryRolesRequestBody,
+  params?: QueryRolesRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.roles.search(params),
-    queryFn: () => unwrap(searchRoles(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(searchRoles(params as QueryRolesRequestBody)(getApiBaseUrl())),
     enabled: options?.enabled,
   });
 
@@ -86,12 +87,17 @@ export const useDeleteRole = () => {
 
 export const useRoleMappingRules = (
   roleId: string,
-  params?: QueryMappingRulesByRoleRequestBody,
+  params?: QueryMappingRulesByRoleRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.roles.mappingRules(roleId, params),
     queryFn: () =>
-      unwrap(getMappingRulesByRoleId({ roleId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getMappingRulesByRoleId({
+          roleId,
+          ...(params as QueryMappingRulesByRoleRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!roleId,
   });
 
@@ -125,12 +131,17 @@ export const useUnassignRoleMappingRule = () => {
 
 export const useRoleGroups = (
   roleId: string,
-  params?: QueryGroupsByRoleRequestBody,
+  params?: QueryGroupsByRoleRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.roles.groups(roleId, params),
     queryFn: () =>
-      unwrap(getGroupsByRoleId({ roleId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getGroupsByRoleId({
+          roleId,
+          ...(params as QueryGroupsByRoleRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!roleId,
   });
 
@@ -162,12 +173,17 @@ export const useUnassignRoleGroup = () => {
 
 export const useRoleClients = (
   roleId: string,
-  params?: QueryClientsByRoleRequestBody,
+  params?: QueryClientsByRoleRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.roles.clients(roleId, params),
     queryFn: () =>
-      unwrap(getClientsByRoleId({ roleId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getClientsByRoleId({
+          roleId,
+          ...(params as QueryClientsByRoleRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!roleId,
   });
 

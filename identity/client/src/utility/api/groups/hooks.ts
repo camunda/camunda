@@ -37,17 +37,16 @@ import {
   updateGroup,
 } from ".";
 
-type SearchGroupsParams =
-  | (QueryGroupsRequestBody & { groupIds?: string[] })
-  | undefined;
+type SearchGroupsParams = QueryGroupsRequestBody & { groupIds?: string[] };
 
 export const useSearchGroups = (
-  params?: SearchGroupsParams,
+  params?: SearchGroupsParams | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.groups.search(params),
-    queryFn: () => unwrap(searchGroups(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(searchGroups(params as SearchGroupsParams)(getApiBaseUrl())),
     enabled: options?.enabled,
   });
 
@@ -90,12 +89,17 @@ export const useDeleteGroup = () => {
 
 export const useGroupRoles = (
   groupId: string,
-  params?: QueryRolesByGroupRequestBody,
+  params?: QueryRolesByGroupRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.groups.roles(groupId, params),
     queryFn: () =>
-      unwrap(searchRolesByGroupId({ groupId, ...params })(getApiBaseUrl())),
+      unwrap(
+        searchRolesByGroupId({
+          groupId,
+          ...(params as QueryRolesByGroupRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!groupId,
   });
 
@@ -127,12 +131,17 @@ export const useUnassignGroupRole = () => {
 
 export const useGroupMappingRules = (
   groupId: string,
-  params?: QueryMappingRulesByGroupRequestBody,
+  params?: QueryMappingRulesByGroupRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.groups.mappingRules(groupId, params),
     queryFn: () =>
-      unwrap(getMappingRulesByGroupId({ groupId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getMappingRulesByGroupId({
+          groupId,
+          ...(params as QueryMappingRulesByGroupRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!groupId,
   });
 
@@ -166,12 +175,17 @@ export const useUnassignGroupMappingRule = () => {
 
 export const useGroupClients = (
   groupId: string,
-  params?: QueryClientsByGroupRequestBody,
+  params?: QueryClientsByGroupRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.groups.clients(groupId, params),
     queryFn: () =>
-      unwrap(getClientsByGroupId({ groupId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getClientsByGroupId({
+          groupId,
+          ...(params as QueryClientsByGroupRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!groupId,
   });
 

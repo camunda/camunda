@@ -10,18 +10,15 @@ import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
-import { createGroup } from "src/utility/api/groups";
+import { useCreateGroup } from "src/utility/api/groups/hooks";
 import { useNotifications } from "src/components/notifications";
 import { getIdPattern, isValidId } from "src/utility/validate.ts";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
-  const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
-    suppressErrorNotification: true,
-  });
+  const { mutate, isPending: loading, error } = useCreateGroup();
   type FormData = {
     groupId: string;
     groupName: string;
@@ -37,23 +34,26 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     mode: "all",
   });
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await callAddGroup({
-      name: data.groupName,
-      groupId: data.groupId,
-      description: data.description,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("groupCreated"),
-        subtitle: t("groupCreatedSuccessfully", {
-          groupName: data.groupName,
-        }),
-      });
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.groupName,
+        groupId: data.groupId,
+        description: data.description,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("groupCreated"),
+            subtitle: t("groupCreatedSuccessfully", {
+              groupName: data.groupName,
+            }),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

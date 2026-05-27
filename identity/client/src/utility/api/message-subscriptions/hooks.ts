@@ -14,11 +14,16 @@ import { queryKeys } from "../queryKeys";
 import { searchMessageSubscriptions } from ".";
 
 export const useSearchMessageSubscriptions = (
-  params?: QueryMessageSubscriptionsRequestBody,
+  params?: QueryMessageSubscriptionsRequestBody | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.messageSubscriptions.search(params),
-    queryFn: () => unwrap(searchMessageSubscriptions(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchMessageSubscriptions(
+          params as QueryMessageSubscriptionsRequestBody,
+        )(getApiBaseUrl()),
+      ),
     enabled: options?.enabled,
   });

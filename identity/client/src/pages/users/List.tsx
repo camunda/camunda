@@ -10,10 +10,10 @@ import { FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { useSearchUsers } from "src/utility/api/users/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchUser } from "src/utility/api/users";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/users/modals/AddModal";
@@ -25,17 +25,17 @@ import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 const List: FC = () => {
   const { t } = useTranslate("users");
   const navigate = useNavigate();
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: userSearchResults,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchUser);
-  const [addUser, addUserModal] = useModal(AddModal, reload);
-  const [editUser, editUserModal] = useEntityModal(EditModal, reload);
-  const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useSearchUsers(pageParams);
+  const noop = () => {};
+  const [addUser, addUserModal] = useModal(AddModal, noop);
+  const [editUser, editUserModal] = useEntityModal(EditModal, noop);
+  const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, noop);
 
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
@@ -98,12 +98,18 @@ const List: FC = () => {
         loading={loading}
         searchPlaceholder={t("searchByUsername")}
         searchKey="username"
-        {...paginationProps}
+        page={{ ...page, ...userSearchResults?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("listUsersLoadError")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {addUserModal}

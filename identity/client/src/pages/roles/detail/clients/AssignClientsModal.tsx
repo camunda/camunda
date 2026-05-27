@@ -8,9 +8,8 @@
 
 import { FC, useEffect, useState } from "react";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import FormModal from "src/components/modal/FormModal";
-import { assignRoleClient } from "src/utility/api/roles";
+import { useAssignRoleClient } from "src/utility/api/roles/hooks";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import type { Role, TenantClient } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -23,25 +22,13 @@ const AssignClientsModal: FC<UseEntityModalProps<Role["roleId"]>> = ({
 }) => {
   const { t, Translate } = useTranslate("roles");
   const [clientId, setClientId] = useState<TenantClient["clientId"]>("");
-  const [loadingAssignClient, setLoadingAssignClient] = useState(false);
-
-  const [callAssignClient] = useApiCall(assignRoleClient);
+  const { mutate, isPending: loadingAssignClient } = useAssignRoleClient();
 
   const canSubmit = roleId && clientId.length;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignClient(true);
-    const { success } = await callAssignClient({
-      clientId,
-      roleId,
-    });
-    setLoadingAssignClient(false);
-
-    if (success) {
-      onSuccess();
-    }
+    mutate({ clientId, roleId }, { onSuccess });
   };
 
   useEffect(() => {

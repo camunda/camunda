@@ -23,17 +23,22 @@ import {
   updateClusterVariable,
 } from ".";
 
-type SearchClusterVariablesParams =
-  | (QueryClusterVariablesRequestBody & { clusterVariableNames?: string[] })
-  | undefined;
+type SearchClusterVariablesParams = QueryClusterVariablesRequestBody & {
+  clusterVariableNames?: string[];
+};
 
 export const useSearchClusterVariables = (
-  params?: SearchClusterVariablesParams,
+  params?: SearchClusterVariablesParams | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.clusterVariables.search(params),
-    queryFn: () => unwrap(searchClusterVariables(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(
+        searchClusterVariables(params as SearchClusterVariablesParams)(
+          getApiBaseUrl(),
+        ),
+      ),
     enabled: options?.enabled,
   });
 

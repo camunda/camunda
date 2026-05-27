@@ -12,9 +12,8 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { deleteGroup } from "src/utility/api/groups";
+import { useDeleteGroup } from "src/utility/api/groups/hooks";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<UseEntityModalProps<Group>> = ({
@@ -26,19 +25,21 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callDeleteGroup, { loading }] = useApiCall(deleteGroup);
+  const { mutate, isPending: loading } = useDeleteGroup();
 
-  const handleSubmit = async () => {
-    const { success } = await callDeleteGroup({
-      groupId,
-    });
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("groupHasBeenDeleted"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { groupId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("groupHasBeenDeleted"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

@@ -35,12 +35,17 @@ import {
 
 export const useGroupMembers = (
   groupId: string,
-  params?: QueryUsersByGroupRequestBody,
+  params?: QueryUsersByGroupRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.groups.members(groupId, params),
     queryFn: () =>
-      unwrap(searchMembersByGroup({ groupId, ...params })(getApiBaseUrl())),
+      unwrap(
+        searchMembersByGroup({
+          groupId,
+          ...(params as QueryUsersByGroupRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!groupId,
   });
 
@@ -72,12 +77,17 @@ export const useUnassignGroupMember = () => {
 
 export const useTenantMembers = (
   tenantId: string,
-  params?: QueryUsersByTenantRequestBody,
+  params?: QueryUsersByTenantRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.tenants.members(tenantId, params),
     queryFn: () =>
-      unwrap(getMembersByTenantId({ tenantId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getMembersByTenantId({
+          tenantId,
+          ...(params as QueryUsersByTenantRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!tenantId,
   });
 
@@ -109,12 +119,17 @@ export const useUnassignTenantMember = () => {
 
 export const useRoleMembers = (
   roleId: string,
-  params?: QueryUsersByRoleRequestBody,
+  params?: QueryUsersByRoleRequestBody | Record<string, unknown>,
 ) =>
   useQuery({
     queryKey: queryKeys.roles.members(roleId, params),
     queryFn: () =>
-      unwrap(getMembersByRole({ roleId, ...params })(getApiBaseUrl())),
+      unwrap(
+        getMembersByRole({
+          roleId,
+          ...(params as QueryUsersByRoleRequestBody),
+        })(getApiBaseUrl()),
+      ),
     enabled: !!roleId,
   });
 

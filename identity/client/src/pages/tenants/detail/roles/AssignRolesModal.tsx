@@ -10,13 +10,12 @@ import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchRoles } from "src/utility/api/roles";
+import { useSearchRoles } from "src/utility/api/roles/hooks";
+import { useAssignTenantRole } from "src/utility/api/tenants/hooks";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantRole } from "src/utility/api/tenants";
 import type { Role, Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedRoles = styled.div`
@@ -44,12 +43,12 @@ const AssignRolesModal: FC<
 
   const {
     data: roleSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchRoles, search);
+  } = useSearchRoles(search);
 
-  const [callAssignRole] = useApiCall(assignTenantRole);
+  const { mutateAsync: callAssignRole } = useAssignTenantRole();
 
   const unassignedFilter = useCallback(
     ({ roleId }: Role) =>
@@ -74,17 +73,17 @@ const AssignRolesModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignRole(true);
-
-    const results = await Promise.all(
-      selectedRoles.map(({ roleId }) =>
-        callAssignRole({ roleId, tenantId: tenant.id }),
-      ),
-    );
-
-    setLoadingAssignRole(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedRoles.map(({ roleId }) =>
+          callAssignRole({ roleId, tenantId: tenant.id }),
+        ),
+      );
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignRole(false);
     }
   };
 
@@ -137,7 +136,12 @@ const AssignRolesModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("rolesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

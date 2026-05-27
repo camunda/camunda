@@ -7,14 +7,13 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignTenantGroup } from "src/utility/api/tenants";
+import { useUnassignTenantGroup } from "src/utility/api/tenants/hooks";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantGroupModalProps = UseEntityModalCustomProps<
@@ -34,22 +33,22 @@ const DeleteModal: FC<RemoveTenantGroupModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignGroup, { loading }] = useApiCall(unassignTenantGroup);
+  const { mutate, isPending: loading } = useUnassignTenantGroup();
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (tenant && group) {
-      const { success } = await callUnassignGroup({
-        tenantId: tenant,
-        groupId: group.groupId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("tenantGroupRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { tenantId: tenant, groupId: group.groupId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("tenantGroupRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

@@ -10,8 +10,8 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
-import { getClientsByTenantId } from "src/utility/api/tenants";
+import { usePagination } from "src/utility/api";
+import { useTenantClients } from "src/utility/api/tenants/hooks";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/clients/DeleteModal";
@@ -25,28 +25,27 @@ type ClientsProps = {
 
 const Clients: FC<ClientsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
+  const noop = () => {};
 
+  const { pageParams, page, ...paginationCallbacks } = usePagination();
   const {
     data: clients,
-    loading,
-    success,
-    reload,
-    ...paginationProps
-  } = usePaginatedApi(getClientsByTenantId, {
-    tenantId,
-  });
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useTenantClients(tenantId, pageParams);
 
   const assignedClients =
     clients && Array.isArray(clients.items) ? clients.items : [];
 
   const [assignClient, assignClientModal] = useEntityModal(
     AssignClientsModal,
-    reload,
+    noop,
   );
   const openAssignModal = () => assignClient(tenantId);
   const [unassignClient, unassignClientModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     { tenantId },
   );
 
@@ -57,7 +56,12 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
         description={t("unableToLoadResource", {
           resourceType: t("client").toLowerCase(),
         })}
-        button={{ label: t("retry"), onClick: reload }}
+        button={{
+          label: t("retry"),
+          onClick: () => {
+            void reload();
+          },
+        }}
       />
     );
 
@@ -92,7 +96,8 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
             onClick: unassignClient,
           },
         ]}
-        {...paginationProps}
+        page={{ ...page, ...clients?.page }}
+        {...paginationCallbacks}
       />
       {assignClientModal}
       {unassignClientModal}

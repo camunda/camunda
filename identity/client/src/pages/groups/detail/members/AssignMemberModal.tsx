@@ -8,9 +8,8 @@
 
 import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { assignGroupMember } from "src/utility/api/membership";
+import { useAssignGroupMember } from "src/utility/api/membership/hooks";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
 import { useNotifications } from "src/components/notifications";
@@ -27,27 +26,25 @@ const AssignMemberModal: FC<
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
   const [username, setUsername] = useState("");
-  const [loadingAssignUser, setLoadingAssignUser] = useState(false);
-
-  const [callAssignUser] = useApiCall(assignGroupMember);
+  const { mutate, isPending: loadingAssignUser } = useAssignGroupMember();
 
   const canSubmit = groupId && username;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignUser(true);
-    const { success } = await callAssignUser({ username, groupId });
-    setLoadingAssignUser(false);
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("userAssigned"),
-        subtitle: t("userAssignedSuccessfully"),
-      });
-      onSuccess();
-    }
+    mutate(
+      { username, groupId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("userAssigned"),
+            subtitle: t("userAssignedSuccessfully"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   useEffect(() => {

@@ -24,17 +24,16 @@ import {
   updateUser,
 } from ".";
 
-type SearchUsersParams =
-  | (QueryUsersRequestBody & { usernames?: string[] })
-  | undefined;
+type SearchUsersParams = QueryUsersRequestBody & { usernames?: string[] };
 
 export const useSearchUsers = (
-  params?: SearchUsersParams,
+  params?: SearchUsersParams | Record<string, unknown>,
   options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: queryKeys.users.search(params),
-    queryFn: () => unwrap(searchUser(params)(getApiBaseUrl())),
+    queryFn: () =>
+      unwrap(searchUser(params as SearchUsersParams)(getApiBaseUrl())),
     enabled: options?.enabled,
   });
 

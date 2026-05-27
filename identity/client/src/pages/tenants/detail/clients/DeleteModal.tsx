@@ -7,14 +7,13 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignTenantClient } from "src/utility/api/tenants";
+import { useUnassignTenantClient } from "src/utility/api/tenants/hooks";
 import type {
   Tenant,
   TenantClient,
@@ -37,22 +36,22 @@ const DeleteModal: FC<RemoveTenantClientModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignClient, { loading }] = useApiCall(unassignTenantClient);
+  const { mutate, isPending: loading } = useUnassignTenantClient();
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (tenantId && client) {
-      const { success } = await callUnassignClient({
-        tenantId,
-        clientId: client.clientId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("tenantClientRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { tenantId, clientId: client.clientId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("tenantClientRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

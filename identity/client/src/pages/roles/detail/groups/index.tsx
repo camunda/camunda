@@ -38,9 +38,10 @@ const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
     );
 
   const isGroupsEmpty = !groups || groups.length === 0;
+  const noop = () => {};
   const [assignGroups, assignGroupsModal] = useEntityModal(
     isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
-    reload,
+    noop,
     {
       assignedGroups: groups,
     },
@@ -48,7 +49,7 @@ const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
   const openAssignModal = () => assignGroups({ roleId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       role: roleId,
     },

@@ -8,9 +8,8 @@
 
 import { FC, useEffect, useState } from "react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { assignTenantGroup } from "src/utility/api/tenants";
+import { useAssignTenantGroup } from "src/utility/api/tenants/hooks";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
 import type { Group, Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -23,22 +22,13 @@ const AssignGroupModal: FC<
 > = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("tenants");
   const [groupId, setGroupId] = useState("");
-  const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
-
-  const [callAssignGroup] = useApiCall(assignTenantGroup);
+  const { mutate, isPending: loadingAssignGroup } = useAssignTenantGroup();
 
   const canSubmit = tenantId && groupId;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignGroup(true);
-    const { success } = await callAssignGroup({ groupId, tenantId });
-    setLoadingAssignGroup(false);
-
-    if (success) {
-      onSuccess();
-    }
+    mutate({ groupId, tenantId }, { onSuccess });
   };
 
   useEffect(() => {
