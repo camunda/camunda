@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.time.Duration;
-import java.util.Optional;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
@@ -23,27 +23,25 @@ import org.testcontainers.utility.DockerImageName;
  */
 final class CamundaContainerProvider {
 
-  static final String IMAGE_SYSPROP = "camunda.docker.test.image";
-  static final String IMAGE_ENV_VAR = "CAMUNDA_TEST_DOCKER_IMAGE";
-  static final String DEFAULT_IMAGE = "camunda/camunda:SNAPSHOT";
-
   private CamundaContainerProvider() {}
 
   static CamundaContainer createCamundaContainer() {
-    return new CamundaContainer(DockerImageName.parse(resolveImage()))
+    // CI passes -Dio.camunda.process.test.camundaDockerImage{Name,Version} to point at the image
+    // built locally by build-platform-docker in the same job. Honor those first; otherwise fall
+    // back to the bundled defaults (resolved from camunda-process-test-java's filtered properties
+    // and git.branch). Without this, the load-tester module is not in the verify -pl reactor, so
+    // the filtered properties never get rewritten and ITs pull camunda/camunda:SNAPSHOT, which is
+    // a head-of-main build incompatible with stable/8.x.
+    final String imageName =
+        System.getProperty(
+            "io.camunda.process.test.camundaDockerImageName",
+            CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME);
+    final String imageVersion =
+        System.getProperty(
+            "io.camunda.process.test.camundaDockerImageVersion",
+            CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
+    return new CamundaContainer(DockerImageName.parse(imageName).withTag(imageVersion))
         .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
-  }
-
-  static String resolveImage() {
-    return Optional.ofNullable(System.getProperty(IMAGE_SYSPROP))
-        .map(String::trim)
-        .filter(s -> !s.isBlank())
-        .or(
-            () ->
-                Optional.ofNullable(System.getenv(IMAGE_ENV_VAR))
-                    .map(String::trim)
-                    .filter(s -> !s.isBlank()))
-        .orElse(DEFAULT_IMAGE);
   }
 
   static void registerClientProperties(
