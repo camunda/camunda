@@ -189,6 +189,10 @@ test.describe('task details page', () => {
     });
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    // Wait for the completed Zeebe task view to fully transition before opening the
+    // next task; otherwise the Zeebe task's still-enabled Complete Task button bleeds
+    // into the assertion that follows and causes a flaky toBeDisabled failure.
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible({timeout: 60000});
 
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
