@@ -28,15 +28,6 @@ tasks.named<JavaExec>("generateSbe") {
     )
 }
 
-// Configure compiler for Immutables annotation processor
-tasks.named<JavaCompile>("compileJava") {
-    options.isFork = true
-    options.forkOptions.jvmArgs =
-        listOf(
-            "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-        )
-}
-
 dependencies {
     implementation(project(":camunda-security-protocol"))
     api(libs.org.agrona.agrona)
