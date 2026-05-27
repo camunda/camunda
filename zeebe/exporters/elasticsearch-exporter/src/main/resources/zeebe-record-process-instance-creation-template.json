@@ -65,6 +65,9 @@
             },
             "elementInstanceKey": {
               "enabled": false
+            },
+            "ordinalKey": {
+              "type": "integer"
             }
           }
         }
