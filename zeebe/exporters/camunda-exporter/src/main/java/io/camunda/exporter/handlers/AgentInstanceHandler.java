@@ -110,8 +110,7 @@ public class AgentInstanceHandler
         .setModelCalls(value.getMetrics().getModelCalls())
         .setToolCalls(value.getMetrics().getToolCalls())
         .setTools(mapTools(value.getTools()))
-        // once record will return `getElementInstanceKeys()` the line below should be adjusted
-        .setElementInstanceKeys(List.of(value.getElementInstanceKey()))
+        .setElementInstanceKeys(value.getElementInstanceKeys())
         .setLastUpdatedDate(timestamp);
 
     if (intent == AgentInstanceIntent.CREATED) {

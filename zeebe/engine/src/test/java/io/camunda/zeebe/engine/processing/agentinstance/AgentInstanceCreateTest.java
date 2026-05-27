@@ -308,6 +308,7 @@ public class AgentInstanceCreateTest {
     // then
     assertThat(created.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
     assertThat(created.getValue().getElementId()).isEqualTo(AD_HOC_SUB_PROCESS_ID);
+    assertThat(created.getValue().getElementInstanceKeys()).containsExactly(adHocInstance.getKey());
   }
 
   @Test

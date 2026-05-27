@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
@@ -26,6 +27,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  private final ArrayProperty<LongValue> elementInstanceKeysProp =
+      new ArrayProperty<>("elementInstanceKeys", LongValue::new);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
@@ -50,9 +53,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(14);
+    super(16);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
+        .declareProperty(elementInstanceKeysProp)
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -85,6 +89,24 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public List<Long> getElementInstanceKeys() {
+    return elementInstanceKeysProp.stream().map(LongValue::getValue).toList();
+  }
+
+  public AgentInstanceRecord setElementInstanceKeys(final List<Long> elementInstanceKeys) {
+    elementInstanceKeysProp.reset();
+    if (elementInstanceKeys != null) {
+      elementInstanceKeys.forEach(k -> elementInstanceKeysProp.add().setValue(k));
+    }
+    return this;
+  }
+
+  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeysProp.add().setValue(elementInstanceKey);
     return this;
   }
 

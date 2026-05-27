@@ -206,6 +206,54 @@ final class AgentInstanceRecordTest {
   }
 
   @Test
+  void shouldDefaultElementInstanceKeysToEmptyList() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getElementInstanceKeys()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripElementInstanceKeysViaMsgPack() {
+    // given
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord()
+            .setElementInstanceKeys(List.of(2251799813685248L, 2251799813685249L));
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getElementInstanceKeys()).containsExactly(2251799813685248L, 2251799813685249L);
+  }
+
+  @Test
+  void shouldReplaceExistingElementInstanceKeysOnSet() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setElementInstanceKeys(List.of(2251799813685248L));
+
+    // when
+    record.setElementInstanceKeys(List.of(2251799813685249L, 2251799813685250L));
+
+    // then
+    assertThat(record.getElementInstanceKeys())
+        .containsExactly(2251799813685249L, 2251799813685250L);
+  }
+
+  @Test
+  void shouldAppendElementInstanceKey() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setElementInstanceKeys(List.of(1L, 2L));
+
+    // when
+    record.addElementInstanceKey(3L);
+
+    // then
+    assertThat(record.getElementInstanceKeys()).containsExactly(1L, 2L, 3L);
+  }
+
+  @Test
   void shouldDefaultChangedAttributesToEmptyList() {
     final AgentInstanceRecord record = new AgentInstanceRecord();
     assertThat(record.getChangedAttributes()).isEmpty();

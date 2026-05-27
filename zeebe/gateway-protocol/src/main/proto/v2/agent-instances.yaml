@@ -546,8 +546,11 @@ components:
         elementInstanceKey:
           nullable: false
           description: |
-            The key of the element instance associated with this agent instance.
-            Used to validate that the update targets the correct process instance.
+            The key of the currently-active element instance for this agent instance.
+            Used for ownership/equality validation against the stored agent instance
+            and, when the supplied key differs from the previous association (re-entry
+            of an ad-hoc sub-process or AI Agent task), appended to elementInstanceKeys
+            with the reverse link updated on the supplied element instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         status:
