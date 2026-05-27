@@ -64,9 +64,11 @@ class StarterWorkerIT {
 
   @Test
   void shouldStartInstancesAndCompleteThem() {
-    // given — the starter has already run (CommandLineRunner blocks context startup for
-    //         duration-limit=5s) and produced ~5 instances of the "benchmark" process.
-    //         The worker is also active and subscribed to "benchmark-task".
+    // given — the starter's @PostConstruct armed its scheduler during context startup
+    //         and has produced ~5 instances of the "benchmark" process by the time
+    //         duration-limit=5s elapses. The worker is also active and subscribed to
+    //         "benchmark-task". Awaitility below covers the async gap between
+    //         "starter stopped scheduling" and "worker drained queue".
 
     // then — at least one instance should be queryable via REST and in COMPLETED state.
     //        Awaitility handles the async gap between "starter stopped" and "worker drained queue".
