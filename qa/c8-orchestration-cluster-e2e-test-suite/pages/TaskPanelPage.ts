@@ -103,16 +103,40 @@ class TaskPanelPage {
       | 'Completed'
       | 'Custom',
   ) {
-    await this.expandSidePanelButton.click();
-    await this.page.getByRole('link', {name: option, exact: true}).click();
     const expectedSegment =
       option === 'All open tasks'
         ? 'all-open'
         : option === 'Assigned to me'
           ? 'assigned-to-me'
           : option.toLowerCase().replace(/\s+/g, '-');
-    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`));
-    await this.collapseSidePanelButton.click();
+
+    await waitForAssertion({
+      assertion: async () => {
+        if (
+          await this.expandSidePanelButton
+            .isVisible({timeout: 2000})
+            .catch(() => false)
+        ) {
+          await this.expandSidePanelButton.click();
+        }
+        await this.page.getByRole('link', {name: option, exact: true}).click();
+        await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
+          timeout: 5000,
+        });
+      },
+      onFailure: async () => {
+        console.log(`Filter "${option}" not applied, retrying...`);
+      },
+      maxRetries: 3,
+    });
+
+    if (
+      await this.collapseSidePanelButton
+        .isVisible({timeout: 2000})
+        .catch(() => false)
+    ) {
+      await this.collapseSidePanelButton.click();
+    }
   }
 
   async clickCollapseFilter(): Promise<void> {
