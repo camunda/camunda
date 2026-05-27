@@ -148,7 +148,7 @@ class ReplicationLsnProviderFactoryTest {
   }
 
   @Test
-  void shouldNotCreateReplicationLsnProviderForUnsupportedDatabase() {
+  void shouldCreateOracleReplicationLsnProvider() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -157,9 +157,25 @@ class ReplicationLsnProviderFactoryTest {
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(DefaultReplicationLsnProvider.class);
+  }
+
+  @Test
+  void shouldNotCreateReplicationLsnProviderForUnsupportedDatabase() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("h2");
+    final var factory =
+        new ReplicationLsnProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
+    // when
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Cannot create ReplicationLsnProvider for unknown database id oracle");
+        .hasMessage("Cannot create ReplicationLsnProvider for unknown database id h2");
   }
 
   @Test
