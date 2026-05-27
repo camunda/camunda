@@ -265,7 +265,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test, setup-ecs-benchmark ]
+    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test, setup-ecs-benchmark ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
