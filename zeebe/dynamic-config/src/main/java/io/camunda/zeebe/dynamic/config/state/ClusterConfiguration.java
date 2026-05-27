@@ -35,6 +35,7 @@ import java.util.stream.Stream;
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
+ * @param recovery - indicates whether the cluster is in recovery mode
  */
 public record ClusterConfiguration(
     long version,
