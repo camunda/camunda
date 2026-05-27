@@ -65,7 +65,9 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   /** Will return a failed future for any error returned by the store */
   public CompletableFuture<DocumentReferenceResponse> createDocument(
-      final DocumentCreateRequest request, final CamundaAuthentication authentication) {
+      final DocumentCreateRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
@@ -95,7 +97,9 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   /** Will never return a failed future; an Either type is returned instead */
   public CompletableFuture<List<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
       createDocumentBatch(
-          final List<DocumentCreateRequest> requests, final CamundaAuthentication authentication) {
+          final List<DocumentCreateRequest> requests,
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
 
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
@@ -136,7 +140,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final String documentId,
       final String storeId,
       final String contentHash,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     if (!hasDocumentPermission(PermissionType.READ, authentication)) {
       return CompletableFuture.failedFuture(
@@ -163,7 +168,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<Void> deleteDocument(
-      final String documentId, final String storeId, final CamundaAuthentication authentication) {
+      final String documentId,
+      final String storeId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     if (!hasDocumentPermission(PermissionType.DELETE, authentication)) {
       return CompletableFuture.failedFuture(
@@ -182,7 +190,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final String storeId,
       final String contentHash,
       final DocumentLinkParams params,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(

@@ -57,7 +57,7 @@ public class ClockControllerTest extends RestControllerTest {
     final var request = ClockPinRequest.Builder.create().timestamp(timestamp).build();
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
-    when(clockServices.pinClock(eq(timestamp), any()))
+    when(clockServices.pinClock(eq(timestamp), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(clockRecord));
 
     // when - then
@@ -71,7 +71,7 @@ public class ClockControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(clockServices).pinClock(eq(timestamp), any());
+    verify(clockServices).pinClock(eq(timestamp), any(), any());
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
@@ -109,7 +109,7 @@ public class ClockControllerTest extends RestControllerTest {
   @Test
   void restClockShouldReturnNoContent() {
     // given
-    when(clockServices.resetClock(any()))
+    when(clockServices.resetClock(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new ClockRecord()));
 
     // when - then
@@ -121,6 +121,6 @@ public class ClockControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(clockServices).resetClock(any());
+    verify(clockServices).resetClock(any(), any());
   }
 }

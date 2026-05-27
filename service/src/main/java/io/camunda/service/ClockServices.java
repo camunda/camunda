@@ -31,11 +31,14 @@ public final class ClockServices extends ApiServices<ClockServices> {
   }
 
   public CompletableFuture<ClockRecord> pinClock(
-      final long pinnedEpoch, final CamundaAuthentication authentication) {
+      final long pinnedEpoch,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch), authentication);
   }
 
-  public CompletableFuture<ClockRecord> resetClock(final CamundaAuthentication authentication) {
+  public CompletableFuture<ClockRecord> resetClock(
+      final CamundaAuthentication authentication, final String physicalTenantId) {
     return sendBrokerRequest(new BrokerClockResetRequest(), authentication);
   }
 }

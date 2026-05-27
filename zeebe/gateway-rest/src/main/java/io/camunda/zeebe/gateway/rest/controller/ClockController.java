@@ -13,6 +13,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -37,24 +38,27 @@ public class ClockController {
 
   @CamundaPutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> pinClock(
-      @RequestBody final ClockPinRequest pinRequest) {
+      @RequestBody final ClockPinRequest pinRequest,
+      @PhysicalTenantId final String physicalTenantId) {
 
     return RequestMapper.getPinnedEpoch(pinRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::pinClock);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, e -> pinClock(e, physicalTenantId));
   }
 
   @CamundaPostMapping(
       path = "/reset",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> resetClock() {
+  public CompletableFuture<ResponseEntity<Object>> resetClock(
+      @PhysicalTenantId final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> clockServices.resetClock(authentication));
+        () -> clockServices.resetClock(authentication, physicalTenantId));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> pinClock(final long pinnedEpoch) {
+  private CompletableFuture<ResponseEntity<Object>> pinClock(
+      final long pinnedEpoch, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> clockServices.pinClock(pinnedEpoch, authentication));
+        () -> clockServices.pinClock(pinnedEpoch, authentication, physicalTenantId));
   }
 }

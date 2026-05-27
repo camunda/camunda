@@ -68,7 +68,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final ArgumentCaptor<DocumentCreateRequest> requestCaptor =
         ArgumentCaptor.forClass(DocumentCreateRequest.class);
-    when(documentServices.createDocument(any(), any()))
+    when(documentServices.createDocument(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentReferenceResponse(
@@ -114,7 +114,7 @@ public class DocumentControllerTest extends RestControllerTest {
                 timestamp),
             JsonCompareMode.STRICT);
 
-    verify(documentServices).createDocument(requestCaptor.capture(), any());
+    verify(documentServices).createDocument(requestCaptor.capture(), any(), any());
 
     final DocumentCreateRequest request = requestCaptor.getValue();
     assertThat(request.documentId()).isNull();
@@ -144,7 +144,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final ArgumentCaptor<DocumentCreateRequest> requestCaptor =
         ArgumentCaptor.forClass(DocumentCreateRequest.class);
-    when(documentServices.createDocument(any(), any()))
+    when(documentServices.createDocument(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentReferenceResponse(
@@ -198,7 +198,7 @@ public class DocumentControllerTest extends RestControllerTest {
                 timestamp),
             JsonCompareMode.STRICT);
 
-    verify(documentServices).createDocument(requestCaptor.capture(), any());
+    verify(documentServices).createDocument(requestCaptor.capture(), any(), any());
 
     final DocumentCreateRequest request = requestCaptor.getValue();
     assertThat(request.documentId()).isNull();
@@ -237,7 +237,7 @@ public class DocumentControllerTest extends RestControllerTest {
             "dummy_hash",
             new DocumentMetadataModel(
                 contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
-    when(documentServices.createDocumentBatch(any(), any()))
+    when(documentServices.createDocumentBatch(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(List.of(Either.right(ref1), Either.right(ref1))));
 
@@ -318,7 +318,7 @@ public class DocumentControllerTest extends RestControllerTest {
                 .formatted(timestamp, timestamp),
             JsonCompareMode.STRICT);
 
-    verify(documentServices).createDocumentBatch(requestCaptor.capture(), any());
+    verify(documentServices).createDocumentBatch(requestCaptor.capture(), any(), any());
 
     final var values = requestCaptor.getValue();
     assertThat(values).extracting(DocumentCreateRequest::documentId).containsOnlyNulls();
@@ -348,7 +348,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
@@ -368,7 +368,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void testDeleteDocument() {
     // given
-    when(documentServices.deleteDocument(eq("documentId"), isNull(), any()))
+    when(documentServices.deleteDocument(eq("documentId"), isNull(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when/then
@@ -385,7 +385,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any()))
+    when(documentServices.getDocumentContent(eq("documentId"), isNull(), isNull(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DocumentContentResponse(new ByteArrayInputStream(content), null)));
@@ -405,7 +405,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldYieldBadRequestWhenNoHashDocumentForGetDocument() {
     // given
-    when(documentServices.getDocumentContent(any(), any(), any(), any()))
+    when(documentServices.getDocumentContent(any(), any(), any(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", null))));
@@ -436,7 +436,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldYieldBadRequestWhenWrongHashForGetDocument() {
     // given
-    when(documentServices.getDocumentContent(any(), any(), any(), any()))
+    when(documentServices.getDocumentContent(any(), any(), any(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", "barbaz"))));
@@ -497,7 +497,7 @@ public class DocumentControllerTest extends RestControllerTest {
             "The provided processDefinitionId contains illegal characters. "
                 + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
 
-    verify(documentServices, never()).createDocument(any(), any());
+    verify(documentServices, never()).createDocument(any(), any(), any());
   }
 
   @Test
@@ -539,7 +539,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .isEqualTo("metadataList length (1) does not match files length (2)");
 
     // ensure service layer was not invoked
-    verify(documentServices, never()).createDocumentBatch(any(), any());
+    verify(documentServices, never()).createDocumentBatch(any(), any(), any());
   }
 
   @Test
@@ -561,7 +561,7 @@ public class DocumentControllerTest extends RestControllerTest {
             "dummy_hash",
             new DocumentMetadataModel(
                 contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
-    when(documentServices.createDocumentBatch(any(), any()))
+    when(documentServices.createDocumentBatch(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(List.of(Either.right(ref), Either.right(ref))));
 
@@ -599,7 +599,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .expectStatus()
         .isCreated();
 
-    verify(documentServices).createDocumentBatch(requestCaptor.capture(), any());
+    verify(documentServices).createDocumentBatch(requestCaptor.capture(), any(), any());
     final var values = requestCaptor.getValue();
     assertThat(values).hasSize(2);
     assertThat(values)
@@ -691,7 +691,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo("Specify either metadataList part or X-Document-Metadata headers, but not both");
 
-    verify(documentServices, never()).createDocumentBatch(any(), any());
+    verify(documentServices, never()).createDocumentBatch(any(), any(), any());
   }
 
   @Test
@@ -728,7 +728,7 @@ public class DocumentControllerTest extends RestControllerTest {
                     Map.of())),
             ErrorMapper.mapDocumentError(new DocumentHashMismatch("doc2", "expected")));
 
-    when(documentServices.createDocumentBatch(any(), any()))
+    when(documentServices.createDocumentBatch(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(Either.right(successfulRef), Either.left(failedError))));
@@ -793,6 +793,6 @@ public class DocumentControllerTest extends RestControllerTest {
             "The provided processDefinitionId contains illegal characters. "
                 + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
 
-    verify(documentServices, never()).createDocumentBatch(any(), any());
+    verify(documentServices, never()).createDocumentBatch(any(), any(), any());
   }
 }

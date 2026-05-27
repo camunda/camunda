@@ -19,6 +19,7 @@ import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.Part;
@@ -56,10 +57,13 @@ public class DocumentController {
       @RequestParam(required = false) final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestPart(value = "file") final Part file,
-      @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
+      @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata,
+      @PhysicalTenantId final String physicalTenantId) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocument);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            r -> createDocument(r, physicalTenantId));
   }
 
   @CamundaPostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -67,28 +71,31 @@ public class DocumentController {
       @RequestPart(value = "files") final List<Part> files,
       @RequestPart(value = "metadataList", required = false)
           final List<DocumentMetadata> metadataList,
-      @RequestParam(required = false) final String storeId) {
+      @RequestParam(required = false) final String storeId,
+      @PhysicalTenantId final String physicalTenantId) {
     // Pass metadataList to let mapper prefer it over legacy headers when provided
     return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocumentBatch);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            r -> createDocumentBatch(r, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocument(
-      final DocumentServices.DocumentCreateRequest request) {
+      final DocumentServices.DocumentCreateRequest request, final String physicalTenantId) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> documentServices.createDocument(request, authentication),
+        () -> documentServices.createDocument(request, authentication, physicalTenantId),
         ResponseMapper::toDocumentReference,
         HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentBatch(
-      final List<DocumentServices.DocumentCreateRequest> requests) {
+      final List<DocumentServices.DocumentCreateRequest> requests, final String physicalTenantId) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> documentServices.createDocumentBatch(requests, authentication),
+        () -> documentServices.createDocumentBatch(requests, authentication, physicalTenantId),
         ResponseMapper::toDocumentReferenceBatch,
         response ->
             response.getFailedDocuments().isEmpty() ? HttpStatus.CREATED : HttpStatus.MULTI_STATUS);
@@ -100,13 +107,14 @@ public class DocumentController {
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
-      @RequestParam(required = false) final String contentHash) {
+      @RequestParam(required = false) final String contentHash,
+      @PhysicalTenantId final String physicalTenantId) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
     // of a future wrapping the stream response
     return documentServices
-        .getDocumentContent(documentId, storeId, contentHash, authentication)
+        .getDocumentContent(documentId, storeId, contentHash, authentication, physicalTenantId)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
         .thenApply(DocumentController::toDocumentContentResponse)
         .join();
@@ -127,11 +135,14 @@ public class DocumentController {
 
   @CamundaDeleteMapping(path = "/{documentId}")
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
-      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
+      @PathVariable final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @PhysicalTenantId final String physicalTenantId) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> documentServices.deleteDocument(documentId, storeId, authentication));
+        () ->
+            documentServices.deleteDocument(documentId, storeId, authentication, physicalTenantId));
   }
 
   @CamundaPostMapping(path = "/{documentId}/links")
@@ -139,23 +150,28 @@ public class DocumentController {
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash,
-      @RequestBody final DocumentLinkRequest linkRequest) {
+      @RequestBody final DocumentLinkRequest linkRequest,
+      @PhysicalTenantId final String physicalTenantId) {
 
     return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            params -> createDocumentLink(documentId, storeId, contentHash, params));
+            params ->
+                createDocumentLink(documentId, storeId, contentHash, params, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       final String documentId,
       final String storeId,
       final String contentHash,
-      final DocumentLinkParams params) {
+      final DocumentLinkParams params,
+      final String physicalTenantId) {
 
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> documentServices.createLink(documentId, storeId, contentHash, params, authentication),
+        () ->
+            documentServices.createLink(
+                documentId, storeId, contentHash, params, authentication, physicalTenantId),
         ResponseMapper::toDocumentLinkResponse,
         HttpStatus.OK);
   }
