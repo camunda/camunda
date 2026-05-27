@@ -18,14 +18,15 @@
     E2E-09 — beforeAll variable scope isolation
     ─────────────────────────────────────────────
     Purpose : Verify that variables written by the beforeAll listener are
-              accessible (a) during inputCollection evaluation, (b) by inner
-              instances via inherited scope, and (c) by downstream elements
-              after the MI element completes.
+              scoped to the MI body and do NOT leak to the process root scope.
+              The beforeAll listener sets "items" (drives inputCollection) and
+              "sharedCtx" (extra variable under test).  At no point during or
+              after MI execution should sharedCtx appear at the process root scope.
 
     Workers required
       mi-scope-init          – beforeAll job; sets "items" + "sharedCtx"
       mi-inner-worker-scope  – task job per inner instance; completes with "result"
-      downstream-worker-scope– task job after MI; validates sharedCtx is visible
+      downstream-worker-scope– task job after MI; completes the process (no variable assertions)
   -->
 
   <bpmn:process id="mi-el-scope-isolation"
@@ -68,8 +69,9 @@
 
     <!--
       Downstream service task — token arrives here only after MI fully completes.
-      Worker "downstream-worker-scope" should observe sharedCtx in its job variables
-      if beforeAll-set variables are promoted to (or visible at) process scope.
+      Worker "downstream-worker-scope" simply completes the process; it is present
+      to confirm the process reaches the end event normally.  sharedCtx must NOT
+      appear in the root-scope variables at this point (verified by the E2E spec).
     -->
     <bpmn:serviceTask id="downstreamTask" name="Downstream Task (reads sharedCtx)">
       <bpmn:extensionElements>

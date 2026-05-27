@@ -16,12 +16,8 @@ import {
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {
-  activateJobToObtainAValidJobKey,
-  searchIncidentByPIK,
-} from '@requestHelpers';
-
-// Epic camunda/camunda#49208 — Multi-Instance Activity Execution Listeners
+import {activateJobToObtainAValidJobKey} from '@requestHelpers';
+import {searchIncidentByPIK} from '../../../../utils/requestHelpers/incident-requestHelpers';
 
 type Worker = {close: () => Promise<unknown> | unknown};
 

@@ -681,13 +681,18 @@ class OperateProcessInstancePage {
   getExecutionListenerRowsByEventType(
     eventType: 'start' | 'end' | 'beforeAll',
   ): Locator {
-    const eventTypePatterns: Record<typeof eventType, RegExp> = {
-      start: /\bstart\b/i,
-      end: /\bend\b/i,
-      beforeAll: /before\s+all/i,
+    // The listeners table columns are: Listener type | Listener key | State | Job type | Event | Time
+    // "Event" is the 5th column (td:nth-child(5)).  spaceAndCapitalize() formats API values as:
+    //   START → "Start", END → "End", BEFORE_ALL → "Before all"
+    const eventTypeText: Record<typeof eventType, string> = {
+      start: 'Start',
+      end: 'End',
+      beforeAll: 'Before all',
     };
     return this.getListenerRows('execution').filter({
-      hasText: eventTypePatterns[eventType],
+      has: this.page
+        .locator('td:nth-child(5)')
+        .filter({hasText: eventTypeText[eventType]}),
     });
   }
 

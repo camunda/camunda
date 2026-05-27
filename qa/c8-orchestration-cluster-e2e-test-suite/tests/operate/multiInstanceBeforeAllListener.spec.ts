@@ -19,7 +19,6 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 
-// Epic camunda/camunda#49208 — UI verification in Operate
 const suffix = randomUUID().slice(0, 8);
 const processId = `mi-el-basic-collection-ui-${suffix}`;
 const beforeAllJobType = `mi-body-init-collection-ui-${suffix}`;
