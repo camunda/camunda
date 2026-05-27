@@ -14,9 +14,9 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  # Enabling ELASTICSEARCH
-  # We need to explicitly enable ELS as by default this is disabled now
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  # Enabling Elasticsearch as secondary storage.
+  # The chart's default is disabled, so we enable it explicitly here.
+  # This file is only loaded when secondaryStorage=elasticsearch.
   elasticsearch:
     enabled: true
     url:
