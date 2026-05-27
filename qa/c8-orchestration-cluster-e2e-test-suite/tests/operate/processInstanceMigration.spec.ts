@@ -404,8 +404,18 @@ test.describe.serial('Process Instance Migration', () => {
           `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
         );
 
-        await expect(page.getByText('6 results')).toBeVisible({
-          timeout: 90000,
+        // AIAgentTask/AIAgentsubprocess can take longer than other elements
+        // to propagate through Operate's index. Reload on failure to clear
+        // stale state rather than holding a single 90s assertion.
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(page.getByText('6 results')).toBeVisible({
+              timeout: 30000,
+            });
+          },
+          onFailure: async () => {
+            await page.reload();
+          },
         });
       });
     }

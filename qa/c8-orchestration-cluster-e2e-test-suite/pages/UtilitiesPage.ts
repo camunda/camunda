@@ -31,6 +31,15 @@ export async function navigateToApp(
   }
 }
 
+export async function navigateToAppHome(
+  page: Page,
+  appName: string,
+): Promise<void> {
+  await page.goto(
+    `${process.env.CORE_APPLICATION_URL}/${appName.toLowerCase()}`,
+  );
+}
+
 export async function hideModificationHelperModal(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem(
