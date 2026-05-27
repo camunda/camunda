@@ -28,8 +28,8 @@ module.
 
 ### Key Modules
 
-| Module           | Description                                               |
-| ---------------- | --------------------------------------------------------- |
+|      Module      |                        Description                        |
+|------------------|-----------------------------------------------------------|
 | `zeebe/`         | Core process engine (broker, engine, protocol, exporters) |
 | `zeebe/gateway`  | gRPC gateway                                              |
 | `operate/`       | Process monitoring webapp                                 |
@@ -155,3 +155,4 @@ Additional instruction files are auto-loaded when you edit matching paths:
 - MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
+

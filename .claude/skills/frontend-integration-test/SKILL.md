@@ -27,6 +27,7 @@ test('should ...', async ({loginPage, network, page}) => {
   await loginPage.goto();
 });
 ```
+
 - Visual tests require a containerized browser for consistent cross-machine rendering (`CONTAINERIZED_BROWSER=true` runs the official `mcr.microsoft.com/playwright` Docker image).
 - Accessibility tests check both light and dark themes automatically — the Playwright config runs a11y tests through `a11y-light` and `a11y-dark` projects.
 
@@ -89,12 +90,12 @@ test('should have no a11y violations', async ({makeAxeBuilder, page}) => {
 
 The custom `test` from `#/pw-modules/test-extend` provides these fixtures:
 
-| Fixture | Auto | Description |
-|---|---|---|
-| `network` | yes | MSW interception via `@msw/playwright`. Starts before each test, stops after. Use `network.use()` to add handlers. |
-| `handlers` | no (option) | Pre-configure MSW handlers at suite level via `test.use({handlers: [...]})`. Useful when every test in a file shares the same mock setup. |
-| `makeAxeBuilder` | no | Creates an `AxeBuilder` instance scoped to the current page. Call `makeAxeBuilder().analyze()` to run the audit. |
-| `loginPage` | no | Page object for the login page. Every page object follows this pattern — registered as a fixture, destructured in tests. |
+|     Fixture      |    Auto     |                                                                Description                                                                |
+|------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `network`        | yes         | MSW interception via `@msw/playwright`. Starts before each test, stops after. Use `network.use()` to add handlers.                        |
+| `handlers`       | no (option) | Pre-configure MSW handlers at suite level via `test.use({handlers: [...]})`. Useful when every test in a file shares the same mock setup. |
+| `makeAxeBuilder` | no          | Creates an `AxeBuilder` instance scoped to the current page. Call `makeAxeBuilder().analyze()` to run the audit.                          |
+| `loginPage`      | no          | Page object for the login page. Every page object follows this pattern — registered as a fixture, destructured in tests.                  |
 
 The `network` fixture errors on unhandled requests (except HTML page navigations), so tests fail fast if they hit an un-mocked endpoint. This is intentional — it catches missing mocks early.
 
@@ -216,15 +217,15 @@ test('should show an error for wrong credentials', async ({network, loginPage}) 
 
 The config at `playwright.config.ts` defines 7 projects:
 
-| Project | Category | Theme | Viewport |
-|---|---|---|---|
-| `visual-light` | visual | light | desktop |
-| `visual-dark` | visual | dark | desktop |
-| `visual-light-tablet` | visual | light | tablet |
-| `visual-dark-tablet` | visual | dark | tablet |
-| `a11y-light` | a11y | light | desktop |
-| `a11y-dark` | a11y | dark | desktop |
-| `integration` | integration | — | desktop |
+|        Project        |  Category   | Theme | Viewport |
+|-----------------------|-------------|-------|----------|
+| `visual-light`        | visual      | light | desktop  |
+| `visual-dark`         | visual      | dark  | desktop  |
+| `visual-light-tablet` | visual      | light | tablet   |
+| `visual-dark-tablet`  | visual      | dark  | tablet   |
+| `a11y-light`          | a11y        | light | desktop  |
+| `a11y-dark`           | a11y        | dark  | desktop  |
+| `integration`         | integration | —     | desktop  |
 
 Tests match by directory: `visual/**/*.test.ts`, `a11y/**/*.test.ts`, `integration/**/*.test.ts`. The app is served via `npx vite preview` on port 3003 (build must exist first). Retries are 2x on CI, traces and screenshots are captured on failure.
 
@@ -248,3 +249,4 @@ npm run test:a11y           # Accessibility (light + dark themes)
 - `shared-test-modules/mock-endpoint.ts` — `createEndpointMock` factory source.
 - `shared-test-modules/mock-handlers.ts` — shared endpoint mock definitions.
 - `docs/monorepo-docs/frontend/testing.md` — full testing guide.
+

@@ -142,3 +142,4 @@ npm run test:unit:ui    # Visible browser — useful for debugging
 - `shared-test-modules/mock-endpoint.ts` — `createEndpointMock` factory source.
 - `shared-test-modules/mock-handlers.ts` — shared endpoint mock definitions.
 - `docs/monorepo-docs/frontend/testing.md` — full testing guide.
+

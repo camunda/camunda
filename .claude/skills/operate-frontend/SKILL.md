@@ -13,19 +13,19 @@ Follow the existing conventions described here. Don't introduce new architectura
 
 ## Tech stack
 
-| Category | Technology |
-|---|---|
-| UI framework | React 18, React DOM 18 |
-| Language | TypeScript 5.9 (strict mode) |
-| Bundler | Vite 8 |
-| Routing | react-router-dom 7 (React Router v6 API) |
-| Server state | TanStack React Query 5 |
-| Client state | MobX 6 + mobx-react / mobx-react-lite |
-| Styling | styled-components 6, Carbon Design System (`@carbon/react`, `@carbon/elements`) |
-| Forms | React Final Form + final-form-arrays |
-| Testing | Vitest (jsdom) + Testing Library + MSW 2, Playwright (E2E) |
-| BPMN/DMN | bpmn-js 18, dmn-js 17 |
-| Code editor | Monaco Editor (`@monaco-editor/react`) |
+|   Category   |                                   Technology                                    |
+|--------------|---------------------------------------------------------------------------------|
+| UI framework | React 18, React DOM 18                                                          |
+| Language     | TypeScript 5.9 (strict mode)                                                    |
+| Bundler      | Vite 8                                                                          |
+| Routing      | react-router-dom 7 (React Router v6 API)                                        |
+| Server state | TanStack React Query 5                                                          |
+| Client state | MobX 6 + mobx-react / mobx-react-lite                                           |
+| Styling      | styled-components 6, Carbon Design System (`@carbon/react`, `@carbon/elements`) |
+| Forms        | React Final Form + final-form-arrays                                            |
+| Testing      | Vitest (jsdom) + Testing Library + MSW 2, Playwright (E2E)                      |
+| BPMN/DMN     | bpmn-js 18, dmn-js 17                                                           |
+| Code editor  | Monaco Editor (`@monaco-editor/react`)                                          |
 
 ## Project structure
 
@@ -186,26 +186,26 @@ Live data uses `refetchInterval` on query hooks (standard interval is 5000ms). C
 
 State is split across three mechanisms. When you encounter state, identify which category it belongs to:
 
-| What | Where | Why |
-|------|-------|-----|
-| Server data (API responses) | React Query via `modules/queries/` | Automatic caching, deduplication, background refresh |
-| Filters, sort, pagination, element selection | URL search params via `useFilters`, `useSearchParams` | Shareable, survives refresh, back/forward works |
-| UI mode (modification mode, panel visibility, selection, theme) | MobX stores in `modules/stores/` | Ephemeral client-side state that doesn't belong in the URL |
+|                              What                               |                         Where                         |                            Why                             |
+|-----------------------------------------------------------------|-------------------------------------------------------|------------------------------------------------------------|
+| Server data (API responses)                                     | React Query via `modules/queries/`                    | Automatic caching, deduplication, background refresh       |
+| Filters, sort, pagination, element selection                    | URL search params via `useFilters`, `useSearchParams` | Shareable, survives refresh, back/forward works            |
+| UI mode (modification mode, panel visibility, selection, theme) | MobX stores in `modules/stores/`                      | Ephemeral client-side state that doesn't belong in the URL |
 
 ### MobX stores
 
 There are ~20 MobX stores. The important ones:
 
-| Store | What it manages |
-|-------|-----------------|
-| `authentication` | Session state, login/logout flow |
-| `modifications` | Process instance modification mode (add/cancel/move tokens, variable edits) |
-| `notifications` | Toast notification queue (max 5 visible) |
-| `instancesSelection` | Selected process instances for batch operations |
-| `processInstanceMigration` | Migration wizard state |
-| `panelStates` | UI panel open/closed state |
-| `batchModification` | Batch modification mode |
-| `currentTheme` | Light/dark theme preference |
+|           Store            |                               What it manages                               |
+|----------------------------|-----------------------------------------------------------------------------|
+| `authentication`           | Session state, login/logout flow                                            |
+| `modifications`            | Process instance modification mode (add/cancel/move tokens, variable edits) |
+| `notifications`            | Toast notification queue (max 5 visible)                                    |
+| `instancesSelection`       | Selected process instances for batch operations                             |
+| `processInstanceMigration` | Migration wizard state                                                      |
+| `panelStates`              | UI panel open/closed state                                                  |
+| `batchModification`        | Batch modification mode                                                     |
+| `currentTheme`             | Light/dark theme preference                                                 |
 
 Components that read MobX stores must be wrapped with `observer()`:
 

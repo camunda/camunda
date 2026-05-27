@@ -18,6 +18,7 @@ Side-by-side code examples for each pattern transformation. Use this as a refere
 ### Route definition
 
 **Legacy (React Router):**
+
 ```tsx
 // operate/client/src/App/index.tsx
 import {Paths} from 'modules/Routes';
@@ -32,6 +33,7 @@ import {Paths} from 'modules/Routes';
 ```
 
 **Target (TanStack Router file-based):**
+
 ```tsx
 // src/routes/_auth/operate/processes/index.tsx
 import {createFileRoute} from '@tanstack/react-router';
@@ -49,6 +51,7 @@ The file path `src/routes/_auth/operate/processes/index.tsx` *is* the URL `/oper
 ### Route with data loading
 
 **Legacy:**
+
 ```tsx
 // Page component fetches its own data
 function Dashboard() {
@@ -58,6 +61,7 @@ function Dashboard() {
 ```
 
 **Target:**
+
 ```tsx
 // src/routes/_auth/operate/dashboard/index.tsx
 import {createFileRoute} from '@tanstack/react-router';
@@ -80,6 +84,7 @@ export {Route};
 ### Route params
 
 **Legacy:**
+
 ```tsx
 // operate/client/src/modules/Routes.tsx
 processInstance: (id?: string) => `/processes/${id ?? ':processInstanceId'}`;
@@ -89,6 +94,7 @@ const {processInstanceId} = useParams<{processInstanceId: string}>();
 ```
 
 **Target:**
+
 ```tsx
 // File: src/routes/_auth/operate/processes/$processInstanceId/index.tsx
 // The $ prefix makes it a param segment automatically.
@@ -104,12 +110,14 @@ const {processInstanceId} = useParams({from: '/_auth/operate/processes/$processI
 ### Search params with validation
 
 **Legacy:**
+
 ```tsx
 const [searchParams, setSearchParams] = useSearchParams();
 const filter = searchParams.get('filter') ?? 'all';
 ```
 
 **Target:**
+
 ```tsx
 // In the route file:
 import {z} from 'zod';
@@ -132,6 +140,7 @@ const {filter, sort} = useSearch({from: '/_auth/operate/processes/'});
 ### Redirects
 
 **Legacy:**
+
 ```tsx
 useEffect(() => {
   if (!isAuthenticated) {
@@ -141,6 +150,7 @@ useEffect(() => {
 ```
 
 **Target:**
+
 ```tsx
 // In the route's beforeLoad:
 beforeLoad: async ({context: {queryClient}}) => {
@@ -158,6 +168,7 @@ beforeLoad: async ({context: {queryClient}}) => {
 ### Endpoint definition
 
 **Legacy (scattered across modules):**
+
 ```tsx
 // operate/client/src/modules/api/v2/variables/searchVariables.ts
 const searchVariables = async (payload: QueryVariablesRequestBody) => {
@@ -170,6 +181,7 @@ const searchVariables = async (payload: QueryVariablesRequestBody) => {
 ```
 
 **Target (centralized):**
+
 ```tsx
 // src/modules/http/endpoints.ts — ALL endpoints in one file
 import {endpoints as apiEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -189,6 +201,7 @@ export {searchVariables};
 ### Query definition
 
 **Legacy (scattered `use*.query.ts` files):**
+
 ```tsx
 // operate/client/src/modules/queries/variables/useVariables.ts
 function useVariables(filters: Filters) {
@@ -204,6 +217,7 @@ function useVariables(filters: Filters) {
 ```
 
 **Target (centralized `queries.ts`):**
+
 ```tsx
 // src/modules/http/queries.ts — ALL query options in one file
 import {queryOptions} from '@tanstack/react-query';
@@ -236,6 +250,7 @@ export {queries, queryKeys};
 ### Using queries in components
 
 **Legacy:**
+
 ```tsx
 function VariablesList({processInstanceId}: Props) {
   const {data, fetchNextPage, hasNextPage} = useVariables({processInstanceId});
@@ -244,6 +259,7 @@ function VariablesList({processInstanceId}: Props) {
 ```
 
 **Target:**
+
 ```tsx
 function VariablesList({processInstanceId}: Props) {
   const {data} = useSuspenseQuery(queries.searchVariables({processInstanceId}));
@@ -261,6 +277,7 @@ function VariablesList({processInstanceId}: Props) {
 ### MobX store holding server data → TanStack Query
 
 **Legacy:**
+
 ```tsx
 // MobX store that fetches and caches process instances
 class ProcessInstancesStore {
@@ -287,6 +304,7 @@ class ProcessInstancesStore {
 ```
 
 **Target:** Delete the store entirely. Add to `queries.ts`:
+
 ```tsx
 const queries = {
   searchProcessInstances: (filters: Filters) =>
@@ -306,6 +324,7 @@ Components consume it with `useSuspenseQuery(queries.searchProcessInstances(filt
 ### MobX store holding filter state → URL search params
 
 **Legacy:**
+
 ```tsx
 class FiltersStore {
   status = 'all';
@@ -326,6 +345,7 @@ class FiltersStore {
 ```
 
 **Target:** Delete the store. Define search params on the route:
+
 ```tsx
 // In the route file
 const searchSchema = z.object({
@@ -348,6 +368,7 @@ Components read with `useSearch({ from: '/_auth/operate/processes/' })` and upda
 ### styled-components → SCSS modules
 
 **Legacy (`styled.ts`):**
+
 ```tsx
 import styled, {css} from 'styled-components';
 import {Tile as BaseTile} from '@carbon/react';
@@ -372,6 +393,7 @@ const Title = styled.h2<{$isActive: boolean}>`
 ```
 
 **Target (`PageName.module.scss` + component):**
+
 ```scss
 // ProcessesPage.module.scss
 @use '@carbon/layout' as layout;
@@ -430,6 +452,7 @@ Transient props (`$isActive`) become data attributes or conditional class names.
 ### Exports
 
 **Legacy:**
+
 ```tsx
 // Some files use default export
 export default Dashboard;
@@ -442,6 +465,7 @@ export {Dashboard as Component};
 ```
 
 **Target — always a block export at the end:**
+
 ```tsx
 function Dashboard() {
   // ...
@@ -453,6 +477,7 @@ export {Dashboard};
 ### File naming
 
 **Legacy:**
+
 ```
 App/Dashboard/index.tsx        → import from './Dashboard'
 App/Dashboard/styled.ts        → styled-components
@@ -460,6 +485,7 @@ App/Dashboard/index.test.tsx   → co-located test
 ```
 
 **Target:**
+
 ```
 pages/DashboardPage.tsx             → import from '#/pages/DashboardPage'
 pages/DashboardPage.module.scss     → co-located SCSS module
@@ -475,6 +501,7 @@ No barrel files, no `index.tsx`, direct file imports with `#/` path aliases.
 ### Basic component test
 
 **Legacy (jsdom + Testing Library):**
+
 ```tsx
 import {render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
@@ -500,6 +527,7 @@ describe('Dashboard', () => {
 ```
 
 **Target (Vitest browser mode):**
+
 ```tsx
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -537,11 +565,13 @@ Key differences:
 ### Testing absence of elements
 
 **Legacy:**
+
 ```tsx
 expect(screen.queryByText('Error')).not.toBeInTheDocument();
 ```
 
 **Target:**
+
 ```tsx
 await expect.element(screen.getByText('Error')).not.toBeVisible();
 ```
@@ -551,6 +581,7 @@ There is no `queryByText` in Vitest browser mode.
 ### User interactions
 
 **Legacy:**
+
 ```tsx
 const {user} = render(<Form />, {wrapper: Wrapper});
 await user.click(screen.getByRole('button', {name: /submit/i}));
@@ -558,6 +589,7 @@ await user.type(screen.getByLabelText('Name'), 'Alice');
 ```
 
 **Target:**
+
 ```tsx
 const screen = await renderWithRouter('/form');
 await screen.getByRole('button', {name: /submit/i}).click();
@@ -569,6 +601,7 @@ No `user` fixture — interact directly via locators. `.fill()` replaces `.type(
 ### Standalone component test (no routing context)
 
 **Target:**
+
 ```tsx
 import {render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
