@@ -155,7 +155,9 @@ public final class MessageEventProcessors {
                 authCheckBehavior,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                routingInfo,
+                partitionId))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,

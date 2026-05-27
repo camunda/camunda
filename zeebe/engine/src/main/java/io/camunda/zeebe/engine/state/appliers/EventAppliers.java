@@ -532,7 +532,8 @@ public final class EventAppliers implements EventApplier {
         MessageStartProcessInstanceRequestIntent.STARTED,
         new MessageStartProcessInstanceStartedV1Applier(
             state.getMessageStartProcessInstanceDedupState(),
-            state.getMessageStartProcessInstanceAskState()));
+            state.getMessageStartProcessInstanceAskState(),
+            state.getMessageState()));
     register(
         MessageStartProcessInstanceRequestIntent.TOMBSTONE_DELETED,
         new MessageStartProcessInstanceTombstoneDeletedV1Applier(
