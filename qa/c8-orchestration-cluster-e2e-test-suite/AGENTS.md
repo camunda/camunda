@@ -188,4 +188,4 @@ test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
 
-Never use `test.skip()` or `test.fixme()` — fix the test or document a pre-existing failure in the PR description.
+Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a rationale comment, and a plan to re-enable it must be tracked on the project board.
