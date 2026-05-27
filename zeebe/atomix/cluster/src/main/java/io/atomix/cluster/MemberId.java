@@ -16,6 +16,8 @@
  */
 package io.atomix.cluster;
 
+import static io.camunda.zeebe.util.MemberIdUtil.validateZone;
+
 import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Objects;
@@ -26,6 +28,7 @@ import org.jspecify.annotations.Nullable;
 /** Controller cluster identity. */
 @NullMarked
 public class MemberId extends NodeId {
+
   /**
    * Null when the member is anonymous When a zone is present, this is the node index in the local
    * cluster (e.g. 0, 1, 2, 3...) If a zone is not present, it's equal to the id
@@ -84,7 +87,7 @@ public class MemberId extends NodeId {
    * Creates a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
+   * it is {@code "$zone/$nodeId"}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
@@ -118,13 +121,6 @@ public class MemberId extends NodeId {
       throw new IllegalArgumentException("Expected nodeIdx to be >= 0, but got " + nodeIdx);
     }
     return nodeIdx;
-  }
-
-  private static @Nullable String validateZone(final @Nullable String zone) {
-    if (zone != null && zone.isBlank()) {
-      throw new IllegalArgumentException("Expected zone to be non-empty, but was empty");
-    }
-    return zone != null ? zone.strip() : null;
   }
 
   private static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {

@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -30,6 +31,16 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 @ActiveProfiles("broker")
 public class ClusterBrokerPropertiesTest {
+  @Test
+  void shouldRejectInvalidZoneAtConfigTime() {
+    // given
+    final var cluster = new Cluster();
+
+    // when / then
+    assertThatThrownBy(() -> cluster.setZone("zone_with_underscores"))
+        .isInstanceOf(UnifiedConfigurationException.class);
+  }
+
   @Test
   public void shouldMatchThePropertyNamesInClusterCfg() {
     /*

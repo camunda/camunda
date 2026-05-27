@@ -15,6 +15,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.util.MemberIdUtil;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -154,6 +155,10 @@ public class Cluster implements Cloneable {
   /**
    * The zone this broker belongs to. Used for zone-aware routing and replication. If not set, the
    * broker is considered to be in a single-zone setup.
+   *
+   * <p>Zone must be at most 63 characters, starting with an * alphanumeric character, and
+   * containing only alphanumeric characters and hyphens {@code * [A-Za-z0-9-]}. It must start with
+   * an alphanumeric character (no hyphen)
    */
   private String zone;
 
@@ -349,7 +354,11 @@ public class Cluster implements Cloneable {
   }
 
   public void setZone(final String zone) {
-    this.zone = zone;
+    try {
+      this.zone = MemberIdUtil.validateZone(zone);
+    } catch (final IllegalArgumentException e) {
+      throw new UnifiedConfigurationException(e);
+    }
   }
 
   @Override

@@ -54,16 +54,66 @@ final class MemberIdTest {
   }
 
   @Test
-  void shouldStripSurroundingWhitespaceFromZone() {
+  void shouldThrowWhenZoneContainsUnderscore() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("zone_a", 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowWhenZoneContainsSlash() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("zone/a", 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowWhenZoneContainsSpecialChars() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("zone.a", 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowWhenZoneStartsWithHyphen() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("-zone", 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowWhenZoneExceedsMaxLength() {
+    // given
+    final var longZone = "a".repeat(64);
+
+    // when / then
+    assertThatThrownBy(() -> MemberId.from(longZone, 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldAcceptZoneAtMaxLength() {
+    // given
+    final var zone = "a".repeat(63);
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> MemberId.from(zone, 7));
+  }
+
+  @Test
+  void shouldAcceptZoneWithAlphanumericAndHyphens() {
     // given / when
-    final var memberId = MemberId.from("  eu-west  ", 7);
+    final var memberId = MemberId.from("eu-west-1", 7);
 
     // then
-    assertThat(memberId)
-        .returns(7, MemberId::nodeIdx)
-        .returns("eu-west", MemberId::zone)
-        .returns("eu-west/7", MemberId::id);
-    assertEncodeDecode(memberId);
+    assertThat(memberId).returns("eu-west-1", MemberId::zone);
+  }
+
+  @Test
+  void shouldThrowWhenZoneContainsWhitespace() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("  eu-west  ", 7))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

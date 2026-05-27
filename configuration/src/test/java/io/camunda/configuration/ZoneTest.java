@@ -8,11 +8,19 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import org.junit.jupiter.api.Test;
 
 public class ZoneTest {
+  @Test
+  void shouldRejectInvalidZoneNameAtConfigTime() {
+    // when / then
+    assertThatThrownBy(() -> new Zone("zone_with_underscores", 1, 1, 100))
+        .isInstanceOf(UnifiedConfigurationException.class);
+  }
+
   @Test
   public void shouldMapRegionCorrectly() {
     // given
