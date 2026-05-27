@@ -26,4 +26,7 @@ public interface MessageSubscriptionMapper
 
   List<ProcessDefinitionMessageSubscriptionStatisticsEntity> getProcessDefinitionStatistics(
       ProcessDefinitionMessageSubscriptionStatisticsDbQuery query);
+
+  int deleteStartEventSubscriptionsByProcessDefinitionKeys(
+      List<Long> processDefinitionKeys, int limit);
 }

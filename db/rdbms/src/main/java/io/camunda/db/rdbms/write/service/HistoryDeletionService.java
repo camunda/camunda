@@ -153,6 +153,15 @@ public class HistoryDeletionService {
       return List.of();
     }
 
+    final var limit = config.dependentRowLimit();
+    final int deletedSubscriptions =
+        rdbmsWriters
+            .getMessageSubscriptionWriter()
+            .deleteStartEventSubscriptionsByProcessDefinitionKeys(processDefinitionKeys, limit);
+    if (deletedSubscriptions >= limit) {
+      return List.of();
+    }
+
     rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
     scheduleAuditLogDataForDeletion(
         processDefinitionKeys, HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
