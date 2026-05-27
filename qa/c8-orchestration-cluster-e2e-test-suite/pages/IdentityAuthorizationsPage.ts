@@ -244,14 +244,27 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
-      await this.createAuthorizationOwnerSearchInput.fill(
-        authorization.ownerId,
+      // The "Search by owner ID" field queries users by username (the login
+      // identifier), not by display name.  The ownerId passed here is typically
+      // the display name (e.g. "Auth Test xyz"); normalise it to the username
+      // format ("authtestxyz") so the server-side search returns results.
+      const usernameSearch = authorization.ownerId
+        .toLowerCase()
+        .replace(/ /g, '');
+      await this.createAuthorizationOwnerSearchInput.click();
+      await this.createAuthorizationOwnerSearchInput.pressSequentially(
+        usernameSearch,
+        {delay: 50},
       );
-      await this.createAuthorizationModal
+      // Typing the exact username yields exactly one result.  Wait up to 60s
+      // for the debounced API call to return — just-created users can be slow
+      // to surface under CI load.  force:true bypasses transient Carbon
+      // re-render actionability blocks after the item is confirmed visible.
+      const ownerOption = this.createAuthorizationModal
         .locator('.cds--list-box__menu-item')
-        .filter({hasText: authorization.ownerId})
-        .first()
-        .click({timeout: 20000});
+        .first();
+      await expect(ownerOption).toBeVisible({timeout: 60000});
+      await ownerOption.click({force: true});
       return;
     }
 

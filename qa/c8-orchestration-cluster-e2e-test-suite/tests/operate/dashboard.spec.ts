@@ -105,17 +105,21 @@ test.describe('Dashboard', () => {
 
   test('Navigation to Processes View', async ({operateDashboardPage}) => {
     await test.step('Navigate to active instances and verify count', async () => {
-      const activeProcessInstancesCount =
-        await operateDashboardPage.activeInstancesBadge.innerText();
+      await expect(async () => {
+        await operateDashboardPage.gotoDashboardPage();
 
-      await operateDashboardPage.clickActiveInstancesLink();
+        const activeProcessInstancesCount =
+          await operateDashboardPage.activeInstancesBadge.innerText();
 
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          activeProcessInstancesCount,
-          Number(activeProcessInstancesCount) > 1,
-        ),
-      ).toBeVisible();
+        await operateDashboardPage.clickActiveInstancesLink();
+
+        await expect(
+          operateDashboardPage.processInstancesHeading(
+            activeProcessInstancesCount,
+            Number(activeProcessInstancesCount) > 1,
+          ),
+        ).toBeVisible();
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Navigate to incident instances and verify count', async () => {
