@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.zeebe;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -111,6 +112,7 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
     return null;
   }
 
+  @JsonIgnore
   @Override
   public int getRecordVersion() {
     throw new UnsupportedOperationException("Operation not supported");
