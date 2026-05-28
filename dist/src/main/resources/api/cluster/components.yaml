@@ -457,13 +457,13 @@ schemas:
     title: BrokerId
     description: >
       The ID of a broker. An integer (e.g. 0) for non-zone-aware clusters,
-      or a string (e.g. "zone-a/0") for zone-aware clusters.
+      or a string (e.g. "zone-a_0") for zone-aware clusters.
     oneOf:
       - type: integer
         format: int32
         example: 0
       - type: string
-        example: "zone-a/0"
+        example: "zone-a_0"
 
   PartitionId:
     title: PartitionId
