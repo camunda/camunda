@@ -13,9 +13,12 @@ import {mergePathname} from 'modules/request/mergePathname';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
+type DocumentType = 'image' | 'unknown';
+
 type DocumentInfo = {
   fileName: string;
   link: string;
+  type: DocumentType;
   size: number | undefined;
 };
 
@@ -32,6 +35,7 @@ const documentReferenceSchema = z
     metadata: z
       .object({
         fileName: z.string().optional(),
+        contentType: z.string().optional(),
         size: z.number().optional(),
       })
       .catchall(z.unknown())
@@ -47,6 +51,23 @@ function isDocumentReference(
   return documentReferenceSchema.safeParse(value).success;
 }
 
+const SUPPORTED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+function getDocumentType(contentType: string | undefined): DocumentType {
+  if (!contentType) {
+    return 'unknown';
+  } else if (SUPPORTED_IMAGE_MIME_TYPES.has(contentType)) {
+    return 'image';
+  } else {
+    return 'unknown';
+  }
+}
+
 function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
   const link = mergePathname(
     getClientConfig().contextPath,
@@ -55,6 +76,7 @@ function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
   return {
     link,
     fileName: ref.metadata?.fileName ?? ref.documentId,
+    type: getDocumentType(ref.metadata?.contentType),
     size: ref.metadata?.size,
   };
 }
@@ -127,4 +149,4 @@ function toHumanReadableBytes(bytes: number): string {
 }
 
 export {parseDocumentVariable, toHumanReadableBytes};
-export type {DocumentParseResult};
+export type {DocumentInfo, DocumentParseResult};

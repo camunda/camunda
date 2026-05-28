@@ -27,6 +27,7 @@ import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariableValueCell} from './VariableValueCell';
 import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
 import {DownloadDocumentButton} from './DownloadDocumentButton';
+import {PreviewDocumentButton} from './DocumentPreview/PreviewDocumentButton';
 
 type Props = {
   scopeId: string | null;
@@ -123,11 +124,17 @@ const VariablesTable: React.FC<Props> = ({
                   return (
                     <>
                       {documentResult.type === 'single' && (
-                        <DownloadDocumentButton
-                          documentLink={documentResult.document.link}
-                          fileName={documentResult.document.fileName}
-                          variableName={name}
-                        />
+                        <>
+                          <PreviewDocumentButton
+                            document={documentResult.document}
+                            variableName={name}
+                          />
+                          <DownloadDocumentButton
+                            documentLink={documentResult.document.link}
+                            fileName={documentResult.document.fileName}
+                            variableName={name}
+                          />
+                        </>
                       )}
                     </>
                   );
