@@ -801,6 +801,34 @@ anything in secondary storage since this change was already reflected after Hand
 
 Final state in secondary storage: status = MIGRATED, update time = not updated
 
+### 5.1 Testing Multi-Handler Flush Consistency
+
+When a handler writes to an entity that another handler also writes to (i.e. both handlers share the
+same `generateIds` output for the same entity type), you have a multi-handler entity. The
+flush-boundary bug described above is only possible for these entities: a single-handler entity
+cannot be inconsistent regardless of when the flush fires.
+
+**How to identify multi-handler entities:**
+
+Search `DefaultExporterResourceProvider.getExportHandlers()` for handlers that produce the same
+entity type and the same document ID for a given record. If two or more handlers can write to the
+same `(index, id)` pair, the entity is multi-handler.
+
+**What to do:**
+
+Add a scenario to `ExporterBulkConsistencyIT` (
+`zeebe/exporters/camunda-exporter/src/test/java/io/camunda/exporter/ExporterBulkConsistencyIT.java`)
+that exercises all handlers for the entity in a realistic record sequence. The test exports the same
+records at several bulk sizes and asserts that the final indexed state is identical in each case. If
+your change introduces flush-dependent branching in `flush()` (like HandlerA above), the test aims to
+catch it.
+
+You do not need to add a test for:
+
+- Single-handler entities — no merge risk.
+- Create/delete pairs on independent documents — deletes replace the document entirely.
+- Write-once entities (e.g. identity records, deployment artifacts) — no subsequent update handler.
+
 ---
 
 ## 6. References
