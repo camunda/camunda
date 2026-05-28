@@ -125,23 +125,50 @@ identified by the `event.name` attribute following the OTel Events semantic conv
 
 ### Event types
 
-|        Source record        |         Event name         |
-|-----------------------------|----------------------------|
-| `PROCESS_INSTANCE_CREATION` | `process_instance_created` |
+|        Source record        |       Intent        |          Event name          |                                       Notes                                       |
+|-----------------------------|---------------------|------------------------------|-----------------------------------------------------------------------------------|
+| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                           |
+| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                 |
+| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped. |
 
-### Log record attributes
+### Common log record attributes
 
-Per-event attributes attached to each log record:
+These attributes are set on every log record:
+
+|         Attribute         |  Type  |                                               Description                                                |
+|---------------------------|--------|----------------------------------------------------------------------------------------------------------|
+| `event.name`              | string | Event type identifier (one of the names in the table above).                                             |
+| `camunda.log.position`    | long   | Log stream position. Used as a deduplication key.                                                        |
+| `camunda.sequence_number` | long   | Monotonic per-partition counter incremented for each emitted event. Used for ordering and gap detection. |
+
+### `process_instance_created` attributes
 
 |            Attribute             |  Type  |                       Description                       |
 |----------------------------------|--------|---------------------------------------------------------|
-| `event.name`                     | string | Event type identifier.                                  |
 | `camunda.bpmn_process_id`        | string | BPMN process ID.                                        |
 | `camunda.process_version`        | long   | Process definition version.                             |
 | `camunda.process_definition_key` | long   | Process definition key.                                 |
 | `camunda.process_instance_key`   | long   | Process instance key.                                   |
 | `camunda.tenant_id`              | string | Tenant ID, or the default tenant when not multi-tenant. |
-| `camunda.log.position`           | long   | Log stream position. Used as a deduplication key.       |
+
+### `adhoc_subprocess_activated` attributes
+
+|            Attribute             |  Type  |                       Description                       |
+|----------------------------------|--------|---------------------------------------------------------|
+| `camunda.bpmn_process_id`        | string | BPMN process ID.                                        |
+| `camunda.process_definition_key` | long   | Process definition key.                                 |
+| `camunda.process_instance_key`   | long   | Process instance key.                                   |
+| `camunda.element_id`             | string | BPMN element ID of the ad-hoc sub-process.              |
+| `camunda.tenant_id`              | string | Tenant ID, or the default tenant when not multi-tenant. |
+
+### `usage_metric_exported` attributes
+
+|               Attribute               |  Type  |                                        Description                                        |
+|---------------------------------------|--------|-------------------------------------------------------------------------------------------|
+| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (process instances), `EDI` (decision instances), or `TU` (task users). |
+| `camunda.usage_metric.count`          | long   | Total occurrences in the interval. For `TU`, the count of distinct task users.            |
+| `camunda.usage_metric.interval_start` | long   | Interval start timestamp, in epoch milliseconds.                                          |
+| `camunda.usage_metric.interval_end`   | long   | Interval end timestamp, in epoch milliseconds.                                            |
 
 ### Resource attributes
 
