@@ -7,24 +7,33 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.BatchResult.Callback;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
+import com.google.cloud.storage.StorageBatch;
+import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.BatchOperationException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -32,6 +41,7 @@ final class FileSetManager {
 
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  static final int MAX_DELETE_BATCH_SIZE = 100;
 
   /**
    * The path format consists of the following elements:
@@ -134,12 +144,30 @@ final class FileSetManager {
     }
   }
 
-  public void delete(final BackupIdentifier id, final String fileSetName) {
+  Collection<BlobId> collectBlobIds(final BackupIdentifier id, final String fileSetName) {
+    final var ids = new ArrayList<BlobId>();
     for (final var blob :
         client
             .list(bucketInfo.getName(), BlobListOption.prefix(fileSetPath(id, fileSetName)))
             .iterateAll()) {
-      blob.delete();
+      ids.add(blob.getBlobId());
+    }
+    return ids;
+  }
+
+  void deleteBlobs(final List<BlobId> blobIds) {
+    final int size = blobIds.size();
+    for (int i = 0; i < size; i += MAX_DELETE_BATCH_SIZE) {
+      final StorageBatch batch = client.batch();
+      final List<StorageException> errors = new ArrayList<>();
+      for (final var blobId : blobIds.subList(i, Math.min(i + MAX_DELETE_BATCH_SIZE, size))) {
+        batch.delete(blobId).notify(new BooleanStorageExceptionCallback(errors::add));
+      }
+      batch.submit();
+      if (!errors.isEmpty()) {
+        throw new BatchOperationException(
+            "Failures detected in the blob batch deletion", errors.getFirst()) {};
+      }
     }
   }
 
@@ -192,5 +220,17 @@ final class FileSetManager {
     return BlobInfo.newBuilder(bucketInfo, fileSetPath(id, fileSetName) + fileName)
         .setContentType("application/octet-stream")
         .build();
+  }
+
+  private record BooleanStorageExceptionCallback(Consumer<StorageException> onError)
+      implements Callback<Boolean, StorageException> {
+
+    @Override
+    public void success(final Boolean deleted) {}
+
+    @Override
+    public void error(final StorageException exception) {
+      onError.accept(exception);
+    }
   }
 }
