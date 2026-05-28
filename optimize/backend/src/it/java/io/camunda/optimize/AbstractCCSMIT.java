@@ -170,6 +170,17 @@ public abstract class AbstractCCSMIT extends AbstractIT {
             + "."
             + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
         BpmnElementType.PROCESS.name());
+    // Restrict the count to the cancelled instances we are actually waiting for. Without this
+    // filter, terminal records from any other instance (e.g. instances that completed normally
+    // during the test and were excluded from cancelledKeys) can satisfy the count, letting the
+    // wait return before the exporter has flushed the records for the cancelled instances. The
+    // subsequent cleanup would then race the still-pending flush and leak records into the next
+    // test.
+    terminalQuery.addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value
+            + "."
+            + ZeebeProcessInstanceDataDto.Fields.processInstanceKey,
+        cancelledKeys.stream().map(String::valueOf).toList());
     waitUntilMinimumDataExportedCount(
         cancelledKeys.size(), DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, terminalQuery);
   }
