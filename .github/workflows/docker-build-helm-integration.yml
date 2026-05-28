@@ -871,7 +871,7 @@ jobs:
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
             if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="@camunda/qa-engineering"
+              OWNER_TEAM="@camunda/test-automation-team"
               FAILURE_CATEGORY="saas_e2e"
             else
               OWNER_TEAM="@camunda/monorepo-devops-team"
