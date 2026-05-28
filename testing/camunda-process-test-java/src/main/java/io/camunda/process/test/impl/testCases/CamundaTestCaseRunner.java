@@ -46,7 +46,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
 
   public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
-    this(context, assertionFacade, TestCaseInstructionHandlerRegistry.defaultRegistry());
+    this(context, assertionFacade, new TestCaseInstructionHandlerRegistry());
   }
 
   public CamundaTestCaseRunner(
@@ -79,12 +79,8 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
       final TestCaseInstruction instruction, final CamundaClient camundaClient) {
     LOGGER.debug("Executing instruction: {}", instruction);
 
-    //noinspection rawtypes
-    final TestCaseInstructionHandler instructionHandler = registry.getHandler(instruction);
-
     try {
-      //noinspection unchecked
-      instructionHandler.execute(instruction, context, camundaClient, assertionFacade);
+      registry.dispatch(instruction, context, camundaClient, assertionFacade);
 
     } catch (final Exception e) {
       throw new TestCaseRunException(

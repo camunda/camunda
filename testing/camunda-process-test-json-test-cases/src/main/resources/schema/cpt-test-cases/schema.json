@@ -1359,7 +1359,7 @@
       "additionalProperties": false
     },
     "ConditionalBehaviorInstruction": {
-      "description": "An instruction to register a conditional behavior that reacts to process state changes. The behavior watches the given conditions on a background scheduler; the conditions form a conjunction so the behavior fires only when every assertion succeeds. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely. Conditional behaviors should be registered before any CREATE_PROCESS_INSTANCE instruction in the same test case so the engine can observe early state changes.",
+      "description": "An instruction to register a conditional behavior that reacts to process state changes. The behavior watches the given conditions on a background scheduler; the conditions form a conjunction so the behavior fires only when every assertion succeeds. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely.",
       "type": "object",
       "properties": {
         "type": {

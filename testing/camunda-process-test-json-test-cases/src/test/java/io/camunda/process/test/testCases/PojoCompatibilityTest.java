@@ -806,14 +806,26 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "conditional behavior: full with name and chained actions",
+            "conditional behavior: chained conditions with action chain and name",
             singleTestCase(
                 ImmutableConditionalBehaviorInstruction.builder()
                     .name("auto-complete-review-task")
                     .addConditions(
+                        ImmutableAssertElementInstancesInstruction.builder()
+                            .processInstanceSelector(
+                                ImmutableProcessInstanceSelector.builder()
+                                    .processDefinitionId("my-process")
+                                    .build())
+                            .addElementSelectors(
+                                ImmutableElementSelector.builder()
+                                    .elementId("Export_Happiness")
+                                    .build())
+                            .state(ElementInstancesState.IS_ACTIVE)
+                            .build())
+                    .addConditions(
                         ImmutableAssertUserTaskInstruction.builder()
                             .userTaskSelector(
-                                ImmutableUserTaskSelector.builder().taskName("Review Task").build())
+                                ImmutableUserTaskSelector.builder().elementId("task1").build())
                             .state(UserTaskState.IS_CREATED)
                             .build())
                     .addActions(
@@ -827,57 +839,6 @@ public class PojoCompatibilityTest {
                             .userTaskSelector(
                                 ImmutableUserTaskSelector.builder().taskName("Review Task").build())
                             .putVariables("approved", true)
-                            .build())
-                    .build())),
-        Arguments.of(
-            "conditional behavior: complete job action",
-            singleTestCase(
-                ImmutableConditionalBehaviorInstruction.builder()
-                    .addConditions(
-                        ImmutableAssertElementInstancesInstruction.builder()
-                            .processInstanceSelector(
-                                ImmutableProcessInstanceSelector.builder()
-                                    .processDefinitionId("my-process")
-                                    .build())
-                            .addElementSelectors(
-                                ImmutableElementSelector.builder()
-                                    .elementId("Export_Happiness")
-                                    .build())
-                            .state(ElementInstancesState.IS_ACTIVE)
-                            .build())
-                    .addActions(
-                        ImmutableCompleteJobInstruction.builder()
-                            .jobSelector(
-                                ImmutableJobSelector.builder()
-                                    .jobType("io.camunda:http-json:1")
-                                    .build())
-                            .putVariables("exportSuccess", true)
-                            .build())
-                    .build())),
-        Arguments.of(
-            "conditional behavior: chained conditions form a conjunction",
-            singleTestCase(
-                ImmutableConditionalBehaviorInstruction.builder()
-                    .addConditions(
-                        ImmutableAssertElementInstanceInstruction.builder()
-                            .processInstanceSelector(
-                                ImmutableProcessInstanceSelector.builder()
-                                    .processDefinitionId("my-process")
-                                    .build())
-                            .elementSelector(
-                                ImmutableElementSelector.builder().elementId("task1").build())
-                            .state(ElementInstanceState.IS_ACTIVE)
-                            .build())
-                    .addConditions(
-                        ImmutableAssertUserTaskInstruction.builder()
-                            .userTaskSelector(
-                                ImmutableUserTaskSelector.builder().elementId("task1").build())
-                            .state(UserTaskState.IS_CREATED)
-                            .build())
-                    .addActions(
-                        ImmutableCompleteUserTaskInstruction.builder()
-                            .userTaskSelector(
-                                ImmutableUserTaskSelector.builder().elementId("task1").build())
                             .build())
                     .build()))
         // add new instructions here
