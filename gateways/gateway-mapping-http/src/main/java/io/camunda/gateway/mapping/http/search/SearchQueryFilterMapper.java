@@ -251,6 +251,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRetries())
           .map(mapToIntegerOperations("retries", validationErrors))
           .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getPriority())
+          .map(mapToIntegerOperations("priority", validationErrors))
+          .ifPresent(builder::priorityOperations);
       ofNullable(filter.getCreationTime())
           .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
           .ifPresent(builder::creationTimeOperations);
