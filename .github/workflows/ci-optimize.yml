@@ -135,6 +135,7 @@ jobs:
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
+        continue-on-error: true
         with:
           archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
 
@@ -227,6 +228,7 @@ jobs:
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
+        continue-on-error: true
         with:
           archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
 
@@ -479,6 +481,7 @@ jobs:
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
+        continue-on-error: true
         with:
           archive_name: optimize-e2e-smoke-docker-logs
 
