@@ -119,10 +119,10 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
             .index(decisionRequirementsIndex.getAlias())
             .query(tenantAwareQuery);
 
-    return ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, DecisionRequirements.class)
-        .flatMap(res -> res.hits().hits().stream())
-        .map(Hit::source)
-        .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, DecisionRequirements.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
+    }
   }
 
   @Override

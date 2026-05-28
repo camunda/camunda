@@ -266,12 +266,10 @@ public class FlowNodeInstanceReader extends AbstractReader
             .query(query)
             .sort(ElasticsearchUtil.sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       throw new OperateRuntimeException(e);
     }
@@ -513,21 +511,25 @@ public class FlowNodeInstanceReader extends AbstractReader
       final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
       throws IOException {
     final var runningParent = new AtomicBoolean();
-    final List<FlowNodeInstanceEntity> children =
+    final List<FlowNodeInstanceEntity> children;
+    try (final var resStream =
         ElasticsearchUtil.scrollAllStream(
-                esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
-            .flatMap(
-                response -> {
-                  processAggregation(response.aggregations(), null, runningParent);
-                  return response.hits().hits().stream();
-                })
-            .map(
-                hit -> {
-                  final var entity = hit.source();
-                  entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
-                  return entity;
-                })
-            .toList();
+            esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)) {
+      children =
+          resStream
+              .flatMap(
+                  response -> {
+                    processAggregation(response.aggregations(), null, runningParent);
+                    return response.hits().hits().stream();
+                  })
+              .map(
+                  hit -> {
+                    final var entity = hit.source();
+                    entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
+                    return entity;
+                  })
+              .toList();
+    }
     markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(
         runningParent.get(), FlowNodeInstanceDto.createFrom(children, objectMapper));

@@ -151,9 +151,9 @@ public class DecisionInstanceReader extends AbstractReader
             .source(s -> s.filter(f -> f.includes(DECISION_ID, STATE)))
             .sort(ElasticsearchUtil.sortOrder(EVALUATION_DATE, SortOrder.Asc));
 
-    try {
+    try (final var resStream = scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)) {
       final var entries =
-          scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)
+          resStream
               .flatMap(res -> res.hits().hits().stream())
               .map(
                   hit ->

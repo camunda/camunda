@@ -90,11 +90,11 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
     final var searchRequestBuilder =
         new SearchRequest.Builder().index(decisionIndex.getAlias()).query(tenantAwareQuery);
 
-    return ElasticsearchUtil.scrollAllStream(
-            esClient, searchRequestBuilder, DecisionDefinition.class)
-        .flatMap(res -> res.hits().hits().stream())
-        .map(Hit::source)
-        .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, DecisionDefinition.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
+    }
   }
 
   @Override
@@ -192,14 +192,18 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(DecisionRequirementsIndex.KEY)));
 
-    final var nonNullKeys =
+    final List<Long> nonNullKeys;
+    try (final var resStream =
         ElasticsearchUtil.scrollAllStream(
-                esClient, searchRequestBuilder, DecisionRequirements.class)
-            .flatMap(res -> res.hits().hits().stream())
-            .map(Hit::source)
-            .filter(Objects::nonNull)
-            .map(DecisionRequirements::getKey)
-            .toList();
+            esClient, searchRequestBuilder, DecisionRequirements.class)) {
+      nonNullKeys =
+          resStream
+              .flatMap(res -> res.hits().hits().stream())
+              .map(Hit::source)
+              .filter(Objects::nonNull)
+              .map(DecisionRequirements::getKey)
+              .toList();
+    }
 
     if (nonNullKeys.isEmpty()) {
       return ElasticsearchUtil.createMatchNoneQuery().build()._toQuery();

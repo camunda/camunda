@@ -109,9 +109,11 @@ public abstract class ElasticsearchUtil {
    */
   public static Map<String, String> scrollIdsWithIndexToMap(
       final ElasticsearchClient client, final SearchRequest.Builder searchRequestBuilder) {
-    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
-        .flatMap(response -> response.hits().hits().stream())
-        .collect(Collectors.toMap(Hit::id, Hit::index));
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, MAP_CLASS)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .collect(Collectors.toMap(Hit::id, Hit::index));
+    }
   }
 
   // ============ ES Query Helper Methods ============

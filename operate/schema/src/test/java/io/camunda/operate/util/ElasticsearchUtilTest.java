@@ -26,6 +26,7 @@ import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.elasticsearch.core.search.TotalHits;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
+import co.elastic.clients.util.ObjectBuilder;
 import io.camunda.operate.store.ScrollException;
 import java.io.IOException;
 import java.util.List;
@@ -36,8 +37,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ElasticsearchUtilTest {
 
   @Mock private ElasticsearchClient esClient;
@@ -61,10 +65,7 @@ class ElasticsearchUtilTest {
     }
 
     // then - clearScroll should have been called
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(1)).clearScroll(captor.capture());
-    assertThat(captor.getValue().scrollId()).contains(scrollId);
+    assertThat(capturedScrollIds(1)).contains(scrollId);
   }
 
   @Test
@@ -89,10 +90,7 @@ class ElasticsearchUtilTest {
     }
 
     // then - clearScroll should have been called
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(1)).clearScroll(captor.capture());
-    assertThat(captor.getValue().scrollId()).contains(scrollId);
+    assertThat(capturedScrollIds(1)).contains(scrollId);
   }
 
   @Test
@@ -123,10 +121,7 @@ class ElasticsearchUtilTest {
         .hasMessageContaining("Error during scroll");
 
     // then - clearScroll should have been called from both the catch block and onClose
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(2)).clearScroll(captor.capture());
-    assertThat(captor.getAllValues()).allSatisfy(req -> assertThat(req.scrollId()).isNotEmpty());
+    assertThat(capturedScrollIds(2)).allSatisfy(id -> assertThat(id).isNotEmpty());
   }
 
   @Test
@@ -151,10 +146,7 @@ class ElasticsearchUtilTest {
     }
 
     // then - clearScroll should have been called
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(1)).clearScroll(captor.capture());
-    assertThat(captor.getValue().scrollId()).contains(scrollId);
+    assertThat(capturedScrollIds(1)).contains(scrollId);
   }
 
   @Test
@@ -193,10 +185,7 @@ class ElasticsearchUtilTest {
         .hasMessageContaining("Callback processing error");
 
     // then - clearScroll should have been called from onClose
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(1)).clearScroll(captor.capture());
-    assertThat(captor.getValue().scrollId()).contains(scrollId);
+    assertThat(capturedScrollIds(1)).contains(scrollId);
   }
 
   @Test
@@ -217,10 +206,22 @@ class ElasticsearchUtilTest {
     }
 
     // then - clearScroll should still be called from onClose
-    final ArgumentCaptor<ClearScrollRequest> captor =
-        ArgumentCaptor.forClass(ClearScrollRequest.class);
-    verify(esClient, times(1)).clearScroll(captor.capture());
-    assertThat(captor.getValue().scrollId()).contains(scrollId);
+    assertThat(capturedScrollIds(1)).contains(scrollId);
+  }
+
+  /**
+   * Captures the {@code Function<ClearScrollRequest.Builder, ObjectBuilder<ClearScrollRequest>>}
+   * lambdas passed to {@code esClient.clearScroll(...)} and returns the scroll IDs they produce.
+   */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private List<String> capturedScrollIds(final int expectedInvocations) throws IOException {
+    final ArgumentCaptor<Function<ClearScrollRequest.Builder, ObjectBuilder<ClearScrollRequest>>>
+        captor = ArgumentCaptor.forClass(Function.class);
+    verify(esClient, times(expectedInvocations)).clearScroll((Function) captor.capture());
+    return captor.getAllValues().stream()
+        .map(fn -> fn.apply(new ClearScrollRequest.Builder()).build())
+        .flatMap(req -> req.scrollId().stream())
+        .toList();
   }
 
   private SearchResponse<TestEntity> mockSearchResponse(

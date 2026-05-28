@@ -209,12 +209,9 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
             .index(decisionInstanceTemplate.getAlias())
             .query(tenantAwareQuery);
 
-    final var decisionInstances =
-        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, DecisionInstance.class)
-            .flatMap(res -> res.hits().hits().stream())
-            .map(Hit::source)
-            .toList();
-
-    return decisionInstances;
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, DecisionInstance.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
+    }
   }
 }

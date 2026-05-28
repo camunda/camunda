@@ -218,9 +218,8 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .source(s -> s.filter(f -> f.includes(IncidentTemplate.PROCESS_INSTANCE_KEY)))
             .size(batchSize);
 
-    try {
-      final var resStream =
-          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)) {
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .collect(
