@@ -15,7 +15,6 @@ import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
@@ -26,7 +25,6 @@ import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -67,50 +65,6 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 })
 public class WebSecurityConfig {
 
-  /**
-   * Syncs OC's {@link SecurityConfiguration} into CSL's {@link CamundaSecurityLibraryProperties}
-   * after both have finished property binding but before any {@code SecurityFilterChain} bean is
-   * built.
-   *
-   * <p>OC's {@code SecurityConfiguration} and CSL's {@code CamundaSecurityLibraryProperties} are
-   * two separate {@code @ConfigurationProperties} beans bound to overlapping prefixes under {@code
-   * camunda.security.*}. Properties supplied via {@code application.yaml} populate both, so
-   * production deployments stay in sync. But programmatic mutations applied via {@code
-   * withSecurityConfig(...)} in QA test fixtures only touch OC's bean — leaving CSL's properties at
-   * their defaults. The visible failure mode is {@code BasicAuthLogoutIT.logout} disabling CSRF on
-   * OC's bean while CSL's chain still enforces CSRF and rejects the test's tokenless POST with a
-   * 401.
-   *
-   * <p>Implemented as a {@link org.springframework.beans.factory.config.BeanPostProcessor} so the
-   * sync fires the moment CSL's {@code CamundaSecurityLibraryProperties} bean finishes property
-   * binding, regardless of where the consuming chain bean lives in the dependency graph. A plain
-   * {@code @PostConstruct} on this configuration class is unreliable because {@code @Import} does
-   * not enforce instantiation ordering between the host configuration class and the imported CSL
-   * filter chain beans.
-   *
-   * <p>This whole sync goes away once the unified-configuration migration on the CSL side lands
-   * (camunda/camunda-security-library#170): the OC and CSL property objects merge and the drift
-   * surface disappears.
-   */
-  @Bean
-  static org.springframework.beans.factory.config.BeanPostProcessor
-      csrfConfigurationSyncBeanPostProcessor(
-          final ObjectProvider<SecurityConfiguration> securityConfigurationProvider) {
-    return new org.springframework.beans.factory.config.BeanPostProcessor() {
-      @Override
-      public Object postProcessAfterInitialization(final Object bean, final String beanName) {
-        if (bean instanceof final CamundaSecurityLibraryProperties libraryProperties) {
-          final SecurityConfiguration securityConfiguration =
-              securityConfigurationProvider.getIfAvailable();
-          if (securityConfiguration != null) {
-            libraryProperties.getCsrf().setEnabled(securityConfiguration.getCsrf().isEnabled());
-          }
-        }
-        return bean;
-      }
-    };
-  }
-
   @Bean
   public SecurityPathPort securityPathPort() {
     return new SecurityPathAdapter();
@@ -122,10 +76,10 @@ public class WebSecurityConfig {
   }
 
   /**
-   * Host {@link AdminUserPresencePort} backed by OC's {@link RoleServices} and {@link
-   * SecurityConfiguration}. CSL's {@code AdminUserCheckFilter} is wired only into the basic-auth
-   * webapp chain (camunda/camunda-security-library#190); gating registration on the same property
-   * keeps the port off OIDC deployments.
+   * Host {@link AdminUserPresencePort} backed by OC's {@link RoleServices} and the initialization
+   * sub-config from {@link CamundaSecurityLibraryProperties}. CSL's {@code AdminUserCheckFilter} is
+   * wired only into the basic-auth webapp chain (camunda/camunda-security-library#190); gating
+   * registration on the same property keeps the port off OIDC deployments.
    */
   @Bean
   @ConditionalOnProperty(
@@ -133,8 +87,8 @@ public class WebSecurityConfig {
       havingValue = "basic",
       matchIfMissing = true)
   public AdminUserPresencePort adminUserPresencePort(
-      final RoleServices roleServices, final SecurityConfiguration securityConfiguration) {
-    return new AdminUserPresenceAdapter(roleServices, securityConfiguration);
+      final RoleServices roleServices, final CamundaSecurityLibraryProperties properties) {
+    return new AdminUserPresenceAdapter(roleServices, properties.getInitialization());
   }
 
   /**

@@ -7,10 +7,10 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -27,12 +27,10 @@ public class NoDBMembershipService implements MembershipPort {
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
-  public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
+  public NoDBMembershipService(final CamundaSecurityLibraryProperties cslProperties) {
     oidcGroupsExtractor =
-        new OidcGroupsExtractor(
-            securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured =
-        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
+        new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
+    isGroupsClaimConfigured = cslProperties.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
 
   @Override

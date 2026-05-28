@@ -24,7 +24,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -118,14 +118,14 @@ public class AdminClientConfigControllerTest {
       final String expectedClusterId)
       throws Exception {
 
-    final var securityConfiguration =
-        createSecurityConfiguration(
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(
             authMethod,
             groupsClaim,
             multiTenancyEnabled,
             expectedOrganizationId,
             expectedClusterId);
-    final var controller = new AdminClientConfigController(securityConfiguration);
+    final var controller = new AdminClientConfigController(cslProperties);
 
     // Setup MockMvc with the controller for this specific test
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -152,14 +152,14 @@ public class AdminClientConfigControllerTest {
         .containsEntry("clusterId", expectedClusterId);
   }
 
-  private SecurityConfiguration createSecurityConfiguration(
+  private CamundaSecurityLibraryProperties createCamundaSecurityLibraryProperties(
       final AuthenticationMethod authMethod,
       final String groupsClaim,
       final boolean multiTenancyEnabled,
       final String organizationId,
       final String clusterId) {
 
-    final var securityConfiguration = new SecurityConfiguration();
+    final var cslProperties = new CamundaSecurityLibraryProperties();
 
     // Configure authentication
     final var authentication = new AuthenticationConfiguration();
@@ -171,20 +171,20 @@ public class AdminClientConfigControllerTest {
       authentication.setOidc(oidcConfig);
     }
 
-    securityConfiguration.setAuthentication(authentication);
+    cslProperties.setAuthentication(authentication);
 
     // Configure multi-tenancy
     final var multiTenancy = new MultiTenancyConfiguration();
     multiTenancy.setApiEnabled(multiTenancyEnabled);
-    securityConfiguration.setMultiTenancy(multiTenancy);
+    cslProperties.setMultiTenancy(multiTenancy);
 
     // Configure SaaS
     final var saasConfiguration = new SaasConfiguration();
     saasConfiguration.setOrganizationId(organizationId);
     saasConfiguration.setClusterId(clusterId);
-    securityConfiguration.setSaas(saasConfiguration);
+    cslProperties.setSaas(saasConfiguration);
 
-    return securityConfiguration;
+    return cslProperties;
   }
 
   @Test
@@ -192,7 +192,8 @@ public class AdminClientConfigControllerTest {
     // given
     final var controller =
         new AdminClientConfigController(
-            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+            createCamundaSecurityLibraryProperties(
+                AuthenticationMethod.BASIC, null, false, null, null));
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -211,7 +212,8 @@ public class AdminClientConfigControllerTest {
     // given
     final var controller =
         new AdminClientConfigController(
-            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+            createCamundaSecurityLibraryProperties(
+                AuthenticationMethod.BASIC, null, false, null, null));
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -229,7 +231,8 @@ public class AdminClientConfigControllerTest {
     // given
     final var controller =
         new AdminClientConfigController(
-            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+            createCamundaSecurityLibraryProperties(
+                AuthenticationMethod.BASIC, null, false, null, null));
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -251,7 +254,8 @@ public class AdminClientConfigControllerTest {
     // given
     final var controller =
         new AdminClientConfigController(
-            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+            createCamundaSecurityLibraryProperties(
+                AuthenticationMethod.BASIC, null, false, null, null));
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -276,7 +280,8 @@ public class AdminClientConfigControllerTest {
     // given
     final var controller =
         new AdminClientConfigController(
-            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+            createCamundaSecurityLibraryProperties(
+                AuthenticationMethod.BASIC, null, false, null, null));
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when

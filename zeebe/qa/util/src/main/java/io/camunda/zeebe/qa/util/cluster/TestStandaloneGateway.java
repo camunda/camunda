@@ -10,9 +10,9 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.configuration.Camunda;
 import io.camunda.container.ExtendedConfigurationBuilder;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
@@ -22,7 +22,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final Camunda unifiedConfig;
-  private final CamundaSecurityProperties securityConfig;
+  private final CamundaSecurityLibraryProperties cslProperties;
 
   public TestStandaloneGateway() {
     super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -40,11 +40,11 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         .setPort(SocketUtil.getNextAddress().getPort());
     withAdditionalProfile(Profile.GATEWAY);
 
-    securityConfig = new CamundaSecurityProperties();
-    securityConfig.getAuthentication().setUnprotectedApi(true);
-    securityConfig.getAuthorizations().setEnabled(false);
+    cslProperties = new CamundaSecurityLibraryProperties();
+    cslProperties.getAuthentication().setUnprotectedApi(true);
+    cslProperties.getAuthorizations().setEnabled(false);
     //noinspection resource
-    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    withBean("cslProperties", cslProperties, CamundaSecurityLibraryProperties.class);
 
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test

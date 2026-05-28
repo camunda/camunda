@@ -14,9 +14,9 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -85,7 +85,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties securityProperties,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
@@ -104,12 +104,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.meterRegistry = meterRegistry;
     this.engineSecurityConfig =
         new EngineSecurityConfig(
-            securityConfiguration.getAuthentication(),
-            securityConfiguration.getAuthorizations().isEnabled(),
-            securityConfiguration.getMultiTenancy().isChecksEnabled(),
-            securityConfiguration.getInitialization(),
-            securityConfiguration.getCompiledIdValidationPattern(),
-            securityConfiguration.getCompiledGroupIdValidationPattern());
+            securityProperties.getAuthentication(),
+            securityProperties.getAuthorizations().isEnabled(),
+            securityProperties.getMultiTenancy().isChecksEnabled(),
+            securityProperties.getInitialization(),
+            securityProperties.getCompiledIdValidationPattern(),
+            securityProperties.getCompiledGroupIdValidationPattern());
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;

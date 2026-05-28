@@ -73,7 +73,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
         getProperties("camunda.security.authentication.oidc.assertion.kidSource", "certificate"),
         getProperties("camunda.security.authentication.oidc.assertion.kidDigestAlgorithm", "sha1"),
         getProperties("camunda.security.authentication.oidc.assertion.kidEncoding", "hex"),
-        getProperties("camunda.security.authentication.oidc.assertion.kidCase", "upper"),
+        // kidCase requires kidEncoding=hex to pass CSL's property-level validation; combine both
+        // so the BASIC-auth incompatibility check is reached before the encoding validation fires.
+        getProperties(
+            "camunda.security.authentication.oidc.assertion.kidEncoding",
+            "hex",
+            "camunda.security.authentication.oidc.assertion.kidCase",
+            "upper"),
         getProperties(
             "camunda.security.authentication.oidc.client-authentication-method", "private_key_jwt"),
         getProperties(
@@ -90,6 +96,14 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   private Map<String, Object> getProperties(final String property, final String value) {
     final Map<String, Object> properties = getBasicProperties();
     properties.put(property, value);
+    return properties;
+  }
+
+  private Map<String, Object> getProperties(
+      final String property1, final String value1, final String property2, final String value2) {
+    final Map<String, Object> properties = getBasicProperties();
+    properties.put(property1, value1);
+    properties.put(property2, value2);
     return properties;
   }
 
@@ -130,12 +144,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     }
 
     /**
-     * CSL's {@code CamundaAuthenticationBeansConfiguration} provides a default {@code
-     * requestContextBasedAuthenticationHolder} bean that injects {@link
-     * jakarta.servlet.http.HttpServletRequest}, which is not available in a {@link
-     * org.springframework.boot.WebApplicationType#NONE} context. Registering a no-op holder here
-     * satisfies the {@code @ConditionalOnMissingBean} condition so the CSL default — and its {@code
-     * HttpServletRequest} dependency — is never activated.
+     * CSL's {@code CamundaAuthenticationBeansConfiguration} provides a {@code
+     * requestContextBasedAuthenticationHolder} that injects {@link
+     * jakarta.servlet.http.HttpServletRequest}. That bean is unavailable in a {@link
+     * org.springframework.boot.WebApplicationType#NONE} context. Providing a no-op bean here
+     * satisfies the {@code @ConditionalOnMissingBean} condition so the CSL default is skipped. The
+     * proper fix is {@code @ConditionalOnWebApplication(type=SERVLET)} in CSL
+     * (camunda-security-library#271).
      */
     @Bean(name = "requestContextBasedAuthenticationHolder")
     public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {

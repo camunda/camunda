@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
+import static io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_EXTERNAL_ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,7 +20,7 @@ import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -63,7 +63,8 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   // When building the expected error messages including this regex, for some reason the backslashes
   // disappear and have to be doubled to prevent that.
   private static final String TENANT_ID_PATTERN =
@@ -506,7 +507,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -606,7 +607,7 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(entityIdName, CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -650,7 +651,7 @@ public class TenantControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
@@ -677,7 +678,7 @@ public class TenantControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldUnassignExternalGroupFromTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
@@ -707,7 +708,7 @@ public class TenantControllerTest {
       @Bean
       @Primary
       public IdentifierValidator byogIdentifierValidator() {
-        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_PATTERN);
       }
     }
   }
@@ -734,7 +735,7 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")

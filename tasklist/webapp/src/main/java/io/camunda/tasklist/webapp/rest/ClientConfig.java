@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.rest;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.service.EnvironmentService;
@@ -48,13 +48,13 @@ public class ClientConfig {
   @Autowired private TasklistProfileService profileService;
   @Autowired private EnvironmentService environmentService;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private SecurityConfiguration securityConfiguration;
+  @Autowired private CamundaSecurityLibraryProperties cslProperties;
   @Autowired private ServletContext context;
 
   @PostConstruct
   public void init() {
     isEnterprise = tasklistProperties.isEnterprise();
-    isMultiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
+    isMultiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/tasklist";
     canLogout = profileService.currentProfileCanLogout();

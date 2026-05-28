@@ -8,7 +8,7 @@
 package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
@@ -32,22 +32,23 @@ public final class AuthenticationProperties {
 
   /**
    * Mirrors a {@code camunda.security.*} property change into an existing {@link
-   * SecurityConfiguration} bean when {@code @ConfigurationProperties} binding is not active for
-   * that instance. Does nothing if {@code securityConfig} or {@code value} is {@code null}.
+   * CamundaSecurityLibraryProperties} bean when {@code @ConfigurationProperties} binding is not
+   * active for that instance. Does nothing if {@code cslProperties} or {@code value} is {@code
+   * null}.
    */
   public static void applyToSecurityConfig(
-      final SecurityConfiguration securityConfig, final String key, final Object value) {
-    if (securityConfig == null || value == null) {
+      final CamundaSecurityLibraryProperties cslProperties, final String key, final Object value) {
+    if (cslProperties == null || value == null) {
       return;
     }
-    final var oidc = securityConfig.getAuthentication().getOidc();
+    final var oidc = cslProperties.getAuthentication().getOidc();
     switch (key) {
       case METHOD ->
-          securityConfig
+          cslProperties
               .getAuthentication()
               .setMethod(AuthenticationMethod.parse(String.valueOf(value)));
       case API_UNPROTECTED ->
-          securityConfig
+          cslProperties
               .getAuthentication()
               .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
       case OIDC_CLIENT_ID -> oidc.setClientId(String.valueOf(value));

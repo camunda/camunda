@@ -39,8 +39,8 @@ import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -94,16 +94,15 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final SecurityConfiguration securityConfiguration) {
-    final var engineSecurityConfig =
+      final CamundaSecurityLibraryProperties cslProperties) {
+    return new BrokerRequestAuthorizationConverter(
         new EngineSecurityConfig(
-            securityConfiguration.getAuthentication(),
-            securityConfiguration.getAuthorizations().isEnabled(),
-            securityConfiguration.getMultiTenancy().isChecksEnabled(),
-            securityConfiguration.getInitialization(),
-            securityConfiguration.getCompiledIdValidationPattern(),
-            securityConfiguration.getCompiledGroupIdValidationPattern());
-    return new BrokerRequestAuthorizationConverter(engineSecurityConfig);
+            cslProperties.getAuthentication(),
+            cslProperties.getAuthorizations().isEnabled(),
+            cslProperties.getMultiTenancy().isChecksEnabled(),
+            cslProperties.getInitialization(),
+            cslProperties.getCompiledIdValidationPattern(),
+            cslProperties.getCompiledGroupIdValidationPattern()));
   }
 
   @Bean
@@ -454,7 +453,7 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationChecker authorizationChecker,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties cslProperties,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DocumentServices(
@@ -462,7 +461,7 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
         authorizationChecker,
-        securityConfiguration,
+        cslProperties.getAuthorizations(),
         executorProvider,
         brokerRequestAuthorizationConverter);
   }

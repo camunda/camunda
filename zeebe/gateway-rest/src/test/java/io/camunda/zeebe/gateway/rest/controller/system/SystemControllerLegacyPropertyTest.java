@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.system;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -41,7 +41,7 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
-  @MockitoBean SecurityConfiguration securityConfiguration;
+  @MockitoBean CamundaSecurityLibraryProperties cslProperties;
 
   @Test
   void shouldUseCloudStageFromWebappConfiguration() {

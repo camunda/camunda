@@ -10,9 +10,9 @@ package io.camunda.operate.webapp.security.tenant;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -22,15 +22,15 @@ public class TenantService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final TenantAccessProvider tenantAccessProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
 
   public TenantService(
       final CamundaAuthenticationProvider authenticationProvider,
       final TenantAccessProvider tenantAccessProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties cslProperties) {
     this.authenticationProvider = authenticationProvider;
     this.tenantAccessProvider = tenantAccessProvider;
-    this.securityConfiguration = securityConfiguration;
+    this.cslProperties = cslProperties;
   }
 
   public TenantAccess getAuthenticatedTenants() {
@@ -48,7 +48,7 @@ public class TenantService {
   }
 
   private boolean isMultiTenancyEnabled() {
-    return securityConfiguration.getMultiTenancy().isChecksEnabled();
+    return cslProperties.getMultiTenancy().isChecksEnabled();
   }
 
   private boolean hasNoneRequestContext() {

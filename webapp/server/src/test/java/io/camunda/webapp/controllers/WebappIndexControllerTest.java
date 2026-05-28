@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.config.SaasConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration.Cloud;
 import jakarta.servlet.ServletContext;
@@ -192,13 +192,13 @@ class WebappIndexControllerTest {
     // given
     when(servletContext.getContextPath()).thenReturn("");
     final WebappConfiguration config = new WebappConfiguration();
-    final SecurityConfiguration securityConfig = new SecurityConfiguration();
+    final CamundaSecurityLibraryProperties securityProps = new CamundaSecurityLibraryProperties();
     final SaasConfiguration saasConfig = new SaasConfiguration();
     saasConfig.setOrganizationId("org-123");
     saasConfig.setClusterId("cluster-456");
-    securityConfig.setSaas(saasConfig);
+    securityProps.setSaas(saasConfig);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, securityConfig);
+        new WebappIndexController(servletContext, config, securityProps);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when

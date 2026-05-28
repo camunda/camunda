@@ -20,7 +20,7 @@ import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -53,7 +53,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class GroupControllerTest {
 
   private static final String GROUP_BASE_URL = "/v2/groups";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(GroupController.class)
@@ -222,13 +223,13 @@ public class GroupControllerTest {
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -413,7 +414,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, GROUP_BASE_URL),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, GROUP_BASE_URL),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -640,7 +641,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -856,7 +857,7 @@ public class GroupControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -887,7 +888,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1079,7 +1080,7 @@ public class GroupControllerTest {
                   "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1109,7 +1110,7 @@ public class GroupControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }

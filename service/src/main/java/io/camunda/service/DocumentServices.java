@@ -21,9 +21,9 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
@@ -43,14 +43,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private final SimpleDocumentStoreRegistry registry;
   private final AuthorizationChecker authorizationChecker;
-  private final SecurityConfiguration securityConfig;
+  private final AuthorizationsConfiguration authorizationsConfig;
 
   public DocumentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final SimpleDocumentStoreRegistry registry,
       final AuthorizationChecker authorizationChecker,
-      final SecurityConfiguration securityConfig,
+      final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
@@ -60,7 +60,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         brokerRequestAuthorizationConverter);
     this.registry = registry;
     this.authorizationChecker = authorizationChecker;
-    this.securityConfig = securityConfig;
+    this.authorizationsConfig = authorizationsConfig;
   }
 
   /** Will return a failed future for any error returned by the store */
@@ -256,7 +256,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private boolean hasDocumentPermission(
       final PermissionType permission, final CamundaAuthentication authentication) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!authorizationsConfig.isEnabled()) {
       return true;
     }
 

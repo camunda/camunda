@@ -10,8 +10,8 @@ package io.camunda.application.commons;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration;
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Import;
     properties = {"spring.config.location="})
 class DefaultConfigurationTest {
 
-  @Autowired private CamundaSecurityProperties camundaSecurityProperties;
+  @Autowired private CamundaSecurityLibraryProperties camundaSecurityProperties;
 
   @Test
   void verifySecurityConfigurations() {

@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +34,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @ExtendWith(SpringExtension.class)
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
@@ -40,7 +42,6 @@ import org.springframework.web.context.WebApplicationContext;
       EnvironmentService.class,
       ClientConfig.class,
       ClientConfigRestService.class,
-      SecurityConfiguration.class,
       TasklistPropertiesOverride.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class

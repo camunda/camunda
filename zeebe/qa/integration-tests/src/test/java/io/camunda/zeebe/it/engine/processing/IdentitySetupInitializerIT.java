@@ -9,10 +9,10 @@ package io.camunda.zeebe.it.engine.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.security.api.model.config.initialization.ConfiguredMappingRule;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.engine.processing.identity.initialize.PlatformDefaultEntities;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -243,7 +243,7 @@ final class IdentitySetupInitializerIT {
       final boolean authorizationsEnabled,
       final int partitionCount,
       final Path tempDir,
-      final Consumer<CamundaSecurityProperties> securityCfg) {
+      final Consumer<CamundaSecurityLibraryProperties> securityCfg) {
     broker =
         new TestStandaloneBroker()
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
@@ -279,7 +279,7 @@ final class IdentitySetupInitializerIT {
   private void createBroker(
       final boolean authorizationsEnabled,
       final int partitionCount,
-      final Consumer<CamundaSecurityProperties> securityCfg) {
+      final Consumer<CamundaSecurityLibraryProperties> securityCfg) {
     createBroker(authorizationsEnabled, partitionCount, null, securityCfg);
   }
 }

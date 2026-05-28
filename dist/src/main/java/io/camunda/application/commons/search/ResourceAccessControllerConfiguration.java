@@ -16,11 +16,11 @@ import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
@@ -33,16 +33,16 @@ public class ResourceAccessControllerConfiguration {
 
   @Bean
   public ResourceAccessProvider resourceAccessProvider(
-      final SecurityConfiguration securityConfiguration, final AuthorizationChecker checker) {
-    return securityConfiguration.getAuthorizations().isEnabled()
+      final CamundaSecurityLibraryProperties cslProperties, final AuthorizationChecker checker) {
+    return cslProperties.getAuthorizations().isEnabled()
         ? new DefaultResourceAccessProvider(checker)
         : new DisabledResourceAccessProvider();
   }
 
   @Bean
   public TenantAccessProvider tenantAccessProvider(
-      final SecurityConfiguration securityConfiguration) {
-    return securityConfiguration.getMultiTenancy().isChecksEnabled()
+      final CamundaSecurityLibraryProperties cslProperties) {
+    return cslProperties.getMultiTenancy().isChecksEnabled()
         ? new DefaultTenantAccessProvider()
         : new DisabledTenantAccessProvider();
   }
