@@ -315,8 +315,43 @@ test type did not fail (or does not exist for this version).
 
 ### Diagnosis steps
 
-**Step 1 — Download nightly artifacts.** Run the download block from the
-workflow prompt. Resulting layout:
+**Step 1 — Download nightly artifacts.** Run this block as-is (env vars are
+already exported by the calling workflow):
+
+```bash
+mkdir -p /tmp/nightly-artifacts
+
+if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
+  for mode in v1 v2; do
+    # 8.7 has no v2, main has no v1 — gh silently no-ops on missing patterns
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}" 2>/dev/null || true
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "html-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}-html" 2>/dev/null || true
+  done
+fi
+
+if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  gh run download "$API_ES_RUN_ID" --repo "$REPO" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
+fi
+
+if [ "$HAS_API_RDBMS" = "true" ] && [ -n "$API_RDBMS_RUN_ID" ]; then
+  # Only download the DB-specific artifacts that have failing tests
+  jq -r '[.[] | select(.test_type == "api" and .database != null
+           and .database != "" and .database != "elasticsearch")
+           | .database] | unique[]' /tmp/test_specs.json | while read -r db; do
+    gh run download "$API_RDBMS_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-api-rdbms-${SAFE_VERSION}-${db}" \
+      --dir "/tmp/nightly-artifacts/api-rdbms" 2>/dev/null || true
+  done
+fi
+```
+
+Resulting layout:
 
 ```
 /tmp/nightly-artifacts/

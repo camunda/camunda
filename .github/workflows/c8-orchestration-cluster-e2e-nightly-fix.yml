@@ -164,157 +164,34 @@ jobs:
           # Pre-create artifact dirs so Claude does not need to mkdir
           mkdir -p /tmp/nightly-artifacts
 
-          prompt=$(cat <<'EOF_PROMPT'
-          You are a Camunda QA engineer fixing failing nightly tests in the camunda/camunda
-          monorepo. Working directory: the current repo checkout (already on the correct
-          target branch). Test suite path: qa/c8-orchestration-cluster-e2e-test-suite/.
+          # The prompt is deliberately terse: all diagnosis steps, artifact-download
+          # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
+          # read first). This keeps the per-run prompt small and the source-of-truth
+          # for behaviour in a single file the team can update without editing CI.
+          claude --dangerously-skip-permissions -p "$(cat <<EOF
+          You are the Camunda orchestration-cluster nightly fix agent. The repo is
+          already on the correct target branch (${TARGET_REF}).
 
-          Read qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md (its "## Nightly Fix Agent"
-          section) for diagnosis steps and HARD CONSTRAINTS before doing anything else.
+          STEP 0 — read qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md, the
+          "## Nightly Fix Agent" section. That file is your full operating manual:
+          diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
+          PR conventions ('test:' not 'fix:'), and the /tmp/fix-meta.json schema.
 
-          ## HARD RULES — no exceptions
-          - NEVER use test.skip(), test.fixme(), test.only, or any skip/pending variant.
-            If you cannot write a code fix, write {"prs":[]} to /tmp/fix-meta.json and stop.
-          - Fix ONLY the tests listed in /tmp/test_specs.json. Ignore any additional failures
-            visible in the downloaded artifacts — they are handled by separate agents.
-          - Minimal diff. No refactoring, no dependency bumps, no unrelated edits.
-          - Lint before commit: cd qa/c8-orchestration-cluster-e2e-test-suite &&
-            npx prettier --write <changed-files> && npx eslint <changed-files> --fix.
-            Fix any remaining eslint errors before committing.
+          Failing tests to fix are in /tmp/test_specs.json.
+          Fix ONLY those entries — ignore other failures visible in artifacts.
 
-          ## Step 1 — Download nightly artifacts
+          Context (env vars already exported):
+            VERSION=${VERSION}  TARGET_REF=${TARGET_REF}  SAFE_VERSION=${SAFE_VERSION}
+            E2E_RUN_ID=${E2E_RUN_ID}  API_ES_RUN_ID=${API_ES_RUN_ID}  API_RDBMS_RUN_ID=${API_RDBMS_RUN_ID}
+            HAS_E2E=${HAS_E2E}  HAS_API_ES=${HAS_API_ES}  HAS_API_RDBMS=${HAS_API_RDBMS}
+            TRIAGE_RUN_URL=${TRIAGE_RUN_URL}  REPO=${REPO}
 
-          Read /tmp/test_specs.json — each entry has:
-            file         : path relative to qa/c8-orchestration-cluster-e2e-test-suite/
-            test_name    : the test("...") title
-            error        : first line of the failure from json-report results.json
-            test_type    : "e2e" or "api"
-            tasklist_mode: "v1" or "v2" (E2E only)
-            database     : RDBMS database name (API only, e.g. "Postgres 17") or "elasticsearch"
+          Branch name to use: fix/nightly-${VERSION}-<short-slug>.
+          Commit + PR title prefix: 'test:' (NEVER 'fix:' — commitlint rejects it).
 
-          Environment:
-            VERSION          = the camunda version (8.7 / 8.8 / 8.9 / main)
-            SAFE_VERSION     = "stable-${VERSION}" for stable branches, "main" for main
-            E2E_RUN_ID       = run ID for the failing E2E nightly (empty if no E2E failed)
-            API_ES_RUN_ID    = run ID for the failing API ES nightly
-            API_RDBMS_RUN_ID = run ID for the failing API RDBMS nightly (8.9 / main only)
-            HAS_E2E, HAS_API_ES, HAS_API_RDBMS : "true" / "false" flags
-
-          Download exactly what is needed:
-
-            if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
-              for mode in v1 v2; do
-                # Skip absent modes: 8.7 has no v2, main has no v1
-                gh run download "$E2E_RUN_ID" --repo "$REPO" \
-                  --pattern "json-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
-                  --dir "/tmp/nightly-artifacts/e2e-${mode}" 2>/dev/null || true
-                gh run download "$E2E_RUN_ID" --repo "$REPO" \
-                  --pattern "html-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
-                  --dir "/tmp/nightly-artifacts/e2e-${mode}-html" 2>/dev/null || true
-              done
-            fi
-
-            if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
-              gh run download "$API_ES_RUN_ID" --repo "$REPO" \
-                --pattern "json-report-nightly-api-${SAFE_VERSION}" \
-                --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
-            fi
-
-            if [ "$HAS_API_RDBMS" = "true" ] && [ -n "$API_RDBMS_RUN_ID" ]; then
-              # Only download artifacts for databases that actually have failing tests
-              jq -r '[.[] | select(.test_type == "api" and .database != null
-                       and .database != "" and .database != "elasticsearch")
-                       | .database] | unique[]' /tmp/test_specs.json | while read -r db; do
-                gh run download "$API_RDBMS_RUN_ID" --repo "$REPO" \
-                  --pattern "json-report-nightly-api-rdbms-${SAFE_VERSION}-${db}" \
-                  --dir "/tmp/nightly-artifacts/api-rdbms" 2>/dev/null || true
-              done
-            fi
-
-          ## Step 2 — Diagnose each failing test
-
-          For each entry in /tmp/test_specs.json:
-
-          1. Read the test file at qa/c8-orchestration-cluster-e2e-test-suite/<file>.
-             Read any imported page objects / helpers.
-          2. For E2E entries: open the matching screenshot under
-             /tmp/nightly-artifacts/e2e-<mode>-html/.../data/<image>.png — you can read PNG
-             images directly. Cross-reference with the error message and the test code.
-          3. For API entries: read the JSON report under /tmp/nightly-artifacts/api-es/results.json
-             (or api-rdbms/). Look at the full error message + stack trace + any response body.
-          4. Form a hypothesis. Match it to a specific assertion / action in the test or page
-             object. If the failure is clearly a product bug (not a test bug) and no test-side
-             fix is reasonable, write {"prs":[]} to /tmp/fix-meta.json and stop. Do not skip.
-
-          ## Step 3 — Apply the fix and open the PR
-
-          1. Determine a short slug describing the fix (e.g. "operate-process-name-wait",
-             "tasklist-task-assignment-flake").
-          2. Create branch: git checkout -b "fix/nightly-${VERSION}-<slug>"
-          3. Edit files under qa/c8-orchestration-cluster-e2e-test-suite/ only.
-          4. Run lint (see HARD RULES) on changed files. Fix any eslint errors.
-          5. Stage + commit (Conventional Commits, no scope — commitlint enforces scope-empty):
-               git add <files>
-               git commit -m "test: fix nightly ${VERSION} failures (<slug>)"
-          6. Push: git push -u origin "fix/nightly-${VERSION}-<slug>"
-          7. Check for existing open PRs first:
-               gh pr list --repo "$REPO" --search "nightly is:open label:failing-test-fix" \
-                          --json number,title,baseRefName
-             If an open PR exists targeting the same base branch (${TARGET_REF}) for the same
-             root cause, COMMENT on it instead of opening a new one, and add its number to
-             /tmp/fix-meta.json.
-          8. Open a draft PR (note: title type is "test:" per camunda/camunda commitlint rules
-             — do NOT use "fix:" for test-only changes):
-               gh pr create --repo "$REPO" --draft \
-                 --base "${TARGET_REF}" \
-                 --head "fix/nightly-${VERSION}-<slug>" \
-                 --label "failing-test-fix" \
-                 --title "test: fix nightly ${VERSION} failures (<slug>)" \
-                 --body "$(cat <<'PRBODY'
-          ## Summary
-          Bot-opened fix for failing tests detected by the nightly triage agent.
-
-          **Version:** ${VERSION} (target: \`${TARGET_REF}\`)
-          **Triage run:** ${TRIAGE_RUN_URL}
-          **Failing nightly runs:**
-          - E2E: <link if applicable>
-          - API ES: <link if applicable>
-          - API RDBMS: <link if applicable>
-
-          ## Root cause analysis
-          <Claude's diagnosis>
-
-          ## Tests fixed
-          <bulleted list from test_specs>
-
-          ## Verification
-          On-demand runs will be linked here automatically by the workflow.
-
-          ---
-          Generated by the nightly fix agent. Review carefully — this is a bot fix.
-          PRBODY
+          When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
+          EOF
           )"
-
-          ## Step 4 — Write the result manifest
-
-          Write /tmp/fix-meta.json with this shape:
-            {"prs": [{"number": 1234, "owner": "camunda", "repo": "camunda",
-                      "branch": "fix/nightly-${VERSION}-<slug>",
-                      "has_e2e": <bool>, "has_api": <bool>}]}
-          Multiple PRs: one object per PR. {"prs": []} if no PR was opened.
-
-          STOP after writing the file. Do not run any further commands.
-          EOF_PROMPT
-          )
-
-          # Substitute environment variables into the prompt at the heredoc level (the
-          # outer heredoc was quoted with 'EOF_PROMPT' to preserve $-references in the
-          # Bash snippets — but we need a small set of variables resolved upfront for
-          # the PR body template). Easier: write the prompt with envsubst on a narrow allowlist.
-          export VERSION TARGET_REF TRIAGE_RUN_URL REPO
-          prompt_resolved=$(printf '%s' "$prompt" | envsubst '$VERSION $TARGET_REF $TRIAGE_RUN_URL $REPO')
-
-          claude -p "$prompt_resolved" --dangerously-skip-permissions
 
       - name: Trigger on-demand verification runs and patch PR body
         if: always()
