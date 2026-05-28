@@ -50,7 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      dispatches: ${{ steps.group.outputs.dispatches }}
+      dispatches:    ${{ steps.group.outputs.dispatches }}
+      slack_ts:      ${{ steps.slack.outputs.ts }}
+      slack_channel: ${{ steps.slack.outputs.channel }}
 
     steps:
       - name: Import Vault secrets
@@ -339,6 +341,51 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Post Slack triage summary
+        id: slack
+        if: always()
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          date_str=$(date -u +%Y-%m-%d)
+          text=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"$'\n'
+
+          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+          if [ "$count" -gt 0 ]; then
+            text="${text}"$'\n'"*Failed tests by version:*"
+            while IFS= read -r line; do
+              version=$(echo "$line" | jq -r '.version')
+              n=$(echo "$line"       | jq -r '.count')
+              types=$(echo "$line"   | jq -r '.types')
+              text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
+            done < <(jq -c 'group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
+                      /tmp/failures_normalized.json)
+            dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
+            if [ "$dispatches" -gt 0 ]; then
+              text="${text}"$'\n\n'":hourglass_flowing_sand: Dispatching fix agents..."
+            else
+              text="${text}"$'\n\n'":information_source: No fix agents dispatched (open PRs already cover all failing versions)."
+            fi
+          else
+            text="${text}"$'\n'":white_check_mark: No failures found — all nightly runs passed."
+          fi
+          text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+
+          payload=$(jq -nc --arg channel '#c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
+            '{channel: $channel, text: $text, mrkdwn: true}')
+          response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload")
+          echo "$response" | jq '.'
+          ts=$(echo "$response"      | jq -r '.ts      // ""')
+          channel=$(echo "$response" | jq -r '.channel // ""')
+          echo "ts=${ts}"           >> "$GITHUB_OUTPUT"
+          echo "channel=${channel}" >> "$GITHUB_OUTPUT"
+
       - name: Upload triage artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -382,6 +429,8 @@ jobs:
           REPO:            ${{ github.repository }}
           DISPATCHES_JSON: ${{ needs.triage.outputs.dispatches }}
           TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_THREAD_TS: ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
         run: |
           set -euo pipefail
 
@@ -401,5 +450,7 @@ jobs:
               -f e2e_run_id="$e2e" \
               -f api_es_run_id="$api_es" \
               -f api_rdbms_run_id="$api_rdbms" \
-              -f triage_run_url="$TRIAGE_RUN_URL"
+              -f triage_run_url="$TRIAGE_RUN_URL" \
+              -f slack_thread_ts="$SLACK_THREAD_TS" \
+              -f slack_channel="$SLACK_CHANNEL"
           done
