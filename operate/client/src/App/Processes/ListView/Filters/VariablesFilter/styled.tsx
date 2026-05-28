@@ -43,6 +43,7 @@ const ValueFieldContainer = styled.div`
 const DeleteButton = styled(BaseIconButton)<{$hidden?: boolean}>`
   flex-shrink: 0;
   visibility: ${({$hidden}) => ($hidden ? 'hidden' : 'visible')};
+  margin-inline-end: var(--cds-spacing-03, 0.5rem);
 `;
 
 const ConditionList = styled.ul`
@@ -67,6 +68,20 @@ const EditorToolbar = styled.div`
   padding-bottom: var(--cds-spacing-03);
 `;
 
+const ConditionRowsScroll = styled.div`
+  box-sizing: border-box;
+  max-height: min(60vh, 28rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-gutter: stable;
+  padding-inline-end: var(--cds-spacing-06, 1.5rem);
+`;
+
+const AddConditionWrap = styled.div`
+  margin-top: var(--cds-spacing-05, 1rem);
+`;
+
 export {
   ModalContent,
   Description,
@@ -76,4 +91,6 @@ export {
   ConditionList,
   ConditionItem,
   EditorToolbar,
+  ConditionRowsScroll,
+  AddConditionWrap,
 };
