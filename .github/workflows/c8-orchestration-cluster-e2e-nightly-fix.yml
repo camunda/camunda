@@ -301,6 +301,49 @@ jobs:
             done
           fi
 
+      - name: Write job summary
+        if: always()
+        env:
+          VERSION:        ${{ github.event.inputs.version }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          TRIAGE_RUN_URL: ${{ github.event.inputs.triage_run_url }}
+          REPO:           ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Fix Agent — ${VERSION} (\`${TARGET_REF}\`)"
+            echo ""
+
+            if [ ! -f /tmp/fix-meta.json ]; then
+              echo ":x: **Agent did not produce \`/tmp/fix-meta.json\`** — see agent logs above."
+            else
+              pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
+              if [ "$pr_count" -eq 0 ]; then
+                echo ":warning: **No PRs opened** — agent could not determine a safe fix."
+                echo ""
+                echo "Check the agent log above for the root-cause analysis."
+              else
+                echo "### PRs opened"
+                echo ""
+                jq -r --arg repo "$REPO" \
+                  '.prs[] | "- [PR #\(.number)](https://github.com/\($repo)/pull/\(.number)) — `\(.branch)`"' \
+                  /tmp/fix-meta.json
+                echo ""
+                echo "### Tests covered"
+                echo ""
+                echo "| PR | E2E | API |"
+                echo "|----|-----|-----|"
+                jq -r '.prs[] | "| #\(.number) | \(if .has_e2e then ":white_check_mark:" else ":heavy_minus_sign:" end) | \(if .has_api then ":white_check_mark:" else ":heavy_minus_sign:" end) |"' \
+                  /tmp/fix-meta.json
+              fi
+            fi
+
+            if [ -n "${TRIAGE_RUN_URL:-}" ]; then
+              echo ""
+              echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4

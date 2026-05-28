@@ -300,6 +300,47 @@ jobs:
             echo "EOF_DISPATCH"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Write job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## C8 Orchestration Cluster Nightly Triage"
+            echo ""
+
+            # Failures per version
+            count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+            if [ "$count" -gt 0 ]; then
+              echo "### Failures found"
+              echo ""
+              echo "| Version | Count | Test types |"
+              echo "|---------|-------|------------|"
+              jq -r '
+                group_by(.version)[]
+                | (.[0].version) as $v
+                | (length) as $n
+                | ([.[].test_type] | unique | join(", ")) as $types
+                | "| \($v) | \($n) | \($types) |"
+              ' /tmp/failures_normalized.json
+              echo ""
+            else
+              echo "> No failures found — all nightly runs passed or no runs exist yet."
+              echo ""
+            fi
+
+            # Dispatch decisions
+            dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
+            if [ "$dispatches" -gt 0 ]; then
+              echo "### Fix agents dispatched"
+              echo ""
+              echo "| Version | Branch | Tests |"
+              echo "|---------|--------|-------|"
+              jq -r '.[] | "| \(.version) | `\(.ref)` | \(.test_specs | length) |"' /tmp/dispatches.json
+            else
+              echo "> No fix agents dispatched (no failures, daily cap reached, or open PRs already exist)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload triage artifacts
         if: always()
         uses: actions/upload-artifact@v4
