@@ -27,14 +27,18 @@ import Members from "src/pages/roles/detail/members";
 import Groups from "src/pages/roles/detail/groups";
 import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
-import { isProtectedRole } from "src/pages/roles/protected-roles";
 
 type DetailsProps = {
   isOIDC: boolean;
   isCamundaGroupsEnabled: boolean;
+  defaultRoleIds: string[];
 };
 
-const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
+const Details: FC<DetailsProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  defaultRoleIds,
+}) => {
   const navigate = useNavigate();
   const { t } = useTranslate("roles");
   const { id = "", tab = "details" } = useParams<{
@@ -70,7 +74,7 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
                 <Stack gap={spacing03}>
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{role.name}</PageHeadline>
-                    {!isProtectedRole(role.roleId) && (
+                    {!defaultRoleIds.includes(role.roleId) && (
                       <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
                         <OverflowMenuItem
                           itemText={t("editRole")}

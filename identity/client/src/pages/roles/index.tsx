@@ -14,13 +14,24 @@ import Detail from "src/pages/roles/detail";
 type RolesProps = {
   isOIDC: boolean;
   isCamundaGroupsEnabled: boolean;
+  defaultRoleIds: string[];
 };
 
-const Roles: FC<RolesProps> = ({ isOIDC, isCamundaGroupsEnabled }) => (
+const Roles: FC<RolesProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  defaultRoleIds,
+}) => (
   <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
+    indexElement={
+      <Lazy load={() => import("./List")} elementProps={{ defaultRoleIds }} />
+    }
     detailElement={
-      <Detail isOIDC={isOIDC} isCamundaGroupsEnabled={isCamundaGroupsEnabled} />
+      <Detail
+        isOIDC={isOIDC}
+        isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+        defaultRoleIds={defaultRoleIds}
+      />
     }
   />
 );

@@ -15,7 +15,6 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
-import { isProtectedRole } from "src/pages/roles/protected-roles";
 import { DataTableHeader } from "src/components/entityList/EntityList";
 import type {
   Authorization,
@@ -36,6 +35,7 @@ type AuthorizationListProps = {
   isCamundaGroupsEnabled: boolean;
   isTenantsApiEnabled: boolean;
   resourcePermissions: Record<ResourceType, PermissionType[]>;
+  defaultRoleIds: string[];
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
@@ -47,6 +47,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   isCamundaGroupsEnabled,
   isTenantsApiEnabled,
   resourcePermissions,
+  defaultRoleIds,
 }) => {
   const { t } = useTranslate("authorizations");
 
@@ -102,7 +103,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
               isDangerous: true,
               onClick: deleteAuthorization,
               disabled: ({ ownerType, ownerId }: Authorization) =>
-                ownerType === "ROLE" && isProtectedRole(ownerId),
+                ownerType === "ROLE" && defaultRoleIds.includes(ownerId),
             },
           ]}
           maxDisplayCellLength={25}

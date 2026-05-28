@@ -34,3 +34,8 @@ export const resourcePermissions = getClientConfigObject(
   "resourcePermissions",
   {} as Record<ResourceType, PermissionType[]>,
 ) as Record<ResourceType, PermissionType[]>;
+
+export const defaultRoleIds = getClientConfigObject<string[]>(
+  "defaultRoleIds",
+  [],
+);
