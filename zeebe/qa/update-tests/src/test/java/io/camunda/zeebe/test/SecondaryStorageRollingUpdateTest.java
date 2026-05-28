@@ -12,6 +12,9 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.zeebe.test.ClusterHelper.createProcessInstance;
 import static io.camunda.zeebe.test.ClusterHelper.deployProcess;
 import static io.camunda.zeebe.test.ClusterHelper.newClient;
+import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_DATABASE;
+import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_PASSWORD;
+import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -46,10 +49,6 @@ import org.testcontainers.containers.Network;
 final class SecondaryStorageRollingUpdateTest {
 
   private static List<Arguments> cachedVersionMatrix;
-
-  private static final String CAMUNDA_DATABASE = "camunda";
-  private static final String CAMUNDA_USER = "camunda";
-  private static final String CAMUNDA_PASSWORD = "Camunda_Pass123!";
 
   private static final List<StorageTestCase> STORAGE_TEST_CASES =
       List.of(
