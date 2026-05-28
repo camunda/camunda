@@ -13,7 +13,9 @@ import static io.camunda.service.authorization.Authorizations.ELEMENT_INSTANCE_R
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -162,6 +164,12 @@ public final class ElementInstanceServices
                     .sort(query.sort())
                     .page(query.page())),
         authentication);
+  }
+
+  public SearchQueryResult<WaitStateEntity> searchWaitStates(
+      final ElementInstanceWaitStateQuery query, final CamundaAuthentication authentication) {
+    // TODO: not implemented yet
+    return SearchQueryResult.empty();
   }
 
   public record SetVariablesRequest(

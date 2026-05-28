@@ -32,6 +32,38 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
 
+  /element-instances/wait-states/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Element instance
+      operationId: searchElementInstanceWaitStates
+      summary: Search element instance wait states
+      description: >
+        Returns the wait states for element instances matching the given filter.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInstanceWaitStateQuery'
+      responses:
+        "200":
+          description: The element instance wait state search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceWaitStateQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /element-instances/{elementInstanceKey}:
     get:
       x-eventually-consistent: true
@@ -566,6 +598,199 @@ components:
           default: false
       required:
         - elements
+
+    ElementInstanceWaitStateQuery:
+      description: Element instance inspection request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        filter:
+          description: Filter criteria for the inspection.
+          allOf:
+            - $ref: '#/components/schemas/ElementInstanceWaitStateFilter'
+
+    ElementInstanceWaitStateFilter:
+      description: Filters for the element instance inspection.
+      type: object
+      properties:
+        elementInstanceKey:
+          description: Filter by element instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        processInstanceKey:
+          description: Filter by process instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        rootProcessInstanceKey:
+          description: Filter by root process instance key.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        elementId:
+          description: Filter by element ID.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+
+    ElementInstanceWaitStateQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching waiting states.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceWaitStateResult'
+
+    ElementInstanceWaitStateResult:
+      x-polymorphic-schema: true
+      description: >
+        An element instance waiting state. Discriminated by `waitStateType`:
+        `JOB` resolves to `ElementInstanceWaitStateJobResult`,
+        `MESSAGE` resolves to `ElementInstanceWaitStateMessageResult`.
+      oneOf:
+        - $ref: '#/components/schemas/ElementInstanceWaitStateJobResult'
+        - $ref: '#/components/schemas/ElementInstanceWaitStateMessageResult'
+      discriminator:
+        propertyName: waitStateType
+        mapping:
+          JOB: '#/components/schemas/ElementInstanceWaitStateJobResult'
+          MESSAGE: '#/components/schemas/ElementInstanceWaitStateMessageResult'
+
+    WaitStateTypeEnum:
+      description: The type of waiting state an element instance is in.
+      type: string
+      enum:
+        - JOB
+        - MESSAGE
+
+    BaseElementInstanceWaitStateResult:
+      type: object
+      required:
+        - waitStateType
+        - processInstanceKey
+        - elementInstanceKey
+        - elementId
+        - elementType
+        - tenantId
+      properties:
+        waitStateType:
+          description: The type of waiting state an element instance is in.
+          type: string
+        rootProcessInstanceKey:
+          description: Key of the root process instance.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The process instance key associated to this element instance.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The element instance key associated to this element instance.
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID for this element instance.
+        elementType:
+          description: The BPMN element type of this element instance.
+          type: string
+          enum:
+            - AD_HOC_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+            - BOUNDARY_EVENT
+            - BUSINESS_RULE_TASK
+            - CALL_ACTIVITY
+            - END_EVENT
+            - EVENT_BASED_GATEWAY
+            - EVENT_SUB_PROCESS
+            - EXCLUSIVE_GATEWAY
+            - INCLUSIVE_GATEWAY
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - MANUAL_TASK
+            - MULTI_INSTANCE_BODY
+            - PARALLEL_GATEWAY
+            - PROCESS
+            - RECEIVE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - SEQUENCE_FLOW
+            - SERVICE_TASK
+            - START_EVENT
+            - SUB_PROCESS
+            - TASK
+            - UNKNOWN
+            - UNSPECIFIED
+            - USER_TASK
+        tenantId:
+          description: The tenant ID of the element instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
+    ElementInstanceWaitStateJobResult:
+      description: Inspection result for an element instance waiting on a job.
+      allOf:
+        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: '#/components/schemas/JobWaitStateDetails'
+
+    ElementInstanceWaitStateMessageResult:
+      description: Inspection result for an element instance waiting on a message.
+      allOf:
+        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: '#/components/schemas/MessageWaitStateDetails'
+
+    JobWaitStateDetails:
+      type: object
+      required:
+        - jobKey
+        - jobType
+        - jobKind
+      properties:
+        jobKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The key of the job.
+        jobType:
+          description: The job type (worker subscription identifier).
+          type: string
+        jobKind:
+          description: The kind of job.
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/JobKindEnum'
+        retries:
+          description: The number of retries remaining for the job.
+          nullable: true
+          type: integer
+          format: int32
+
+    MessageWaitStateDetails:
+      type: object
+      required:
+        - messageName
+      properties:
+        messageName:
+          description: The name of the message being awaited.
+          type: string
+        correlationKey:
+          description: The correlation key for the message subscription (null for start events).
+          nullable: true
+          type: string
 
     AdHocSubProcessActivateActivityReference:
       type: object

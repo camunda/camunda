@@ -15,10 +15,12 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -67,6 +69,30 @@ public class ElementInstanceController {
         () ->
             elementInstanceServices.setVariables(
                 variablesRequest, authenticationProvider.getCamundaAuthentication()));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/wait-states/search")
+  public ResponseEntity<ElementInstanceWaitStateQueryResult> searchElementInstanceWaitStates(
+      @RequestBody(required = false)
+          final io.camunda.gateway.protocol.model.ElementInstanceWaitStateQuery query) {
+    return SearchQueryRequestMapper.toElementInstanceWaitStateQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchWaitStates);
+  }
+
+  private ResponseEntity<ElementInstanceWaitStateQueryResult> searchWaitStates(
+      final ElementInstanceWaitStateQuery query) {
+
+    try {
+      final var result =
+          elementInstanceServices.searchWaitStates(
+              query, authenticationProvider.getCamundaAuthentication());
+
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @RequiresSecondaryStorage

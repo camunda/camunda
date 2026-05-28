@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
+import io.camunda.gateway.protocol.model.BaseElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
@@ -62,6 +63,10 @@ import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateJobResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateMessageResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
+import io.camunda.gateway.protocol.model.ElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
@@ -95,6 +100,7 @@ import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
@@ -104,6 +110,7 @@ import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum;
+import io.camunda.gateway.protocol.model.MessageWaitStateDetails;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
@@ -154,6 +161,7 @@ import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.gateway.protocol.model.WaitStateTypeEnum;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -204,6 +212,9 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateJobDetails;
+import io.camunda.search.entities.WaitStateMessageDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.entity.ClusterMetadata.AppName;
@@ -636,6 +647,74 @@ public final class SearchQueryResponseMapper {
                 .map(instances -> toElementInstance(instances))
                 .orElseGet(Collections::emptyList))
         .build();
+  }
+
+  public static ElementInstanceWaitStateQueryResult toElementInstanceWaitStateQueryResult(
+      final SearchQueryResult<WaitStateEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return ElementInstanceWaitStateQueryResult.Builder.create()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toElementInstanceWaitStateResult)
+                .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  private static List<ElementInstanceWaitStateResult> toElementInstanceWaitStateResult(
+      final List<WaitStateEntity> instances) {
+    return instances.stream()
+        .map(SearchQueryResponseMapper::toElementInstanceWaitStateResult)
+        .toList();
+  }
+
+  private static ElementInstanceWaitStateResult toElementInstanceWaitStateResult(
+      final WaitStateEntity item) {
+    final var rootKey = keyToStringOrNull(item.rootProcessInstanceKey());
+    final var elementType =
+        BaseElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
+    return switch (item.details()) {
+      case WaitStateJobDetails(
+              final var jobKey,
+              final var jobType,
+              final var jobKind,
+              final var retries) -> {
+        final var dtoDetails =
+            JobWaitStateDetails.Builder.create()
+                .jobKey(keyToString(jobKey))
+                .jobType(jobType)
+                .jobKind(JobKindEnum.fromValue(jobKind.name()))
+                .retries(retries)
+                .build();
+        yield ElementInstanceWaitStateJobResult.Builder.create()
+            .waitStateType(WaitStateTypeEnum.JOB.getValue())
+            .processInstanceKey(keyToString(item.processInstanceKey()))
+            .elementInstanceKey(keyToString(item.elementInstanceKey()))
+            .elementId(item.elementId())
+            .elementType(elementType)
+            .tenantId(item.tenantId())
+            .details(dtoDetails)
+            .rootProcessInstanceKey(rootKey)
+            .build();
+      }
+      case WaitStateMessageDetails(final var messageName, final var correlationKey) -> {
+        final var dtoDetails =
+            MessageWaitStateDetails.Builder.create()
+                .messageName(messageName)
+                .correlationKey(correlationKey)
+                .build();
+        yield ElementInstanceWaitStateMessageResult.Builder.create()
+            .waitStateType(WaitStateTypeEnum.MESSAGE.getValue())
+            .processInstanceKey(keyToString(item.processInstanceKey()))
+            .elementInstanceKey(keyToString(item.elementInstanceKey()))
+            .elementId(item.elementId())
+            .elementType(elementType)
+            .tenantId(item.tenantId())
+            .details(dtoDetails)
+            .rootProcessInstanceKey(rootKey)
+            .build();
+      }
+    };
   }
 
   public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(

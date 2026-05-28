@@ -414,4 +414,15 @@ public final class FilterBuilders {
       final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static ElementInstanceWaitStateFilter.Builder elementInstanceWaitState() {
+    return new ElementInstanceWaitStateFilter.Builder();
+  }
+
+  public static ElementInstanceWaitStateFilter elementInstanceWaitState(
+      final Function<
+              ElementInstanceWaitStateFilter.Builder, ObjectBuilder<ElementInstanceWaitStateFilter>>
+          fn) {
+    return fn.apply(elementInstanceWaitState()).build();
+  }
 }

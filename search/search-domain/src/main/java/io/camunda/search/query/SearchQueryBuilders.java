@@ -337,4 +337,15 @@ public final class SearchQueryBuilders {
       final Function<DeployedResourceQuery.Builder, ObjectBuilder<DeployedResourceQuery>> fn) {
     return fn.apply(deployedResourceSearchQuery()).build();
   }
+
+  public static ElementInstanceWaitStateQuery.Builder elementInstanceWaitStateSearchQuery() {
+    return new ElementInstanceWaitStateQuery.Builder();
+  }
+
+  public static ElementInstanceWaitStateQuery elementInstanceWaitStateSearchQuery(
+      final Function<
+              ElementInstanceWaitStateQuery.Builder, ObjectBuilder<ElementInstanceWaitStateQuery>>
+          fn) {
+    return fn.apply(elementInstanceWaitStateSearchQuery()).build();
+  }
 }
