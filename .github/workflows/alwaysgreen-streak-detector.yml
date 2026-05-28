@@ -1,23 +1,28 @@
 # description: AlwaysGreen streak detector. Reacts to completion of the
 # main AlwaysGreen pipeline and posts to #alwaysgreen-reliability when the
-# last N runs on the same protected ref all failed. Uses 'gh run list' rather
-# than persisted state — no race conditions, nothing to migrate on rename.
-# Lives in its own file (instead of an extra job in docker-build-helm-integration.yml)
-# so it doesn't share an edit surface with PR #54171 (Slice A) and to keep
-# the streak-detector cleanly separable / removable on its own.
+# last N runs targeting the same protected base branch all failed. Uses
+# 'gh run list' rather than persisted state — no race conditions, nothing
+# to migrate on rename.
+#
+# Tracks both `push` and `merge_group` events on protected refs. For
+# merge_group, the parent run's head_branch is a per-PR queue ref
+# (`gh-readonly-queue/<base>/pr-<n>-<suffix>`), so we normalise it to its
+# `<base>` before counting streaks. That way several consecutive failing
+# PR batches against the same `stable/x` line aggregate into one streak
+# rather than each batch starting at zero.
 # type: CI
-# owner: @camunda/distribution
+# owner: @camunda/test-automation-team
 ---
 name: AlwaysGreen Streak Detector
 
 on:
   workflow_run:
-    workflows: ["Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)"]
+    workflows: ["Docker Build and Helm Integration Test"]
     types:
       - completed
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.event }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 env:
@@ -25,6 +30,12 @@ env:
   LOOKBACK_RUNS: '10'
   ALERT_CHANNEL: 'alwaysgreen-reliability'
   PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
+  # Slack subteam handles for medic pings. These are workspace identifiers,
+  # not secrets — same hardcoded convention as
+  # .ci/scripts/ci/setup-medic-lookup.sh.
+  MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
+  MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
+  MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
 
 defaults:
   run:
@@ -33,11 +44,18 @@ defaults:
 jobs:
   detect-streak:
     name: Detect failure streak
-    # Only react to completed runs that ended in failure on protected events.
-    # Successful or in-progress runs don't move the streak counter.
+    # React to completed `push` and `merge_group` runs that ended in
+    # failure / timed_out / cancelled — anything the streak counter below
+    # also treats as a streak hit. The counter normalises merge_group
+    # head_branch values (`gh-readonly-queue/<base>/pr-<n>-...`) to their
+    # base so consecutive failing PR batches against the same protected
+    # branch aggregate together.
     if: |
-      github.event.workflow_run.conclusion == 'failure' &&
-      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'merge_group')
+      (github.event.workflow_run.conclusion == 'failure' ||
+       github.event.workflow_run.conclusion == 'timed_out' ||
+       github.event.workflow_run.conclusion == 'cancelled') &&
+      (github.event.workflow_run.event == 'push' ||
+       github.event.workflow_run.event == 'merge_group')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -59,28 +77,64 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
-      - name: Detect failure streak on this ref
+      - name: Detect failure streak on this base branch
         id: streak
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          PARENT_EVENT: ${{ github.event.workflow_run.event }}
         run: |
           set -euo pipefail
+
+          # Normalise the triggering run's head_branch to its protected
+          # base ref:
+          #   - push to `main` or `stable/x`        → branch stays as-is
+          #   - merge_group queue branch
+          #     (`gh-readonly-queue/<base>/pr-...`) → strip down to <base>
+          # `<base>` matches `main` or `stable/<version>` — that's the
+          # protected ref we want to accumulate streaks against.
+          normalise_branch() {
+            local b="$1"
+            if [[ "$b" =~ ^gh-readonly-queue/(.+)/pr-[0-9]+ ]]; then
+              echo "${BASH_REMATCH[1]}"
+            else
+              echo "$b"
+            fi
+          }
+          BASE_REF=$(normalise_branch "${HEAD_BRANCH}")
+          echo "Normalised base ref: ${BASE_REF} (raw: ${HEAD_BRANCH})"
+
+          # Pull the recent workflow runs. We can't filter by `--branch
+          # ${BASE_REF}` because merge_group runs are stored under the
+          # transient queue ref, not the base; instead we fetch a wider
+          # window and normalise each entry the same way below.
           RUNS_JSON=$(gh run list \
             --workflow "${PARENT_WORKFLOW_FILE}" \
-            --branch "${HEAD_BRANCH}" \
-            --event "${PARENT_EVENT}" \
             --limit "${LOOKBACK_RUNS}" \
-            --json conclusion,status,databaseId,createdAt,url,displayTitle 2>/dev/null || echo '[]')
+            --json conclusion,status,headBranch,event,databaseId,createdAt,url,displayTitle 2>/dev/null || echo '[]')
 
-          # Count leading consecutive failures (most recent first). Skip
-          # in-progress runs — only completed runs count toward the streak.
-          STREAK=$(jq '
-            [ .[] | select(.status == "completed") ]
+          # Build a jq regex matching either a literal base ref or the
+          # queue ref shape that normalises to that base. Protected refs
+          # in this workflow are only `main` or `stable/<version>` (e.g.
+          # `stable/8.9`), so the only regex-special character we need to
+          # escape is `.`. Use bash parameter expansion rather than sed
+          # to satisfy SC2001.
+          ESCAPED_BASE="${BASE_REF//./\\.}"
+          BASE_PATTERN="^(${ESCAPED_BASE}|gh-readonly-queue/${ESCAPED_BASE}/pr-[0-9]+)"
+
+          # Filter to completed runs whose head_branch matches the base
+          # (after normalisation), sort newest-first, then count leading
+          # consecutive failures. `failure`, `timed_out`, and `cancelled`
+          # are all treated as a streak hit; this set must stay in sync
+          # with the job-level `if:` condition above.
+          STREAK=$(jq --arg pat "$BASE_PATTERN" '
+            [ .[] | select(.status == "completed")
+                  | select((.headBranch // "") | test($pat)) ]
+            | sort_by(.createdAt) | reverse
             | (reduce .[] as $r ({count:0, broken:false};
                 if .broken then .
-                elif ($r.conclusion == "failure" or $r.conclusion == "timed_out") then
+                elif ($r.conclusion == "failure"
+                      or $r.conclusion == "timed_out"
+                      or $r.conclusion == "cancelled") then
                   .count = (.count + 1)
                 else
                   .broken = true
@@ -93,13 +147,16 @@ jobs:
           {
             echo "streak_count=${STREAK}"
             echo "threshold=${STREAK_THRESHOLD}"
+            echo "base_ref=${BASE_REF}"
             echo "is_streak=$([[ ${STREAK} -ge ${STREAK_THRESHOLD} ]] && echo true || echo false)"
           } >> "$GITHUB_OUTPUT"
 
-          echo "Streak count on ${HEAD_BRANCH} (${PARENT_EVENT}): ${STREAK} / ${STREAK_THRESHOLD}"
-          echo "$RUNS_JSON" | jq -r '
-            "Recent runs:",
-            (.[] | "  - \(.conclusion // .status)  \(.createdAt)  \(.url)")
+          echo "Streak count on ${BASE_REF}: ${STREAK} / ${STREAK_THRESHOLD}"
+          echo "$RUNS_JSON" | jq -r --arg pat "$BASE_PATTERN" '
+            [ .[] | select((.headBranch // "") | test($pat)) ]
+            | sort_by(.createdAt) | reverse
+            | "Recent runs on this base:",
+              (.[] | "  - \(.conclusion // .status)  \(.event)  \(.headBranch)  \(.createdAt)  \(.url)")
           '
 
       - name: Aggregate failure-context artifacts from triggering run
@@ -112,12 +169,12 @@ jobs:
           set -euo pipefail
           WORK_DIR="${RUNNER_TEMP}/streak-context"
           mkdir -p "$WORK_DIR"
-          # Pull every context artifact produced by the parent run.
-          # Includes:
-          #   - alwaysgreen-failure-context-* (per-job, from Slice A — #54171)
-          #   - alwaysgreen-saas-category    (downstream SaaS E2E category, Slice D)
-          # Missing artifacts are tolerated — the message degrades gracefully
-          # if either slice is rolled back.
+          # Pull every context artifact produced by the parent run:
+          #   - alwaysgreen-failure-context-* (per-job, emitted by each
+          #     stage of the parent workflow)
+          #   - alwaysgreen-saas-category    (downstream SaaS E2E category)
+          # Missing artifacts are tolerated — the message degrades
+          # gracefully if either kind isn't present.
           gh run download "${PARENT_RUN_ID}" \
             --pattern 'alwaysgreen-*' \
             --dir "$WORK_DIR" 2>/dev/null || true
@@ -150,6 +207,41 @@ jobs:
             echo "EOF_STAGES"
           } >> "$GITHUB_OUTPUT"
 
+          # Build the list of Slack medic mentions to ping. We deduplicate
+          # by team so the same medic isn't pinged multiple times when
+          # several stages failed under the same owner.
+          OWNERS=$(jq -r '
+            [ .[] | (.owner_team // empty) ] | unique | .[]
+          ' "$SUMMARY_JSON")
+
+          mentions=()
+          while IFS= read -r owner; do
+            case "$owner" in
+              "@camunda/test-automation-team")
+                mentions+=("${MEDIC_TEST_AUTOMATION}")
+                ;;
+              "@camunda/distribution")
+                mentions+=("${MEDIC_DISTRIBUTION}")
+                ;;
+              "@camunda/monorepo-devops-team")
+                mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+                ;;
+            esac
+          done <<<"$OWNERS"
+
+          # If no failure context was attributable to a team (e.g. the
+          # parent run died before any job emitted context), default to
+          # pinging the monorepo-devops medic since they own the workflow
+          # plumbing itself.
+          if (( ${#mentions[@]} == 0 )); then
+            mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+          fi
+
+          # Dedup + join with spaces for the Slack message body.
+          medic_pings=$(printf '%s\n' "${mentions[@]}" | awk '!seen[$0]++' | paste -sd ' ' -)
+          echo "medic_pings=${medic_pings}" >> "$GITHUB_OUTPUT"
+          echo "Will ping: ${medic_pings}"
+
       - name: Upload streak-context artifact
         if: steps.streak.outputs.is_streak == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -166,20 +258,24 @@ jobs:
           token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           payload: |
             channel: "${{ env.ALERT_CHANNEL }}"
-            text: ":rotating_light: AlwaysGreen failure streak on ${{ github.event.workflow_run.head_branch }} (${{ steps.streak.outputs.streak_count }} consecutive failures)"
+            text: ":rotating_light: AlwaysGreen failure streak on ${{ steps.streak.outputs.base_ref }} (${{ steps.streak.outputs.streak_count }} consecutive failures)"
             blocks:
               - type: "header"
                 text:
                   type: "plain_text"
                   text: ":rotating_light: AlwaysGreen streak: ${{ steps.streak.outputs.streak_count }} consecutive failures"
               - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.aggregate-context.outputs.medic_pings }} — please triage."
+              - type: "section"
                 fields:
                   - type: "mrkdwn"
-                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|Docker Build, Helm Deploy & E2E Tests>"
+                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|${{ env.PARENT_WORKFLOW_FILE }}>"
                   - type: "mrkdwn"
-                    text: "*Ref / event:*\n`${{ github.event.workflow_run.head_branch }}` (${{ github.event.workflow_run.event }})"
+                    text: "*Base ref:*\n`${{ steps.streak.outputs.base_ref }}`"
                   - type: "mrkdwn"
-                    text: "*Latest failing run:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}>"
+                    text: "*Latest failing run:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}> (`${{ github.event.workflow_run.event }}` on `${{ github.event.workflow_run.head_branch }}`)"
                   - type: "mrkdwn"
                     text: "*Streak threshold:*\n${{ steps.streak.outputs.threshold }}"
               - type: "section"
@@ -197,7 +293,8 @@ jobs:
           {
             echo "### AlwaysGreen Streak Detector"
             echo ""
-            echo "- ref: ${{ github.event.workflow_run.head_branch }}"
+            echo "- base ref: ${{ steps.streak.outputs.base_ref }}"
+            echo "- raw head_branch: ${{ github.event.workflow_run.head_branch }}"
             echo "- parent event: ${{ github.event.workflow_run.event }}"
             echo "- parent run: ${{ github.event.workflow_run.html_url }}"
             echo "- consecutive failures: ${{ steps.streak.outputs.streak_count }} / ${{ steps.streak.outputs.threshold }}"
@@ -207,3 +304,17 @@ jobs:
               echo "- below threshold — no alert posted"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # CI Health hook — same observe-build-status action every other
+      # workflow in this repo ends jobs with. Keep this as the final step so
+      # the Monorepo CI Health linter recognises it.
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: alwaysgreen-streak-detector
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
