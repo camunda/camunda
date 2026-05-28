@@ -5,7 +5,7 @@
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
-# Per default we run with the Orchestration Cluster, Optimize, Connectors, and Identity 
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, and Identity
 # Keycloak as identity provider with OIDC authentication, but you can easily
 # switch to other configurations by changing the values in this file or by overriding them via the
 # command line when installing the chart.
@@ -321,9 +321,7 @@ zeebe:
       zeebe.broker.executionMetricsExporterEnabled: "true"
       zeebe.broker.data.diskUsageCommandWatermark: "0.8"
       zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
-      # Configure index suffix with hour pattern, so we create every hour a new index
-      # such that ILM can clean it up quickly
-      zeebe.broker.exporters.elasticsearch.args.index.indexSuffixDatePattern: "yyyy-MM-dd_HH"
+
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
       zeebe.broker.flowControl.write.limit: 4000
