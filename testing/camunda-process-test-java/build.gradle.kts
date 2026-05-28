@@ -90,8 +90,6 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.wiremock.wiremock.standalone)
-    testImplementation(libs.org.apache.logging.log4j.log4j.core)
-    testImplementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter.x1)
 }
 

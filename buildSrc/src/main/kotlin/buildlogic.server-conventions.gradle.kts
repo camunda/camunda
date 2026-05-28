@@ -35,6 +35,8 @@ dependencies {
     add("implementation", platform(versionCatalog.findLibrary("software-amazon-awssdk-bom").get()))
     add("implementation", platform(versionCatalog.findLibrary("tools-jackson-jackson-bom").get()))
     add("annotationProcessor", platform(versionCatalog.findLibrary("org-apache-logging-log4j-log4j-bom").get()))
+    add("testRuntimeOnly", versionCatalog.findLibrary("org-apache-logging-log4j-log4j-core").get())
+    add("testRuntimeOnly", versionCatalog.findLibrary("org-apache-logging-log4j-log4j-slf4j2-impl").get())
 }
 
 // Spring Boot 4 BOM uses strictly constraints for elasticsearch-java (upgrades 8.x → 9.x).
