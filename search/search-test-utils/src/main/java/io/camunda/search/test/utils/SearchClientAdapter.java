@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -294,6 +295,72 @@ public class SearchClientAdapter {
       elsClient.indices().refresh();
     } else if (osClient != null) {
       osClient.indices().refresh();
+    }
+  }
+
+  /** Returns up to 10,000 documents from {@code index}. Suitable for test use only. */
+  public <T> List<T> searchAll(final String index, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
+  }
+
+  public <T> List<T> searchByIds(
+      final String index, final List<String> ids, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
+  }
+
+  /**
+   * Deletes all documents from indices whose names start with {@code indexPrefix}. Scoped
+   * deliberately to avoid affecting indices outside the prefix; never pass {@code "*"} here.
+   */
+  public void deleteAllDocuments(final String indexPrefix) throws IOException {
+    if (elsClient != null) {
+      elsClient.deleteByQuery(
+          d ->
+              d.index(indexPrefix + "*")
+                  .query(q -> q.matchAll(m -> m))
+                  .conflicts(co.elastic.clients.elasticsearch._types.Conflicts.Proceed));
+    } else if (osClient != null) {
+      osClient.deleteByQuery(
+          d ->
+              d.index(indexPrefix + "*")
+                  .query(q -> q.matchAll(m -> m))
+                  .conflicts(org.opensearch.client.opensearch._types.Conflicts.Proceed));
     }
   }
 
