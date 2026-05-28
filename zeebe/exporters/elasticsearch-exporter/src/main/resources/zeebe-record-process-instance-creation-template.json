@@ -63,6 +63,9 @@
             "businessId": {
               "type": "keyword"
             },
+            "processName": {
+              "type": "keyword"
+            },
             "elementInstanceKey": {
               "enabled": false
             }

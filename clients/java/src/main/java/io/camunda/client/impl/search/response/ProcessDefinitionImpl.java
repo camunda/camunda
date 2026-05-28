@@ -89,6 +89,11 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   }
 
   @Override
+  public String getProcessName() {
+    return name;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         processDefinitionKey,

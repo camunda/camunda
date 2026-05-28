@@ -86,14 +86,20 @@ public final class ResponseMapper {
     brokerResponse
         .processesMetadata()
         .forEach(
-            process ->
-                responseBuilder
-                    .addProcessesBuilder()
-                    .setBpmnProcessId(bufferAsString(process.getBpmnProcessIdBuffer()))
-                    .setVersion(process.getVersion())
-                    .setProcessDefinitionKey(process.getKey())
-                    .setTenantId(process.getTenantId())
-                    .setResourceName(bufferAsString(process.getResourceNameBuffer())));
+            process -> {
+              final var builder =
+                  responseBuilder
+                      .addProcessesBuilder()
+                      .setBpmnProcessId(bufferAsString(process.getBpmnProcessIdBuffer()))
+                      .setVersion(process.getVersion())
+                      .setProcessDefinitionKey(process.getKey())
+                      .setTenantId(process.getTenantId())
+                      .setResourceName(bufferAsString(process.getResourceNameBuffer()));
+              final var processName = process.getProcessName();
+              if (processName != null && !processName.isEmpty()) {
+                builder.setProcessName(processName);
+              }
+            });
 
     return responseBuilder.build();
   }
@@ -105,14 +111,20 @@ public final class ResponseMapper {
 
     brokerResponse.processesMetadata().stream()
         .map(
-            process ->
-                ProcessMetadata.newBuilder()
-                    .setBpmnProcessId(process.getBpmnProcessId())
-                    .setVersion(process.getVersion())
-                    .setProcessDefinitionKey(process.getKey())
-                    .setResourceName(process.getResourceName())
-                    .setTenantId(process.getTenantId())
-                    .build())
+            process -> {
+              final var builder =
+                  ProcessMetadata.newBuilder()
+                      .setBpmnProcessId(process.getBpmnProcessId())
+                      .setVersion(process.getVersion())
+                      .setProcessDefinitionKey(process.getKey())
+                      .setResourceName(process.getResourceName())
+                      .setTenantId(process.getTenantId());
+              final var processName = process.getProcessName();
+              if (processName != null && !processName.isEmpty()) {
+                builder.setProcessName(processName);
+              }
+              return builder.build();
+            })
         .forEach(process -> responseBuilder.addDeploymentsBuilder().setProcess(process));
 
     brokerResponse.decisionsMetadata().stream()
@@ -198,6 +210,7 @@ public final class ResponseMapper {
             .setVersion(brokerResponse.getVersion())
             .setTenantId(brokerResponse.getTenantId())
             .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
+            .setProcessName(brokerResponse.getProcessName())
             .addAllTags(brokerResponse.getTags());
     if (brokerResponse.hasBusinessId()) {
       builder.setBusinessId(brokerResponse.getBusinessId());
@@ -209,16 +222,23 @@ public final class ResponseMapper {
 
   public static CreateProcessInstanceWithResultResponse toCreateProcessInstanceWithResultResponse(
       final long key, final ProcessInstanceResultRecord brokerResponse) {
-    return CreateProcessInstanceWithResultResponse.newBuilder()
-        .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
-        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
-        .setVersion(brokerResponse.getVersion())
-        .setTenantId(brokerResponse.getTenantId())
-        .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
-        .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
-        .addAllTags(brokerResponse.getTags())
-        .setBusinessId(brokerResponse.getBusinessId())
-        .build();
+    final var builder =
+        CreateProcessInstanceWithResultResponse.newBuilder()
+            .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
+            .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
+            .setVersion(brokerResponse.getVersion())
+            .setTenantId(brokerResponse.getTenantId())
+            .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
+            .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
+            .setProcessName(brokerResponse.getProcessName())
+            .addAllTags(brokerResponse.getTags());
+    final var businessId = brokerResponse.getBusinessId();
+    if (businessId != null && !businessId.isEmpty()) {
+      builder.setBusinessId(businessId);
+    } else {
+      builder.clearBusinessId();
+    }
+    return builder.build();
   }
 
   public static EvaluateDecisionResponse toEvaluateDecisionResponse(

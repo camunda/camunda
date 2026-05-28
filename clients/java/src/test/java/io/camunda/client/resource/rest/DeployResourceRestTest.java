@@ -215,6 +215,7 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String key = "123";
     final String tenantId = "test-tenant";
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
+    final String processName = "Demo Process";
     gatewayService.onDeploymentsRequest(
         new DeploymentResult()
             .deploymentKey(key)
@@ -227,7 +228,8 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionVersion(12)
                             .processDefinitionKey("423")
                             .tenantId(tenantId)
-                            .resourceName(filename))));
+                            .resourceName(filename)
+                            .processName(processName))));
 
     // when
     final DeploymentEvent response =
@@ -242,7 +244,8 @@ public class DeployResourceRestTest extends ClientRestTest {
     assertThat(String.valueOf(response.getKey())).isEqualTo(key);
     assertThat(response.getTenantId()).isEqualTo(tenantId);
     assertThat(response.getProcesses())
-        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId));
+        .containsExactly(
+            new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId, processName));
   }
 
   @Test
@@ -252,6 +255,8 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
+    final String processName1 = "Demo Process 1";
+    final String processName2 = "Demo Process 2";
     gatewayService.onDeploymentsRequest(
         new DeploymentResult()
             .deploymentKey(key)
@@ -264,6 +269,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionVersion(1)
                             .processDefinitionKey("1")
                             .tenantId(tenantId)
+                            .processName(processName1)
                             .resourceName(filename1)))
             .addDeploymentsItem(
                 new DeploymentMetadataResult()
@@ -273,7 +279,8 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .processDefinitionVersion(1)
                             .processDefinitionKey("2")
                             .tenantId(tenantId)
-                            .resourceName(filename2))));
+                            .resourceName(filename2)
+                            .processName(processName2))));
 
     // when
     final DeploymentEvent response =
@@ -289,8 +296,8 @@ public class DeployResourceRestTest extends ClientRestTest {
     assertThat(String.valueOf(response.getKey())).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
-            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId),
-            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, tenantId));
+            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId, processName1),
+            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, tenantId, processName2));
   }
 
   @Test

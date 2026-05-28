@@ -78,4 +78,10 @@ public interface ProcessInstanceResult {
    * @return the business id, or null if not set
    */
   String getBusinessId();
+
+  /**
+   * @return the name of the process which this instance was created for, as defined in the BPMN, or
+   *     an empty string if no name was defined.
+   */
+  String getProcessName();
 }

@@ -229,13 +229,19 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void updateCreationRecord(
-      final ProcessInstanceCreationRecord record, final ProcessInstanceRecord processInstance) {
+      final ProcessInstanceCreationRecord record,
+      final ProcessInstanceRecord processInstance,
+      final DeployedProcess deployedProcess) {
     record
         .setProcessInstanceKey(processInstance.getProcessInstanceKey())
         .setRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
         .setBpmnProcessId(processInstance.getBpmnProcessId())
         .setVersion(processInstance.getVersion())
         .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+    final DirectBuffer processName = deployedProcess.getProcess().getName();
+    if (processName != null) {
+      record.setProcessName(processName);
+    }
   }
 
   public void setVariablesFromDocument(

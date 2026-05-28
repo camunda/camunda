@@ -340,6 +340,7 @@ components:
         - resourceName
         - processDefinitionKey
         - tenantId
+        - processName
       properties:
         processDefinitionId:
           allOf:
@@ -354,6 +355,10 @@ components:
         resourceName:
           type: string
           description: The resource name from which this process was parsed.
+        processName:
+          type: string
+          nullable: true
+          description: The name of the process.
         tenantId:
           description: The tenant ID of the deployed process.
           allOf:
@@ -362,6 +367,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The assigned key, which acts as a unique identifier for this process.
+      x-properties-added-in-version:
+        - propertyName: processName
+          addedInVersion: "8.10"
 
     DeploymentDecisionResult:
       description: A deployed decision.

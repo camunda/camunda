@@ -115,7 +115,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
           record.startInstructions(), process, processInstance);
     }
 
-    helper.updateCreationRecord(record, processInstance);
+    helper.updateCreationRecord(record, processInstance, process);
 
     final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 

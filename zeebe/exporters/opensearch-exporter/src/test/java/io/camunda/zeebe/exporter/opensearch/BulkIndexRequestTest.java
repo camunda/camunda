@@ -14,8 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -446,6 +448,102 @@ final class BulkIndexRequestTest {
           .isEqualTo(50);
     }
 
+    @Test
+    void shouldIndexProcessRecordWithoutProcessNameOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(newProcessRecord()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processName"))
+          .describedAs(
+              "Expect that process records are NOT serialized with processName on previous version")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexProcessRecordWithProcessNameOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS,
+              r -> r.withBrokerVersion(VersionUtil.getVersion()).withValue(newProcessRecord()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processName"))
+          .describedAs(
+              "Expect that process records are serialized with processName on current version")
+          .isEqualTo("My Process");
+    }
+
+    @Test
+    void shouldIndexProcessInstanceCreationRecordWithoutProcessNameOnPreviousVersion()
+        throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_CREATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new ProcessInstanceCreationRecord().setProcessName("My Process")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processName"))
+          .describedAs(
+              "Expect that process instance creation records are NOT serialized with processName on previous version")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexProcessInstanceCreationRecordWithProcessNameOnCurrentVersion()
+        throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE_CREATION,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new ProcessInstanceCreationRecord().setProcessName("My Process")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("processName"))
+          .describedAs(
+              "Expect that process instance creation records are serialized with processName on current version")
+          .isEqualTo("My Process");
+    }
+
     private static Map<String, Object> getDocumentAsMap(final BulkOperation operation)
         throws IOException {
       return MAPPER.readValue(
@@ -456,6 +554,17 @@ final class BulkIndexRequestTest {
         throws IOException {
       final Map<String, Object> doc = getDocumentAsMap(request.bulkOperations().getFirst());
       return (Map<String, Object>) doc.get("value");
+    }
+
+    private static ProcessRecord newProcessRecord() {
+      return new ProcessRecord()
+          .setKey(1L)
+          .setBpmnProcessId("processId")
+          .setVersion(1)
+          .setResourceName("process.bpmn")
+          .setChecksum(BufferUtil.wrapString("checksum"))
+          .setResource(BufferUtil.wrapString("resource"))
+          .setProcessName("My Process");
     }
   }
 }

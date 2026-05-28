@@ -967,6 +967,7 @@ components:
         - processInstanceKey
         - tags
         - businessId
+        - processName
       type: object
       properties:
         processDefinitionId:
@@ -1009,11 +1010,19 @@ components:
           description: Business id as provided on creation.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        processName:
+          type: string
+          description: |
+            The name of the process which this instance was created for, as defined in the BPMN.
+            Returns an empty string if no name was defined in the BPMN.
+          example: My Process
       x-properties-added-in-version:
         - propertyName: tags
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: processName
+          addedInVersion: "8.10"
 
     ProcessInstanceSearchQuerySortRequest:
       type: object

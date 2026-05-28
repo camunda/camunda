@@ -83,7 +83,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
              "tenantId":"tenantId",
              "variables":{},
              "tags":[],
-             "businessId": null
+             "businessId": null,
+             "processName": ""
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
@@ -182,7 +183,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "tenantId":"<default>",
               "variables":{},
               "tags":[],
-              "businessId": null
+              "businessId": null,
+              "processName": ""
             }""";
 
     // when / then
@@ -336,7 +338,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "tenantId":"<default>",
               "variables":{},
               "tags":[],
-              "businessId":"order-12345"
+              "businessId":"order-12345",
+              "processName": ""
             }""";
 
     // when / then
@@ -802,7 +805,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "tenantId":"<default>",
                 "variables":{},
                 "tags":[],
-                "businessId":"order-12345"
+                "businessId":"order-12345",
+                "processName": ""
             }""",
             JsonCompareMode.STRICT);
 

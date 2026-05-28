@@ -539,21 +539,25 @@ public final class ResponseMapper {
       final List<ProcessMetadataValue> processesMetadata) {
     return processesMetadata.stream()
         .map(
-            process ->
-                DeploymentMetadataResult.Builder.create()
-                    .processDefinition(
-                        DeploymentProcessResult.Builder.create()
-                            .processDefinitionId(process.getBpmnProcessId())
-                            .processDefinitionVersion(process.getVersion())
-                            .resourceName(process.getResourceName())
-                            .processDefinitionKey(keyToString(process.getProcessDefinitionKey()))
-                            .tenantId(process.getTenantId())
-                            .build())
-                    .decisionDefinition(null)
-                    .decisionRequirements(null)
-                    .form(null)
-                    .resource(null)
-                    .build())
+            process -> {
+              final var processName = process.getProcessName();
+              return DeploymentMetadataResult.Builder.create()
+                  .processDefinition(
+                      DeploymentProcessResult.Builder.create()
+                          .processDefinitionId(process.getBpmnProcessId())
+                          .processDefinitionVersion(process.getVersion())
+                          .resourceName(process.getResourceName())
+                          .processDefinitionKey(keyToString(process.getProcessDefinitionKey()))
+                          .tenantId(process.getTenantId())
+                          .processName(
+                              processName != null && !processName.isEmpty() ? processName : null)
+                          .build())
+                  .decisionDefinition(null)
+                  .decisionRequirements(null)
+                  .form(null)
+                  .resource(null)
+                  .build();
+            })
         .toList();
   }
 
@@ -567,7 +571,8 @@ public final class ResponseMapper {
         brokerResponse.getTenantId(),
         null,
         brokerResponse.getTags(),
-        brokerResponse.getBusinessId());
+        brokerResponse.getBusinessId(),
+        brokerResponse.getProcessName());
   }
 
   public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
@@ -580,7 +585,8 @@ public final class ResponseMapper {
         brokerResponse.getTenantId(),
         brokerResponse.getVariables(),
         brokerResponse.getTags(),
-        brokerResponse.getBusinessId());
+        brokerResponse.getBusinessId(),
+        brokerResponse.getProcessName());
   }
 
   private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
@@ -591,7 +597,8 @@ public final class ResponseMapper {
       final String tenantId,
       final @Nullable Map<String, Object> variables,
       final @Nullable Set<String> tags,
-      final String businessId) {
+      final String businessId,
+      final String processName) {
     return CreateProcessInstanceResult.Builder.create()
         .processDefinitionId(bpmnProcessId)
         .processDefinitionKey(keyToString(processDefinitionKey))
@@ -603,6 +610,7 @@ public final class ResponseMapper {
         // defaults to an empty string on the originating record
         // the conversion to null ensures response contract compliance
         .businessId(emptyToNull(businessId))
+        .processName(processName != null ? processName : "")
         .build();
   }
 
