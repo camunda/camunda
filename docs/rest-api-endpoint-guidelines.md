@@ -273,7 +273,9 @@ For how the `required` / `nullable` flags propagate from the spec down through t
 
 On request schemas, the `nullable` property is **not** used to express optionality. Request schema fields are optional by default, and must be added to the `required` array if they are not optional and must be set by the client. If a request field can be omitted by the client, **do not** mark it as `nullable: true` - simply omit it from the `required` array. The Jackson deserialiser will produce an object with `null` for request fields that are not sent by the client. In Java, not present and `null` are the same thing. In JSON, `null` is an explicit value, distinct from "not present". Both JSON `null` and "not present" deserialise to `null` in Java. Marking an *optional* request schema field as `nullable: true` does not make it optional (its omission from `required` does that). It generates ternary client types in languages such as JavaScript and Python, where "not present" (JS `undefined` / Python `Unset`) are *distinct* from present and explicitly null (JS `null` / Python `None`).
 
-You are reaching for `T | undefined` in JS, and `T | Unset` in Python. Just leave it out of the required array. Marking it `nullable: true` will create `T | undefined | null` in JS and `T | Unset | None` in Python.
+You are probably reaching for `T | undefined` in JS, and `T | Unset` in Python. Just leave it out of the required array. Marking it `nullable: true` will create `T | undefined | null` in JS and `T | Unset | None` in Python.
+
+The exception to this is a PATCH operation where sending an explicit `null` is semantically meaningful: it erases any previous set value.
 
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
