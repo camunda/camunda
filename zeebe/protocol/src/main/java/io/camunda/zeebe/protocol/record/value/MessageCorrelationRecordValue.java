@@ -68,10 +68,7 @@ public interface MessageCorrelationRecordValue
   /**
    * Returns the name of the agent tool that initiated this message correlation, if any.
    *
-   * @return the agent tool name, or null if not set
+   * @return the agent tool name, or an empty string if not set
    */
-  @edu.umd.cs.findbugs.annotations.Nullable
-  default String getAgentToolName() {
-    return null;
-  }
+  String getAgentToolName();
 }
