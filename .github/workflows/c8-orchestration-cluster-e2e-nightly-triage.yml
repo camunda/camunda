@@ -217,8 +217,6 @@ jobs:
           # First few entries for visibility
           head -3 "$all_failures" || true
 
-          # Expose run_ids_map for the next step
-          cp "$run_ids_map" /tmp/run_ids.json
 
       - name: Normalize, filter and group by version
         id: group
