@@ -74,7 +74,7 @@ public interface LogStorage {
     append(
         lowestPosition,
         highestPosition,
-        new DirectBufferWriter().wrap(new UnsafeBuffer(blockBuffer)),
+        new DirectBufferWriter(new UnsafeBuffer(blockBuffer)),
         listener);
   }
 

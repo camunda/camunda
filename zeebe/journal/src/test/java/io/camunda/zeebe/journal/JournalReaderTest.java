@@ -33,7 +33,7 @@ final class JournalReaderTest {
 
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
+  private final BufferWriter recordDataWriter = new DirectBufferWriter(data);
   private JournalReader reader;
   private SegmentedJournal journal;
 

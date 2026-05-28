@@ -37,18 +37,18 @@ final class JournalAppendTest {
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private DirectBufferWriter recordDataWriter;
+  private DirectBufferWriter otherRecordDataWriter;
 
-  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
-  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
   private Journal journal;
 
   @BeforeEach
   void setup() {
     final byte[] entry = "TestData".getBytes();
-    recordDataWriter.wrap(new UnsafeBuffer(entry));
+    recordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
-    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
+    otherRecordDataWriter = new DirectBufferWriter(new UnsafeBuffer(entryOther));
 
     journal = openJournal();
   }

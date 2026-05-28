@@ -466,9 +466,7 @@ class SegmentedJournalTest {
     journal.deleteAfter(first - 1);
     final var lastRecord =
         journal.append(
-            3,
-            new DirectBufferWriter()
-                .wrap(new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
+            3, new DirectBufferWriter(new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
 
     // then
     assertThat(first).isEqualTo(lastRecord.index());
@@ -484,11 +482,11 @@ class SegmentedJournalTest {
 
     // when
     final var firstRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("12345".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("12345".getBytes())));
     final var secondRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("1234567".getBytes())));
     final var thirdRecord =
-        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567890".getBytes())));
+        journal.append(new DirectBufferWriter(new UnsafeBuffer("1234567890".getBytes())));
 
     // then
     assertThat(reader.next()).isEqualTo(firstRecord);

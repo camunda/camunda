@@ -179,10 +179,9 @@ public class PartitionRestoreService {
       final Journal targetJournal,
       final JournalReader sourceReader,
       final long checkpointPosition) {
-    final var recordWriter = new DirectBufferWriter();
     while (sourceReader.hasNext()) {
       final var record = sourceReader.next();
-      targetJournal.append(record.asqn(), recordWriter.wrap(record.data()));
+      targetJournal.append(record.asqn(), new DirectBufferWriter(record.data()));
       if (record.asqn() == checkpointPosition) {
         LOG.debug("Copied up to checkpoint record {} from source journal", record);
         return;

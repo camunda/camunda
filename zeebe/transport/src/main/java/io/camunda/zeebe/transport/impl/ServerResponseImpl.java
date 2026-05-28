@@ -11,13 +11,10 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.jspecify.annotations.Nullable;
 
 public final class ServerResponseImpl implements ServerResponse {
-  private final DirectBufferWriter writerAdapter = new DirectBufferWriter();
   private @Nullable BufferWriter writer;
   private int partitionId;
   private long requestId;
@@ -25,14 +22,6 @@ public final class ServerResponseImpl implements ServerResponse {
   public ServerResponseImpl writer(final BufferWriter writer) {
     this.writer = writer;
     return this;
-  }
-
-  public ServerResponseImpl buffer(final DirectBuffer buffer) {
-    return buffer(buffer, 0, buffer.capacity());
-  }
-
-  public ServerResponseImpl buffer(final DirectBuffer buffer, final int offset, final int length) {
-    return writer(writerAdapter.wrap(buffer, offset, length));
   }
 
   public ServerResponseImpl reset() {

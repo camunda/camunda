@@ -25,7 +25,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
   private final PushStreamRequestDecoder messageDecoder = new PushStreamRequestDecoder();
 
   private final DirectBuffer payloadReader = new UnsafeBuffer();
-  private BufferWriter payloadWriter = new DirectBufferWriter().wrap(payloadReader);
+  private BufferWriter payloadWriter = new DirectBufferWriter(payloadReader);
   private UUID streamId;
 
   @Override
@@ -34,7 +34,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
     messageDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
     streamId = new UUID(messageDecoder.id().high(), messageDecoder.id().low());
     messageDecoder.wrapPayload(payloadReader);
-    payloadWriter = new DirectBufferWriter().wrap(payloadReader);
+    payloadWriter = new DirectBufferWriter(payloadReader);
   }
 
   @Override
@@ -98,7 +98,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
 
   public PushStreamRequest payload(final DirectBuffer payload) {
     payloadReader.wrap(payload);
-    payloadWriter = new DirectBufferWriter().wrap(payload);
+    payloadWriter = new DirectBufferWriter(payload);
     return this;
   }
 

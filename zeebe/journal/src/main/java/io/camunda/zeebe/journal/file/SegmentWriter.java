@@ -117,7 +117,7 @@ final class SegmentWriter {
   Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
     final var entryIndex = record.index();
     final var asqn = record.asqn();
-    final var recordDataWriter = new DirectBufferWriter().wrap(record.data());
+    final var recordDataWriter = new DirectBufferWriter(record.data());
     final var expectedChecksum = record.checksum();
 
     verifyAsqnIsIncreasing(asqn);
