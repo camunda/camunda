@@ -9,7 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 
-public class RdbmsCache {
+public class RdbmsCache implements RdbmsCacheConfiguration {
 
   /**
    * The maximum number of entries the cache may contain. When the size of the cache exceeds this,

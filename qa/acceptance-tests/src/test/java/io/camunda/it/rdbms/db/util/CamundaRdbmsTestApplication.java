@@ -9,7 +9,7 @@ package io.camunda.it.rdbms.db.util;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;

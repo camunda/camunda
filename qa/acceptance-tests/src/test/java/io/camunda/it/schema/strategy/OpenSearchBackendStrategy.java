@@ -11,7 +11,7 @@ import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProp
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestStandaloneBackupManager;

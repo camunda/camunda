@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import java.time.Duration;
 
-public class RdbmsAsyncReplication {
+public class RdbmsAsyncReplication implements RdbmsAsyncReplicationConfiguration {
 
   private boolean enabled = ReplicationConfiguration.DEFAULT_ENABLED;
   private Duration pollingInterval = ReplicationConfiguration.DEFAULT_POLLING_INTERVAL;

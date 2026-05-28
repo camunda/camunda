@@ -12,7 +12,7 @@ import io.camunda.authentication.session.WebSessionDeletionTask;
 import io.camunda.authentication.session.WebSessionMapper;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;

@@ -47,6 +47,7 @@
     <module>testing</module>
     <module>document</module>
     <module>security</module>
+    <module>configuration-lib</module>
     <module>configuration</module>
     <module>load-tests/load-tester</module>
     <module>debug-cli</module>

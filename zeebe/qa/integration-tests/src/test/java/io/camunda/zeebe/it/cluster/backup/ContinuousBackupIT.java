@@ -18,7 +18,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;

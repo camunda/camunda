@@ -13,7 +13,7 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;

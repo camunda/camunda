@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Data {
+public class Data implements DataConfiguration {
   private static final String PREFIX = "camunda.data";
   private static final Set<String> LEGACY_SNAPSHOT_PERIOD_PROPERTIES =
       Set.of("zeebe.broker.data.snapshotPeriod");

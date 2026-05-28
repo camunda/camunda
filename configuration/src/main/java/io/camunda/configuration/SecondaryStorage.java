@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class SecondaryStorage {
+public class SecondaryStorage implements SecondaryStorageConfiguration {
 
   private static final String PREFIX = "camunda.data.secondary-storage";
   private static final Set<String> LEGACY_TYPE_PROPERTIES =
@@ -121,25 +121,6 @@ public class SecondaryStorage {
       default -> {
         return null;
       }
-    }
-  }
-
-  public enum SecondaryStorageType {
-    elasticsearch,
-    opensearch,
-    rdbms,
-    none;
-
-    public boolean isElasticSearch() {
-      return this == elasticsearch;
-    }
-
-    public boolean isOpenSearch() {
-      return this == opensearch;
-    }
-
-    public boolean isRdbms() {
-      return this == rdbms;
     }
   }
 }

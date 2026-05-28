@@ -19,7 +19,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.ResolvableType;
 
 public abstract class DocumentBasedSecondaryStorageDatabase
-    extends SecondaryStorageDatabase<DocumentBasedHistory> {
+    extends SecondaryStorageDatabase<DocumentBasedHistory>
+    implements DocumentBasedSecondaryStorageDatabaseConfiguration {
 
   /** Prefix to apply to the indexes. */
   private String indexPrefix = "";

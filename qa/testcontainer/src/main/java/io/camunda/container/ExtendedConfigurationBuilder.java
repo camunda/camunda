@@ -39,7 +39,7 @@ import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Network;
 import io.camunda.configuration.PostExport;
 import io.camunda.configuration.Processing;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.TlsCluster;

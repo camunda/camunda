@@ -9,7 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 
-public class RdbmsInsertBatching {
+public class RdbmsInsertBatching implements RdbmsInsertBatchingConfiguration {
   private int maxVariableInsertBatchSize = InsertBatchingConfig.DEFAULT_VARIABLE_INSERT_BATCH_SIZE;
   private int maxAuditLogInsertBatchSize = InsertBatchingConfig.DEFAULT_AUDIT_LOG_INSERT_BATCH_SIZE;
   private int maxJobInsertBatchSize = InsertBatchingConfig.DEFAULT_JOB_INSERT_BATCH_SIZE;

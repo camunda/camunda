@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.backup;
 
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+import static io.camunda.configuration.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorageType.opensearch;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;

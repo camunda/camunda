@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import java.time.Duration;
 
 /** Configuration for RDBMS metrics. */
-public class RdbmsMetrics {
+public class RdbmsMetrics implements RdbmsMetricsConfiguration {
 
   /** Default cache duration for table row count metrics. */
   public static final Duration DEFAULT_TABLE_ROW_COUNT_CACHE_DURATION = Duration.ofMinutes(5);

@@ -11,7 +11,7 @@ import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompa
 
 import java.util.Set;
 
-public class Retention {
+public class Retention implements RetentionConfiguration {
 
   private static final String PREFIX = "camunda.data.secondary-storage.retention";
   private static final Set<String> LEGACY_ENABLED_PROPERTIES =

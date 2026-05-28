@@ -10,7 +10,8 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
 
-public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
+public class Opensearch extends DocumentBasedSecondaryStorageDatabase
+    implements OpensearchConfiguration {
 
   private boolean awsEnabled = false;
 

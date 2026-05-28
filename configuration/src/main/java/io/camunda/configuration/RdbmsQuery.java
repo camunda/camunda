@@ -9,7 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 
-public class RdbmsQuery {
+public class RdbmsQuery implements RdbmsQueryConfiguration {
 
   /** The maximum number of total hits to return in search results. */
   private int maxTotalHits = RdbmsReaderConfig.DEFAULT_MAX_TOTAL_HITS;

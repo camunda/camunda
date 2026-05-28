@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
