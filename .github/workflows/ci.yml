@@ -1056,7 +1056,7 @@ jobs:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
       CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
-      CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
+      CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/zeebe
       DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
     services:
