@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.function.Consumer;
@@ -523,11 +524,11 @@ class ExporterConfigurationTest {
   // ReplicationConfiguration tests
 
   @Test
-  public void shouldBeOkWithEnabledReplicationAndValidConfig() {
+  public void shouldBeOkWithLogSeqReplicationAndValidConfig() {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
-    replication.setEnabled(true);
+    replication.setType(ReplicationType.LOG_SEQ);
     replication.setPollingInterval(Duration.ofSeconds(10));
     replication.setMinSyncReplicas(1);
     replication.setMaxLag(Duration.ofMinutes(5));
@@ -540,11 +541,26 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  public void shouldNotFailWhenReplicationDisabledWithCompletelyWrongConfig() {
+  public void shouldBeOkWithDelayReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setType(ReplicationType.DELAY);
+    replication.setDelay(Duration.ofMinutes(10));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldNotFailWhenReplicationNoneWithCompletelyWrongConfig() {
     // given - completely invalid configuration, but replication is disabled
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
-    replication.setEnabled(false);
+    replication.setType(ReplicationType.NONE);
     replication.setPollingInterval(Duration.ofMillis(-1000));
     replication.setMaxLag(Duration.ofMillis(-1000));
     configuration.setAsyncReplication(replication);
@@ -552,7 +568,7 @@ class ExporterConfigurationTest {
     // when
     configuration.validate();
 
-    // then - no error, pollingInterval and maxLag are only validated when replication is enabled
+    // then - no error, pollingInterval and maxLag are only validated for LOG_SEQ type
   }
 
   @ParameterizedTest
@@ -574,14 +590,14 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
                   r.setPollingInterval(Duration.ofMillis(-1000));
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
                   r.setPollingInterval(Duration.ZERO);
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
@@ -594,16 +610,30 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
                   r.setMaxLag(Duration.ofMillis(-1000));
                 },
             "asyncReplication.maxLag must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setEnabled(true);
+                  r.setType(ReplicationType.LOG_SEQ);
                   r.setMaxLag(Duration.ZERO);
                 },
-            "asyncReplication.maxLag must be a positive duration"));
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.delay must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ZERO);
+                },
+            "asyncReplication.delay must be a positive duration"));
   }
 }

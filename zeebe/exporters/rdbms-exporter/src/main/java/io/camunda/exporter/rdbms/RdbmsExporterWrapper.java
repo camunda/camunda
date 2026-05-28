@@ -62,6 +62,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigratio
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddHandler;
 import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
+import io.camunda.exporter.rdbms.replication.DelayReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
@@ -138,18 +139,23 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDependentRowLimit()),
             context.clock());
     builder.historyDeletionService(historyDeletionService);
-    if (config.getAsyncReplication().isEnabled()) {
-      final ReplicationLogStatusProvider replicationLogStatusProvider =
-          rdbmsService.getReplicationLogStatusProvider();
-      builder.replicationControllerFactory(
-          new LsnReplicationControllerFactory(
-              replicationLogStatusProvider,
-              config.getAsyncReplication(),
-              partitionId,
-              context.clock(),
-              rdbmsWriters.getMetrics()));
-    } else {
-      builder.replicationControllerFactory(ReplicationControllerFactory.noop());
+    switch (config.getAsyncReplication().getType()) {
+      case LOG_SEQ -> {
+        final ReplicationLogStatusProvider replicationLogStatusProvider =
+            rdbmsService.getReplicationLogStatusProvider();
+        builder.replicationControllerFactory(
+            new LsnReplicationControllerFactory(
+                replicationLogStatusProvider,
+                config.getAsyncReplication(),
+                partitionId,
+                context.clock(),
+                rdbmsWriters.getMetrics()));
+      }
+      case DELAY ->
+          builder.replicationControllerFactory(
+              new DelayReplicationControllerFactory(
+                  config.getAsyncReplication(), partitionId, context.clock()));
+      case NONE -> builder.replicationControllerFactory(ReplicationControllerFactory.noop());
     }
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
