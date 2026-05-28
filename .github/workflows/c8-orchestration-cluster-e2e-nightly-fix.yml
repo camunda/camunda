@@ -61,9 +61,13 @@ jobs:
     steps:
       - name: Resolve target branch
         id: target
+        env:
+          # Read workflow_dispatch input through env to avoid template injection
+          # (zizmor: template-injection — github.event.inputs.* is attacker-controllable)
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           set -euo pipefail
-          version="${{ github.event.inputs.version }}"
+          version="$INPUT_VERSION"
           case "$version" in
             main)
               {
@@ -88,12 +92,18 @@ jobs:
         with:
           ref: ${{ steps.target.outputs.ref }}
           fetch-depth: 1
+          # We re-configure git with the bot PAT below; no need to keep the
+          # short-lived GITHUB_TOKEN around in .git/config (zizmor: artipacked).
+          persist-credentials: false
 
       - name: Write test_specs to file
+        env:
+          # Read the (potentially large + arbitrary) JSON input through env to
+          # avoid template injection (zizmor: template-injection).
+          INPUT_TEST_SPECS: ${{ github.event.inputs.test_specs }}
         run: |
-          cat > /tmp/test_specs.json <<'ENDOFSPECS'
-          ${{ github.event.inputs.test_specs }}
-          ENDOFSPECS
+          set -euo pipefail
+          printf '%s' "$INPUT_TEST_SPECS" > /tmp/test_specs.json
           echo "test_specs entries: $(jq 'length' /tmp/test_specs.json)"
           jq '.[0:3]' /tmp/test_specs.json || true
 

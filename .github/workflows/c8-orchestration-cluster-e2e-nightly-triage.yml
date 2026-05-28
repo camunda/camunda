@@ -30,9 +30,11 @@ on:
         default: true
         required: false
 
+# Minimal at workflow level. Triage job only needs to read; dispatch job
+# bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
 permissions:
   contents: read
-  actions: write
+  actions: read
   pull-requests: read
 
 concurrency:
@@ -317,6 +319,10 @@ jobs:
     if: ${{ github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != '[]' && needs.triage.outputs.dispatches != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write   # required to dispatch the fix workflow
+      pull-requests: read
 
     steps:
       - name: Import Vault secrets
