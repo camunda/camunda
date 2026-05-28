@@ -76,6 +76,9 @@ test.describe.serial('component authorizations CRUD', () => {
   test('tries to create an authorization with invalid id', async ({
     identityAuthorizationsPage,
   }) => {
+    await identityAuthorizationsPage.selectResourceTypeTab(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
     await identityAuthorizationsPage.createAuthorizationButton.click();
     await identityAuthorizationsPage.selectAuthorizationOwnerType({
       ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
@@ -83,9 +86,6 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityAuthorizationsPage.selectAuthorizationOwner({
       ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
     });
-    await identityAuthorizationsPage.selectResourceType(
-      NEW_COMPONENT_AUTHORIZATION.resourceType,
-    );
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
@@ -292,5 +292,39 @@ test.describe('authorization scenarios', () => {
       await loginPage.login(testUser.username, testUser.password);
       await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
     });
+  });
+});
+
+test.describe('create authorization modal — resource type field', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('prefills resource type from the active tab and disables the dropdown', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.selectResourceTypeTab('Component');
+
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toBeVisible();
+
+    await expect(identityAuthorizationsPage.resourceTypeComboBox).toHaveText(
+      /Component/i,
+    );
+    await expect(
+      identityAuthorizationsPage.resourceTypeComboBox,
+    ).toBeDisabled();
   });
 });
