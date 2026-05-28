@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.TestInstance;
@@ -124,11 +125,25 @@ final class UserTaskVariableExportIT {
     clientAdapter.refresh();
     final var expectedDocId = scopeKey + "-myVar";
     final var taskIndexName = getTaskTemplateIndexName(config);
-    final var document = clientAdapter.get(expectedDocId, taskIndexName, TaskVariableEntity.class);
+    final var document = findExpectedDocument(clientAdapter, expectedDocId, taskIndexName);
     assertThat(document)
         .describedAs(
             "Variable should be exported to tasklist-task index for process with user tasks")
         .isNotNull();
+  }
+
+  private static TaskVariableEntity findExpectedDocument(
+      final SearchClientAdapter clientAdapter,
+      final String expectedDocId,
+      final String taskIndexName)
+      throws IOException {
+    final var docs =
+        clientAdapter.searchById(
+            taskIndexName + "*", List.of(expectedDocId), TaskVariableEntity.class);
+    if (docs.isEmpty()) {
+      return null;
+    }
+    return docs.getFirst();
   }
 
   @TestTemplate
@@ -185,7 +200,7 @@ final class UserTaskVariableExportIT {
     clientAdapter.refresh();
     final var expectedDocId = scopeKey + "-myVar";
     final var taskIndexName = getTaskTemplateIndexName(config);
-    final var document = clientAdapter.get(expectedDocId, taskIndexName, TaskVariableEntity.class);
+    final var document = findExpectedDocument(clientAdapter, expectedDocId, taskIndexName);
     assertThat(document)
         .describedAs(
             "Variable should NOT be exported to tasklist-task index for process without user tasks")

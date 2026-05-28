@@ -62,6 +62,13 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
     final long ordinalBaseKey = getOrdinalBaseKey(record.getValue());
     if (ordinalBaseKey > 0) {
+      LOGGER.warn(
+          "Processing a record we expect to have an ordinal using fallback behavior. Record key: {}, "
+              + "position: {}, type: {}, value type: {}.",
+          record.getKey(),
+          record.getPosition(),
+          record.getRecordType(),
+          record.getValueType());
       final int ordinal = getOrdinal(ordinalBaseKey);
       final var suffix = getOrCreateOrdinalSuffix("exporter", ordinal);
       return new SingleSuffixOrdinalIndexLocator(suffix);

@@ -8,6 +8,7 @@
 package io.camunda.search.test.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -189,6 +191,32 @@ public class SearchClientAdapter {
       return osClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     }
     return null;
+  }
+
+  public <T> List<T> searchById(
+      final String index, final List<String> ids, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(
+              s -> s.index(index).query(q -> q.ids(i -> i.values(ids))).size(ids.size()), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(
+              s -> s.index(index).query(q -> q.ids(i -> i.values(ids))).size(ids.size()), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .filter(Objects::nonNull)
+          .toList();
+    }
+    return List.of();
   }
 
   public String index(final String id, final String index, final Object document)
