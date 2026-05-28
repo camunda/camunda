@@ -362,6 +362,27 @@ public class ExporterMigrationTestHelper {
       brokerCurrent.start().await(TestHealthProbe.READY, Duration.ofMinutes(3));
       log.info("Camunda " + CURRENT_MINOR_VERSION + " broker started");
 
+      final var partitionsActuator = PartitionsActuator.of(brokerCurrent);
+
+      // TODO this is a workaround - probably already fixed on main?
+      // Wait for all partitions to have a leader before resuming exporting
+      Awaitility.await("all partitions should have leaders")
+          .atMost(Duration.ofMinutes(2))
+          .pollInterval(Duration.ofSeconds(2))
+          .untilAsserted(
+              () -> {
+                final var status = partitionsActuator.query();
+                assertThat(status).as("partitions should be reported").isNotEmpty();
+                status.forEach(
+                    (id, partition) -> {
+                      log.info("Partition {}: role={}", id, partition.role());
+                      assertThat(partition.role())
+                          .as("partition %d should have a leader", id)
+                          .isEqualToIgnoringCase("LEADER");
+                    });
+              });
+      log.info("All partitions have leaders");
+
       // Resume exporter
       ExportingActuator.of(brokerCurrent).resume();
       log.info("Resumed exporter on " + CURRENT_MINOR_VERSION);
@@ -396,7 +417,6 @@ public class ExporterMigrationTestHelper {
 
         // ---- Phase 6: Verify everything exported and completed ----
         log.info("Phase 6: Verifying all records exported");
-        final var partitionsActuator = PartitionsActuator.of(brokerCurrent);
 
         // Wait for exporter to catch up (exportedPosition == processedPosition)
         Awaitility.await("exporter should catch up")

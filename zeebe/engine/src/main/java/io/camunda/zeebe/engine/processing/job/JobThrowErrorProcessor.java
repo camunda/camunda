@@ -215,6 +215,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())
+        .setOrdinalKey(job.getOrdinalKey())
         .setElementId(getElementId(job))
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())

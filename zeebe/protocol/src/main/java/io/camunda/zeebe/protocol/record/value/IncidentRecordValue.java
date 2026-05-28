@@ -29,7 +29,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableIncidentRecordValue.Builder.class)
 public interface IncidentRecordValue
-    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
+    extends RecordValue,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        OrdinalKeyBased,
+        TenantOwned {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
@@ -70,6 +74,19 @@ public interface IncidentRecordValue
   long getElementInstanceKey();
 
   /**
+   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
+   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
+   * call activities), this is the key of the topmost parent process instance.
+   *
+   * <p>Important: This value is only set for incidents created after version 8.8.0. For older
+   * incidents, the method will return -1.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
    * @return the BPMN process id this incident belongs to. Can be empty if the incident record is
    *     part of a {@link IncidentIntent#RESOLVE} command.
    */
@@ -108,16 +125,4 @@ public interface IncidentRecordValue
    *     entry is a reference to the call activity in BPMN model containing an incident.
    */
   List<Integer> getCallingElementPath();
-
-  /**
-   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
-   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
-   * call activities), this is the key of the topmost parent process instance.
-   *
-   * <p>Important: This value is only set for incidents created after version 8.8.0. For older
-   * incidents, the method will return -1.
-   *
-   * @return the key of the root process instance, or {@code -1} if not set
-   */
-  long getRootProcessInstanceKey();
 }

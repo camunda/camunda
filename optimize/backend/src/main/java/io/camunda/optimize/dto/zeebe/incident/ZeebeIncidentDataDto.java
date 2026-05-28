@@ -56,18 +56,13 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKey;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
   }
 
   @Override
@@ -78,6 +73,16 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return -1L; // Not used in Optimize
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
   @Override
@@ -108,17 +113,16 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
-  @Override
-  public long getRootProcessInstanceKey() {
-    return -1L; // Not used in Optimize
-  }
-
   public void setVariableScopeKey(final long variableScopeKey) {
     this.variableScopeKey = variableScopeKey;
   }
 
   public void setJobKey(final long jobKey) {
     this.jobKey = jobKey;
+  }
+
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public void setElementInstanceKey(final long elementInstanceKey) {
@@ -129,16 +133,12 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     this.elementId = elementId;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public void setErrorMessage(final String errorMessage) {
@@ -147,6 +147,11 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
 
   public void setErrorType(final ErrorType errorType) {
     this.errorType = errorType;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return -1; // not used in Optimize
   }
 
   @Override
