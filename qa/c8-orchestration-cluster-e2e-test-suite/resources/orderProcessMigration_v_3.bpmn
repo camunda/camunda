@@ -142,6 +142,8 @@
       <bpmn:outgoing>Flow_1235n4i</bpmn:outgoing>
       <bpmn:outgoing>Flow_192dswa</bpmn:outgoing>
       <bpmn:outgoing>Flow_14gbl4m</bpmn:outgoing>
+      <bpmn:outgoing>Flow_aiagent_v3_in</bpmn:outgoing>
+      <bpmn:outgoing>Flow_aiagentsub_v3_in</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:parallelGateway id="Gateway_3">
       <bpmn:incoming>Flow_0hxjz3q</bpmn:incoming>
@@ -154,6 +156,8 @@
       <bpmn:incoming>Flow_1xg3tdz</bpmn:incoming>
       <bpmn:incoming>Flow_1epls0w</bpmn:incoming>
       <bpmn:incoming>Flow_0vlhghj</bpmn:incoming>
+      <bpmn:incoming>Flow_aiagent_v3_out</bpmn:incoming>
+      <bpmn:incoming>Flow_aiagentsub_v3_out</bpmn:incoming>
       <bpmn:outgoing>Flow_1ibxab9</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_0lyxcbw" sourceRef="TaskB2" targetRef="TimerIntermediateCatch2" />
@@ -239,6 +243,24 @@
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_14gbl4m" sourceRef="Gateway_2" targetRef="SendTask2" />
     <bpmn:sequenceFlow id="Flow_0vlhghj" sourceRef="SendTask2" targetRef="Gateway_3" />
+    <bpmn:serviceTask id="AIAgentTask2" name="AI Agent Task 2">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="foo" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_aiagent_v3_in</bpmn:incoming>
+      <bpmn:outgoing>Flow_aiagent_v3_out</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_aiagent_v3_in" sourceRef="Gateway_2" targetRef="AIAgentTask2" />
+    <bpmn:sequenceFlow id="Flow_aiagent_v3_out" sourceRef="AIAgentTask2" targetRef="Gateway_3" />
+    <bpmn:serviceTask id="AIAgentsubprocess2" name="AI Agent subprocess 2">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="foo" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_aiagentsub_v3_in</bpmn:incoming>
+      <bpmn:outgoing>Flow_aiagentsub_v3_out</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_aiagentsub_v3_in" sourceRef="Gateway_2" targetRef="AIAgentsubprocess2" />
+    <bpmn:sequenceFlow id="Flow_aiagentsub_v3_out" sourceRef="AIAgentsubprocess2" targetRef="Gateway_3" />
     <bpmn:sendTask id="SendTask2" name="Send Task 2">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="failingTaskWorker" />
@@ -1144,6 +1166,34 @@
       <bpmndi:BPMNEdge id="Flow_0vlhghj_di" bpmnElement="Flow_0vlhghj">
         <di:waypoint x="460" y="1590" />
         <di:waypoint x="1105" y="1590" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_aiagent2_di" bpmnElement="AIAgentTask2">
+        <dc:Bounds x="360" y="1700" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_aiagent_v3_in_di" bpmnElement="Flow_aiagent_v3_in">
+        <di:waypoint x="290" y="233" />
+        <di:waypoint x="290" y="1740" />
+        <di:waypoint x="360" y="1740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_aiagent_v3_out_di" bpmnElement="Flow_aiagent_v3_out">
+        <di:waypoint x="460" y="1740" />
+        <di:waypoint x="1130" y="1740" />
+        <di:waypoint x="1130" y="1565" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_aiagentsub2_di" bpmnElement="AIAgentsubprocess2">
+        <dc:Bounds x="360" y="1810" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_aiagentsub_v3_in_di" bpmnElement="Flow_aiagentsub_v3_in">
+        <di:waypoint x="290" y="233" />
+        <di:waypoint x="290" y="1850" />
+        <di:waypoint x="360" y="1850" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_aiagentsub_v3_out_di" bpmnElement="Flow_aiagentsub_v3_out">
+        <di:waypoint x="460" y="1850" />
+        <di:waypoint x="1130" y="1850" />
+        <di:waypoint x="1130" y="1565" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_126yu9s_di" bpmnElement="Flow_126yu9s">
         <di:waypoint x="1477" y="208" />

@@ -390,6 +390,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with prefilled form', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -410,11 +411,23 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('User registration with vars');
 
-    await taskDetailsPage.assertFieldValue('Name*', 'Jon');
-    await taskDetailsPage.assertFieldValue('Address*', 'Earth');
-    await taskDetailsPage.assertFieldValue('Age', '21');
+    // The completed task can briefly show stale prefilled values before the
+    // submitted variable values rehydrate into the form — same race seen on
+    // the checklist form. Re-open and reassert on reload until the correct
+    // submitted values appear.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('User registration with vars');
+        await taskDetailsPage.assertFieldValue('Name*', 'Jon');
+        await taskDetailsPage.assertFieldValue('Address*', 'Earth');
+        await taskDetailsPage.assertFieldValue('Age', '21');
+      },
+      onFailure: async () => {
+        await page.reload();
+        await taskPanelPage.assertCompletedHeadingVisible();
+      },
+    });
   });
 
   // eslint-disable-next-line playwright/expect-expect

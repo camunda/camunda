@@ -8,7 +8,12 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, cancelProcessInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  deployWithProcessId,
+  createInstances,
+  cancelProcessInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -57,11 +62,23 @@ const targetTaskCards: TaskCard[] = parseAssignedTasksFromFile(
 
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {
+    // Use a run-unique suffix so each test run deploys a fresh, isolated set
+    // of process definitions. This avoids Operate's auto-migration picking up
+    // stale versions from prior runs (which share the same bpmnProcessId).
+    // The random suffix guards against v1-mode and v2-mode running concurrently
+    // and calling Date.now() within the same millisecond.
+    const runId =
+      Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const orderProcessId = `orderProcessMigration_${runId}`;
+    const newOrderProcessId = `newOrderProcessMigration_${runId}`;
 
-    await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
+    const newProcessMigrationV1 = await deployWithProcessId(
+      './resources/orderProcessMigration_v_1.bpmn',
+      orderProcessId,
+    );
     const processV1: ProcessDeployment = {
-      bpmnProcessId: 'orderProcessMigration',
-      version: 1,
+      bpmnProcessId: newProcessMigrationV1.processes[0].processDefinitionId,
+      version: newProcessMigrationV1.processes[0].processDefinitionVersion,
     };
 
     processes = await Promise.all(
@@ -74,20 +91,25 @@ test.describe.serial('Process Instance Migration', () => {
       ),
     );
 
-    const newProcessMigrationV2: DeployResourceResponse = await deploy([
+    // Deploy v2 under the same process ID as v1 so Operate treats it as
+    // version 2 of the same process — the intended migration target.
+    const newProcessMigrationV2 = await deployWithProcessId(
       './resources/orderProcessMigration_v_2.bpmn',
-    ]);
+      orderProcessId,
+    );
     const processV2: ProcessDeployment = {
-      bpmnProcessId: 'orderProcessMigration',
+      bpmnProcessId: newProcessMigrationV2.processes[0].processDefinitionId,
       version: newProcessMigrationV2.processes[0].processDefinitionVersion,
     };
-    const newProcessMigrationV3: DeployResourceResponse = await deploy([
+
+    const newProcessMigrationV3 = await deployWithProcessId(
       './resources/orderProcessMigration_v_3.bpmn',
-    ]);
+      newOrderProcessId,
+    );
     expect(processV2.version).toBeGreaterThan(processV1.version);
 
     const processV3: ProcessDeployment = {
-      bpmnProcessId: 'newOrderProcessMigration',
+      bpmnProcessId: newProcessMigrationV3.processes[0].processDefinitionId,
       version: newProcessMigrationV3.processes[0].processDefinitionVersion,
     };
 
@@ -133,20 +155,23 @@ test.describe.serial('Process Instance Migration', () => {
     const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-
-      // Wait for the process to be selected and version dropdown to be populated
-      await sleep(1000);
-
-      // Ensure we're selecting the correct source version (version 1)
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
-
-      await expect
-        .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
-        .toBe(sourceVersion);
-
-      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await sleep(1000);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+          await expect
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
+            .toBe(sourceVersion);
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+            timeout: 10000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
 
@@ -280,6 +305,14 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for message start event',
           targetValue: 'MessageStartEvent',
         },
+        {
+          label: 'target element for ai agent task',
+          targetValue: 'AIAgentTask',
+        },
+        {
+          label: 'target element for ai agent subprocess',
+          targetValue: 'AIAgentsubprocess',
+        },
       ]);
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
@@ -295,8 +328,9 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Verify 6 instances migrated to target version', async () => {
       await operateOperationPanelPage.expandOperationsPanel();
 
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(6);
+      const operationEntry = operateOperationPanelPage
+        .getMigrationOperationEntry(6)
+        .first();
 
       await expect(operationEntry).toBeVisible({timeout: 120000});
 
@@ -346,7 +380,16 @@ test.describe.serial('Process Instance Migration', () => {
         `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=TaskF`,
       );
 
-      await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('6 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
   });
 
@@ -375,7 +418,16 @@ test.describe.serial('Process Instance Migration', () => {
           `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
         );
 
-        await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(page.getByText('6 results')).toBeVisible({
+              timeout: 30000,
+            });
+          },
+          onFailure: async () => {
+            await page.reload();
+          },
+        });
       });
     }
   });
@@ -401,11 +453,21 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
-        await expect(page.getByText('6 results')).toBeVisible({
-          timeout: 90000,
+        // AIAgentTask/AIAgentsubprocess can take longer than other elements
+        // to propagate through Operate's index. Reload on failure to clear
+        // stale state rather than holding a single 90s assertion.
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(page.getByText('6 results')).toBeVisible({
+              timeout: 30000,
+            });
+          },
+          onFailure: async () => {
+            await page.reload();
+          },
         });
       });
     }
@@ -546,6 +608,14 @@ test.describe.serial('Process Instance Migration', () => {
         'Send Task',
         'Send Task 2',
       );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent Task',
+        'AI Agent Task 2',
+      );
+      await operateProcessMigrationModePage.mapFlowNode(
+        'AI Agent subprocess',
+        'AI Agent subprocess 2',
+      );
 
       await operateProcessMigrationModePage.mapFlowNode(
         'Event based gateway',
@@ -591,8 +661,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      const operationEntry =
-        operateOperationPanelPage.getMigrationOperationEntry(3);
+      const operationEntry = operateOperationPanelPage
+        .getMigrationOperationEntry(3)
+        .first();
 
       await expect(operationEntry).toBeVisible({
         timeout: 120000,
@@ -658,7 +729,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();

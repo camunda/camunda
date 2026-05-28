@@ -59,6 +59,9 @@ class TasklistProcessesPage {
 
   async clickStartProcessSubButton(): Promise<void> {
     await this.startProcessSubButton.click();
+    await this.page
+      .getByRole('dialog')
+      .waitFor({state: 'hidden', timeout: 30000});
   }
 }
 

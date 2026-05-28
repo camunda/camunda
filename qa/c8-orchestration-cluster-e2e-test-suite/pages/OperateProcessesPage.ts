@@ -187,10 +187,18 @@ class OperateProcessesPage {
 
   async filterByProcessName(name: string): Promise<void> {
     await expect(this.processNameFilter).toBeVisible();
+    const clearButton = this.page.getByRole('button', {
+      name: 'Clear selected item',
+    });
+    if (await clearButton.isVisible({timeout: 1000}).catch(() => false)) {
+      await clearButton.click();
+    }
     await this.processNameFilter.click();
     await this.processNameFilter.fill(name);
     await this.page.keyboard.press('Enter');
-    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
+    await this.page
+      .getByRole('heading', {name})
+      .waitFor({state: 'visible', timeout: 30000});
   }
 
   async clickProcessInstanceLink(): Promise<void> {

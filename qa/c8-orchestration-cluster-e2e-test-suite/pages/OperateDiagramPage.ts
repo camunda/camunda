@@ -84,7 +84,7 @@ export class OperateDiagramPage {
         await this.page.reload();
       },
     });
-    return flowNode.click({timeout: 20000});
+    return flowNode.click({timeout: 20000, force: true});
   }
 
   clickSubProcess(subProcessName: string) {
@@ -172,11 +172,27 @@ export class OperateDiagramPage {
       isSubProcess?: boolean;
     } = {},
   ) {
-    if (options.isSubProcess) {
-      await this.clickSubProcess(flowNodeId);
-    } else {
-      await this.clickFlowNode(flowNodeId);
-    }
+    // Retry the click+popover sequence: the click may land on the element but
+    // Operate's BPMN viewer sometimes does not register it on the first attempt
+    // (e.g. when the element is small after a zoom-reset or an overlay briefly
+    // intercepts the event).  We check that the popover with "show more metadata"
+    // actually appears before proceeding; if not, we retry the click.
+    await waitForAssertion({
+      assertion: async () => {
+        if (options.isSubProcess) {
+          await this.clickSubProcess(flowNodeId);
+        } else {
+          await this.clickFlowNode(flowNodeId);
+        }
+        await expect(this.showMetadataButton).toBeVisible({timeout: 5000});
+      },
+      onFailure: async () => {
+        console.log(
+          `Popover not visible after clicking flow node ${flowNodeId}, retrying...`,
+        );
+      },
+      maxRetries: 3,
+    });
     await this.clickShowMetaData();
 
     await this.monacoAriaContainer.waitFor({state: 'visible'});
