@@ -9,7 +9,7 @@
 import {Modal} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
-import {PreviewImage} from './styled';
+import {PreviewImage, PreviewPdf} from './styled';
 
 type DocumentPreviewProps = {
   document: DocumentInfo;
@@ -36,6 +36,10 @@ const DocumentPreviewModal: React.FC<StateProps & DocumentPreviewProps> = ({
 const ModalContent: React.FC<DocumentPreviewProps> = ({document}) => {
   if (document.type === 'image') {
     return <PreviewImage src={document.link} alt={document.fileName} />;
+  }
+
+  if (document.type === 'pdf') {
+    return <PreviewPdf src={document.link} title={document.fileName} />;
   }
 
   return <p>Preview not available for document "{document.fileName}".</p>;

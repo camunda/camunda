@@ -11,9 +11,16 @@ import styled from 'styled-components';
 const PreviewImage = styled.img`
   display: block;
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 80vh;
   object-fit: contain;
   margin: 0 auto;
 `;
 
-export {PreviewImage};
+const PreviewPdf = styled.iframe`
+  display: block;
+  width: 100%;
+  height: 80vh;
+  border: none;
+`;
+
+export {PreviewImage, PreviewPdf};
