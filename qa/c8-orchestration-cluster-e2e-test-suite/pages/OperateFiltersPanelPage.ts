@@ -161,11 +161,29 @@ export class OperateFiltersPanelPage {
       return;
     }
     await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+
+    // Re-check after opening the menu: the filter may have become visible
+    // concurrently (race condition between React state updates and the dropdown).
+    if (await this.isOptionalFilterDisplayed(filterName)) {
+      await this.page.keyboard.press('Escape');
+      return;
+    }
+
+    try {
+      await this.page
+        .getByRole('menuitem', {
+          name: filterName,
+        })
+        .click();
+    } catch (error) {
+      // The filter may have become visible while waiting for the menuitem
+      // (race condition where the URL is updated concurrently).
+      if (await this.isOptionalFilterDisplayed(filterName)) {
+        await this.page.keyboard.press('Escape');
+        return;
+      }
+      throw error;
+    }
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
