@@ -27,10 +27,44 @@ import org.testcontainers.utility.MountableFile;
 
 /**
  * Container which starts an MSSQL primary and a read replica using Always On Availability Groups
- * (AG) with CLUSTER_TYPE=NONE — the Docker-friendly AG mode that needs no Windows cluster.
+ * (AG) with {@code CLUSTER_TYPE=NONE} — the Docker-friendly AG mode that needs no Windows Server
+ * Failover Cluster.
  *
  * <p>Replication status can be monitored via {@code sys.dm_hadr_database_replica_states} on the
  * primary, which is what {@code ReplicationStatusMapper} queries with {@code databaseId="mssql"}.
+ *
+ * <h2>Why certificate-based authentication is required</h2>
+ *
+ * <p>SQL Server's database mirroring endpoint — the internal TCP channel used by AG replicas to
+ * exchange log records — supports only three authentication modes: Windows (Kerberos/NTLM),
+ * Negotiate, and Certificate. Windows and Negotiate both require Active Directory, which is
+ * unavailable in plain Linux/Docker containers. Certificate-based authentication is therefore the
+ * <em>only</em> supported option for AG on Linux.
+ *
+ * <p>The setup follows the procedure documented by Microsoft:
+ *
+ * <ul>
+ *   <li><a
+ *       href="https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-availability-group-configure-ha">
+ *       Configure SQL Server Always On Availability Groups for high availability on Linux</a>
+ *   <li><a
+ *       href="https://learn.microsoft.com/en-us/sql/database-engine/database-mirroring/use-certificates-for-a-database-mirroring-endpoint-transact-sql">
+ *       Use certificates for a database mirroring endpoint (T-SQL)</a>
+ * </ul>
+ *
+ * <h2>Startup sequence</h2>
+ *
+ * <ol>
+ *   <li>Start the primary container and wait for SQL Server to accept connections.
+ *   <li>Initialise the primary: create the database, master key, mirroring certificate, mirroring
+ *       endpoint, and the AG definition (which lists the replica as a future member).
+ *   <li>Read the certificate and private-key files out of the primary container into memory.
+ *   <li>Start the replica container and wait for SQL Server to accept connections.
+ *   <li>Inject the certificate files into the replica container.
+ *   <li>Initialise the replica: recreate the master key, import the certificate, create the
+ *       mirroring endpoint, and join the AG.
+ *   <li>Wait until the replica reports {@code synchronization_health = 2} (HEALTHY).
+ * </ol>
  */
 @SuppressWarnings("resource")
 public final class MSSQLReplicationClusterContainer
@@ -116,6 +150,22 @@ public final class MSSQLReplicationClusterContainer
     }
   }
 
+  @Override
+  public String getJdbcUrl() {
+    return buildJdbcUrl(getHost(), getMappedPort(MSSQL_PORT), DATABASE_NAME);
+  }
+
+  @Override
+  public String getUsername() {
+    return SA_USER;
+  }
+
+  @Override
+  public String getPassword() {
+    return SA_PASSWORD;
+  }
+
+  @Override
   public void stopReplica() {
     if (!replicaStopped) {
       LOG.info("Stopping MSSQL replica");
@@ -125,6 +175,7 @@ public final class MSSQLReplicationClusterContainer
     }
   }
 
+  @Override
   public void startReplica() {
     LOG.info("Starting MSSQL replica");
     replicaStopped = false;
@@ -135,18 +186,10 @@ public final class MSSQLReplicationClusterContainer
     waitForReplication();
   }
 
-  public String getJdbcUrl() {
-    return buildJdbcUrl(getHost(), getMappedPort(MSSQL_PORT), DATABASE_NAME);
-  }
-
-  public String getUsername() {
-    return SA_USER;
-  }
-
-  public String getPassword() {
-    return SA_PASSWORD;
-  }
-
+  /**
+   * Polls the given JDBC URL with {@code SELECT 1} until SQL Server accepts connections or the
+   * 2-minute timeout is exceeded. Used for both the primary and the replica after container start.
+   */
   private void waitForSqlServerReady(final String jdbcUrl) {
     LOG.info("Waiting for SQL Server to be ready");
     await()
@@ -165,6 +208,12 @@ public final class MSSQLReplicationClusterContainer
     LOG.info("SQL Server is ready");
   }
 
+  /**
+   * Initialises the primary node: creates the {@code camunda} database (with {@code RECOVERY FULL}
+   * and an initial backup to establish the log chain), creates the master key and mirroring
+   * certificate, backs up the certificate and its private key to {@code /tmp}, starts the mirroring
+   * endpoint on TCP port 5022, creates the AG, and grants automatic seeding permission.
+   */
   private void initPrimary() {
     LOG.info("Initializing MSSQL primary");
     try (final Connection conn =
@@ -230,6 +279,12 @@ public final class MSSQLReplicationClusterContainer
     LOG.info("MSSQL primary initialized");
   }
 
+  /**
+   * Reads the certificate ({@code .cer}) and private-key ({@code .pvk}) files out of the running
+   * primary container into JVM heap memory. The bytes are kept so the replica can receive them
+   * again if it is restarted via {@link #startReplica()}, without having to re-initialise the
+   * primary.
+   */
   private void cacheCertFiles() {
     try {
       certFileBytes = copyFileFromContainer(CERT_CONTAINER_PATH, InputStream::readAllBytes);
@@ -239,6 +294,12 @@ public final class MSSQLReplicationClusterContainer
     }
   }
 
+  /**
+   * Writes the cached certificate bytes to temporary host files and copies them into the replica
+   * container at the same {@code /tmp} paths that {@link #initReplica()} expects. Testcontainers'
+   * {@link MountableFile} is used rather than a shared Docker volume because these containers share
+   * no volumes — the host JVM is the transfer intermediary.
+   */
   private void transferCertsToReplica() {
     try {
       final Path certPath = Files.createTempFile("dbm_certificate", ".cer");
@@ -253,6 +314,12 @@ public final class MSSQLReplicationClusterContainer
     }
   }
 
+  /**
+   * Initialises a replica node: creates its own master key, imports the certificate that was
+   * transferred from the primary, starts the mirroring endpoint on TCP port 5022, and joins the AG
+   * that the primary already defined. The replica inherits the {@code camunda} database
+   * automatically via {@code SEEDING_MODE=AUTOMATIC}.
+   */
   private void initReplica() {
     LOG.info("Initializing MSSQL replica");
     try (final Connection conn =
@@ -290,6 +357,11 @@ public final class MSSQLReplicationClusterContainer
     LOG.info("MSSQL replica initialized");
   }
 
+  /**
+   * Polls {@code sys.dm_hadr_database_replica_states} on the primary until the replica row shows
+   * {@code synchronization_health = 2} (HEALTHY), meaning log records are being applied and the
+   * replica is caught up. Times out after 120 seconds.
+   */
   private void waitForReplication() {
     LOG.info("Waiting for MSSQL replica to sync");
     await()
