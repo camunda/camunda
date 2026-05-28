@@ -83,6 +83,33 @@ const ConditionRowsScroll = styled.div`
   min-height: 0;
 `;
 
+const SwitcherWrap = styled.div`
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+
+  .cds--content-switcher {
+    inline-size: fit-content;
+    max-inline-size: 100%;
+  }
+
+  .cds--content-switcher-btn {
+    flex: 0 0 auto;
+    padding-inline: var(--cds-spacing-05, 1rem);
+  }
+`;
+
+const JsonEditorWrap = styled.div<{$invalid?: boolean}>`
+  border: 1px solid
+    ${({$invalid}) =>
+      $invalid
+        ? 'var(--cds-support-error, #da1e28)'
+        : 'var(--cds-border-subtle-01)'};
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 280px;
+`;
+
 export {
   ModalContent,
   Description,
@@ -93,4 +120,6 @@ export {
   ConditionItem,
   EditorToolbar,
   ConditionRowsScroll,
+  SwitcherWrap,
+  JsonEditorWrap,
 };

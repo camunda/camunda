@@ -11,8 +11,23 @@ import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
-import {type editor, KeyCode} from 'monaco-editor';
+import {type editor, KeyCode, MarkerSeverity} from 'monaco-editor';
 import type {ReactNode} from 'react';
+
+type EditorHandle = {
+  showMarkers: () => void;
+  hideMarkers: () => void;
+  setCustomMarkers: (
+    markers: Array<{
+      message: string;
+      startLineNumber: number;
+      startColumn: number;
+      endLineNumber: number;
+      endColumn: number;
+      severity?: 'error' | 'warning' | 'info';
+    }>,
+  ) => void;
+};
 
 type Props = {
   /** @default "json" */
@@ -21,10 +36,7 @@ type Props = {
   readOnly?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
-  onMount?: (editor: {
-    showMarkers: () => void;
-    hideMarkers: () => void;
-  }) => void;
+  onMount?: (editor: EditorHandle) => void;
   height?: string;
   width?: string;
   options?: editor.IStandaloneEditorConstructionOptions;
@@ -64,7 +76,7 @@ const RichTextEditor: React.FC<Props> = observer(
           onChange={(value) => {
             onChange?.(value ?? '');
           }}
-          onMount={(editor) => {
+          onMount={(editor, monaco) => {
             editor.focus();
 
             editor.onKeyDown((e) => {
@@ -75,6 +87,12 @@ const RichTextEditor: React.FC<Props> = observer(
               }
             });
 
+            const severityMap = {
+              error: MarkerSeverity.Error,
+              warning: MarkerSeverity.Warning,
+              info: MarkerSeverity.Info,
+            } as const;
+
             onMount({
               showMarkers: () => {
                 editor.trigger('', 'editor.action.marker.next', undefined);
@@ -82,6 +100,19 @@ const RichTextEditor: React.FC<Props> = observer(
               },
               hideMarkers: () => {
                 editor.trigger('', 'closeMarkersNavigation', undefined);
+              },
+              setCustomMarkers: (markers) => {
+                const model = editor.getModel();
+                if (model) {
+                  monaco.editor.setModelMarkers(
+                    model,
+                    'custom',
+                    markers.map((m) => ({
+                      ...m,
+                      severity: severityMap[m.severity ?? 'error'],
+                    })),
+                  );
+                }
               },
             });
           }}
@@ -95,3 +126,4 @@ const RichTextEditor: React.FC<Props> = observer(
 );
 
 export {RichTextEditor};
+export type {EditorHandle};
