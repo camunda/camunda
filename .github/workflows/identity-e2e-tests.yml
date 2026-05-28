@@ -8,7 +8,7 @@
 name: Identity E2E Tests
 on:
   # Temporarily disabled - tests run nightly instead
-  # See: https://github.com/camunda/camunda/issues/[issue-number]
+  # See: https://github.com/camunda/camunda/issues/50125
   workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs

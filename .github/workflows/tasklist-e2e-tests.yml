@@ -8,7 +8,7 @@
 name: "[Legacy] Tasklist / E2E Tests"
 on:
   # Temporarily disabled - tests run nightly instead
-  # See: https://github.com/camunda/camunda/issues/[issue-number]
+  # See: https://github.com/camunda/camunda/issues/50125
   workflow_dispatch: {}
 
 permissions:
