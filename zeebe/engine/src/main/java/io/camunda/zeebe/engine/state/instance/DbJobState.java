@@ -61,16 +61,11 @@ public final class DbJobState implements JobState, MutableJobState {
           DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
       activatableColumnFamily;
 
-  // JOB_ACTIVATABLE_BY_PRIORITY: key = [type | invertedPriority | jobKey | tenantId]
   // invertedPriority = Integer.MAX_VALUE - priority so higher-priority entries sort first
   // under RocksDB's unsigned byte comparator. For negative priorities the subtraction
   // overflows (e.g. priority=-1 → invertedPriority=Integer.MIN_VALUE, stored as 0x80000000);
-  // this is intentional — 0x80000000 sorts after 0x7FFFFFFF (priority=0) in unsigned order,
+  // this is intentional: 0x80000000 sorts after 0x7FFFFFFF (priority=0) in unsigned order,
   // so negative-priority jobs correctly sort last.
-  //
-  // makeJobNotActivatable does NOT set jobKey — callers are responsible for setting it
-  // (via jobKey.wrapLong or via updateJobRecord) before calling it.
-  // makeJobActivatable receives key as a parameter and sets jobKey itself.
   private final DbInt invertedPriorityKey;
   private final DbCompositeKey<DbInt, DbForeignKey<DbLong>> invertedPriorityJobKey;
   private final DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>
@@ -78,6 +73,8 @@ public final class DbJobState implements JobState, MutableJobState {
   private final DbTenantAwareKey<
           DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>>
       tenantAwarePriorityKey;
+
+  // CF JOB_ACTIVATABLE_BY_PRIORITY: key = [type | invertedPriority | jobKey | tenantId]
   private final ColumnFamily<
           DbTenantAwareKey<DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>>,
           DbNil>
@@ -448,10 +445,10 @@ public final class DbJobState implements JobState, MutableJobState {
 
     // Three-phase sequential read ensures correct activation order across the 8.10 upgrade
     // boundary:
-    //   Phase 1 — new jobs with priority > 0, highest first
-    //   Phase 2 — legacy pre-8.10 jobs from JOB_ACTIVATABLE (implicit priority = 0, lower job
+    //   Phase 1: new jobs with priority > 0, highest first
+    //   Phase 2: legacy pre-8.10 jobs from JOB_ACTIVATABLE (implicit priority = 0, lower job
     // keys)
-    //   Phase 3 — new jobs with priority <= 0, highest first
+    //   Phase 3: new jobs with priority <= 0, highest first
     // Each phase returns true if the batch still wants more jobs. Subsequent phases are skipped
     // when the batch is full to avoid redundant state reads.
     if (visitHighPriorityJobs(tenantIds, callback)
@@ -587,7 +584,7 @@ public final class DbJobState implements JobState, MutableJobState {
     // Seek-key setup mutates shared mutable fields (same pattern as makeJobActivatable and
     // makeJobNotActivatable). After this method returns, invertedPriorityKey, jobKey, and
     // tenantIdKey hold values from the seek or from the last iteration. Callers of write
-    // operations must re-wrap jobKey before use — this is the established contract in this class.
+    // operations must re-wrap jobKey before use. This is the established contract in this class.
     invertedPriorityKey.wrapInt(Integer.MAX_VALUE); // Integer.MAX_VALUE encodes priority = 0
     jobKey.wrapLong(0L);
     tenantIdKey.wrapString("");
@@ -645,12 +642,14 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
-    // overflow for negative priorities is intentional — see field comment above
+    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
     invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
     // upsert because a failed job with retries can be made activatable multiple times
     priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
   }
 
+  // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
+  // (via jobKey.wrapLong or via updateJobRecord) before calling it.
   private void makeJobNotActivatable(
       final DirectBuffer type, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
@@ -658,13 +657,13 @@ public final class DbJobState implements JobState, MutableJobState {
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
-    // overflow for negative priorities is intentional — see field comment above
+    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
     invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
     // Requires jobKey to already be set by the caller (directly or via updateJobRecord).
     // This method does not set jobKey because it is not passed as a parameter.
     priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
     // Legacy CF cleanup: pre-8.10 jobs live in JOB_ACTIVATABLE; deleteIfExists is a no-op
-    // when the key is absent. Do not remove this line — it drains legacy entries on upgrade.
+    // when the key is absent. Do not remove this line!
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 

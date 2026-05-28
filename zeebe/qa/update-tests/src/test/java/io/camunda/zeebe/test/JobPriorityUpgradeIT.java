@@ -57,11 +57,15 @@ import org.junit.jupiter.api.Timeout;
 @TestInstance(Lifecycle.PER_CLASS)
 final class JobPriorityUpgradeIT {
 
-  // Unique job types per scenario — forEachActivatableJobs scans by type prefix so each type
-  // is fully isolated from the others during activation.
   private static final String LEGACY_ONLY_TYPE = "upgrade-priority-legacy-only";
+  private static final int NUM_OF_LEGACY_ONLY_TYPE_JOBS = 3;
+
   private static final String MIXED_TYPE = "upgrade-priority-mixed";
+  private static final int NUM_OF_MIXED_TYPE_LEGACY_JOBS = 2;
+  private static final int NUM_OF_MIXED_TYPE_NEW_JOBS = 3;
+
   private static final String NEW_ONLY_TYPE = "upgrade-priority-new-only";
+  private static final int NUM_OF_NEW_ONLY_TYPE_JOBS = 3;
 
   private final ContainerState state = new ContainerState();
 
@@ -84,11 +88,13 @@ final class JobPriorityUpgradeIT {
     // broker stores jobs in the legacy CF with an implicit priority of 0.
     state.withPartitionCount(1).withOldBroker().start(true);
 
-    deployAndCreateInstances(LEGACY_ONLY_TYPE + "-legacy", LEGACY_ONLY_TYPE, null, 3);
-    awaitJobsCreated(LEGACY_ONLY_TYPE, 3);
+    deployAndCreateInstances(
+        LEGACY_ONLY_TYPE + "-legacy", LEGACY_ONLY_TYPE, null, NUM_OF_LEGACY_ONLY_TYPE_JOBS);
+    awaitJobsCreated(LEGACY_ONLY_TYPE, NUM_OF_LEGACY_ONLY_TYPE_JOBS);
 
-    deployAndCreateInstances(MIXED_TYPE + "-legacy", MIXED_TYPE, null, 2);
-    awaitJobsCreated(MIXED_TYPE, 2);
+    deployAndCreateInstances(
+        MIXED_TYPE + "-legacy", MIXED_TYPE, null, NUM_OF_MIXED_TYPE_LEGACY_JOBS);
+    awaitJobsCreated(MIXED_TYPE, NUM_OF_MIXED_TYPE_LEGACY_JOBS);
 
     // ── UPGRADE ────────────────────────────────────────────────────────────────────────────────
     // RecordingExporter is reset inside ContainerState when the Spring broker starts.
@@ -105,7 +111,7 @@ final class JobPriorityUpgradeIT {
     // The Spring broker replays the old broker's log on startup, so RecordingExporter already
     // contains 2 replayed legacy MIXED_TYPE JOB CREATED records. Wait for all 5 (2 legacy + 3 new)
     // before computing minNewMixedJobKey, so we can reliably skip the replayed legacy records.
-    awaitJobsCreated(MIXED_TYPE, 5);
+    awaitJobsCreated(MIXED_TYPE, NUM_OF_MIXED_TYPE_LEGACY_JOBS + NUM_OF_MIXED_TYPE_NEW_JOBS);
 
     // Record the minimum key of the new mixed jobs to distinguish Phase-2 legacy jobs (lower keys)
     // from the Phase-3 new zero-priority job (higher key) during the mixed assertion.
@@ -124,7 +130,7 @@ final class JobPriorityUpgradeIT {
     deployAndCreateInstances(NEW_ONLY_TYPE + "-pos50", NEW_ONLY_TYPE, 50, 1);
     deployAndCreateInstances(NEW_ONLY_TYPE + "-zero", NEW_ONLY_TYPE, 0, 1);
     deployAndCreateInstances(NEW_ONLY_TYPE + "-neg10", NEW_ONLY_TYPE, -10, 1);
-    awaitJobsCreated(NEW_ONLY_TYPE, 3);
+    awaitJobsCreated(NEW_ONLY_TYPE, NUM_OF_NEW_ONLY_TYPE_JOBS);
   }
 
   @AfterAll
@@ -137,51 +143,45 @@ final class JobPriorityUpgradeIT {
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldActivateMultipleLegacyJobsInKeyOrder() {
-    // given — 3 legacy jobs in JOB_ACTIVATABLE created on the old broker
-
-    // when
+    // given/when
     activateJobs(LEGACY_ONLY_TYPE, 10);
 
-    // then — all 3 activated with default priority=0 in job-key-ascending (FIFO) order
+    // then
     final var batch = activatedBatch(LEGACY_ONLY_TYPE);
+    assertThat(batch.getJobs().size()).isEqualTo(NUM_OF_LEGACY_ONLY_TYPE_JOBS);
     assertThat(batch.getJobs()).extracting(JobRecordValue::getPriority).containsOnly(0);
     assertThat(batch.getJobKeys()).isSorted();
 
-    // and — no stale CF entry: a second activation returns nothing
+    // and a second activation returns nothing (no stale entry)
     assertThat(activateJobs(LEGACY_ONLY_TYPE, 10)).isEmpty();
   }
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldActivateNewJobsByPriorityAfterUpgrade() {
-    // given — 3 new jobs in JOB_ACTIVATABLE_BY_PRIORITY created post-upgrade (priorities 50, 0,
-    // -10)
-
-    // when
+    // given/when
     activateJobs(NEW_ONLY_TYPE, 10);
 
-    // then — activated in priority-descending order
+    // then
     final var batch = activatedBatch(NEW_ONLY_TYPE);
+    assertThat(batch.getJobs().size()).isEqualTo(NUM_OF_NEW_ONLY_TYPE_JOBS);
     assertThat(batch.getJobs()).extracting(JobRecordValue::getPriority).containsExactly(50, 0, -10);
 
-    // and — no stale CF entry
+    // and a second activation returns nothing (no stale entry)
     assertThat(activateJobs(NEW_ONLY_TYPE, 10)).isEmpty();
   }
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldActivateMixedJobsInThreePhaseOrder() {
-    // given — 2 legacy jobs (JOB_ACTIVATABLE) + 3 new jobs (JOB_ACTIVATABLE_BY_PRIORITY)
-    //         new job priorities: 50 (Phase 1), 0 (Phase 3), -10 (Phase 3)
-
     // when
     activateJobs(MIXED_TYPE, 10);
 
-    // then — 5 jobs in 3-phase order
+    // then
     final var batch = activatedBatch(MIXED_TYPE);
     final var jobs = batch.getJobs();
     final var keys = batch.getJobKeys();
-    assertThat(jobs).hasSize(5);
+    assertThat(jobs).hasSize(NUM_OF_MIXED_TYPE_LEGACY_JOBS + NUM_OF_MIXED_TYPE_NEW_JOBS);
 
     // Phase 1: new high-priority job first
     assertThat(jobs.get(0).getPriority()).isEqualTo(50);
@@ -198,7 +198,7 @@ final class JobPriorityUpgradeIT {
     assertThat(keys.get(3)).isGreaterThanOrEqualTo(minNewMixedJobKey);
     assertThat(jobs.get(4).getPriority()).isEqualTo(-10);
 
-    // and — no stale CF entry for either legacy or new jobs
+    // and a second activation returns nothing (no stale entry)
     assertThat(activateJobs(MIXED_TYPE, 10)).isEmpty();
   }
 

@@ -67,27 +67,7 @@ public class JobPriorityStreamingActivationTest {
   @Test
   public void shouldLeaveNoStaleCfEntryAfterStreamingActivationOfNonZeroPriorityJob() {
     // given
-    deployPriorityProcess(50);
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when — streaming path activates the job
-    await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
-
-    // then — streaming batch event carries the correct priority
-    final var streamedBatch = jobBatchRecords(ACTIVATED).withType(jobType).getFirst();
-    assertThat(streamedBatch.getValue().getJobs().get(0).getPriority()).isEqualTo(50);
-
-    // and — a subsequent pull returns no jobs (no stale entry in JOB_ACTIVATABLE_BY_PRIORITY).
-    // This is the primary no-double-activation assertion: if a stale CF entry existed the pull
-    // would find the already-activated job and activate it a second time.
-    final var pullResponse = ENGINE.jobs().withType(jobType).activate();
-    assertThat(pullResponse.getValue().getJobKeys()).isEmpty();
-  }
-
-  @Test
-  public void shouldLeaveNoStaleCfEntryAfterStreamingActivationOfDefaultPriorityJob() {
-    // given
-    deployDefaultPriorityProcess();
+    deployProcessWithPriorityForJob(50);
     ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -95,7 +75,26 @@ public class JobPriorityStreamingActivationTest {
 
     // then
     final var streamedBatch = jobBatchRecords(ACTIVATED).withType(jobType).getFirst();
-    assertThat(streamedBatch.getValue().getJobs().get(0).getPriority()).isZero();
+    assertThat(streamedBatch.getValue().getJobs().getFirst().getPriority()).isEqualTo(50);
+
+    // a subsequent pull returns no jobs (no stale entry in JOB_ACTIVATABLE_BY_PRIORITY).
+    // This is the primary no-double-activation assertion
+    final var pullResponse = ENGINE.jobs().withType(jobType).activate();
+    assertThat(pullResponse.getValue().getJobKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldLeaveNoStaleCfEntryAfterStreamingActivationOfDefaultPriorityJob() {
+    // given
+    deployProcessWithDefaultJobPriority();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
+
+    // then
+    final var streamedBatch = jobBatchRecords(ACTIVATED).withType(jobType).getFirst();
+    assertThat(streamedBatch.getValue().getJobs().getFirst().getPriority()).isZero();
 
     final var pullResponse = ENGINE.jobs().withType(jobType).activate();
     assertThat(pullResponse.getValue().getJobKeys()).isEmpty();
@@ -104,23 +103,22 @@ public class JobPriorityStreamingActivationTest {
   @Test
   public void shouldPreserveOriginalPriorityAfterStreamedJobTimesOut() {
     // given
-    deployPriorityProcess(50);
+    deployProcessWithPriorityForJob(50);
     ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
 
-    // when — advance clock past the job timeout
+    // when clock advances past the job timeout
     ENGINE.increaseTime(
         Duration.ofMillis(TIMEOUT_MS)
             .plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
     jobRecords(TIMED_OUT).withType(jobType).await();
 
-    // then — pull worker activates the timed-out job at the original priority
+    // then the pull worker activates the timed-out job at the original priority
     final var pullResponse = ENGINE.jobs().withType(jobType).activate();
     assertThat(pullResponse.getValue().getJobKeys()).hasSize(1);
-    assertThat(pullResponse.getValue().getJobs().get(0).getPriority()).isEqualTo(50);
+    assertThat(pullResponse.getValue().getJobs().getFirst().getPriority()).isEqualTo(50);
 
-    // and — exactly two ACTIVATED events: one streaming, one pull (no duplicate)
-    // exactly two non-empty ACTIVATED events: one streaming, one pull (no duplicate)
+    // and we recorded exactly two ACTIVATED events: one streaming, one pull (no duplicate)
     assertThat(
             jobBatchRecords(ACTIVATED)
                 .withType(jobType)
@@ -133,25 +131,25 @@ public class JobPriorityStreamingActivationTest {
   @Test
   public void shouldPreserveOriginalPriorityAfterStreamedJobFailsAndSubscriberDisconnects() {
     // given
-    deployPriorityProcess(50);
+    deployProcessWithPriorityForJob(50);
     ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     await().untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
-    final long jobKey = jobStream.getActivatedJobs().get(0).jobKey();
+    final long jobKey = jobStream.getActivatedJobs().getFirst().jobKey();
 
-    // when — disconnect the streaming subscriber FIRST, then fail the job
+    // when the streaming subscriber disconnects FIRST, then we fail the job
     // IMPORTANT: clearStreams() must be called BEFORE fail(). If the subscriber is still
     // registered when fail() is called, JobFailProcessor calls publishWork() which re-streams
     // the job immediately, bypassing JOB_ACTIVATABLE_BY_PRIORITY entirely.
     JOB_STREAMER.clearStreams();
     ENGINE.job().withKey(jobKey).withRetries(3).fail();
 
-    // then — pull worker activates the failed job at the original priority
+    // then the pull worker activates the failed job at the original priority
     final var pullResponse = ENGINE.jobs().withType(jobType).activate();
     assertThat(pullResponse.getValue().getJobKeys()).hasSize(1);
-    assertThat(pullResponse.getValue().getJobs().get(0).getPriority()).isEqualTo(50);
+    assertThat(pullResponse.getValue().getJobs().getFirst().getPriority()).isEqualTo(50);
   }
 
-  private void deployPriorityProcess(final int priority) {
+  private void deployProcessWithPriorityForJob(final int priority) {
     ENGINE
         .deployment()
         .withXmlResource(
@@ -164,7 +162,7 @@ public class JobPriorityStreamingActivationTest {
         .deploy();
   }
 
-  private void deployDefaultPriorityProcess() {
+  private void deployProcessWithDefaultJobPriority() {
     ENGINE
         .deployment()
         .withXmlResource(

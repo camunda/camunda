@@ -165,6 +165,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY(74, PARTITION_LOCAL),
   PROCESS_SUBSCRIPTION_BY_KEY(75, PARTITION_LOCAL),
 
+  @Deprecated
   JOB_ACTIVATABLE(76, PARTITION_LOCAL),
 
   SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY(77, PARTITION_LOCAL),
@@ -310,7 +311,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   CROSS_PARTITION_MESSAGE_START_LOCK(147, PARTITION_LOCAL),
 
   JOB_ACTIVATABLE_BY_PRIORITY(148, PARTITION_LOCAL);
-
+  
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
 

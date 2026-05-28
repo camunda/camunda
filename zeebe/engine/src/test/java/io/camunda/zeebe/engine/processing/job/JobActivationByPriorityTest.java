@@ -61,9 +61,8 @@ public class JobActivationByPriorityTest {
 
   @Test
   public void shouldActivateJobsInPriorityDescendingOrder() {
-    // given — boundary values covering MAX_VALUE, MAX_VALUE-1, positive, zero, negative,
-    // MIN_VALUE+1, and MIN_VALUE to exercise the full inversion-encoding range
-    final int[] priorities =
+    // given
+    final var priorities =
         new int[] {
           Integer.MIN_VALUE,
           -1,
@@ -95,7 +94,7 @@ public class JobActivationByPriorityTest {
     final var batch =
         ENGINE.jobs().withType(jobType).withMaxJobsToActivate(priorities.length).activate();
 
-    // then — Phase 1 (priority > 0) then Phase 3 (priority ≤ 0), each in descending order
+    // then
     assertThat(batch.getValue().getJobs())
         .extracting(JobRecordValue::getPriority)
         .containsExactly(
@@ -131,38 +130,6 @@ public class JobActivationByPriorityTest {
     // then
     assertThat(batch.getValue().getJobKeys()).isSorted();
     assertThat(batch.getValue().getJobs()).extracting(JobRecordValue::getPriority).containsOnly(0);
-  }
-
-  @Test
-  public void shouldActivateNegativePriorityJobsAfterZeroPriorityJobs() {
-    // given — jobs at priority 5, 0, and -5
-    // The CF encodes invertedPriority = Integer.MAX_VALUE - priority.
-    // For priority=-1, invertedPriority overflows to Integer.MIN_VALUE (bytes 0x80...).
-    // RocksDB unsigned byte order: 0x80... > 0x7F..., so negatives sort correctly after zero.
-    for (final int priority : new int[] {-5, 0, 5}) {
-      final String processId = "negative-" + priority;
-      ENGINE
-          .deployment()
-          .withXmlResource(
-              Bpmn.createExecutableProcess(processId)
-                  .startEvent()
-                  .serviceTask(
-                      "task",
-                      b -> b.zeebeJobType(jobType).zeebeJobPriority(String.valueOf(priority)))
-                  .endEvent()
-                  .done())
-          .deploy();
-      ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    }
-    awaitJobsCreated(3);
-
-    // when
-    final var batch = ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
-
-    // then
-    assertThat(batch.getValue().getJobs())
-        .extracting(JobRecordValue::getPriority)
-        .containsExactly(5, 0, -5);
   }
 
   @Test
@@ -202,12 +169,10 @@ public class JobActivationByPriorityTest {
 
     // then
     assertThat(batch.getValue().getJobs()).hasSize(1);
-    assertThat(batch.getValue().getJobs().get(0).getPriority()).isEqualTo(1);
-    assertThat(batch.getValue().getJobs().get(0).getTenantId()).isEqualTo(tenantA);
+    assertThat(batch.getValue().getJobs().getFirst().getPriority()).isEqualTo(1);
+    assertThat(batch.getValue().getJobs().getFirst().getTenantId()).isEqualTo(tenantA);
   }
 
-  // Blocks until the engine has exported `count` CREATED records, so jobs are in state before
-  // activating.
   private void awaitJobsCreated(final int count) {
     RecordingExporter.jobRecords(CREATED).withType(jobType).limit(count).toList();
   }
