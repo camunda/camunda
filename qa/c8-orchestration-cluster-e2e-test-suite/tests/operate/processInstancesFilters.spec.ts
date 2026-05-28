@@ -624,7 +624,9 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await expect(operateOperationsDetailsPage.state).toBeVisible();
         },
+        maxRetries: 5,
       });
 
       const batchOperationKey =
