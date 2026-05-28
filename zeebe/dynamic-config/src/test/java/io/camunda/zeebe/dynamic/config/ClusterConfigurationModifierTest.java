@@ -426,16 +426,13 @@ final class ClusterConfigurationModifierTest {
 
     private static ClusterConfiguration withRestorePendingChange(
         final ClusterConfiguration base, final MemberId coordinatorId) {
-      return new ClusterConfiguration(
-          base.version(),
-          base.members(),
-          base.lastChange(),
-          Optional.of(
-              ClusterChangePlan.initForRestore(
-                  List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
-          base.routingState(),
-          base.clusterId(),
-          base.incarnationNumber());
+      final var pendingChanges =
+          ClusterChangePlan.initForRestore(
+              List.of(new UpdateRoutingState(coordinatorId, Optional.empty())));
+      return ClusterConfiguration.builder()
+          .from(base)
+          .pendingChanges(Optional.of(pendingChanges))
+          .build();
     }
 
     private static ClusterConfiguration withTwoMembers(

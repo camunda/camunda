@@ -58,6 +58,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var arbitraryRoutingState = routingStates().optional();
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
+    final var arbitraryRecovery = Arbitraries.of(true, false);
     return Combinators.combine(
             arbitraryVersion,
             arbitraryMembers,
@@ -65,7 +66,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             arbitraryChangePlan,
             arbitraryRoutingState,
             arbitraryClusterId,
-            arbitraryIncarnationNumber)
+            arbitraryIncarnationNumber,
+            arbitraryRecovery)
         .as(ClusterConfiguration::new);
   }
 
