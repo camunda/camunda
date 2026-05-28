@@ -12,22 +12,27 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Set;
 
 /**
- * Record filter for the analytics exporter with three filtering layers:
+ * Record filter for the analytics exporter with four filtering layers:
  *
  * <ol>
  *   <li><b>Record type</b> — only {@link RecordType#EVENT} records pass; commands and rejections
  *       are skipped.
  *   <li><b>Value type</b> — only value types with registered handlers pass (e.g. {@link
  *       ValueType#PROCESS_INSTANCE_CREATION}).
+ *   <li><b>Intent</b> — only intents with registered handlers pass. This is an intentional
+ *       over-approximation: the set is flat across all value types, so a record may pass intent
+ *       filtering even if its (ValueType, Intent) pair has no handler. Exact routing happens in
+ *       {@link HandlerRegistry#handle}.
  *   <li><b>Partition ownership</b> — only events whose key encodes the local partition ID pass.
  * </ol>
  *
- * <p>Layers 1 and 2 are metadata-based and evaluated in phase 1 of the broker's filter pipeline
- * (before record deserialization). Layer 3 runs in phase 2 on the deserialized record, but only for
- * the small subset that passed phase 1.
+ * <p>Layers 1-3 are metadata-based and evaluated in phase 1 of the broker's filter pipeline (before
+ * record deserialization). Layer 4 runs in phase 2 on the deserialized record, but only for the
+ * small subset that passed phase 1.
  *
  * <h3>Partition filtering rationale</h3>
  *
@@ -44,11 +49,13 @@ import java.util.Set;
  * command.getKey()} directly, or via keys embedded in the distributed command's value that were
  * generated on the originating partition.
  */
-record AnalyticsRecordFilter(Set<ValueType> acceptedValueTypes, int partitionId)
+record AnalyticsRecordFilter(
+    Set<ValueType> acceptedValueTypes, Set<Intent> acceptedIntents, int partitionId)
     implements RecordFilter {
 
   AnalyticsRecordFilter {
     acceptedValueTypes = Set.copyOf(acceptedValueTypes);
+    acceptedIntents = Set.copyOf(acceptedIntents);
   }
 
   @Override
@@ -59,6 +66,11 @@ record AnalyticsRecordFilter(Set<ValueType> acceptedValueTypes, int partitionId)
   @Override
   public boolean acceptValue(final ValueType valueType) {
     return acceptedValueTypes.contains(valueType);
+  }
+
+  @Override
+  public boolean acceptIntent(final Intent intent) {
+    return acceptedIntents.contains(intent);
   }
 
   @Override

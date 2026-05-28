@@ -12,12 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AnalyticsRecordFilterTest {
 
@@ -25,39 +31,65 @@ class AnalyticsRecordFilterTest {
   private static final ProtocolFactory FACTORY = new ProtocolFactory();
 
   private final AnalyticsRecordFilter filter =
-      new AnalyticsRecordFilter(Set.of(ValueType.PROCESS_INSTANCE_CREATION), TEST_PARTITION_ID);
+      new AnalyticsRecordFilter(
+          Set.of(
+              ValueType.PROCESS_INSTANCE_CREATION,
+              ValueType.PROCESS_INSTANCE,
+              ValueType.USAGE_METRIC),
+          Set.of(
+              ProcessInstanceCreationIntent.CREATED,
+              ProcessInstanceIntent.ELEMENT_ACTIVATED,
+              UsageMetricIntent.EXPORTED),
+          TEST_PARTITION_ID);
 
   @Test
   void shouldAcceptEventRecordType() {
     assertThat(filter.acceptType(RecordType.EVENT)).isTrue();
   }
 
-  @Test
-  void shouldRejectCommandRecordType() {
-    assertThat(filter.acceptType(RecordType.COMMAND)).isFalse();
-  }
-
-  @Test
-  void shouldRejectCommandRejectionRecordType() {
-    assertThat(filter.acceptType(RecordType.COMMAND_REJECTION)).isFalse();
-  }
-
   @ParameterizedTest
   @EnumSource(
-      value = ValueType.class,
-      mode = EnumSource.Mode.INCLUDE,
-      names = "PROCESS_INSTANCE_CREATION")
-  void shouldAcceptRegisteredValueType(final ValueType type) {
-    assertThat(filter.acceptValue(type)).isTrue();
+      value = RecordType.class,
+      mode = EnumSource.Mode.EXCLUDE,
+      names = {"EVENT"})
+  void shouldRejectNonEventRecordType(final RecordType type) {
+    assertThat(filter.acceptType(type)).isFalse();
+  }
+
+  @Test
+  void shouldAcceptAllRegisteredValueTypes() {
+    assertThat(filter.acceptValue(ValueType.PROCESS_INSTANCE_CREATION)).isTrue();
+    assertThat(filter.acceptValue(ValueType.PROCESS_INSTANCE)).isTrue();
+    assertThat(filter.acceptValue(ValueType.USAGE_METRIC)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(
       value = ValueType.class,
       mode = EnumSource.Mode.EXCLUDE,
-      names = "PROCESS_INSTANCE_CREATION")
+      names = {"PROCESS_INSTANCE_CREATION", "PROCESS_INSTANCE", "USAGE_METRIC"})
   void shouldRejectUnregisteredValueType(final ValueType type) {
     assertThat(filter.acceptValue(type)).isFalse();
+  }
+
+  @Test
+  void shouldAcceptAllRegisteredIntents() {
+    assertThat(filter.acceptIntent(ProcessInstanceCreationIntent.CREATED)).isTrue();
+    assertThat(filter.acceptIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)).isTrue();
+    assertThat(filter.acceptIntent(UsageMetricIntent.EXPORTED)).isTrue();
+  }
+
+  @ParameterizedTest
+  @MethodSource("unregisteredIntents")
+  void shouldRejectUnregisteredIntent(final Intent intent) {
+    assertThat(filter.acceptIntent(intent)).isFalse();
+  }
+
+  private static Stream<Intent> unregisteredIntents() {
+    return Stream.of(
+        ProcessInstanceCreationIntent.CREATE,
+        ProcessInstanceIntent.ELEMENT_COMPLETING,
+        DeploymentIntent.CREATED);
   }
 
   @Test

@@ -15,31 +15,55 @@ import io.opentelemetry.api.common.AttributeKey;
  *
  * @see <a href="https://opentelemetry.io/docs/specs/semconv/general/naming/">OTel Naming</a>
  */
-final class AnalyticsAttributes {
+public final class AnalyticsAttributes {
 
   // Resource-level
-  static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
-  static final AttributeKey<String> CLUSTER_ID = AttributeKey.stringKey("camunda.cluster.id");
-  static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("camunda.partition.id");
+  public static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
+  public static final AttributeKey<String> CLUSTER_ID =
+      AttributeKey.stringKey("camunda.cluster.id");
+  public static final AttributeKey<Long> PARTITION_ID =
+      AttributeKey.longKey("camunda.partition.id");
 
   // OTel semantic convention for events (until Event API is stable)
-  static final AttributeKey<String> EVENT_NAME = AttributeKey.stringKey("event.name");
+  public static final AttributeKey<String> EVENT_NAME = AttributeKey.stringKey("event.name");
 
   // Common
-  static final AttributeKey<Long> LOG_POSITION = AttributeKey.longKey("camunda.log.position");
-  static final AttributeKey<Long> SEQUENCE_NUMBER = AttributeKey.longKey("camunda.sequence_number");
-  static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
+  public static final AttributeKey<Long> LOG_POSITION =
+      AttributeKey.longKey("camunda.log.position");
+  public static final AttributeKey<Long> SEQUENCE_NUMBER =
+      AttributeKey.longKey("camunda.sequence_number");
+  public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant_id");
 
   // Process instance
-  static final AttributeKey<String> BPMN_PROCESS_ID =
+  public static final AttributeKey<String> BPMN_PROCESS_ID =
       AttributeKey.stringKey("camunda.bpmn_process_id");
-  static final AttributeKey<Long> PROCESS_VERSION = AttributeKey.longKey("camunda.process_version");
-  static final AttributeKey<Long> PROCESS_DEFINITION_KEY =
+  public static final AttributeKey<Long> PROCESS_VERSION =
+      AttributeKey.longKey("camunda.process_version");
+  public static final AttributeKey<Long> PROCESS_DEFINITION_KEY =
       AttributeKey.longKey("camunda.process_definition_key");
-  static final AttributeKey<Long> PROCESS_INSTANCE_KEY =
+  public static final AttributeKey<Long> PROCESS_INSTANCE_KEY =
       AttributeKey.longKey("camunda.process_instance_key");
-  static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
+  public static final AttributeKey<Long> ROOT_PROCESS_INSTANCE_KEY =
       AttributeKey.longKey("camunda.root_process_instance_key");
+
+  // Adhoc subprocess
+  public static final AttributeKey<String> ELEMENT_ID =
+      AttributeKey.stringKey("camunda.element_id");
+
+  // Event names
+  public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";
+  public static final String EVENT_ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
+  public static final String EVENT_USAGE_METRIC_EXPORTED = "usage_metric_exported";
+
+  // Usage metrics
+  public static final AttributeKey<String> USAGE_METRIC_EVENT_TYPE =
+      AttributeKey.stringKey("camunda.usage_metric.event_type");
+  public static final AttributeKey<Long> USAGE_METRIC_COUNT =
+      AttributeKey.longKey("camunda.usage_metric.count");
+  public static final AttributeKey<Long> USAGE_METRIC_INTERVAL_START =
+      AttributeKey.longKey("camunda.usage_metric.interval_start");
+  public static final AttributeKey<Long> USAGE_METRIC_INTERVAL_END =
+      AttributeKey.longKey("camunda.usage_metric.interval_end");
 
   private AnalyticsAttributes() {}
 }

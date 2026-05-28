@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /** Manages the OTel SDK lifecycle for one partition. */
-class OtelSdkManager {
+public class OtelSdkManager {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
@@ -51,7 +51,7 @@ class OtelSdkManager {
     return this;
   }
 
-  void logEvent(
+  public void logEvent(
       final String eventName, final long logPosition, final Consumer<LogRecordBuilder> builder) {
     final var record =
         otelLogger

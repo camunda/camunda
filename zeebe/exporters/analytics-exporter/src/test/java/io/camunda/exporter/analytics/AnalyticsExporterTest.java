@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,8 +22,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
-import io.opentelemetry.sdk.logs.SdkLoggerProvider;
-import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -89,7 +88,7 @@ class AnalyticsExporterTest {
             logRecord -> {
               assertThat(logRecord.getSeverity()).isEqualTo(Severity.INFO);
               assertThat(logRecord.getAttributes().asMap())
-                  .containsEntry(AnalyticsAttributes.EVENT_NAME, "process_instance_created")
+                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_PROCESS_INSTANCE_CREATED)
                   .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, value.getBpmnProcessId())
                   .containsEntry(AnalyticsAttributes.PROCESS_VERSION, (long) value.getVersion())
                   .containsEntry(
@@ -233,18 +232,7 @@ class AnalyticsExporterTest {
 
   private static AnalyticsExporter exporterWithInMemory(
       final InMemoryLogRecordExporter memoryExporter, final ExporterTestController controller) {
-    return newExporter(
-        new OtelSdkManager() {
-          @Override
-          protected SdkLoggerProvider createLoggerProvider(
-              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
-            return SdkLoggerProvider.builder()
-                .setResource(OtelSdkManager.buildResource(context))
-                .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
-                .build();
-          }
-        },
-        controller);
+    return newExporter(TestOtelSdkManager.inMemory(memoryExporter), controller);
   }
 
   private static AnalyticsExporter exporterWithThrowingOtel(
@@ -252,7 +240,7 @@ class AnalyticsExporterTest {
     return newExporter(
         new OtelSdkManager() {
           @Override
-          void logEvent(
+          public void logEvent(
               final String eventName,
               final long logPosition,
               final Consumer<LogRecordBuilder> builder) {

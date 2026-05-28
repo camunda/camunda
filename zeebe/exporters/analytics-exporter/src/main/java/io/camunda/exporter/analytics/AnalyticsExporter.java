@@ -7,25 +7,19 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_DEFINITION_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_INSTANCE_KEY;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
-
+import io.camunda.exporter.analytics.handler.AdHocSubProcessHandler;
+import io.camunda.exporter.analytics.handler.ProcessInstanceCreationHandler;
+import io.camunda.exporter.analytics.handler.UsageMetricHandler;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
-import java.util.EnumMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +30,6 @@ public class AnalyticsExporter implements Exporter {
   private static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
-  private static final ThrottledLogger SAMPLED_LOG =
-      new ThrottledLogger(LOG, Duration.ofMinutes(1));
   private static final ThrottledLogger SAMPLED_WARN_LOG =
       new ThrottledLogger(LOG, Duration.ofMinutes(1));
   private final OtelSdkManager otelSdkManager;
@@ -66,7 +58,18 @@ public class AnalyticsExporter implements Exporter {
 
     handlers =
         new HandlerRegistry()
-            .register(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation)
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                new ProcessInstanceCreationHandler(otelSdkManager))
+            .register(
+                ValueType.PROCESS_INSTANCE,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                new AdHocSubProcessHandler(otelSdkManager))
+            .register(
+                ValueType.USAGE_METRIC,
+                UsageMetricIntent.EXPORTED,
+                new UsageMetricHandler(otelSdkManager))
             .apply(context);
 
     LOG.info(
@@ -97,40 +100,12 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     try {
-      final var handler = handlers.get(record);
-      if (handler != null) {
-        handler.accept(record);
-      }
+      handlers.handle(record);
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
-  }
-
-  private void handleProcessInstanceCreation(
-      final Record<ProcessInstanceCreationRecordValue> record) {
-    final var value = record.getValue();
-
-    otelSdkManager.logEvent(
-        "process_instance_created",
-        record.getPosition(),
-        log ->
-            log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
-                .setAttribute(PROCESS_VERSION, (long) value.getVersion())
-                .setAttribute(PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(PROCESS_INSTANCE_KEY, record.getKey())
-                //                Uncomment as this is not available on 8.8
-                //                .setAttribute(ROOT_PROCESS_INSTANCE_KEY,
-                // value.getRootProcessInstanceKey())
-                .setAttribute(TENANT_ID, value.getTenantId())
-                .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
-
-    SAMPLED_LOG.info(
-        "Process instance created: bpmnProcessId={}, processInstanceKey={}, position={}",
-        value.getBpmnProcessId(),
-        record.getKey(),
-        record.getPosition());
   }
 
   /**
@@ -165,27 +140,6 @@ public class AnalyticsExporter implements Exporter {
     } catch (final NoSuchMethodError e) {
       final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
       return fromEnv != null ? fromEnv : "";
-    }
-  }
-
-  static final class HandlerRegistry {
-
-    private final EnumMap<ValueType, Consumer<Record<?>>> handlers = new EnumMap<>(ValueType.class);
-
-    @SuppressWarnings("unchecked")
-    <T extends RecordValue> HandlerRegistry register(
-        final ValueType valueType, final Consumer<Record<T>> handler) {
-      handlers.put(valueType, record -> handler.accept((Record<T>) record));
-      return this;
-    }
-
-    HandlerRegistry apply(final Context context) {
-      context.setFilter(new AnalyticsRecordFilter(handlers.keySet(), context.getPartitionId()));
-      return this;
-    }
-
-    @Nullable Consumer<Record<?>> get(final Record<?> record) {
-      return handlers.get(record.getValueType());
     }
   }
 }
