@@ -101,10 +101,108 @@ jobs:
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
 
+  # Slice B — preflight checks. Validates the things that have historically
+  # broken downstream stages silently:
+  #   1. required org secrets are present
+  #   2. expected Vault paths are readable from this repo
+  #   3. the image-tag shape that will be synthesized matches the contract
+  #      Harbor replication filters expect (**-(main|dispatch|mq*)-run**-a**)
+  # Fails fast so we don't burn 30 min of build only to land on ImagePullBackOff
+  # in helm-deploy or a "no matching generation" error in trigger-saas-e2e.
+  preflight:
+    name: Preflight checks
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: ${{ github.event_name == 'merge_group' }}
+    permissions: { }
+    steps:
+      - name: Verify required org secrets are set
+        env:
+          VAULT_ADDR_PRESENT: ${{ secrets.VAULT_ADDR != '' }}
+          VAULT_ROLE_ID_PRESENT: ${{ secrets.VAULT_ROLE_ID != '' }}
+          VAULT_SECRET_ID_PRESENT: ${{ secrets.VAULT_SECRET_ID != '' }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ "$VAULT_ADDR_PRESENT" == "true" ]] || missing+=(VAULT_ADDR)
+          [[ "$VAULT_ROLE_ID_PRESENT" == "true" ]] || missing+=(VAULT_ROLE_ID)
+          [[ "$VAULT_SECRET_ID_PRESENT" == "true" ]] || missing+=(VAULT_SECRET_ID)
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing org secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+          echo "All required org secrets are present."
+
+      - name: Verify Vault paths are reachable
+        # Read-only smoke check: only proves the role can resolve the paths
+        # this workflow depends on. Failure here means the Vault policy for
+        # this repo lost a path binding (or the secret was rotated to a
+        # different path) — a known historical break mode.
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Validate image-tag shape contract
+        # Mirrors the tag synthesis in build-and-push.set-image-tag. The
+        # contract here is the one Harbor replication filters match against:
+        # "**-(main|dispatch|mq*)-run**-a**" (see comment in trigger-saas-e2e).
+        # If this fails, build-and-push would silently produce a tag that is
+        # not replicated to the downstream registry, and helm-deploy would
+        # later fail with ImagePullBackOff.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # Pseudo maven-version placeholder — exact value irrelevant here,
+          # we only validate the suffix shape this workflow guarantees.
+          MAVEN_VERSION="8.x.y-SNAPSHOT"
+          if [[ -n "$INPUT_VERSION" ]]; then
+            TAG="$INPUT_VERSION"
+          elif [[ "$EVENT_NAME" == "merge_group" ]]; then
+            PR_NUM=$(sed -nE 's|^refs/heads/gh-readonly-queue/.+/pr-([0-9]+)-.*$|\1|p' <<< "$REF")
+            if [[ -z "$PR_NUM" ]]; then
+              echo "merge_group ref did not resolve to a PR number: $REF" >&2
+              exit 1
+            fi
+            TAG="${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            TAG="${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}"
+          else
+            TAG="${MAVEN_VERSION}-main-run${{ github.run_id }}-a${{ github.run_attempt }}"
+          fi
+          echo "Validating tag: $TAG"
+          if ! [[ "$TAG" =~ ^.+-(main|dispatch|mq[0-9]+)-run[0-9]+-a[0-9]+$ ]]; then
+            echo "Tag does not match Harbor replication contract '**-(main|dispatch|mq*)-run**-a**'." >&2
+            echo "Got: $TAG" >&2
+            exit 1
+          fi
+          echo "Tag shape OK."
+
+      - name: Add preflight summary
+        if: always()
+        run: |
+          {
+            echo "### AlwaysGreen Preflight"
+            echo ""
+            echo "- secrets: validated"
+            echo "- vault paths: validated"
+            echo "- image tag shape: validated against Harbor replication contract"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # Parallel frontend builds
   build-operate-frontend:
     name: Build Operate Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -160,7 +258,7 @@ jobs:
 
   build-tasklist-frontend:
     name: Build Tasklist Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -216,7 +314,7 @@ jobs:
 
   build-identity-frontend:
     name: Build Identity Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -407,7 +505,7 @@ jobs:
   format-identifier:
     name: Format Identifier
     # Runs in parallel with frontend builds (no dependency on their outputs)
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -710,6 +808,110 @@ jobs:
           echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
           echo "Timed out waiting for downstream workflow to complete."
           exit 1
+
+      # Slice D — propagate downstream SaaS E2E failure category. Computed
+      # from the downstream json-report artifact using the decision tree in
+      # camunda/c8-cross-component-e2e-tests/docs/ci-failure-categories.md
+      # so an alwaysgreen medic can immediately tell whether a downstream
+      # failure was infrastructure / product / mixed without opening the
+      # downstream HTML report.
+      #
+      # Emitted as a separate artifact (alwaysgreen-saas-category) so it
+      # doesn't conflict with the failure-context artifacts produced by the
+      # parallel Slice A work (#54171). Slice C's streak detector reads both.
+      - name: Resolve downstream SaaS E2E failure category
+        id: downstream-category
+        if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          DOWNSTREAM_CONCLUSION="${{ steps.wait-downstream.outputs.downstream_conclusion }}"
+          RUN_ID="${DOWNSTREAM_URL##*/}"
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+
+          DOWNSTREAM_CATEGORY="unknown"
+          DOWNSTREAM_OWNER="@camunda/test-automation-team"
+
+          case "$DOWNSTREAM_CONCLUSION" in
+            success)
+              DOWNSTREAM_CATEGORY="none"
+              DOWNSTREAM_OWNER="none"
+              ;;
+            timeout|cancelled)
+              DOWNSTREAM_CATEGORY="infrastructure"
+              ;;
+            failure)
+              WORK_DIR="${RUNNER_TEMP}/downstream-report"
+              mkdir -p "$WORK_DIR"
+              if gh run download "$RUN_ID" --repo "$TARGET_REPO" \
+                  --pattern 'json-report*' --dir "$WORK_DIR" 2>/dev/null; then
+                TOTAL=0
+                FAILED=0
+                FLAKY=0
+                SETUP_FAILED=0
+                while IFS= read -r -d '' RESULTS; do
+                  T=$(jq '[.suites[]?.specs[]?] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  F=$(jq '[.suites[]?.specs[]? | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  K=$(jq '[.suites[]?.specs[]? | select(.tests[]?.results | length > 1) | select(.ok==true)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  S=$(jq '[.suites[]?.specs[]? | select((.file // "") | endswith("test-setup.spec.ts")) | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  TOTAL=$((TOTAL + T))
+                  FAILED=$((FAILED + F))
+                  FLAKY=$((FLAKY + K))
+                  SETUP_FAILED=$((SETUP_FAILED + S))
+                done < <(find "$WORK_DIR" -type f -name 'results.json' -print0)
+
+                echo "downstream totals: total=$TOTAL failed=$FAILED flaky=$FLAKY setup_failed=$SETUP_FAILED"
+                if (( TOTAL == 0 )) || (( SETUP_FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="infrastructure"
+                elif (( FAILED > 0 )) && (( FLAKY > 0 )); then
+                  DOWNSTREAM_CATEGORY="mixed"
+                elif (( FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="product"
+                else
+                  DOWNSTREAM_CATEGORY="unknown"
+                fi
+              else
+                echo "Could not download json-report artifact — leaving category as unknown" >&2
+              fi
+              ;;
+          esac
+
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-saas-category.json"
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg downstream_conclusion "$DOWNSTREAM_CONCLUSION" \
+            --arg downstream_category "$DOWNSTREAM_CATEGORY" \
+            --arg owner_team "$DOWNSTREAM_OWNER" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg downstream_run_url "$DOWNSTREAM_URL" \
+            '{
+              stage:$stage,
+              downstream_conclusion:$downstream_conclusion,
+              downstream_category:$downstream_category,
+              owner_team:$owner_team,
+              run_url:$run_url,
+              downstream_run_url:$downstream_run_url
+            }' > "$CONTEXT_FILE"
+
+          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
+          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Downstream SaaS E2E Failure Category"
+            echo ""
+            echo "- conclusion: $DOWNSTREAM_CONCLUSION"
+            echo "- category: $DOWNSTREAM_CATEGORY"
+            echo "- owner: $DOWNSTREAM_OWNER"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload downstream SaaS E2E category artifact
+        if: ${{ always() && steps.downstream-category.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-saas-category
+          path: ${{ runner.temp }}/alwaysgreen-saas-category.json
+          retention-days: 14
 
       - name: Add SaaS downstream workflow link to Job Summary
         if: always()
