@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -57,7 +56,11 @@ public class ActivateJobIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withRecordingExporter(true)
-          .withBrokerConfig(c -> c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+          .withBrokerConfig(
+              c -> {
+                c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
+                c.getGateway().getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
+              });
 
   private static CamundaClient grpcClient;
 
@@ -79,7 +82,7 @@ public class ActivateJobIT {
   }
 
   @Test
-  void shouldFailDeferredJobsWithAnonymousAuthorizationClaims() {
+  void shouldFailDeferredJobs() {
     // given
     final var quoteHeavyPayload = "\"".repeat(QUOTE_PAYLOAD_LENGTH);
     for (int i = 0; i < JOBS_TO_CREATE; i++) {
@@ -109,16 +112,14 @@ public class ActivateJobIT {
     // then — the gateway response cannot include all activated jobs (5 * ~14 KB > 64 KB),
     // so at least one is FAILed back to the broker via toFailJobRequest. The fix in
     // RoundRobinActivateJobsHandler attaches the anonymous authorization claim so the
-    // broker bypasses authorization for the gateway-internal FAIL command; the resulting
-    // FAILED event carries the same claim and is what we assert on.
-    final var failedJob =
-        RecordingExporter.jobRecords(JobIntent.FAILED)
-            .withType(JOB_TYPE)
-            .limit(1)
-            .findFirst()
-            .orElseThrow();
-    assertThat(failedJob.getAuthorizations())
-        .as("gateway-issued FAIL command carries the anonymous authorization claim")
-        .containsEntry(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+    // broker bypasses authorization for the gateway-internal FAIL command; without it,
+    // the broker rejects the FAIL with FORBIDDEN and never emits a FAILED event.
+    // Asserting on the event's presence is sufficient — on stable/8.8 the engine does
+    // not yet propagate claims onto follow-up event metadata, so we cannot check the
+    // claim map directly the way main does.
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.FAILED).withType(JOB_TYPE).limit(1).findFirst())
+        .as("gateway-issued FAIL is accepted by the broker, producing a FAILED event")
+        .isPresent();
   }
 }
