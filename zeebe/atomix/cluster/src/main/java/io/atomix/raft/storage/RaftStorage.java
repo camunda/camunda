@@ -125,8 +125,7 @@ public final class RaftStorage {
    */
   public boolean lock(final String id) {
     final File lockFile = new File(directory, String.format(".%s.lock", prefix));
-    final File tempLockFile =
-        new File(directory, String.format(".%s.lock.tmp", id.replace('/', '_')));
+    final File tempLockFile = new File(directory, String.format(".%s.lock.tmp", id));
     try {
       if (!lockFile.exists()) {
         // Create and update the file atomically

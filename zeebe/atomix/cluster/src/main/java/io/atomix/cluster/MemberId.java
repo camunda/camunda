@@ -47,18 +47,15 @@ public class MemberId extends NodeId {
 
   public MemberId(final String id) {
     super(id);
-    final var parts = id.split("/");
-    if (parts.length > 2) {
-      throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
-    } else if (parts.length == 2) {
-      zone = parts[0];
-      nodeIdx = tryParseInt(parts[1]);
-    } else if (parts.length == 1) {
-      zone = null;
-      nodeIdx = tryParseInt(parts[0]);
+    // The underscore separator is safe because validateZone forbids underscores in zone names.
+    final int sep = id.lastIndexOf('_');
+    final Integer suffixIdx = sep > 0 ? tryParseInt(id.substring(sep + 1)) : null;
+    if (suffixIdx != null) {
+      zone = id.substring(0, sep);
+      nodeIdx = suffixIdx;
     } else {
-      throw new IllegalArgumentException(
-          "Expected id to be of the form $zone/$id or $id, but got " + id);
+      zone = null;
+      nodeIdx = tryParseInt(id);
     }
     validateZone(zone);
     validateNodeIdx(nodeIdx);
@@ -87,7 +84,7 @@ public class MemberId extends NodeId {
    * Creates a zone-aware member identifier.
    *
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}.
+   * it is {@code "$zone_$nodeId"}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));

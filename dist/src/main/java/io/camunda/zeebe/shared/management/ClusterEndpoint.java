@@ -480,7 +480,7 @@ public class ClusterEndpoint {
   /**
    * Converts a list of broker ID values (which can be either Integer or String from JSON
    * deserialization) into a list of string identifiers. This supports both non-zone-aware clusters
-   * (integer node IDs like 0) and zone-aware clusters (composite member IDs like "zone-a/0").
+   * (integer node IDs like 0) and zone-aware clusters (composite member IDs like "zone-a_0").
    */
   static List<String> toBrokerIdStrings(final @Nullable List<Object> items) {
     if (items == null) {
@@ -560,7 +560,7 @@ public class ClusterEndpoint {
             "'"
                 + memberId
                 + "' is a bare node ID, but this cluster is zone-aware — "
-                + "use '$zone/$nodeId' (e.g. 'zone-a/0')");
+                + "use '$zone_$nodeId' (e.g. 'zone-a_0')");
       } else if (!clusterIsZoneAware && memberId.zone() != null) {
         errors.add(
             "'"

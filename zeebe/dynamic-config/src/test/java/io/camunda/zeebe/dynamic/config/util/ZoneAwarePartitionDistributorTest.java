@@ -190,7 +190,7 @@ final class ZoneAwarePartitionDistributorTest {
     // when
     final var result = distributor.distributePartitions(clusterMembers, partitions(3), 3);
 
-    // then — partitions 1,3 → us-east1/0; partitions 2,4 → us-east1/1 (or vice versa)
+    // then — partitions 1,3 → us-east1_0; partitions 2,4 → us-east1_1 (or vice versa)
     final var rrResult =
         new RoundRobinPartitionDistributor().distributePartitions(clusterMembers, partitions(3), 3);
 
@@ -212,15 +212,15 @@ final class ZoneAwarePartitionDistributorTest {
         distributor.distributePartitions(
             config.clusterMembers(), partitions(2), config.replicationFactor());
 
-    // then — for partition 1 the highest-priority east broker is us-east1/0,
-    //        for partition 2 it is us-east1/1 (offset shifts by 1)
+    // then — for partition 1 the highest-priority east broker is us-east1_0,
+    //        for partition 2 it is us-east1_1 (offset shifts by 1)
     final var p1 = partitionById(result, 1);
     final var p2 = partitionById(result, 2);
 
     assertThat(p1.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 0));
     assertThat(p2.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 1));
 
-    // us-west1/0 is always assigned regardless of zone size or round-robin offset
+    // us-west1_0 is always assigned regardless of zone size or round-robin offset
     assertThat(p1.members()).contains(MemberId.from("us-west1", 0));
     assertThat(p2.members()).contains(MemberId.from("us-west1", 0));
   }
@@ -326,7 +326,7 @@ final class ZoneAwarePartitionDistributorTest {
         Map.of(
             2,
 """
-Partition | us-east1/0 | us-east1/1 | us-west1/0
+Partition | us-east1_0 | us-east1_1 | us-west1_0
 ----------|------------|------------|-----------
         1 |     3      |     2      |     1    \s
         2 |     2      |     3      |     1    \s
@@ -336,7 +336,7 @@ Partition | us-east1/0 | us-east1/1 | us-west1/0
 """,
             3,
 """
-Partition | us-east1/0 | us-east1/1 | us-west1/0 | us-west1/1 | eu-east1/0
+Partition | us-east1_0 | us-east1_1 | us-west1_0 | us-west1_1 | eu-east1_0
 ----------|------------|------------|------------|------------|-----------
         1 |     5      |     4      |     3      |     2      |     1
         2 |     4      |     5      |     2      |     3      |     1
@@ -362,7 +362,7 @@ Partition | us-east1/0 | us-east1/1 | us-west1/0 | us-west1/1 | eu-east1/0
     assertThat(priorityTable)
         .isEqualToIgnoringWhitespace(
 """
-Partition | us-east1/0 | us-east1/1 | us-west1/0
+Partition | us-east1_0 | us-east1_1 | us-west1_0
 ----------|------------|------------|-----------
         1 |     3      |     1      |     2
         2 |     1      |     2      |     3

@@ -29,7 +29,7 @@ final class ClusterConfigFactoryTest {
     final var clusterConfig = new ClusterConfigFactory().mapConfiguration(cfg);
 
     // then
-    assertThat(clusterConfig.getNodeConfig().getId().id()).isEqualTo("eu-central-1a/2");
+    assertThat(clusterConfig.getNodeConfig().getId().id()).isEqualTo("eu-central-1a_2");
     assertThat(clusterConfig.getNodeConfig().getZoneId()).isEqualTo("eu-central-1a");
   }
 
