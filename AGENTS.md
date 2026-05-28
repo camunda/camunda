@@ -210,6 +210,13 @@ changes. Skipping formatting reliably breaks the `Java checks` CI job.
 3. Run module tests and verify zero failures
 4. Verify the full repo still compiles: `./mvnw install -Dquickly -T1C`
 
+### Running locally
+
+To spin up a full Camunda stack (broker + Operate + Tasklist + Admin) on your machine using an
+embedded H2 database — no Elasticsearch, no Docker, login `demo`/`demo` — follow the step-by-step
+guide at `docs/local-development.md`. It covers build commands, start/stop, the Vite dev server
+for frontend hot-reload, and common troubleshooting scenarios.
+
 ### Scoped instructions
 
 Load extra context on demand — only when relevant, only if the files exist.
