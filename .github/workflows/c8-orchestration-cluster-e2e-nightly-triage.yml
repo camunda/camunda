@@ -343,6 +343,9 @@ jobs:
           REPO:            ${{ github.repository }}
           DISPATCHES_JSON: ${{ needs.triage.outputs.dispatches }}
           TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # On pull_request events use the PR branch so the fix workflow is found there too;
+          # on schedule/workflow_dispatch github.head_ref is empty so we fall back to main.
+          FIX_WORKFLOW_REF: ${{ github.head_ref || 'main' }}
         run: |
           set -euo pipefail
 
@@ -353,10 +356,10 @@ jobs:
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
-            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
+            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')  ref=${FIX_WORKFLOW_REF}"
 
             gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
-              --repo "$REPO" --ref main \
+              --repo "$REPO" --ref "${FIX_WORKFLOW_REF}" \
               -f version="$version" \
               -f test_specs="$specs" \
               -f e2e_run_id="$e2e" \
