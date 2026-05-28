@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54222/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54222/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54222/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54222/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54222/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI & Automation","item":"https://camunda.github.io/camunda/pr-preview/pr-54222/ci"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54222/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54222/assets/js/runtime~main.8a90cc3a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54222/assets/js/main.97c1ec44.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54222/assets/js/runtime~main.a55bad09.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54222/assets/js/main.cdf11f52.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -502,6 +502,10 @@ wagoid/commitlint-github-action@</em>,<p></p></div></div></details>
 <li class="">corrects build, test, or development instructions that affect stable branch workflows</li>
 </ul>
 </li>
+<li class="">is a new CI job for new product feature or test cases: backport <strong>only if</strong> the product feature is backported</li>
+<li class="">is a new CI feature: backport <strong>only if</strong> required in the ticket</li>
+<li class="">is related to an <code>on: schedule</code> GHA workflow: <strong>no need</strong> to backport, only works on <code>main</code></li>
+<li class="">is related to <a href="#preview-environments" class="">Preview Environments</a>: <strong>no need</strong> to backport, only supported on <code>main</code></li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="documentation-specific-backporting-monorepo-docs-folders">Documentation-specific backporting (monorepo-docs/* folders)<a href="#documentation-specific-backporting-monorepo-docs-folders" class="hash-link" aria-label="Direct link to Documentation-specific backporting (monorepo-docs/* folders)" title="Direct link to Documentation-specific backporting (monorepo-docs/* folders)" translate="no">​</a></h3>
 <p>When touching <code>monorepo-docs/*</code> folders, use these guidelines:</p>
@@ -518,12 +522,6 @@ wagoid/commitlint-github-action@</em>,<p></p></div></div></details>
 <li class="">Style/formatting improvements</li>
 </ul>
 <p><strong>Rationale:</strong> Documentation in stable branches serves as AI context for developers working on that specific version. Only backport changes that fix critical errors or security issues, while avoiding feature additions that don&#x27;t exist in that release.</p>
-<ul>
-<li class="">is a new CI job for new product feature or test cases: backport <strong>only if</strong> the product feature is backported</li>
-<li class="">is a new CI feature: backport <strong>only if</strong> required in the ticket</li>
-<li class="">is related to an <code>on: schedule</code> GHA workflow: <strong>no need</strong> to backport, only works on <code>main</code></li>
-<li class="">is related to <a href="#preview-environments" class="">Preview Environments</a>: <strong>no need</strong> to backport, only supported on <code>main</code></li>
-</ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="slack-notifications">Slack Notifications<a href="#slack-notifications" class="hash-link" aria-label="Direct link to Slack Notifications" title="Direct link to Slack Notifications" translate="no">​</a></h2>
 <p>All CI workflows in the <a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="">camunda/camunda monorepo</a> must use the <a href="https://api.slack.com/apps/A086JM3CTB7/incoming-webhooks" target="_blank" rel="noopener noreferrer" class="">&quot;C8 Monorepo Notifications&quot; Slack app</a>. Messages to Slack should be send via webhooks. The webhook URLs are <a href="#ci-secret-management" class="">secrets</a> and stored in <a href="https://vault.int.camunda.com/ui/vault/secrets/secret/kv/products%2Fcamunda%2Fci%2Fgithub-actions" target="_blank" rel="noopener noreferrer" class="">Vault</a> for each Slack channel.</p>
 <p>If you need to send Slack messages to a channel for which no webhook URL exists yet, reach out via Slack to the Monorepo CI DRI to request one. They then will generate a new webhook URL for the <a href="https://api.slack.com/apps/A086JM3CTB7/incoming-webhooks" target="_blank" rel="noopener noreferrer" class="">&quot;C8 Monorepo Notifications&quot; Slack app</a> and store it in <a href="https://vault.int.camunda.com/ui/vault/secrets/secret/kv/products%2Fcamunda%2Fci%2Fgithub-actions" target="_blank" rel="noopener noreferrer" class="">Vault</a>.</p>
