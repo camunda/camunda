@@ -265,6 +265,9 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
               req: request,
               expectPolling: options?.expectPolling,
             });
+            if (typeof responseData === 'string') {
+              return HttpResponse.text(responseData);
+            }
             return HttpResponse.json(responseData);
           },
           {once: true},
