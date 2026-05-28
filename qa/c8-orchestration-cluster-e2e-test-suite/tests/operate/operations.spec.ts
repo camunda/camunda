@@ -18,6 +18,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
+import {jsonHeaders} from 'utils/http';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -241,7 +242,7 @@ let deleteTestData: {
 
 const batchDeleteProcessId = `batchDeleteProcess-${runSuffix}`;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({request}) => {
   await deployWithSubstitutions('./resources/batch_delete_process.bpmn', {
     batchDeleteProcess: batchDeleteProcessId,
   });
@@ -254,14 +255,38 @@ test.beforeAll(async () => {
     })),
   };
 
-  // Allow time for all instances to auto-complete
-  await sleep(5000);
+  // Poll until all instances are COMPLETED and indexed in the search backend
+  // before the test runs. Avoids a fixed sleep that is too short on slow runners
+  // and wastes time on fast ones.
+  const instanceKeys = instances.map((i) => i.processInstanceKey.toString());
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/process-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'COMPLETED',
+              processInstanceKey: {$in: instanceKeys},
+            },
+          },
+        });
+        if (response.status() !== 200) {
+          throw new Error(
+            `process-instances/search returned ${response.status()}: ${await response.text()}`,
+          );
+        }
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBe(instances.length);
 });
 
 test.describe('Delete Operations', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
