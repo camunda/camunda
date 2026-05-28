@@ -80,8 +80,7 @@ class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
     void shouldDeserializeAndPassWrappedDto() {
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createTask")
+              CallToolRequest.builder("createTask")
                   .arguments(
                       Map.of("name", "My Task", "priority", 5, "tags", Set.of("urgent", "review")))
                   .build());
@@ -99,8 +98,7 @@ class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
     void shouldReturnValidationErrorWithNormalizedPath() {
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createTask")
+              CallToolRequest.builder("createTask")
                   .arguments(Map.of("name", "", "priority", 1))
                   .build());
 
@@ -119,8 +117,7 @@ class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
     void shouldReturnMultipleValidationErrors() {
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createTask")
+              CallToolRequest.builder("createTask")
                   .arguments(Map.of("name", "", "priority", -1))
                   .build());
 
@@ -140,8 +137,7 @@ class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
     void shouldValidateCollectionElements() {
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("createTask")
+              CallToolRequest.builder("createTask")
                   .arguments(Map.of("name", "Valid", "priority", 1, "tags", Set.of("")))
                   .build());
 
@@ -162,7 +158,7 @@ class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
     void shouldReturnErrorOnIndividualParamValidation() {
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("getTask").arguments(Map.of("taskKey", -1L)).build());
+              CallToolRequest.builder("getTask").arguments(Map.of("taskKey", -1L)).build());
 
       assertThat(result.isError()).isTrue();
       assertThat(result.structuredContent()).isNull();

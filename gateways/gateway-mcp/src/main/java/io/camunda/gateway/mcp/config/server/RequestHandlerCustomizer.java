@@ -54,7 +54,8 @@ public final class RequestHandlerCustomizer {
       final ToolRepository toolRepository) {
     // load tools via repository and wrap in callable to pass exceptions in a non-blocking way
     return (ctx, params) ->
-        Mono.fromCallable(() -> new McpSchema.ListToolsResult(toolRepository.getTools(ctx), null));
+        Mono.fromCallable(
+            () -> McpSchema.ListToolsResult.builder(toolRepository.getTools(ctx)).build());
   }
 
   private static McpStatelessRequestHandler<CallToolResult> toolsCallRequestHandler(

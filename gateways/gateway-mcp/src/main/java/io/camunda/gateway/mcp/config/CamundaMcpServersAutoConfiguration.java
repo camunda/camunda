@@ -117,6 +117,7 @@ public class CamundaMcpServersAutoConfiguration {
         .capabilities(capabilities)
         .tools(toolSpecifications)
         .immediateExecution(true)
+        .validateToolInputs(false) // covered by bean validation
         .build();
   }
 
@@ -187,6 +188,7 @@ public class CamundaMcpServersAutoConfiguration {
           """)
             .capabilities(capabilities)
             .immediateExecution(true)
+            .validateToolInputs(false) // covered by bean validation
             .build();
 
     RequestHandlerCustomizer.replaceToolHandlers(processesTransport, jsonMapper, toolRepository);

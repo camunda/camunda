@@ -95,7 +95,7 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       assertThat(result.isError()).isFalse();
       assertThat(result.content())
@@ -112,7 +112,7 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();

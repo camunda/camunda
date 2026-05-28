@@ -42,7 +42,7 @@ class ProcessesMcpServerEmptyToolRepositoryTest extends ProcessesToolsTest {
   @Test
   void shouldCreateMcpErrorForToolFind() {
     // when/then
-    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder().name("anyTool").build()))
+    assertThatThrownBy(() -> mcpClient.callTool(CallToolRequest.builder("anyTool").build()))
         .isInstanceOfSatisfying(
             McpError.class,
             exception ->
