@@ -96,10 +96,6 @@ final class FileSetManager {
         responses.add(batch.deleteBlob(url));
       }
       blobBatchClient.submitBatch(batch);
-      final var failure = responses.stream().filter(r -> r.getStatusCode() / 100 != 2).findFirst();
-      if (failure.isPresent()) {
-        throw new RuntimeException("Failures detected in the blob batch deletion");
-      }
     }
   }
 
