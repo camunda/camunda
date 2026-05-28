@@ -228,11 +228,12 @@ types, converts each matching record into an OpenTelemetry log record, and pushe
 the configured OTLP/HTTP endpoint. Three design choices keep the broker fast and
 predictable:
 
-- **Fire-and-forget, non-blocking pipeline.** Every record's position is acknowledged
-  eagerly and unconditionally, before any analytics processing happens. A background
-  thread batches and pushes records through the OTel SDK's `BatchLogRecordProcessor`; when
-  the in-memory queue fills, new records are silently dropped instead of back-pressuring
-  the broker.
+- **Fire-and-forget, non-blocking pipeline.** A background thread batches and pushes
+  records through the OTel SDK's `BatchLogRecordProcessor`; when the in-memory queue
+  fills, new records are silently dropped instead of back-pressuring the broker. After
+  invoking the handler, the broker unconditionally acknowledges the record's position —
+  handler exceptions are caught and swallowed — so neither a failing handler nor a
+  saturated queue can stall the broker.
 - **Partition-aware filtering.** Each event is emitted by exactly one partition — the one
   that originally produced it — so events are not duplicated across a multi-partition
   cluster. See `AnalyticsRecordFilter` for the filtering layers and the rationale behind
