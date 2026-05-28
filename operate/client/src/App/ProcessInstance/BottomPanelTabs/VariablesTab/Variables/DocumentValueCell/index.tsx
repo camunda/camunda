@@ -11,6 +11,7 @@ import {
   toHumanReadableBytes,
   type DocumentParseResult,
 } from './parseDocumentVariable';
+import {middleTruncate} from './middleTruncate';
 import {
   DocumentCellContainer,
   DocumentIcon,
@@ -23,16 +24,6 @@ type Props = {
   result: DocumentParseResult;
 };
 
-const TRUNCATION_LIMIT = 60;
-
-function middleTruncate(text: string, limit: number): string {
-  if (text.length <= limit) {
-    return text;
-  }
-  const half = Math.floor((limit - 1) / 2);
-  return text.slice(0, half) + '\u2026' + text.slice(text.length - half);
-}
-
 const DocumentValueCell: React.FC<Props> = ({result}) => {
   if (result.type === 'single') {
     const {fileName, size} = result.document;
@@ -42,7 +33,7 @@ const DocumentValueCell: React.FC<Props> = ({result}) => {
           <Document size={16} />
         </DocumentIcon>
         <DocumentFileName title={fileName}>
-          {middleTruncate(fileName, TRUNCATION_LIMIT)}
+          {middleTruncate(fileName)}
         </DocumentFileName>
         {size !== undefined && (
           <DocumentSize>{toHumanReadableBytes(size)}</DocumentSize>
