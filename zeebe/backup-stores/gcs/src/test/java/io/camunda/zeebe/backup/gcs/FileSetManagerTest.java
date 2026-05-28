@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.BatchOperationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -206,7 +207,7 @@ final class FileSetManagerTest {
 
     // when/then
     Assertions.assertThatThrownBy(() -> manager.deleteBlobs(List.of(blobId)))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(BatchOperationException.class)
         .hasMessageContaining("Failures detected in the blob batch deletion");
   }
 

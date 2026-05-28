@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.BatchOperationException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -164,8 +165,8 @@ final class FileSetManager {
       }
       batch.submit();
       if (!errors.isEmpty()) {
-        throw new RuntimeException(
-            "Failures detected in the blob batch deletion", errors.getFirst());
+        throw new BatchOperationException(
+            "Failures detected in the blob batch deletion", errors.getFirst()) {};
       }
     }
   }

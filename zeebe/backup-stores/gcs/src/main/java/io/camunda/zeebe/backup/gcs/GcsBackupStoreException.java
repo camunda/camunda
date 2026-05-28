@@ -31,4 +31,10 @@ public abstract class GcsBackupStoreException extends RuntimeException {
       super(message, cause);
     }
   }
+
+  public static class BatchOperationException extends GcsBackupStoreException {
+    public BatchOperationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }
