@@ -271,6 +271,10 @@ Use `nullable: true` only when the property can genuinely be `null` in the respo
 
 For how the `required` / `nullable` flags propagate from the spec down through the generated POJOs, search-domain entities, transformers, and response mapper — and how NullAway and ArchUnit enforce the contract at compile and build time — see [api-entities-nullaway-enforcement.md](api-entities-nullaway-enforcement.md).
 
+On request schemas, the `nullable` property is **not** used to express optionality. Request schema fields are optional by default, and must be added to the `required` array if they are not optional and must be set by the client. If a request field can be omitted by the client, **do not** mark it as `nullable: true`, simply omit it from the `required` array. The Jackson deserialiser will produce an object with `null` for request fields that are not sent by the client. In Java, not present and `null` are the same thing. In JSON, `null` is an explicit value, distinct from "not present". Both JSON `null` and "not present" deserialise to `null` in Java. Marking an *optional* request schema field as `nullable: true` does not make it optional (its omission from `required` does that). It generates ternary client types in languages such as JavaScript and Python, where "not present" (JS `undefined` / Python `Unset`) are *distinct* from present and explicitly null (JS `null` / Python `None`).
+
+You are reaching for `T | undefined` in JS, and `T | Unset` in Python. Just leave it out of the required array. Marking it `nullable: true` will create `T | undefined | null` in JS and `T | Unset | None` in Python.
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
 Every operation **should** declare `x-eventually-consistent` explicitly:
@@ -1779,4 +1783,3 @@ MySchema:
 | CI OpenAPI lint job          | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                                                              |
 | Slack channel                | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                                                            |
 | API team (reviewers)         | `@camunda/c8-api-team`                                                                                                                                                        |
-
