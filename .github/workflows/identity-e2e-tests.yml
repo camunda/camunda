@@ -1,38 +1,15 @@
-# description: Workflow for end to end tests for Identity only. Tests will use a running instance of Identity for the API
+# description: DISABLED - Workflow for end to end tests for Identity only. Tests will use a running instance of Identity for the API
+#              These tests are flaky and block PRs. They continue to run nightly via c8-orchestration-cluster-nightly-*-e2e.yml workflows.
+#              New smoke tests will be introduced as part of the FE Unification epic.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/identity
 # type: CI
 # owner: @camunda/identity
 ---
 name: Identity E2E Tests
 on:
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-      - "release**"
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/identity-*"
-      - "bom/*"
-      - "distro/**"
-      - "identity/**"
-      - "zeebe/exporters/camunda-exporter/**"
-      - "parent/*"
-      - "pom.xml"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
-  pull_request:
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/identity-*"
-      - "bom/*"
-      - "distro/**"
-      - "identity/**"
-      - "zeebe/exporters/camunda-exporter/**"
-      - "parent/*"
-      - "pom.xml"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
+  # Temporarily disabled - tests run nightly instead
+  # See: https://github.com/camunda/camunda/issues/[issue-number]
+  workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence

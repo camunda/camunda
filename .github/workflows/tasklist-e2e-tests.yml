@@ -1,16 +1,15 @@
-# description: This is a Workflow for running end to end FE tests on Tasklist. Starts an instance of Tasklist and uses that instance to run tests on
+# description: DISABLED - This is a Workflow for running end to end FE tests on Tasklist. Starts an instance of Tasklist and uses that instance to run tests on
+#              These tests are flaky and block PRs. They continue to run nightly via c8-orchestration-cluster-nightly-*-e2e.yml workflows.
+#              New smoke tests will be introduced as part of the FE Unification epic.
 # test location: /tasklist/client/e2e
 # type: CI
 # owner: @camunda/core-features
 ---
 name: "[Legacy] Tasklist / E2E Tests"
 on:
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-      - "release**"
-  pull_request:
+  # Temporarily disabled - tests run nightly instead
+  # See: https://github.com/camunda/camunda/issues/[issue-number]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
