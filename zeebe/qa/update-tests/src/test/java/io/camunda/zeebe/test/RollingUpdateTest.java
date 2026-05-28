@@ -9,26 +9,25 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+import static io.camunda.zeebe.test.ClusterHelper.configureBroker;
+import static io.camunda.zeebe.test.ClusterHelper.createProcessInstance;
+import static io.camunda.zeebe.test.ClusterHelper.currentVersion;
+import static io.camunda.zeebe.test.ClusterHelper.deployProcess;
+import static io.camunda.zeebe.test.ClusterHelper.newClient;
+import static io.camunda.zeebe.test.ClusterHelper.updateBroker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
-import io.camunda.container.cluster.CamundaClusterBuilder;
 import io.camunda.container.cluster.GatewayNode;
 import io.camunda.container.volume.CamundaVolume;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.util.SemanticVersion;
-import io.camunda.zeebe.util.VersionUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -36,10 +35,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -49,9 +46,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * These tests are here to detect when rolling update between one version to the next are not
@@ -63,14 +58,6 @@ import org.testcontainers.utility.DockerImageName;
 final class RollingUpdateTest {
 
   private static List<Arguments> cachedVersionMatrix;
-
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("process")
-          .startEvent()
-          .serviceTask("task1", s -> s.zeebeJobType("firstTask"))
-          .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
-          .endEvent()
-          .done();
 
   @SuppressWarnings("unused")
   @RegisterExtension()
@@ -114,7 +101,10 @@ final class RollingUpdateTest {
   public void setup() {
     final var initialContactPoints =
         cluster.getBrokers().values().stream().map(BrokerNode::getInternalClusterAddress).toList();
-    cluster.getBrokers().values().forEach(broker -> configureBroker(broker, initialContactPoints));
+    cluster
+        .getBrokers()
+        .values()
+        .forEach(broker -> configureBroker(broker, initialContactPoints, volumes));
   }
 
   @AfterEach
@@ -168,12 +158,7 @@ final class RollingUpdateTest {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
-      Awaitility.await("process instance creation")
-          .atMost(Duration.ofSeconds(30))
-          .pollInterval(Duration.ofMillis(100))
-          .ignoreExceptions()
-          .until(() -> createProcessInstance(client), Objects::nonNull)
-          .getProcessInstanceKey();
+      createProcessInstance(client);
     }
 
     final var brokerId = 1;
@@ -187,12 +172,7 @@ final class RollingUpdateTest {
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
       for (int i = 0; i < 100; i++) {
-        Awaitility.await("process instance creation")
-            .atMost(Duration.ofSeconds(30))
-            .pollInterval(Duration.ofMillis(100))
-            .ignoreExceptions()
-            .until(() -> createProcessInstance(client), Objects::nonNull)
-            .getProcessInstanceKey();
+        createProcessInstance(client);
       }
 
       // force the current leader to take a snapshot by just telling all the remaining nodes to take
@@ -236,13 +216,7 @@ final class RollingUpdateTest {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
-      firstProcessInstanceKey =
-          Awaitility.await("process instance creation")
-              .atMost(Duration.ofSeconds(30))
-              .pollInterval(Duration.ofMillis(100))
-              .ignoreExceptions()
-              .until(() -> createProcessInstance(client), Objects::nonNull)
-              .getProcessInstanceKey();
+      firstProcessInstanceKey = createProcessInstance(client);
     }
 
     for (int i = cluster.getBrokers().size() - 1; i >= 0; i--) {
@@ -284,7 +258,7 @@ final class RollingUpdateTest {
         };
 
     try (final var client = newClient(availableGateway)) {
-      final var secondProcessInstanceKey = createProcessInstance(client).getProcessInstanceKey();
+      final var secondProcessInstanceKey = createProcessInstance(client);
       final var expectedActivatedJobs =
           Map.of(
               firstProcessInstanceKey,
@@ -310,67 +284,6 @@ final class RollingUpdateTest {
 
   private void updateAllBrokers(final String version) {
     cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, id, version));
-  }
-
-  private void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
-    if ("CURRENT".equals(version)) {
-      broker.setDockerImageName(
-          ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
-      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
-    } else {
-      broker.setDockerImageName(
-          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
-    }
-
-    final var semVer = SemanticVersion.parse(version);
-
-    // For versions < 8.8 Unified configuration is not supported.
-    // Clustering parameters have to be passed using the ENV vars in the containers
-
-    if (semVer.isPresent() && semVer.get().minor() < 8) {
-      broker.setDockerImageName(
-          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
-      broker
-          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-          .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT", "1")
-          .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", "3")
-          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE", "3")
-          .withEnv("ZEEBE_BROKER_CLUSTER_NODE_ID", String.valueOf(id))
-          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_NAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
-          .withEnv(
-              "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
-              String.join(",", broker.getConfiguration().getCluster().getInitialContactPoints()))
-          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-          .withEnv("ZEEBE_BROKER_NETWORK_HOST", "0.0.0.0")
-          .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
-          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
-          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
-    }
-  }
-
-  private String currentVersion() {
-    // Act as if the current in-development version were released already.
-    // Otherwise, updates will be rejected because we don't allow upgrading to
-    // pre-release versions.
-    return VersionUtil.getVersion().replace("-SNAPSHOT", "");
-  }
-
-  private ProcessInstanceEvent createProcessInstance(final CamundaClient client) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .variables(Map.of("foo", "bar"))
-        .send()
-        .join();
-  }
-
-  private void deployProcess(final CamundaClient client) {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(PROCESS, "process.bpmn")
-        .send()
-        .join(10, TimeUnit.SECONDS);
   }
 
   private void assertTopologyContainsUpdatedBroker(
@@ -403,13 +316,6 @@ final class RollingUpdateTest {
         .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
-  private CamundaClient newClient(final GatewayNode<?> gateway) {
-    return CamundaClient.newClientBuilder()
-        .preferRestOverGrpc(false)
-        .grpcAddress(gateway.getGrpcAddress())
-        .build();
-  }
-
   private void assertBrokerHasAtLeastOneSnapshot(final int index) {
     final BrokerNode<?> broker = cluster.getBrokers().get(index);
     final PartitionsActuator partitionsActuator = PartitionsActuator.of(broker);
@@ -420,56 +326,5 @@ final class RollingUpdateTest {
                 assertThat(status.snapshotId())
                     .as("partition 1 reports the presence of a snapshot")
                     .isNotBlank());
-  }
-
-  private void configureBroker(
-      final BrokerNode<?> broker, final List<String> initialContactPoints) {
-    final var volume =
-        CamundaVolume.newVolume(
-            cfg -> {
-              // Workaround for
-              // https://github.com/camunda-community-hub/zeebe-test-container/issues/656
-              final var labels = new HashMap<>(cfg.getLabels());
-              labels.put(
-                  DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
-                  DockerClientFactory.SESSION_ID);
-              return cfg.withLabels(labels);
-            });
-    volumes.add(volume);
-    broker
-        .withCamundaData(volume)
-        .withUnifiedConfig(
-            cfg -> {
-              cfg.getCluster().getMembership().setBroadcastUpdates(true);
-              cfg.getCluster().getMembership().setSyncInterval(Duration.ofMillis(250));
-              cfg.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-              cfg.getCluster().getMembership().setProbeTimeout(Duration.ofSeconds(1));
-              cfg.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(2));
-              cfg.getCluster().getMembership().setSuspectProbes(2);
-            })
-
-        // Pass the old env vars for the old version broker
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
-        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
-        .withEnv(
-            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
-        // ensure we have an exporter present to test sharing exporter state across nodes
-        .withEnv("ZEEBE_BROKER_EXECUTIONMETRICSEXPORTERENABLED", "true")
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        // user - needs to be set to `1001` to allow a smooth update from zeebe 8.3 to 8.4,
-        // as the default user changed to `1001` with 8.4 and was `1000` with 8.3
-        // group - needs to be set to `0` as the data volume in 8.3 is owned by 1000:0
-        // thus zeebe 8.4 needs to run with group `0` to be able to create new files in
-        // the root of the data volume (in particular it creates a new `.topology.meta` file)
-        // TODO remove after 8.4 release
-        .withCreateContainerCmdModifier(
-            createContainerCmd -> createContainerCmd.withUser("1001:0"));
   }
 }
