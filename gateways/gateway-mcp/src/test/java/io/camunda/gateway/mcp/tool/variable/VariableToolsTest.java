@@ -113,8 +113,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
+              CallToolRequest.builder("getVariable")
                   .arguments(Map.of("variableKey", 123L))
                   .build());
 
@@ -140,8 +139,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
+              CallToolRequest.builder("getVariable")
                   .arguments(Map.of("variableKey", 123L))
                   .build());
 
@@ -162,8 +160,7 @@ class VariableToolsTest extends ToolsTest {
     void shouldFailGetVariableByKeyOnMissingKey() {
       // when
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getVariable").arguments(Map.of()).build());
+          mcpClient.callTool(CallToolRequest.builder("getVariable").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -184,8 +181,7 @@ class VariableToolsTest extends ToolsTest {
       final var arguments = new HashMap<String, Object>();
       arguments.put("variableKey", null);
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getVariable").arguments(arguments).build());
+          mcpClient.callTool(CallToolRequest.builder("getVariable").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -205,10 +201,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getVariable")
-                  .arguments(Map.of("variableKey", -3L))
-                  .build());
+              CallToolRequest.builder("getVariable").arguments(Map.of("variableKey", -3L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -236,8 +229,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(
                       Map.of(
                           "filter",
@@ -283,8 +275,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(
                       Map.of(
                           "filter",
@@ -351,7 +342,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchVariables").arguments(Map.of()).build());
+              CallToolRequest.builder("searchVariables").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -370,8 +361,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -393,8 +383,7 @@ class VariableToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchVariables")
+              CallToolRequest.builder("searchVariables")
                   .arguments(Map.of("filter", Map.of("variableKey", "abc")))
                   .build());
 

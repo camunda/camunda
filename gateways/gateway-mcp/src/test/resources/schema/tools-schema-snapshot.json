@@ -5,6 +5,7 @@
       "title": "getClusterStatus",
       "description": "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {},
         "required": []
@@ -18,6 +19,7 @@
       "title": "getTopology",
       "description": "Obtains the current topology of the cluster the gateway is part of.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {},
         "required": []
@@ -31,6 +33,7 @@
       "title": "getIncident",
       "description": "Get incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "incidentKey": {
@@ -52,6 +55,7 @@
       "title": "resolveIncident",
       "description": "Resolve incident by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "incidentKey": {
@@ -71,6 +75,7 @@
       "title": "searchIncidents",
       "description": "Search for incidents. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "filter": {
@@ -214,6 +219,7 @@
       "title": "getProcessDefinition",
       "description": "Get process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "processDefinitionKey": {
@@ -235,6 +241,7 @@
       "title": "getProcessDefinitionXml",
       "description": "Get the BPMN XML of a process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "processDefinitionKey": {
@@ -256,6 +263,7 @@
       "title": "searchProcessDefinitions",
       "description": "Search for process definitions. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "filter": {
@@ -365,6 +373,7 @@
       "title": "createProcessInstance",
       "description": "Create a new process instance of the given process definition. Either a processDefinitionKey or\na processDefinitionId (with an optional processDefinitionVersion) need to be passed.\n\nWhen using the awaitCompletion flag, the tool will wait for the process instance to complete\nand return its result variables. When using awaitCompletion, always include a unique tag\n`mcp-tool:<uniqueId>` which can be used to search for the started process instance in case\nof timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,\nare more likely to time out. You can increase the timeout to wait for completion by defining\na longer requestTimeout.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "awaitCompletion": {
@@ -401,7 +410,7 @@
             "description": "Timeout (in ms) the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied. "
           },
           "tags": {
-            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+            "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
             "type": "array",
             "items": {
               "type": "string"
@@ -425,6 +434,7 @@
       "title": "getProcessInstance",
       "description": "Get process instance by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "processInstanceKey": {
@@ -446,6 +456,7 @@
       "title": "searchProcessInstances",
       "description": "Search for process instances. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "filter": {
@@ -518,7 +529,7 @@
                 "description": "The process instance state."
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -623,6 +634,7 @@
       "title": "assignUserTask",
       "description": "Assign or unassign a user task. Provide an assignee to assign the task, or omit/provide null to unassign it.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "userTaskKey": {
@@ -660,6 +672,7 @@
       "title": "getUserTask",
       "description": "Get user task by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "userTaskKey": {
@@ -681,6 +694,7 @@
       "title": "searchUserTaskVariables",
       "description": "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "userTaskKey": {
@@ -763,6 +777,7 @@
       "title": "searchUserTasks",
       "description": "Search for user tasks. Variable values in filters need to be in serialized JSON format. Example string value: `\\\"myValue\\\"`. Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "filter": {
@@ -915,7 +930,7 @@
                 "description": "The user task state."
               },
               "tags": {
-                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length \u2264 100.",
+                "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
                 "type": "array",
                 "items": {
                   "type": "string"
@@ -995,6 +1010,7 @@
       "title": "getVariable",
       "description": "Get variable by key. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "variableKey": {
@@ -1016,6 +1032,7 @@
       "title": "searchVariables",
       "description": "Search for variables. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
         "properties": {
           "filter": {

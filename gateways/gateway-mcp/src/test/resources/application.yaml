@@ -3,20 +3,14 @@ spring:
     mcp:
       server:
         enabled: true
-        name: Camunda 8 Orchestration API Test MCP Server
-        version: '${project.version}'
         type: sync
         protocol: stateless
         annotation-scanner:
           enabled: true
-        streamable-http:
-          mcp-endpoint: /mcp/cluster
-        capabilities:
-          completion: false
-          prompt: false
-          resource: false
-          tool: true
-
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration
+      - org.springframework.ai.mcp.server.webmvc.autoconfigure.McpServerStatelessWebMvcAutoConfiguration
 camunda:
   mcp:
     enabled: true

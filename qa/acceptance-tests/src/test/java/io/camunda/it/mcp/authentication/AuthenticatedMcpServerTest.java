@@ -101,7 +101,7 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
   private Set<String> searchProcessDefinitionIds(final McpSyncClient client) {
     final CallToolResult result =
         client.callTool(
-            CallToolRequest.builder().name("searchProcessDefinitions").arguments(Map.of()).build());
+            CallToolRequest.builder("searchProcessDefinitions").arguments(Map.of()).build());
     assertThat(result.isError())
         .withFailMessage(
             "Expected successful searchProcessDefinitions response, but got error result: %s",

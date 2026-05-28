@@ -52,6 +52,9 @@ class McpGatewayConfigurationTest {
     // mock JsonMapper used in MCP observation convention
     mockBeans.add(JsonMapper.class);
 
+    // mock qualified JsonMapper dependency used in MCP transports
+    runner = runner.withBean("mcpServerJsonMapper", JsonMapper.class, () -> mock(JsonMapper.class));
+
     for (final Class<?> mockedBean : mockBeans) {
       runner = addMockedBean(runner, mockedBean);
     }

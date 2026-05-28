@@ -125,10 +125,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", 5L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -152,10 +149,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", 5L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", 5L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -174,8 +168,7 @@ class IncidentToolsTest extends ToolsTest {
     void shouldFailGetIncidentByKeyOnMissingKey() {
       // when
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getIncident").arguments(Map.of()).build());
+          mcpClient.callTool(CallToolRequest.builder("getIncident").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -196,8 +189,7 @@ class IncidentToolsTest extends ToolsTest {
       final var arguments = new HashMap<String, Object>();
       arguments.put("incidentKey", null);
       final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder().name("getIncident").arguments(arguments).build());
+          mcpClient.callTool(CallToolRequest.builder("getIncident").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -217,10 +209,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("getIncident")
-                  .arguments(Map.of("incidentKey", -3L))
-                  .build());
+              CallToolRequest.builder("getIncident").arguments(Map.of("incidentKey", -3L)).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -251,8 +240,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(
                       Map.of(
                           "filter",
@@ -284,8 +272,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(
                       Map.of(
                           "filter",
@@ -342,7 +329,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("searchIncidents").arguments(Map.of()).build());
+              CallToolRequest.builder("searchIncidents").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -362,8 +349,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
                   .build());
 
@@ -386,8 +372,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("searchIncidents")
+              CallToolRequest.builder("searchIncidents")
                   .arguments(Map.of("filter", Map.of("creationTime", Map.of("from", "not-a-date"))))
                   .build());
 
@@ -418,8 +403,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -454,8 +438,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -494,8 +477,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", 5L))
                   .build());
 
@@ -521,7 +503,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("resolveIncident").arguments(Map.of()).build());
+              CallToolRequest.builder("resolveIncident").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -543,7 +525,7 @@ class IncidentToolsTest extends ToolsTest {
       arguments.put("incidentKey", null);
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder().name("resolveIncident").arguments(arguments).build());
+              CallToolRequest.builder("resolveIncident").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -563,8 +545,7 @@ class IncidentToolsTest extends ToolsTest {
       // when
       final CallToolResult result =
           mcpClient.callTool(
-              CallToolRequest.builder()
-                  .name("resolveIncident")
+              CallToolRequest.builder("resolveIncident")
                   .arguments(Map.of("incidentKey", -3L))
                   .build());
 
