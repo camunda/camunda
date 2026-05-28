@@ -380,10 +380,13 @@ jobs:
 
       - name: Dispatch one fix-agent run per version
         env:
-          GH_TOKEN:        ${{ steps.secrets.outputs.GH_TOKEN }}
-          REPO:            ${{ github.repository }}
-          DISPATCHES_JSON: ${{ needs.triage.outputs.dispatches }}
-          TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN:            ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:                ${{ github.repository }}
+          DISPATCHES_JSON:     ${{ needs.triage.outputs.dispatches }}
+          TRIAGE_RUN_URL:      ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # schedule always runs on the default branch so ref_name == main;
+          # workflow_dispatch from a feature branch uses that branch, enabling PR-time testing.
+          FIX_WORKFLOW_REF:    ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -394,10 +397,10 @@ jobs:
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
-            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
+            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')  ref=${FIX_WORKFLOW_REF}"
 
             gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
-              --repo "$REPO" --ref main \
+              --repo "$REPO" --ref "${FIX_WORKFLOW_REF}" \
               -f version="$version" \
               -f test_specs="$specs" \
               -f e2e_run_id="$e2e" \
