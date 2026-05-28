@@ -47,8 +47,16 @@ import tools.jackson.databind.node.ObjectNode;
  * <p>This test compares the current tool schema output against a stored snapshot to catch any
  * unintended schema changes during migration (e.g., from @McpTool to @CamundaMcpTool).
  *
- * <p>To update the snapshot after intentional changes, manually update the file at:
- * src/test/resources/schema/tools-schema-snapshot.json
+ * <p>To update the snapshot after intentional changes, start a local Camunda cluster with the MCP
+ * gateway enabled and run (from the repository root):
+ *
+ * <pre>
+ * ./gateways/gateway-mcp/src/test/resources/schema/update-tools-schema-snapshot.sh \
+ *   &gt; gateways/gateway-mcp/src/test/resources/schema/tools-schema-snapshot.json
+ * </pre>
+ *
+ * <p>The script fetches the live {@code tools/list} response from {@code /mcp/cluster}, so the
+ * snapshot reflects what the running server actually serves rather than the partial test context.
  */
 @ContextConfiguration(
     classes = {
@@ -102,23 +110,20 @@ class ToolsSchemaRegressionTest extends OperationalToolsTest {
                             "Tool '"
                                 + toolName
                                 + "' is present but not in snapshot. "
-                                + "If intentional, add it to: src/test/resources/"
-                                + SNAPSHOT_PATH);
+                                + "If intentional, regenerate the snapshot — see class javadoc.");
                       }
                       if (actual == null) {
                         throw new AssertionError(
                             "Tool '"
                                 + toolName
                                 + "' is in snapshot but missing from current tools. "
-                                + "If intentional, remove it from: src/test/resources/"
-                                + SNAPSHOT_PATH);
+                                + "If intentional, regenerate the snapshot — see class javadoc.");
                       }
 
                       JSONAssert.assertEquals(
                           "Schema mismatch for tool '"
                               + toolName
-                              + "'. If intentional, update: src/test/resources/"
-                              + SNAPSHOT_PATH,
+                              + "'. If intentional, regenerate the snapshot — see class javadoc.",
                           OBJECT_MAPPER.writeValueAsString(expected),
                           OBJECT_MAPPER.writeValueAsString(actual),
                           JSONCompareMode.STRICT);
