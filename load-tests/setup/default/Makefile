@@ -67,6 +67,12 @@ ifneq ($(enable_optimize),true)
 	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 		platform_values += --set elasticsearch.enabled=false
 	endif
+else
+	# Optimize needs specifically Elasticsearch (independently from the
+	# secondary storage configuration).
+	ifneq ($(secondary_storage),elasticsearch)
+		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
+	endif
 endif
 
 # Platform values with stable configuration
