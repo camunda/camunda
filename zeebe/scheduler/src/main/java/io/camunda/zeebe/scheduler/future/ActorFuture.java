@@ -328,8 +328,11 @@ public interface ActorFuture<V extends @Nullable Object>
   }
 
   /**
-   * Widens this future's value type to allow null. Safe because consumers only read the value, they
-   * never write to it, making the covariant cast sound in practice.
+   * Widens this future's value type to allow null values in contexts where {@code @Nullable V} is
+   * expected.
+   *
+   * <p><strong>Warning:</strong> this performs an unchecked covariant cast. The cast is sound only
+   * if the caller never calls {@link #complete(Object)} with a `null` value on the returned future.
    */
   @SuppressWarnings("unchecked")
   default ActorFuture<@Nullable V> asNullable() {

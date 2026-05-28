@@ -86,12 +86,12 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
       return CompletableActorFuture.completed(null);
     }
     final ActorFuture<@Nullable PersistedSnapshot> future =
-        receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
+        receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId).asNullable();
     future.onError(error -> tuple.getRight().abort());
     return future;
   }
 
-  private ActorFuture<@Nullable PersistedSnapshot> receiveAllChunks(
+  private ActorFuture<PersistedSnapshot> receiveAllChunks(
       final int partitionId,
       final SnapshotChunk snapshotChunk,
       final ReceivedSnapshot receivedSnapshot,
@@ -108,7 +108,7 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
                 receivedSnapshot.apply(chunk);
                 return receiveAllChunks(partitionId, chunk, receivedSnapshot, transferId);
               } else {
-                return receivedSnapshot.persist().asNullable();
+                return receivedSnapshot.persist();
               }
             },
             actor);

@@ -146,41 +146,41 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
         .orElseGet(() -> createSnapshotForBootstrap(lastProcessedPosition));
   }
 
-  private ActorFuture<@Nullable PersistedSnapshot> createSnapshotForBootstrap(
+  private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(
       final long lastProcessedPosition) {
-    final ActorFuture<@Nullable PersistedSnapshot> lastSnapshot =
+    final var lastSnapshot =
         snapshotStore
             .getLatestSnapshot()
             .filter(snapshot -> metadataProcessedPosition(snapshot) >= lastProcessedPosition)
-            .<ActorFuture<@Nullable PersistedSnapshot>>map(
-                snapshot -> CompletableActorFuture.completed(snapshot).asNullable())
-            .orElseGet(() -> takeSnapshot.takeSnapshot(lastProcessedPosition).asNullable());
+            .<ActorFuture<PersistedSnapshot>>map(CompletableActorFuture::completed)
+            .orElseGet(() -> takeSnapshot.takeSnapshot(lastProcessedPosition));
 
     return lastSnapshot.andThen(
-        persistedSnapshot -> {
-          if (persistedSnapshot == null) {
-            return CompletableActorFuture.completed(null);
-          }
-          return withReservation(
-              persistedSnapshot,
-              () ->
-                  snapshotStore
-                      .copyForBootstrap(persistedSnapshot, copyForBootstrap)
-                      .andThen(
-                          (snapshot, error) -> {
-                            if (error != null) {
-                              if (error instanceof SnapshotAlreadyExistsException) {
-                                return CompletableActorFuture.completed(
-                                    snapshotStore.getBootstrapSnapshot().orElse(null));
+        persistedSnapshot ->
+            withReservation(
+                persistedSnapshot,
+                () ->
+                    snapshotStore
+                        .copyForBootstrap(persistedSnapshot, copyForBootstrap)
+                        .andThen(
+                            (snapshot, error) -> {
+                              if (error != null) {
+                                if (error instanceof SnapshotAlreadyExistsException) {
+                                  return snapshotStore
+                                      .getBootstrapSnapshot()
+                                      .map(CompletableActorFuture::completed)
+                                      .orElse(
+                                          CompletableActorFuture.completedExceptionally(
+                                              new IllegalStateException(
+                                                  "Expected to find a bootstrap snapshot, but none found.")));
+                                } else {
+                                  return CompletableActorFuture.completedExceptionally(error);
+                                }
                               } else {
-                                return CompletableActorFuture.completedExceptionally(error);
+                                return CompletableActorFuture.completed(snapshot);
                               }
-                            } else {
-                              return CompletableActorFuture.completed(snapshot);
-                            }
-                          },
-                          concurrency));
-        },
+                            },
+                            concurrency)),
         concurrency);
   }
 
