@@ -60,6 +60,8 @@ export {
   activateJobAndGetHeaders,
   activateJobsByType,
   completeJob,
+  countJobsByType,
+  expectJobsByType,
   getLast24HoursRange,
   type StatisticsJobItem,
   type ActivatedJob,

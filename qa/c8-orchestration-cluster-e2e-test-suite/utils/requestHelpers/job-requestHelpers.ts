@@ -206,6 +206,40 @@ export function setupProcessInstanceForTests(
   };
 }
 
+/**
+ * Searches for jobs by type and returns their count. Asserts that
+ * /v2/jobs/search returns HTTP 200 (never 500).
+ */
+export async function countJobsByType(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  type: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/jobs/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey, type}, page: {limit: 100}},
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).items.length;
+}
+
+export async function expectJobsByType(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  type: string,
+  expected: number,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await countJobsByType(request, processInstanceKey, type)).toBe(
+      expected,
+    );
+  }).toPass(assertionOptions);
+}
+
 export function getLast24HoursRange() {
   const fromDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago
   const toDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now

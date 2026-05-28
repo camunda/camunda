@@ -39,7 +39,7 @@ public class JobEntityTransformer
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
         .rootProcessInstanceKey(value.getRootProcessInstanceKey())
-        .elementId(value.getFlowNodeId() != null ? value.getFlowNodeId() : "")
+        .elementId(value.getFlowNodeId())
         .elementInstanceKey(value.getFlowNodeInstanceId())
         .tenantId(value.getTenantId())
         .creationTime(value.getCreationTime())

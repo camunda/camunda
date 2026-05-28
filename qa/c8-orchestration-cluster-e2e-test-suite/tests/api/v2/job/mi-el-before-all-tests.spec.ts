@@ -15,14 +15,14 @@ import {
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
-import {
-  defaultAssertionOptions,
-  extendedAssertionOptions,
-} from '../../../../utils/constants';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 import {
   activateJobToObtainAValidJobKey,
   activateJobsByType,
   completeJob,
+  countJobsByType,
+  expectJobsByType,
+  expectProcessState,
 } from '@requestHelpers';
 import {searchIncidentByPIK} from '../../../../utils/requestHelpers/incident-requestHelpers';
 
@@ -36,51 +36,6 @@ const closeAll = async (workers: Worker[]) => {
       // best-effort cleanup
     }
   }
-};
-
-const countJobsByType = async (
-  request: APIRequestContext,
-  processInstanceKey: string,
-  type: string,
-): Promise<number> => {
-  const res = await request.post(buildUrl('/jobs/search'), {
-    headers: jsonHeaders(),
-    data: {filter: {processInstanceKey, type}, page: {limit: 100}},
-  });
-  await assertStatusCode(res, 200);
-  return (await res.json()).items.length;
-};
-
-const expectJobsByType = async (
-  request: APIRequestContext,
-  processInstanceKey: string,
-  type: string,
-  expected: number,
-  assertionOptions = defaultAssertionOptions,
-): Promise<void> => {
-  await expect(async () => {
-    expect(await countJobsByType(request, processInstanceKey, type)).toBe(
-      expected,
-    );
-  }).toPass(assertionOptions);
-};
-
-const expectProcessState = async (
-  request: APIRequestContext,
-  processInstanceKey: string,
-  state: 'ACTIVE' | 'COMPLETED',
-  assertionOptions = defaultAssertionOptions,
-): Promise<void> => {
-  await expect(async () => {
-    const res = await request.post(buildUrl('/process-instances/search'), {
-      headers: jsonHeaders(),
-      data: {filter: {processInstanceKey}},
-    });
-    await assertStatusCode(res, 200);
-    const json = await res.json();
-    expect(json.items).toHaveLength(1);
-    expect(json.items[0].state).toBe(state);
-  }).toPass(assertionOptions);
 };
 
 const countRootScopeVarsByName = async (
@@ -278,8 +233,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           extendedAssertionOptions,
         );
 
-        // ── Recovery: resolve the incident and verify MI proceeds ────────────
-        // Update retries to re-enable activation, then resolve the incident
+        // ── Recovery: update retries + resolve incident ──────────────────────
         const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
           headers: jsonHeaders(),
           data: {changeset: {retries: 1}},
@@ -309,7 +263,6 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
           items: ['alpha', 'beta', 'gamma'],
         });
 
-        // MI body now proceeds normally
         await expectJobsByType(
           request,
           piKey,
@@ -364,7 +317,6 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
       const piKey = String(instance.processInstanceKey);
 
       try {
-        // ── Step 1: beforeAll EL is blocking ────────────────────────────────
         await expectJobsByType(request, piKey, beforeAllJobType, 1);
 
         // Manually activate the beforeAll job — do NOT complete yet
@@ -378,19 +330,16 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         // While beforeAll is still pending, no inner instances must exist
         await expectJobsByType(request, piKey, innerJobType, 0);
 
-        // Complete beforeAll with items (drives inputCollection) + sharedCtx (scope-isolation var)
         await completeJob(request, beforeAllJobs[0].jobKey, {
           items: ['alpha', 'beta', 'gamma'],
           sharedCtx: {env: 'test', batchId: 42},
         });
 
-        // ── Step 2: inner instances — verify scope inheritance ──────────────
         await expectJobsByType(request, piKey, innerJobType, 3);
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
         ).toBe(0);
 
-        // Activate all 3 inner jobs, fetching item + sharedCtx
         const innerJobs = await activateJobsByType(
           request,
           innerJobType,
@@ -412,19 +361,16 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
             env: 'test',
             batchId: 42,
           });
-          // Complete with item-specific result per spec
           await completeJob(request, job.jobKey, {
             result: `${job.variables['item'] as string}_done`,
           });
         }
 
-        // ── Step 3: downstream job — sharedCtx must be absent ───────────────
         await expectJobsByType(request, piKey, downstreamJobType, 1);
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
         ).toBe(0);
 
-        // Activate downstream job fetching sharedCtx — must not be present
         const downstreamJobs = await activateJobsByType(
           request,
           downstreamJobType,
@@ -436,8 +382,8 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
         await completeJob(request, downstreamJobs[0].jobKey);
 
-        // ── Step 4: process completion — final root scope check ─────────────
         await expectProcessState(request, piKey, 'COMPLETED');
+        // sharedCtx must never appear in root scope at any point
         expect(
           await countRootScopeVarsByName(request, piKey, 'sharedCtx'),
         ).toBe(0);
@@ -504,7 +450,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
 
         await expectProcessState(request, piKey, 'COMPLETED');
 
-        // Pure read-through: process-root `count` unchanged.
+        // Pure read-through: process-root `count` unchanged
         const countRes = await request.post(buildUrl('/variables/search'), {
           headers: jsonHeaders(),
           data: {
@@ -523,6 +469,272 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         await cancelProcessInstance(piKey);
         throw e;
       }
+    });
+  });
+
+  /**
+   * E2E-10 — beforeAll + start/end EL co-existence (parallel MI)
+   *
+   * Verifies that introducing a beforeAll EL on an MI element does NOT alter the
+   * semantics of existing start/end ELs. They must continue to fire once per inner
+   * instance ("before each" / "after each"), not once globally.
+   *
+   * BPMN: mi-el-coexistence.bpmn
+   *   - beforeAll EL  "mi-coexist-before-all"   retries=3  → fires once
+   *   - start EL      "mi-coexist-before-each"  retries=3  → fires per inner instance (×3)
+   *   - task          "mi-coexist-inner-worker"             → fires per inner instance (×3)
+   *   - end EL        "mi-coexist-after-each"   retries=3  → fires per inner instance (×3)
+   */
+  test.describe.parallel('beforeAll + start/end EL co-existence', () => {
+    test.describe.parallel('Happy path', () => {
+      const suffix = randomUUID().slice(0, 8);
+      const processId = `mi-el-coexistence-${suffix}`;
+      const beforeAllJobType = `mi-coexist-before-all-${suffix}`;
+      const startElJobType = `mi-coexist-before-each-${suffix}`;
+      const innerJobType = `mi-coexist-inner-worker-${suffix}`;
+      const endElJobType = `mi-coexist-after-each-${suffix}`;
+      const workers: Worker[] = [];
+
+      test.beforeAll(async () => {
+        await deployWithSubstitutions('./resources/mi-el-coexistence.bpmn', {
+          'mi-el-coexistence': processId,
+          'mi-coexist-before-all': beforeAllJobType,
+          'mi-coexist-before-each': startElJobType,
+          'mi-coexist-inner-worker': innerJobType,
+          'mi-coexist-after-each': endElJobType,
+        });
+      });
+
+      test.afterAll(async () => {
+        await closeAll(workers);
+      });
+
+      test('E2E-10: beforeAll fires once; start/end ELs fire per inner instance (×3); process completes with 10 total jobs', async ({
+        request,
+      }) => {
+        const instance = await createSingleInstance(processId, 1);
+        const piKey = String(instance.processInstanceKey);
+
+        try {
+          await expectJobsByType(
+            request,
+            piKey,
+            beforeAllJobType,
+            1,
+            extendedAssertionOptions,
+          );
+          await expectJobsByType(request, piKey, startElJobType, 0);
+          await expectJobsByType(request, piKey, innerJobType, 0);
+          await expectJobsByType(request, piKey, endElJobType, 0);
+
+          workers.push(
+            createWorker(beforeAllJobType, false, {
+              items: ['alpha', 'beta', 'gamma'],
+            }),
+          );
+
+          // ⚠️ CRITICAL REGRESSION CHECK: count=1 means the start EL is being treated as
+          // "before all" — a regression introduced by the beforeAll feature.
+          await expect(async () => {
+            const count = await countJobsByType(request, piKey, startElJobType);
+            if (count === 1) {
+              throw new Error(
+                'REGRESSION DETECTED: mi-coexist-before-each count=1 instead of 3. ' +
+                  'The start EL is being incorrectly treated as "before all" rather than ' +
+                  '"before each". Introducing a beforeAll EL must not alter start EL semantics.',
+              );
+            }
+            expect(count).toBe(3);
+          }).toPass(extendedAssertionOptions);
+          // inner worker jobs must still be blocked until per-instance start EL completes
+          await expectJobsByType(request, piKey, innerJobType, 0);
+
+          workers.push(createWorker(startElJobType));
+
+          await expectJobsByType(
+            request,
+            piKey,
+            innerJobType,
+            3,
+            extendedAssertionOptions,
+          );
+
+          workers.push(createWorker(innerJobType));
+
+          // ⚠️ CRITICAL REGRESSION CHECK: count=1 means end EL has been collapsed to
+          // "after all" semantics — a regression.
+          await expect(async () => {
+            const count = await countJobsByType(request, piKey, endElJobType);
+            if (count === 1) {
+              throw new Error(
+                'REGRESSION DETECTED: mi-coexist-after-each count=1 instead of 3. ' +
+                  'The end EL has been incorrectly collapsed to "after all" semantics. ' +
+                  'Introducing a beforeAll EL must not alter end EL semantics.',
+              );
+            }
+            expect(count).toBe(3);
+          }).toPass(extendedAssertionOptions);
+
+          workers.push(createWorker(endElJobType));
+
+          await expectProcessState(
+            request,
+            piKey,
+            'COMPLETED',
+            extendedAssertionOptions,
+          );
+
+          // Total: 1 + 3 + 3 + 3 = 10 jobs
+          await expectJobsByType(request, piKey, beforeAllJobType, 1);
+          await expectJobsByType(request, piKey, startElJobType, 3);
+          await expectJobsByType(request, piKey, innerJobType, 3);
+          await expectJobsByType(request, piKey, endElJobType, 3);
+        } catch (e) {
+          await cancelProcessInstance(piKey);
+          throw e;
+        }
+      });
+    });
+
+    test.describe.parallel('start EL job failure and recovery', () => {
+      const suffix = randomUUID().slice(0, 8);
+      const processId = `mi-el-coexistence-neg-${suffix}`;
+      const beforeAllJobType = `mi-coexist-before-all-neg-${suffix}`;
+      const startElJobType = `mi-coexist-before-each-neg-${suffix}`;
+      const innerJobType = `mi-coexist-inner-worker-neg-${suffix}`;
+      const endElJobType = `mi-coexist-after-each-neg-${suffix}`;
+
+      test.beforeAll(async () => {
+        await deployWithSubstitutions('./resources/mi-el-coexistence.bpmn', {
+          'mi-el-coexistence': processId,
+          'mi-coexist-before-all': beforeAllJobType,
+          'mi-coexist-before-each': startElJobType,
+          'mi-coexist-inner-worker': innerJobType,
+          'mi-coexist-after-each': endElJobType,
+        });
+      });
+
+      test('/v2/jobs/search returns 200 for all types after a start EL fails (FAILED state, retries > 0)', async ({
+        request,
+      }) => {
+        const instance = await createSingleInstance(processId, 1);
+        const piKey = String(instance.processInstanceKey);
+
+        try {
+          await expect(async () => {
+            const jobs = await activateJobsByType(
+              request,
+              beforeAllJobType,
+              piKey,
+            );
+            expect(jobs).toHaveLength(1);
+            await completeJob(request, jobs[0].jobKey, {
+              items: ['alpha', 'beta', 'gamma'],
+            });
+          }).toPass(extendedAssertionOptions);
+
+          await expectJobsByType(
+            request,
+            piKey,
+            startElJobType,
+            3,
+            extendedAssertionOptions,
+          );
+
+          const startJobs = await activateJobsByType(
+            request,
+            startElJobType,
+            piKey,
+            [],
+            3,
+          );
+          expect(startJobs).toHaveLength(3);
+
+          // Fail one job with retries=1 (FAILED state, no incident, re-activatable immediately)
+          const failRes = await request.post(
+            buildUrl(`/jobs/${startJobs[0].jobKey}/failure`),
+            {
+              headers: jsonHeaders(),
+              data: {retries: 1, errorMessage: 'Simulated start EL failure'},
+            },
+          );
+          await assertStatusCode(failRes, 204);
+
+          for (const j of startJobs.slice(1)) {
+            await completeJob(request, j.jobKey);
+          }
+
+          // TODO: #54238 workaround — activate the failed job before searching
+          // so it is no longer in FAILED/RETRIES_UPDATED state when /jobs/search
+          // is called (those states cause HTTP 500 in the current backend).
+          let retryJobs: Awaited<ReturnType<typeof activateJobsByType>> = [];
+          await expect(async () => {
+            retryJobs = await activateJobsByType(
+              request,
+              startElJobType,
+              piKey,
+            );
+            expect(retryJobs).toHaveLength(1);
+          }).toPass(extendedAssertionOptions);
+          await completeJob(request, retryJobs[0].jobKey);
+
+          // Search after activation: all start EL jobs are now out of FAILED state.
+          await expectJobsByType(
+            request,
+            piKey,
+            startElJobType,
+            3,
+            extendedAssertionOptions,
+          );
+          await expectJobsByType(request, piKey, beforeAllJobType, 1);
+
+          await expectJobsByType(
+            request,
+            piKey,
+            innerJobType,
+            3,
+            extendedAssertionOptions,
+          );
+          const innerJobs = await activateJobsByType(
+            request,
+            innerJobType,
+            piKey,
+            [],
+            3,
+          );
+          for (const j of innerJobs) {
+            await completeJob(request, j.jobKey);
+          }
+
+          await expectJobsByType(
+            request,
+            piKey,
+            endElJobType,
+            3,
+            extendedAssertionOptions,
+          );
+          const endJobs = await activateJobsByType(
+            request,
+            endElJobType,
+            piKey,
+            [],
+            3,
+          );
+          for (const j of endJobs) {
+            await completeJob(request, j.jobKey);
+          }
+
+          await expectProcessState(
+            request,
+            piKey,
+            'COMPLETED',
+            extendedAssertionOptions,
+          );
+        } catch (e) {
+          await cancelProcessInstance(piKey);
+          throw e;
+        }
+      });
     });
   });
 });
