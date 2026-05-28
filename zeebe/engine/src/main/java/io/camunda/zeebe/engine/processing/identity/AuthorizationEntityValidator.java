@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -45,10 +45,10 @@ public class AuthorizationEntityValidator {
   private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final RoleState roleState;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
 
   public AuthorizationEntityValidator(
-      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+      final ProcessingState processingState, final EngineSecurityConfig securityConfig) {
     userState = processingState.getUserState();
     mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();

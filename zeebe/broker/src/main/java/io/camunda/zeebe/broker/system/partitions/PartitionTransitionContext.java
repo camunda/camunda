@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -111,7 +111,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   BrokerCfg getBrokerCfg();
 
-  SecurityConfiguration getSecurityConfig();
+  EngineSecurityConfig getSecurityConfig();
 
   QueryService getQueryService();
 

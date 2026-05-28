@@ -42,9 +42,9 @@ public class ResourceEventsClaimsTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(
               cfg -> {
-                cfg.getAuthorizations().setEnabled(true);
                 cfg.getInitialization().setUsers(List.of(DEFAULT_USER));
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));

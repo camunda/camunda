@@ -14,7 +14,8 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
@@ -83,7 +84,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private Duration shutdownTimeout = Duration.ofSeconds(30);
   private SnowflakeIdGenerator requestIdGenerator = mock(SnowflakeIdGenerator.class);
   private MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private SecurityConfiguration securityConfiguration = new SecurityConfiguration();
+  private EngineSecurityConfig securityConfiguration = EngineSecurityConfigurations.defaultConfig();
   private UserServices userServices = mock(UserServices.class);
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
@@ -372,11 +373,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public SecurityConfiguration getSecurityConfiguration() {
+  public EngineSecurityConfig getSecurityConfiguration() {
     return securityConfiguration;
   }
 
-  public void setSecurityConfiguration(final SecurityConfiguration securityConfiguration) {
+  public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
     this.securityConfiguration = securityConfiguration;
   }
 

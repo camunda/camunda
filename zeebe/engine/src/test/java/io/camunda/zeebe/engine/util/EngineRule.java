@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -133,8 +134,9 @@ public final class EngineRule extends ExternalResource {
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
-  private Consumer<SecurityConfiguration> securityConfigModifier =
-      cfg -> cfg.getAuthorizations().setEnabled(false);
+  private boolean securityAuthorizationsEnabled = false;
+  private boolean securityMultiTenancyChecksEnabled = false;
+  private Consumer<EngineSecurityConfig> securityConfigModifier = cfg -> {};
   private Consumer<EngineConfiguration> engineConfigModifier =
       cfg -> {
         // identity setup is disabled by default so we can have deterministic writes
@@ -265,8 +267,18 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
+  public EngineRule withSecurityConfig(final Consumer<EngineSecurityConfig> modifier) {
     securityConfigModifier = securityConfigModifier.andThen(modifier);
+    return this;
+  }
+
+  public EngineRule withAuthorizationsEnabled(final boolean enabled) {
+    securityAuthorizationsEnabled = enabled;
+    return this;
+  }
+
+  public EngineRule withMultiTenancyChecksEnabled(final boolean enabled) {
+    securityMultiTenancyChecksEnabled = enabled;
     return this;
   }
 
@@ -320,6 +332,12 @@ public final class EngineRule extends ExternalResource {
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
+    final var securityConfig =
+        EngineSecurityConfigurations.defaultConfig()
+            .withAuthorizationsEnabled(securityAuthorizationsEnabled)
+            .withMultiTenancyChecksEnabled(securityMultiTenancyChecksEnabled);
+    securityConfigModifier.accept(securityConfig);
+
     forEachPartition(
         partitionId -> {
           final var interPartitionCommandSender =
@@ -346,7 +364,6 @@ public final class EngineRule extends ExternalResource {
                   dbRoutingState.setDesiredPartitions(state.desiredPartitions(), 0L);
                 }
 
-                securityConfigModifier.accept(recordProcessorContext.getSecurityConfig());
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
                         recordProcessorContext,
@@ -376,7 +393,8 @@ public final class EngineRule extends ExternalResource {
                     }
                   }),
               cfg -> cfg.streamProcessorMode(mode),
-              awaitOpening);
+              awaitOpening,
+              securityConfig);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }

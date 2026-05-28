@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -15,7 +16,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +34,7 @@ public abstract class GatewayTest {
   protected StubbedBrokerClient brokerClient;
   protected StubbedJobStreamer jobStreamer;
 
-  public GatewayTest(final GatewayCfg config, final SecurityConfiguration securityConfiguration) {
+  public GatewayTest(final GatewayCfg config, final EngineSecurityConfig securityConfiguration) {
     actorClock = new ControlledActorClock();
     actorSchedulerRule = new ActorSchedulerRule(actorClock);
     gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config, securityConfiguration);
@@ -41,28 +42,21 @@ public abstract class GatewayTest {
   }
 
   public GatewayTest() {
-    this(new GatewayCfg(), new SecurityConfiguration());
-  }
-
-  private GatewayTest(
-      final Supplier<GatewayCfg> configSupplier,
-      final Supplier<SecurityConfiguration> securitySupplier) {
-    this(configSupplier.get(), securitySupplier.get());
+    this(new GatewayCfg(), EngineSecurityConfigurations.defaultConfig());
   }
 
   public GatewayTest(
-      final Consumer<GatewayCfg> modifier, final Consumer<SecurityConfiguration> securityModifier) {
+      final Consumer<GatewayCfg> modifier,
+      final UnaryOperator<EngineSecurityConfig> securityOperator) {
     this(
-        () -> {
-          final GatewayCfg config = new GatewayCfg();
-          modifier.accept(config);
-          return config;
-        },
-        () -> {
-          final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
-          securityModifier.accept(securityConfiguration);
-          return securityConfiguration;
-        });
+        applyGatewayCfg(modifier),
+        securityOperator.apply(EngineSecurityConfigurations.defaultConfig()));
+  }
+
+  private static GatewayCfg applyGatewayCfg(final Consumer<GatewayCfg> modifier) {
+    final GatewayCfg config = new GatewayCfg();
+    modifier.accept(config);
+    return config;
   }
 
   @Before

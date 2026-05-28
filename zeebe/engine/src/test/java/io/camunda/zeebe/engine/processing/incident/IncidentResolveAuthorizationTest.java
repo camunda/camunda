@@ -46,7 +46,7 @@ public class IncidentResolveAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
               cfg -> {

@@ -30,11 +30,7 @@ public class IncidentResolveRejectionCommandTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withSecurityConfig(
-              config -> {
-                config.getMultiTenancy().setChecksEnabled(true);
-              });
+      EngineRule.singlePartition().withMultiTenancyChecksEnabled(true);
 
   private static final String TENANT = "custom-tenant";
   private static final String USERNAME = "tenant-user";

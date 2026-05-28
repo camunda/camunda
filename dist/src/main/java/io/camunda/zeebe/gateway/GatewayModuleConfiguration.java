@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
@@ -53,7 +54,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayBasedConfiguration configuration;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig engineSecurityConfig;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -84,7 +85,14 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final MeterRegistry meterRegistry,
       final GatewayRestConfiguration gatewayRestConfiguration) {
     this.configuration = configuration;
-    this.securityConfiguration = securityConfiguration;
+    this.engineSecurityConfig =
+        new EngineSecurityConfig(
+            securityConfiguration.getAuthentication(),
+            securityConfiguration.getAuthorizations().isEnabled(),
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
+            securityConfiguration.getInitialization(),
+            securityConfiguration.getCompiledIdValidationPattern(),
+            securityConfiguration.getCompiledGroupIdValidationPattern());
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -119,7 +127,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
-            securityConfiguration,
+            engineSecurityConfig,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

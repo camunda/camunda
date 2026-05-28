@@ -11,7 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -103,7 +103,7 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
-  private final SecurityConfiguration securityConfig;
+  private final EngineSecurityConfig securityConfig;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
@@ -124,7 +124,7 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final SecurityConfiguration securityConfig,
+      final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,

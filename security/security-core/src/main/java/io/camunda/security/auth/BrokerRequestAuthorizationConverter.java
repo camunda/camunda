@@ -14,7 +14,7 @@ import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +36,13 @@ public class BrokerRequestAuthorizationConverter {
   private final boolean groupsClaimConfigured;
   private final boolean shouldIncludeAuthorizationClaims;
 
-  public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
+  public BrokerRequestAuthorizationConverter(final EngineSecurityConfig securityConfiguration) {
     camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
     final var oidc = securityConfiguration.getAuthentication().getOidc();
     groupsClaimConfigured = oidc != null && oidc.isGroupsClaimConfigured();
     shouldIncludeAuthorizationClaims =
-        securityConfiguration.getAuthorizations().isEnabled()
-            || securityConfiguration.getMultiTenancy().isChecksEnabled();
+        securityConfiguration.isAuthorizationsEnabled()
+            || securityConfiguration.isMultiTenancyChecksEnabled();
   }
 
   /** Returns whether authorization claims (token claims, groups) are needed in broker requests. */

@@ -54,9 +54,7 @@ public class AnonymousAuthorizationTest {
 
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withIdentitySetup()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
+      EngineRule.singlePartition().withIdentitySetup().withAuthorizationsEnabled(true);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

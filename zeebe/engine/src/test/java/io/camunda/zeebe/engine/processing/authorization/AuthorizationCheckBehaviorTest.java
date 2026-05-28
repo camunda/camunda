@@ -17,8 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
@@ -80,13 +79,10 @@ final class AuthorizationCheckBehaviorTest {
 
   @BeforeEach
   public void before() {
-    final var securityConfig = new SecurityConfiguration();
-    final var authConfig = new AuthorizationsConfiguration();
     final var engineConfig = new EngineConfiguration();
-    authConfig.setEnabled(true);
-    securityConfig.setAuthorizations(authConfig);
     authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
+        new AuthorizationCheckBehavior(
+            processingState, EngineSecurityConfigurations.defaultConfig(), engineConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =
@@ -1497,14 +1493,10 @@ final class AuthorizationCheckBehaviorTest {
   @Test
   void shouldExpireAuthorizationCacheAfterConfiguredTtl() {
     // given: authorizations enabled and a very short cache TTL
-    final var securityConfig = new SecurityConfiguration();
-    final var authConfig = new AuthorizationsConfiguration();
-    authConfig.setEnabled(true);
-    securityConfig.setAuthorizations(authConfig);
-
     final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofSeconds(1));
     authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(processingState, securityConfig, config);
+        new AuthorizationCheckBehavior(
+            processingState, EngineSecurityConfigurations.defaultConfig(), config);
 
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;

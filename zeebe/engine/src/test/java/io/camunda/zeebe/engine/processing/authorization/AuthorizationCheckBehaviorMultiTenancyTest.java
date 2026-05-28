@@ -14,9 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,14 +80,15 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
   @BeforeEach
   void before() {
-    final var securityConfig = new SecurityConfiguration();
-    final var authConfig = new AuthorizationsConfiguration();
     final var engineConfig = new EngineConfiguration();
-    authConfig.setEnabled(true);
-    securityConfig.setAuthorizations(authConfig);
-    final var multiTenancyConfig = new MultiTenancyConfiguration();
-    multiTenancyConfig.setChecksEnabled(true);
-    securityConfig.setMultiTenancy(multiTenancyConfig);
+    final var securityConfig =
+        new EngineSecurityConfig(
+            new AuthenticationConfiguration(),
+            /* authorizationsEnabled= */ true,
+            /* multiTenancyChecksEnabled= */ true,
+            new InitializationConfiguration(),
+            Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
+            Pattern.compile(".*", Pattern.DOTALL));
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
 

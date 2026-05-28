@@ -57,14 +57,14 @@ public final class AgentInstanceCreateAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               cfg -> {
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
                 cfg.getInitialization().setDefaultRoles(defaultRoles);
-                cfg.getMultiTenancy().setChecksEnabled(true);
               });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();

@@ -14,8 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
@@ -70,13 +69,10 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
   @BeforeEach
   public void before() {
-    final var securityConfig = new SecurityConfiguration();
-    final var authConfig = new AuthorizationsConfiguration();
     final var engineConfig = new EngineConfiguration();
-    authConfig.setEnabled(true);
-    securityConfig.setAuthorizations(authConfig);
     authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
+        new AuthorizationCheckBehavior(
+            processingState, EngineSecurityConfigurations.defaultConfig(), engineConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =

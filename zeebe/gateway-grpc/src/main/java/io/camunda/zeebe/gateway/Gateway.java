@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
@@ -90,7 +90,7 @@ public final class Gateway implements CloseableSilently {
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
-  private final SecurityConfiguration securityConfiguration;
+  private final EngineSecurityConfig securityConfiguration;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -108,7 +108,7 @@ public final class Gateway implements CloseableSilently {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
@@ -134,7 +134,7 @@ public final class Gateway implements CloseableSilently {
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
@@ -160,7 +160,7 @@ public final class Gateway implements CloseableSilently {
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
-      final SecurityConfiguration securityConfiguration,
+      final EngineSecurityConfig securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
@@ -451,7 +451,7 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
-    if (securityConfiguration.isApiProtected()) {
+    if (!securityConfiguration.getAuthentication().isUnprotectedApi()) {
       final var authMethod = securityConfiguration.getAuthentication().getMethod();
       final var handler =
           switch (authMethod) {
