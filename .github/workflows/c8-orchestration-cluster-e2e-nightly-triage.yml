@@ -10,6 +10,8 @@
 name: C8 Orchestration Cluster Nightly Triage
 
 on:
+  pull_request:
+    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
   schedule:
     - cron: '0 4 * * *'   # 04:00 UTC — after all nightlies finish (00:00–01:45 starts)
                           # and before close-stale-fix-prs.yml runs at 05:00 UTC.
