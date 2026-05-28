@@ -281,16 +281,27 @@ test.describe('Process Instances Table', () => {
       // 350 instances can take longer than 10s to be indexed on a loaded
       // shared cluster, and waitForAssertion's default 3 reloads aren't
       // enough budget. Give each poll a longer timeout and more retries.
+      //
+      // Use >= comparison instead of exact text match: Playwright retries
+      // re-run beforeAll (same Docker container, no data wipe), which adds
+      // another 350 instances. The exact "350 results" text would never
+      // match on a retry run — asserting >= 350 handles both cases.
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            page.getByText(`${amountOfInstancesForInfiniteScroll} results`),
-          ).toBeVisible({timeout: 30000});
+          await expect
+            .poll(
+              async () => {
+                const text = await page.getByText(/\d+ results/).textContent();
+                return parseInt(text?.replace(' results', '') ?? '0', 10);
+              },
+              {timeout: 30000, intervals: [1000]},
+            )
+            .toBeGreaterThanOrEqual(amountOfInstancesForInfiniteScroll);
         },
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 6,
+        maxRetries: 10,
       });
       await operateProcessesPage.clickProcessInstanceKeySortButton();
       await expect(instanceRows).toHaveCount(50);

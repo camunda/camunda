@@ -164,6 +164,12 @@ test.describe('Operations', () => {
       await operateFiltersPanelPage.clickIncidentsInstancesCheckbox();
       await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
 
+      // AutoSubmit has a 100ms throttle for checkbox fields. Ensure the URL
+      // reflects `canceled=true` before entering the reload loop — otherwise
+      // page.reload() fires with the old URL and the canceled filter is lost,
+      // making TERMINATED icons invisible after the reload.
+      await expect.poll(() => page.url()).toContain('canceled');
+
       await expect(
         operateProcessesPage.batchOperationStartedMessage(
           'Cancel Process Instance',
@@ -188,6 +194,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
   });
