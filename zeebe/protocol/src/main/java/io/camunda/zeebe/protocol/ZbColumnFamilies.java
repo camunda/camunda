@@ -279,7 +279,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
 
   // agent instances (scoped to a process instance, which lives on a single partition)
-  AGENT_INSTANCES(143, PARTITION_LOCAL);
+  AGENT_INSTANCES(143, PARTITION_LOCAL),
+
+  // metadata in a command distribuation record
+  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

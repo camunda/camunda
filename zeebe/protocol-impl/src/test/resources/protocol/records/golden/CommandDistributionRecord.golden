@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.distribution;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -61,6 +64,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
   private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
+  private static final StringValue START_TIME_KEY = new StringValue("startTime");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
@@ -84,6 +88,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationPartitionLifecycleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CLUSTER_VARIABLE, ClusterVariableRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.GLOBAL_LISTENER_BATCH, GlobalListenerBatchRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.GLOBAL_LISTENER, GlobalListenerRecord::new);
   }
 
   private final IntegerProperty partitionIdProperty = new IntegerProperty(PARTITION_ID_KEY);
@@ -97,15 +103,17 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
       new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
+  private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
 
   public CommandDistributionRecord() {
-    super(5);
+    super(7);
     declareProperty(partitionIdProperty)
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty)
-        .declareProperty(authInfoProperty);
+        .declareProperty(authInfoProperty)
+        .declareProperty(startTimeProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
@@ -216,6 +224,15 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  public long getStartTime() {
+    return startTimeProperty.getValue();
+  }
+
+  public CommandDistributionRecord setStartTime(final long startTimeProperty) {
+    this.startTimeProperty.setValue(startTimeProperty);
     return this;
   }
 

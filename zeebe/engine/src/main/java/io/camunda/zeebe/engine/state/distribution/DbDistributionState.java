@@ -45,6 +45,10 @@ public class DbDistributionState implements MutableDistributionState {
   private final ColumnFamily<DbLong, PersistedCommandDistribution>
       commandDistributionRecordColumnFamily;
 
+  /** [distribution key | partition id] => [DistributionMetadata] */
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DistributionMetadata>
+      distributionMetadataColumnFamily;
+
   /** [queue id | partition id | distribution key ] => [] */
   private final ColumnFamily<
           DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>, DbNil>
@@ -90,6 +94,13 @@ public class DbDistributionState implements MutableDistributionState {
             distributionPartitionKey,
             DbNil.INSTANCE);
 
+    distributionMetadataColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.COMMAND_DISTRIBUTION_METADATA,
+            transactionContext,
+            distributionPartitionKey,
+            new DistributionMetadata());
+
     queueId = new DbString();
     queuePerPartitionKey = new DbCompositeKey<>(queueId, partitionKey);
     queuedDistributionKey =
@@ -127,9 +138,19 @@ public class DbDistributionState implements MutableDistributionState {
 
   @Override
   public void addRetriableDistribution(final long distributionKey, final int partition) {
+    addRetriableDistribution(distributionKey, partition, -1L);
+  }
+
+  @Override
+  public void addRetriableDistribution(
+      final long distributionKey, final int partition, final long startTime) {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);
+    if (startTime > -1L) {
+      distributionMetadataColumnFamily.insert(
+          distributionPartitionKey, new DistributionMetadata().setStartTime(startTime));
+    }
   }
 
   @Override
@@ -137,6 +158,7 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.deleteExisting(distributionPartitionKey);
+    distributionMetadataColumnFamily.deleteIfExists(distributionPartitionKey);
   }
 
   @Override
@@ -261,6 +283,15 @@ public class DbDistributionState implements MutableDistributionState {
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue())
         .setAuthInfo(persistedDistribution.getAuthInfo());
+  }
+
+  @Override
+  public Optional<DistributionMetadata> getDistributionMetadata(
+      final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    return Optional.ofNullable(distributionMetadataColumnFamily.get(distributionPartitionKey))
+        .map(metadata -> new DistributionMetadata().setStartTime(metadata.getStartTime()));
   }
 
   @Override

@@ -39,6 +39,9 @@
             },
             "commandValue": {
               "enabled": false
+            },
+            "startTime": {
+              "type": "long"
             }
           }
         }
