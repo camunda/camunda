@@ -221,6 +221,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setBpmnProcessId(job.getBpmnProcessIdBuffer())
             .setProcessDefinitionKey(job.getProcessDefinitionKey())
             .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setOrdinalKey(job.getOrdinalKey())
             .setElementId(job.getElementIdBuffer())
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)

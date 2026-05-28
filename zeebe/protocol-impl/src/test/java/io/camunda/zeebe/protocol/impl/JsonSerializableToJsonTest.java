@@ -698,6 +698,7 @@ final class JsonSerializableToJsonTest {
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setProcessInstanceKey(processInstanceKey)
+                  .setOrdinalKey(111)
                   .setElementId(wrapString(elementId))
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setErrorMessage(errorMessage)
@@ -723,7 +724,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[[101, 102], [103, 104]],
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
-                  "rootProcessInstanceKey": 101
+                  "rootProcessInstanceKey": 101,
+                  "ordinalKey": 111
                 }
                 """
       },
@@ -750,7 +752,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[],
                   "processDefinitionPath":[],
                   "callingElementPath":[],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "ordinalKey": 0
                 }
                 """
       },

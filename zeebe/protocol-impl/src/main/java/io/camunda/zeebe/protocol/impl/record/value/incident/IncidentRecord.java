@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.incident;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
@@ -43,6 +44,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private static final StringValue PROCESS_DEFINITION_PATH_KEY =
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
+  private static final StringValue ORDINAL_KEY_KEY = new StringValue("ordinalKey");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -65,9 +67,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
+  private final IntegerProperty ordinalKeyProp = new IntegerProperty(ORDINAL_KEY_KEY, 0);
 
   public IncidentRecord() {
-    super(13);
+    super(14);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -80,7 +83,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
+        .declareProperty(callingElementPathProp)
+        .declareProperty(ordinalKeyProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -97,6 +101,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     setElementInstancePath(record.getElementInstancePath());
     setProcessDefinitionPath(record.getProcessDefinitionPath());
     setCallingElementPath(record.getCallingElementPath());
+    setOrdinalKey(record.getOrdinalKey());
   }
 
   @JsonIgnore
@@ -125,13 +130,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
-    return this;
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -142,11 +142,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -166,6 +161,31 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    // The root process instance key is the first element of the first list in the
+    // elementInstancePath
+    final var iterator = elementInstancePathProp.iterator();
+    if (iterator.hasNext()) {
+      final var firstList = iterator.next();
+      final var listIterator = firstList.iterator();
+      if (listIterator.hasNext()) {
+        return listIterator.next().getValue();
+      }
+    }
+    return -1L;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
     return this;
   }
 
@@ -232,21 +252,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  @Override
-  public long getRootProcessInstanceKey() {
-    // The root process instance key is the first element of the first list in the
-    // elementInstancePath
-    final var iterator = elementInstancePathProp.iterator();
-    if (iterator.hasNext()) {
-      final var firstList = iterator.next();
-      final var listIterator = firstList.iterator();
-      if (listIterator.hasNext()) {
-        return listIterator.next().getValue();
-      }
-    }
-    return -1L;
-  }
-
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
     return this;
@@ -269,6 +274,16 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setErrorType(final ErrorType errorType) {
     errorTypeProp.setValue(errorType);
+    return this;
+  }
+
+  @Override
+  public int getOrdinalKey() {
+    return ordinalKeyProp.getValue();
+  }
+
+  public IncidentRecord setOrdinalKey(int ordinalKey) {
+    ordinalKeyProp.setValue(ordinalKey);
     return this;
   }
 
