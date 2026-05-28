@@ -362,6 +362,7 @@ dependencies {
     implementation(project(":app-integrations-exporter")) {
         exclude(group = "commons-logging", module = "commons-logging")
     }
+    implementation(project(":analytics-exporter"))
     implementation(project(":zeebe-elasticsearch-exporter")) {
         exclude(group = "commons-logging", module = "commons-logging")
     }
