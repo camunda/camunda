@@ -9,16 +9,16 @@ package io.camunda.zeebe.backup.azure;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.azure.core.http.rest.Response;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.batch.BlobBatch;
 import com.azure.storage.blob.batch.BlobBatchClient;
+import com.azure.storage.blob.batch.BlobBatchStorageException;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +45,6 @@ final class FileSetManagerTest {
     // given - 257 URLs exceeds MAX_DELETE_BATCH_SIZE (256)
     final var blobBatch = mock(BlobBatch.class);
     when(blobBatchClient.getBlobBatch()).thenReturn(blobBatch);
-    final var response = mock(Response.class);
-    when(response.getStatusCode()).thenReturn(202);
-    when(blobBatch.deleteBlob(anyString())).thenReturn(response);
     final var urls =
         IntStream.range(0, 257)
             .mapToObj(i -> "https://test.blob.core.windows.net/container/file" + i)
@@ -66,14 +63,11 @@ final class FileSetManagerTest {
     // given
     final var blobBatch = mock(BlobBatch.class);
     when(blobBatchClient.getBlobBatch()).thenReturn(blobBatch);
-    final var failedResponse = mock(Response.class);
-    when(failedResponse.getStatusCode()).thenReturn(412);
-    when(blobBatch.deleteBlob(anyString())).thenReturn(failedResponse);
+    doThrow(mock(BlobBatchStorageException.class)).when(blobBatchClient).submitBatch(any());
     final var url = "https://test.blob.core.windows.net/container/file1";
 
     // when/then
     assertThatThrownBy(() -> manager.deleteBlobs(List.of(url)))
-        .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Failures detected in the blob batch deletion");
+        .isInstanceOf(BlobBatchStorageException.class);
   }
 }
