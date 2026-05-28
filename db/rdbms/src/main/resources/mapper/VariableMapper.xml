@@ -196,4 +196,5 @@
       SET PROCESS_DEFINITION_ID = #{processDefinitionId}
       WHERE VAR_KEY = #{variableKey}
   </update>
+
 </mapper>

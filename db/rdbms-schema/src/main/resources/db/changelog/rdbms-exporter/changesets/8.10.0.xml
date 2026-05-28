@@ -370,4 +370,20 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="create_process_def_var_name_lookup_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}PROCESS_DEF_VAR_NAME_LOOKUP"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}PROCESS_DEF_VAR_NAME_LOOKUP">
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
+        <constraints nullable="false" primaryKey="true"/>
+      </column>
+      <column name="VAR_NAME" type="NVARCHAR(${userCharColumnSize})">
+        <constraints nullable="false" primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>

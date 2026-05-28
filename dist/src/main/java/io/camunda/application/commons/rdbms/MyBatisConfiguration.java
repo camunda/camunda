@@ -37,6 +37,7 @@ import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
@@ -421,6 +422,13 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<WaitStateMapper> waitStateMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, WaitStateMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<ProcessDefinitionVariableNameLookupMapper>
+      processDefinitionVariableNameLookupMapper(final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(
+        sqlSessionFactory, ProcessDefinitionVariableNameLookupMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

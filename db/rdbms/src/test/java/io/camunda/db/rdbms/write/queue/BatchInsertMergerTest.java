@@ -54,7 +54,8 @@ class BatchInsertMergerTest {
             "process1",
             "tenant1",
             1,
-            -1L);
+            -1L,
+            null);
 
     final var variable2 =
         new VariableDbModel(
@@ -72,7 +73,8 @@ class BatchInsertMergerTest {
             "process1",
             "tenant1",
             1,
-            -1L);
+            -1L,
+            null);
 
     final var merger = new InsertVariableMerger(variable2, 50);
     final var parameter = new BatchInsertDto<>(List.of(variable1));
@@ -215,7 +217,8 @@ class BatchInsertMergerTest {
             "process1",
             "tenant1",
             1,
-            -1L);
+            -1L,
+            null);
 
     final var merger = new InsertVariableMerger(variable, 2); // Max batch size of 2
 
@@ -245,7 +248,8 @@ class BatchInsertMergerTest {
             "process1",
             "tenant1",
             1,
-            -1L);
+            -1L,
+            null);
 
     final var merger = new InsertVariableMerger(variable, 1); // Max batch size of 1
 

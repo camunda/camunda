@@ -8,8 +8,10 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -17,22 +19,30 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
+  private final ProcessDefinitionVariableNameLookupMapper lookupMapper;
+  private final Map<Long, Set<String>> processVariableNameCache = new HashMap<>();
 
   public VariableWriter(
       final ExecutionQueue executionQueue,
       final VariableMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final RdbmsWriterConfig config) {
+      final RdbmsWriterConfig config,
+      final ProcessDefinitionVariableNameLookupMapper lookupMapper) {
     super(mapper);
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
+    this.lookupMapper = lookupMapper;
   }
 
   public void create(final VariableDbModel variable) {
@@ -55,6 +65,8 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               "io.camunda.db.rdbms.sql.VariableMapper.insert",
               new BatchInsertDto<>(truncatedVariable)));
     }
+
+    maybeRecordVariableName(variable);
   }
 
   public void update(final VariableDbModel variable) {
@@ -79,5 +91,24 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             new VariableMapper.MigrateToProcessDto.Builder()
                 .variableKey(variableKey)
                 .processDefinitionId(processDefinitionId)));
+  }
+
+  private void maybeRecordVariableName(final VariableDbModel variable) {
+    final Long pdKey = variable.processDefinitionKey();
+    if (pdKey == null || pdKey <= 0) {
+      return;
+    }
+    final Set<String> names =
+        processVariableNameCache.computeIfAbsent(
+            pdKey, k -> new HashSet<>(lookupMapper.findVariableNames(k)));
+    if (names.add(variable.name())) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_DEF_VAR_NAME_LOOKUP,
+              WriteStatementType.INSERT,
+              pdKey,
+              "io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper.insertIfNotExists",
+              new ProcessDefinitionVariableNameLookupDbModel(pdKey, variable.name())));
+    }
   }
 }

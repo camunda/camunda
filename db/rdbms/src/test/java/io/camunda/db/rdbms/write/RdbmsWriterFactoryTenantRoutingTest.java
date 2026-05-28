@@ -28,6 +28,7 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -112,6 +113,7 @@ class RdbmsWriterFactoryTenantRoutingTest {
         mock(ClusterVariableMapper.class),
         mock(HistoryDeletionMapper.class),
         mock(AgentInstanceMapper.class),
-        mock(WaitStateMapper.class));
+        mock(WaitStateMapper.class),
+        mock(ProcessDefinitionVariableNameLookupMapper.class));
   }
 }
