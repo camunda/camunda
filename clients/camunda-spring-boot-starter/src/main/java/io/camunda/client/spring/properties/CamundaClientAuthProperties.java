@@ -143,8 +143,8 @@ public class CamundaClientAuthProperties {
 
   /**
    * The set of HTTP status codes from the token endpoint that are retried with backoff. Any other
-   * non-200 status code triggers the cooldown defined by {@code token-fetch-non-retryable-cooldown}
-   * .
+   * non-200 status code triggers the cooldown defined by {@code
+   * token-fetch-non-retryable-cooldown}.
    */
   private Set<Integer> tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 
