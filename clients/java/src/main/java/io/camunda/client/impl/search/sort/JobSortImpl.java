@@ -61,6 +61,11 @@ public class JobSortImpl extends SearchRequestSortBase<JobSort> implements JobSo
   }
 
   @Override
+  public JobSort priority() {
+    return field("priority");
+  }
+
+  @Override
   public JobSort jobKey() {
     return field("jobKey");
   }

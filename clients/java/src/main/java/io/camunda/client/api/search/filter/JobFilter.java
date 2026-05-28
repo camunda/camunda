@@ -144,6 +144,24 @@ public interface JobFilter extends SearchRequestFilter {
   JobFilter retries(final Consumer<IntegerProperty> fn);
 
   /**
+   * Filters jobs by the specified priority. Jobs created before 8.10 have no stored priority and
+   * are excluded from results when this filter is applied.
+   *
+   * @param priority the priority of the job
+   * @return the updated filter
+   */
+  JobFilter priority(final Integer priority);
+
+  /**
+   * Filters jobs by the specified priority using {@link IntegerProperty} consumer. Jobs created
+   * before 8.10 have no stored priority and are excluded from results when this filter is applied.
+   *
+   * @param fn the priority {@link IntegerProperty} consumer of the job
+   * @return the updated filter
+   */
+  JobFilter priority(final Consumer<IntegerProperty> fn);
+
+  /**
    * Filters jobs by the specified job key.
    *
    * @param value the key of the job

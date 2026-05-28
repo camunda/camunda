@@ -88,7 +88,8 @@ public class SearchJobTest extends ClientRestTest {
                     .errorMessage(f11 -> f11.eq("errorMessage"))
                     .hasFailedWithRetriesLeft(true)
                     .isDenied(false)
-                    .retries(f12 -> f12.eq(3)))
+                    .retries(f12 -> f12.eq(3))
+                    .priority(f13 -> f13.gte(5)))
         .send()
         .join();
 
@@ -139,6 +140,19 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter().getIsDenied()).isEqualTo(false);
     assertThat(request.getFilter().getRetries()).isNotNull();
     assertThat(request.getFilter().getRetries().get$Eq()).isEqualTo(3);
+    assertThat(request.getFilter().getPriority()).isNotNull();
+    assertThat(request.getFilter().getPriority().get$Gte()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldSearchJobWithPriorityEqualityFilter() {
+    // when
+    client.newJobSearchRequest().filter(f -> f.priority(50)).send().join();
+
+    // then
+    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
+    assertThat(request.getFilter().getPriority()).isNotNull();
+    assertThat(request.getFilter().getPriority().get$Eq()).isEqualTo(50);
   }
 
   @ParameterizedTest
@@ -263,7 +277,9 @@ public class SearchJobTest extends ClientRestTest {
                     .isDenied()
                     .asc()
                     .retries()
-                    .desc())
+                    .desc()
+                    .priority()
+                    .asc())
         .send()
         .join();
 
@@ -272,7 +288,7 @@ public class SearchJobTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromJobSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(20);
+    assertThat(sorts).hasSize(21);
     assertSort(sorts.get(0), "jobKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "type", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "worker", SortOrderEnum.ASC);
@@ -293,5 +309,6 @@ public class SearchJobTest extends ClientRestTest {
     assertSort(sorts.get(17), "hasFailedWithRetriesLeft", SortOrderEnum.DESC);
     assertSort(sorts.get(18), "isDenied", SortOrderEnum.ASC);
     assertSort(sorts.get(19), "retries", SortOrderEnum.DESC);
+    assertSort(sorts.get(20), "priority", SortOrderEnum.ASC);
   }
 }

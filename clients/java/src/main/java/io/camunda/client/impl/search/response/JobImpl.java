@@ -34,6 +34,7 @@ public class JobImpl implements Job {
   private final JobKind kind;
   private final ListenerEventType listenerEventType;
   private final Integer retries;
+  private final Integer priority;
   private final Boolean isDenied;
   private final String deniedReason;
   private final Boolean hasFailedWithRetriesLeft;
@@ -60,6 +61,7 @@ public class JobImpl implements Job {
     kind = EnumUtil.convert(item.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(item.getListenerEventType(), ListenerEventType.class);
     retries = item.getRetries();
+    priority = item.getPriority();
     isDenied = item.getIsDenied();
     deniedReason = item.getDeniedReason();
     hasFailedWithRetriesLeft = item.getHasFailedWithRetriesLeft();
@@ -112,6 +114,11 @@ public class JobImpl implements Job {
   @Override
   public Integer getRetries() {
     return retries;
+  }
+
+  @Override
+  public Integer getPriority() {
+    return priority;
   }
 
   @Override
