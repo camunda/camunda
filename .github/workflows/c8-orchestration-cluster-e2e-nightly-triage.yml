@@ -10,8 +10,6 @@
 name: C8 Orchestration Cluster Nightly Triage
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
   schedule:
     - cron: '0 4 * * *'   # 04:00 UTC — after all nightlies finish (00:00–01:45 starts)
                           # and before close-stale-fix-prs.yml runs at 05:00 UTC.
@@ -357,7 +355,7 @@ jobs:
   dispatch:
     name: Dispatch fix agents
     needs: triage
-    if: ${{ github.event_name != 'pull_request' && github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != '[]' && needs.triage.outputs.dispatches != '' }}
+    if: ${{ github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != '[]' && needs.triage.outputs.dispatches != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -380,13 +378,10 @@ jobs:
 
       - name: Dispatch one fix-agent run per version
         env:
-          GH_TOKEN:            ${{ steps.secrets.outputs.GH_TOKEN }}
-          REPO:                ${{ github.repository }}
-          DISPATCHES_JSON:     ${{ needs.triage.outputs.dispatches }}
-          TRIAGE_RUN_URL:      ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          # schedule always runs on the default branch so ref_name == main;
-          # workflow_dispatch from a feature branch uses that branch, enabling PR-time testing.
-          FIX_WORKFLOW_REF:    ${{ github.ref_name }}
+          GH_TOKEN:        ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:            ${{ github.repository }}
+          DISPATCHES_JSON: ${{ needs.triage.outputs.dispatches }}
+          TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
 
@@ -397,10 +392,10 @@ jobs:
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
-            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')  ref=${FIX_WORKFLOW_REF}"
+            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
 
             gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
-              --repo "$REPO" --ref "${FIX_WORKFLOW_REF}" \
+              --repo "$REPO" --ref main \
               -f version="$version" \
               -f test_specs="$specs" \
               -f e2e_run_id="$e2e" \
