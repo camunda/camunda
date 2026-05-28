@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,18 +29,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.BulkRequest.Builder;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
-import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.bulk.OperationType;
+import org.opensearch.client.transport.OpenSearchTransport;
 
 class OpensearchBatchRequestTest {
 
@@ -48,16 +49,20 @@ class OpensearchBatchRequestTest {
   private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private OpensearchBatchRequest batchRequest;
   private OpenSearchClient osClient;
-  private Builder requestBuilder;
   private OpensearchScriptBuilder scriptBuilder;
+  private JacksonJsonpMapper jsonpMapper;
 
   @BeforeEach
   void setUp() throws IOException {
     osClient = mock(OpenSearchClient.class);
-    requestBuilder = new Builder();
+    final OpenSearchTransport transport = mock(OpenSearchTransport.class);
+    jsonpMapper = new JacksonJsonpMapper();
+    when(osClient._transport()).thenReturn(transport);
+    when(transport.jsonpMapper()).thenReturn(jsonpMapper);
     scriptBuilder = mock(OpensearchScriptBuilder.class);
-    batchRequest = new OpensearchBatchRequest(osClient, requestBuilder, scriptBuilder);
+    batchRequest = new OpensearchBatchRequest(osClient, scriptBuilder);
     final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of());
     when(osClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
   }
 
@@ -67,24 +72,21 @@ class OpensearchBatchRequestTest {
     // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    // When
     batchRequest.add(INDEX, entity);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
-    assertThat(index.index()).isEqualTo(INDEX);
-    assertThat(index.id()).isEqualTo(ID);
-    assertThat(index.document()).isEqualTo(entity);
+    assertThat(bulkOperation.index().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.index().id()).isEqualTo(ID);
+    assertDocumentEquals(bulkOperation.index().document(), entity);
   }
 
   @Test
@@ -93,27 +95,22 @@ class OpensearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final String routing = "routing";
 
-    // When
     batchRequest.addWithRouting(INDEX, entity, routing);
-
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
-
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
-    assertThat(index.index()).isEqualTo(INDEX);
-    assertThat(index.id()).isEqualTo(ID);
-    assertThat(index.routing()).isEqualTo(routing);
-    assertThat(index.document()).isEqualTo(entity);
+    assertThat(bulkOperation.index().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.index().id()).isEqualTo(ID);
+    assertThat(bulkOperation.index().routing()).isEqualTo(routing);
+    assertDocumentEquals(bulkOperation.index().document(), entity);
   }
 
   @Test
@@ -122,25 +119,22 @@ class OpensearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
-    // When
     batchRequest.upsert(INDEX, ID, entity, updateFields);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().retryOnConflict())
+        .isEqualTo(OpensearchBatchRequest.UPDATE_RETRY_COUNT);
   }
 
   @Test
@@ -150,25 +144,21 @@ class OpensearchBatchRequestTest {
     final Map<String, Object> updateFields = Map.of("id", "id2");
     final String routing = "routing";
 
-    // When
     batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.routing()).isEqualTo(routing);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().routing()).isEqualTo(routing);
   }
 
   @Test
@@ -178,27 +168,23 @@ class OpensearchBatchRequestTest {
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    // When
     batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
   }
 
   @Test
@@ -209,131 +195,110 @@ class OpensearchBatchRequestTest {
     final Map<String, Object> params = Map.of("id", "id2");
     final String routing = "routing";
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    // When
     batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.routing()).isEqualTo(routing);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().routing()).isEqualTo(routing);
   }
 
   @Test
   void shouldUpdateWithFields() throws PersistenceException, IOException {
+    // given
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
-    // When
     batchRequest.update(INDEX, ID, updateFields);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
   }
 
   @Test
   void shouldUpdateWithEntity() throws IOException, PersistenceException {
-    // Given
+    // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    // When
     batchRequest.update(INDEX, ID, entity);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
   }
 
   @Test
   void shouldUpdateWithScript() throws PersistenceException, IOException {
-    // Given
+    // given
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
-    // When
     batchRequest.updateWithScript(INDEX, ID, script, params);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isUpdate()).isTrue();
-
-    final var update = bulkOperation.update();
-    assertThat(update.index()).isEqualTo(INDEX);
-    assertThat(update.id()).isEqualTo(ID);
+    assertThat(bulkOperation.update().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.update().id()).isEqualTo(ID);
   }
 
   @Test
   void shouldDeleteEntity() throws IOException, PersistenceException {
-    // Given
-    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
-
-    // When
+    // given
     batchRequest.delete(INDEX, ID);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isDelete()).isTrue();
-
-    final var delete = bulkOperation.delete();
-    assertThat(delete.index()).isEqualTo(INDEX);
-    assertThat(delete.id()).isEqualTo(ID);
+    assertThat(bulkOperation.delete().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.delete().id()).isEqualTo(ID);
   }
 
   @Test
@@ -341,56 +306,71 @@ class OpensearchBatchRequestTest {
     // given
     final String routing = "routing";
 
-    // when
     batchRequest.deleteWithRouting(INDEX, ID, routing);
+    // when
     batchRequest.execute();
 
-    // then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that an index operation is added
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(1);
-
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isDelete()).isTrue();
-
-    final var delete = bulkOperation.delete();
-    assertThat(delete.index()).isEqualTo(INDEX);
-    assertThat(delete.id()).isEqualTo(ID);
-    assertThat(delete.routing()).isEqualTo(routing);
+    assertThat(bulkOperation.delete().index()).isEqualTo(INDEX);
+    assertThat(bulkOperation.delete().id()).isEqualTo(ID);
+    assertThat(bulkOperation.delete().routing()).isEqualTo(routing);
   }
 
   @Test
   void shouldExecuteWithMultipleOperationsInBatch() throws PersistenceException, IOException {
-    // Given
+    // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
-    // When
     batchRequest.add(INDEX, entity);
     batchRequest.update(INDEX, ID, entity);
+    // when
     batchRequest.execute();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
 
-    // verify that there are two operations in the bulk request
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(2);
   }
 
   @Test
-  void shouldExecuteWithRefresh() throws PersistenceException, IOException {
-    // Given
+  void shouldSplitIntoMultipleBulksWhenAccumulatedSizeExceedsCap()
+      throws PersistenceException, IOException {
+    // given
+    final BatchRequest tinyCapRequest =
+        new OpensearchBatchRequest(osClient, scriptBuilder).withMaxBytes(1L);
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    // When
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    // when
+    tinyCapRequest.execute();
+
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
+    verify(osClient, times(3)).bulk(captor.capture());
+    assertThat(captor.getAllValues()).allSatisfy(req -> assertThat(req.operations()).hasSize(1));
+  }
+
+  @Test
+  void shouldExecuteWithRefresh() throws PersistenceException, IOException {
+    // given
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+
     batchRequest.add(INDEX, entity);
+    // when
     batchRequest.executeWithRefresh();
 
-    // Then
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    // then
     verify(osClient).bulk(captor.capture());
     final BulkRequest request = captor.getValue();
     assertThat(request.refresh()).isEqualTo(Refresh.True);
@@ -400,24 +380,23 @@ class OpensearchBatchRequestTest {
   @ValueSource(classes = {IOException.class, OpenSearchException.class})
   void shouldThrowPersistenceExceptionIfBulkRequestFails(final Class<? extends Throwable> throwable)
       throws IOException {
-    // Given
+    // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    // When
     batchRequest.add(INDEX, entity);
     when(osClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
-    // When
+    // when
     final ThrowingCallable callable = () -> batchRequest.execute();
 
-    // Then
+    // then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(osClient).bulk(any(BulkRequest.class));
   }
 
   @Test
   void shouldThrowPersistenceExceptionIfAResponseItemHasError() throws IOException {
-    // Given
+    // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     final BulkResponseItem item = mock(BulkResponseItem.class);
@@ -430,18 +409,18 @@ class OpensearchBatchRequestTest {
 
     when(osClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
 
-    // When
     batchRequest.add(INDEX, entity);
+    // when
     final ThrowingCallable callable = () -> batchRequest.execute();
 
-    // Then
+    // then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(osClient).bulk(any(BulkRequest.class));
   }
 
   @Test
   void shouldUseCustomErrorHandlerIfProvided() throws IOException {
-    // Given
+    // given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     final OperationType operationType = OperationType.Update;
     final int notFound = 404;
@@ -466,12 +445,83 @@ class OpensearchBatchRequestTest {
             "%s failed for type [%s] and id [%s]: %s",
             item.operationType(), item.index(), item.id(), item.error().reason());
 
-    // When
     batchRequest.add(INDEX_WITH_HANDLER, entity);
+    // when
     batchRequest.execute(errorHandler);
 
-    // Then
+    // then
     verify(errorHandler)
         .accept(INDEX_WITH_HANDLER, new Error(message, item.error().type(), notFound));
+  }
+
+  @Test
+  void chunkByBytesShouldReturnEmptyForNoOps() {
+    // given
+    // then
+    assertThat(OpensearchBatchRequest.chunkByBytes(List.of(), 100L)).isEmpty();
+  }
+
+  @Test
+  void chunkByBytesShouldReturnSingleChunkWhenUnderLimit() {
+    // given
+    final var ops =
+        List.of(
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 10L),
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 20L));
+    final var chunks = OpensearchBatchRequest.chunkByBytes(ops, 100L);
+    // then
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(2);
+  }
+
+  @Test
+  void chunkByBytesShouldKeepSingleOversizedOpInItsOwnChunk() {
+    // given
+    final var ops = List.of(new OpensearchBatchRequest.SizedOperation(noopOp(), 500L));
+    final var chunks = OpensearchBatchRequest.chunkByBytes(ops, 100L);
+    // then
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(1);
+  }
+
+  @Test
+  void chunkByBytesShouldSplitWhenAdditionWouldExceedLimit() {
+    // given
+    final var ops =
+        List.of(
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 60L));
+    final var chunks = OpensearchBatchRequest.chunkByBytes(ops, 100L);
+    // then
+    assertThat(chunks).hasSize(3);
+    assertThat(chunks).allSatisfy(chunk -> assertThat(chunk).hasSize(1));
+  }
+
+  @Test
+  void chunkByBytesShouldFitExactlyOnBoundary() {
+    // given
+    final var ops =
+        List.of(
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new OpensearchBatchRequest.SizedOperation(noopOp(), 50L));
+    final var chunks = OpensearchBatchRequest.chunkByBytes(ops, 100L);
+    // then
+    assertThat(chunks).hasSize(2);
+    assertThat(chunks.get(0)).hasSize(2);
+    assertThat(chunks.get(1)).hasSize(1);
+  }
+
+  private void assertDocumentEquals(final Object actualDocument, final Object expectedDocument) {
+    assertThat(actualDocument).isEqualTo(expectedDocument);
+  }
+
+  private static Script realScript(final String source) {
+    return Script.of(s -> s.inline(i -> i.source(source)));
+  }
+
+  private static BulkOperation noopOp() {
+    return BulkOperation.of(b -> b.delete(d -> d.index("idx").id("id")));
   }
 }
