@@ -10,8 +10,13 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+<<<<<<< HEAD
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+=======
+import {navigateToAppHome} from '@pages/UtilitiesPage';
+import {jsonHeaders} from 'utils/http';
+>>>>>>> 86ee3e19 (test: fix flaky decision E2E tests by replacing sleeps with polling)
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -20,7 +25,7 @@ type ProcessInstance = {
 let processInstanceWithFailedDecision: ProcessInstance;
 let processInstanceWithSuccessfulDecision: ProcessInstance;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({request}) => {
   await deploy([
     './resources/invoiceBusinessDecisions.dmn',
     './resources/invoice.bpmn',
@@ -35,7 +40,28 @@ test.beforeAll(async () => {
     {amount: 500, invoiceCategory: 'Misc'},
   );
 
-  await sleep(2000);
+  // Poll until our specific failed decision instance is indexed before any test runs.
+  // A fixed sleep is unreliable on slow runners and wasteful on fast ones.
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/decision-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'FAILED',
+              processInstanceKey:
+                processInstanceWithFailedDecision.processInstanceKey,
+            },
+          },
+        });
+        if (response.status() !== 200) return 0;
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBeGreaterThanOrEqual(1);
 });
 
 test.describe('Decision Navigation', () => {
@@ -74,6 +100,7 @@ test.describe('Decision Navigation', () => {
       ).toBeVisible();
     });
 
+<<<<<<< HEAD
     await test.step('Wait for incidents banner to be visible', async () => {
       await expect
         .poll(
@@ -83,6 +110,12 @@ test.describe('Decision Navigation', () => {
           {timeout: 30000},
         )
         .toBe(true);
+=======
+    await test.step('Wait for incidents tab to be visible', async () => {
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible({
+        timeout: 30000,
+      });
+>>>>>>> 86ee3e19 (test: fix flaky decision E2E tests by replacing sleeps with polling)
     });
 
     await test.step('Click on business rule task in diagram', async () => {
@@ -211,6 +244,10 @@ test.describe('Decision Navigation', () => {
 
     await test.step('Open the first Assign Approver Group decision instance', async () => {
       await operateDecisionsPage.decisionInstancesList
+        .getByRole('row')
+        .filter({
+          hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
+        })
         .getByRole('link', {name: /View decision instance/})
         .first()
         .click();
