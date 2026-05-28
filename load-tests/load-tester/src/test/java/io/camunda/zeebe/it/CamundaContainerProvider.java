@@ -40,8 +40,7 @@ final class CamundaContainerProvider {
         System.getProperty(
             "io.camunda.process.test.camundaDockerImageVersion",
             CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
-    return new CamundaContainer(DockerImageName.parse(imageName).withTag(imageVersion))
-        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
+    return new CamundaContainer(DockerImageName.parse(imageName).withTag(imageVersion));
   }
 
   static void registerClientProperties(
