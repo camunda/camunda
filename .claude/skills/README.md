@@ -32,20 +32,21 @@ When a skill exists for a recurring operation, use it rather than improvising st
 
 ## Available skills
 
-| Skill | Description |
-|---|---|
-| `ci-push-workflow-health` | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches |
-| `ci-runner-utilization` | Detect CI runner underutilization and give downsizing recommendations for cost savings |
-| `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows |
-| `engine-expert` | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`) |
-| `frontend-feature` | Build new pages, components, or features in the orchestration cluster webapp |
-| `frontend-integration-test` | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp |
-| `frontend-migrator` | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp |
-| `frontend-unit-test` | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp |
-| `operate-frontend` | Fix bugs or make changes in the Operate legacy frontend at `operate/client/` |
+|             Skill              |                                          Description                                          |
+|--------------------------------|-----------------------------------------------------------------------------------------------|
+| `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches    |
+| `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings        |
+| `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                     |
+| `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                  |
+| `frontend-feature`             | Build new pages, components, or features in the orchestration cluster webapp                  |
+| `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp |
+| `frontend-migrator`            | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp   |
+| `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
+| `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |
 
 ## Adding a new skill
 
 1. Create a new directory under `.claude/skills/` matching the skill name (lowercase, hyphens only).
 2. Add a `SKILL.md` with the required frontmatter (`name`, `description`) and instructions.
 3. Update the table above.
+
