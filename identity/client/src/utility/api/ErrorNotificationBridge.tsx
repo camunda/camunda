@@ -20,8 +20,17 @@ const ErrorNotificationBridge: FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setErrorNotifier((error: ApiError) => {
+    setErrorNotifier((error: ApiError, { skipToast }) => {
       const { status, body } = error;
+
+      // Session-recovery navigation is independent of toast suppression: any
+      // 401 (including the initial auth probe) should bounce to the login
+      // screen, matching the legacy addHandler behavior.
+      if (status === 401 && !window.location.pathname.includes("/login")) {
+        void navigate(`/login?next=${window.location.pathname}`);
+      }
+
+      if (skipToast) return;
 
       switch (status) {
         case 401:
@@ -31,9 +40,6 @@ const ErrorNotificationBridge: FC = () => {
               title: t("unauthorized"),
               subtitle: t("sessionExpired"),
             });
-          }
-          if (!window.location.pathname.includes("/login")) {
-            void navigate(`/login?next=${window.location.pathname}`);
           }
           return;
         case 403:

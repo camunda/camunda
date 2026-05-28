@@ -8,7 +8,8 @@
 
 import { ApiError } from "./request";
 
-type ErrorNotifier = (error: ApiError) => void;
+export type DispatchOptions = { skipToast: boolean };
+type ErrorNotifier = (error: ApiError, options: DispatchOptions) => void;
 
 let dispatch: ErrorNotifier = () => {};
 
@@ -16,8 +17,8 @@ export function setErrorNotifier(notifier: ErrorNotifier) {
   dispatch = notifier;
 }
 
-export function notifyApiError(error: unknown) {
+export function notifyApiError(error: unknown, options: DispatchOptions) {
   if (error instanceof ApiError) {
-    dispatch(error);
+    dispatch(error, options);
   }
 }
