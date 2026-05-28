@@ -275,6 +275,8 @@ On request schemas, the `nullable` property is **not** used to express optionali
 
 You are reaching for `T | undefined` in JS, and `T | Unset` in Python. Just leave it out of the required array. Marking it `nullable: true` will create `T | undefined | null` in JS and `T | Unset | None` in Python.
 
+The exception to this is a PATCH operation where sending an explicit `null` is semantically meaningful: it erases any previous set value.
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
 Every operation **should** declare `x-eventually-consistent` explicitly:
@@ -1783,4 +1785,3 @@ MySchema:
 | CI OpenAPI lint job          | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                                                              |
 | Slack channel                | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                                                            |
 | API team (reviewers)         | `@camunda/c8-api-team`                                                                                                                                                        |
-
