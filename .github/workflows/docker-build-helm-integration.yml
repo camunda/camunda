@@ -99,7 +99,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_should_run"
           fi
           jq -n \
@@ -165,7 +165,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -222,7 +222,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -279,7 +279,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_frontend_build"
           fi
           jq -n \
@@ -463,7 +463,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_build_and_push"
           fi
           jq -n \
@@ -513,7 +513,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="Monorepo DevOps Medic"
+            OWNER_TEAM="@camunda/monorepo-devops-team"
             FAILURE_CATEGORY="orchestration_identifier"
           fi
           jq -n \
@@ -643,7 +643,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
-            OWNER_TEAM="Distribution Team Medic"
+            OWNER_TEAM="@camunda/distribution"
             FAILURE_CATEGORY="helm_install_or_it"
           fi
           jq -n \
@@ -652,8 +652,9 @@ jobs:
             --arg owner_team "$OWNER_TEAM" \
             --arg escalation_team "$OWNER_TEAM" \
             --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --arg status "${{ needs.helm-deploy.result }}" \
-            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+            --arg status "${{ job.status }}" \
+            --arg upstream_result "${{ needs.helm-deploy.result }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,upstream_result:$upstream_result}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -870,10 +871,10 @@ jobs:
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
             if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="Test Automation Team Medic"
+              OWNER_TEAM="@camunda/qa-engineering"
               FAILURE_CATEGORY="saas_e2e"
             else
-              OWNER_TEAM="Monorepo DevOps Medic"
+              OWNER_TEAM="@camunda/monorepo-devops-team"
               FAILURE_CATEGORY="orchestration_dispatch_or_wait"
             fi
           fi
