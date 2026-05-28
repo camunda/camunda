@@ -115,8 +115,7 @@ final class AnalyticsExporterIT {
 
               // bpmn process id matches the deployed process
               assertThat(COLLECTOR_LOGS)
-                  .anyMatch(
-                      line -> line.contains("camunda.bpmn_process_id: Str(" + PROCESS_ID + ")"));
+                  .anyMatch(line -> line.contains("camunda.process.id: Str(" + PROCESS_ID + ")"));
 
               // resource attributes
               assertThat(COLLECTOR_LOGS)
