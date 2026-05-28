@@ -674,12 +674,14 @@ public final class SearchQueryResponseMapper {
     final var elementType =
         BaseElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
     return switch (item.details()) {
-      case WaitStateJobDetails(final var jobKey, final var jobType, final var jobKind) -> {
+      case WaitStateJobDetails(
+              final var jobKey, final var jobType, final var jobKind, final var retries) -> {
         final var dtoDetails =
             JobWaitStateDetails.Builder.create()
                 .jobKey(keyToString(jobKey))
                 .jobType(jobType)
                 .jobKind(JobKindEnum.fromValue(jobKind.name()))
+                .retries(retries)
                 .build();
         yield ElementInstanceWaitStateJobResult.Builder.create()
             .waitStateType(WaitStateTypeEnum.JOB.getValue())

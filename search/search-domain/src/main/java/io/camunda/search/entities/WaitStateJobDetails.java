@@ -14,7 +14,10 @@ import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WaitStateJobDetails(
-    @Nullable Long jobKey, @Nullable String jobType, @Nullable JobKind jobKind)
+    @Nullable Long jobKey,
+    @Nullable String jobType,
+    @Nullable JobKind jobKind,
+    @Nullable Integer retries)
     implements WaitStateDetails {
 
   @Override
@@ -26,6 +29,7 @@ public record WaitStateJobDetails(
     private @Nullable Long jobKey;
     private @Nullable String jobType;
     private @Nullable JobKind jobKind;
+    private @Nullable Integer retries;
 
     public Builder jobKey(final @Nullable Long jobKey) {
       this.jobKey = jobKey;
@@ -42,9 +46,14 @@ public record WaitStateJobDetails(
       return this;
     }
 
+    public Builder retries(final @Nullable Integer retries) {
+      this.retries = retries;
+      return this;
+    }
+
     @Override
     public WaitStateJobDetails build() {
-      return new WaitStateJobDetails(jobKey, jobType, jobKind);
+      return new WaitStateJobDetails(jobKey, jobType, jobKind, retries);
     }
   }
 }

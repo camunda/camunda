@@ -768,6 +768,11 @@ components:
           description: The kind of job.
           allOf:
             - $ref: 'jobs.yaml#/components/schemas/JobKindEnum'
+        retries:
+          description: The number of retries remaining for the job.
+          nullable: true
+          type: integer
+          format: int32
 
     MessageWaitStateDetails:
       type: object
