@@ -20,8 +20,7 @@ const handleError = (
   error: unknown,
   meta: { skipErrorNotification?: boolean } | undefined,
 ) => {
-  if (meta?.skipErrorNotification) return;
-  notifyApiError(error);
+  notifyApiError(error, { skipToast: meta?.skipErrorNotification ?? false });
 };
 
 export const queryClient = new QueryClient({
