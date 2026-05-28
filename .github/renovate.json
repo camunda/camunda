@@ -2,7 +2,8 @@
   "enabled": true,
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "github>camunda/infra-renovate-config:herodevs.json5"
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
@@ -39,6 +40,12 @@
       "password": "{{ secrets.INFRA_MINIMUS_REGISTRY_TOKEN }}"
     },
     {
+      "hostType": "maven",
+      "matchHost": "https://artifacts.camunda.com",
+      "username": "{{ secrets.ARTIFACTORY_USERNAME }}",
+      "password": "{{ secrets.ARTIFACTORY_PASSWORD }}"
+    },
+    {
       "timeout": 10000
     }
   ],
@@ -50,6 +57,19 @@
       ],
       "registryUrls": [
         "https://maven-central.storage-download.googleapis.com/maven2"
+      ]
+    },
+    {
+      "description": "HeroDevs NES Spring artifacts must also be discovered from the HeroDevs Maven repository. Overrides the Maven-Central-only rule above for Spring artifacts.",
+      "matchDatasources": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "/^org\\.springframework(\\..+)?:/"
+      ],
+      "registryUrls": [
+        "https://repo.maven.apache.org/maven2",
+        "https://artifacts.camunda.com/artifactory/herodevs-nes"
       ]
     },
     {
