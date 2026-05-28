@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	API_VERSION,
+	advancedIntegerFilterSchema,
 	advancedStringFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
@@ -57,6 +58,7 @@ const jobSchema = z.object({
 	kind: jobKindSchema,
 	listenerEventType: listenerEventTypeSchema,
 	retries: z.number(),
+	priority: z.number().int(),
 	isDenied: z.boolean().nullable(),
 	deniedReason: z.string().nullable(),
 	hasFailedWithRetriesLeft: z.boolean(),
@@ -87,6 +89,7 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		'kind',
 		'listenerEventType',
 		'retries',
+		'priority',
 		'isDenied',
 		'deniedReason',
 		'hasFailedWithRetriesLeft',
@@ -114,6 +117,7 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		processInstanceKey: basicStringFilterSchema.optional(),
 		elementId: advancedStringFilterSchema.optional(),
 		elementInstanceKey: basicStringFilterSchema.optional(),
+		priority: advancedIntegerFilterSchema.optional(),
 		tenantId: advancedStringFilterSchema.optional(),
 	}),
 });
