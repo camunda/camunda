@@ -17,6 +17,8 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.DefaultIndexLocatorProvider;
 import io.camunda.exporter.store.IndexLocatorProvider;
+import io.camunda.search.schema.OrdinalIndexManager;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -42,7 +44,8 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
       final ExporterEntityCacheProvider entityCacheProvider,
       final Context context,
       final ExporterMetadata exporterMetadata,
-      final ObjectMapper objectMapper) {}
+      final ObjectMapper objectMapper,
+      final SearchEngineClient searchEngineClient) {}
 
   @Override
   public void reset() {}
@@ -97,5 +100,10 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
   @Override
   public IndexLocatorProvider getIndexLocatorProvider() {
     return new DefaultIndexLocatorProvider();
+  }
+
+  @Override
+  public OrdinalIndexManager getOrdinalIndexManager() {
+    return null;
   }
 }

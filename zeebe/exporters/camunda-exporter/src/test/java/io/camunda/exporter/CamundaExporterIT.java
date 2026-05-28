@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -36,6 +37,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -94,6 +96,8 @@ final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
+  private ClientAdapter clientAdapter;
+
   @AfterEach
   public void afterEach() throws IOException {
     final var openSearchAwsInstanceUrl =
@@ -102,6 +106,11 @@ final class CamundaExporterIT {
       searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
     searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+
+    if (clientAdapter != null) {
+      clientAdapter.close();
+      clientAdapter = null;
+    }
   }
 
   @TestTemplate
@@ -278,7 +287,8 @@ final class CamundaExporterIT {
         cacheProvider,
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        searchEngineClient(config));
     final var expectedHandlers =
         resourceProvider.getExportHandlers().stream()
             .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
@@ -345,7 +355,8 @@ final class CamundaExporterIT {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        searchEngineClient(config));
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
@@ -380,7 +391,8 @@ final class CamundaExporterIT {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        searchEngineClient(config));
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
@@ -458,7 +470,8 @@ final class CamundaExporterIT {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        searchEngineClient(config));
 
     return defaultExporterResourceProvider.getExportHandlers().stream()
         .map(handler -> (ExportHandler<T, R>) handler)
@@ -604,5 +617,12 @@ final class CamundaExporterIT {
 
     // act
     assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+  }
+
+  private SearchEngineClient searchEngineClient(final ExporterConfiguration config) {
+    if (clientAdapter == null) {
+      clientAdapter = ClientAdapter.of(config.getConnect());
+    }
+    return clientAdapter.getSearchEngineClient();
   }
 }

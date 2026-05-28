@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface SearchEngineClient extends CloseableSilently {
+  void createOrdinalIndex(String indexName);
+
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
 
   /**
@@ -81,4 +83,6 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   void upsertDocument(
       final String indexName, final String documentId, final Map<String, Object> document);
+
+  void setOrdinalIndexLifeCyclePolicy(String index);
 }
