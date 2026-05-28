@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.68
+
+### 🚀 Enhancements
+
+- Add `priority` field to job schemas
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.67
 
 ### 🚀 Enhancements
