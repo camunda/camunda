@@ -1,0 +1,209 @@
+# description: AlwaysGreen streak detector. Reacts to completion of the
+# main AlwaysGreen pipeline and posts to #alwaysgreen-reliability when the
+# last N runs on the same protected ref all failed. Uses 'gh run list' rather
+# than persisted state — no race conditions, nothing to migrate on rename.
+# Lives in its own file (instead of an extra job in docker-build-helm-integration.yml)
+# so it doesn't share an edit surface with PR #54171 (Slice A) and to keep
+# the streak-detector cleanly separable / removable on its own.
+# type: CI
+# owner: @camunda/distribution
+---
+name: AlwaysGreen Streak Detector
+
+on:
+  workflow_run:
+    workflows: ["Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)"]
+    types:
+      - completed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.event }}
+  cancel-in-progress: false
+
+env:
+  STREAK_THRESHOLD: '3'
+  LOOKBACK_RUNS: '10'
+  ALERT_CHANNEL: 'alwaysgreen-reliability'
+  PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect-streak:
+    name: Detect failure streak
+    # Only react to completed runs that ended in failure on protected events.
+    # Successful or in-progress runs don't move the streak counter.
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'merge_group')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Import Slack token from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Detect failure streak on this ref
+        id: streak
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          PARENT_EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          set -euo pipefail
+          RUNS_JSON=$(gh run list \
+            --workflow "${PARENT_WORKFLOW_FILE}" \
+            --branch "${HEAD_BRANCH}" \
+            --event "${PARENT_EVENT}" \
+            --limit "${LOOKBACK_RUNS}" \
+            --json conclusion,status,databaseId,createdAt,url,displayTitle 2>/dev/null || echo '[]')
+
+          # Count leading consecutive failures (most recent first). Skip
+          # in-progress runs — only completed runs count toward the streak.
+          STREAK=$(jq '
+            [ .[] | select(.status == "completed") ]
+            | (reduce .[] as $r ({count:0, broken:false};
+                if .broken then .
+                elif ($r.conclusion == "failure" or $r.conclusion == "timed_out") then
+                  .count = (.count + 1)
+                else
+                  .broken = true
+                end
+              ))
+            | .count
+          ' <<<"$RUNS_JSON")
+          STREAK=${STREAK:-0}
+
+          {
+            echo "streak_count=${STREAK}"
+            echo "threshold=${STREAK_THRESHOLD}"
+            echo "is_streak=$([[ ${STREAK} -ge ${STREAK_THRESHOLD} ]] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Streak count on ${HEAD_BRANCH} (${PARENT_EVENT}): ${STREAK} / ${STREAK_THRESHOLD}"
+          echo "$RUNS_JSON" | jq -r '
+            "Recent runs:",
+            (.[] | "  - \(.conclusion // .status)  \(.createdAt)  \(.url)")
+          '
+
+      - name: Aggregate failure-context artifacts from triggering run
+        id: aggregate-context
+        if: steps.streak.outputs.is_streak == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARENT_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          WORK_DIR="${RUNNER_TEMP}/streak-context"
+          mkdir -p "$WORK_DIR"
+          # Pull every context artifact produced by the parent run.
+          # Includes:
+          #   - alwaysgreen-failure-context-* (per-job, from Slice A — #54171)
+          #   - alwaysgreen-saas-category    (downstream SaaS E2E category, Slice D)
+          # Missing artifacts are tolerated — the message degrades gracefully
+          # if either slice is rolled back.
+          gh run download "${PARENT_RUN_ID}" \
+            --pattern 'alwaysgreen-*' \
+            --dir "$WORK_DIR" 2>/dev/null || true
+
+          SUMMARY_JSON="${WORK_DIR}/aggregated.json"
+          shopt -s globstar nullglob
+          json_files=( "${WORK_DIR}"/**/*.json )
+          if (( ${#json_files[@]} > 0 )); then
+            jq -s '.' "${json_files[@]}" > "$SUMMARY_JSON"
+          else
+            echo '[]' > "$SUMMARY_JSON"
+          fi
+          echo "summary_path=$SUMMARY_JSON" >> "$GITHUB_OUTPUT"
+
+          jq -r '
+            if length == 0 then "- (no failure-context artifacts produced)"
+            else map(
+              if .stage and .failure_category and .owner_team then
+                "- *\(.stage)* — `\(.failure_category)` → \(.owner_team)"
+              elif .downstream_category then
+                "- *saas-e2e* — `\(.downstream_category)` → \(.owner_team // "@camunda/test-automation-team")"
+              else empty
+              end
+            ) | unique | join("\n")
+            end
+          ' "$SUMMARY_JSON" > "${WORK_DIR}/stages.md"
+          {
+            echo "stages_markdown<<EOF_STAGES"
+            cat "${WORK_DIR}/stages.md"
+            echo "EOF_STAGES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload streak-context artifact
+        if: steps.streak.outputs.is_streak == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-streak-context
+          path: ${{ runner.temp }}/streak-context
+          retention-days: 14
+
+      - name: Post streak alert to Slack
+        if: steps.streak.outputs.is_streak == 'true'
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          method: chat.postMessage
+          token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "${{ env.ALERT_CHANNEL }}"
+            text: ":rotating_light: AlwaysGreen failure streak on ${{ github.event.workflow_run.head_branch }} (${{ steps.streak.outputs.streak_count }} consecutive failures)"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: ":rotating_light: AlwaysGreen streak: ${{ steps.streak.outputs.streak_count }} consecutive failures"
+              - type: "section"
+                fields:
+                  - type: "mrkdwn"
+                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|Docker Build, Helm Deploy & E2E Tests>"
+                  - type: "mrkdwn"
+                    text: "*Ref / event:*\n`${{ github.event.workflow_run.head_branch }}` (${{ github.event.workflow_run.event }})"
+                  - type: "mrkdwn"
+                    text: "*Latest failing run:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}>"
+                  - type: "mrkdwn"
+                    text: "*Streak threshold:*\n${{ steps.streak.outputs.threshold }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(format('*Stages that emitted context this run:*{0}{1}', '\n', steps.aggregate-context.outputs.stages_markdown)) }}
+              - type: "context"
+                elements:
+                  - type: "mrkdwn"
+                    text: "Routing context is in `alwaysgreen-streak-context` artifact on this run. Full categorisation model: <https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-failure-categories.md|ci-failure-categories.md>"
+
+      - name: Add streak summary to job log
+        if: always()
+        run: |
+          {
+            echo "### AlwaysGreen Streak Detector"
+            echo ""
+            echo "- ref: ${{ github.event.workflow_run.head_branch }}"
+            echo "- parent event: ${{ github.event.workflow_run.event }}"
+            echo "- parent run: ${{ github.event.workflow_run.html_url }}"
+            echo "- consecutive failures: ${{ steps.streak.outputs.streak_count }} / ${{ steps.streak.outputs.threshold }}"
+            if [[ "${{ steps.streak.outputs.is_streak }}" == "true" ]]; then
+              echo "- :rotating_light: alert posted to *#${{ env.ALERT_CHANNEL }}*"
+            else
+              echo "- below threshold — no alert posted"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
