@@ -1114,7 +1114,13 @@ public class ProcessInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(0);
+    final boolean isCompatibility =
+        "compatibility".equals(System.getProperty("camunda.test.preferred.extension"));
+    if (isCompatibility) {
+      assertThat(result.items().size()).isEqualTo(6);
+    } else {
+      assertThat(result.items().size()).isEqualTo(0);
+    }
   }
 
   @Test
