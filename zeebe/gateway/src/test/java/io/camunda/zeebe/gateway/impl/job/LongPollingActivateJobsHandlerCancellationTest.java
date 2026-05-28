@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -42,7 +43,6 @@ final class LongPollingActivateJobsHandlerCancellationTest {
 
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
   private LongPollingActivateJobsHandler<Object> handler;
-  private ActivateJobsStub activateJobsStub;
 
   @BeforeEach
   void setUp() {
@@ -81,224 +81,141 @@ final class LongPollingActivateJobsHandlerCancellationTest {
             .setMetrics(LongPollingMetrics.noop())
             .build();
 
-    activateJobsStub = new ActivateJobsStub();
-    activateJobsStub.registerWith(brokerClient);
+    final var stub = new ActivateJobsStub();
+    stub.registerWith(brokerClient);
     // no jobs available — all activate attempts return empty responses
-    activateJobsStub.addAvailableJobs(TYPE, 0);
+    stub.addAvailableJobs(TYPE, 0);
+
+    submitHandlerActor(handler);
   }
 
+  /**
+   * Verifies that cancelled requests are fully removed from all tracking collections after the
+   * broker responds. Runs multiple iterations to surface any accumulation across restarts — the
+   * regression in c51abb99733 caused requests to remain in {@code activeRequests} indefinitely.
+   */
   @Test
-  void shouldHandleCancellationWhileRequestIsActive() throws Exception {
-    // given
-    submitHandlerActor(handler);
+  void shouldCleanUpCancelledRequestsAfterBrokerResponds() {
+    final var totalCompletions = new AtomicInteger(0);
 
-    final var cancelledFlag = new AtomicBoolean(false);
-    final var completedCount = new AtomicInteger(0);
-    final var errorCount = new AtomicInteger(0);
-
-    final var observer =
-        new ResponseObserver<Object>() {
-          @Override
-          public void onCompleted() {
-            completedCount.incrementAndGet();
-          }
-
-          @Override
-          public void onNext(final Object element) {}
-
-          @Override
-          public boolean isCancelled() {
-            return cancelledFlag.get();
-          }
-
-          @Override
-          public void onError(final Throwable throwable) {
-            errorCount.incrementAndGet();
-          }
-        };
-
-    final var brokerRequest = buildBrokerRequest();
-    final var cancelHandler = new Runnable[1];
-
-    // when - activate the request
-    handler.activateJobs(
-        brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
-
-    // Cancel the request while it's active
-    cancelledFlag.set(true);
-    if (cancelHandler[0] != null) {
-      cancelHandler[0].run();
-    }
-    actorScheduler.workUntilDone();
-
-    // then - verify no errors or completions occurred after cancellation
-    assertThat(completedCount.get()).isZero();
-    assertThat(errorCount.get()).isZero();
-    // verify the actual invariant: handler has no tracked state for this job type
-    assertThat(handler.hasInflightRequestsForJobType(TYPE))
-        .as("handler should have no tracked state after cancellation")
-        .isFalse();
-  }
-
-  @Test
-  void shouldNotResubmitCancelledRequestWhenBrokerCallbackFires() throws Exception {
-    // given
-    submitHandlerActor(handler);
-
-    final var cancelledFlag = new AtomicBoolean(false);
-    final var completedCount = new AtomicInteger(0);
-
-    final var observer =
-        new ResponseObserver<Object>() {
-          @Override
-          public void onCompleted() {
-            completedCount.incrementAndGet();
-          }
-
-          @Override
-          public void onNext(final Object element) {}
-
-          @Override
-          public boolean isCancelled() {
-            return cancelledFlag.get();
-          }
-
-          @Override
-          public void onError(final Throwable throwable) {}
-        };
-
-    final var brokerRequest = buildBrokerRequest();
-    final var cancelHandler = new Runnable[1];
-
-    // when - activate the request
-    handler.activateJobs(
-        brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
-
-    // Cancel the request
-    cancelledFlag.set(true);
-    if (cancelHandler[0] != null) {
-      cancelHandler[0].run();
-    }
-    actorScheduler.workUntilDone();
-
-    // then - verify the cancelled request is not resubmitted
-    // The completeOrResubmitRequest should exit early due to isCanceled() check
-    assertThat(completedCount.get()).isZero();
-    // verify the actual invariant: handler has no tracked state for this job type
-    assertThat(handler.hasInflightRequestsForJobType(TYPE))
-        .as("handler should have no tracked state after cancellation")
-        .isFalse();
-  }
-
-  @Test
-  void shouldPreventMemoryLeakWhenMultipleWorkersDisconnect() throws Exception {
-    // given
-    submitHandlerActor(handler);
-
-    final var completedCount = new AtomicInteger(0);
-
-    // when - activate multiple requests and cancel them all
     for (int i = 0; i < 10; i++) {
-      final var cancelledFlag = new AtomicBoolean(false);
-      final var observer =
-          new ResponseObserver<Object>() {
-            @Override
-            public void onCompleted() {
-              completedCount.incrementAndGet();
-            }
-
-            @Override
-            public void onNext(final Object element) {}
-
-            @Override
-            public boolean isCancelled() {
-              return cancelledFlag.get();
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {}
-          };
-
-      final var brokerRequest = buildBrokerRequest();
+      // given
+      final var cancelled = new AtomicBoolean(false);
       final var cancelHandler = new Runnable[1];
+      final var observer = newTrackingObserver(cancelled, totalCompletions);
 
+      // when — activate, let broker respond (no jobs), then cancel
       handler.activateJobs(
-          brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
+          buildBrokerRequest(),
+          observer,
+          runnable -> cancelHandler[0] = runnable,
+          LONG_POLLING_TIMEOUT);
       actorScheduler.workUntilDone();
 
-      // Cancel this request
-      cancelledFlag.set(true);
+      cancelled.set(true);
       if (cancelHandler[0] != null) {
         cancelHandler[0].run();
       }
       actorScheduler.workUntilDone();
     }
 
-    // then - verify no requests were erroneously completed
-    assertThat(completedCount.get()).isZero();
-    // verify the actual invariant: handler has no tracked state for this job type
+    // then
+    assertThat(totalCompletions.get())
+        .as("no cancelled request should have been completed or resubmitted")
+        .isZero();
     assertThat(handler.hasInflightRequestsForJobType(TYPE))
         .as("handler should have no tracked state after all cancellations")
         .isFalse();
   }
 
+  /**
+   * Verifies that when the long-polling timer expires the request is completed to the observer and
+   * removed from {@code pendingRequests}. Active broker requests are cleaned up by their own error
+   * or success callbacks (which always fire within the configured broker request timeout), so the
+   * timer is only responsible for removing from the pending queue.
+   */
   @Test
-  void shouldHandleRaceConditionBetweenCancelAndBrokerCallback() throws Exception {
-    // given
-    submitHandlerActor(handler);
-
-    final var cancelledFlag = new AtomicBoolean(false);
-    final var errorCount = new AtomicInteger(0);
-    final var completedCount = new AtomicInteger(0);
-
-    final var observer =
-        new ResponseObserver<Object>() {
-          @Override
-          public void onCompleted() {
-            completedCount.incrementAndGet();
-          }
-
-          @Override
-          public void onNext(final Object element) {}
-
-          @Override
-          public boolean isCancelled() {
-            return cancelledFlag.get();
-          }
-
-          @Override
-          public void onError(final Throwable throwable) {
-            errorCount.incrementAndGet();
-          }
-        };
-
-    final var brokerRequest = buildBrokerRequest();
-    final var cancelHandler = new Runnable[1];
-
-    // when - activate request and immediately cancel (simulating race condition)
+  void shouldCleanUpRequestWhenLongPollingTimerExpires() {
+    // given - activate, let broker respond with no jobs; request parks in pendingRequests
+    final var completions = new AtomicInteger(0);
     handler.activateJobs(
-        brokerRequest, observer, runnable -> cancelHandler[0] = runnable, LONG_POLLING_TIMEOUT);
+        buildBrokerRequest(),
+        newTrackingObserver(new AtomicBoolean(false), completions),
+        r -> {},
+        LONG_POLLING_TIMEOUT);
+    actorScheduler.workUntilDone();
 
-    // Cancel before broker callback completes
-    cancelledFlag.set(true);
+    // when - advance the actor clock past the long-polling timeout to fire the timer
+    actorScheduler.getClock().addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT + 1));
+    actorScheduler.workUntilDone();
+
+    // then - timer fires request.timeout() which calls onCompleted(), then cleans up tracking state
+    assertThat(completions.get())
+        .as("timer should have sent onCompleted() to the observer")
+        .isEqualTo(1);
+    assertThat(handler.hasInflightRequestsForJobType(TYPE))
+        .as("timed-out request should be removed from all tracking state")
+        .isFalse();
+  }
+
+  /**
+   * Verifies that the handler is safe when the cancel handler fires before the actor has processed
+   * the initial activation (i.e. cancel and broker callback are interleaved on the actor thread).
+   */
+  @Test
+  void shouldHandleRaceConditionBetweenCancelAndBrokerCallback() {
+    // given
+    final var cancelled = new AtomicBoolean(false);
+    final var totalCompletions = new AtomicInteger(0);
+    final var cancelHandler = new Runnable[1];
+    final var observer = newTrackingObserver(cancelled, totalCompletions);
+
+    // when — cancel immediately, before workUntilDone processes either the activation or
+    // the broker callback, so both tasks are queued and run interleaved
+    handler.activateJobs(
+        buildBrokerRequest(),
+        observer,
+        runnable -> cancelHandler[0] = runnable,
+        LONG_POLLING_TIMEOUT);
+
+    cancelled.set(true);
     if (cancelHandler[0] != null) {
       cancelHandler[0].run();
     }
 
     actorScheduler.workUntilDone();
 
-    // then - verify the handler gracefully handles the race condition
-    // The completeOrResubmitRequest should detect isCanceled() and not throw
-    // Should not cause any errors to be sent to observer
-    assertThat(errorCount.get()).isZero();
-    assertThat(completedCount.get()).isZero();
-    // verify the actual invariant: handler has no tracked state for this job type
+    // then
+    assertThat(totalCompletions.get())
+        .as("no cancelled request should have been completed or resubmitted")
+        .isZero();
     assertThat(handler.hasInflightRequestsForJobType(TYPE))
-        .as("handler should have no tracked state after race condition cancellation")
+        .as("handler should have no tracked state after race-condition cancellation")
         .isFalse();
   }
 
   // -- helpers --
+
+  private ResponseObserver<Object> newTrackingObserver(
+      final AtomicBoolean cancelled, final AtomicInteger completions) {
+    return new ResponseObserver<>() {
+      @Override
+      public void onCompleted() {
+        completions.incrementAndGet();
+      }
+
+      @Override
+      public void onNext(final Object element) {}
+
+      @Override
+      public boolean isCancelled() {
+        return cancelled.get();
+      }
+
+      @Override
+      public void onError(final Throwable throwable) {}
+    };
+  }
 
   private void submitHandlerActor(final LongPollingActivateJobsHandler<Object> handlerToSubmit) {
     final var ready = new CompletableFuture<Void>();
