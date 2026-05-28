@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 public class AuthorizationServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private CamundaAuthentication authentication;
   private AuthorizationServices services;
   private AuthorizationSearchClient client;
@@ -54,7 +55,7 @@ public class AuthorizationServiceTest {
     final var searchQuery = SearchQueryBuilders.authorizationSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -68,7 +69,7 @@ public class AuthorizationServiceTest {
 
     // when
     final var searchQueryResult =
-        services.getAuthorization(entity.authorizationKey(), authentication, "default");
+        services.getAuthorization(entity.authorizationKey(), authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

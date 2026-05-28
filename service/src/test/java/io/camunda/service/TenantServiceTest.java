@@ -48,6 +48,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class TenantServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private TenantServices services;
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
@@ -86,7 +87,7 @@ public class TenantServiceTest {
     final var searchQuery = SearchQueryBuilders.tenantSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -98,7 +99,7 @@ public class TenantServiceTest {
     when(client.getTenant(eq("tenant-id"))).thenReturn(tenantEntity);
 
     // when
-    final var searchQueryResult = services.getById("tenant-id", authentication, "default");
+    final var searchQueryResult = services.getById("tenant-id", authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -111,7 +112,7 @@ public class TenantServiceTest {
         new TenantRequest(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
-    services.createTenant(tenantDTO, authentication, "default");
+    services.createTenant(tenantDTO, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -130,7 +131,7 @@ public class TenantServiceTest {
         new TenantRequest(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
-    services.updateTenant(tenantDTO, authentication, "default");
+    services.updateTenant(tenantDTO, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -150,7 +151,7 @@ public class TenantServiceTest {
             tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
 
     // when
-    services.updateTenant(tenantDTO, authentication, "default");
+    services.updateTenant(tenantDTO, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -164,7 +165,7 @@ public class TenantServiceTest {
   @Test
   public void shouldDeleteTenant() {
     // when
-    services.deleteTenant(tenantEntity.tenantId(), authentication, "default");
+    services.deleteTenant(tenantEntity.tenantId(), authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -184,7 +185,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.addMember(tenantMemberRequest, authentication, "default");
+    services.addMember(tenantMemberRequest, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -208,7 +209,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.removeMember(tenantMemberRequest, authentication, "default");
+    services.removeMember(tenantMemberRequest, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -228,7 +229,7 @@ public class TenantServiceTest {
         new TenantRequest(null, DEFAULT_TENANT_IDENTIFIER, "NewName", "NewDescription");
 
     // when
-    final var future = services.updateTenant(tenantDTO, authentication, "default");
+    final var future = services.updateTenant(tenantDTO, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).isCompletedExceptionally();
@@ -244,7 +245,8 @@ public class TenantServiceTest {
   @Test
   public void shouldRejectDeleteOfDefaultTenant() {
     // when
-    final var future = services.deleteTenant(DEFAULT_TENANT_IDENTIFIER, authentication, "default");
+    final var future =
+        services.deleteTenant(DEFAULT_TENANT_IDENTIFIER, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).isCompletedExceptionally();
@@ -264,7 +266,8 @@ public class TenantServiceTest {
 
     final var exception =
         (ServiceException)
-            assertThatThrownBy(() -> services.getById("tenant-id", authentication, "default"))
+            assertThatThrownBy(
+                    () -> services.getById("tenant-id", authentication, PHYSICAL_TENANT_ID))
                 .isInstanceOf(ServiceException.class)
                 .actual();
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);

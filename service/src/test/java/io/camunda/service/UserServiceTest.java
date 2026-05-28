@@ -36,6 +36,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   ArgumentCaptor<BrokerUserDeleteRequest> userDeleteRequestArgumentCaptor;
   private UserServices services;
   private UserSearchClient client;
@@ -75,7 +76,7 @@ public class UserServiceTest {
     final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -91,7 +92,7 @@ public class UserServiceTest {
     when(brokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
-    services.deleteUser(username, authentication, "default");
+    services.deleteUser(username, authentication, PHYSICAL_TENANT_ID);
 
     verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
@@ -107,7 +108,8 @@ public class UserServiceTest {
     when(client.getUser(eq("test"))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getUser(entity.username(), authentication, "default");
+    final var searchQueryResult =
+        services.getUser(entity.username(), authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

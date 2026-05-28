@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public final class DecisionRequirementsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private CamundaAuthentication authentication;
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
@@ -60,7 +61,7 @@ public final class DecisionRequirementsServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(client.searchDecisionRequirements(any())).thenReturn(result);
     final SearchQueryResult<DecisionRequirementsEntity> searchQueryResult =
-        services.search(searchQuery, authentication, "default");
+        services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(searchQueryResult);
@@ -75,7 +76,7 @@ public final class DecisionRequirementsServiceTest {
     when(client.getDecisionRequirements(eq(124L), eq(false))).thenReturn(decisionRequirementEntity);
 
     // when
-    final var searchQueryResult = services.getByKey(124L, authentication, "default");
+    final var searchQueryResult = services.getByKey(124L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final DecisionRequirementsEntity item = searchQueryResult;
@@ -94,7 +95,7 @@ public final class DecisionRequirementsServiceTest {
     // when
     final String expectedXml = "<xml/>";
     final var searchQueryResult =
-        services.getDecisionRequirementsXml(124L, authentication, "default");
+        services.getDecisionRequirementsXml(124L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(expectedXml);
@@ -114,7 +115,7 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getByKey(124L, authentication, "default"))
+            .isThrownBy(() -> services.getByKey(124L, authentication, PHYSICAL_TENANT_ID))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -135,7 +136,8 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getDecisionRequirementsXml(124L, authentication, "default"))
+            .isThrownBy(
+                () -> services.getDecisionRequirementsXml(124L, authentication, PHYSICAL_TENANT_ID))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(

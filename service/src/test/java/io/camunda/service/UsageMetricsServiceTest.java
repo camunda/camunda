@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 public final class UsageMetricsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private UsageMetricsServices services;
   private UsageMetricsSearchClient client;
   private CamundaAuthentication authentication;
@@ -64,7 +65,7 @@ public final class UsageMetricsServiceTest {
             .build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult.items().getFirst())

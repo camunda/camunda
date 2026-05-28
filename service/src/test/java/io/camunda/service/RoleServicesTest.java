@@ -49,6 +49,8 @@ import org.mockito.ArgumentCaptor;
 
 public class RoleServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
+
   private RoleServices services;
   private RoleSearchClient client;
   private CamundaAuthentication authentication;
@@ -84,7 +86,7 @@ public class RoleServicesTest {
 
     // when
     services.createRole(
-        new CreateRoleRequest(roleId, roleName, description), authentication, "default");
+        new CreateRoleRequest(roleId, roleName, description), authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerRoleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -107,7 +109,7 @@ public class RoleServicesTest {
     final var searchQuery = SearchQueryBuilders.roleSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -129,7 +131,8 @@ public class RoleServicesTest {
     when(client.getRole(eq("roleId"))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getRole(entity.roleId(), authentication, "default");
+    final var searchQueryResult =
+        services.getRole(entity.roleId(), authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -144,7 +147,7 @@ public class RoleServicesTest {
 
     // when
     services.updateRole(
-        new UpdateRoleRequest(roleId, name, description), authentication, "default");
+        new UpdateRoleRequest(roleId, name, description), authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -165,7 +168,9 @@ public class RoleServicesTest {
 
     // when
     services.addMember(
-        new RoleMemberRequest(roleId, entityId, EntityType.USER), authentication, "default");
+        new RoleMemberRequest(roleId, entityId, EntityType.USER),
+        authentication,
+        PHYSICAL_TENANT_ID);
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -186,7 +191,9 @@ public class RoleServicesTest {
 
     // when
     services.removeMember(
-        new RoleMemberRequest(roleId, username, EntityType.USER), authentication, "default");
+        new RoleMemberRequest(roleId, username, EntityType.USER),
+        authentication,
+        PHYSICAL_TENANT_ID);
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -219,7 +226,7 @@ public class RoleServicesTest {
                         q.filter(f -> f.memberId(memberId).childMemberType(memberType))
                             .unlimited()),
                 authentication,
-                "default")
+                PHYSICAL_TENANT_ID)
             .items();
 
     // then
@@ -234,14 +241,15 @@ public class RoleServicesTest {
     final var roleServicesSpy = spy(services);
     doReturn(new SearchQueryResult<RoleMemberEntity>(1, false, List.of(), null, null))
         .when(roleServicesSpy)
-        .searchMembers(any(), eq(authentication));
+        .searchMembers(any(), eq(authentication), any());
     final var queryCaptor = ArgumentCaptor.forClass(RoleMemberQuery.class);
 
     // when
-    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType, authentication);
+    final var result =
+        roleServicesSpy.hasMembersOfType(roleId, entityType, authentication, PHYSICAL_TENANT_ID);
 
     // then
-    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication));
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication), any());
     assertThat(queryCaptor.getValue().filter().roleId()).isEqualTo(roleId);
     assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
     assertThat(result).isTrue();
@@ -255,14 +263,15 @@ public class RoleServicesTest {
     final var roleServicesSpy = spy(services);
     doReturn(new SearchQueryResult<RoleMemberEntity>(0, false, List.of(), null, null))
         .when(roleServicesSpy)
-        .searchMembers(any(), eq(authentication));
+        .searchMembers(any(), eq(authentication), any());
     final var queryCaptor = ArgumentCaptor.forClass(RoleMemberQuery.class);
 
     // when
-    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType, authentication);
+    final var result =
+        roleServicesSpy.hasMembersOfType(roleId, entityType, authentication, PHYSICAL_TENANT_ID);
 
     // then
-    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication));
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture(), eq(authentication), any());
     assertThat(queryCaptor.getValue().filter().roleId()).isEqualTo(roleId);
     assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
     assertThat(result).isFalse();

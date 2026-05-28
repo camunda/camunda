@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 public final class FormServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private CamundaAuthentication authentication;
   private FormServices services;
   private FormSearchClient client;
@@ -52,7 +53,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -68,7 +69,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

@@ -40,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 
 public final class IncidentServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private IncidentServices services;
   private IncidentSearchClient client;
   private CamundaAuthentication authentication;
@@ -70,7 +71,7 @@ public final class IncidentServiceTest {
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -82,7 +83,7 @@ public final class IncidentServiceTest {
     final var entity = Instancio.create(IncidentEntity.class);
     when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
-    final var searchQueryResult = services.getByKey(1L, authentication, "default");
+    final var searchQueryResult = services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -94,7 +95,8 @@ public final class IncidentServiceTest {
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
+    final ThrowingCallable executeGetByKey =
+        () -> services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
     // then
     final var exception =
         (ServiceException)
@@ -119,7 +121,7 @@ public final class IncidentServiceTest {
                 .filter(f -> f.states(IncidentState.ACTIVE.name()))
                 .build(),
             authentication,
-            "default");
+            PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -150,7 +152,7 @@ public final class IncidentServiceTest {
                 .filter(f -> f.state(state).errorHashCode(errorHashCode))
                 .build(),
             authentication,
-            "default");
+            PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -179,7 +181,8 @@ public final class IncidentServiceTest {
             .build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication, "default");
+    services.incidentProcessInstanceStatisticsByError(
+        initialQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var queryCaptor =
@@ -201,7 +204,8 @@ public final class IncidentServiceTest {
         SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication, "default");
+    services.incidentProcessInstanceStatisticsByError(
+        initialQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var queryCaptor =

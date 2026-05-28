@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private ProcessDefinitionServices services;
   private ProcessDefinitionSearchClient processDefinitionSearchClient;
   private SecurityContextProvider securityContextProvider;
@@ -85,7 +86,7 @@ public class ProcessDefinitionServiceTest {
 
     // when
     final var result =
-        services.getProcessDefinitionInstanceStatistics(query, authentication, "default");
+        services.getProcessDefinitionInstanceStatistics(query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -116,7 +117,8 @@ public class ProcessDefinitionServiceTest {
 
     // when
     final var result =
-        services.searchProcessDefinitionInstanceVersionStatistics(query, authentication, "default");
+        services.searchProcessDefinitionInstanceVersionStatistics(
+            query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -143,7 +145,7 @@ public class ProcessDefinitionServiceTest {
         .thenReturn(statistics);
 
     // when
-    final var result = services.elementStatistics(filter, authentication, "default");
+    final var result = services.elementStatistics(filter, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(statistics);

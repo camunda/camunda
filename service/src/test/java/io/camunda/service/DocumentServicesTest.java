@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Test;
 
 public class DocumentServicesTest {
 
-  private static final String PHYSICAL_TENANT_ID = "physical-tenant-id";
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private DocumentServices services;
   private final SimpleDocumentStoreRegistry registry = mock(SimpleDocumentStoreRegistry.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);

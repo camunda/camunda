@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 public class JobServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private JobServices<SearchQueryResult<JobEntity>> services;
   private JobSearchClient client;
   private CamundaAuthentication authentication;
@@ -53,7 +54,7 @@ public class JobServiceTest {
     final var searchQuery = SearchQueryBuilders.jobSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

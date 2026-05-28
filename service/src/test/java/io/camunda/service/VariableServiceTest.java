@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 public class VariableServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private VariableServices services;
   private VariableSearchClient client;
   private CamundaAuthentication authentication;
@@ -62,7 +63,7 @@ public class VariableServiceTest {
     final var searchQuery = SearchQueryBuilders.variableSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -85,7 +86,7 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getByKey(1L, authentication, "default");
+    final var searchQueryResult = services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -100,7 +101,8 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.VARIABLE_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
+    final ThrowingCallable executeGetByKey =
+        () -> services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =

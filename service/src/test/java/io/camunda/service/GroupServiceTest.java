@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 public class GroupServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private GroupServices services;
   private GroupSearchClient client;
   private CamundaAuthentication authentication;
@@ -81,7 +82,7 @@ public class GroupServiceTest {
 
     // when
     final var createGroupRequest = new GroupDTO(groupId, groupName, description);
-    services.createGroup(createGroupRequest, authentication, "default");
+    services.createGroup(createGroupRequest, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -104,7 +105,7 @@ public class GroupServiceTest {
     final var searchQuery = SearchQueryBuilders.groupSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -126,7 +127,7 @@ public class GroupServiceTest {
     when(client.getGroup(any())).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getGroup("groupId", authentication, "default");
+    final var searchQueryResult = services.getGroup("groupId", authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -141,7 +142,7 @@ public class GroupServiceTest {
     final var description = "UpdatedDescription";
 
     // when
-    services.updateGroup(groupId, name, description, authentication, "default");
+    services.updateGroup(groupId, name, description, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -163,7 +164,7 @@ public class GroupServiceTest {
     final var description = "";
 
     // when
-    services.updateGroup(groupId, name, description, authentication, "default");
+    services.updateGroup(groupId, name, description, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -183,7 +184,7 @@ public class GroupServiceTest {
     final var groupId = String.valueOf(groupKey);
 
     // when
-    services.deleteGroup(groupId, authentication, "default");
+    services.deleteGroup(groupId, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -202,7 +203,7 @@ public class GroupServiceTest {
     final var dto = new GroupMemberDTO(groupId, memberId, EntityType.USER);
 
     // when
-    services.assignMember(dto, authentication, "default");
+    services.assignMember(dto, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -224,7 +225,7 @@ public class GroupServiceTest {
     final var dto = new GroupMemberDTO(groupId, username, EntityType.USER);
 
     // when
-    services.removeMember(dto, authentication, "default");
+    services.removeMember(dto, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();

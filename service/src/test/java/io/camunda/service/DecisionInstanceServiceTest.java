@@ -52,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 
 class DecisionInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private static final Long DECISION_INSTANCE_KEY = 1L;
   private static final Long NON_EXISTENT_KEY = 999L;
   private static final String DECISION_INSTANCE_ID = "1-1";
@@ -93,7 +94,7 @@ class DecisionInstanceServiceTest {
     final DecisionInstanceQuery query = SearchQueryBuilders.decisionInstanceSearchQuery().build();
 
     // when
-    final var response = services.search(query, authentication, "default");
+    final var response = services.search(query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(response).isEqualTo(result);
@@ -110,7 +111,7 @@ class DecisionInstanceServiceTest {
                     .page(p -> p.size(20)));
 
     // when
-    services.search(query, authentication, "default");
+    services.search(query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     verify(client)
@@ -138,7 +139,7 @@ class DecisionInstanceServiceTest {
                 decisionInstanceSearchQuery(
                     q -> q.filter(f -> f.decisionInstanceKeys(DECISION_INSTANCE_KEY))),
                 authentication,
-                "default");
+                PHYSICAL_TENANT_ID);
 
     // then
     final var exception =
@@ -164,7 +165,7 @@ class DecisionInstanceServiceTest {
     when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
 
     // when
-    final var result = services.getById(DECISION_INSTANCE_ID, authentication, "default");
+    final var result = services.getById(DECISION_INSTANCE_ID, authentication, PHYSICAL_TENANT_ID);
 
     // then
     verify(client).getDecisionInstance(DECISION_INSTANCE_ID);
@@ -200,7 +201,9 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteDecisionInstance(decisionInstanceKey, null, authentication, "default").join();
+    services
+        .deleteDecisionInstance(decisionInstanceKey, null, authentication, PHYSICAL_TENANT_ID)
+        .join();
 
     // then
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
@@ -221,7 +224,8 @@ class DecisionInstanceServiceTest {
     assertThatThrownBy(
             () ->
                 services
-                    .deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication, "default")
+                    .deleteDecisionInstance(
+                        NON_EXISTENT_KEY, null, authentication, PHYSICAL_TENANT_ID)
                     .join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found")
@@ -242,7 +246,8 @@ class DecisionInstanceServiceTest {
     assertThatThrownBy(
             () ->
                 services
-                    .deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication, "default")
+                    .deleteDecisionInstance(
+                        NON_EXISTENT_KEY, null, authentication, PHYSICAL_TENANT_ID)
                     .join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
@@ -272,7 +277,9 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteDecisionInstance(decisionInstanceKey, null, authentication, "default").join();
+    services
+        .deleteDecisionInstance(decisionInstanceKey, null, authentication, PHYSICAL_TENANT_ID)
+        .join();
 
     // then - verify that anonymous authentication was used for the existence check
     final var authCaptor = ArgumentCaptor.forClass(CamundaAuthentication.class);
@@ -304,7 +311,9 @@ class DecisionInstanceServiceTest {
 
     // when
     final var result =
-        services.deleteDecisionInstancesBatchOperation(filter, authentication, "default").join();
+        services
+            .deleteDecisionInstancesBatchOperation(filter, authentication, PHYSICAL_TENANT_ID)
+            .join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);

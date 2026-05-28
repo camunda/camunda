@@ -42,6 +42,7 @@ import org.mockito.Mock;
 
 public final class ElementInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private ProcessCache processCache;
@@ -80,7 +81,9 @@ public final class ElementInstanceServiceTest {
       // when
       final var searchQueryResult =
           services.search(
-              SearchQueryBuilders.flownodeInstanceSearchQuery().build(), authentication, "default");
+              SearchQueryBuilders.flownodeInstanceSearchQuery().build(),
+              authentication,
+              PHYSICAL_TENANT_ID);
 
       // then
       assertThat(searchQueryResult.items()).contains(entity);
@@ -93,7 +96,7 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
       when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey()), "default"))
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey()), PHYSICAL_TENANT_ID))
           .thenReturn(
               ProcessCacheResult.of(
                   entity.processDefinitionKey(),
@@ -102,7 +105,7 @@ public final class ElementInstanceServiceTest {
                   "cached name"));
 
       final var searchQueryResult =
-          services.search(FlowNodeInstanceQuery.of(q -> q), authentication, "default");
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication, PHYSICAL_TENANT_ID);
 
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName("cached name"));
     }
@@ -117,7 +120,7 @@ public final class ElementInstanceServiceTest {
       when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
 
       final var searchQueryResult =
-          services.search(FlowNodeInstanceQuery.of(q -> q), authentication, "default");
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication, PHYSICAL_TENANT_ID);
 
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName(entity.flowNodeId()));
     }
@@ -134,7 +137,7 @@ public final class ElementInstanceServiceTest {
 
       // when
       final var searchQueryResult =
-          services.getByKey(entity.flowNodeInstanceKey(), authentication, "default");
+          services.getByKey(entity.flowNodeInstanceKey(), authentication, PHYSICAL_TENANT_ID);
 
       // then
       assertThat(searchQueryResult).isEqualTo(entity);
@@ -151,7 +154,7 @@ public final class ElementInstanceServiceTest {
 
       // when
       final ThrowingCallable executeGetByKey =
-          () -> services.getByKey(entity.flowNodeInstanceKey(), authentication, "default");
+          () -> services.getByKey(entity.flowNodeInstanceKey(), authentication, PHYSICAL_TENANT_ID);
       // then
       final var exception =
           (ServiceException)
@@ -171,13 +174,13 @@ public final class ElementInstanceServiceTest {
               .create();
 
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID))
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.flowNodeId(), "cached name")));
 
       // when
       final var foundEntity =
-          services.getByKey(entity.flowNodeInstanceKey(), authentication, "default");
+          services.getByKey(entity.flowNodeInstanceKey(), authentication, PHYSICAL_TENANT_ID);
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo("cached name");
@@ -192,12 +195,12 @@ public final class ElementInstanceServiceTest {
               .create();
 
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
-      when(processCache.getCacheItem(entity.processDefinitionKey(), "default"))
+      when(processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID))
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
       // when
       final var foundEntity =
-          services.getByKey(entity.flowNodeInstanceKey(), authentication, "default");
+          services.getByKey(entity.flowNodeInstanceKey(), authentication, PHYSICAL_TENANT_ID);
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
@@ -216,7 +219,7 @@ public final class ElementInstanceServiceTest {
                 .create();
 
         when(client.getFlowNodeInstance(any(Long.class))).thenReturn(elementInstance);
-        when(processCache.getCacheItem(elementInstance.processDefinitionKey(), "default"))
+        when(processCache.getCacheItem(elementInstance.processDefinitionKey(), PHYSICAL_TENANT_ID))
             .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
         final IncidentEntity incident =
             Instancio.of(IncidentEntity.class)
@@ -227,7 +230,7 @@ public final class ElementInstanceServiceTest {
         when(incidentServices.search(any(IncidentQuery.class), any(), any())).thenReturn(result);
         // when
         final var searchResult =
-            services.searchIncidents(elementInstanceKey, query, authentication, "default");
+            services.searchIncidents(elementInstanceKey, query, authentication, PHYSICAL_TENANT_ID);
         // then
         assertThat(searchResult.items()).containsExactly(incident);
       }
@@ -243,7 +246,7 @@ public final class ElementInstanceServiceTest {
         when(incidentServices.search(any(IncidentQuery.class), any(), any())).thenReturn(result);
         // when
         final var searchResult =
-            services.searchIncidents(elementInstanceKey, query, authentication, "default");
+            services.searchIncidents(elementInstanceKey, query, authentication, PHYSICAL_TENANT_ID);
         // then
         assertThat(searchResult.items()).isEmpty();
       }

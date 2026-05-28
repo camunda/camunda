@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public class MessageSubscriptionServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private MessageSubscriptionServices services;
   private MessageSubscriptionSearchClient client;
   private CamundaAuthentication authentication;
@@ -59,7 +60,7 @@ public class MessageSubscriptionServiceTest {
     final var searchQuery = SearchQueryBuilders.messageSubscriptionSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery, authentication, "default");
+    final var searchQueryResult = services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -72,7 +73,7 @@ public class MessageSubscriptionServiceTest {
     when(client.getMessageSubscription(any(Long.class))).thenReturn(entity);
 
     // when
-    final var result = services.getByKey(1L, authentication, "default");
+    final var result = services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(entity);
@@ -87,7 +88,8 @@ public class MessageSubscriptionServiceTest {
                 Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
+    final ThrowingCallable executeGetByKey =
+        () -> services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =

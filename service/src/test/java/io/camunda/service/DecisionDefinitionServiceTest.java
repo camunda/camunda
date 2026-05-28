@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 public final class DecisionDefinitionServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private CamundaAuthentication authentication;
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
@@ -68,7 +69,7 @@ public final class DecisionDefinitionServiceTest {
 
     // when
     final SearchQueryResult<DecisionDefinitionEntity> searchQueryResult =
-        services.search(searchQuery, authentication, "default");
+        services.search(searchQuery, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -85,7 +86,7 @@ public final class DecisionDefinitionServiceTest {
         .thenReturn("<foo>bar</foo>");
 
     // when
-    final var xml = services.getDecisionDefinitionXml(42L, authentication, "default");
+    final var xml = services.getDecisionDefinitionXml(42L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(xml).isEqualTo("<foo>bar</foo>");
@@ -103,7 +104,7 @@ public final class DecisionDefinitionServiceTest {
 
     // when
     final DecisionDefinitionEntity decisionDefinition =
-        services.getByKey(42L, authentication, "default");
+        services.getByKey(42L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(decisionDefinition.decisionDefinitionKey()).isEqualTo(42L);
@@ -122,7 +123,8 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executable = () -> services.getByKey(1L, authentication, "default");
+    final ThrowingCallable executable =
+        () -> services.getByKey(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =
@@ -146,7 +148,7 @@ public final class DecisionDefinitionServiceTest {
 
     // when
     final ThrowingCallable executable =
-        () -> services.getDecisionDefinitionXml(1L, authentication, "default");
+        () -> services.getDecisionDefinitionXml(1L, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =

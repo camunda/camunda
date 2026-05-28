@@ -37,6 +37,7 @@ import org.mockito.MockitoAnnotations;
 
 class AuditLogServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
       new AuditLogEntity.Builder()
           .auditLogKey("auditLogKey")
@@ -100,7 +101,7 @@ class AuditLogServicesTest {
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final var result = auditLogServices.search(query, authentication, "default");
+    final var result = auditLogServices.search(query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(searchResult);
@@ -118,7 +119,7 @@ class AuditLogServicesTest {
     when(auditLogSearchClient.getAuditLog(key)).thenReturn(AUDIT_LOG_ENTITY);
 
     // when
-    final var result = auditLogServices.getAuditLog(key, authentication, "default");
+    final var result = auditLogServices.getAuditLog(key, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isEqualTo(AUDIT_LOG_ENTITY);
@@ -134,7 +135,7 @@ class AuditLogServicesTest {
 
     // when
     final ThrowingCallable executeSearch =
-        () -> auditLogServices.search(query, authentication, "default");
+        () -> auditLogServices.search(query, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =
@@ -155,7 +156,7 @@ class AuditLogServicesTest {
 
     // when
     final ThrowingCallable executeGetByKey =
-        () -> auditLogServices.getAuditLog(key, authentication, "default");
+        () -> auditLogServices.getAuditLog(key, authentication, PHYSICAL_TENANT_ID);
 
     // then
     final var exception =

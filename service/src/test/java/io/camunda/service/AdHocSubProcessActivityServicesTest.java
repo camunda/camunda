@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class AdHocSubProcessActivityServicesTest {
 
   private static final long AD_HOC_SUB_PROCESS_INSTANCE_KEY = 123456L;
+  private static final String PHYSICAL_TENANT_ID = "foo";
   private static final String ELEMENT_ID = "activity1";
 
   private static final AdHocSubProcessActivateActivitiesRequest DEFAULT_ACTIVATION_REQUEST =
@@ -90,7 +91,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final CompletableFuture<AdHocSubProcessInstructionRecord> result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, "default");
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, PHYSICAL_TENANT_ID);
 
     // then
     assertThat(result).isNotCompleted();
@@ -119,7 +120,9 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final AdHocSubProcessInstructionRecord result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, "default").join();
+        services
+            .activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication, PHYSICAL_TENANT_ID)
+            .join();
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
@@ -143,7 +146,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request, authentication, "default").join();
+    services.activateActivities(request, authentication, PHYSICAL_TENANT_ID).join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();
@@ -175,7 +178,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request, authentication, "default").join();
+    services.activateActivities(request, authentication, PHYSICAL_TENANT_ID).join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();

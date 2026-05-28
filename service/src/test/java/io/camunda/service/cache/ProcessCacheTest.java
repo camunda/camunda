@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 
 class ProcessCacheTest {
 
-  private static final String TENANT = "default";
+  private static final String PHYSICAL_TENANT_ID = "foo";
 
   private ProcessCache processCache;
   private ProcessCache.Configuration configuration;
@@ -76,7 +76,7 @@ class ProcessCacheTest {
   }
 
   private LoadingCache<Long, ProcessCacheItem> getCache() {
-    return processCache.getRawCache(TENANT);
+    return processCache.getRawCache(PHYSICAL_TENANT_ID);
   }
 
   private ConcurrentMap<Long, ProcessCacheItem> getCacheMap() {
@@ -86,7 +86,8 @@ class ProcessCacheTest {
   @Test
   void shouldPopulateCache() {
     // when
-    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+    final var cacheItem =
+        processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -101,7 +102,8 @@ class ProcessCacheTest {
         .thenThrow(new NoSuchElementException());
 
     // when
-    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+    final var cacheItem =
+        processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -112,9 +114,9 @@ class ProcessCacheTest {
   @Test
   void shouldNotRepopulateWhenAlreadyCached() {
     // when
-    processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+    processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
     getCache().cleanUp();
-    processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+    processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
 
     // then - extractElementNames not called again
     verify(processDefinitionServices, times(1))
@@ -135,7 +137,8 @@ class ProcessCacheTest {
     // when
     final var cacheResult =
         processCache.getCacheItems(
-            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()), TENANT);
+            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()),
+            PHYSICAL_TENANT_ID);
 
     // then
     verify(processDefinitionServices, times(1)).search(any(), any(), any());
@@ -151,14 +154,14 @@ class ProcessCacheTest {
     processCache =
         new ProcessCache(
             configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
-    processCache.getCacheItem(1L, TENANT);
-    processCache.getCacheItem(2L, TENANT);
+    processCache.getCacheItem(1L, PHYSICAL_TENANT_ID);
+    processCache.getCacheItem(2L, PHYSICAL_TENANT_ID);
     getCache().cleanUp();
     assertThat(getCacheMap()).hasSize(2);
 
     // when - read 1 and adding 3
-    processCache.getCacheItem(1L, TENANT);
-    processCache.getCacheItem(3L, TENANT);
+    processCache.getCacheItem(1L, PHYSICAL_TENANT_ID);
+    processCache.getCacheItem(3L, PHYSICAL_TENANT_ID);
     getCache().cleanUp();
 
     // then - 2 should be removed
@@ -179,7 +182,8 @@ class ProcessCacheTest {
     @Test
     void shouldResolveName() {
       // when
-      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+      final var cacheItem =
+          processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
 
       // then - extractElementNames not called again
       assertThat(cacheItem.getElementName("StartEvent_1")).isEqualTo("Start");
@@ -189,7 +193,8 @@ class ProcessCacheTest {
     @Test
     void shouldResolveDefaultName() {
       // given
-      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey(), TENANT);
+      final var cacheItem =
+          processCache.getCacheItem(entity.processDefinitionKey(), PHYSICAL_TENANT_ID);
 
       // then - extractElementNames not called again
       assertThat(cacheItem.getElementName("non-existing")).isEqualTo("non-existing");
@@ -209,7 +214,8 @@ class ProcessCacheTest {
       // when
       final var cacheResult =
           processCache.getCacheItems(
-              Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()), TENANT);
+              Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()),
+              PHYSICAL_TENANT_ID);
 
       // then
       assertThat(
