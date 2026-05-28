@@ -67,6 +67,15 @@ public final class UserTaskClient {
     return this;
   }
 
+  public UserTaskClient withCandidateUsers(final String... candidateUsers) {
+    return withCandidateUsersList(List.of(candidateUsers));
+  }
+
+  public UserTaskClient withCandidateUsersList(final List<String> candidateUsers) {
+    userTaskRecord.setCandidateUsersList(candidateUsers).setCandidateUsersChanged();
+    return this;
+  }
+
   public UserTaskClient withAssignee(final String assignee) {
     userTaskRecord.setAssignee(assignee);
     return this;
@@ -165,6 +174,72 @@ public final class UserTaskClient {
       return DEFAULT_PARTITION_ID;
     }
     return partitionId;
+  }
+
+  /**
+   * Sends an {@link UserTaskIntent#UPDATE} command for the user task with the specified attribute
+   * values.
+   *
+   * <p>This method uses the attributes set through the {@code with<AttributeName>()} methods to
+   * construct the {@link UserTaskRecord} with the appropriate changed attributes. Only explicitly
+   * set attributes will be included in the {@code changedAttributes} list, ensuring precise control
+   * over which properties are updated.
+   *
+   * <p>Example 1: Update specific attributes
+   *
+   * <pre>{@code
+   * final var candidateGroups = List.of("elves", "dwarves");
+   * userTaskClient
+   *     .ofInstance(processInstanceKey)
+   *     .withCandidateGroupsList(candidateGroups)
+   *     .withCandidateUsers("legolas", "thorin")
+   *     .withDueDate("2023-03-02T15:35+02:00")
+   *     .withPriority(99)
+   *     .update();
+   * }</pre>
+   *
+   * This example constructs and sends an {@link UserTaskIntent#UPDATE} command that updates the
+   * following attributes: {@code candidateGroupsList}, {@code candidateUsersList}, {@code dueDate},
+   * and {@code priority}. These attribute names will be included in the {@code changedAttributes}
+   * list.
+   *
+   * <p>Example 2: Reset all updatable attributes to their default values
+   *
+   * <pre>{@code
+   * userTaskClient
+   *     .ofInstance(processInstanceKey)
+   *     .withAllAttributesChanged()
+   *     .update();
+   * }</pre>
+   *
+   * This example sends an {@link UserTaskIntent#UPDATE} command with all updatable attributes
+   * marked as changed, resulting in all such attributes being reset to their default values.
+   *
+   * <p>Example 3: Trigger update transition without updating any attributes
+   *
+   * <pre>{@code
+   * userTaskClient
+   *     .ofInstance(processInstanceKey)
+   *     .update();
+   * }</pre>
+   *
+   * In this example, the {@link UserTaskIntent#UPDATE} command is sent with an empty {@code
+   * changedAttributes} list. This triggers the update transition, including the execution of
+   * configured {@code updating} listeners, by without updating any user task properties.
+   *
+   * @return the {@link UserTaskIntent#UPDATING} record.
+   */
+  public Record<UserTaskRecordValue> update() {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.UPDATE,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
   }
 
   public Record<UserTaskRecordValue> update(
