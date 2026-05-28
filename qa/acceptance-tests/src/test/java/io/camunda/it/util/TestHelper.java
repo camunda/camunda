@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
@@ -39,6 +40,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -2073,5 +2075,22 @@ public final class TestHelper {
                       .execute();
               assertThat(result.items()).hasSize(listenerIds.size());
             });
+  }
+
+  /**
+   * Waits for audit log entries to be indexed in Elasticsearch/OpenSearch after creation. The
+   * provided filter consumer can be used to specify criteria for the expected audit log entries,
+   * e.g. by operation type, entity type, or process definition ID. The method will wait until the
+   * expected number of entries matching the filter criteria are available.
+   */
+  public static List<AuditLogResult> waitForAuditLogEntries(
+      final CamundaClient camundaClient,
+      final Consumer<AuditLogFilter> filterConsumer,
+      final int expectedCount) {
+    return waitForItemsPaginated(
+        "should wait until audit log entries are available",
+        expectedCount,
+        page ->
+            camundaClient.newAuditLogSearchRequest().filter(filterConsumer).page(page).execute());
   }
 }
