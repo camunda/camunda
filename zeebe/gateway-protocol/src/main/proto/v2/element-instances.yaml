@@ -700,33 +700,33 @@ components:
           description: The BPMN element type of this element instance.
           type: string
           enum:
-            - UNSPECIFIED
-            - PROCESS
-            - SUB_PROCESS
-            - EVENT_SUB_PROCESS
             - AD_HOC_SUB_PROCESS
             - AD_HOC_SUB_PROCESS_INNER_INSTANCE
-            - START_EVENT
-            - INTERMEDIATE_CATCH_EVENT
-            - INTERMEDIATE_THROW_EVENT
             - BOUNDARY_EVENT
+            - BUSINESS_RULE_TASK
+            - CALL_ACTIVITY
             - END_EVENT
-            - SERVICE_TASK
-            - RECEIVE_TASK
-            - USER_TASK
-            - MANUAL_TASK
-            - TASK
+            - EVENT_BASED_GATEWAY
+            - EVENT_SUB_PROCESS
             - EXCLUSIVE_GATEWAY
             - INCLUSIVE_GATEWAY
-            - PARALLEL_GATEWAY
-            - EVENT_BASED_GATEWAY
-            - SEQUENCE_FLOW
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - MANUAL_TASK
             - MULTI_INSTANCE_BODY
-            - CALL_ACTIVITY
-            - BUSINESS_RULE_TASK
+            - PARALLEL_GATEWAY
+            - PROCESS
+            - RECEIVE_TASK
             - SCRIPT_TASK
             - SEND_TASK
+            - SEQUENCE_FLOW
+            - SERVICE_TASK
+            - START_EVENT
+            - SUB_PROCESS
+            - TASK
             - UNKNOWN
+            - UNSPECIFIED
+            - USER_TASK
 
     ElementInstanceWaitStateJobResult:
       description: Inspection result for an element instance waiting on a job.
