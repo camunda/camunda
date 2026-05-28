@@ -46,8 +46,6 @@ public final class AgentInstanceUpdateProcessor
 
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to update agent instance with key '%d', but no such agent instance was found.";
-  private static final String ERROR_MSG_EMPTY_CHANGED =
-      "Expected to update agent instance, but changedAttributes is empty.";
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance, but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
   private static final String ERROR_MSG_INVALID_METRIC_DELTA =
@@ -185,10 +183,6 @@ public final class AgentInstanceUpdateProcessor
     }
 
     final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
-    if (changed.isEmpty()) {
-      writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
-      return;
-    }
 
     final var unknown =
         changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();

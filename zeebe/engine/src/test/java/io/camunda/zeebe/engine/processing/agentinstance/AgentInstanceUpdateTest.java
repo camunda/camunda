@@ -160,43 +160,6 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
-  public void shouldRejectUpdateWithEmptyChangedAttributes() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var serviceTaskInstance = awaitServiceTaskActivated(processInstanceKey);
-    final var agentInstanceKey =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(serviceTaskInstance.getKey())
-            .create()
-            .getValue()
-            .getAgentInstanceKey();
-
-    // when — valid elementInstanceKey supplied, but changedAttributes is empty
-    final Record<?> rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
-            .withElementInstanceKey(serviceTaskInstance.getKey())
-            .withChangedAttributes(List.of())
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("changedAttributes");
-  }
-
-  @Test
   public void shouldDedupeDuplicateAttributesInChangedAttributes() {
     // given — a duplicated "metrics" entry in changedAttributes. Without dedup the delta would
     // be applied twice; the processor iterates the validated set so each attribute is patched once.
