@@ -403,11 +403,13 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final Class<T> docClass) {
-    return scrollAllStream(client, searchRequestBuilder, docClass)
-        .flatMap(response -> response.hits().hits().stream())
-        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, docClass)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+    }
   }
 
   /**
@@ -423,14 +425,16 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final String fieldName) {
-    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
-        .flatMap(response -> response.hits().hits().stream())
-        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
-        .filter(Objects::nonNull)
-        .map(source -> source.get(fieldName))
-        .filter(Objects::nonNull)
-        .map(value -> ((Number) value).longValue())
-        .collect(Collectors.toSet());
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, MAP_CLASS)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .filter(Objects::nonNull)
+          .map(source -> source.get(fieldName))
+          .filter(Objects::nonNull)
+          .map(value -> ((Number) value).longValue())
+          .collect(Collectors.toSet());
+    }
   }
 
   // ===========================================================================================
