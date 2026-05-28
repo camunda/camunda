@@ -116,4 +116,16 @@ class JobEntityTransformerTest {
     final var transformed = transformer.apply(entityValue);
     assertThat(transformed.state()).isEqualTo(jobState);
   }
+
+  @Test
+  void shouldMapNullFlowNodeIdToEmptyString() {
+    // given — BEFORE_ALL execution listener jobs may have null flowNodeId in ES
+    when(entityValue.getFlowNodeId()).thenReturn(null);
+
+    // when
+    final var transformed = transformer.apply(entityValue);
+
+    // then — must not throw NPE; elementId should be empty string
+    assertThat(transformed.elementId()).isEmpty();
+  }
 }
