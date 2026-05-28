@@ -24,6 +24,7 @@ import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
+import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
@@ -382,12 +383,6 @@ public class OidcOverrideBeansConfiguration {
     return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
         .filter(entry -> entry.getValue().isPreferIdTokenClaims())
         .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
-  }
-
-  @Bean
-  public AssertionJwkProvider assertionJwkProvider(
-      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
-    return new AssertionJwkProvider(oidcAuthenticationConfigurationRepository);
   }
 
   @Bean

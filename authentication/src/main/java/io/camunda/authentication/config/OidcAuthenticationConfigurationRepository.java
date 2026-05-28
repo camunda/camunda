@@ -10,12 +10,13 @@ package io.camunda.authentication.config;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public class OidcAuthenticationConfigurationRepository {
+public class OidcAuthenticationConfigurationRepository implements OidcProviderConfigurationPort {
 
   public static final String REGISTRATION_ID = "oidc";
   private final Map<String, OidcConfiguration> providers;
