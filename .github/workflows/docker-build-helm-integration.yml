@@ -67,6 +67,39 @@ jobs:
       github.event_name == 'merge_group'
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_should_run"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+          {
+            echo "### AlwaysGreen Failure Context"
+            echo ""
+            echo "- stage: ${{ github.job }}"
+            echo "- status: ${{ job.status }}"
+            echo "- failure_category: ${FAILURE_CATEGORY}"
+            echo "- owner_team: ${OWNER_TEAM}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   # Parallel frontend builds
   build-operate-frontend:
@@ -99,6 +132,31 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   build-tasklist-frontend:
     name: Build Tasklist Frontend
@@ -130,6 +188,31 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   build-identity-frontend:
     name: Build Identity Frontend
@@ -161,6 +244,31 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_frontend_build"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   # Main build job - waits for all frontends to complete
   build-and-push:
@@ -270,6 +378,31 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_build_and_push"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   format-identifier:
     name: Format Identifier
@@ -292,6 +425,31 @@ jobs:
           # Truncate to max 40 chars if needed (k8s namespace limit)
           IDENTIFIER="${IDENTIFIER:0:40}"
           echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/monorepo-devops-team"
+            FAILURE_CATEGORY="orchestration_identifier"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   helm-deploy:
     name: Helm chart Integration Tests
@@ -376,6 +534,32 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+          if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
+            OWNER_TEAM="@camunda/distribution"
+            FAILURE_CATEGORY="helm_install_or_it"
+          fi
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            --arg upstream_result "${{ needs.helm-deploy.result }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,upstream_result:$upstream_result}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
 
   trigger-saas-e2e:
     name: Trigger SaaS E2E tests
@@ -510,9 +694,11 @@ jobs:
 
             if [[ "$STATUS" == "completed" ]]; then
               if [[ "$CONCLUSION" == "success" ]]; then
+                echo "downstream_conclusion=success" >> "$GITHUB_OUTPUT"
                 echo "Downstream workflow succeeded!"
                 exit 0
               else
+                echo "downstream_conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
                 echo "Downstream workflow failed: $CONCLUSION"
                 exit 1
               fi
@@ -521,6 +707,7 @@ jobs:
             sleep 30
           done
 
+          echo "downstream_conclusion=timeout" >> "$GITHUB_OUTPUT"
           echo "Timed out waiting for downstream workflow to complete."
           exit 1
 
@@ -577,3 +764,36 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Emit AlwaysGreen failure context
+        if: ${{ always() && (failure() || cancelled()) }}
+        run: |
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
+          OWNER_TEAM="none"
+          FAILURE_CATEGORY="none"
+
+          if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
+            if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
+              OWNER_TEAM="@camunda/test-automation-team"
+              FAILURE_CATEGORY="saas_e2e"
+            else
+              OWNER_TEAM="@camunda/monorepo-devops-team"
+              FAILURE_CATEGORY="orchestration_dispatch_or_wait"
+            fi
+          fi
+
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg failure_category "$FAILURE_CATEGORY" \
+            --arg owner_team "$OWNER_TEAM" \
+            --arg escalation_team "$OWNER_TEAM" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg status "${{ job.status }}" \
+            --arg downstream_conclusion "${{ steps.wait-downstream.outputs.downstream_conclusion }}" \
+            '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
+      - name: Upload AlwaysGreen failure context artifact
+        if: ${{ always() && (failure() || cancelled()) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-failure-context-${{ github.job }}
+          path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
+          retention-days: 5
