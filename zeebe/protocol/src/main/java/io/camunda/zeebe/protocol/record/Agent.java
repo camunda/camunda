@@ -52,10 +52,7 @@ public interface Agent {
    * <p>For example, the name of an MCP tool or other agent tool used to start a process via message
    * correlation.
    *
-   * @return the agent tool name, or null if not set
+   * @return the agent tool name, or an empty string if not set
    */
-  @edu.umd.cs.findbugs.annotations.Nullable
-  default String getToolName() {
-    return null;
-  }
+  String getToolName();
 }

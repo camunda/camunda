@@ -10,8 +10,6 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -80,7 +78,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setTenantId(record.getTenantId());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setBusinessId(record.getBusinessIdBuffer());
-    setAgentToolName(record.getAgentToolName());
+    setAgentToolName(record.getAgentToolNameBuffer());
   }
 
   @Override
@@ -115,6 +113,36 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   public MessageCorrelationRecord setRequestStreamId(final int requestStreamId) {
     requestStreamIdProp.setValue(requestStreamId);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public MessageCorrelationRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getAgentToolName() {
+    return bufferAsString(agentToolNameProp.getValue());
+  }
+
+  public MessageCorrelationRecord setAgentToolName(final String agentToolName) {
+    agentToolNameProp.setValue(agentToolName);
+    return this;
+  }
+
+  public MessageCorrelationRecord setAgentToolName(final DirectBuffer agentToolName) {
+    agentToolNameProp.setValue(agentToolName);
     return this;
   }
 
@@ -188,37 +216,13 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
-  }
-
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
   }
 
-  public MessageCorrelationRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  @Override
-  @JsonInclude(Include.NON_NULL)
-  public String getAgentToolName() {
-    final var value = bufferAsString(agentToolNameProp.getValue());
-    return value.isEmpty() ? null : value;
-  }
-
-  public MessageCorrelationRecord setAgentToolName(final String agentToolName) {
-    if (agentToolName != null) {
-      agentToolNameProp.setValue(agentToolName);
-    }
-    return this;
+  @JsonIgnore
+  public DirectBuffer getAgentToolNameBuffer() {
+    return agentToolNameProp.getValue();
   }
 }
