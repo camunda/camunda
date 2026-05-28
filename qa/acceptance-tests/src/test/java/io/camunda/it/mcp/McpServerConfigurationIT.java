@@ -16,7 +16,7 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.McpSyncClient;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,13 +58,15 @@ public class McpServerConfigurationIT {
     void setUp() {
       if (!TEST_INSTANCE.isStarted()) {
         TEST_INSTANCE.start();
-        final var grpcClient = TEST_INSTANCE.newClientBuilder().preferRestOverGrpc(false).build();
-        TEST_INSTANCE.awaitCompleteTopology(TEST_INSTANCE.unifiedConfig(), grpcClient);
+        try (final var grpcClient =
+            TEST_INSTANCE.newClientBuilder().preferRestOverGrpc(false).build()) {
+          TEST_INSTANCE.awaitCompleteTopology(TEST_INSTANCE.unifiedConfig(), grpcClient);
+        }
       }
     }
 
-    @AfterEach
-    void tearDown() {
+    @AfterAll
+    static void tearDown() {
       TEST_INSTANCE.stop();
     }
 
