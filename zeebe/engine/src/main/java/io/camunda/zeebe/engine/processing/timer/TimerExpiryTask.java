@@ -27,7 +27,7 @@ import java.time.InstantSource;
  */
 public final class TimerExpiryTask implements ScheduledTask {
 
-  static final long TIMER_RESOLUTION_MS = Duration.ofMillis(100).toMillis();
+  public static final long TIMER_RESOLUTION_MS = Duration.ofMillis(100).toMillis();
   private static final double GIVE_YIELD_FACTOR = 0.5;
 
   private final TimerInstanceState state;
