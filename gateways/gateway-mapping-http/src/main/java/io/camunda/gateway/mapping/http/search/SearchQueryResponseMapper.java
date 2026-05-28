@@ -675,7 +675,10 @@ public final class SearchQueryResponseMapper {
         BaseElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
     return switch (item.details()) {
       case WaitStateJobDetails(
-              final var jobKey, final var jobType, final var jobKind, final var retries) -> {
+              final var jobKey,
+              final var jobType,
+              final var jobKind,
+              final var retries) -> {
         final var dtoDetails =
             JobWaitStateDetails.Builder.create()
                 .jobKey(keyToString(jobKey))
@@ -689,6 +692,7 @@ public final class SearchQueryResponseMapper {
             .elementInstanceKey(keyToString(item.elementInstanceKey()))
             .elementId(item.elementId())
             .elementType(elementType)
+            .tenantId(item.tenantId())
             .details(dtoDetails)
             .rootProcessInstanceKey(rootKey)
             .build();
@@ -705,6 +709,7 @@ public final class SearchQueryResponseMapper {
             .elementInstanceKey(keyToString(item.elementInstanceKey()))
             .elementId(item.elementId())
             .elementType(elementType)
+            .tenantId(item.tenantId())
             .details(dtoDetails)
             .rootProcessInstanceKey(rootKey)
             .build();

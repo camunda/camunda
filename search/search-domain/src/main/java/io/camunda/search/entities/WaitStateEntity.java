@@ -20,11 +20,13 @@ public record WaitStateEntity(
     String elementId,
     FlowNodeType elementType,
     @Nullable Long rootProcessInstanceKey,
-    WaitStateDetails details) {
+    WaitStateDetails details,
+    String tenantId) {
 
   public WaitStateEntity {
     Objects.requireNonNull(elementId, "elementId");
     Objects.requireNonNull(elementType, "elementType");
+    Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(details, "details");
   }
 
@@ -35,6 +37,7 @@ public record WaitStateEntity(
     private @Nullable FlowNodeType elementType;
     private @Nullable Long rootProcessInstanceKey;
     private @Nullable WaitStateDetails details;
+    private @Nullable String tenantId;
 
     public Builder processInstanceKey(final long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
@@ -66,16 +69,21 @@ public record WaitStateEntity(
       return this;
     }
 
-    @SuppressWarnings("NullAway")
+    public Builder tenantId(final @Nullable String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
     @Override
     public WaitStateEntity build() {
       return new WaitStateEntity(
           processInstanceKey,
           elementInstanceKey,
-          elementId,
-          elementType,
-          rootProcessInstanceKey,
-          details);
+          Objects.requireNonNull(elementId, "elementId"),
+          Objects.requireNonNull(elementType, "elementType"),
+          Objects.requireNonNull(rootProcessInstanceKey, "rootProcessInstanceKey"),
+          Objects.requireNonNull(details, "details"),
+          Objects.requireNonNull(tenantId, "tenantId"));
     }
   }
 }

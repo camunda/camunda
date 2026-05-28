@@ -100,6 +100,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
               .elementId("payment-task")
               .elementType(FlowNodeType.SERVICE_TASK)
               .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
               .details(
                   new WaitStateJobDetails.Builder()
                       .jobKey(2251799813685252L)
@@ -113,6 +114,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
               .elementId("order-received")
               .elementType(FlowNodeType.INTERMEDIATE_CATCH_EVENT)
               .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
               .details(
                   new WaitStateMessageDetails.Builder()
                       .messageName("order-confirmed")
@@ -125,6 +127,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
               .elementId("notify-task")
               .elementType(FlowNodeType.SERVICE_TASK)
               .rootProcessInstanceKey(2251799813685249L)
+              .tenantId("<default>")
               .details(
                   new WaitStateJobDetails.Builder()
                       .jobKey(2251799813685260L)

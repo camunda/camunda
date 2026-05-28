@@ -675,6 +675,7 @@ components:
         - elementInstanceKey
         - elementId
         - elementType
+        - tenantId
       properties:
         waitStateType:
           description: The type of waiting state an element instance is in.
@@ -727,6 +728,10 @@ components:
             - UNKNOWN
             - UNSPECIFIED
             - USER_TASK
+        tenantId:
+          description: The tenant ID of the element instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
 
     ElementInstanceWaitStateJobResult:
       description: Inspection result for an element instance waiting on a job.
