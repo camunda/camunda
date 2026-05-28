@@ -867,6 +867,7 @@ final class JsonSerializableToJsonTest {
                       "variables": {
                         "foo": "bar"
                       },
+                      "secretPaths": {},
                       "retries": 3,
                       "priority": 0,
                       "jobKind": "BPMN_ELEMENT",
@@ -1053,6 +1054,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "secretPaths": {},
                   "retries": 12,
                   "priority": 42,
                   "jobKind": "BPMN_ELEMENT",
@@ -1130,6 +1132,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": -1,
                   "elementInstanceKey": -1,
                   "variables": {},
+                  "secretPaths": {},
                   "worker": "",
                   "retries": -1,
                   "priority": 0,
@@ -1191,6 +1194,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": null
                   },
+                  "secretPaths": {},
                   "deadline": -1,
                   "timeout": -1,
                   "worker": "",
