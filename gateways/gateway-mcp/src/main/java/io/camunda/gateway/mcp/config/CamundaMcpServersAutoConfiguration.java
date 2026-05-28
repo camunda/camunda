@@ -114,6 +114,7 @@ public class CamundaMcpServersAutoConfiguration {
         .capabilities(capabilities)
         .tools(toolSpecifications)
         .immediateExecution(true)
+        .validateToolInputs(false) // covered by bean validation
         .build();
   }
 }
