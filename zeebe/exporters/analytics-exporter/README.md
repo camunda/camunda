@@ -111,12 +111,12 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-| Option           | Type     | Description                                                                                                            | Default                              |
-|------------------|----------|------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`       | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                          | `https://analytics.cloud.camunda.io` |
-| `push-interval`  | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).        | `PT5S`                               |
-| `max-queue-size` | int      | Maximum number of log records buffered in memory before new records are dropped.                                       | `2048`                               |
-| `max-batch-size` | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.               | `512`                                |
+|      Option      |   Type   |                                                   Description                                                   |               Default                |
+|------------------|----------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `endpoint`       | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                   | `https://analytics.cloud.camunda.io` |
+| `push-interval`  | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations). | `PT5S`                               |
+| `max-queue-size` | int      | Maximum number of log records buffered in memory before new records are dropped.                                | `2048`                               |
+| `max-batch-size` | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.        | `512`                                |
 
 ## What data is exported
 
@@ -125,29 +125,29 @@ identified by the `event.name` attribute following the OTel Events semantic conv
 
 ### Event types
 
-| Source record                | Event name                 |
-|------------------------------|----------------------------|
-| `PROCESS_INSTANCE_CREATION`  | `process_instance_created` |
+|        Source record        |         Event name         |
+|-----------------------------|----------------------------|
+| `PROCESS_INSTANCE_CREATION` | `process_instance_created` |
 
 ### Log record attributes
 
 Per-event attributes attached to each log record:
 
-| Attribute                          | Type   | Description                                                |
-|------------------------------------|--------|------------------------------------------------------------|
-| `event.name`                       | string | Event type identifier.                                     |
-| `camunda.bpmn_process_id`          | string | BPMN process ID.                                           |
-| `camunda.process_version`          | long   | Process definition version.                                |
-| `camunda.process_definition_key`   | long   | Process definition key.                                    |
-| `camunda.process_instance_key`     | long   | Process instance key.                                      |
-| `camunda.tenant_id`                | string | Tenant ID, or the default tenant when not multi-tenant.    |
-| `camunda.log.position`             | long   | Log stream position. Used as a deduplication key.          |
+|            Attribute             |  Type  |                       Description                       |
+|----------------------------------|--------|---------------------------------------------------------|
+| `event.name`                     | string | Event type identifier.                                  |
+| `camunda.bpmn_process_id`        | string | BPMN process ID.                                        |
+| `camunda.process_version`        | long   | Process definition version.                             |
+| `camunda.process_definition_key` | long   | Process definition key.                                 |
+| `camunda.process_instance_key`   | long   | Process instance key.                                   |
+| `camunda.tenant_id`              | string | Tenant ID, or the default tenant when not multi-tenant. |
+| `camunda.log.position`           | long   | Log stream position. Used as a deduplication key.       |
 
 ### Resource attributes
 
 Cluster-wide attributes attached to every log record:
 
-| Attribute              | Type   | Description             |
+|       Attribute        |  Type  |       Description       |
 |------------------------|--------|-------------------------|
 | `camunda.cluster.id`   | string | Cluster identifier.     |
 | `camunda.partition.id` | long   | Partition ID.           |
