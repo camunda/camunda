@@ -129,8 +129,10 @@ const VariableFilterModal: React.FC = observer(() => {
 
   const handleTabChange = (newTab: Tab, form: FormApi<FormValues>) => {
     if (newTab === 'json') {
-      const current = form.getState().values?.conditions ?? [];
-      setJsonDraft(serializeConditions(current));
+      if (jsonParseWarning === null) {
+        const current = form.getState().values?.conditions ?? [];
+        setJsonDraft(serializeConditions(current));
+      }
       setJsonError(null);
       setJsonParseWarning(null);
     } else {
@@ -140,7 +142,7 @@ const VariableFilterModal: React.FC = observer(() => {
         setJsonParseWarning(null);
       } else {
         setJsonParseWarning(
-          'JSON could not be parsed — switch to JSON tab to fix syntax. Existing conditions were kept.',
+          'JSON could not be parsed. Switch back to the JSON tab to fix it. Existing conditions were kept.',
         );
       }
       setJsonError(null);
