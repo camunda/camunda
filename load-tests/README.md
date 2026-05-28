@@ -52,6 +52,8 @@ graph TD
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
+        DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
     subgraph "Deployment Layer"
@@ -69,14 +71,19 @@ graph TD
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "after 15min wait" --> PROFILE
+    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "metrics path:<br/>after 30min wait,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
     CORE -- "newLoadTest.sh + make install" --> MAKEFILE
     MAKEFILE -- "Helm install" --> GKE
     PROFILE -- "async-profiler" --> GKE
-    VERIFY -- "kubectl wait + delete" --> GKE
+    VERIFY -- "kubectl wait" --> GKE
+    VERIFY -- "delegate cleanup" --> DELETE
+    PR -- "auto cleanup after<br/>metrics comment posts" --> DELETE
+    PR -- "cleanup on label removal / PR close" --> DELETE
+    DELETE -- "kubectl delete ns" --> GKE
     CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
 
