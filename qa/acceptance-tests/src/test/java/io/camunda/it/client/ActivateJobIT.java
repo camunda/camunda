@@ -57,7 +57,7 @@ public class ActivateJobIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withRecordingExporter(true)
-          .withClusterConfig(c -> c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+          .withBrokerConfig(c -> c.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
 
   private static CamundaClient grpcClient;
 
