@@ -45,3 +45,148 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
   - Allow auto-merging if possible.
 - Complete the above steps within 3 weeks of the DRI assignment.
   - Reach out to your manager to adjust priorities or find a replacement if the above timeline is not possible.
+
+## Monorepo CI Medic
+
+**Purpose:** Be the central point-of-contact for *problems and alerts* with the CI & automation around the C8 monorepo and drive resolution of *incidents* based on their severity.
+
+**Contact:** Mention **@monorepo-ci-medic** in [#top-monorepo-ci](https://camunda.slack.com/archives/C071KP5BTHB) on Slack.
+
+**Response times:** as quickly as possible
+
+**Handovers:** weekly sync meeting with [handover notes](https://docs.google.com/document/d/1kUUfrsJj-AW77rcx5z1I6kmp1QdCj_hb-Mh8A8YQ_Xg/edit?pli=1&tab=t.xwwilhiltkkd)
+
+### Responsibilities & Process
+
+#### React to alerts in [#monorepo-ci-alerts](https://camunda.slack.com/archives/C07NZ85EF1Q)
+
+- Investigate and address alerts in [#monorepo-ci-alerts](https://camunda.slack.com/archives/C07NZ85EF1Q) channel.
+  - If it is an [incident](#incident), follow the [CI incident management process](#ci-incident-management).
+- Follow the [linked CI runbooks](./ci-runbooks.md).
+- Keep [handover notes](https://docs.google.com/document/d/1kUUfrsJj-AW77rcx5z1I6kmp1QdCj_hb-Mh8A8YQ_Xg/edit?tab=t.7wflm6r3a2ix) updated.
+
+#### Triage problems reported in [#top-monorepo-ci](https://camunda.slack.com/archives/C071KP5BTHB)
+
+- React with :eyes: for Slack threads *that ping you* that you are checking/aware of and :white_check_mark: for resolved threads.
+- Verify/reproduce the reported problem to make sure it is not a fluke or misunderstanding:
+  - If it is an [incident](#incident), follow the [CI incident management process](#ci-incident-management).
+  - Otherwise find [existing related issue](https://github.com/camunda/camunda/issues) or create a new issue to document the problem.
+  - Defer strategical decisions to Christian Nicolai after absence.
+
+#### Unhandled FOSSA Licensing Issues reported in [#top-monorepo-ci](https://camunda.slack.com/archives/C071KP5BTHB)
+
+- React with :eyes: for Slack threads *that ping you* that you are checking/aware of and :white_check_mark: for resolved threads.
+- Make sure to read the internal documentation: [FOSS in Camunda 8: FOSSA](https://confluence.camunda.com/spaces/HAN/pages/277024795/FOSS+in+Camunda+8+FOSSA) (and the [Handle License Issues](https://confluence.camunda.com/spaces/HAN/pages/277024795/FOSS+in+Camunda+8+FOSSA#FOSSinCamunda8:FOSSA-Handlelicenseissues) part specifically)
+- Follow the [Playbook](https://confluence.camunda.com/spaces/HAN/pages/277024795/FOSS+in+Camunda+8+FOSSA#FOSSinCamunda8:FOSSA-PlaybooktoKeeponHandWhenReviewingLicenseIssues) for the first actions to take, including:
+  - Curate issues and eliminate false positives.
+  - Multi-licensed components
+  - Other low-complexity cases with known outcomes
+- Escalate to Legal when license terms or obligations require clarification
+  - Open a Jira ticket directly from the corresponding FOSSA issue
+  - e.g. [issue](https://app.fossa.com/projects/custom%2B50756%2Fcamunda%2Fcamunda%40single-app/refs/branch/main/a23e32efeadc45545ae17ce70ed3908e3b9c5f7a/issues/licensing/10591187?revisionScanId=91861742) & [Jira ticket](https://jira.camunda.com/browse/OSS-24)
+- Delegate to the responsible team medics when Engineering actions are needed: use either of the 4 medics:
+  - **@core-features-medic** (Operate, Optimize, Tasklist)
+  - **@zeebe-medic** (Zeebe Engine)
+  - **@data-layer-medic** (Elasticsearch, Opensearch, RDBMS layer)
+  - **@identity-medic** (Identity) to delegate.
+  - *If you're not sure about which medic to choose, pick the one that makes most sense to you. They will reroute you to the right one.*
+- When delegating:
+  - clarify distribution scope, remove or replace a dependency, etc. (example: [OJDBC dependency](https://camunda.slack.com/archives/C071KP5BTHB/p1762249747771159?thread_ts=1762161090.318749&cid=C071KP5BTHB))
+
+#### Drive resolution of incidents
+
+- Follow the [CI incident management process](#ci-incident-management).
+- Debug problems on GitHub Actions level yourself, involve the stakeholder teams (via their medic) or subject-matter experts for advice on technical details in certain sub-areas:
+  - CI Knowledge Base: https://camunda.github.io/camunda/ci
+  - Core Features: **@core-features-medic** on Slack (e.g. issues with Operate, Optimize, Tasklist)
+  - Core Foundations:
+    - Data Layer: **@data-layer-medic** on Slack (e.g. issues with OpenSearch/Elasticsearch tests)
+    - Identity: **@identity-medic** on Slack (e.g. issues with Identity and Identity Management)
+    - Zeebe: **@zeebe-medic** on Slack
+  - Self-Managed:
+    - Distro **@distro-medic** on Slack (e.g. Helm chart integration tests)
+  - Infra: **@infra-medic** on Slack (e.g. self-hosted runner problems, Vault issues)
+- Try to identify a (limited) workaround to unblock users.
+
+## CI Incident Management
+
+This section is for the [camunda/camunda](https://github.com/camunda/camunda/actions) monorepo CI. See all available [incident types](https://confluence.camunda.com/display/HAN/IM+-+Definitions#IMDefinitions-DifferentIncidentTypes).
+
+### Definitions
+
+#### Incident
+
+By *incidents* we refer to problems affecting the C8 Monorepo CI that need to be managed in a structured way.
+
+If *any* of the following is true, an event is an incident:
+
+- Is a C8 release blocked or delayed?
+- Are Camundi blocked from creating and merging PRs (unrelated to their code)?
+- Is it a large-scale problem affecting many engineers/branches/CI job executions?
+- Is the issue unresolved even after an hour of concentrated analysis?
+
+#### Severity
+
+We re-use the generic severity levels from [IM - Service Levels and Criteria](https://confluence.camunda.com/display/HAN/IM+-+Service+Levels+and+Criterias) with the following meanings:
+
+- L1: Problem blocks the [Unified CI](https://camunda.github.io/camunda/ci/#unified-ci) workflow on `main` or `stable/*` or in the merge queue to `main` or `stable/*` branches or blocks release workflows
+  - E.g. no PR mergeable (e.g. [1](https://app.incident.io/camunda/incidents/1756), [2](https://app.incident.io/camunda/incidents/1845), [3](https://camunda.slack.com/archives/C071KP5BTHB/p1723559734451389)), 3+ consecutive executions of same job failing incl retries, external service unreachable
+- L2: Problem degrades the [Unified CI](https://camunda.github.io/camunda/ci/#unified-ci) workflow on `main` or `stable/*` or in the merge queue to `main` or `stable/*` branches
+  - E.g. 3+ consecutive executions of same job taking 50%+ longer, sporadic timeouts, sporadic build failures, external service degraded (e.g. [1](https://app.incident.io/camunda/incidents/1890))
+- L3: Used for tracking a prominent flaky test or slow [Unified CI](https://camunda.github.io/camunda/ci/#unified-ci) job until resolution
+  - E.g. same test has been flaky in dozens of builds over 1 or multiple days, Unified CI job is slower than runtime SLO and needs speedup
+
+#### Roles
+
+From [IM - Roles and Responsibilities](https://confluence.camunda.com/display/HAN/IM+-+Roles+and+Responsibilities#IMRolesandResponsibilities-TheIncidentResponseTeam):
+
+- Incident Commander (IC)
+- Communications Lead (CL)
+- Operations Lead (OL)
+
+### Steps
+
+Effective incident management is key to limiting the disruption caused by an incident and restoring normal business operations as quickly as possible.
+
+#### 1. Identification
+
+An incident can be identified by any engineer in the C8 or Infrastructure domain via:
+
+- Alerts in [#monorepo-ci-alerts](https://camunda.slack.com/archives/C07NZ85EF1Q)
+- Monorepo CI Medic reacting to requests in [#top-monorepo-ci](https://camunda.slack.com/archives/C071KP5BTHB)
+- Issues in [camunda/camunda](https://github.com/camunda/camunda/issues/)
+
+Once an incident is identified, the [Monorepo CI Medic](#monorepo-ci-medic) becomes the incident commander (IC). The IC holds all [roles](#roles) until they delegate to someone else.
+
+##### Incident Command
+
+1. Create an incident as described in [IM - Lifecycle](https://confluence.camunda.com/display/HAN/IM+-+Lifecycle):
+   - Quickly estimate the [severity](#severity) of the incident. Be pessimistic; we can always downgrade
+2. Record everything in the incident channel and pin a message to persist the contents on the timeline.
+3. Take a quick triage of the incident, and remember that you don't need to solve this yourself!
+   - Incidents for which no known fix or mitigation can be applied and which fall into the [responsibility of another team](https://confluence.camunda.com/display/HAN/IM+-+Definitions) should be handed over to them as soon as possible. In this case, they become IC, and Monorepo CI Medic stays on standby to support and apply necessary changes to the C8 Monorepo CI.
+   - If you feel overwhelmed, it's a good idea to get others involved quickly especially on L1. Particularly consider reaching out to the push engineer - in case of a human-triggered incident, this person often has the most state and should be involved as quickly as possible.
+
+#### 2. Response
+
+Incidents are resolved according to the [Engineering Incident Management Process](https://confluence.camunda.com/display/HAN/Incident+Management) by the [Incident Response Team](https://confluence.camunda.com/display/HAN/IM+-+Roles+and+Responsibilities#IMRolesandResponsibilities-TheIncidentResponseTeam). Helpful resources:
+
+- [Runbooks](./ci-runbooks.md) for CI-related problems
+- generically applicable [Incident Checklist](https://confluence.camunda.com/display/SRE/Incident+Checklist) of the Infra team
+
+The Communications Lead should send out periodic updates depending on the severity of the incident:
+
+- L1: Once per hour until resolved
+- L2: Once per day until resolved
+
+#### 3. Follow-Up
+
+##### Incident Command
+
+1. Mark incident as Resolved (see [IM - Lifecycle](https://confluence.camunda.com/display/HAN/IM+-+Lifecycle)) and notify stakeholders.
+2. The Monorepo CI Medic is responsible for ensuring the post-incident activities happen:
+
+- Follow the [IM - Post Mortem](https://confluence.camunda.com/display/HAN/IM%3A+Post+Mortem) procedures, especially [Create and schedule a Post Mortem](https://confluence.camunda.com/display/HAN/Create+and+schedule+a+Post+Mortem) if needed
+- The post-mortem meeting (**mandatory for L1 severity, otherwise optional**) should occur no more than 5 working days after the incident is resolved. It is recommended to try and asynchronously do a post-mortem if possible. Use [the example meeting invite](https://docs.google.com/document/d/1oVfVST6XPncPPl711CmeDkrU9p0-nNqJHQLeDMBjlpw) to schedule early; you can always use it for root-cause hunting if the incident is not ready for review.
+- Assign due dates and assignees to any actionable tasks from the post-mortem meeting.
+- Mark incident as Closed (see [IM - Lifecycle](https://confluence.camunda.com/display/HAN/IM+-+Lifecycle)).
