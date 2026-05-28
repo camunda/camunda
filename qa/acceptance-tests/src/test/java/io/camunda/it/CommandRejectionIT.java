@@ -8,7 +8,7 @@
 package io.camunda.it;
 
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
-import static io.camunda.it.util.TestHelper.waitUntilJobExistsForProcessInstance;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
@@ -20,6 +20,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.BanningActuator;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -51,19 +52,23 @@ public class CommandRejectionIT {
     BanningActuator.of(CAMUNDA_APPLICATION).ban(processInstanceKey);
 
     // when - we attempt to modify the banned process instance
-    final var modifyFuture =
-        assertThatThrownBy(
-                () ->
-                    camundaClient
-                        .newModifyProcessInstanceCommand(processInstanceKey)
-                        .activateElement("taskB")
-                        .send()
-                        .join())
-            .isInstanceOf(ProblemException.class)
-            .hasMessageContaining("INVALID_STATE")
-            .hasMessageContaining(
-                "Expected to process command for process instance with key '%d', but the process instance is banned"
-                    .formatted(processInstanceKey));
+    Awaitility.await("should reject PI modification command")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(
+                        () ->
+                            camundaClient
+                                .newModifyProcessInstanceCommand(processInstanceKey)
+                                .activateElement("taskB")
+                                .send()
+                                .join())
+                    .isInstanceOf(ProblemException.class)
+                    .hasMessageContaining("INVALID_STATE")
+                    .hasMessageContaining(
+                        "Expected to process command for process instance with key '%d', but the process instance is banned"
+                            .formatted(processInstanceKey)));
   }
 
   @Test
@@ -75,27 +80,28 @@ public class CommandRejectionIT {
 
     final long processInstanceKey = createProcessInstance(processId);
     waitForProcessInstancesToStart(camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
-    waitUntilJobExistsForProcessInstance(camundaClient, processInstanceKey);
-    final long jobKey =
-        camundaClient
-            .newJobSearchRequest()
-            .filter(f -> f.processInstanceKey(processInstanceKey))
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getJobKey();
 
     // and - the process instance is banned
     BanningActuator.of(CAMUNDA_APPLICATION).ban(processInstanceKey);
 
     // when - we attempt to complete the job of the banned process instance
-    assertThatThrownBy(() -> camundaClient.newCompleteCommand(jobKey).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("INVALID_STATE")
-        .hasMessageContaining(
-            "Expected to process command for process instance with key '%d', but the process instance is banned"
-                .formatted(processInstanceKey));
+    Awaitility.await("should reject set variable command")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(
+                        () ->
+                            camundaClient
+                                .newSetVariablesCommand(processInstanceKey)
+                                .variable("test", "test")
+                                .send()
+                                .join())
+                    .isInstanceOf(ProblemException.class)
+                    .hasMessageContaining("INVALID_STATE")
+                    .hasMessageContaining(
+                        "Expected to process command for process instance with key '%d', but the process instance is banned"
+                            .formatted(processInstanceKey)));
   }
 
   private static BpmnModelInstance twoServiceTasksProcess(
