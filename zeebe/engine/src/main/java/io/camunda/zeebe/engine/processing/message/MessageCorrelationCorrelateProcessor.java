@@ -42,6 +42,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.StringUtils;
 
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
@@ -146,17 +147,27 @@ public final class MessageCorrelationCorrelateProcessor
       return;
     }
 
-    // If a start event will be triggered and an agent tool name was provided, propagate agent
-    // context so process creation events and the CORRELATED record carry traceability info.
+    // Propagate agent context so follow-up events (process CREATED, message CORRELATED) carry
+    // traceability info
     final var agentToolName = messageCorrelationRecord.getAgentToolName();
-    if (agentToolName != null) {
+    if (StringUtils.isNotBlank(agentToolName)) {
       tempCorrelatingSubscriptions
           .getFirstMessageStartEventSubscription()
-          .filter(sub -> sub.startEventId() != null)
-          .ifPresent(
-              sub ->
+          .ifPresentOrElse(
+              // the first start event subscription is preferred, if there is any
+              subscription ->
                   session.appendAgentInfoToFollowUps(
-                      new AgentInfo().setElementId(sub.startEventId()).setToolName(agentToolName)));
+                      new AgentInfo()
+                          .setElementId(subscription.startEventId())
+                          .setToolName(agentToolName)),
+              // otherwise, the first process event subscription is used without element id
+              () ->
+                  tempCorrelatingSubscriptions
+                      .getFirstProcessEventSubscription()
+                      .ifPresent(
+                          subscription ->
+                              session.appendAgentInfoToFollowUps(
+                                  new AgentInfo().setToolName(agentToolName))));
     }
 
     // Now that authorization passed, write the message and correlations to state

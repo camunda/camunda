@@ -79,6 +79,15 @@ public final class Subscriptions {
     return Optional.empty();
   }
 
+  public Optional<Subscription> getFirstProcessEventSubscription() {
+    for (final Subscription subscription : subscriptions.values()) {
+      if (!subscription.isStartEventSubscription) {
+        return Optional.of(subscription);
+      }
+    }
+    return Optional.empty();
+  }
+
   public boolean visitSubscriptions(final SubscriptionVisitor subscriptionConsumer) {
     return visitSubscriptions(subscriptionConsumer, false);
   }
