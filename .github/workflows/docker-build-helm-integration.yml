@@ -93,7 +93,7 @@ jobs:
           fi
       - run: echo "Workflow conditions met, proceeding with build"
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -119,7 +119,7 @@ jobs:
             echo "- owner_team: ${OWNER_TEAM}"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -159,7 +159,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -177,7 +177,7 @@ jobs:
             --arg status "${{ job.status }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -216,7 +216,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -234,7 +234,7 @@ jobs:
             --arg status "${{ job.status }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -273,7 +273,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -291,7 +291,7 @@ jobs:
             --arg status "${{ job.status }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -457,7 +457,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -475,7 +475,7 @@ jobs:
             --arg status "${{ job.status }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -507,7 +507,7 @@ jobs:
           IDENTIFIER="${IDENTIFIER:0:40}"
           echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -525,7 +525,7 @@ jobs:
             --arg status "${{ job.status }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -637,7 +637,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -656,7 +656,7 @@ jobs:
             --arg upstream_result "${{ needs.helm-deploy.result }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,upstream_result:$upstream_result}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (needs.helm-deploy.result == 'failure' || needs.helm-deploy.result == 'cancelled') }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
@@ -863,7 +863,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Emit AlwaysGreen failure context
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         run: |
           CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-context-${{ github.job }}.json"
           OWNER_TEAM="none"
@@ -871,7 +871,7 @@ jobs:
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
             if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="@camunda/qa-engineering"
+              OWNER_TEAM="@camunda/test-automation-team"
               FAILURE_CATEGORY="saas_e2e"
             else
               OWNER_TEAM="@camunda/monorepo-devops-team"
@@ -889,7 +889,7 @@ jobs:
             --arg downstream_conclusion "${{ steps.wait-downstream.outputs.downstream_conclusion }}" \
             '{stage:$stage,failure_category:$failure_category,owner_team:$owner_team,escalation_team:$escalation_team,run_url:$run_url,status:$status,downstream_conclusion:$downstream_conclusion}' > "$CONTEXT_FILE"
       - name: Upload AlwaysGreen failure context artifact
-        if: always()
+        if: ${{ always() && (failure() || cancelled()) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: alwaysgreen-failure-context-${{ github.job }}
