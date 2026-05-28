@@ -47,7 +47,9 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   public AgentInfo setToolName(final String toolName) {
-    toolNameProp.setValue(toolName);
+    if (toolName != null) {
+      toolNameProp.setValue(toolName);
+    }
     return this;
   }
 
@@ -85,12 +87,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
 
   public static AgentInfo of(final Agent agent) {
     if (agent != null) {
-      final var info = new AgentInfo().setElementId(agent.getElementId());
-      final var toolName = agent.getToolName();
-      if (toolName != null) {
-        info.setToolName(toolName);
-      }
-      return info;
+      return new AgentInfo().setElementId(agent.getElementId()).setToolName(agent.getToolName());
     } else {
       return null;
     }

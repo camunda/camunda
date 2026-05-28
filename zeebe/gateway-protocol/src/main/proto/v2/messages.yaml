@@ -161,7 +161,7 @@ components:
       required:
         - name
       x-properties-added-in-version:
-        - propertyName: toolName
+        - propertyName: agentToolName
           addedInVersion: "8.10"
       properties:
         name:
@@ -181,9 +181,9 @@ components:
           description: the tenant for which the message is published
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        toolName:
+        agentToolName:
           description: >
-            The name of the MCP tool that triggered this message correlation, used for audit
+            The name of the agent tool that triggered this message correlation, used for audit
             log traceability. When set, audit log entries for the resulting process instance
             will include this value as agentToolName.
           type: string

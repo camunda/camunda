@@ -39,7 +39,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  private static final StringValue TOOL_NAME_KEY = new StringValue("toolName");
+  private static final StringValue AGENT_TOOL_NAME_KEY = new StringValue("agentToolName");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -56,7 +56,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-  private final StringProperty toolNameProp = new StringProperty(TOOL_NAME_KEY, "");
+  private final StringProperty agentToolNameProp = new StringProperty(AGENT_TOOL_NAME_KEY, "");
 
   public MessageCorrelationRecord() {
     super(11);
@@ -70,7 +70,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(businessIdProp)
-        .declareProperty(toolNameProp);
+        .declareProperty(agentToolNameProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -80,9 +80,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setTenantId(record.getTenantId());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setBusinessId(record.getBusinessIdBuffer());
-    if (record.getToolName() != null) {
-      setToolName(record.getToolName());
-    }
+    setAgentToolName(record.getAgentToolName());
   }
 
   @Override
@@ -212,13 +210,15 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   @Override
   @JsonInclude(Include.NON_NULL)
-  public String getToolName() {
-    final var value = bufferAsString(toolNameProp.getValue());
+  public String getAgentToolName() {
+    final var value = bufferAsString(agentToolNameProp.getValue());
     return value.isEmpty() ? null : value;
   }
 
-  public MessageCorrelationRecord setToolName(final String toolName) {
-    toolNameProp.setValue(toolName);
+  public MessageCorrelationRecord setAgentToolName(final String agentToolName) {
+    if (agentToolName != null) {
+      agentToolNameProp.setValue(agentToolName);
+    }
     return this;
   }
 }

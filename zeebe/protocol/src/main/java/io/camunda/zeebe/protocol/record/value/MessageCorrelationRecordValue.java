@@ -66,12 +66,12 @@ public interface MessageCorrelationRecordValue
   String getBusinessId();
 
   /**
-   * Returns the MCP tool name that initiated this message correlation, if any.
+   * Returns the name of the agent tool that initiated this message correlation, if any.
    *
-   * @return the tool name, or null if not set
+   * @return the agent tool name, or null if not set
    */
   @edu.umd.cs.findbugs.annotations.Nullable
-  default String getToolName() {
+  default String getAgentToolName() {
     return null;
   }
 }

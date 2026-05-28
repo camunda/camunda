@@ -48,8 +48,8 @@ public final class BrokerCorrelateMessageRequest
     return this;
   }
 
-  public BrokerCorrelateMessageRequest setToolName(final String toolName) {
-    requestDto.setToolName(toolName);
+  public BrokerCorrelateMessageRequest setAgentToolName(final String agentToolName) {
+    requestDto.setAgentToolName(agentToolName);
     return this;
   }
 

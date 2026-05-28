@@ -57,12 +57,12 @@ public class McpAuditLogIT {
             .done();
     deployProcessAndWaitForIt(client, processModel, "mcp_audit_log_process.bpmn");
 
-    // Correlate a message with toolName set — this simulates what the MCP gateway does
+    // Correlate a message with agentToolName set — this simulates what the MCP gateway does
     client
         .newCorrelateMessageCommand()
         .messageName(MSG_NAME)
         .withoutCorrelationKey()
-        .toolName(MCP_TOOL_NAME)
+        .agentToolName(MCP_TOOL_NAME)
         .send()
         .join();
 

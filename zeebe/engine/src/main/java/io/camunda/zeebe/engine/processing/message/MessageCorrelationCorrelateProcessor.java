@@ -146,17 +146,17 @@ public final class MessageCorrelationCorrelateProcessor
       return;
     }
 
-    // If a start event will be triggered and a tool name was provided, propagate agent context
-    // so process creation events and the CORRELATED record carry agent/tool traceability info.
-    final var toolName = messageCorrelationRecord.getToolName();
-    if (toolName != null) {
+    // If a start event will be triggered and an agent tool name was provided, propagate agent
+    // context so process creation events and the CORRELATED record carry traceability info.
+    final var agentToolName = messageCorrelationRecord.getAgentToolName();
+    if (agentToolName != null) {
       tempCorrelatingSubscriptions
           .getFirstMessageStartEventSubscription()
           .filter(sub -> sub.startEventId() != null)
           .ifPresent(
               sub ->
                   session.appendAgentInfoToFollowUps(
-                      new AgentInfo().setElementId(sub.startEventId()).setToolName(toolName)));
+                      new AgentInfo().setElementId(sub.startEventId()).setToolName(agentToolName)));
     }
 
     // Now that authorization passed, write the message and correlations to state

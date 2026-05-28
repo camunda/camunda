@@ -286,7 +286,7 @@ public class RequestMapper {
                 correlationRequest.getCorrelationKey(),
                 correlationRequest.getVariables(),
                 tenantId,
-                correlationRequest.getToolName()));
+                correlationRequest.getAgentToolName()));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(
