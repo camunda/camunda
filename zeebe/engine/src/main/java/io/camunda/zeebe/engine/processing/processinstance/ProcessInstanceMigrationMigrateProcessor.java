@@ -399,6 +399,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
                         .setRootProcessInstanceKey(
                             elementInstance.getValue().getRootProcessInstanceKey())
+                        .setOrdinalKey(elementInstance.getValue().getOrdinalKey())
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));

@@ -397,6 +397,7 @@ final class VariableBehaviorTest {
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final int rootProcessInstanceKey = 3;
+    final int ordinalKey = 0;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -410,6 +411,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootProcessInstanceKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -430,6 +432,7 @@ final class VariableBehaviorTest {
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasRootProcessInstanceKey(rootProcessInstanceKey)
+                  .hasOrdinalKey(ordinalKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });
@@ -443,6 +446,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long parentFooKey = 3;
     final long rootProcessInstanceKey = 4;
+    final int ordinalKey = 0;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -457,6 +461,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootProcessInstanceKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -478,6 +483,7 @@ final class VariableBehaviorTest {
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasRootProcessInstanceKey(rootProcessInstanceKey)
+                  .hasOrdinalKey(ordinalKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });
@@ -491,6 +497,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long parentFooKey = 3;
     final long rootProcessInstanceKey = 4;
+    final int ordinalKey = 5;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -505,6 +512,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootProcessInstanceKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -526,6 +534,7 @@ final class VariableBehaviorTest {
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final int rootProcessInstanceKey = 3;
+    final int ordinalKey = 0;
 
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -540,6 +549,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootProcessInstanceKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -560,6 +570,7 @@ final class VariableBehaviorTest {
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasRootProcessInstanceKey(rootProcessInstanceKey)
+                  .hasOrdinalKey(ordinalKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });
@@ -575,6 +586,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long parentFooKey = 3;
     final long rootProcessInstanceKey = 4;
+    final int ordinalKey = 0;
 
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -591,6 +603,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         rootProcessInstanceKey,
+        ordinalKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -612,6 +625,7 @@ final class VariableBehaviorTest {
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
                   .hasRootProcessInstanceKey(rootProcessInstanceKey)
+                  .hasOrdinalKey(ordinalKey)
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });

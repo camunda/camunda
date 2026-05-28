@@ -221,6 +221,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getRootProcessInstanceKey(),
+        context.getOrdinalKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variableName,

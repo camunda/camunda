@@ -221,6 +221,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long rootProcessInstanceKey,
+      final int ordinalKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
       final DirectBuffer name,
