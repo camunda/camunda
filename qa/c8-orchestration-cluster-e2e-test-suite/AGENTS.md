@@ -406,26 +406,35 @@ If a minimal test-side fix exists, apply it.
    Touch page objects when the selector itself is wrong; touch utilities
    only when multiple tests share the same root cause.
 4. Lint changed files:
+
    ```bash
    cd qa/c8-orchestration-cluster-e2e-test-suite
    npx prettier --write <changed-files>
    npx eslint <changed-files> --fix
    ```
+
    Fix any remaining eslint errors before committing.
+
 5. Commit with `test:` (NOT `fix:` — see above on Conventional Commits):
    `git commit -m "test: <one-line description> (nightly ${VERSION})"`
+
 6. Push: `git push -u origin fix/nightly-${VERSION}-<slug>`
+
 7. Check for existing open PRs before opening a new one:
+
    ```bash
    gh pr list --repo camunda/camunda \
      --search "nightly is:open label:failing-test-fix" \
      --json number,title,baseRefName,headRefName
    ```
+
    If an open PR targets the same `stable/<version>` for the same root
    cause: comment on it with your additional diagnosis; do not open a
    second PR.
+
 8. Open a draft PR targeting the same base branch you are on, label
    `failing-test-fix`. Body must include:
+
    - Root cause analysis
    - List of fixed tests (file + name)
    - Link to the failing nightly run(s)

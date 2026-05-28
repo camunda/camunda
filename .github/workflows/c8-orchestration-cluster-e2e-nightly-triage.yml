@@ -153,17 +153,18 @@ jobs:
               # List the per-database artifact names from the run
               gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
                 --jq '.artifacts[].name' > /tmp/rdbms_artifact_names.txt
+              rdbms_prefix="json-report-nightly-api-rdbms-${safe_version}-"
               while read -r artifact_name; do
-                # Strip the "json-report-nightly-api-rdbms-${safe_version}-" prefix to extract db name
-                db_name="${artifact_name#json-report-nightly-api-rdbms-${safe_version}-}"
+                # Strip the prefix to extract db name; quoted to avoid pattern expansion
+                db_name="${artifact_name#"${rdbms_prefix}"}"
                 [ "$db_name" = "$artifact_name" ] && continue   # didn't match prefix → not an rdbms report
                 patterns+=("${artifact_name}|${db_name}")
               done < /tmp/rdbms_artifact_names.txt
             fi
 
-            # Download each artifact and extract failures
-            for entry in "${patterns[@]}"; do
-              IFS='|' read -r artifact_name dim <<< "$entry"
+            # Download each artifact and extract failures (inner loop var differs from outer)
+            for pattern_entry in "${patterns[@]}"; do
+              IFS='|' read -r artifact_name dim <<< "$pattern_entry"
               tmp_dir=$(mktemp -d)
               if ! gh run download "$run_id" --repo "$REPO" \
                     --pattern "$artifact_name" --dir "$tmp_dir" 2>/dev/null; then

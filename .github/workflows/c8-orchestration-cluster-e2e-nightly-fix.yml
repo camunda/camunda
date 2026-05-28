@@ -66,12 +66,16 @@ jobs:
           version="${{ github.event.inputs.version }}"
           case "$version" in
             main)
-              echo "ref=main"             >> "$GITHUB_OUTPUT"
-              echo "safe_version=main"    >> "$GITHUB_OUTPUT"
+              {
+                echo "ref=main"
+                echo "safe_version=main"
+              } >> "$GITHUB_OUTPUT"
               ;;
             8.7|8.8|8.9)
-              echo "ref=stable/${version}"          >> "$GITHUB_OUTPUT"
-              echo "safe_version=stable-${version}" >> "$GITHUB_OUTPUT"
+              {
+                echo "ref=stable/${version}"
+                echo "safe_version=stable-${version}"
+              } >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "::error::Unsupported version: $version (must be 8.7, 8.8, 8.9, or main)"
@@ -138,10 +142,12 @@ jobs:
           has_api=$(jq '[.[] | select(.test_type == "api")] | length > 0' /tmp/test_specs.json)
           has_api_es=$(jq '[.[] | select(.test_type == "api" and (.database == null or .database == "" or .database == "elasticsearch"))] | length > 0' /tmp/test_specs.json)
           has_api_rdbms=$(jq '[.[] | select(.test_type == "api" and .database != null and .database != "" and .database != "elasticsearch")] | length > 0' /tmp/test_specs.json)
-          echo "has_e2e=$has_e2e"             >> "$GITHUB_OUTPUT"
-          echo "has_api=$has_api"             >> "$GITHUB_OUTPUT"
-          echo "has_api_es=$has_api_es"       >> "$GITHUB_OUTPUT"
-          echo "has_api_rdbms=$has_api_rdbms" >> "$GITHUB_OUTPUT"
+          {
+            echo "has_e2e=$has_e2e"
+            echo "has_api=$has_api"
+            echo "has_api_es=$has_api_es"
+            echo "has_api_rdbms=$has_api_rdbms"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Run Claude Code fix agent
         env:
@@ -227,7 +233,7 @@ jobs:
               gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
                 --repo "$REPO" -f branch="$branch"
               # Poll up to 90s for the new run to appear
-              for i in $(seq 1 18); do
+              for _ in $(seq 1 18); do
                 sleep 5
                 run_id=$(gh run list \
                   --workflow c8-orchestration-cluster-e2e-tests-on-demand.yml \
@@ -245,7 +251,7 @@ jobs:
               echo "Triggering API on-demand run for branch $branch..."
               gh workflow run c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
                 --repo "$REPO" -f branch="$branch"
-              for i in $(seq 1 18); do
+              for _ in $(seq 1 18); do
                 sleep 5
                 run_id=$(gh run list \
                   --workflow c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
