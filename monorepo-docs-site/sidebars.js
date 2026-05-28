@@ -20,7 +20,7 @@ const sidebars = {
     'ci',
     'ci-runbooks',
     'infrastructure-services',
-    'renovate-pr-handling',
+    'processes',
     'release',
     {
       type: 'category',
