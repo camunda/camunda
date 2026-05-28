@@ -532,4 +532,38 @@ describe('<VariableFilterModal />', () => {
         expect(input).not.toBeVisible();
       });
   });
+
+  it('should show truncation warning when contains operator is selected', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('contains'));
+
+    expect(
+      screen.getByText(
+        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should hide truncation warning when operator is changed away from contains', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('contains'));
+    expect(
+      screen.getByText(
+        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('equals'));
+
+    expect(
+      screen.queryByText(
+        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
+      ),
+    ).not.toBeInTheDocument();
+  });
 });

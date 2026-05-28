@@ -9,7 +9,7 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
-import {Field, Form} from 'react-final-form';
+import {Field, Form, FormSpy} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import {useNavigate, useLocation} from 'react-router-dom';
@@ -244,6 +244,22 @@ const VariableFilterModal: React.FC = observer(() => {
                     Define one or more conditions to filter process instances by
                     variable values. All conditions are combined with AND logic.
                   </Description>
+                  <FormSpy subscription={{values: true}}>
+                    {({values}) => {
+                      const hasContains = (
+                        values as FormValues
+                      ).conditions?.some((c) => c.operator === 'contains');
+                      return hasContains ? (
+                        <InlineNotification
+                          kind="warning"
+                          lowContrast
+                          hideCloseButton
+                          subtitle='"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.'
+                          role="status"
+                        />
+                      ) : null;
+                    }}
+                  </FormSpy>
                   <FieldArray<DraftCondition> name="conditions">
                     {({fields}) => (
                       <>
