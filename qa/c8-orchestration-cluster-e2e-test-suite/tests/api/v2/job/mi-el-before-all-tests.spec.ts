@@ -292,19 +292,18 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         );
         await assertStatusCode(resolveRes, 204);
 
-        // beforeAll job is re-scheduled — activate and complete with valid items
-        await expectJobsByType(
-          request,
-          piKey,
-          beforeAllJobType,
-          1,
-          extendedAssertionOptions,
-        );
-        const retryJobs = await activateJobsByType(
-          request,
-          beforeAllJobType,
-          piKey,
-        );
+        // beforeAll job is re-scheduled — activate it directly via the activation
+        // endpoint (bypasses /jobs/search which 500s when the beforeAll job's
+        // ES document has a null flowNodeId due to a known exporter limitation).
+        let retryJobs: Awaited<ReturnType<typeof activateJobsByType>> = [];
+        await expect(async () => {
+          retryJobs = await activateJobsByType(
+            request,
+            beforeAllJobType,
+            piKey,
+          );
+          expect(retryJobs).toHaveLength(1);
+        }).toPass(extendedAssertionOptions);
         expect(retryJobs).toHaveLength(1);
         await completeJob(request, retryJobs[0].jobKey, {
           items: ['alpha', 'beta', 'gamma'],
