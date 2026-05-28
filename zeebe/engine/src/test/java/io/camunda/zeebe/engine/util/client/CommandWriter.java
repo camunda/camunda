@@ -40,6 +40,14 @@ public interface CommandWriter {
       final UnifiedRecordValue value,
       String... authorizedTenants);
 
+  long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
+
   long writeCommandOnPartition(int partitionId, final UnaryOperator<FluentLogWriter> builder);
 
   long writeCommandOnPartition(
