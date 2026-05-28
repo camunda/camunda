@@ -80,6 +80,9 @@ module.
 
 Architecture overview: `docs/architecture/overview.md`.
 
+Read `docs/architecture/overview.md` when answering questions about system design, module
+structure, or how to approach any new capability — not only when making a change.
+
 Before making any architectural change, consult the relevant ADR indexes in order (see
 `docs/adr/README.md` for the full tier structure):
 
