@@ -59,7 +59,7 @@ class ClusterToolsTest extends ToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -81,7 +81,7 @@ class ClusterToolsTest extends ToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+          mcpClient.callTool(CallToolRequest.builder("getClusterStatus").build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -178,7 +178,7 @@ class ClusterToolsTest extends ToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       // then
       assertThat(result.isError()).isFalse();
@@ -199,7 +199,7 @@ class ClusterToolsTest extends ToolsTest {
 
       // when
       final CallToolResult result =
-          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+          mcpClient.callTool(CallToolRequest.builder("getTopology").build());
 
       // then
       assertThat(result.isError()).isTrue();
