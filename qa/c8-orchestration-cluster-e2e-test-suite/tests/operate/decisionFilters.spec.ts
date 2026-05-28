@@ -11,16 +11,20 @@ import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
+import {jsonHeaders} from 'utils/http';
 
-test.beforeAll(async () => {
+// Exposed at module level so tests can scope assertions to instances created by this spec.
+let failedInstanceProcessKey: string;
+
+test.beforeAll(async ({request}) => {
   await deploy([
     './resources/invoiceBusinessDecisions.dmn',
     './resources/invoice.bpmn',
   ]);
 
   // No variables → decision evaluation error → FAILED decision instance
-  await createSingleInstance('invoice', 1);
+  const failedInstance = await createSingleInstance('invoice', 1);
+  failedInstanceProcessKey = failedInstance.processInstanceKey;
 
   // Valid inputs → decision evaluates successfully → EVALUATED decision instance
   await createSingleInstance('invoice', 1, {
@@ -28,7 +32,28 @@ test.beforeAll(async () => {
     invoiceCategory: 'Misc',
   });
 
-  await sleep(2000);
+  // Poll until the FAILED decision instance for OUR specific process instance is indexed.
+  // Scoping by processInstanceKey prevents a false-positive from parallel tests'
+  // failed instances satisfying the global FAILED filter before ours is ready.
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/decision-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'FAILED',
+              processInstanceKey: failedInstanceProcessKey,
+            },
+          },
+        });
+        if (response.status() !== 200) return 0;
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBeGreaterThanOrEqual(1);
 });
 
 test.describe('Decision Filters', () => {
@@ -75,6 +100,14 @@ test.describe('Decision Filters', () => {
 
     await test.step('Get total row count with both filters active', async () => {
       await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
+      // Wait for the failed instance to appear before reading the count.
+      // This ensures both evaluated and failed instances are present so totalCount
+      // reflects the full result set and the subsequent comparison is reliable.
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: `View process instance ${failedInstanceProcessKey}`,
+        }),
+      ).toBeVisible({timeout: 30_000});
       totalCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
@@ -99,10 +132,13 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Verify no failed instances appear in results', async () => {
+      // The failed instance's process key link must be absent — the row only appears
+      // when the Failed filter is active. Using the process-instance link is more
+      // reliable than getByText('Evaluation failed'), which is icon-only in the UI.
       await expect(
-        operateDecisionsPage.decisionInstancesList.getByText(
-          'Evaluation failed',
-        ),
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: `View process instance ${failedInstanceProcessKey}`,
+        }),
       ).toHaveCount(0);
     });
   });
@@ -118,6 +154,14 @@ test.describe('Decision Filters', () => {
 
     await test.step('Get total row count with both filters active', async () => {
       await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
+      // Wait until the failed instance's process-instance link is visible in the list.
+      // This is more reliable than checking for 'Evaluation failed' text, which is
+      // rendered as an icon (no DOM text) in the Operate UI.
+      await expect(
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: `View process instance ${failedInstanceProcessKey}`,
+        }),
+      ).toBeVisible({timeout: 30_000});
       totalCount = await operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .count();
