@@ -147,7 +147,7 @@ class TaskDetailsPage {
           (await this.completeTaskButton.isVisible()) &&
           (await this.completeTaskButton.isEnabled())
         ) {
-          await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
+          await this.completeTaskButton.click({timeout: 60000});
         }
       },
     });
