@@ -1785,3 +1785,4 @@ MySchema:
 | CI OpenAPI lint job          | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                                                              |
 | Slack channel                | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                                                            |
 | API team (reviewers)         | `@camunda/c8-api-team`                                                                                                                                                        |
+
