@@ -17,8 +17,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.azure.core.http.HttpPipeline;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceVersion;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.azure.ManifestManager.PersistedManifest;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -65,6 +67,9 @@ final class AzureBackupStoreSaveTest {
     final var containerClient = mock(BlobContainerClient.class);
     when(blobServiceClient.getBlobContainerClient(anyString())).thenReturn(containerClient);
     when(containerClient.exists()).thenReturn(true);
+    when(blobServiceClient.getHttpPipeline()).thenReturn(mock(HttpPipeline.class));
+    when(blobServiceClient.getAccountUrl()).thenReturn("https://test.blob.core.windows.net");
+    when(blobServiceClient.getServiceVersion()).thenReturn(BlobServiceVersion.V2020_10_02);
     final var realStore = new AzureBackupStore(config, blobServiceClient);
 
     /* Inject mocks */

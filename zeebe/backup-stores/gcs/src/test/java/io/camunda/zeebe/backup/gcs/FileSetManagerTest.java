@@ -11,22 +11,29 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.google.api.gax.paging.Page;
+import com.google.cloud.BatchResult.Callback;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageBatch;
+import com.google.cloud.storage.StorageBatchResult;
 import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.BatchOperationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -145,50 +152,82 @@ final class FileSetManagerTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void shouldDeleteFileSet() {
+  void shouldCollectAndDeleteFileSetBlobs() {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-
+    final var blobId = BlobId.of("bucket", "basePath/contents/1/2/3/filesetName/file");
     final var mockBlob = mock(Blob.class);
+    when(mockBlob.getBlobId()).thenReturn(blobId);
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
     when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
+    final var mockBatch = mock(StorageBatch.class);
+    when(storage.batch()).thenReturn(mockBatch);
+    when(mockBatch.delete(any(BlobId.class))).thenReturn(mock(StorageBatchResult.class));
 
     // when
-    manager.delete(backupIdentifier, "filesetName");
+    final var collected = manager.collectBlobIds(backupIdentifier, "filesetName");
+    manager.deleteBlobs(new ArrayList<>(collected));
 
     // then
-    verify(mockBlob).delete();
+    verify(storage).batch();
+    verify(mockBatch).delete(blobId);
+    verify(mockBatch).submit();
   }
 
   @Test
-  void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
+  void shouldThrowExceptionOnCollectWhenListThrows() {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     when(storage.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
-    // when throw
-    Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.collectBlobIds(backupIdentifier, "filesetName"))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
   @SuppressWarnings("unchecked")
   @Test
-  void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
+  void shouldThrowExceptionWhenBatchDeleteThrows() {
     // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var blobId = BlobId.of("bucket", "basePath/contents/1/2/3/filesetName/file");
+    final var mockBatch = mock(StorageBatch.class);
+    when(storage.batch()).thenReturn(mockBatch);
+    final var mockResult = mock(StorageBatchResult.class);
+    when(mockBatch.delete(any(BlobId.class))).thenReturn(mockResult);
+    doAnswer(
+            inv -> {
+              final Callback<Boolean, StorageException> cb = inv.getArgument(0);
+              cb.error(new StorageException(412, "expected"));
+              return null;
+            })
+        .when(mockResult)
+        .notify(any());
 
-    final Blob mockBlob = mock(Blob.class);
-    when(mockBlob.delete()).thenThrow(new StorageException(412, "expected"));
-    final var mockPage = mock(Page.class);
-    when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.deleteBlobs(List.of(blobId)))
+        .isInstanceOf(BatchOperationException.class)
+        .hasMessageContaining("Failures detected in the blob batch deletion");
+  }
 
-    // when throw
-    Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
-        .isInstanceOf(StorageException.class)
-        .hasMessageContaining("expected");
+  @SuppressWarnings("unchecked")
+  @Test
+  void shouldSplitDeleteAcrossMultipleBatches() {
+    // given - 101 blobs exceeds MAX_DELETE_BATCH_SIZE (100)
+    final var blobIds =
+        IntStream.range(0, 101)
+            .mapToObj(i -> BlobId.of("bucket", "contents/1/2/3/file" + i))
+            .toList();
+    final var mockBatch = mock(StorageBatch.class);
+    when(storage.batch()).thenReturn(mockBatch);
+    when(mockBatch.delete(any(BlobId.class))).thenReturn(mock(StorageBatchResult.class));
+
+    // when
+    manager.deleteBlobs(blobIds);
+
+    // then - two separate batch calls: first 100, then 1
+    verify(storage, times(2)).batch();
   }
 
   @Test
