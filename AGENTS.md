@@ -92,7 +92,7 @@ If the decision is not covered by an existing ADR, draft a new one using the
 
 ### Skills
 
-Repo-specific skills live in `skills/` at the repo root. They extend the org-level skills
+Repo-specific skills live in `.claude/skills/`. They extend the org-level skills
 described in the central AGENTS.md. When a skill exists for a recurring operation, always use it
 rather than improvising steps.
 
