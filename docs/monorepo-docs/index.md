@@ -60,14 +60,12 @@ used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
 - CI analytics monitoring with BigQuery, Prometheus, and Grafana
 - Infra Global GitHub Actions reusable workflows and composite actions
 
-### Renovate PR Handling
+### Processes
 
-**[Renovate PR Handling](./renovate-pr-handling.md)** - Process and responsibilities for handling
-Renovate dependency update PRs that require manual intervention:
+**[Processes](./processes.md)** - Processes we follow in the Monorepo, including:
 
-- How DRIs are assigned to open Renovate PRs based on expertise
-- DRI responsibilities: resolving breaking changes, follow-up tickets, Renovate config improvements
-- Assignment automation via GitHub Actions (in progress)
+- Renovate PR Handling
+- (CI) Incident Management Process
 
 ### Release Process
 
