@@ -986,16 +986,35 @@ jobs:
           # from the GHA API (the release job has completed by this point) and grep it.
           api="https://api.github.com/repos/${{ github.repository }}"
 
+          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
+          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
+          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
+          # Match both forms and disambiguate matrix invocations via the release version,
+          # which callers conventionally embed in their job display name.
           job_id=$(curl -fsSL \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
-            | jq -r '.jobs[] | select(.name == "Maven Release") | .id')
+            | jq -r --arg rv "$RELEASE_VERSION" '
+                .jobs[]
+                | select(.name == "Maven Release"
+                         or ((.name | endswith(" / Maven Release"))
+                             and (.name | contains($rv))))
+                | .id
+              ' \
+            | tail -1)
 
-          deployment_id=$(curl -fsSL \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "${api}/actions/jobs/${job_id}/logs" \
+          if [[ -z "${job_id}" ]]; then
+            echo "::warning::Could not locate the Maven Release job via the API"
+            job_logs=""
+          else
+            job_logs=$(curl -fsSL \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${api}/actions/jobs/${job_id}/logs" || true)
+          fi
+
+          deployment_id=$(printf '%s' "$job_logs" \
             | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
             | tail -1 \
             | awk '{print $2}' || true)
@@ -1119,16 +1138,35 @@ jobs:
           # from the GHA API (the release job has completed by this point) and grep it.
           api="https://api.github.com/repos/${{ github.repository }}"
 
+          # When this workflow is invoked as a reusable workflow (e.g., by the dry-run
+          # wrapper with a matrix), the run-level jobs API surfaces the inner job as
+          # "<caller-job-display-name> / Maven Release" rather than just "Maven Release".
+          # Match both forms and disambiguate matrix invocations via the release version,
+          # which callers conventionally embed in their job display name.
           job_id=$(curl -fsSL \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
-            | jq -r '.jobs[] | select(.name == "Maven Release") | .id')
+            | jq -r --arg rv "$RELEASE_VERSION" '
+                .jobs[]
+                | select(.name == "Maven Release"
+                         or ((.name | endswith(" / Maven Release"))
+                             and (.name | contains($rv))))
+                | .id
+              ' \
+            | tail -1)
 
-          deployment_id=$(curl -fsSL \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "${api}/actions/jobs/${job_id}/logs" \
+          if [[ -z "${job_id}" ]]; then
+            echo "::warning::Could not locate the Maven Release job via the API"
+            job_logs=""
+          else
+            job_logs=$(curl -fsSL \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${api}/actions/jobs/${job_id}/logs" || true)
+          fi
+
+          deployment_id=$(printf '%s' "$job_logs" \
             | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
             | tail -1 \
             | awk '{print $2}' || true)
