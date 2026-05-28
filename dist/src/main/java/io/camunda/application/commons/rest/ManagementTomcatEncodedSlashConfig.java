@@ -29,7 +29,6 @@ public class ManagementTomcatEncodedSlashConfig {
     return factory ->
         factory.addConnectorCustomizers(
             connector ->
-                connector.setEncodedSolidusHandling(
-                    EncodedSolidusHandling.PASS_THROUGH.getValue()));
+                connector.setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue()));
   }
 }
