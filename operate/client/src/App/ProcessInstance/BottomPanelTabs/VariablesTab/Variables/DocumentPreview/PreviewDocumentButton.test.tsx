@@ -7,8 +7,18 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+
+const createWrapper = (): React.FC<{children?: React.ReactNode}> => {
+  const client = getMockQueryClient();
+  return ({children}) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+};
 
 const imageDocument: DocumentInfo = {
   link: '/v2/documents/img',
@@ -22,6 +32,13 @@ const pdfDocument: DocumentInfo = {
   fileName: 'report.pdf',
   type: 'pdf',
   size: 2048,
+};
+
+const jsonDocument: DocumentInfo = {
+  link: '/v2/documents/json',
+  fileName: 'data.json',
+  type: 'json',
+  size: 256,
 };
 
 const unknownDocument: DocumentInfo = {
@@ -49,6 +66,18 @@ describe('<PreviewDocumentButton />', () => {
     );
 
     const button = screen.getByLabelText('Preview document for variable myPdf');
+    expect(button).toBeEnabled();
+  });
+
+  it('should render an enabled preview button for json documents', () => {
+    render(
+      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      {wrapper: createWrapper()},
+    );
+
+    const button = screen.getByLabelText(
+      'Preview document for variable myJson',
+    );
     expect(button).toBeEnabled();
   });
 
@@ -98,6 +127,44 @@ describe('<PreviewDocumentButton />', () => {
     expect(dialog).toBeInTheDocument();
     const image = screen.getByRole('img', {name: 'photo.png'});
     expect(image).toHaveAttribute('src', '/v2/documents/img');
+  });
+
+  it('should open the modal and render pretty-printed JSON when clicked', async () => {
+    mockDownloadDocument().withSuccess('{"foo":"bar","nested":{"baz":1}}');
+
+    const {user} = render(
+      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(
+      screen.getByLabelText('Preview document for variable myJson'),
+    );
+
+    const editor = await screen.findByTestId('monaco-editor');
+    expect(editor).toHaveValue(
+      '{\n\t"foo": "bar",\n\t"nested": {\n\t\t"baz": 1\n\t}\n}',
+    );
+  });
+
+  it('should show an error notification when the JSON document fails to load', async () => {
+    mockDownloadDocument().withServerError();
+
+    const {user} = render(
+      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(
+      screen.getByLabelText('Preview document for variable myJson'),
+    );
+
+    expect(
+      await screen.findByText(
+        `Failed to prepare JSON preview for document "${jsonDocument.fileName}".`,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
   });
 
   it('should show the file name as the modal heading', async () => {

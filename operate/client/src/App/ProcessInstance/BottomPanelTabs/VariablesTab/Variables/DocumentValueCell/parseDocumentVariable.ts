@@ -13,7 +13,7 @@ import {mergePathname} from 'modules/request/mergePathname';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
-type DocumentType = 'image' | 'pdf' | 'unknown';
+type DocumentType = 'image' | 'pdf' | 'json' | 'unknown';
 
 type DocumentInfo = {
   fileName: string;
@@ -51,24 +51,20 @@ function isDocumentReference(
   return documentReferenceSchema.safeParse(value).success;
 }
 
-const SUPPORTED_IMAGE_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-]);
-const SUPPORTED_PDF_MIME_TYPES = new Set(['application/pdf']);
+const MIME_TYPE_MAP: Record<string, DocumentType> = {
+  'image/jpeg': 'image',
+  'image/png': 'image',
+  'image/gif': 'image',
+  'image/webp': 'image',
+  'application/pdf': 'pdf',
+  'application/json': 'json',
+};
 
 function getDocumentType(contentType: string | undefined): DocumentType {
   if (!contentType) {
     return 'unknown';
-  } else if (SUPPORTED_IMAGE_MIME_TYPES.has(contentType)) {
-    return 'image';
-  } else if (SUPPORTED_PDF_MIME_TYPES.has(contentType)) {
-    return 'pdf';
-  } else {
-    return 'unknown';
   }
+  return MIME_TYPE_MAP[contentType] ?? 'unknown';
 }
 
 function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {

@@ -104,7 +104,7 @@ describe('parseDocumentVariable', () => {
         {
           link: '/v2/documents/doc-124?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'b.json',
-          type: 'unknown',
+          type: 'json',
           size: 500,
         },
         {
@@ -159,6 +159,22 @@ describe('parseDocumentVariable', () => {
         }),
       });
     }
+  });
+
+  it('should parse a json document type for application/json', () => {
+    const value = JSON.stringify(
+      makeDocRef({
+        metadata: {...makeDocRef().metadata, contentType: 'application/json'},
+      }),
+    );
+    const result = parseDocumentVariable(value, false);
+
+    expect(result).toEqual({
+      type: 'single',
+      document: expect.objectContaining({
+        type: 'json',
+      }),
+    });
   });
 
   it('should parse a pdf document type for application/pdf', () => {
