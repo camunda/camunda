@@ -172,7 +172,7 @@ val defaultJvmOpts =
         "-Dfile.encoding=UTF-8",
         "-Xshare:auto",
         *jvmModuleOpens.toTypedArray(),
-    ).joinToString(" ")
+    )
 val startupPrograms =
     mapOf(
         "broker" to "io.camunda.application.StandaloneBroker",
@@ -207,26 +207,44 @@ val generateDistScripts by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("generated/dist/scripts"))
 
     startupPrograms.forEach { (applicationName, mainClass) ->
-        from("src/main/script-templates/unix") {
+        from("src/main/scripts/unixBinTemplate") {
             rename { applicationName }
             filter<ReplaceTokens>(
                 "tokens" to
                     mapOf(
-                        "applicationName" to applicationName,
-                        "mainClass" to mainClass,
-                        "defaultJvmOpts" to defaultJvmOpts,
+                        "LICENSE_HEADER" to "",
+                        "ENV_SETUP" to "",
+                        "REPO" to "lib",
+                        "CLASSPATH" to "\$BASEDIR/config:\$BASEDIR/lib/*",
+                        "ENDORSED_DIR" to "driver-lib",
+                        "EXTRA_JVM_ARGUMENTS" to defaultJvmOpts.joinToString(" "),
+                        "APP_NAME" to applicationName,
+                        "MAINCLASS" to mainClass,
+                        "APP_ARGUMENTS" to "",
+                        "UNIX_BACKGROUND" to "",
                     ),
+                "beginToken" to "@",
+                "endToken" to "@",
             )
         }
-        from("src/main/script-templates/windows.bat") {
+        from("src/main/scripts/windowsBinTemplate") {
             rename { "$applicationName.bat" }
             filter<ReplaceTokens>(
                 "tokens" to
                     mapOf(
-                        "applicationName" to applicationName,
-                        "mainClass" to mainClass,
-                        "defaultJvmOpts" to defaultJvmOpts,
+                        "LICENSE_HEADER" to "",
+                        "ENV_SETUP" to "",
+                        "JAVA_BINARY" to "java",
+                        "REPO" to "lib",
+                        "CLASSPATH" to "%BASEDIR%\\config;%BASEDIR%\\lib\\*",
+                        "ENDORSED_DIR" to "driver-lib",
+                        "EXTRA_JVM_ARGUMENTS" to defaultJvmOpts.joinToString(" "),
+                        "APP_NAME" to applicationName,
+                        "MAINCLASS" to mainClass,
+                        "APP_ARGUMENTS" to "",
                     ),
+                "beginToken" to "#",
+                "endToken" to "#",
             )
         }
     }
