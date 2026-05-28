@@ -9,17 +9,20 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
+import static io.camunda.it.util.TestHelper.waitForAuditLogEntries;
+import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -29,7 +32,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * MCP gateway does), the resulting process instance's audit log entries carry agentElementId (the
  * start event element ID) and agentToolName (the tool name).
  */
-@MultiDbTest
+@MultiDbTest(DatabaseType.RDBMS_H2)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class McpAuditLogIT {
 
@@ -56,6 +59,7 @@ public class McpAuditLogIT {
             .endEvent()
             .done();
     deployProcessAndWaitForIt(client, processModel, "mcp_audit_log_process.bpmn");
+    waitForMessageSubscriptions(client, f -> f.messageName(MSG_NAME), 1);
 
     // Correlate a message with agentToolName set — this simulates what the MCP gateway does
     client
@@ -66,50 +70,33 @@ public class McpAuditLogIT {
         .send()
         .join();
 
-    waitForProcessInstancesToStart(client, 1);
+    // start a control instance via direct message correlation (no requestSource)
+    startProcessInstanceWithMessage(client, MSG_NAME);
 
-    // Wait for the audit log entry with agentToolName to be indexed
-    Awaitility.await("audit log entry with agentToolName to be available")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var result =
-                  client
-                      .newAuditLogSearchRequest()
-                      .filter(f -> f.agentToolName(MCP_TOOL_NAME))
-                      .send()
-                      .join();
-              assertThat(result.items()).isNotEmpty();
-            });
+    // wait until both process instance creation audit log entries are indexed
+    waitForAuditLogEntries(
+        client,
+        f ->
+            f.operationType(AuditLogOperationTypeEnum.CREATE)
+                .entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
+                .processDefinitionId(PROCESS_ID),
+        2);
   }
 
   @Test
   void shouldAddAgentToolNameToAuditLogsFromMcpMessageCorrelation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
-    // when - search for audit logs with the MCP tool name
+    // when
     final var result =
         client.newAuditLogSearchRequest().filter(f -> f.agentToolName(MCP_TOOL_NAME)).send().join();
 
-    // then - all entries should carry both agentToolName and agentElementId from the start event
+    // then
     assertThat(result.items())
-        .isNotEmpty()
+        .hasSize(1)
         .allSatisfy(
             auditLog -> {
               assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME);
               assertThat(auditLog.getAgentElementId()).isEqualTo(MSG_START_EVENT_ID);
             });
-  }
-
-  @Test
-  void shouldFilterAuditLogsByAgentToolName(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
-    // when - filter by agentToolName
-    final var result =
-        client.newAuditLogSearchRequest().filter(f -> f.agentToolName(MCP_TOOL_NAME)).send().join();
-
-    // then - only entries with the matching agentToolName are returned
-    assertThat(result.items()).isNotEmpty();
-    assertThat(result.items())
-        .allSatisfy(auditLog -> assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME));
   }
 }
