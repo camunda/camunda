@@ -194,6 +194,11 @@ class OperateProcessesPage {
         .nth(cellIndex);
 <<<<<<< HEAD
     this.deleteBatchOperationButton = page.getByTestId('delete-batch-operation');
+=======
+    this.deleteBatchOperationButton = page.getByTestId(
+      'delete-batch-operation',
+    );
+>>>>>>> 957ed82951adc4cb2e42aaf106e1474fe4a69c62
     this.deleteBatchOperationConfirmButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Delete'});
