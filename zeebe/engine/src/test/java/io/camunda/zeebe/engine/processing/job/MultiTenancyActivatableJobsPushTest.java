@@ -53,10 +53,7 @@ public class MultiTenancyActivatableJobsPushTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withJobStreamer(JOB_STREAMER)
-          .withSecurityConfig(
-              config -> {
-                config.setMultiTenancyChecksEnabled(true);
-              });
+          .withMultiTenancyChecksEnabled(true);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

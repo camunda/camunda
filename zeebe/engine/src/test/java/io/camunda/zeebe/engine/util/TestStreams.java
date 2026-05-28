@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -229,6 +230,24 @@ public final class TestStreams {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final boolean awaitOpening) {
+    return startStreamProcessor(
+        log,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        streamProcessorListenerOpt,
+        processorConfiguration,
+        awaitOpening,
+        EngineSecurityConfigurations.defaultConfig());
+  }
+
+  public StreamProcessor startStreamProcessor(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening,
+      final EngineSecurityConfig securityConfig) {
     final TestLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream,
@@ -236,7 +255,8 @@ public final class TestStreams {
         processorConfiguration,
         typedRecordProcessorFactory,
         awaitOpening,
-        streamProcessorListenerOpt);
+        streamProcessorListenerOpt,
+        securityConfig);
   }
 
   public StreamProcessor buildStreamProcessor(
@@ -246,6 +266,24 @@ public final class TestStreams {
       final TypedRecordProcessorFactory factory,
       final boolean awaitOpening,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return buildStreamProcessor(
+        stream,
+        zeebeDbFactory,
+        processorConfiguration,
+        factory,
+        awaitOpening,
+        streamProcessorListenerOpt,
+        EngineSecurityConfigurations.defaultConfig());
+  }
+
+  public StreamProcessor buildStreamProcessor(
+      final TestLogStream stream,
+      final ZeebeDbFactory zeebeDbFactory,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final TypedRecordProcessorFactory factory,
+      final boolean awaitOpening,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final EngineSecurityConfig securityConfig) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -294,11 +332,7 @@ public final class TestStreams {
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessors(
-                List.of(
-                    new Engine(
-                        wrappedFactory,
-                        new EngineConfiguration(),
-                        EngineSecurityConfigurations.defaultConfig())))
+                List.of(new Engine(wrappedFactory, new EngineConfiguration(), securityConfig)))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(isReplay ? null : mock(InterPartitionCommandSender.class))

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -150,6 +151,22 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final boolean awaitOpening) {
     return streamProcessingComposite.startTypedStreamProcessor(
         partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
+  }
+
+  public StreamProcessor startTypedStreamProcessor(
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening,
+      final EngineSecurityConfig securityConfig) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId,
+        factory,
+        streamProcessorListenerOpt,
+        processorConfiguration,
+        awaitOpening,
+        securityConfig);
   }
 
   public void pauseProcessing(final int partitionId) {

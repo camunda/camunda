@@ -44,7 +44,7 @@ public class TenantAwareResourceDeletionTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.setMultiTenancyChecksEnabled(true))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               config ->
                   config

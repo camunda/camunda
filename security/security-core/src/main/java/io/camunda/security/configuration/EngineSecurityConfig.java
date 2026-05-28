@@ -29,8 +29,8 @@ import java.util.regex.Pattern;
 public final class EngineSecurityConfig {
 
   private final AuthenticationConfiguration authentication;
-  private boolean authorizationsEnabled;
-  private boolean multiTenancyChecksEnabled;
+  private final boolean authorizationsEnabled;
+  private final boolean multiTenancyChecksEnabled;
   private final InitializationConfiguration initialization;
   private final Pattern idValidationPattern;
   private final Pattern groupIdValidationPattern;
@@ -58,16 +58,33 @@ public final class EngineSecurityConfig {
     return authorizationsEnabled;
   }
 
-  public void setAuthorizationsEnabled(final boolean authorizationsEnabled) {
-    this.authorizationsEnabled = authorizationsEnabled;
+  /** Returns a copy of this config with {@code authorizationsEnabled} set to the given value. */
+  public EngineSecurityConfig withAuthorizationsEnabled(final boolean authorizationsEnabled) {
+    return new EngineSecurityConfig(
+        authentication,
+        authorizationsEnabled,
+        multiTenancyChecksEnabled,
+        initialization,
+        idValidationPattern,
+        groupIdValidationPattern);
   }
 
   public boolean isMultiTenancyChecksEnabled() {
     return multiTenancyChecksEnabled;
   }
 
-  public void setMultiTenancyChecksEnabled(final boolean multiTenancyChecksEnabled) {
-    this.multiTenancyChecksEnabled = multiTenancyChecksEnabled;
+  /**
+   * Returns a copy of this config with {@code multiTenancyChecksEnabled} set to the given value.
+   */
+  public EngineSecurityConfig withMultiTenancyChecksEnabled(
+      final boolean multiTenancyChecksEnabled) {
+    return new EngineSecurityConfig(
+        authentication,
+        authorizationsEnabled,
+        multiTenancyChecksEnabled,
+        initialization,
+        idValidationPattern,
+        groupIdValidationPattern);
   }
 
   public InitializationConfiguration getInitialization() {

@@ -49,7 +49,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true))
+          .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
               cfg -> {

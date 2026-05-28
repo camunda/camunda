@@ -16,7 +16,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,26 +45,18 @@ public abstract class GatewayTest {
     this(new GatewayCfg(), EngineSecurityConfigurations.defaultConfig());
   }
 
-  private GatewayTest(
-      final Supplier<GatewayCfg> configSupplier,
-      final Supplier<EngineSecurityConfig> securitySupplier) {
-    this(configSupplier.get(), securitySupplier.get());
+  public GatewayTest(
+      final Consumer<GatewayCfg> modifier,
+      final UnaryOperator<EngineSecurityConfig> securityOperator) {
+    this(
+        applyGatewayCfg(modifier),
+        securityOperator.apply(EngineSecurityConfigurations.defaultConfig()));
   }
 
-  public GatewayTest(
-      final Consumer<GatewayCfg> modifier, final Consumer<EngineSecurityConfig> securityModifier) {
-    this(
-        () -> {
-          final GatewayCfg config = new GatewayCfg();
-          modifier.accept(config);
-          return config;
-        },
-        () -> {
-          final EngineSecurityConfig securityConfiguration =
-              EngineSecurityConfigurations.defaultConfig();
-          securityModifier.accept(securityConfiguration);
-          return securityConfiguration;
-        });
+  private static GatewayCfg applyGatewayCfg(final Consumer<GatewayCfg> modifier) {
+    final GatewayCfg config = new GatewayCfg();
+    modifier.accept(config);
+    return config;
   }
 
   @Before

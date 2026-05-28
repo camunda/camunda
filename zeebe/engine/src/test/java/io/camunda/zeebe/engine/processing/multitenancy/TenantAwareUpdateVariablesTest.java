@@ -40,7 +40,7 @@ public class TenantAwareUpdateVariablesTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.setMultiTenancyChecksEnabled(true))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
               cfg -> {

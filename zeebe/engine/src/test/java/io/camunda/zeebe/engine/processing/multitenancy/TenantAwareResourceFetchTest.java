@@ -54,9 +54,9 @@ public class TenantAwareResourceFetchTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               config -> {
-                config.setMultiTenancyChecksEnabled(true);
                 config
                     .getInitialization()
                     .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));

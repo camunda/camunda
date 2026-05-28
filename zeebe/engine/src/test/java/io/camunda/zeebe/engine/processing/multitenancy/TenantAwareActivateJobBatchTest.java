@@ -24,8 +24,7 @@ public class TenantAwareActivateJobBatchTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.setMultiTenancyChecksEnabled(true));
+      EngineRule.singlePartition().withMultiTenancyChecksEnabled(true);
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 

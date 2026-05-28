@@ -24,8 +24,7 @@ import org.junit.rules.TestWatcher;
 public class GlobalListenerDeleteTest {
 
   @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition().withSecurityConfig(cfg -> cfg.setAuthorizationsEnabled(true));
+  public final EngineRule engine = EngineRule.singlePartition().withAuthorizationsEnabled(true);
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
