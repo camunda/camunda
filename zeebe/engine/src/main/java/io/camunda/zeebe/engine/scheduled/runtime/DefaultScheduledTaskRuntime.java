@@ -18,11 +18,16 @@ import java.util.Map;
 
 public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
 
+  private final BackPressureSignal backPressureSignal;
   private final Map<String, RegisteredTask> tasks = new LinkedHashMap<>();
   private ProcessingScheduleService scheduleService;
   private InstantSource clock;
   private boolean recovered;
   private boolean schedulingEnabled = true;
+
+  public DefaultScheduledTaskRuntime(final BackPressureSignal backPressureSignal) {
+    this.backPressureSignal = backPressureSignal;
+  }
 
   @Override
   public Handle register(

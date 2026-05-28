@@ -127,7 +127,8 @@ public final class EngineProcessors {
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
     final var scheduledTaskRuntime =
-        new io.camunda.zeebe.engine.scheduled.runtime.DefaultScheduledTaskRuntime();
+        new io.camunda.zeebe.engine.scheduled.runtime.DefaultScheduledTaskRuntime(
+            io.camunda.zeebe.engine.scheduled.runtime.BackPressureSignal.alwaysGreen());
 
     final var timerExpiryTask =
         new io.camunda.zeebe.engine.processing.timer.TimerExpiryTask(

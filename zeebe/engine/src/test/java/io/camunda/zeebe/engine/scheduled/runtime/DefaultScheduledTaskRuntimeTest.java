@@ -22,7 +22,7 @@ class DefaultScheduledTaskRuntimeTest {
     @Test
     void shouldReturnHandleForNewRegistration() {
       // given
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
 
       // when
       final var handle =
@@ -39,7 +39,7 @@ class DefaultScheduledTaskRuntimeTest {
     @Test
     void shouldThrowWhenRegisteringDuplicateName() {
       // given
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -70,7 +70,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var runs = new java.util.concurrent.atomic.AtomicInteger();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -96,7 +96,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -123,7 +123,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -157,7 +157,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var runs = new java.util.concurrent.atomic.AtomicInteger();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.OnDemand(Duration.ofMillis(100)),
@@ -183,7 +183,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var runs = new java.util.concurrent.atomic.AtomicInteger();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -211,7 +211,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -244,7 +244,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -277,7 +277,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -315,7 +315,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var fireA = new java.util.ArrayList<Long>();
       final var fireB = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -351,7 +351,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireA = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -389,7 +389,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -433,7 +433,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var context = TestProcessorContext.with(scheduleService, clock);
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -473,7 +473,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var maxDepth = new java.util.concurrent.atomic.AtomicInteger();
       final var fireTimes = new java.util.ArrayList<Long>();
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
           runtime.register(
               "task-a",
@@ -518,7 +518,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var scheduleService = new FakeScheduleService(clock);
       final var context = TestProcessorContext.with(scheduleService, clock);
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
@@ -541,7 +541,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var scheduleService = new FakeScheduleService(clock);
       final var context = TestProcessorContext.with(scheduleService, clock);
 
-      final var runtime = new DefaultScheduledTaskRuntime();
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.Periodic(Duration.ofMillis(100)),
