@@ -14,7 +14,9 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,11 +36,12 @@ public class ProcessCache {
 
   public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
+  private static final String PHYSICAL_TENANT_ID_TAG = "physicalTenantId";
   private final ConcurrentHashMap<String, LoadingCache<Long, ProcessCacheItem>>
       cachesByPhysicalTenant;
   private final ProcessDefinitionProvider processDefinitionProvider;
   private final Configuration configuration;
-  private final CaffeineCacheStatsCounter statsCounter;
+  private final MeterRegistry meterRegistry;
 
   public ProcessCache(
       final Configuration configuration,
@@ -48,7 +51,7 @@ public class ProcessCache {
     this.configuration = configuration;
     processDefinitionProvider = new ProcessDefinitionProvider(processDefinitionServices);
     cachesByPhysicalTenant = new ConcurrentHashMap<>();
-    statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
+    this.meterRegistry = meterRegistry;
 
     brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
   }
@@ -78,8 +81,14 @@ public class ProcessCache {
   }
 
   private LoadingCache<Long, ProcessCacheItem> buildTenantCache(final String physicalTenantId) {
+    final var tenantRegistry =
+        MicrometerUtil.wrap(meterRegistry, Tags.of(PHYSICAL_TENANT_ID_TAG, physicalTenantId));
+    final var tenantStatsCounter =
+        new CaffeineCacheStatsCounter(NAMESPACE, "process", tenantRegistry);
     final var cacheBuilder =
-        Caffeine.newBuilder().maximumSize(configuration.maxSize()).recordStats(() -> statsCounter);
+        Caffeine.newBuilder()
+            .maximumSize(configuration.maxSize())
+            .recordStats(() -> tenantStatsCounter);
     final var expirationIdle = configuration.expirationIdleMillis();
     if (expirationIdle != null && expirationIdle > 0) {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
