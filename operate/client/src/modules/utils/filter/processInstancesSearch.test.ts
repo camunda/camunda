@@ -12,7 +12,9 @@ const params = (obj: Record<string, string>) => new URLSearchParams(obj);
 
 describe('parseProcessInstancesSearchFilter', () => {
   it('should return undefined when no filters are set', () => {
-    expect(parseProcessInstancesSearchFilter(new URLSearchParams())).toBeUndefined();
+    expect(
+      parseProcessInstancesSearchFilter(new URLSearchParams()),
+    ).toBeUndefined();
   });
 
   it('should return a filter with elementId and elementInstanceState when only elementId is set', () => {
