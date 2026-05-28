@@ -2,6 +2,7 @@
 # Replaces Vacuum for comprehensive OpenAPI linting and validation
 description: Recommended ruleset with additional customizations.
 extends: [[spectral:oas, recommended]]
+ignoreUnknownFormat: true
 functions:
   - verifyKeyTypesPaths
   - verifyKeyTypesSchemas
@@ -19,16 +20,14 @@ rules:
   # Tag validation
   operation-tag-defined: error
 
-  # Schema example validation rules.
-  # Downgraded from error → warn because Spectral does not support Unicode regex
-  # (\p{L}, \p{N}) in pattern validation. Our identifier schemas use Unicode-aware
-  # patterns (e.g. ProcessDefinitionId, DecisionDefinitionId, Tag), which causes
-  # false-positive failures on all example values.
-  # Upstream issue: https://github.com/stoplightio/spectral/issues/2419
-  # Upstream fix:   https://github.com/stoplightio/spectral/pull/2809
-  # TODO: Restore to error once Spectral ships the unicodeRegExp option.
+  # Schema example validation — @camunda8/spectral-cli supports unicodeRegExp,
+  # so false-positive pattern failures are resolved.
+  # oas3-valid-schema-example remains at warn because ScopeKey uses oneOf with
+  # structurally identical branches (ProcessInstanceKey, ElementInstanceKey),
+  # causing "must match exactly one schema in oneOf" on any ScopeKey example.
+  # Changing oneOf→anyOf would fix the warning but breaks Java code generation.
   oas3-valid-schema-example: warn
-  oas3-valid-media-example: warn
+  oas3-valid-media-example: error
 
   # Custom validation rules migrated from Vacuum
   no-period-in-summary:

@@ -28,7 +28,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
 
 ```bash
 # Install Spectral CLI (if not already installed)
-npm install -g @stoplight/spectral-cli
+npm install -g @camunda8/spectral-cli
 
 # Run validation from the repository root
 
