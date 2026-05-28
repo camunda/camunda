@@ -54,7 +54,7 @@ git_author=$(compute_git_author)
 kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
-cp -rv cloud-default/ $namespace
+cp -rv saas-default/ $namespace
 cd $namespace
 
 
