@@ -64,7 +64,9 @@ resolve_test_source_file() {
     # Input: fully qualified test class name, e.g. io.camunda.foo.BarTest
     # Output: prints a single repo-relative path or empty string.
     local fqcn="$1"
-    local rel_test_path="${fqcn//./\/}.java"
+    # Strip nested class suffix (e.g. OuterClass$InnerClass -> OuterClass)
+    local outer_fqcn="${fqcn%%\$*}"
+    local rel_test_path="${outer_fqcn//./\/}.java"
 
     # Find the test file location (first match is good enough)
     local test_file
