@@ -9,7 +9,12 @@ package io.camunda.optimize.service.db.report.plan.process;
 
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.OUTPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.PERCENTAGE;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOOL_CALLS;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOTAL_TOKENS;
+import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_INSTANCE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.FLOW_NODE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.INCIDENT;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.PROCESS_INSTANCE;
@@ -34,7 +39,11 @@ public enum ProcessView {
   PROCESS_VIEW_VARIABLE(
       new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.variable(null, null))),
   PROCESS_VIEW_USER_TASK_FREQUENCY(new ProcessViewDto(USER_TASK, FREQUENCY)),
-  PROCESS_VIEW_USER_TASK_DURATION(new ProcessViewDto(USER_TASK, DURATION));
+  PROCESS_VIEW_USER_TASK_DURATION(new ProcessViewDto(USER_TASK, DURATION)),
+  PROCESS_VIEW_AGENT_INPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, INPUT_TOKENS)),
+  PROCESS_VIEW_AGENT_OUTPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, OUTPUT_TOKENS)),
+  PROCESS_VIEW_AGENT_TOOL_CALLS(new ProcessViewDto(AGENT_INSTANCE, TOOL_CALLS)),
+  PROCESS_VIEW_AGENT_TOTAL_TOKENS(new ProcessViewDto(AGENT_INSTANCE, TOTAL_TOKENS));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;
