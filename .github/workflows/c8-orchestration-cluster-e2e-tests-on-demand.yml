@@ -506,7 +506,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-branch.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
         camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
@@ -718,12 +718,15 @@ jobs:
               fi
             else
               echo "Running V1 mode tests"
-              if [[ "$BASE_BRANCH" == "stable/8.8" ]]; then
+              if [[ "$BASE_BRANCH" == "stable/8.9" ]]; then
+                # stable/8.9: has v1/ directories, run only v1-specific tests
+                TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
+              elif [[ "$BASE_BRANCH" == "stable/8.8" ]]; then
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # main: has v1/ directories for V1 mode
-                TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
+                # main: v1 directories removed, run all tests with V1 mode enabled
+                TEST_ARGS+=(tests/)
               fi
             fi
           fi
