@@ -136,7 +136,9 @@ Contracts that must not be bypassed:
 **Zeebe gRPC protocol** (`zeebe/gateway-protocol/src/main/proto/gateway.proto`)\
 The interface between external clients and the gRPC gateway. Java stubs are generated at build time
 in `zeebe/gateway-protocol-impl/`; never edit them manually. Changing the `.proto` requires
-regenerating stubs and updating all consumers in `clients/`.
+regenerating stubs in `gateway-protocol-impl/`, updating every caller in `service/` and `gateways/`,
+and bumping `clients/java` and the Spring Boot starter — a cascade that touches every layer of the
+write path.
 
 **Zeebe record/exporter contract** (`zeebe/exporter-api`, `zeebe/protocol`)\
 The SBE-encoded record format emitted by the broker and consumed by exporters. Access broker state
@@ -144,9 +146,10 @@ only through this contract; never read from RocksDB directly.
 
 **ES/OS index schema** (`webapps-schema/`)\
 All templates use `"dynamic": "strict"` — new fields must be explicitly added to the template
-definitions before the exporter writes them. Changing a field type is a breaking change that
-requires a migration plan. Never query ES/OS indices directly from application code; always go
-through `search/`.
+definitions before the exporter writes them. Fields are additive-only; never change or remove a
+field once deployed — strict mapping will reject mistyped documents from the exporter, and any
+query in `search/` referencing the field breaks, surfacing in `operate/` and `tasklist/`. Never
+query ES/OS indices directly from application code; always go through `search/`.
 
 **ES/OS exporter index templates** (`zeebe/exporters/elasticsearch-exporter/src/main/resources`,
 `zeebe/exporters/opensearch-exporter/src/main/resources`)\
@@ -155,30 +158,22 @@ the impact on existing index mappings.
 
 **`service/` as the REST-to-engine bridge**\
 All REST commands must flow through `service/` before reaching Zeebe. REST controllers in
-`zeebe/gateway-rest` must not call the Zeebe gRPC gateway directly.
+`zeebe/gateway-rest` must not call the Zeebe gRPC gateway directly. An interface change here breaks
+`zeebe/gateway-rest` at compile time; `operate/` and `tasklist/` are indirect consumers via the
+REST API and will break at runtime.
 
 **RDBMS schema** (`db/rdbms-schema`)\
 Schema changes are versioned Liquibase changesets and must be additive-only (new tables or columns).
 Never drop or alter existing columns; never modify tables outside a changeset.
 
-## Cross-module blast radius
+**`security/` permission model**\
+New or renamed permissions must land in `security/` before enforcement is wired elsewhere. A model
+change propagates to `service/`, `gateways/`, and `identity/` — all must be updated before the new
+permission is used.
 
-Changes that propagate farthest:
-
-- **`.proto` change in `zeebe/gateway-protocol`**: regenerates stubs in `gateway-protocol-impl`,
-  breaks `clients/java`, `clients/go`, and `clients/camunda-spring-boot-starter`, and affects every
-  call in `service/` and
-  `gateways/` that maps to the changed RPC.
-- **Field type change or removal in `webapps-schema/`**: breaks exporter indexing (strict mapping
-  rejects documents with unknown or mistyped fields) and all queries in `operate/`, `tasklist/`, and
-  `search/` that reference that field. Requires a versioned template migration.
-- **`service/` interface change**: simultaneous breakage in `zeebe/gateway-rest`, `operate/`, and
-  `tasklist/`, which all depend on these interfaces.
-- **`security/` permission model change**: new or renamed permissions must be added to `security/`
-  first; enforcement in `service/`, `gateways/`, and `identity/` must be updated before the
-  permission is used.
-- **`authentication/` claim mapping change**: affects all webapps and gateways that extract tenant
-  ID, user ID, or roles from OIDC tokens.
+**`authentication/` claim mapping**\
+A claim mapping change affects every webapp and gateway that extracts tenant ID, user ID, or roles
+from OIDC tokens. Update all consumers before changing the mapping.
 
 ## Path rules
 
