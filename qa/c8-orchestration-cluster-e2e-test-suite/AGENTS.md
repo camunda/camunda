@@ -60,12 +60,12 @@ never patch the generated `.spec.ts` files directly.
 
 Defined in `tsconfig.json`. Use these consistently in new tests and page objects:
 
-| Alias | Resolves to | Use for |
-|---|---|---|
-| `@fixtures` | `fixtures.ts` | `import {test} from 'fixtures';` (page-object-injecting test) |
-| `@setup` | `./test-setup.ts` | `captureScreenshot`, `captureFailureVideo` |
-| `@pages/*` | `pages/*` | Page object classes — `import {OperateProcessesPage} from '@pages/OperateProcessesPage';` |
-| `@requestHelpers` | `utils/requestHelpers/index.ts` | Typed REST API helpers |
+|       Alias       |           Resolves to           |                                          Use for                                          |
+|-------------------|---------------------------------|-------------------------------------------------------------------------------------------|
+| `@fixtures`       | `fixtures.ts`                   | `import {test} from 'fixtures';` (page-object-injecting test)                             |
+| `@setup`          | `./test-setup.ts`               | `captureScreenshot`, `captureFailureVideo`                                                |
+| `@pages/*`        | `pages/*`                       | Page object classes — `import {OperateProcessesPage} from '@pages/OperateProcessesPage';` |
+| `@requestHelpers` | `utils/requestHelpers/index.ts` | Typed REST API helpers                                                                    |
 
 Example test imports (from `tests/operate/batchOperations.spec.ts`):
 
@@ -102,15 +102,15 @@ Ensure the ports in your `.env` match those used in the local stack (e.g., 8080,
 
 ### Other environment variables read by the suite
 
-| Variable | Purpose |
-|---|---|
-| `LOCAL_TEST` | Required by `npm run test:local` — gates the interactive runner in `runTest.js` |
-| `PLAYWRIGHT_BASE_URL` | Overrides default `http://localhost:8080` for all projects |
-| `DATABASE` | Selects backing database (`elasticsearch`, `opensearch`, `RDBMS`, ...); used by docker compose and `api-tests` |
-| `V2_STATELESS_TESTS` | When `true`, switches Playwright to the stateless `request-validation-tests` project set |
-| `API_TESTS_ONLY` | Reporter label flag for nightly API-only runs |
-| `VERSION`, `DB_NAME` | Reporter labels (used in Slack title from `playwright.config.ts`) |
-| `INCLUDE_SLACK_REPORTER` | `true` activates the Slack reporter (set by CI only) |
+|         Variable         |                                                    Purpose                                                     |
+|--------------------------|----------------------------------------------------------------------------------------------------------------|
+| `LOCAL_TEST`             | Required by `npm run test:local` — gates the interactive runner in `runTest.js`                                |
+| `PLAYWRIGHT_BASE_URL`    | Overrides default `http://localhost:8080` for all projects                                                     |
+| `DATABASE`               | Selects backing database (`elasticsearch`, `opensearch`, `RDBMS`, ...); used by docker compose and `api-tests` |
+| `V2_STATELESS_TESTS`     | When `true`, switches Playwright to the stateless `request-validation-tests` project set                       |
+| `API_TESTS_ONLY`         | Reporter label flag for nightly API-only runs                                                                  |
+| `VERSION`, `DB_NAME`     | Reporter labels (used in Slack title from `playwright.config.ts`)                                              |
+| `INCLUDE_SLACK_REPORTER` | `true` activates the Slack reporter (set by CI only)                                                           |
 
 ## Running Tests
 
@@ -136,33 +136,33 @@ npx playwright show-report html-report
 
 ### Output artifacts
 
-| Path | Contents |
-|---|---|
-| `html-report/` | Latest Playwright HTML report (open `index.html`) |
-| `test-results/` | Per-test traces (`trace.zip`), screenshots, videos — only retained on failure |
-| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail) |
-| `json-report/results.json` | JSON results (parsed by the flakiness agent and CI) |
+|              Path               |                                   Contents                                    |
+|---------------------------------|-------------------------------------------------------------------------------|
+| `html-report/`                  | Latest Playwright HTML report (open `index.html`)                             |
+| `test-results/`                 | Per-test traces (`trace.zip`), screenshots, videos — only retained on failure |
+| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail)                                              |
+| `json-report/results.json`      | JSON results (parsed by the flakiness agent and CI)                           |
 
 Inspect a failing test's trace with `npx playwright show-trace test-results/<test-dir>/trace.zip`,
 or upload the `.zip` to https://trace.playwright.dev.
 
 ## Playwright Projects
 
-| Project | Test match | Notes |
-|---|---|---|
-| `chromium` | `tests/**/*.spec.ts` | Main UI tests; excludes `task-panel.spec.ts`, `tests/api/**`, and `v2-stateless-tests/**` |
-| `chromium-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of chromium |
-| `firefox` | Same as chromium | Cross-browser variant |
-| `firefox-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of firefox |
-| `msedge` | Same as chromium | Cross-browser variant |
-| `msedge-subset` | `tests/tasklist/task-panel.spec.ts` | Teardown project of msedge |
-| `api-tests` | `tests/api/v2/**/*.spec.ts` | Stateful REST API tests; excludes `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `optimize/**` |
-| `api-tests-subset` | `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*` | Sequential teardown of api-tests (`workers: 1`) |
-| `tasklist-e2e` | `tests/tasklist/*.spec.ts` | Tasklist-scoped run |
-| `identity-e2e` | `tests/identity/*.spec.ts` | Identity-scoped run |
-| `operate-e2e` | `tests/operate/*.spec.ts` | Operate-scoped run |
-| `optimize-default-config` | `tests/api/v2/optimize/default-config.spec.ts` | Single Optimize config test |
-| `request-validation-tests` | `v2-stateless-tests/tests/request-validation/*.spec.ts` | Stateless; set `V2_STATELESS_TESTS=true` |
+|          Project           |                            Test match                            |                                                       Notes                                                       |
+|----------------------------|------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `chromium`                 | `tests/**/*.spec.ts`                                             | Main UI tests; excludes `task-panel.spec.ts`, `tests/api/**`, and `v2-stateless-tests/**`                         |
+| `chromium-subset`          | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of chromium                                                                                      |
+| `firefox`                  | Same as chromium                                                 | Cross-browser variant                                                                                             |
+| `firefox-subset`           | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of firefox                                                                                       |
+| `msedge`                   | Same as chromium                                                 | Cross-browser variant                                                                                             |
+| `msedge-subset`            | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of msedge                                                                                        |
+| `api-tests`                | `tests/api/v2/**/*.spec.ts`                                      | Stateful REST API tests; excludes `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `optimize/**` |
+| `api-tests-subset`         | `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*` | Sequential teardown of api-tests (`workers: 1`)                                                                   |
+| `tasklist-e2e`             | `tests/tasklist/*.spec.ts`                                       | Tasklist-scoped run                                                                                               |
+| `identity-e2e`             | `tests/identity/*.spec.ts`                                       | Identity-scoped run                                                                                               |
+| `operate-e2e`              | `tests/operate/*.spec.ts`                                        | Operate-scoped run                                                                                                |
+| `optimize-default-config`  | `tests/api/v2/optimize/default-config.spec.ts`                   | Single Optimize config test                                                                                       |
+| `request-validation-tests` | `v2-stateless-tests/tests/request-validation/*.spec.ts`          | Stateless; set `V2_STATELESS_TESTS=true`                                                                          |
 
 Global settings: timeout 12 min, 4 workers, 1 retry, trace/screenshot/video retained on failure.
 
@@ -219,23 +219,23 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## Key Utilities
 
-| File | Purpose |
-|---|---|
-| `utils/zeebeClient.ts` | Zeebe gRPC/REST client wrapper |
-| `utils/waitForAssertion.ts` | Retry wrapper for async assertions |
-| `utils/waitForItemInList.ts` | Paginated list polling helper |
-| `utils/requestHelpers/` | Typed HTTP helpers for REST API tests |
-| `utils/beans/` | Shared test fixtures / dependency injection |
-| `utils/*Cleanup.ts` | Per-resource teardown helpers (roles, users, groups, etc.) |
-| `utils/constants.ts` | Shared test constants |
-| `fixtures.ts` | Playwright fixture definitions extending base test |
+|             File             |                          Purpose                           |
+|------------------------------|------------------------------------------------------------|
+| `utils/zeebeClient.ts`       | Zeebe gRPC/REST client wrapper                             |
+| `utils/waitForAssertion.ts`  | Retry wrapper for async assertions                         |
+| `utils/waitForItemInList.ts` | Paginated list polling helper                              |
+| `utils/requestHelpers/`      | Typed HTTP helpers for REST API tests                      |
+| `utils/beans/`               | Shared test fixtures / dependency injection                |
+| `utils/*Cleanup.ts`          | Per-resource teardown helpers (roles, users, groups, etc.) |
+| `utils/constants.ts`         | Shared test constants                                      |
+| `fixtures.ts`                | Playwright fixture definitions extending base test         |
 
 ## CI Workflows
 
-| Workflow | Trigger | Link |
-|---|---|---|
-| `c8-orchestration-cluster-e2e-tests-nightly.yml` | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml) |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+|                      Workflow                      |        Trigger         |                                                       Link                                                       |
+|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
 
@@ -243,13 +243,13 @@ Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and T
 
 Each supported version lives on its own branch in `camunda/camunda`:
 
-| Version | Branch |
-|---|---|
-| Next | `main` |
-| 8.10 | `stable/8.10` |
-| 8.9 | `stable/8.9` |
-| 8.8 | `stable/8.8` |
-| 8.7 | `stable/8.7` |
+| Version |    Branch     |
+|---------|---------------|
+| Next    | `main`        |
+| 8.10    | `stable/8.10` |
+| 8.9     | `stable/8.9`  |
+| 8.8     | `stable/8.8`  |
+| 8.7     | `stable/8.7`  |
 
 - **New tests / refactors** — land on `main` first, then backport to each affected `stable/8.x` branch
   using the repo's standard backport label (`backport stable/8.x`) once the original PR merges.
@@ -279,3 +279,4 @@ Follows the monorepo standard (Conventional Commits, no scope):
 test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
+
