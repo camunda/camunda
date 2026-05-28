@@ -47,13 +47,13 @@ public class MessageCorrelationMcpAgentTest {
   }
 
   @Test
-  public void shouldPropagateToolNameOnCorrelationRecord() {
+  public void shouldPropagateAgentToolNameOnCorrelationRecord() {
     // when
     engine
         .messageCorrelation()
         .withName(START_MSG_NAME)
         .withCorrelationKey("")
-        .withToolName(MCP_TOOL_NAME)
+        .withAgentToolName(MCP_TOOL_NAME)
         .correlate();
 
     // then
@@ -62,17 +62,17 @@ public class MessageCorrelationMcpAgentTest {
             .withName(START_MSG_NAME)
             .getFirst();
 
-    assertThat(correlatedRecord.getValue().getToolName()).isEqualTo(MCP_TOOL_NAME);
+    assertThat(correlatedRecord.getValue().getAgentToolName()).isEqualTo(MCP_TOOL_NAME);
   }
 
   @Test
-  public void shouldSetAgentInfoOnFollowUpRecordsWhenToolNameIsSet() {
+  public void shouldSetAgentInfoOnFollowUpRecordsWhenAgentToolNameIsSet() {
     // when
     engine
         .messageCorrelation()
         .withName(START_MSG_NAME)
         .withCorrelationKey("")
-        .withToolName(MCP_TOOL_NAME)
+        .withAgentToolName(MCP_TOOL_NAME)
         .correlate();
 
     // then - the process instance created from the message start event carries agent tracing
@@ -88,7 +88,7 @@ public class MessageCorrelationMcpAgentTest {
   }
 
   @Test
-  public void shouldNotSetAgentInfoWhenToolNameIsAbsent() {
+  public void shouldNotSetAgentInfoWhenAgentToolNameIsAbsent() {
     // when
     engine.messageCorrelation().withName(START_MSG_NAME).withCorrelationKey("").correlate();
 

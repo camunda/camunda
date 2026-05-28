@@ -93,8 +93,8 @@ public final class MessageCorrelationClient {
     return this;
   }
 
-  public MessageCorrelationClient withToolName(final String toolName) {
-    messageCorrelationRecord.setToolName(toolName);
+  public MessageCorrelationClient withAgentToolName(final String agentToolName) {
+    messageCorrelationRecord.setAgentToolName(agentToolName);
     return this;
   }
 

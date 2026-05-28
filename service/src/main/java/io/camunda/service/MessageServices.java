@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public final class MessageServices extends ApiServices<MessageServices> {
   private final int maxVariableNameLength;
@@ -57,10 +58,8 @@ public final class MessageServices extends ApiServices<MessageServices> {
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-            .setTenantId(correlationRequest.tenantId);
-    if (correlationRequest.toolName != null) {
-      brokerRequest.setToolName(correlationRequest.toolName);
-    }
+            .setTenantId(correlationRequest.tenantId)
+            .setAgentToolName(correlationRequest.agentToolName);
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -80,7 +79,7 @@ public final class MessageServices extends ApiServices<MessageServices> {
       String correlationKey,
       Map<String, Object> variables,
       String tenantId,
-      @org.jspecify.annotations.Nullable String toolName) {
+      @Nullable String agentToolName) {
 
     public CorrelateMessageRequest(
         final String name,

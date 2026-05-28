@@ -110,12 +110,12 @@ public interface CorrelateMessageCommandStep1 {
     CorrelateMessageCommandStep3 variable(String key, Object value);
 
     /**
-     * Set the name of the MCP tool that triggered this message correlation. When set, audit log
+     * Set the name of the agent tool that triggered this message correlation. When set, audit log
      * entries for the resulting process instance will include this value as agentToolName.
      *
-     * @param toolName the MCP tool name
+     * @param agentToolName the agent tool name
      * @return the builder for this command
      */
-    CorrelateMessageCommandStep3 toolName(String toolName);
+    CorrelateMessageCommandStep3 agentToolName(String agentToolName);
   }
 }
