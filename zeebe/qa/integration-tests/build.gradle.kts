@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.integration-test-module-conventions")
 }
 
 dependencies {
@@ -111,6 +112,12 @@ dependencies {
     testImplementation(project(":configuration"))
     testImplementation(libs.org.apache.logging.log4j.log4j.api)
     testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
+}
+
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+    exclude(group = "ch.qos.logback", module = "logback-classic")
 }
 
 description = "Zeebe QA Integration Tests"

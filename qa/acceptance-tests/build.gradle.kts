@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.integration-test-module-conventions")
 }
 
 dependencies {
@@ -49,7 +50,9 @@ dependencies {
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.springframework.spring.beans)
     testImplementation(libs.org.springframework.spring.jdbc)
-    testImplementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc)
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     testImplementation("org.springframework.boot:spring-boot-data-jdbc-test:4.0.6")
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(project(":camunda-zeebe"))

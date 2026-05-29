@@ -23,7 +23,9 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
-    api(libs.org.springframework.boot.spring.boot.starter.validation)
+    api(libs.org.springframework.boot.spring.boot.starter.validation) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.web)
@@ -38,3 +40,9 @@ dependencies {
 }
 
 description = "Camunda Gateway MCP server"
+
+configurations.named("runtimeClasspath") {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+    exclude(group = "ch.qos.logback", module = "logback-classic")
+}
