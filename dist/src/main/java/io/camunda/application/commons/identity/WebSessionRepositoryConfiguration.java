@@ -7,11 +7,8 @@
  */
 package io.camunda.application.commons.identity;
 
+import io.camunda.authentication.config.spi.SessionStoreAdapter;
 import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
-import io.camunda.authentication.session.WebSessionDeletionTask;
-import io.camunda.authentication.session.WebSessionMapper;
-import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
-import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
@@ -23,6 +20,11 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.security.core.port.out.SessionStorePort;
+import io.camunda.security.spring.session.WebSessionDeletionTask;
+import io.camunda.security.spring.session.WebSessionMapper;
+import io.camunda.security.spring.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
+import io.camunda.security.spring.session.WebSessionRepository;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
@@ -84,13 +86,18 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
+  public SessionStorePort sessionStorePort(
+      final PersistentWebSessionClient persistentWebSessionClient) {
+    return new SessionStoreAdapter(persistentWebSessionClient);
+  }
+
+  @Bean
   public WebSessionRepository webSessionRepository(
-      final PersistentWebSessionClient persistentWebSessionClient,
-      final HttpServletRequest request) {
+      final SessionStorePort sessionStorePort, final HttpServletRequest request) {
     final var webSessionAttributeConverter =
         new SpringBasedWebSessionAttributeConverter(conversionService);
     final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
-    return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
+    return new WebSessionRepository(sessionStorePort, webSessionMapper, request);
   }
 
   @Bean("persistentWebSessionDeletionTaskExecutor")
