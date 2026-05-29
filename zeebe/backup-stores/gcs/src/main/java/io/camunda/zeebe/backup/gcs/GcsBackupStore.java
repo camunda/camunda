@@ -130,15 +130,17 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
-        executor);
+        () -> manifestManager.listBackupStatuses(wildcard), executor);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.deleteManifest(id);
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest != null) {
+            manifestManager.deleteManifest(manifest);
+          }
           fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
         },
