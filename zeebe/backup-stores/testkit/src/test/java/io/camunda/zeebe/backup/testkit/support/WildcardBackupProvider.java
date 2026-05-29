@@ -130,7 +130,21 @@ public class WildcardBackupProvider implements ArgumentsProvider {
                         new BackupIdentifierImpl(1, 1, 1),
                         new BackupIdentifierImpl(2, 2, 2),
                         new BackupIdentifierImpl(3, 3, 3)),
-                    List.of()))));
+                    List.of()))),
+        Arguments.of(
+            Named.of(
+                "Backups of same nodeIdx in different zones are zone-isolated",
+                new WildcardTestParameter(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.of(BrokerMemberId.from("zone-a", 1)),
+                        Optional.empty(),
+                        CheckpointPattern.any()),
+                    List.of(
+                        new BackupIdentifierImpl(1, "zone-a", 1, 1),
+                        new BackupIdentifierImpl(1, "zone-a", 1, 2)),
+                    List.of(
+                        new BackupIdentifierImpl(1, "zone-b", 1, 1),
+                        new BackupIdentifierImpl(1, null, 1, 1))))));
   }
 
   public record WildcardTestParameter(

@@ -12,6 +12,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
@@ -63,6 +65,21 @@ public interface QueryingBackupStatus {
   default void statusIsDoesNotExistForNonExistingBackup() {
     // when
     final var result = getStore().getStatus(new BackupIdentifierImpl(1, 1, 15));
+    // then
+    Assertions.assertThat(result)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.DOES_NOT_EXIST, Assertions.from(BackupStatus::statusCode));
+  }
+
+  @Test
+  default void shouldNotReturnBackupFromDifferentZoneWithSameNodeIdx() throws IOException {
+    // given
+    final var zoneAId = new BackupIdentifierImpl(1, "zone-a", 1, 1);
+    getStore().save(TestBackupProvider.minimalBackupWithId(zoneAId)).join();
+
+    // when
+    final var result = getStore().getStatus(new BackupIdentifierImpl(1, "zone-b", 1, 1));
+
     // then
     Assertions.assertThat(result)
         .succeedsWithin(Duration.ofSeconds(10))

@@ -39,17 +39,12 @@ public class MemberIdUtilTest {
     // given / when / then
     assertThatThrownBy(() -> MemberIdUtil.validateZone(zone))
         .isInstanceOf(IllegalArgumentException.class);
-
-    assertThat(MemberIdUtil.regex().matcher(zone).matches()).isFalse();
   }
 
   @ParameterizedTest
   @MethodSource("illegalZones")
   void shouldThrowWhenZoneIsIllegalRegex(final String zone) {
     // given / when / then
-    assertThatThrownBy(() -> MemberIdUtil.validateZone(zone))
-        .isInstanceOf(IllegalArgumentException.class);
-
     assertThat(MemberIdUtil.regex().matcher(zone).matches()).isFalse();
   }
 
