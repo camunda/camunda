@@ -94,7 +94,7 @@ under `_auth/` when auth is required.
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { dashboardQueryOptions } from "#/modules/http/queries";
-  import { DashboardPage } from "#/pages/DashboardPage";
+import { DashboardPage } from "#/pages/DashboardPage";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   loader: ({ context: { queryClient } }) => {
