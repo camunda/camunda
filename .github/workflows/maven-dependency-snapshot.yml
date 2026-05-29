@@ -16,6 +16,7 @@ on:
       - '**/pom.xml'
       - 'bom/**'
       - 'parent/**'
+      - '.github/workflows/maven-dependency-snapshot.yml'  # temporary: remove before merge
   pull_request:
     paths:
       - '**/pom.xml'
