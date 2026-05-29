@@ -376,10 +376,11 @@ jobs:
 
           payload=$(jq -nc --arg channel 'c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
             '{channel: $channel, text: $text, mrkdwn: true}')
+          # Slack post is non-critical — a transient failure must not block dispatch.
           response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
             -H 'Content-Type: application/json; charset=utf-8' \
-            -d "$payload")
+            -d "$payload" || echo '{}')
           echo "$response" | jq '.'
           ts=$(echo "$response"      | jq -r '.ts      // ""')
           channel=$(echo "$response" | jq -r '.channel // ""')
