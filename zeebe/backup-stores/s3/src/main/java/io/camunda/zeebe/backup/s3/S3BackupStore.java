@@ -33,6 +33,7 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
@@ -111,7 +112,8 @@ public final class S3BackupStore implements BackupStore {
     final var basePath = config.basePath();
     final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
     final var identifierSuffix =
-        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(?:[A-Za-z0-9-]+_)?\\d+).*";
+        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
+            .formatted(MemberIdUtil.regexPattern());
     backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
   }
 
