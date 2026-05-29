@@ -39,16 +39,16 @@ class WaitStateTransformerTest {
 
         @Override
         public WaitStateEntry extract(final Record<RecordValue> record) {
-          return new WaitStateEntry(
-              1L,
-              2L,
-              record.getKey(),
-              "job-element",
-              WaitStateElementType.SERVICE_TASK,
-              WaitStateType.JOB,
-              Map.of(),
-              TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-              record.getPartitionId());
+          return new WaitStateEntry()
+              .setRootProcessInstanceKey(1L)
+              .setProcessInstanceKey(2L)
+              .setElementInstanceKey(record.getKey())
+              .setElementId("job-element")
+              .setElementType(WaitStateElementType.SERVICE_TASK)
+              .setWaitStateType(WaitStateType.JOB)
+              .setDetails(Map.of())
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+              .setPartitionId(record.getPartitionId());
         }
       };
 
@@ -103,10 +103,10 @@ class WaitStateTransformerTest {
 
     // then
     assertThat(entry).isNotNull();
-    assertThat(entry.elementInstanceKey()).isEqualTo(record.getKey());
-    assertThat(entry.elementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
-    assertThat(entry.waitStateType()).isEqualTo(WaitStateType.JOB);
-    assertThat(entry.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(entry.partitionId()).isEqualTo(record.getPartitionId());
+    assertThat(entry.getElementInstanceKey()).isEqualTo(record.getKey());
+    assertThat(entry.getElementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
+    assertThat(entry.getWaitStateType()).isEqualTo(WaitStateType.JOB);
+    assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(entry.getPartitionId()).isEqualTo(record.getPartitionId());
   }
 }

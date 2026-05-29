@@ -22,47 +22,42 @@ class WaitStateEntryTest {
     // given
     final Map<String, Object> details = Map.of("jobType", "payment", "retries", 3);
     final var entry =
-        new WaitStateEntry(
-            100L,
-            200L,
-            300L,
-            "task-1",
-            WaitStateElementType.SERVICE_TASK,
-            WaitStateType.JOB,
-            details,
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-            1L);
+        new WaitStateEntry()
+            .setRootProcessInstanceKey(100L)
+            .setProcessInstanceKey(200L)
+            .setElementInstanceKey(300L)
+            .setElementId("task-1")
+            .setElementType(WaitStateElementType.SERVICE_TASK)
+            .setWaitStateType(WaitStateType.JOB)
+            .setDetails(details)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setPartitionId(1L);
 
     // when / then
-    assertThat(entry.rootProcessInstanceKey()).isEqualTo(100L);
-    assertThat(entry.processInstanceKey()).isEqualTo(200L);
-    assertThat(entry.elementInstanceKey()).isEqualTo(300L);
-    assertThat(entry.elementId()).isEqualTo("task-1");
-    assertThat(entry.elementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
-    assertThat(entry.waitStateType()).isEqualTo(WaitStateType.JOB);
-    assertThat(entry.details()).isEqualTo(details);
-    assertThat(entry.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(entry.partitionId()).isEqualTo(1L);
+    assertThat(entry.getRootProcessInstanceKey()).isEqualTo(100L);
+    assertThat(entry.getProcessInstanceKey()).isEqualTo(200L);
+    assertThat(entry.getElementInstanceKey()).isEqualTo(300L);
+    assertThat(entry.getElementId()).isEqualTo("task-1");
+    assertThat(entry.getElementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
+    assertThat(entry.getWaitStateType()).isEqualTo(WaitStateType.JOB);
+    assertThat(entry.getDetails()).isEqualTo(details);
+    assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(entry.getPartitionId()).isEqualTo(1L);
   }
 
   @Test
   void shouldAcceptDefaultTenantAndEmptyDetails() {
     // given / when
     final var entry =
-        new WaitStateEntry(
-            0L,
-            0L,
-            0L,
-            "task-1",
-            WaitStateElementType.USER_TASK,
-            WaitStateType.USER_TASK,
-            Map.of(),
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-            1L);
+        new WaitStateEntry()
+            .setElementType(WaitStateElementType.USER_TASK)
+            .setWaitStateType(WaitStateType.USER_TASK)
+            .setDetails(Map.of())
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
-    assertThat(entry.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(entry.details()).isEmpty();
+    assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(entry.getDetails()).isEmpty();
   }
 
   @Test
