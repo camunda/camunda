@@ -325,6 +325,12 @@
 ## @camunda/monorepo-devops-team
 ################################
 
+# CI skills
+/.claude/skills/act-testing/ @camunda/monorepo-devops-team
+/.claude/skills/ci-security-compliance/ @camunda/monorepo-devops-team
+/.claude/skills/ci-validation/ @camunda/monorepo-devops-team
+/.claude/skills/ci-workflow-authoring/ @camunda/monorepo-devops-team
+
 # Root build configuration
 /pom.xml                    @camunda/monorepo-devops-team
 /maven-settings.xml         @camunda/monorepo-devops-team

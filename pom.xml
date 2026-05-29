@@ -87,7 +87,7 @@
               YamlFrontMatter flexmark extension
               -->
               <exclude>.github/instructions/**/*.md</exclude>
-              <exclude>.github/skills/**/*.md</exclude>
+              <exclude>.claude/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
             </excludes>
             <flexmark/>
