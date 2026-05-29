@@ -135,7 +135,7 @@ npm run test:unit:ui    # Visible browser — useful for debugging
 
 ## Template references
 
-- `src/pages/login.test.tsx` — page-level test using `renderWithRouter`.
+- `src/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
 - `src/modules/mock-test.test.tsx` — component test with MSW mocking.
 - `src/vitest-modules/test-extend.ts` — custom `it` fixture source.
 - `src/vitest-modules/render-with-router.tsx` — `renderWithRouter` utility source.

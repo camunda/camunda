@@ -51,13 +51,13 @@ Reuse before building. For what counts as a module, see the
 
 ## Step 2: Compose the page
 
-Page lives at `src/pages/<page>.tsx` with co-located styles and tests:
+Page lives at `src/pages/<PageName>.tsx` with co-located styles and tests:
 
 ```
 src/pages/
-├── dashboard.tsx
-├── dashboard.module.scss
-└── dashboard.test.tsx
+├── DashboardPage.tsx
+├── DashboardPage.module.scss
+└── DashboardPage.test.tsx
 ```
 
 Pages are glue: receive data as props, orchestrate module components.
@@ -68,11 +68,11 @@ than it helps. See [Data loading](../data-loading.md) for the
 loader/query patterns.
 
 ```tsx
-// src/pages/dashboard.tsx
+// src/pages/DashboardPage.tsx
 import { DashboardHeader } from "#/modules/dashboard/components/DashboardHeader";
 import { Metrics } from "#/modules/dashboard/components/Metrics";
 import type { Dashboard } from "#/modules/http/queries";
-import styles from "./dashboard.module.scss";
+import styles from "./DashboardPage.module.scss";
 
 export function DashboardPage({ data }: { data: Dashboard }) {
   return (
@@ -94,7 +94,7 @@ under `_auth/` when auth is required.
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { dashboardQueryOptions } from "#/modules/http/queries";
-import { DashboardPage } from "#/pages/dashboard";
+  import { DashboardPage } from "#/pages/DashboardPage";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   loader: ({ context: { queryClient } }) => {
@@ -211,7 +211,7 @@ Before opening the PR:
 
 - [ ] Modules created or existing ones reused; no business logic in
       `src/pages/`.
-- [ ] Page in `src/pages/<name>.tsx`; styles + tests co-located.
+- [ ] Page in `src/pages/<PageName>.tsx` (PascalCase + `Page` suffix); styles + tests co-located and named to match.
 - [ ] Route in `src/routes/<path>.tsx`; URL matches file path;
       auth-gated routes under `_auth/`.
 - [ ] Loader uses `queryClient.ensureQueryData`; `pendingComponent` +
