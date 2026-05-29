@@ -10,11 +10,15 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -39,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class RoleServicesTest {
 
@@ -209,5 +214,47 @@ public class RoleServicesTest {
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));
+  }
+
+  @Test
+  public void shouldUseProvidedRoleIdAndEntityTypeAndReturnTrueWhenMembersExist() {
+    // given
+    final var roleId = "test-role";
+    final var entityType = EntityType.CLIENT;
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(1, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any());
+    final var queryCaptor = ArgumentCaptor.forClass(RoleQuery.class);
+
+    // when
+    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType);
+
+    // then
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture());
+    assertThat(queryCaptor.getValue().filter().joinParentId()).isEqualTo(roleId);
+    assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  public void shouldUseProvidedRoleIdAndEntityTypeAndReturnFalseWhenNoMembersExist() {
+    // given
+    final var roleId = "another-role";
+    final var entityType = EntityType.MAPPING_RULE;
+    final var roleServicesSpy = spy(services);
+    doReturn(new SearchQueryResult<RoleMemberEntity>(0, false, List.of(), null, null))
+        .when(roleServicesSpy)
+        .searchMembers(any());
+    final var queryCaptor = ArgumentCaptor.forClass(RoleQuery.class);
+
+    // when
+    final var result = roleServicesSpy.hasMembersOfType(roleId, entityType);
+
+    // then
+    verify(roleServicesSpy).searchMembers(queryCaptor.capture());
+    assertThat(queryCaptor.getValue().filter().joinParentId()).isEqualTo(roleId);
+    assertThat(queryCaptor.getValue().filter().memberType()).isEqualTo(entityType);
+    assertThat(result).isFalse();
   }
 }
