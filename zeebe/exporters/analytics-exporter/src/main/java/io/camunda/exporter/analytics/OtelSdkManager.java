@@ -10,8 +10,8 @@ package io.camunda.exporter.analytics;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -60,7 +60,7 @@ public class OtelSdkManager {
             .setSeverityText("INFO")
             .setAttribute(EVENT_NAME, eventName)
             .setAttribute(LOG_POSITION, logPosition)
-            .setAttribute(SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
+            .setAttribute(LOG_SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
     builder.accept(record);
     record.emit();
   }

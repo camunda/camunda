@@ -68,9 +68,9 @@ class AnalyticsExporterOtelIT {
     // then
     awaitCollectorLogs(
         EVENT_PROCESS_INSTANCE_CREATED,
-        "camunda.cluster.id",
+        AnalyticsAttributes.CLUSTER_ID.getKey(),
         "test-cluster",
-        "camunda.bpmn_process_id");
+        AnalyticsAttributes.BPMN_PROCESS_ID.getKey());
   }
 
   /**

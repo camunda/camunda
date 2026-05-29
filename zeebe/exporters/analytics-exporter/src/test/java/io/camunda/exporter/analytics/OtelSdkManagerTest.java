@@ -213,11 +213,11 @@ class OtelSdkManagerTest {
 
     // then
     assertThat(received).hasSize(3);
-    assertThat(received.get(0).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+    assertThat(received.get(0).getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
         .isEqualTo(1L);
-    assertThat(received.get(1).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+    assertThat(received.get(1).getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
         .isEqualTo(2L);
-    assertThat(received.get(2).getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+    assertThat(received.get(2).getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
         .isEqualTo(3L);
   }
 
@@ -249,7 +249,7 @@ class OtelSdkManagerTest {
     // then — sequence continues from 5, so first event gets 6
     assertThat(received)
         .singleElement()
-        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.SEQUENCE_NUMBER))
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
         .isEqualTo(6L);
   }
 
