@@ -1,0 +1,65 @@
+# -- Name of the load test.
+name:
+
+# -- Name or handle of the person owning this load-test deployment.
+author:
+
+# -- Date (YYYY-MM-DD) after which this load-test environment can be reclaimed.
+deadlineDate:
+
+# -- Optional Kubernetes topology zone to pin workloads to (e.g. `europe-west1-b`).
+# When set, configures the `topology.kubernetes.io/zone` annotation on the namespace resources.
+topologyZone:
+
+
+# -- Secrets rendered into the `camunda-credentials` Secret and consumed by
+# the Camunda Platform sub-charts. All fields are required when their
+# corresponding component is enabled.
+credentials:
+  identity:
+    firstuser:
+      # -- Password for the initial Identity user.
+      password:
+    keycloak:
+      admin:
+        # -- Keycloak admin console password.
+        password:
+      postgresql:
+        admin:
+          # -- Keycloak's PostgreSQL admin (superuser) password.
+          password:
+        user:
+          # -- Keycloak's PostgreSQL application user password.
+          password:
+    postgresql:
+      admin:
+        # -- Identity's PostgreSQL admin (superuser) password.
+        password:
+      user:
+        # -- Identity's PostgreSQL application user password.
+        password:
+    admin:
+      client:
+        # -- OAuth client token for the Identity admin client.
+        token:
+    optimize:
+      client:
+        # -- OAuth client token for the Optimize client in Identity.
+        token:
+  orchestration:
+    security:
+      authentication:
+        oidc:
+          # -- OIDC client secret used by the orchestration cluster.
+          secret:
+  connectors:
+    security:
+      authentication:
+        oidc:
+          # -- OIDC client secret used by Connectors.
+          secret:
+
+# -- Internal URL of the Camunda management endpoint. Used by the
+# `leader-balancer` CronJob to trigger periodic partition rebalancing via
+# `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+camundaManagementUrl: "http://camunda:9600"

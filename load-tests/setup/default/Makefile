@@ -2,8 +2,6 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
-curl_image ?= curlimages/curl:7.87.0
-camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
@@ -15,7 +13,7 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
-helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
+helm_chart_platform := charts/camunda-platform-helm/charts/$(helm_chart)
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 
 # Scenario: controls the workload profile for the load test.
@@ -78,50 +76,56 @@ endif
 # Platform values with stable configuration
 platform_values_stable := $(platform_values) -f values-stable.yaml
 
+helm_chart_umbrella := charts/umbrella
+umbrella_values := -f umbrella-values.yaml -f umbrella-values.secrets.yaml
+
 .PHONY: all
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install: check-deadline install-umbrella install-storage install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install-stable: check-deadline install-umbrella install-storage install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
+# Install the umbrella Helm Chart
+.PHONY: install-umbrella
+install-umbrella: create-namespace
+	helm upgrade --install --take-ownership --create-namespace \
+		$(namespace)-umbrella $(helm_chart_umbrella) \
+		--namespace $(namespace) \
+		$(umbrella_values)
+
+# The namespace **must** exist before trying to install/upgrade with Helm:
+# normally, Helm should be able to create it itself, but our camunda-benchmark
+# Teleport/RBAC configuration returns "permission denied" when trying to list
+# secrets on a non-existent namespace (instead of "not found"), which stop Helm
+# prematurely with an error instead of proceeding with the creation of a new
+# namespace.
+.PHONY: create-namespace
+create-namespace:
+	@echo "Making sure the namespace $(namespace) exists..."
+	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || kubectl create namespace "$(namespace)"
+
+# Fail fast if the namespace TTL deadline (read from umbrella-values.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
 # workflow will delete the namespace and undo the install. To extend, edit
-# `deadline-date` in resources/namespace.yaml and `make create-namespace`.
+# `deadlineDate` in umbrella-values.yaml and `make install-umbrella`.
 .PHONY: check-deadline
 check-deadline:
-	@deadline_date=$$(awk -F'"' '/^[[:space:]]*deadline-date:/ {print $$2; exit}' resources/namespace.yaml); \
+	@deadline_date=$$(awk -F'"' '/^[[:space:]]*deadlineDate:/ {print $$2; exit}' umbrella-values.yaml); \
 	if [ -z "$$deadline_date" ]; then \
-		echo "ERROR: could not parse deadline-date from resources/namespace.yaml."; \
+		echo "ERROR: could not parse deadlineDate from umbrella-values.yaml."; \
 		exit 1; \
 	fi; \
 	today=$$(date +%Y-%m-%d); \
 	if [ "$$today" \> "$$deadline_date" ] || [ "$$today" = "$$deadline_date" ]; then \
-		echo "ERROR: namespace deadline-date ($$deadline_date) is today or earlier (today: $$today)."; \
+		echo "ERROR: namespace deadline date ($$deadline_date) is today or earlier (today: $$today)."; \
 		echo "       The TTL cleanup workflow will delete this namespace."; \
-		echo "       To extend, edit deadline-date in resources/namespace.yaml and run:"; \
-		echo "         make create-namespace"; \
+		echo "       To extend, edit deadlineDate in umbrella-values.yaml and run:"; \
+		echo "         make install-umbrella"; \
 		exit 1; \
 	fi
-
-# Apply the rendered namespace manifest. Idempotent: the same manifest applies
-# cleanly whether the namespace exists or not, so reruns of `make install`
-# after a TTL deletion recreate the namespace with the same labels and AZ.
-.PHONY: create-namespace
-create-namespace:
-	@echo "Applying namespace manifest for $(namespace)..."
-	kubectl apply -f resources/namespace.yaml
-
-# Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
-# deletion reapplies the SAME credentials, so the orchestration secret in
-# load-test-values.yaml stays in sync with the live secret.
-.PHONY: create-credentials
-create-credentials:
-	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
-	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
 # Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
 .PHONY: install-storage
@@ -176,14 +180,9 @@ else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
-.PHONY: install-optimize-cleanup
-install-optimize-cleanup:
-	@echo "Deploying Optimize indices cleanup job"
-	kubectl apply --namespace $(namespace) -f resources/optimize-indices-cleanup.yaml
-
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
-install-platform: setup-leader-balancer
+install-platform:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
@@ -195,7 +194,7 @@ install-platform: setup-leader-balancer
 
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
-install-platform-stable: setup-leader-balancer
+install-platform-stable:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
@@ -217,20 +216,6 @@ install-load-test:
 		$(_scenario_load_test_flags) \
 		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration)
-
-# Setup leader balancing cronjob
-.PHONY: setup-leader-balancer
-setup-leader-balancer:
-	@if ! kubectl get cronjob leader-balancer --namespace $(namespace) >/dev/null 2>&1; then \
-		kubectl create cronjob leader-balancer \
-			--namespace $(namespace) \
-			--image=$(curl_image) \
-			--schedule="*/10 * * * *" \
-			-- curl -L -v -X POST $(camunda_management_url)/actuator/rebalance; \
-		echo "Leader balancer cronjob created"; \
-	else \
-		echo "Leader balancer cronjob already exists"; \
-	fi
 
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
@@ -285,9 +270,9 @@ clean:
 	-helm --namespace $(namespace) uninstall $(namespace)
 	-helm --namespace $(namespace) uninstall $(namespace)-test
 	-helm --namespace $(namespace) uninstall elasticsearch-exporter
+	-helm --namespace $(namespace) uninstall $(namespace)-umbrella
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
-	-kubectl delete -n $(namespace) cronjob leader-balancer
 # Clean up secondary storage based on helm charts
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb),)
 	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
@@ -305,8 +290,8 @@ else ifeq ($(secondary_storage),opensearch)
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
 	@echo "Deleting namespace $(namespace) and waiting for finalization..."
-	# `--wait` (default) blocks until the namespace is fully gone. We intentionally
-	# wait so that a subsequent `make install` (or `make clean install`) doesn't
-	# race against finalizers — applying manifests into a still-terminating
-	# namespace errors out with "namespace X is being terminated".
-	-kubectl delete -f resources/namespace.yaml --ignore-not-found
+	@# `--wait` (default) blocks until the namespace is fully gone. We intentionally
+	@# wait so that a subsequent `make install` (or `make clean install`) doesn't
+	@# race against finalizers — applying manifests into a still-terminating
+	@# namespace errors out with "namespace X is being terminated".
+	-kubectl delete namespace $(namespace) --ignore-not-found --wait
