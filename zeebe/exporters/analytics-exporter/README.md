@@ -8,17 +8,21 @@ cannot impact broker throughput, and it accepts data loss under failure. It runs
 the partition leader, so no extra high-availability setup is required.
 
 > **Data handling.** The exporter sends process metadata only. It does **not** export
-> process variables, payloads, message bodies, or any other potentially sensitive data. For
-> the company-wide policy on what telemetry Camunda collects and how privacy is protected,
-> see [data collection](https://docs.camunda.io/docs/reference/data-collection/data-collection/).
+> process variables, payloads, message bodies, or any other potentially sensitive data.
 
 ## Enable the exporter
 
-To enable the exporter, add an `analytics` block to your broker configuration. To disable
-it, remove the block. On Camunda 8.10 and later, the exporter ships with Zeebe and no
-`jarPath` is required. On 8.9 and earlier, you must install the standalone JAR (see
-[Install on older clusters](#install-on-older-clusters-standalone-jar)) and reference it
-via `jarPath`.
+The analytics exporter is disabled by default. To enable it, add an `analytics` exporter
+declaration to your broker configuration; to disable it again, remove the declaration.
+The configuration can be provided via YAML or as environment variables — both styles are
+shown below.
+
+The exact shape of the configuration depends on your Camunda version:
+
+- **8.10 and later:** the exporter ships with Zeebe; you only need to declare it.
+- **8.9 and earlier:** the exporter is not shipped, so you must install the
+  [standalone JAR](#install-on-older-clusters-standalone-jar) and reference it via
+  `jarPath`.
 
 ### Prerequisites
 
