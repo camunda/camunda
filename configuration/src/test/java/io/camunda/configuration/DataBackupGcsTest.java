@@ -62,6 +62,11 @@ public class DataBackupGcsTest {
       assertThat(brokerCfg.getData().getBackup().getGcs().getAuth())
           .isEqualTo(GcsBackupStoreAuth.NONE);
     }
+
+    @Test
+    void shouldUseDefaultMaxConcurrentUploads() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getMaxConcurrentTransfers()).isEqualTo(8);
+    }
   }
 
   @Nested
@@ -163,6 +168,26 @@ public class DataBackupGcsTest {
     @Test
     void shouldSetBufferSize() {
       assertThat(brokerCfg.getData().getBackup().getGcs().getBufferSize()).isEqualTo(4194304);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.backup.gcs.bucket-name=test-bucket",
+        "camunda.data.backup.gcs.max-concurrent-transfers=100",
+      })
+  class WithCustomMaxConcurrentTransfers {
+    final BrokerBasedProperties brokerCfg;
+
+    WithCustomMaxConcurrentTransfers(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetMaxConcurrentTransfers() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getMaxConcurrentTransfers())
+          .isEqualTo(100);
     }
   }
 }

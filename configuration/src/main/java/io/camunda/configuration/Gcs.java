@@ -50,6 +50,9 @@ public class Gcs {
    */
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
+  /** Maximum number of concurrent file transfers (uploads and downloads) using virtual threads. */
+  private int maxConcurrentTransfers = 8;
+
   /** Size of the buffer (in bytes) used when uploading files to GCS. */
   private int bufferSize = 2 * 1024 * 1024;
 
@@ -103,6 +106,14 @@ public class Gcs {
 
   public void setAuth(final GcsBackupStoreAuth auth) {
     this.auth = auth;
+  }
+
+  public int getMaxConcurrentTransfers() {
+    return maxConcurrentTransfers;
+  }
+
+  public void setMaxConcurrentTransfers(final int maxConcurrentTransfers) {
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
   }
 
   public int getBufferSize() {
