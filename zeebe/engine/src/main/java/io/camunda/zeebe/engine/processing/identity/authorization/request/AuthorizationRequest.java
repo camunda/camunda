@@ -190,7 +190,7 @@ public record AuthorizationRequest(
     private Map<String, Object> resolveClaims() {
       final var claims = command != null ? command.getAuthorizations() : authorizationClaims;
       return Collections.unmodifiableMap(
-          Objects.requireNonNullElse(claims, Collections.emptyMap()));
+          Objects.requireNonNullElse(claims, Collections.<String, Object>emptyMap()));
     }
   }
 }
