@@ -20,6 +20,7 @@ on:
       - '**/pom.xml'
       - 'bom/**'
       - 'parent/**'
+  workflow_dispatch:
 
 defaults:
   run:
