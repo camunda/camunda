@@ -11,7 +11,7 @@ name: C8 Orchestration Cluster Nightly Triage
 
 on:
   schedule:
-    - cron: '0 4 * * *'   # 04:00 UTC — after all nightlies finish (00:00–01:45 starts)
+    - cron: '0 4 * * 1-5' # 04:00 UTC Mon–Fri — after all nightlies finish (00:00–01:45 starts)
                           # and before close-stale-fix-prs.yml runs at 05:00 UTC.
   workflow_dispatch:
     inputs:
