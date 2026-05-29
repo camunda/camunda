@@ -282,6 +282,9 @@ jobs:
                 api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
                 api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
               })
+            # cap failures per version to 20 so the workflow_dispatch input
+            # stays well under the 64KB limit even with many nightly failures
+            | map(.test_specs |= .[0:20])
             # cap dispatch count
             | .[0:$cap]
           ' /tmp/failures_normalized.json > /tmp/dispatches.json
@@ -370,7 +373,7 @@ jobs:
           fi
           text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
 
-          payload=$(jq -nc --arg channel '#c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
+          payload=$(jq -nc --arg channel 'c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
             '{channel: $channel, text: $text, mrkdwn: true}')
           response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \

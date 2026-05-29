@@ -399,7 +399,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Slack thread reply
-        if: always() && github.event.inputs.slack_thread_ts != ''
+        if: always() && github.event.inputs.slack_thread_ts != '' && github.event.inputs.slack_channel != ''
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
