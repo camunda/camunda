@@ -33,6 +33,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.jakarta.validation.jakarta.validation.api)
     testImplementation(project(":zeebe-msgpack-core"))
+    testImplementation(libs.org.springframework.security.spring.security.oauth2.core)
     compileOnly(libs.jakarta.servlet.jakarta.servlet.api)
 }
 
