@@ -84,9 +84,11 @@ public class AgentInfo extends UnpackedObject implements Agent {
 
   public static AgentInfo of(final Agent agent) {
     if (agent != null) {
-      return new AgentInfo().setElementId(agent.getElementId()).setToolName(agent.getToolName());
-    } else {
-      return null;
+      // Only create AgentInfo if at least one field is non-empty
+      if (!agent.getElementId().isEmpty() || !agent.getToolName().isEmpty()) {
+        return new AgentInfo().setElementId(agent.getElementId()).setToolName(agent.getToolName());
+      }
     }
+    return null;
   }
 }
