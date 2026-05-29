@@ -1,6 +1,18 @@
 {
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
+  "agenticControlPlane": {
+    "title": "Agentic control plane",
+    "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
+    "dateRange": "Zeitraum",
+    "presets": {
+      "last7Days": "Letzte 7 Tage",
+      "last30Days": "Letzte 30 Tage",
+      "last3Months": "Letzte 3 Monate",
+      "last6Months": "Letzte 6 Monate",
+      "last12Months": "Letzte 12 Monate"
+    }
+  },
   "navigation": {
     "analysis": "Analyse",
     "logout": "Abmelden",
@@ -13,6 +25,7 @@
     "appSwitcher": "App Switcher",
     "dashboards": "Dashboards",
     "collections": "Sammlungen",
+    "agenticControlPlane": "Agentische Steuerungsebene",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",

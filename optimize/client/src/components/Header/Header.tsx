@@ -157,6 +157,15 @@ function createNavBarProps(
       routeProps: {to: '/analysis'},
       isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
     },
+    {
+      key: 'agentic-control-plane',
+      label: t('navigation.agenticControlPlane').toString(),
+      routeProps: {to: '/agentic-control-plane'},
+      isCurrentPage: isCurrentPage(
+        ['/agentic-control-plane', '/agentic-control-plane/*'],
+        pathname,
+      ),
+    },
   ];
 
   const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
