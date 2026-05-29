@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -58,6 +59,8 @@ public interface ProcessState {
    */
   Optional<Integer> findProcessVersionBefore(
       String bpmnProcessId, long version, final String tenantId);
+
+  List<Long> getKnownProcessVersions(String bpmnProcessId, String tenantId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);

@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+import static io.camunda.zeebe.protocol.ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -57,10 +59,14 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ResourceDeletionDeleteProcessor.class);
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -194,12 +200,11 @@ public class ResourceDeletionDeleteProcessor
 
     final var drgRecord =
         new DecisionRequirementsRecord()
-            .setDecisionRequirementsId(BufferUtil.bufferAsString(drg.getDecisionRequirementsId()))
-            .setDecisionRequirementsName(
-                BufferUtil.bufferAsString(drg.getDecisionRequirementsName()))
+            .setDecisionRequirementsId(bufferAsString(drg.getDecisionRequirementsId()))
+            .setDecisionRequirementsName(bufferAsString(drg.getDecisionRequirementsName()))
             .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
             .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-            .setResourceName(BufferUtil.bufferAsString(drg.getResourceName()))
+            .setResourceName(bufferAsString(drg.getResourceName()))
             .setChecksum(drg.getChecksum())
             .setResource(drg.getResource())
             .setTenantId(drg.getTenantId());
@@ -211,13 +216,13 @@ public class ResourceDeletionDeleteProcessor
   private void deleteDecision(final PersistedDecision persistedDecision) {
     final var decisionRecord =
         new DecisionRecord()
-            .setDecisionId(BufferUtil.bufferAsString(persistedDecision.getDecisionId()))
-            .setDecisionName(BufferUtil.bufferAsString(persistedDecision.getDecisionName()))
+            .setDecisionId(bufferAsString(persistedDecision.getDecisionId()))
+            .setDecisionName(bufferAsString(persistedDecision.getDecisionName()))
             .setVersion(persistedDecision.getVersion())
             .setVersionTag(persistedDecision.getVersionTag())
             .setDecisionKey(persistedDecision.getDecisionKey())
             .setDecisionRequirementsId(
-                BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
+                bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
             .setTenantId(persistedDecision.getTenantId())
             .setDeploymentKey(persistedDecision.getDeploymentKey());
@@ -228,6 +233,7 @@ public class ResourceDeletionDeleteProcessor
     // We don't add the checksum or resource in this event. The checksum is not easily available
     // and the resources are left out to prevent exceeding the maximum batch size.
     final var processIdBuffer = process.getBpmnProcessId();
+    final var tenantId = process.getTenantId();
     final var processRecord =
         new ProcessRecord()
             .setBpmnProcessId(processIdBuffer)
@@ -235,27 +241,30 @@ public class ResourceDeletionDeleteProcessor
             .setVersionTag(process.getVersionTag())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
-            .setTenantId(process.getTenantId())
+            .setTenantId(tenantId)
             .setDeploymentKey(process.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
-    final var latestVersion =
-        processState.getLatestProcessVersion(processId, processRecord.getTenantId());
+    final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
       final var previousVersion =
-          processState.findProcessVersionBefore(
-              processId, latestVersion, processRecord.getTenantId());
+          processState.findProcessVersionBefore(processId, latestVersion, tenantId);
       // If there is a previous version we must resubscribe to the previous version's start events.
       if (previousVersion.isPresent()) {
         final var previousProcess =
             processState.getProcessByProcessIdAndVersion(
-                processIdBuffer, previousVersion.get(), process.getTenantId());
-        resubscribeStartEvents(previousProcess);
+                processIdBuffer, previousVersion.get(), tenantId);
+        if (previousProcess == null) {
+          warnPreviousProcessNotFound(
+              processIdBuffer, previousVersion.get(), tenantId, processId, latestVersion);
+        } else {
+          resubscribeStartEvents(previousProcess);
+        }
       }
     }
 
@@ -347,6 +356,24 @@ public class ResourceDeletionDeleteProcessor
             .setVersionTag(persistedResource.getVersionTag())
             .setDeploymentKey(persistedResource.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ResourceIntent.DELETED, resource);
+  }
+
+  private void warnPreviousProcessNotFound(
+      final DirectBuffer processIdBuffer,
+      final int previousVersion,
+      final String tenantId,
+      final String processId,
+      final int latestVersion) {
+    LOG.warn(
+        "Expected to find previous process: {} with version: {} and tenant: '{}' to "
+            + "resubscribe start events, but no row exists in {}. "
+            + "knownVersions: {}, current latest version: {}.",
+        bufferAsString(processIdBuffer),
+        previousVersion,
+        tenantId,
+        PROCESS_CACHE_BY_ID_AND_VERSION.name(),
+        processState.getKnownProcessVersions(processId, tenantId),
+        latestVersion);
   }
 
   private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
