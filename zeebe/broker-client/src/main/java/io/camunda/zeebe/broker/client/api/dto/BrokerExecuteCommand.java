@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api.dto;
 
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
@@ -68,6 +69,15 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public void setAuthorization(final Map<String, Object> claims) {
     request.setAuthorization(new AuthInfo().setClaims(claims));
+  }
+
+  public AgentInfo getAgentInfo() {
+    return request.getAgentInfo();
+  }
+
+  @Override
+  public void setAgentInfo(final AgentInfo agentInfo) {
+    request.setAgentInfo(agentInfo);
   }
 
   @Override

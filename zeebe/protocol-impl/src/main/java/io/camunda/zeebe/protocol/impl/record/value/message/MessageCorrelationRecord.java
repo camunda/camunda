@@ -37,7 +37,6 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  private static final StringValue AGENT_TOOL_NAME_KEY = new StringValue("agentToolName");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -54,10 +53,9 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-  private final StringProperty agentToolNameProp = new StringProperty(AGENT_TOOL_NAME_KEY, "");
 
   public MessageCorrelationRecord() {
-    super(11);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
@@ -67,8 +65,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(requestStreamIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(agentToolNameProp);
+        .declareProperty(businessIdProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -78,7 +75,6 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setTenantId(record.getTenantId());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setBusinessId(record.getBusinessIdBuffer());
-    setAgentToolName(record.getAgentToolNameBuffer());
   }
 
   @Override
@@ -128,21 +124,6 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  @Override
-  public String getAgentToolName() {
-    return bufferAsString(agentToolNameProp.getValue());
-  }
-
-  public MessageCorrelationRecord setAgentToolName(final String agentToolName) {
-    agentToolNameProp.setValue(agentToolName);
-    return this;
-  }
-
-  public MessageCorrelationRecord setAgentToolName(final DirectBuffer agentToolName) {
-    agentToolNameProp.setValue(agentToolName);
     return this;
   }
 
@@ -219,10 +200,5 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getAgentToolNameBuffer() {
-    return agentToolNameProp.getValue();
   }
 }

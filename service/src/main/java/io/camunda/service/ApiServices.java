@@ -9,12 +9,14 @@ package io.camunda.service;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.service.agent.AgentContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.time.Duration;
 import java.util.Map;
@@ -51,6 +53,14 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected <R> CompletableFuture<R> sendBrokerRequest(
       final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final AgentContext agentContext) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication, agentContext)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
+  protected <R> CompletableFuture<R> sendBrokerRequest(
+      final BrokerRequest<R> brokerRequest,
       final Duration requestTimeout,
       final CamundaAuthentication authentication) {
     return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout, authentication)
@@ -62,6 +72,17 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
+    return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final AgentContext agentContext) {
+    final var brokerRequestAuthorization =
+        brokerRequestAuthorizationConverter.convert(authentication);
+    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    brokerRequest.setAgentInfo(new AgentInfo().setToolName(agentContext.toolName()));
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
   }
 

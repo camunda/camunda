@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="9"
+  id="0" version="10"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -146,6 +146,8 @@
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
+    <!-- populated by MCP gateway to carry agent context for audit log traceability -->
+    <data name="agentInfo" id="10" type="varDataEncoding" sinceVersion="10"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">

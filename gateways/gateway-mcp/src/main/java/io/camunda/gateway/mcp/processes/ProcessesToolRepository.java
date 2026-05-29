@@ -18,6 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.agent.AgentContext;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -165,9 +166,9 @@ public class ProcessesToolRepository implements ToolRepository {
                   // UUID: distribute messages across partitions, support parallel process instances
                   UUID.randomUUID().toString(),
                   arguments,
-                  entity.tenantId(),
-                  entity.toolName()),
-              authenticationProvider.getCamundaAuthentication()),
+                  entity.tenantId()),
+              authenticationProvider.getCamundaAuthentication(),
+              entity.toolName() == null ? AgentContext.EMPTY : new AgentContext(entity.toolName())),
           record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
     };
   }

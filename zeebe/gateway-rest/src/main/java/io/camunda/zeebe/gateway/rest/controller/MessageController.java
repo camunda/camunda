@@ -16,6 +16,7 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.agent.AgentContext;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -66,7 +67,9 @@ public class MessageController {
       final CorrelateMessageRequest correlationRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> messageServices.correlateMessage(correlationRequest, authentication),
+        () ->
+            messageServices.correlateMessage(
+                correlationRequest, authentication, AgentContext.EMPTY),
         ResponseMapper::toMessageCorrelationResponse,
         HttpStatus.OK);
   }

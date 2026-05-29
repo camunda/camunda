@@ -71,7 +71,7 @@ public class MessageControllerTest extends RestControllerTest {
   void shouldCorrelateMessageWithMultiTenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(messageServices.correlateMessage(any(), any()))
+    when(messageServices.correlateMessage(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new MessageCorrelationRecord()
@@ -102,7 +102,8 @@ public class MessageControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture(), any());
+    Mockito.verify(messageServices)
+        .correlateMessage(correlationRequestCaptor.capture(), any(), any());
     final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
@@ -127,7 +128,7 @@ public class MessageControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(messageServices.correlateMessage(any(), any()))
+    when(messageServices.correlateMessage(any(), any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new MessageCorrelationRecord()
@@ -158,7 +159,8 @@ public class MessageControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture(), any());
+    Mockito.verify(messageServices)
+        .correlateMessage(correlationRequestCaptor.capture(), any(), any());
     final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");

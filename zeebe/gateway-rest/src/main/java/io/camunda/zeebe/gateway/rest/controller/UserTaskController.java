@@ -32,6 +32,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.agent.AgentContext;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
@@ -231,7 +232,8 @@ public class UserTaskController {
                 request.assignee(),
                 request.action(),
                 request.allowOverride(),
-                authenticationProvider.getCamundaAuthentication()));
+                authenticationProvider.getCamundaAuthentication(),
+                AgentContext.EMPTY));
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(

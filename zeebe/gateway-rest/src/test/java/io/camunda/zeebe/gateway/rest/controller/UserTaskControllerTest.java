@@ -990,7 +990,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1012,7 +1012,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any(), any());
   }
 
   @ParameterizedTest
@@ -1021,7 +1022,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1045,7 +1046,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(true),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1054,7 +1060,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1079,7 +1085,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(true), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(true),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1088,7 +1099,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // gíven
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1113,7 +1124,12 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     Mockito.verify(userTaskServices)
         .assignUserTask(
-            eq(2251799813685732L), eq("Test Assignee"), eq("custom action"), eq(false), any());
+            eq(2251799813685732L),
+            eq("Test Assignee"),
+            eq("custom action"),
+            eq(false),
+            any(),
+            any());
   }
 
   @ParameterizedTest
@@ -1122,7 +1138,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1145,7 +1161,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(true), any(), any());
   }
 
   @ParameterizedTest
@@ -1154,7 +1171,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -1177,7 +1194,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .assignUserTask(eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(false), any());
+        .assignUserTask(
+            eq(2251799813685732L), eq("Test Assignee"), eq("assign"), eq(false), any(), any());
   }
 
   @ParameterizedTest
@@ -1221,7 +1239,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     Mockito.when(
             userTaskServices.assignUserTask(
-                anyLong(), anyString(), anyString(), anyBoolean(), any()))
+                anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked assignment"))));

@@ -93,10 +93,6 @@ public class McpAuditLogIT {
     // then
     assertThat(result.items())
         .hasSize(1)
-        .allSatisfy(
-            auditLog -> {
-              assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME);
-              assertThat(auditLog.getAgentElementId()).isEqualTo(MSG_START_EVENT_ID);
-            });
+        .allSatisfy(auditLog -> assertThat(auditLog.getAgentToolName()).isEqualTo(MCP_TOOL_NAME));
   }
 }

@@ -606,7 +606,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     void shouldAssignUserTaskByKey() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -628,14 +628,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices)
-          .assignUserTask(eq(5L), eq("jane.doe"), eq("assign"), eq(true), any());
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("assign"), eq(true), any(), any());
     }
 
     @Test
     void shouldAssignUserTaskWithOptions() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -664,7 +664,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
       verify(userTaskServices)
-          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), any());
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), any(), any());
     }
 
     @Test
@@ -726,7 +726,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     void shouldFailAssignUserTaskOnException() {
       // given
       when(userTaskServices.assignUserTask(
-              anyLong(), anyString(), anyString(), anyBoolean(), any()))
+              anyLong(), anyString(), anyString(), anyBoolean(), any(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));

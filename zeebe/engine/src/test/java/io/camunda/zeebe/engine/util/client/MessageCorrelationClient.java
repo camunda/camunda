@@ -93,11 +93,6 @@ public final class MessageCorrelationClient {
     return this;
   }
 
-  public MessageCorrelationClient withAgentToolName(final String agentToolName) {
-    messageCorrelationRecord.setAgentToolName(agentToolName);
-    return this;
-  }
-
   public MessageCorrelationClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;

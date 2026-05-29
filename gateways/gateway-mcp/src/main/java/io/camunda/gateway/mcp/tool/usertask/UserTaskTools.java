@@ -31,6 +31,7 @@ import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.agent.AgentContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -144,7 +145,8 @@ public class UserTaskTools {
             assignmentRequest.assignee(),
             assignmentRequest.action(),
             assignmentRequest.allowOverride(),
-            authenticationProvider.getCamundaAuthentication()),
+            authenticationProvider.getCamundaAuthentication(),
+            new AgentContext("assignUserTask")),
         r ->
             "User task with key %s assigned to %s."
                 .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));

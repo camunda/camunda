@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -36,14 +35,11 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.StringUtils;
-
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
@@ -104,8 +100,7 @@ public final class MessageCorrelationCorrelateProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<MessageCorrelationRecord> command, final ProcessingSession session) {
+  public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
     final var messageCorrelationRecord = command.getValue();
 
     // Check tenant authorization if not an internal command
@@ -145,12 +140,6 @@ public final class MessageCorrelationCorrelateProcessor
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
-    }
-
-    // Propagate agent context so all follow-up records carry traceability info
-    final var agentToolName = messageCorrelationRecord.getAgentToolName();
-    if (StringUtils.isNotBlank(agentToolName) && !tempCorrelatingSubscriptions.isEmpty()) {
-      session.appendAgentInfoToFollowUps(new AgentInfo().setToolName(agentToolName));
     }
 
     // Now that authorization passed, write the message and correlations to state

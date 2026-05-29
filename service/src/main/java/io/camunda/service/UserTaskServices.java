@@ -30,6 +30,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.service.agent.AgentContext;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.search.core.SearchQueryService;
@@ -193,14 +194,16 @@ public final class UserTaskServices
       final String assignee,
       final String action,
       final boolean allowOverride,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final AgentContext agentContext) {
     return sendBrokerRequest(
         new BrokerUserTaskAssignmentRequest(
             userTaskKey,
             assignee,
             action,
             allowOverride ? UserTaskIntent.ASSIGN : UserTaskIntent.CLAIM),
-        authentication);
+        authentication,
+        agentContext);
   }
 
   public CompletableFuture<UserTaskRecord> completeUserTask(

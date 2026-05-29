@@ -8,6 +8,8 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.Agent;
@@ -15,7 +17,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/** */
+@JsonInclude(Include.NON_EMPTY)
 public class AgentInfo extends UnpackedObject implements Agent {
 
   private final StringProperty elementIdProp = new StringProperty("elementId", "");

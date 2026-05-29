@@ -38,6 +38,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
+  private final AgentInfo agentInfo = new AgentInfo();
 
   public ExecuteCommandRequest() {
     reset();
@@ -51,6 +52,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
     authorization.reset();
+    agentInfo.reset();
 
     return this;
   }
@@ -142,6 +144,20 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  public AgentInfo getAgentInfo() {
+    return agentInfo;
+  }
+
+  public ExecuteCommandRequest setAgentInfo(final AgentInfo agentInfo) {
+    this.agentInfo.copyFrom(agentInfo);
+    return this;
+  }
+
+  public ExecuteCommandRequest setAgentInfo(final DirectBuffer buffer) {
+    agentInfo.wrap(buffer);
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -174,6 +190,11 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     authorization.wrap(buffer, offset, authorizationLength);
     offset += authorizationLength;
 
+    final int agentInfoLength = bodyDecoder.agentInfoLength();
+    offset += ExecuteCommandRequestDecoder.agentInfoHeaderLength();
+    agentInfo.wrap(buffer, offset, agentInfoLength);
+    offset += agentInfoLength;
+
     bodyDecoder.limit(offset);
 
     assert bodyDecoder.limit() == frameEnd
@@ -191,7 +212,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.valueHeaderLength()
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + ExecuteCommandRequestEncoder.agentInfoHeaderLength()
+        + agentInfo.getLength();
   }
 
   @Override
@@ -204,7 +227,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .valueType(valueType)
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength())
+        .putAgentInfo(agentInfo.toDirectBuffer(), 0, agentInfo.getLength());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

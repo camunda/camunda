@@ -65,10 +65,4 @@ public interface MessageCorrelationRecordValue
    */
   String getBusinessId();
 
-  /**
-   * Returns the name of the agent tool that initiated this message correlation, if any.
-   *
-   * @return the agent tool name, or an empty string if not set
-   */
-  String getAgentToolName();
 }
