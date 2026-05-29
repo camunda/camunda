@@ -44,14 +44,12 @@ public final class GcsBackupStore implements BackupStore {
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
   private final Storage client;
-  private final GcsBackupConfig config;
 
   GcsBackupStore(final GcsBackupConfig config) {
     this(config, buildClient(config));
   }
 
   GcsBackupStore(final GcsBackupConfig config, final Storage client) {
-    this.config = config;
     final var bucketInfo = BucketInfo.of(config.bucketName());
     final var basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
@@ -192,6 +190,17 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<BackupStatusCode> markFailed(
+      final BackupIdentifier id, final String failureReason) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          manifestManager.markAsFailed(id, failureReason);
+          return BackupStatusCode.FAILED;
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -206,17 +215,6 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
-  }
-
-  @Override
-  public CompletableFuture<BackupStatusCode> markFailed(
-      final BackupIdentifier id, final String failureReason) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          manifestManager.markAsFailed(id, failureReason);
-          return BackupStatusCode.FAILED;
-        },
-        executor);
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
