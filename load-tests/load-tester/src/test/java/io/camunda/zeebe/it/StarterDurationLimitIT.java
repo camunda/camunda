@@ -42,8 +42,6 @@ import org.springframework.test.context.DynamicPropertySource;
       "load-tester.starter.duration-limit=3",
       "load-tester.starter.threads=1",
       "load-tester.starter.payload-path=bpmn/small_payload.json",
-      "load-tester.monitor-data-availability=false",
-      "load-tester.perform-read-benchmarks=false",
     })
 @ActiveProfiles({"starter", "it"})
 @Disabled
