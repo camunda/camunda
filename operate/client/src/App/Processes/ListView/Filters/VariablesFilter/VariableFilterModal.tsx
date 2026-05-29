@@ -246,7 +246,7 @@ const VariableFilterModal: React.FC = observer(() => {
                   </Description>
                   {form
                     .getState()
-                    .values.conditions?.some(
+                    .values?.conditions?.some(
                       (c) => c.operator === 'contains',
                     ) && (
                     <InlineNotification

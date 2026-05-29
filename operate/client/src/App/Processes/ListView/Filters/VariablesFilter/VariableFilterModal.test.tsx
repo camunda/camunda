@@ -553,7 +553,9 @@ describe('<VariableFilterModal />', () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
-    const operatorDropdowns = screen.getAllByRole('combobox', {name: 'Operator'});
+    const operatorDropdowns = screen.getAllByRole('combobox', {
+      name: 'Operator',
+    });
     await user.click(operatorDropdowns[1]!);
     await user.click(screen.getByText('contains'));
 
