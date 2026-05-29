@@ -162,11 +162,13 @@ jobs:
 
       - name: Stage workspace manifest
         run: |
+          set -euo pipefail
           mkdir -p "$HOME/.workspace-templates"
-          cp qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
-             "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
-          cp qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
-             "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
+          git fetch --depth 1 origin main
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
+          git show origin/main:qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
+            > "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
 
       - name: Create workspace
         run: |
