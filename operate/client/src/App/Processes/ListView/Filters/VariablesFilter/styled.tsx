@@ -12,12 +12,21 @@ import {styles} from '@carbon/elements';
 import {IconContainer, IconButton} from 'modules/components/IconInput/styled';
 
 const ModalContent = styled.div`
+  position: relative;
   min-height: 350px;
+  overflow: hidden;
+
+  && {
+    margin-bottom: 0;
+  }
 `;
 
 const Description = styled.p`
-  margin: 0;
   ${styles.bodyShort01};
+
+  && {
+    margin: 0;
+  }
 `;
 
 const FilterRow = styled.div`
@@ -43,7 +52,6 @@ const ValueFieldContainer = styled.div`
 const DeleteButton = styled(BaseIconButton)<{$hidden?: boolean}>`
   flex-shrink: 0;
   visibility: ${({$hidden}) => ($hidden ? 'hidden' : 'visible')};
-  margin-inline-end: var(--cds-spacing-03, 0.5rem);
 `;
 
 const ConditionList = styled.ul`
@@ -69,17 +77,10 @@ const EditorToolbar = styled.div`
 `;
 
 const ConditionRowsScroll = styled.div`
-  box-sizing: border-box;
-  max-height: min(60vh, 28rem);
+  max-height: clamp(7.5rem, calc(100vh - 26rem), 24rem);
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  scrollbar-gutter: stable;
-  padding-inline-end: var(--cds-spacing-06, 1.5rem);
-`;
-
-const AddConditionWrap = styled.div`
-  margin-top: var(--cds-spacing-05, 1rem);
 `;
 
 export {
@@ -92,5 +93,4 @@ export {
   ConditionItem,
   EditorToolbar,
   ConditionRowsScroll,
-  AddConditionWrap,
 };

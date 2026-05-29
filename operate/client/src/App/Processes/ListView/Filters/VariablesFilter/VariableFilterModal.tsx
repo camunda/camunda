@@ -25,7 +25,6 @@ import {
 } from 'modules/stores/variableFilter';
 import type {DraftCondition} from './constants';
 import {
-  AddConditionWrap,
   ConditionRowsScroll,
   Description,
   EditorToolbar,
@@ -281,16 +280,14 @@ const VariableFilterModal: React.FC = observer(() => {
                             role="status"
                           />
                         )}
-                        <AddConditionWrap>
-                          <Button
-                            kind="ghost"
-                            size="sm"
-                            renderIcon={Add}
-                            onClick={() => fields.push(createDraft())}
-                          >
-                            Add condition
-                          </Button>
-                        </AddConditionWrap>
+                        <Button
+                          kind="ghost"
+                          size="sm"
+                          renderIcon={Add}
+                          onClick={() => fields.push(createDraft())}
+                        >
+                          Add condition
+                        </Button>
                       </>
                     )}
                   </FieldArray>
