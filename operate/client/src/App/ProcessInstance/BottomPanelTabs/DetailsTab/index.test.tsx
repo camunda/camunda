@@ -110,6 +110,7 @@ const mockJob = {
   type: 'httpService',
   worker: 'worker-1',
   retries: 3,
+  priority: 0,
   deadline: '2023-01-15T10:10:00.000Z',
   customHeaders: {timeout: '30s'},
   state: 'CREATED',
@@ -126,7 +127,6 @@ const mockJob = {
   creationTime: null,
   lastUpdateTime: null,
   tags: [],
-  priority: 0,
 } satisfies Job;
 
 const mockCalledProcessInstance = {
@@ -341,6 +341,18 @@ describe('<DetailsTab />', () => {
 
     expect(await screen.findByText('Retries Left')).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('3');
+  });
+
+  it('should display job priority when available', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchJobs().withSuccess(searchResult([{...mockJob, priority: 50}]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Job Priority')).toBeInTheDocument();
+    expect(screen.getByTestId('job-priority')).toHaveTextContent('50');
   });
 
   it('should hide job retries when no job exists', async () => {

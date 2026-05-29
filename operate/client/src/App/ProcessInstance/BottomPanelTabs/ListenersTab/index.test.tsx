@@ -116,6 +116,7 @@ const baseJobFields = {
   elementInstanceKey: '123456789',
   worker: 'worker-1',
   retries: 3,
+  priority: 0,
   deadline: null,
   customHeaders: null,
   tenantId: '<default>',
@@ -129,7 +130,6 @@ const baseJobFields = {
   creationTime: null,
   lastUpdateTime: null,
   tags: [],
-  priority: 0,
 } satisfies Omit<
   Job,
   'jobKey' | 'type' | 'state' | 'kind' | 'listenerEventType'
