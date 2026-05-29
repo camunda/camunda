@@ -20,6 +20,10 @@ on:
         description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
         required: true
         type: string
+      gradleTestTasks:
+        description: "Gradle test tasks to execute for this suite"
+        required: true
+        type: string
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -59,17 +63,14 @@ jobs:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Maven Run Test
+      - name: Gradle Run Test
         shell: bash
-        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
-        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -Dtest=${{inputs.componentName}}${{inputs.suite}}TestSuite
-          -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
-          -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
-          -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D junitThreadCount=16 -P skipFrontendBuild
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
+          if [[ -z "${{ inputs.gradleTestTasks }}" ]]; then
+            printf 'No Gradle unit test tasks configured for %s %s\n' "${{ inputs.componentName }}" "${{ inputs.suite }}" | tee "${BUILD_OUTPUT_FILE_PATH}";
+          else
+            ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build ${{ inputs.gradleTestTasks }} | tee "${BUILD_OUTPUT_FILE_PATH}";
+          fi
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()

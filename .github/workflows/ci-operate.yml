@@ -51,12 +51,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            gradleTestTasks: ":operate-common:test --tests io.camunda.operate.OperateDataLayerTestSuite :operate-schema:test --tests io.camunda.operate.OperateDataLayerTestSuite"
           - suite: CoreFeatures
             suiteName: Core Features
+            gradleTestTasks: ":operate-common:test --tests io.camunda.operate.OperateCoreFeaturesTestSuite"
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      gradleTestTasks: ${{ matrix.gradleTestTasks }}
 
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:

@@ -772,24 +772,15 @@ jobs:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      # shellcheck disabled because the list of modules needs to contain single quotes
       - name: Setup General UT Modules
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
-      - name: Maven Test Build Unit
+      - name: Gradle Test Build Unit
         shell: bash
-        # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
-        #
-        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
-        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=7
-          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
-          -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -pl ${{ env.GENERAL_UT_MODULES }}
-          verify
+          ./gradlew --no-daemon --console=plain --parallel
+          -Pskip.fe.build
+          test ${{ env.GENERAL_UT_MODULES }}
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
@@ -872,22 +863,11 @@ jobs:
           maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Maven Run Test (Zeebe)
-        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
-        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
-        # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
-        # on the runner.
+      - name: Gradle Run Test (Zeebe)
         shell: bash
         run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=3
-          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
-          -D junitThreadCount=16
-          -D argLine="@{argLine} -Xmx4g"
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -pl ${{ matrix.maven-modules }}
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
+          TASKS=$(echo "${{ matrix.maven-modules }}" | tr -d "'" | tr ',' '\n' | sed '/^$/d; s/$/:test/' | tr '\n' ' ') &&
+          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()

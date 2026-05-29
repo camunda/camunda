@@ -12,55 +12,64 @@ set -euxo pipefail
 #### Outputs a list of optimize, operate, tasklist, and zeebe modules that should be skipped in the general unit tests
 #### The skipped modules are run elsewhere. This script ensures that any new modules that are added will be run by general unit test
 
-### Get list of all modules in monorepo
-# shellcheck disable=SC2005,SC2046
-rawModuleList=$(echo $(python3 .ci/scripts/ci/find-pom-artifactids.py))
-echo "Raw module list: $rawModuleList"
+items=()
+declare -A seen_items=()
+declare -A module_paths=()
+project_dir_pattern='project\(":([^"]+)"\)\.projectDir[[:space:]]*=[[:space:]]*file\("([^"]+)"\)'
 
-# Convert the module list string into an array
-IFS=' ' read -ra items <<< "$rawModuleList"
+while IFS= read -r line; do
+  if [[ $line =~ $project_dir_pattern ]]; then
+    module="${BASH_REMATCH[1]}"
+    path="${BASH_REMATCH[2]}"
 
-# Initialize an empty array for filtered items
+    if [[ $path == optimize/* || $path == tasklist/* || $path == operate/* || $path == zeebe/* ]]; then
+      if [[ -z "${seen_items[$module]:-}" ]]; then
+        items+=("$module")
+        seen_items["$module"]=1
+        module_paths["$module"]="$path"
+      fi
+    fi
+  fi
+done < settings.gradle.kts
+
+echo "Raw module list: ${items[*]}"
+
 filtered_items=()
-
-# Loop through each item and construct list of Operate, Optimize, Tasklist, and Zeebe modules. These modules will be removed
 for item in "${items[@]}"; do
-  if [[ $item == *optimize* || $item == tasklist* || $item == operate* || $item == zeebe* ]]; then
+  project_path="${module_paths[$item]:-}"
+
+  if [[ -n "$project_path" && -d "$project_path/src/test" ]]; then
     filtered_items+=("$item")
   fi
 done
 
-# these modules shouldn't be removed and need to be included for a successful run
 doNotSkip="$1"
-
 for i in "${!filtered_items[@]}"; do
   word="${filtered_items[$i]}"
   # shellcheck disable=SC1087
   if [[ " $doNotSkip " =~ [[:space:]]$word[[:space:]] ]]; then
-    unset 'filtered_items[i]'  # Remove the module from the array
+    unset 'filtered_items[i]'
   fi
 done
 
-# Join the filtered items back into a string
-IFS=' '; modules="${filtered_items[*]}"
-
-### Add Extra modules to skip, these are not Zeebe/Operate/Tasklist/Optimize modules
+IFS=' '
+modules="${filtered_items[*]}"
 modules+=" $2"
 
-### Format with '-:<moduleName>' This format is used by maven to skip modules with the -pl argument
-# Initialize an empty array for formatted words
 formatted_modules=()
+declare -A seen_formatted_modules=()
 
-# Loop through each word and format it
 for module in $modules; do
-  formatted_modules+=("'-:$module'")
+  formatted_module="-x :$module:test"
+  if [[ -z "${seen_formatted_modules[$formatted_module]:-}" ]]; then
+    formatted_modules+=("$formatted_module")
+    seen_formatted_modules["$formatted_module"]=1
+  fi
 done
 
-# Join the array into a comma-separated string
-ut_modules=$(IFS=','; echo "${formatted_modules[*]}")
+ut_modules=$(IFS=' '; echo "${formatted_modules[*]}")
 
-# Print the result
-echo "Modules to be skipped: $ut_modules"
+echo "Gradle test exclusions: $ut_modules"
 
 # shellcheck disable=SC2086
-echo GENERAL_UT_MODULES=$ut_modules >> $GITHUB_ENV
+echo GENERAL_UT_MODULES=$ut_modules >> "$GITHUB_ENV"
