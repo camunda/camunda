@@ -14,14 +14,21 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_SEQUENCE_NUM
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.api.logs.Severity;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
+import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -32,10 +39,12 @@ public class OtelSdkManager {
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
   private static final String OTLP_LOGS_PATH = "/v1/logs";
+  private static final String OTLP_METRICS_PATH = "/v1/metrics";
   private static final String SERVICE_NAME_VALUE = "camunda-zeebe";
 
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
+  private Meter otelMeter;
   private AnalyticsExporterMetadata metadata;
 
   OtelSdkManager initialize(
@@ -44,10 +53,16 @@ public class OtelSdkManager {
       final AnalyticsExporterMetadata metadata) {
     this.metadata = metadata;
     final var loggerProvider = createLoggerProvider(config, context);
+    final var meterProvider = createMeterProvider(config, context);
 
-    sdk = OpenTelemetrySdk.builder().setLoggerProvider(loggerProvider).build();
+    sdk =
+        OpenTelemetrySdk.builder()
+            .setLoggerProvider(loggerProvider)
+            .setMeterProvider(meterProvider)
+            .build();
     otelLogger =
         sdk.getLogsBridge().loggerBuilder(INSTRUMENTATION_SCOPE).setSchemaUrl(SCHEMA_URL).build();
+    otelMeter = sdk.getMeterProvider().get(INSTRUMENTATION_SCOPE);
     return this;
   }
 
@@ -63,6 +78,11 @@ public class OtelSdkManager {
             .setAttribute(LOG_SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
     builder.accept(record);
     record.emit();
+  }
+
+  /** Increments the named counter by 1 with the given dimension attributes. */
+  public void incrementMetric(final String metricName, final Attributes dimensions) {
+    otelMeter.counterBuilder(metricName).build().add(1, dimensions);
   }
 
   void shutdown() {
@@ -94,6 +114,35 @@ public class OtelSdkManager {
         OtlpHttpLogRecordExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
             // Static auth headers (constant per exporter lifetime)
+            .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
+            .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
+
+    if (config.isSigning()) {
+      builder.setHeaders(context::computeSignatureHeaders);
+    }
+
+    return builder.build();
+  }
+
+  /** Override in tests to swap the OTLP metric transport for an in-memory reader. */
+  protected SdkMeterProvider createMeterProvider(
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
+    return SdkMeterProvider.builder()
+        .setResource(buildResource(context))
+        .registerMetricReader(
+            PeriodicMetricReader.builder(createMetricExporter(config, context))
+                .setInterval(config.getPushInterval())
+                .build())
+        .build();
+  }
+
+  /** Override in tests to swap the OTLP metric transport for an in-memory exporter. */
+  protected MetricExporter createMetricExporter(
+      final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
+    final var builder =
+        OtlpHttpMetricExporter.builder()
+            .setEndpoint(config.getEndpoint() + OTLP_METRICS_PATH)
+            .setAggregationTemporalitySelector(AggregationTemporalitySelector.deltaPreferred())
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
 
