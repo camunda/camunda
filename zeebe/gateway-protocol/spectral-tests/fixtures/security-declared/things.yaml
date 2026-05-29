@@ -1,0 +1,176 @@
+# Domain file for require-security-declared rule test fixture.
+openapi: "3.0.3"
+info:
+  title: Things domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: both conditionally-enforced schemes (OR) ───────────
+  /valid/both-schemes:
+    get:
+      operationId: getValidBoth
+      summary: Both schemes declared
+      description: Canonical OR-pattern across BearerAuth and basicAuth.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: []
+        - basicAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Valid: BearerAuth only (e.g. getAuthentication today) ─────
+  /valid/bearer-only:
+    get:
+      operationId: getValidBearerOnly
+      summary: BearerAuth only
+      description: Single-scheme operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Valid: basicAuth only ─────────────────────────────────────
+  /valid/basic-only:
+    get:
+      operationId: getValidBasicOnly
+      summary: basicAuth only
+      description: Single-scheme operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Valid: explicit public ────────────────────────────────────
+  /valid/public:
+    get:
+      operationId: getValidPublic
+      summary: Explicit public
+      description: Empty security overrides the global enforcement.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: missing security block ───────────────────────────
+  /invalid/missing-security:
+    get:
+      operationId: getInvalidMissingSecurity
+      summary: Missing security
+      description: No security block declared.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: references an unknown scheme ─────────────────────
+  /invalid/unknown-scheme:
+    get:
+      operationId: getInvalidUnknownScheme
+      summary: Unknown scheme
+      description: Uses a scheme name that is not BearerAuth or basicAuth.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - OAuth2: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: non-empty scopes array ───────────────────────────
+  /invalid/non-empty-scopes:
+    get:
+      operationId: getInvalidNonEmptyScopes
+      summary: Non-empty scopes
+      description: BearerAuth/basicAuth do not use OAuth scopes.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: [read:thing]
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: empty entry ──────────────────────────────────────
+  /invalid/empty-entry:
+    get:
+      operationId: getInvalidEmptyEntry
+      summary: Empty entry
+      description: An entry with no scheme name.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - {}
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: multiple schemes in a single entry (AND) ─────────
+  /invalid/multi-scheme-entry:
+    get:
+      operationId: getInvalidMultiSchemeEntry
+      summary: Multiple schemes in one entry
+      description: AND-semantics is not allowed; use separate list entries.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: []
+          basicAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: duplicate scheme in separate entries ─────────────
+  /invalid/duplicate-scheme:
+    get:
+      operationId: getInvalidDuplicateScheme
+      summary: Duplicate scheme entries
+      description: Same scheme listed twice.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: security is not an array ─────────────────────────
+  /invalid/not-an-array:
+    get:
+      operationId: getInvalidNotAnArray
+      summary: Security is an object
+      description: Security must be an array.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        BearerAuth: []
+      responses:
+        '200':
+          description: OK
+
+  # ── Invalid: scopes value is not an array ─────────────────────
+  /invalid/scopes-not-an-array:
+    get:
+      operationId: getInvalidScopesNotAnArray
+      summary: Scopes is a string
+      description: Scopes value must be an array.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      security:
+        - BearerAuth: "not-an-array"
+      responses:
+        '200':
+          description: OK

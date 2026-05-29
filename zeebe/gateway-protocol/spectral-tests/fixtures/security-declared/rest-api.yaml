@@ -1,0 +1,59 @@
+# Entry point for require-security-declared rule tests.
+# Mirrors the real spec structure: paths $ref to a domain file, and the
+# securitySchemes are declared at the top level so $ref resolution can see
+# both BearerAuth and basicAuth.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — require-security-declared
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid cases ────────────────────────────────────────────────
+  /valid/both-schemes:
+    $ref: 'things.yaml#/paths/~1valid~1both-schemes'
+
+  /valid/bearer-only:
+    $ref: 'things.yaml#/paths/~1valid~1bearer-only'
+
+  /valid/basic-only:
+    $ref: 'things.yaml#/paths/~1valid~1basic-only'
+
+  /valid/public:
+    $ref: 'things.yaml#/paths/~1valid~1public'
+
+  # ── Invalid cases ──────────────────────────────────────────────
+  /invalid/missing-security:
+    $ref: 'things.yaml#/paths/~1invalid~1missing-security'
+
+  /invalid/unknown-scheme:
+    $ref: 'things.yaml#/paths/~1invalid~1unknown-scheme'
+
+  /invalid/non-empty-scopes:
+    $ref: 'things.yaml#/paths/~1invalid~1non-empty-scopes'
+
+  /invalid/empty-entry:
+    $ref: 'things.yaml#/paths/~1invalid~1empty-entry'
+
+  /invalid/multi-scheme-entry:
+    $ref: 'things.yaml#/paths/~1invalid~1multi-scheme-entry'
+
+  /invalid/duplicate-scheme:
+    $ref: 'things.yaml#/paths/~1invalid~1duplicate-scheme'
+
+  /invalid/not-an-array:
+    $ref: 'things.yaml#/paths/~1invalid~1not-an-array'
+
+  /invalid/scopes-not-an-array:
+    $ref: 'things.yaml#/paths/~1invalid~1scopes-not-an-array'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    basicAuth:
+      type: http
+      scheme: basic
