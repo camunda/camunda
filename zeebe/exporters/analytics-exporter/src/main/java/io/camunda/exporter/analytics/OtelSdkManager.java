@@ -30,13 +30,17 @@ import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-/** Manages the OTel SDK lifecycle for one partition. */
+/**
+ * Manages the OTel SDK lifecycle for one partition. Provides log events via {@link #logEvent} and
+ * pre-aggregated metric counters via {@link #incrementMetric}. Metric collection is triggered
+ * manually via {@link #flushMetrics} from the partition thread — no background reader thread.
+ */
 public class OtelSdkManager {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
@@ -48,8 +52,9 @@ public class OtelSdkManager {
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
   private Meter otelMeter;
+  private ManualMetricReader metricReader;
   private AnalyticsExporterMetadata metadata;
-  private final HashMap<String, LongCounter> counters = new HashMap<>();
+  private final Map<String, LongCounter> counters = new HashMap<>();
   private final MetricWindow metricWindow = new MetricWindow();
 
   OtelSdkManager initialize(
@@ -60,7 +65,8 @@ public class OtelSdkManager {
     counters.clear();
     metricWindow.reset();
     final var loggerProvider = createLoggerProvider(config, context);
-    final var meterProvider = createMeterProvider(config, context);
+    metricReader = createMetricReader(config, context);
+    final var meterProvider = createMeterProvider(context, metricReader);
 
     sdk =
         OpenTelemetrySdk.builder()
@@ -100,6 +106,23 @@ public class OtelSdkManager {
     metricWindow.record(position, eventTimeMs);
   }
 
+  // Performance: collectAndExport() runs on the partition thread. Benchmarked at ~8ms for 50
+  // metrics × 1999 dimensions, ~236ms for 1000 × 1999 (worst case). If collection time becomes
+  // a concern, offload to a background thread: create a fresh MeterProvider per flush ("seal &
+  // create"), swap atomically, and collect the old provider on a background ExecutorService.
+  void flushMetrics() {
+    if (metricReader != null) {
+      metricReader.collectAndExport();
+    }
+  }
+
+  void shutdown() {
+    flushMetrics();
+    if (sdk != null) {
+      sdk.shutdown().join(10, TimeUnit.SECONDS);
+    }
+  }
+
   private void registerExportWindowGauge() {
     otelMeter
         .gaugeBuilder(METRIC_EXPORT_WINDOW)
@@ -111,12 +134,6 @@ public class OtelSdkManager {
               measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
               metricWindow.reset();
             });
-  }
-
-  void shutdown() {
-    if (sdk != null) {
-      sdk.shutdown().join(10, TimeUnit.SECONDS);
-    }
   }
 
   /**
@@ -141,7 +158,6 @@ public class OtelSdkManager {
     final var builder =
         OtlpHttpLogRecordExporter.builder()
             .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
-            // Static auth headers (constant per exporter lifetime)
             .addHeader(AnalyticsExporterContext.HEADER_FINGERPRINT, context.fingerprint())
             .addHeader(AnalyticsExporterContext.HEADER_CLUSTER_ID, context.clusterId());
 
@@ -152,16 +168,10 @@ public class OtelSdkManager {
     return builder.build();
   }
 
-  /** Override in tests to swap the OTLP metric transport for an in-memory reader. */
-  protected SdkMeterProvider createMeterProvider(
+  /** Override in tests to use an in-memory metric reader instead of OTLP. */
+  protected ManualMetricReader createMetricReader(
       final AnalyticsExporterConfig config, final AnalyticsExporterContext context) {
-    return SdkMeterProvider.builder()
-        .setResource(buildResource(context))
-        .registerMetricReader(
-            PeriodicMetricReader.builder(createMetricExporter(config, context))
-                .setInterval(config.getPushInterval())
-                .build())
-        .build();
+    return new ManualMetricReader(createMetricExporter(config, context));
   }
 
   /** Override in tests to swap the OTLP metric transport for an in-memory exporter. */
@@ -179,6 +189,15 @@ public class OtelSdkManager {
     }
 
     return builder.build();
+  }
+
+  /** Override in tests to use an in-memory metric reader instead of ManualMetricReader. */
+  protected SdkMeterProvider createMeterProvider(
+      final AnalyticsExporterContext context, final ManualMetricReader reader) {
+    return SdkMeterProvider.builder()
+        .setResource(buildResource(context))
+        .registerMetricReader(reader)
+        .build();
   }
 
   static Resource buildResource(final AnalyticsExporterContext context) {

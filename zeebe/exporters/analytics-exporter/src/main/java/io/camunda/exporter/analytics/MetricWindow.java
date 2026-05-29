@@ -19,11 +19,8 @@ import io.opentelemetry.api.common.Attributes;
  * Tracks the export window state between metric flushes. Accumulates event count, position range,
  * and event time range. Reset after each gauge collection.
  *
- * <p><b>Thread safety:</b> In Phase 2 (PeriodicMetricReader), this class is accessed from both the
- * partition thread ({@link #record}) and the metric reader thread ({@link #toGaugeAttributes},
- * {@link #reset}). This is a known race with ±few-event inaccuracy at push boundaries. Phase 3
- * (ManualMetricReader + scheduleCancellableTask) eliminates this by moving all access to the
- * partition thread.
+ * <p><b>Thread safety:</b> All access happens on the partition thread via {@link
+ * ManualMetricReader} + {@code scheduleCancellableTask}. No synchronization required.
  */
 final class MetricWindow {
 

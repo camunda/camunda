@@ -39,7 +39,8 @@ public final class TestOtelSdkManager {
 
           @Override
           protected SdkMeterProvider createMeterProvider(
-              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
+              final AnalyticsExporterContext context, final ManualMetricReader reader) {
+            // Bypass ManualMetricReader — use InMemoryMetricReader for synchronous test collection
             return SdkMeterProvider.builder()
                 .setResource(OtelSdkManager.buildResource(context))
                 .registerMetricReader(metricReader)
