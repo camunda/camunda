@@ -20,7 +20,7 @@ public final class MemberIdUtil {
 
   private static final Pattern ZONE_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9-]*$");
   private static final Pattern MEMBER_ID_PATTERN =
-      Pattern.compile("(?:[A-Za-z0-9][A-Za-z0-9-]+_)?\\d+");
+      Pattern.compile("(?:[A-Za-z0-9][A-Za-z0-9-]*_)?\\d+");
   private static final int MAX_ZONE_LENGTH = 63;
 
   private MemberIdUtil() {}

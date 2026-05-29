@@ -30,7 +30,12 @@ public class MemberIdUtilTest {
   }
 
   static Stream<Named<String>> validMemberIds() {
-    return Stream.of(Named.of("zoned", "us-east1_2"), Named.of("zoned", "2"));
+    return Stream.of(
+        Named.of("zoned", "us-east1_2"),
+        Named.of("zoned 1 letter", "a_2"),
+        Named.of("zoned 1 number", "1_2"),
+        Named.of("zoned w/ 63 chars", "b".repeat(63) + "_2"),
+        Named.of("without zone", "2"));
   }
 
   @ParameterizedTest
