@@ -21,6 +21,8 @@ import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -63,6 +65,14 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   // Indicates whether there is a configuration change operation in progress on this member.
   private boolean onGoingConfigurationChangeOperation = false;
   private boolean shouldRetry = false;
+  // Per-group change appliers for non-default partition groups (keyed by group ID)
+  private final Map<String, ConfigurationChangeAppliers> partitionGroupAppliers = new HashMap<>();
+  // In-memory ClusterConfiguration for non-default partition groups; not yet persisted or gossiped
+  private final Map<String, ClusterConfiguration> nonDefaultGroupConfigs = new HashMap<>();
+  // Per-group operation-in-progress flag
+  private final Map<String, Boolean> onGoingGroupOperations = new HashMap<>();
+  // Per-group should-retry flag
+  private final Map<String, Boolean> shouldRetryGroup = new HashMap<>();
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
@@ -261,40 +271,40 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   private void applyConfigurationChangeOperation(final ClusterConfiguration mergedConfiguration) {
-    if (!shouldApplyConfigurationChangeOperation(mergedConfiguration)) {
-      return;
-    }
+    if (shouldApplyConfigurationChangeOperation(mergedConfiguration)) {
+      onGoingConfigurationChangeOperation = true;
+      shouldRetry = false;
+      final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
+      final var observer = topologyMetrics.observeOperation(operation);
+      LOG.info("Applying configuration change operation {}", operation);
+      final var operationApplier = changeAppliers.getApplier(operation);
+      final var operationInitialized =
+          operationApplier
+              .init(mergedConfiguration)
+              .map(transformer -> transformer.apply(mergedConfiguration))
+              .flatMap(this::updateLocalConfiguration);
 
-    onGoingConfigurationChangeOperation = true;
-    shouldRetry = false;
-    final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
-    final var observer = topologyMetrics.observeOperation(operation);
-    LOG.info("Applying configuration change operation {}", operation);
-    final var operationApplier = changeAppliers.getApplier(operation);
-    final var operationInitialized =
+      if (operationInitialized.isLeft()) {
+        // TODO: Mark ClusterChangePlan as failed
+        observer.failed();
+        onGoingConfigurationChangeOperation = false;
+        LOG.error(
+            "Failed to initialize configuration change operation {}",
+            operation,
+            operationInitialized.getLeft());
+      } else {
+        final var initializedConfiguration = operationInitialized.get();
         operationApplier
-            .init(mergedConfiguration)
-            .map(transformer -> transformer.apply(mergedConfiguration))
-            .flatMap(this::updateLocalConfiguration);
-
-    if (operationInitialized.isLeft()) {
-      // TODO: Mark ClusterChangePlan as failed
-      observer.failed();
-      onGoingConfigurationChangeOperation = false;
-      LOG.error(
-          "Failed to initialize configuration change operation {}",
-          operation,
-          operationInitialized.getLeft());
-      return;
+            .apply()
+            .onComplete(
+                (transformer, error) ->
+                    onOperationApplied(
+                        initializedConfiguration, operation, transformer, error, observer));
+      }
     }
 
-    final var initializedConfiguration = operationInitialized.get();
-    operationApplier
-        .apply()
-        .onComplete(
-            (transformer, error) ->
-                onOperationApplied(
-                    initializedConfiguration, operation, transformer, error, observer));
+    // Apply operations for non-default partition groups concurrently with the default group
+    nonDefaultGroupConfigs.forEach(this::applyGroupConfigurationChangeOperation);
   }
 
   private void logAndScheduleRetry(
@@ -364,6 +374,176 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       return Either.right(configuration);
     } catch (final Exception e) {
       return Either.left(e);
+    }
+  }
+
+  // ---- Non-default partition group support ----
+
+  /**
+   * Registers change appliers for a non-default partition group. Once registered, any pending
+   * operations for {@code groupId} are applied immediately. Operations across different groups
+   * execute concurrently.
+   */
+  void registerPartitionGroupAppliers(
+      final String groupId, final ConfigurationChangeAppliers appliers) {
+    executor.run(
+        () -> {
+          partitionGroupAppliers.put(groupId, appliers);
+          final var groupConfig = nonDefaultGroupConfigs.get(groupId);
+          if (groupConfig != null) {
+            applyGroupConfigurationChangeOperation(groupId, groupConfig);
+          }
+        });
+  }
+
+  void removePartitionGroupAppliers(final String groupId) {
+    executor.run(() -> partitionGroupAppliers.remove(groupId));
+  }
+
+  /**
+   * Updates the in-memory configuration for a non-default partition group and triggers application
+   * of any newly pending operation for the local member.
+   */
+  ActorFuture<Void> updatePartitionGroupConfig(
+      final String groupId, final UnaryOperator<ClusterConfiguration> updater) {
+    final var future = executor.<Void>createFuture();
+    executor.run(
+        () -> {
+          try {
+            final var current =
+                nonDefaultGroupConfigs.getOrDefault(groupId, ClusterConfiguration.init());
+            final var updated = updater.apply(current);
+            nonDefaultGroupConfigs.put(groupId, updated);
+            future.complete(null);
+            applyGroupConfigurationChangeOperation(groupId, updated);
+          } catch (final Exception e) {
+            LOG.error("Failed to update partition group config for group {}", groupId, e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  /** Seeds the initial configuration for a non-default partition group. */
+  void setPartitionGroupConfig(final String groupId, final ClusterConfiguration config) {
+    executor.run(
+        () -> {
+          nonDefaultGroupConfigs.put(groupId, config);
+          applyGroupConfigurationChangeOperation(groupId, config);
+        });
+  }
+
+  @VisibleForTesting
+  ClusterConfiguration getPartitionGroupConfig(final String groupId) {
+    return nonDefaultGroupConfigs.get(groupId);
+  }
+
+  private boolean shouldApplyGroupOperation(
+      final String groupId, final ClusterConfiguration config) {
+    return (!onGoingGroupOperations.getOrDefault(groupId, false)
+            || shouldRetryGroup.getOrDefault(groupId, false))
+        && config.pendingChangesFor(localMemberId).isPresent()
+        && partitionGroupAppliers.containsKey(groupId);
+  }
+
+  private void applyGroupConfigurationChangeOperation(
+      final String groupId, final ClusterConfiguration config) {
+    if (!shouldApplyGroupOperation(groupId, config)) {
+      return;
+    }
+
+    onGoingGroupOperations.put(groupId, true);
+    shouldRetryGroup.put(groupId, false);
+    final var operation = config.pendingChangesFor(localMemberId).orElseThrow();
+    final var observer = topologyMetrics.observeOperation(operation);
+    LOG.info(
+        "Applying configuration change operation {} for partition group {}", operation, groupId);
+
+    final var appliers = partitionGroupAppliers.get(groupId);
+    final var operationApplier = appliers.getApplier(operation);
+    final var operationInitialized =
+        operationApplier
+            .init(config)
+            .map(transformer -> transformer.apply(config))
+            .flatMap(
+                updatedConfig -> {
+                  nonDefaultGroupConfigs.put(groupId, updatedConfig);
+                  return Either.right(updatedConfig);
+                });
+
+    if (operationInitialized.isLeft()) {
+      observer.failed();
+      onGoingGroupOperations.put(groupId, false);
+      LOG.error(
+          "Failed to initialize configuration change operation {} for group {}",
+          operation,
+          groupId,
+          operationInitialized.getLeft());
+      return;
+    }
+
+    final var initializedConfig = operationInitialized.get();
+    operationApplier
+        .apply()
+        .onComplete(
+            (transformer, error) ->
+                onGroupOperationApplied(
+                    groupId, initializedConfig, operation, transformer, error, observer));
+  }
+
+  private void onGroupOperationApplied(
+      final String groupId,
+      final ClusterConfiguration configOnWhichOpApplied,
+      final ClusterConfigurationChangeOperation operation,
+      final UnaryOperator<ClusterConfiguration> transformer,
+      final Throwable error,
+      final OperationObserver observer) {
+    onGoingGroupOperations.put(groupId, false);
+    if (error == null) {
+      observer.applied();
+      backoffRetry.reset();
+      final var current = nonDefaultGroupConfigs.getOrDefault(groupId, ClusterConfiguration.init());
+      if (current.version() != configOnWhichOpApplied.version()) {
+        LOG.debug(
+            "Configuration changed for group {} while applying operation {}. "
+                + "Expected version {}. Current version {}. Most likely cancelled.",
+            groupId,
+            operation,
+            configOnWhichOpApplied.version(),
+            current.version());
+        return;
+      }
+      nonDefaultGroupConfigs.put(groupId, current.advanceConfigurationChange(transformer));
+      LOG.info(
+          "Operation {} for group {} applied. Updated config to {}",
+          operation,
+          groupId,
+          nonDefaultGroupConfigs.get(groupId));
+      executor.run(
+          () -> {
+            final var groupConfig = nonDefaultGroupConfigs.get(groupId);
+            if (groupConfig != null) {
+              applyGroupConfigurationChangeOperation(groupId, groupConfig);
+            }
+          });
+    } else {
+      observer.failed();
+      shouldRetryGroup.put(groupId, true);
+      final var delay = backoffRetry.nextDelay();
+      LOG.warn(
+          "Failed to apply operation {} for group {}. Will be retried in {}.",
+          operation,
+          groupId,
+          delay,
+          error);
+      executor.schedule(
+          delay,
+          () -> {
+            final var groupConfig = nonDefaultGroupConfigs.get(groupId);
+            if (groupConfig != null) {
+              applyGroupConfigurationChangeOperation(groupId, groupConfig);
+            }
+          });
     }
   }
 
