@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 dependencies {
@@ -16,20 +17,3 @@ dependencies {
 }
 
 description = "Zeebe Backup Store Testkit"
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-val tests by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-    extendsFrom(configurations["testRuntimeClasspath"])
-}
-
-artifacts {
-    add("tests", testsJar)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)

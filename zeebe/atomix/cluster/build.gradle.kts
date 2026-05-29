@@ -7,6 +7,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 plugins {
     id("buildlogic.sbe-conventions")
     id("buildlogic.netty-tcnative-runtime-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 // Configure SBE generation
@@ -66,20 +67,3 @@ dependencies {
 }
 
 description = "Zeebe Atomix Cluster"
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-val tests by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-    extendsFrom(configurations["testRuntimeClasspath"])
-}
-
-artifacts {
-    add("tests", testsJar)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)

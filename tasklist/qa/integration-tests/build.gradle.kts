@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 dependencies {
@@ -93,10 +94,3 @@ configurations.named("testRuntimeClasspath") {
 tasks.withType<Test>().configureEach {
     maxHeapSize = "3g"
 }
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)

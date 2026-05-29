@@ -7,6 +7,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 val backwardsCompatVersion = "8.8.0"
@@ -61,20 +62,3 @@ dependencies {
 }
 
 description = "Zeebe Util"
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-val tests by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-    extendsFrom(configurations["testRuntimeClasspath"])
-}
-
-artifacts {
-    add("tests", testsJar)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)

@@ -5,6 +5,7 @@
 plugins {
     id("buildlogic.server-conventions")
     id("buildlogic.integration-test-module-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 dependencies {
@@ -129,23 +130,6 @@ dependencies {
 }
 
 description = "Camunda QA Acceptance Tests"
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-val tests by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-    extendsFrom(configurations["testRuntimeClasspath"])
-}
-
-artifacts {
-    add("tests", testsJar)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)
 
 configurations.named("testRuntimeClasspath") {
     exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")

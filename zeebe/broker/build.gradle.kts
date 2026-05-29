@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.sbe-conventions")
+    id("buildlogic.test-jar-conventions")
 }
 
 // Configure SBE generation
@@ -92,20 +93,3 @@ dependencies {
 }
 
 description = "Zeebe Broker"
-
-val testsJar by tasks.registering(Jar::class) {
-    archiveClassifier = "tests"
-    from(sourceSets["test"].output)
-}
-
-val tests by configurations.creating {
-    isCanBeConsumed = true
-    isCanBeResolved = false
-    extendsFrom(configurations["testRuntimeClasspath"])
-}
-
-artifacts {
-    add("tests", testsJar)
-}
-
-(publishing.publications["maven"] as MavenPublication).artifact(testsJar)
