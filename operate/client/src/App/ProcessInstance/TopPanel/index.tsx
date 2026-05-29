@@ -22,6 +22,8 @@ import {
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
   WAITING_BADGE,
+  AGENT_STATUS_TAG,
+  AGENT_SHINE,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -30,8 +32,11 @@ import {Diagram} from 'modules/components/Diagram';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
+import {AgentStatusOverlay} from './AgentStatusOverlay';
+import {AgentShineOverlay} from './AgentShineOverlay';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {WaitingStateOverlay} from 'modules/components/WaitingStateOverlay';
+import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/useProcessInstanceAgentInstances';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
@@ -56,7 +61,12 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
 import {getWaitStateLabel} from 'modules/utils/waitStates';
-import type {ElementState} from 'modules/bpmn-js/overlayTypes';
+import type {
+  AgentShinePayload,
+  AgentStatusPayload,
+  ElementState,
+  OverlayData,
+} from 'modules/bpmn-js/overlayTypes';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -66,6 +76,8 @@ import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram'
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
 const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
+const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
+const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -113,6 +125,7 @@ const TopPanel: React.FC = observer(() => {
     processInstanceKey: processInstanceId,
     enabled: processInstance?.state === 'ACTIVE',
   });
+  const {data: agentInstancesData} = useProcessInstanceAgentInstances();
   const modificationsByElement = useModificationsByElement();
   const affectedTokenCount = sourceElementInstanceKeyForMoveOperation
     ? 1
@@ -212,6 +225,41 @@ const TopPanel: React.FC = observer(() => {
     return overlays;
   }, [inspectionData]);
 
+  const agentOverlays = useMemo(() => {
+    if (!agentInstancesData?.items?.length) {
+      return [];
+    }
+
+    const mappedElementIds = new Set<string>();
+
+    return agentInstancesData.items.flatMap<OverlayData>((agentInstance) => {
+      if (mappedElementIds.has(agentInstance.elementId)) {
+        return [];
+      }
+
+      mappedElementIds.add(agentInstance.elementId);
+      return [
+        {
+          type: OVERLAY_TYPE_AGENT_STATUS,
+          elementId: agentInstance.elementId,
+          position: AGENT_STATUS_TAG,
+          payload: {
+            status: agentInstance.status,
+            agentInstanceKey: agentInstance.agentInstanceKey,
+          } satisfies AgentStatusPayload,
+        },
+        {
+          type: OVERLAY_TYPE_AGENT_SHINE,
+          elementId: agentInstance.elementId,
+          position: AGENT_SHINE,
+          payload: {
+            agentInstanceKey: agentInstance.agentInstanceKey,
+          } satisfies AgentShinePayload,
+        },
+      ];
+    });
+  }, [agentInstancesData]);
+
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
       ? [selectedAnchorElementId]
@@ -275,6 +323,12 @@ const TopPanel: React.FC = observer(() => {
   );
   const waitingOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_WAITING_STATE,
+  );
+  const agentStatusOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_STATUS,
+  );
+  const agentShineOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_SHINE,
   );
 
   const modifiableElements = useModifiableElements();
@@ -423,7 +477,11 @@ const TopPanel: React.FC = observer(() => {
                         ...(elementStateOverlays ?? []),
                         ...modificationBadgesPerElement.get(),
                       ]
-                    : [...(elementStateOverlays ?? []), ...waitingStateOverlays]
+                    : [
+                        ...(elementStateOverlays ?? []),
+                        ...agentOverlays,
+                        ...waitingStateOverlays,
+                      ]
                 }
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />
@@ -492,6 +550,26 @@ const TopPanel: React.FC = observer(() => {
                       key={`waiting-${overlay.elementId}`}
                       container={overlay.container}
                       label={payload.label}
+                    />
+                  );
+                })}
+                {agentStatusOverlays.map((overlay) => {
+                  const payload = overlay.payload as AgentStatusPayload;
+                  return (
+                    <AgentStatusOverlay
+                      key={`${payload.agentInstanceKey}-status`}
+                      container={overlay.container}
+                      status={payload.status}
+                    />
+                  );
+                })}
+                {agentShineOverlays.map((overlay) => {
+                  const payload = overlay.payload as AgentShinePayload;
+                  return (
+                    <AgentShineOverlay
+                      key={`${payload.agentInstanceKey}-shine`}
+                      container={overlay.container}
+                      elementId={overlay.elementId}
                     />
                   );
                 })}

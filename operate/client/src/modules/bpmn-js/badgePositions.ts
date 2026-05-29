@@ -44,6 +44,16 @@ const WAITING_BADGE = {
   left: 6,
 };
 
+const AGENT_STATUS_TAG = {
+  top: -32,
+  left: 0,
+};
+
+const AGENT_SHINE = {
+  top: 0,
+  left: 0,
+};
+
 export {
   MODIFICATIONS,
   DECISION_STATE,
@@ -54,4 +64,6 @@ export {
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
   WAITING_BADGE,
+  AGENT_STATUS_TAG,
+  AGENT_SHINE,
 };
