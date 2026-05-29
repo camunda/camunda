@@ -219,7 +219,7 @@ jobs:
                 !contains(github.event.pull_request.labels.*.name, 'gradle-build')
               )
             }}
-      - run: ./gradlew assemble --no-daemon
+      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -748,9 +748,9 @@ jobs:
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: always() && needs.detect-changes.outputs.java-code-changes == 'true' && needs.gradle-compile-check.result == 'success'
     name: "General / Unit - Back End"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, gradle-compile-check, setup-tests ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -766,10 +766,9 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          maven-extra-args: -T1C -Dquickly
+          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Setup General UT Modules
@@ -807,9 +806,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   zeebe-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: always() && needs.detect-changes.outputs.java-code-changes == 'true' && needs.gradle-compile-check.result == 'success'
     name: "Zeebe / Unit - ${{matrix.component}}"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, gradle-compile-check, setup-tests ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -857,10 +856,9 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
-          maven-extra-args: -T1C -Dquickly
+          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Gradle Run Test (Zeebe)
@@ -1786,9 +1784,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: always() && (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && (needs.detect-changes.outputs.gradle-changes != 'true' || needs.gradle-compile-check.result == 'success')
     name: "Tasklist"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, gradle-compile-check ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
     permissions: { }
@@ -1797,9 +1795,9 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
 
   operate-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: always() && (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && (needs.detect-changes.outputs.gradle-changes != 'true' || needs.gradle-compile-check.result == 'success')
     name: "Operate"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, gradle-compile-check ]
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
     permissions: { }
@@ -1808,9 +1806,9 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
 
   optimize-ci:
-    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
+    if: always() && (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && (needs.detect-changes.outputs.gradle-changes != 'true' || needs.gradle-compile-check.result == 'success')
     name: "Optimize"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, gradle-compile-check ]
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
     permissions: { }
