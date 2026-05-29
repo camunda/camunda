@@ -82,6 +82,7 @@ tasks.withType<Test> {
         "--add-opens=java.base/java.util=ALL-UNNAMED",
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+        "--enable-native-access=ALL-UNNAMED",
     )
 
     useJUnitPlatform()
