@@ -15,7 +15,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {FilteredElementInstancesList} from './index';
-import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -71,11 +70,7 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
 );
 
 describe('<FilteredElementInstancesList />', () => {
-  afterEach(() => {
-    elementInstanceHistorySearchStore.reset();
-  });
-
-  it('renders results returned by the search store', async () => {
+  it('renders results returned by the search API', async () => {
     mockSearchElementInstances().withSuccess(
       mockResponse(
         [
@@ -94,15 +89,14 @@ describe('<FilteredElementInstancesList />', () => {
       ),
     );
 
-    elementInstanceHistorySearchStore.setProcessInstanceKey(
-      PROCESS_INSTANCE_KEY,
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
     );
-    elementInstanceHistorySearchStore.setSearchText('order');
-    await elementInstanceHistorySearchStore.fetchFirstPage();
-
-    render(<FilteredElementInstancesList businessObjects={businessObjects} />, {
-      wrapper: Wrapper,
-    });
 
     await waitFor(() => {
       expect(screen.getByTestId('search-result-100')).toBeInTheDocument();
@@ -113,15 +107,14 @@ describe('<FilteredElementInstancesList />', () => {
   it('renders the empty state when there are no results', async () => {
     mockSearchElementInstances().withSuccess(mockResponse([], 0));
 
-    elementInstanceHistorySearchStore.setProcessInstanceKey(
-      PROCESS_INSTANCE_KEY,
+    render(
+      <FilteredElementInstancesList
+        searchText="zzz"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
     );
-    elementInstanceHistorySearchStore.setSearchText('zzz');
-    await elementInstanceHistorySearchStore.fetchFirstPage();
-
-    render(<FilteredElementInstancesList businessObjects={businessObjects} />, {
-      wrapper: Wrapper,
-    });
 
     await waitFor(() => {
       expect(screen.getByText('No matching elements')).toBeInTheDocument();
@@ -132,35 +125,36 @@ describe('<FilteredElementInstancesList />', () => {
   it('renders an error message on a non-permissions error', async () => {
     mockSearchElementInstances().withServerError(500);
 
-    elementInstanceHistorySearchStore.setProcessInstanceKey(
-      PROCESS_INSTANCE_KEY,
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
     );
-    elementInstanceHistorySearchStore.setSearchText('order');
-    await elementInstanceHistorySearchStore.fetchFirstPage();
 
-    render(<FilteredElementInstancesList businessObjects={businessObjects} />, {
-      wrapper: Wrapper,
+    await waitFor(() => {
+      expect(
+        screen.getByText('Search results could not be fetched'),
+      ).toBeInTheDocument();
     });
-
-    expect(
-      screen.getByText('Search results could not be fetched'),
-    ).toBeInTheDocument();
   });
 
   it('renders the permissions error UX on a 403', async () => {
     mockSearchElementInstances().withServerError(403);
 
-    elementInstanceHistorySearchStore.setProcessInstanceKey(
-      PROCESS_INSTANCE_KEY,
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
     );
-    elementInstanceHistorySearchStore.setSearchText('order');
-    await elementInstanceHistorySearchStore.fetchFirstPage();
 
-    render(<FilteredElementInstancesList businessObjects={businessObjects} />, {
-      wrapper: Wrapper,
+    await waitFor(() => {
+      expect(screen.getAllByText(/permission/i).length).toBeGreaterThan(0);
     });
-
-    // Permissions error UX shows the forbidden message
-    expect(screen.getAllByText(/permission/i).length).toBeGreaterThan(0);
   });
 });

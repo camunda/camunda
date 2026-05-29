@@ -7,8 +7,11 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect, useRef} from 'react';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useMemo, useRef} from 'react';
+import type {
+  ElementInstance,
+  QueryElementInstancesRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {Search} from '@carbon/react/icons';
 import {EmptyState} from 'modules/components/EmptyState';
@@ -17,11 +20,16 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {Skeleton} from '../Skeleton';
 import {Bar} from '../ElementInstancesTree/Bar';
 import {ElementInstanceIcon} from 'modules/components/ElementInstanceIcon';
-import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
+import {useElementInstancesSearchPaginated} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
+import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
+import {useDashboardScrollPagination} from 'App/Dashboard/useDashboardScrollPagination';
+import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
+import {isRequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {
   ScrollContainer,
   List,
@@ -35,6 +43,8 @@ const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'Instance History',
   'this instance history',
 );
+
+const PAGE_LIMIT = 50;
 
 type RowProps = {
   item: ElementInstance;
@@ -94,89 +104,103 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
 });
 
 type Props = {
+  searchText: string;
+  processInstanceKey: string;
   businessObjects: BusinessObjects;
 };
 
-const FilteredElementInstancesList: React.FC<Props> = observer(
-  ({businessObjects}) => {
-    const scrollableContainerRef = useRef<HTMLDivElement>(null);
-    const {state} = elementInstanceHistorySearchStore;
+const FilteredElementInstancesList: React.FC<Props> = ({
+  searchText,
+  processInstanceKey,
+  businessObjects,
+}) => {
+  const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
-    // Trigger the first fetch when the panel mounts with an active search
-    // (e.g. when search text was already present from a prior interaction).
-    useEffect(() => {
-      if (
-        elementInstanceHistorySearchStore.hasActiveSearch &&
-        state.status === 'idle'
-      ) {
-        void elementInstanceHistorySearchStore.fetchFirstPage();
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  const payload = useMemo(
+    () =>
+      ({
+        filter: {
+          processInstanceKey,
+          $or: [
+            {elementName: {$like: escapeLikePattern(searchText)}},
+            {elementId: {$like: escapeLikePattern(searchText)}},
+          ],
+        },
+        sort: [{field: 'startDate' as const, order: 'asc' as const}],
+      }) as QueryElementInstancesRequestBody,
+    [searchText, processInstanceKey],
+  );
 
-    if (state.status === 'error-permissions') {
-      return (
-        <ErrorMessage
-          message={INSTANCE_HISTORY_FORBIDDEN.message}
-          additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
-        />
-      );
-    }
+  const query = useElementInstancesSearchPaginated({
+    payload,
+    select: flattenPaginatedPages,
+  });
 
-    if (state.status === 'error') {
-      return (
-        <ErrorMessage
-          message="Search results could not be fetched"
-          additionalInfo="Refresh the page to try again"
-        />
-      );
-    }
+  const scroll = useDashboardScrollPagination(query, PAGE_LIMIT);
 
-    if (state.status === 'loading' && state.items.length === 0) {
-      return <Skeleton />;
-    }
+  const isForbiddenError =
+    query.status === 'error' &&
+    isRequestError(query.error) &&
+    query.error?.response?.status === HTTP_STATUS_FORBIDDEN;
 
-    if (state.status === 'loaded' && state.items.length === 0) {
-      return (
-        <EmptyStateContainer>
-          <EmptyState
-            heading="No matching elements"
-            description="Try a different name or ID"
-            icon={<Search size={32} />}
-          />
-        </EmptyStateContainer>
-      );
-    }
-
+  if (isForbiddenError) {
     return (
-      <>
-        <StatusRegion aria-live="polite">
-          {state.pageMetadata.totalItems} matching elements
-        </StatusRegion>
-        <ScrollContainer ref={scrollableContainerRef}>
-          <InfiniteScroller
-            scrollableContainerRef={scrollableContainerRef}
-            onVerticalScrollEndReach={() => {
-              void elementInstanceHistorySearchStore.fetchNextPage();
-            }}
-            onVerticalScrollStartReach={() => {
-              void elementInstanceHistorySearchStore.fetchPreviousPage();
-            }}
-          >
-            <List>
-              {state.items.map((item) => (
-                <Row
-                  key={item.elementInstanceKey}
-                  item={item}
-                  businessObjects={businessObjects}
-                />
-              ))}
-            </List>
-          </InfiniteScroller>
-        </ScrollContainer>
-      </>
+      <ErrorMessage
+        message={INSTANCE_HISTORY_FORBIDDEN.message}
+        additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
+      />
     );
-  },
-);
+  }
+
+  if (query.status === 'error') {
+    return (
+      <ErrorMessage
+        message="Search results could not be fetched"
+        additionalInfo="Refresh the page to try again"
+      />
+    );
+  }
+
+  if (query.status === 'pending') {
+    return <Skeleton />;
+  }
+
+  if (query.data?.items.length === 0) {
+    return (
+      <EmptyStateContainer>
+        <EmptyState
+          heading="No matching elements"
+          description="Try a different name or ID"
+          icon={<Search size={32} />}
+        />
+      </EmptyStateContainer>
+    );
+  }
+
+  return (
+    <>
+      <StatusRegion aria-live="polite">
+        {query.data?.totalCount ?? 0} matching elements
+      </StatusRegion>
+      <ScrollContainer ref={scrollableContainerRef}>
+        <InfiniteScroller
+          scrollableContainerRef={scrollableContainerRef}
+          onVerticalScrollEndReach={scroll.handleScrollEndReach}
+          onVerticalScrollStartReach={scroll.handleScrollStartReach}
+        >
+          <List>
+            {query.data?.items.map((item) => (
+              <Row
+                key={item.elementInstanceKey}
+                item={item}
+                businessObjects={businessObjects}
+              />
+            ))}
+          </List>
+        </InfiniteScroller>
+      </ScrollContainer>
+    </>
+  );
+};
 
 export {FilteredElementInstancesList};

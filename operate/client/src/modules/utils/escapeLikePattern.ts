@@ -19,32 +19,4 @@ const escapeLikePattern = (input: string): string => {
   return `*${escaped}*`;
 };
 
-/**
- * Emits substring `$like` patterns that approximate a case-insensitive
- * substring search. The v2 API's `$like` operator is case-sensitive and there
- * is no `$ilike`, so the caller is expected to combine the returned patterns
- * with `$or` to cover the common case styles used in BPMN naming
- * (Title Case names, lower/UPPER case ids).
- *
- * For `"order"` this returns `["*order*", "*Order*", "*ORDER*"]`.
- * Duplicates are removed, so input that is already in one of the canonical
- * forms produces fewer entries.
- */
-const escapeLikePatternsForCaseInsensitive = (input: string): string[] => {
-  const variants = new Set<string>([
-    input,
-    input.toLowerCase(),
-    input.toUpperCase(),
-    capitalizeFirstLetter(input),
-  ]);
-  return Array.from(variants).map(escapeLikePattern);
-};
-
-const capitalizeFirstLetter = (s: string): string => {
-  if (s.length === 0) {
-    return s;
-  }
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-};
-
-export {escapeLikePattern, escapeLikePatternsForCaseInsensitive};
+export {escapeLikePattern};
