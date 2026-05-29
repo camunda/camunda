@@ -131,7 +131,7 @@ public class CamundaClientAuthProperties {
 
   /**
    * The initial backoff duration applied between token fetch retry attempts. Each subsequent delay
-   * is multiplied by {@link #tokenFetchBackoffMultiplier}.
+   * is multiplied by {@code camunda.client.auth.token-fetch-backoff-multiplier}.
    */
   private Duration tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
 
