@@ -173,6 +173,10 @@ const queryKeys = {
     ) => {
       return ['elementInstancesSearchByScope', ...Object.values(payload)];
     },
+    searchPaginated: (payload?: QueryElementInstancesRequestBody) =>
+      payload
+        ? ['elementInstancesSearchPaginated', payload]
+        : ['elementInstancesSearchPaginated'],
   },
   processInstances: {
     base: () => ['processInstances'],

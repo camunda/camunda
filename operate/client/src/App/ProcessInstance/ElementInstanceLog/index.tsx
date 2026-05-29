@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {
   Container,
   PanelHeader,
@@ -28,10 +28,15 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
-import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 
-const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
-  observer(({children, isPanel}) => {
+type LayoutProps = {
+  children: React.ReactNode;
+  isPanel: boolean;
+  searchInput?: React.ReactNode;
+};
+
+const Layout: React.FC<LayoutProps> = observer(
+  ({children, isPanel, searchInput}) => {
     if (!isPanel) {
       return children;
     }
@@ -46,11 +51,12 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
             </Stack>
           )}
         </PanelHeader>
-        {!modificationsStore.isModificationModeEnabled && <SearchInput />}
+        {!modificationsStore.isModificationModeEnabled && searchInput}
         {children}
       </Container>
     );
-  });
+  },
+);
 
 const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'Instance History',
@@ -70,27 +76,41 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       error: businessObjectsError,
     } = useBusinessObjects();
 
-    // Keep the search store's processInstanceKey in sync with the URL, and
-    // drop any active search when modification mode is enabled (modification
-    // mode is incompatible with search).
-    const processInstanceKey = processInstance?.processInstanceKey ?? null;
+    const [searchText, setSearchText] = useState('');
+    const [debouncedSearchText, setDebouncedSearchText] = useState('');
+
     const isModificationModeEnabled =
       modificationsStore.isModificationModeEnabled;
+
+    // Clear search when modification mode is enabled (modification mode is
+    // incompatible with search).
     useEffect(() => {
       if (isModificationModeEnabled) {
-        elementInstanceHistorySearchStore.reset();
+        setSearchText('');
       }
-      elementInstanceHistorySearchStore.setProcessInstanceKey(
-        processInstanceKey,
-      );
-      return () => {
-        elementInstanceHistorySearchStore.reset();
-      };
-    }, [processInstanceKey, isModificationModeEnabled]);
+    }, [isModificationModeEnabled]);
+
+    // Debounce the search text by 300ms before triggering the API query.
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchText(searchText);
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [searchText]);
+
+    const isFiltered = debouncedSearchText.length > 0;
+
+    const searchInputElement = (
+      <SearchInput
+        value={searchText}
+        onChange={setSearchText}
+        onClear={() => setSearchText('')}
+      />
+    );
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
-        <Layout isPanel={isPanel}>
+        <Layout isPanel={isPanel} searchInput={searchInputElement}>
           <Skeleton />
         </Layout>
       );
@@ -104,7 +124,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           businessObjectsError?.response?.status === HTTP_STATUS_FORBIDDEN);
 
       return (
-        <Layout isPanel={isPanel}>
+        <Layout isPanel={isPanel} searchInput={searchInputElement}>
           <ErrorMessage
             message={
               isForbidden
@@ -121,10 +141,8 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       );
     }
 
-    const isFiltered = elementInstanceHistorySearchStore.hasActiveSearch;
-
     return (
-      <Layout isPanel={isPanel}>
+      <Layout isPanel={isPanel} searchInput={searchInputElement}>
         <PanelBody>
           <HiddenTreeWrapper $hidden={isFiltered}>
             <ElementInstancesTree
@@ -136,7 +154,11 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
             />
           </HiddenTreeWrapper>
           {isFiltered && (
-            <FilteredElementInstancesList businessObjects={businessObjects!} />
+            <FilteredElementInstancesList
+              searchText={debouncedSearchText}
+              processInstanceKey={processInstance!.processInstanceKey}
+              businessObjects={businessObjects!}
+            />
           )}
         </PanelBody>
       </Layout>
