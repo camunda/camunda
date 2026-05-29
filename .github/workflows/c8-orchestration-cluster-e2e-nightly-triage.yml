@@ -122,7 +122,7 @@ jobs:
 
             # Find the latest run
             run_info=$(gh run list --workflow "$workflow_file" --repo "$REPO" \
-                        --limit 1 --json databaseId,conclusion,createdAt,event 2>/dev/null \
+                        --status completed --limit 1 --json databaseId,conclusion,createdAt,event 2>/dev/null \
                         | jq -c '.[0] // empty')
             if [ -z "$run_info" ] || [ "$run_info" = "null" ]; then
               echo "  no recent runs — skipping"

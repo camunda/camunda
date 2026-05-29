@@ -87,11 +87,15 @@ jobs:
               ;;
           esac
 
-      - name: Checkout target branch
+      - name: Checkout main for workflow tooling
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.target.outputs.ref }}
           fetch-depth: 1
+          # Intentionally NOT pinning to the target stable branch.
+          # The workspace manifest and guidance files live on main (introduced
+          # by this PR) and are absent from stable branches. workspace-cli
+          # handles cloning + switching to the correct stable branch inside
+          # ws_dir; nothing in the runner workspace needs the stable tree.
           # We re-configure git with the bot PAT below; no need to keep the
           # short-lived GITHUB_TOKEN around in .git/config (zizmor: artipacked).
           persist-credentials: false
