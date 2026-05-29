@@ -342,6 +342,7 @@ jobs:
 
       - name: Post Slack triage summary
         id: slack
+        continue-on-error: true
         if: always()
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
