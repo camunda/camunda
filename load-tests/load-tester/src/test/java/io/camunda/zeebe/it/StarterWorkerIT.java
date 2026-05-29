@@ -21,6 +21,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
+import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.junit.jupiter.api.Disabled;
@@ -76,5 +77,25 @@ class StarterWorkerIT {
                   .describedAs("Starter should have created at least one process instance")
                   .isGreaterThan(0);
             });
+
+    // and — the starter should have exposed a counter that recorded each submitted request.
+    final var counter =
+        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counter();
+    assertThat(counter)
+        .describedAs("starter.process.instances.started counter should be registered")
+        .isNotNull();
+    assertThat(counter.count())
+        .describedAs("counter should reflect the number of submitted start requests (>0)")
+        .isGreaterThan(0.0);
+
+    // and — the run-finished gauge should have flipped to 1 once the duration limit elapsed.
+    final var runFinishedGauge =
+        meterRegistry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
+    assertThat(runFinishedGauge)
+        .describedAs("starter.run.finished gauge should be registered")
+        .isNotNull();
+    assertThat(runFinishedGauge.value())
+        .describedAs("gauge should be 1 after the starter finished its creation loop")
+        .isEqualTo(1.0);
   }
 }
