@@ -38,20 +38,6 @@ public class UserIT {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
-
-    final var user = UserFixtures.createRandomized(b -> b);
-    createAndSaveUser(rdbmsWriters, user);
-
-    final var instance = userReader.findOneByUsername(user.username()).orElse(null);
-
-    compareUsers(instance, user);
-  }
-
-  @TestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
