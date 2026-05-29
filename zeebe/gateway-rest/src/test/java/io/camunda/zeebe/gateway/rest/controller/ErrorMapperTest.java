@@ -28,6 +28,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -65,11 +66,13 @@ public class ErrorMapperTest extends RestControllerTest {
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @Autowired private View error;
 
   @BeforeEach
   void setUp() {
+    when(serviceRegistry.userTaskServices(any())).thenReturn(userTaskServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

@@ -29,6 +29,7 @@ import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -65,11 +66,14 @@ public class RoleControllerTest {
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     }
 
     @ParameterizedTest
@@ -1258,11 +1262,14 @@ public class RoleControllerTest {
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     }
 
     /**

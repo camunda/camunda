@@ -21,6 +21,7 @@ import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -63,11 +64,13 @@ public class ResourceControllerTest extends RestControllerTest {
   @MockitoBean ResourceServices resourceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<DeployResourcesRequest> deployRequestCaptor;
   @Captor ArgumentCaptor<ResourceDeletionRequest> deleteRequestCaptor;
 
   @BeforeEach
   void setup() {
+    Mockito.lenient().when(serviceRegistry.resourceServices(any())).thenReturn(resourceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

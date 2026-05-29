@@ -20,8 +20,10 @@ import io.camunda.gateway.protocol.model.DeleteDecisionInstanceRequest;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -37,59 +39,74 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-instances")
 public class DecisionInstanceController {
 
-  private final DecisionInstanceServices decisionInstanceServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionInstanceController(
-      final DecisionInstanceServices decisionInstanceServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
-    this.decisionInstanceServices = decisionInstanceServices;
+      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final DecisionInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> search(registry.decisionInstanceServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
     return RequestValidator.validate(
             violations ->
                 RequestValidator.validateDecisionEvaluationInstanceKeyFormat(
                     decisionEvaluationInstanceKey, violations))
         .<ResponseEntity<DecisionInstanceGetQueryResult>>map(RestErrorMapper::mapProblemToResponse)
-        .orElseGet(() -> getDecisionInstance(decisionEvaluationInstanceKey));
+        .orElseGet(
+            () ->
+                getDecisionInstance(
+                    registry.decisionInstanceServices(physicalTenantId),
+                    decisionEvaluationInstanceKey));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{decisionEvaluationKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstance(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long decisionEvaluationKey,
       @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            decisionInstanceServices.deleteDecisionInstance(
-                decisionEvaluationKey,
-                Objects.nonNull(request) ? request.getOperationReference() : null,
-                authenticationProvider.getCamundaAuthentication()));
+            registry
+                .decisionInstanceServices(physicalTenantId)
+                .deleteDecisionInstance(
+                    decisionEvaluationKey,
+                    Objects.nonNull(request) ? request.getOperationReference() : null,
+                    authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstancesBatchOperation(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final DecisionInstanceDeletionBatchOperationRequest request) {
     return RequestMapper.toRequiredDecisionInstanceFilter(request.getFilter())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationDeletion);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter ->
+                batchOperationDeletion(
+                    registry.decisionInstanceServices(physicalTenantId), filter));
   }
 
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
-      final DecisionInstanceQuery query) {
+      final DecisionInstanceServices decisionInstanceServices, final DecisionInstanceQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var decisionInstances = decisionInstanceServices.search(query, authentication);
@@ -101,6 +118,7 @@ public class DecisionInstanceController {
   }
 
   private ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstance(
+      final DecisionInstanceServices decisionInstanceServices,
       final String decisionEvaluationInstanceKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
@@ -114,6 +132,7 @@ public class DecisionInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
+      final DecisionInstanceServices decisionInstanceServices,
       final io.camunda.search.filter.DecisionInstanceFilter filter) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(

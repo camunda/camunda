@@ -25,7 +25,9 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
@@ -43,7 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/system")
 public class SystemController {
 
-  private final UsageMetricsServices usageMetricsServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final CamundaSecurityLibraryProperties cslProperties;
@@ -51,13 +53,13 @@ public class SystemController {
   private final long maxRequestSizeBytes;
 
   public SystemController(
-      final UsageMetricsServices usageMetricsServices,
+      final ServiceRegistry registry,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
-    this.usageMetricsServices = usageMetricsServices;
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
     this.gatewayRestConfiguration = gatewayRestConfiguration;
     this.cslProperties = cslProperties;
@@ -69,13 +71,16 @@ public class SystemController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/usage-metrics")
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestParam final String startTime,
       @RequestParam final String endTime,
       @RequestParam(required = false) final String tenantId,
       @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
 
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> getMetrics(registry.usageMetricsServices(physicalTenantId), query));
   }
 
   @CamundaGetMapping(path = "/configuration")
@@ -141,7 +146,8 @@ public class SystemController {
         .build();
   }
 
-  private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
+  private ResponseEntity<UsageMetricsResponse> getMetrics(
+      final UsageMetricsServices usageMetricsServices, final UsageMetricsQuery query) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUsageMetricsResponse(

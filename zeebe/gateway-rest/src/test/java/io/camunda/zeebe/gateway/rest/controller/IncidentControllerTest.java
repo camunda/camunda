@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -39,9 +40,11 @@ public class IncidentControllerTest extends RestControllerTest {
   @MockitoBean IncidentServices incidentServices;
 
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUp() {
+    when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

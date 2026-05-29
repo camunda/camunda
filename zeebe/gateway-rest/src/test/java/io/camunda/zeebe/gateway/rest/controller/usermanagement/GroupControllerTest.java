@@ -28,6 +28,7 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
@@ -72,6 +73,7 @@ public class GroupControllerTest {
           "instance": "%%s"
         }"""
             .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @Test
     void shouldReturnErrorOnCreate() {
@@ -224,12 +226,16 @@ public class GroupControllerTest {
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
     @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     @ParameterizedTest

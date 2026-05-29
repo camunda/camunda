@@ -23,6 +23,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
@@ -61,9 +62,11 @@ public class UserControllerTest {
     @MockitoBean private UserServices userServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
     @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);

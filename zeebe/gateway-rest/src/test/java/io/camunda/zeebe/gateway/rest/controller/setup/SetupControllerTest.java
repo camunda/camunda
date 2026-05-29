@@ -25,6 +25,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.net.URI;
@@ -54,6 +55,7 @@ class SetupControllerTest extends RestControllerTest {
   @MockitoBean private UserServices userServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
   private CamundaSecurityLibraryProperties cslProperties;
@@ -61,6 +63,8 @@ class SetupControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     final var anonymousAuthentication = CamundaAuthentication.anonymous();
+    when(serviceRegistry.userServices(any())).thenReturn(userServices);
+    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     when(authenticationProvider.getAnonymousCamundaAuthentication())
         .thenReturn(anonymousAuthentication);
     when(cslProperties.getAuthentication().getMethod()).thenReturn(AuthenticationMethod.BASIC);

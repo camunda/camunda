@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -22,16 +22,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2")
 public class StatusController {
 
-  private final TopologyServices topologyServices;
+  private final ServiceRegistry registry;
 
-  public StatusController(final TopologyServices topologyServices) {
-    this.topologyServices = topologyServices;
+  public StatusController(final ServiceRegistry registry) {
+    this.registry = registry;
   }
 
   @CamundaGetMapping(path = "/status")
   public CompletableFuture<ResponseEntity<Object>> getStatus() {
     return RequestExecutor.executeServiceMethod(
-        topologyServices::getStatus, StatusController::getStatusResponse);
+        registry.topologyServices()::getStatus, StatusController::getStatusResponse);
   }
 
   private static ResponseEntity<Object> getStatusResponse(final ClusterStatus clusterStatus) {

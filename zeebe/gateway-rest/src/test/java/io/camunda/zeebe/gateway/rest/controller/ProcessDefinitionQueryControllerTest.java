@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,6 +34,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
@@ -139,6 +141,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @MockitoBean FormServices formServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @Captor
   ArgumentCaptor<io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
@@ -150,6 +153,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupProcessDefinitionServices() {
+    lenient()
+        .when(serviceRegistry.processDefinitionServices(any()))
+        .thenReturn(processDefinitionServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

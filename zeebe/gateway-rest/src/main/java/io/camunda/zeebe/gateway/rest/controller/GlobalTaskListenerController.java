@@ -20,10 +20,12 @@ import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GlobalListenerServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -39,15 +41,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/global-task-listeners")
 public class GlobalTaskListenerController {
 
-  private final GlobalListenerServices globalListenerServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GlobalListenerMapper globalListenerMapper;
 
   public GlobalTaskListenerController(
-      final GlobalListenerServices globalListenerServices,
+      final ServiceRegistry registry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.globalListenerServices = globalListenerServices;
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
     globalListenerMapper =
         new GlobalListenerMapper(new GlobalListenerRequestValidator(identifierValidator));
@@ -55,39 +57,53 @@ public class GlobalTaskListenerController {
 
   @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createGlobalTaskListener(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final CreateGlobalTaskListenerRequest request) {
     return globalListenerMapper
         .toGlobalTaskListenerCreateRequest(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGlobalListener);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped ->
+                createGlobalListener(registry.globalListenerServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{id}")
-  public ResponseEntity<Object> getGlobalTaskListener(@PathVariable("id") final String id) {
+  public ResponseEntity<Object> getGlobalTaskListener(
+      @PhysicalTenantId final String physicalTenantId, @PathVariable("id") final String id) {
     return globalListenerMapper
         .toGlobalTaskListenerGetRequest(id)
-        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalListener);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            mapped -> getGlobalListener(registry.globalListenerServices(physicalTenantId), mapped));
   }
 
   @CamundaPutMapping(path = "/{id}")
   public CompletableFuture<ResponseEntity<Object>> updateGlobalTaskListener(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("id") final String id,
       @RequestBody final UpdateGlobalTaskListenerRequest request) {
     return globalListenerMapper
         .toGlobalTaskListenerUpdateRequest(id, request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGlobalListener);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped ->
+                updateGlobalListener(registry.globalListenerServices(physicalTenantId), mapped));
   }
 
   @CamundaDeleteMapping(path = "/{id}")
   public CompletableFuture<ResponseEntity<Object>> deleteGlobalTaskListener(
-      @PathVariable("id") final String id) {
+      @PhysicalTenantId final String physicalTenantId, @PathVariable("id") final String id) {
     return globalListenerMapper
         .toGlobalTaskListenerDeleteRequest(id)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deleteGlobalListener);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped ->
+                deleteGlobalListener(registry.globalListenerServices(physicalTenantId), mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGlobalListener(
-      final GlobalListenerRecord request) {
+      final GlobalListenerServices globalListenerServices, final GlobalListenerRecord request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> globalListenerServices.createGlobalListener(request, authentication),
@@ -98,12 +114,16 @@ public class GlobalTaskListenerController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   private ResponseEntity<Object> search(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final GlobalTaskListenerSearchQueryRequest request) {
     return SearchQueryRequestMapper.toGlobalTaskListenerQuery(request)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> search(registry.globalListenerServices(physicalTenantId), query));
   }
 
-  private ResponseEntity<Object> getGlobalListener(final GlobalListenerRecord request) {
+  private ResponseEntity<Object> getGlobalListener(
+      final GlobalListenerServices globalListenerServices, final GlobalListenerRecord request) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
@@ -116,7 +136,7 @@ public class GlobalTaskListenerController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateGlobalListener(
-      final GlobalListenerRecord request) {
+      final GlobalListenerServices globalListenerServices, final GlobalListenerRecord request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> globalListenerServices.updateGlobalListener(request, authentication),
@@ -125,13 +145,14 @@ public class GlobalTaskListenerController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> deleteGlobalListener(
-      final GlobalListenerRecord request) {
+      final GlobalListenerServices globalListenerServices, final GlobalListenerRecord request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> globalListenerServices.deleteGlobalListener(request, authentication));
   }
 
-  private ResponseEntity<Object> search(final GlobalListenerQuery query) {
+  private ResponseEntity<Object> search(
+      final GlobalListenerServices globalListenerServices, final GlobalListenerQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = globalListenerServices.search(query, authentication);

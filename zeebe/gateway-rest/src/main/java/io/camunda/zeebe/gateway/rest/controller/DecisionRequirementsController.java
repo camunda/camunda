@@ -16,8 +16,10 @@ import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
@@ -32,24 +34,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-requirements")
 public class DecisionRequirementsController {
 
-  private final DecisionRequirementsServices decisionRequirementsServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionRequirementsController(
-      final DecisionRequirementsServices decisionRequirementsServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
-    this.decisionRequirementsServices = decisionRequirementsServices;
+      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<Object> searchDecisionRequirements(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final DecisionRequirementsSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> search(registry.decisionRequirementsServices(physicalTenantId), q));
   }
 
-  private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
+  private ResponseEntity<Object> search(
+      final DecisionRequirementsServices decisionRequirementsServices,
+      final DecisionRequirementsQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = decisionRequirementsServices.search(query, authentication);
@@ -62,13 +68,16 @@ public class DecisionRequirementsController {
 
   @CamundaGetMapping(path = "/{decisionRequirementsKey}")
   public ResponseEntity<DecisionRequirementsResult> getByKey(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
-                  decisionRequirementsServices.getByKey(decisionRequirementsKey, authentication)));
+                  registry
+                      .decisionRequirementsServices(physicalTenantId)
+                      .getByKey(decisionRequirementsKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -78,14 +87,16 @@ public class DecisionRequirementsController {
       path = "/{decisionRequirementsKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionRequirementsXml(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
-              decisionRequirementsServices.getDecisionRequirementsXml(
-                  decisionRequirementsKey, authentication));
+              registry
+                  .decisionRequirementsServices(physicalTenantId)
+                  .getDecisionRequirementsXml(decisionRequirementsKey, authentication));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

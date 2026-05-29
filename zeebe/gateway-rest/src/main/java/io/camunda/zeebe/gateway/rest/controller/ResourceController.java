@@ -20,8 +20,10 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -40,53 +42,62 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/v2")
 public class ResourceController {
 
-  private final ResourceServices resourceServices;
+  private final ServiceRegistry registry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ResourceController(
-      final ResourceServices resourceServices,
+      final ServiceRegistry registry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.resourceServices = resourceServices;
+    this.registry = registry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/deployments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> deployResources(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
 
     return RequestMapper.toDeployResourceRequest(
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deployResources);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> deployResources(registry.resourceServices(physicalTenantId), request));
   }
 
   @CamundaPostMapping(path = "/resources/{resourceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteResource(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long resourceKey,
       @RequestBody(required = false) final DeleteResourceRequest deleteRequest) {
     return RequestMapper.toResourceDeletion(resourceKey, deleteRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::delete);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> delete(registry.resourceServices(physicalTenantId), request));
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}")
   public CompletableFuture<ResponseEntity<Object>> getResource(
-      @PathVariable final long resourceKey) {
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> resourceServices.getByKey(resourceKey, authentication),
+        () -> registry.resourceServices(physicalTenantId).getByKey(resourceKey, authentication),
         ResponseMapper::toGetResourceResponse,
         HttpStatus.OK);
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content")
   public CompletableFuture<ResponseEntity<Object>> getResourceContent(
-      @PathVariable final long resourceKey) {
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> resourceServices.getContentByKeyFilteredByType(resourceKey, "rpa", authentication),
+        () ->
+            registry
+                .resourceServices(physicalTenantId)
+                .getContentByKeyFilteredByType(resourceKey, "rpa", authentication),
         entity ->
             ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -95,10 +106,13 @@ public class ResourceController {
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content/binary")
   public CompletableFuture<ResponseEntity<Object>> getResourceContentBinary(
-      @PathVariable final long resourceKey) {
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> resourceServices.getContentByKey(resourceKey, authentication),
+        () ->
+            registry
+                .resourceServices(physicalTenantId)
+                .getContentByKey(resourceKey, authentication),
         entity ->
             ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -108,12 +122,16 @@ public class ResourceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/resources/search")
   public ResponseEntity<ResourceSearchQueryResult> searchResources(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final ResourceSearchQuery query) {
     return SearchQueryRequestMapper.toDeployedResourceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> search(registry.resourceServices(physicalTenantId), q));
   }
 
-  private ResponseEntity<ResourceSearchQueryResult> search(final DeployedResourceQuery query) {
+  private ResponseEntity<ResourceSearchQueryResult> search(
+      final ResourceServices resourceServices, final DeployedResourceQuery query) {
     try {
       final var result =
           resourceServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -124,7 +142,7 @@ public class ResourceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
-      final DeployResourcesRequest request) {
+      final ResourceServices resourceServices, final DeployResourcesRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> resourceServices.deployResources(request, authentication),
@@ -132,7 +150,8 @@ public class ResourceController {
         HttpStatus.OK);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> delete(final ResourceDeletionRequest request) {
+  private CompletableFuture<ResponseEntity<Object>> delete(
+      final ResourceServices resourceServices, final ResourceDeletionRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> resourceServices.deleteResource(request, authentication),

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.stream.Stream;
@@ -150,10 +152,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           .build();
   @MockitoBean VariableServices variableServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
   @BeforeEach
   void setupServices() {
+    lenient().when(serviceRegistry.variableServices(any())).thenReturn(variableServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 

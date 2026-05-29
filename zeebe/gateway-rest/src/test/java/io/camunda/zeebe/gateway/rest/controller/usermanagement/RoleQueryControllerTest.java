@@ -31,6 +31,7 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -54,9 +55,12 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
+    when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);

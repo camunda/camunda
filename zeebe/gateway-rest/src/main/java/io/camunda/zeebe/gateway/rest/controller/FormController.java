@@ -12,8 +12,9 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.FormServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,21 +24,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/forms")
 public class FormController {
 
-  private final FormServices formServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public FormController(
-      final FormServices formServices, final CamundaAuthenticationProvider authenticationProvider) {
-    this.formServices = formServices;
+      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{formKey}")
-  public ResponseEntity<FormResult> getFormByKey(@PathVariable("formKey") final Long formKey) {
+  public ResponseEntity<FormResult> getFormByKey(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable("formKey") final Long formKey) {
     try {
       final var form =
-          formServices.getByKey(formKey, authenticationProvider.getCamundaAuthentication());
+          registry
+              .formServices(physicalTenantId)
+              .getByKey(formKey, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toFormItem(form));
     } catch (final Exception e) {

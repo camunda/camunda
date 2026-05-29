@@ -30,6 +30,7 @@ import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
@@ -79,11 +80,17 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     @ParameterizedTest
@@ -642,11 +649,17 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
+      when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+      when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
     }
 
     /**
@@ -736,6 +749,7 @@ public class TenantControllerTest {
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
     @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
 
     @ParameterizedTest
     @MethodSource("tenantControllerRequests")

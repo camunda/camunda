@@ -18,6 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
@@ -44,9 +45,11 @@ public class ExpressionControllerTest extends RestControllerTest {
   @MockitoBean ExpressionServices expressionServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.expressionServices(any())).thenReturn(expressionServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);

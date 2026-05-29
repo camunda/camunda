@@ -38,6 +38,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -225,6 +226,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .endCursor("v")
           .build();
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
@@ -232,6 +234,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
+    org.mockito.Mockito.lenient()
+        .when(serviceRegistry.processInstanceServices(any()))
+        .thenReturn(processInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

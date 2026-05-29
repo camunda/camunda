@@ -28,6 +28,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -207,9 +208,11 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @MockitoBean IncidentServices incidentServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupIncidentServices() {
+    when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

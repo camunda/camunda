@@ -14,10 +14,12 @@ import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
 import io.camunda.service.TopologyServices.Topology;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
@@ -30,6 +32,12 @@ import org.springframework.test.json.JsonCompareMode;
 public class TopologyControllerTest extends RestControllerTest {
 
   @MockitoBean TopologyServices topologyServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
+
+  @BeforeEach
+  void setup() {
+    Mockito.when(serviceRegistry.topologyServices()).thenReturn(topologyServices);
+  }
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})

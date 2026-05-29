@@ -31,6 +31,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -129,9 +130,11 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.authorizationServices(any())).thenReturn(authorizationServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

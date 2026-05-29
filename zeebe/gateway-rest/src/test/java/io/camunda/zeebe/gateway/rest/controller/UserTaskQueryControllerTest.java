@@ -31,6 +31,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -411,9 +412,11 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() throws IOException {
+    when(serviceRegistry.userTaskServices(any())).thenReturn(userTaskServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 

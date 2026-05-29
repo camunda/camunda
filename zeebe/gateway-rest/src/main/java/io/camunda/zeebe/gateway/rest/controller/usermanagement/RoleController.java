@@ -38,10 +38,12 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -56,32 +58,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/roles")
 public class RoleController {
-  private final RoleServices roleServices;
-  private final MappingRuleServices mappingServices;
+  private final ServiceRegistry registry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final RoleMapper roleMapper;
 
   public RoleController(
-      final RoleServices roleServices,
-      final MappingRuleServices mappingServices,
+      final ServiceRegistry registry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.roleServices = roleServices;
-    this.mappingServices = mappingServices;
+    this.registry = registry;
     this.authenticationProvider = authenticationProvider;
     roleMapper = new RoleMapper(new RoleRequestValidator(new RoleValidator(identifierValidator)));
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createRole(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final RoleCreateRequest createRoleRequest) {
     return roleMapper
         .toRoleCreateRequest(createRoleRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> createRole(registry.roleServices(physicalTenantId), request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createRole(
-      final CreateRoleRequest createRoleRequest) {
+      final RoleServices roleServices, final CreateRoleRequest createRoleRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> roleServices.createRole(createRoleRequest, authentication),
@@ -91,14 +93,18 @@ public class RoleController {
 
   @CamundaPutMapping(path = "/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> updateRole(
-      @PathVariable final String roleId, @RequestBody final RoleUpdateRequest roleUpdateRequest) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @RequestBody final RoleUpdateRequest roleUpdateRequest) {
     return roleMapper
         .toRoleUpdateRequest(roleUpdateRequest, roleId)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> updateRole(registry.roleServices(physicalTenantId), request));
   }
 
   public CompletableFuture<ResponseEntity<Object>> updateRole(
-      final UpdateRoleRequest updateRoleRequest) {
+      final RoleServices roleServices, final UpdateRoleRequest updateRoleRequest) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> roleServices.updateRole(updateRoleRequest, authentication),
@@ -107,19 +113,23 @@ public class RoleController {
   }
 
   @CamundaDeleteMapping(path = "/{roleId}")
-  public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final String roleId) {
+  public CompletableFuture<ResponseEntity<Object>> deleteRole(
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final String roleId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> roleServices.deleteRole(roleId, authentication));
+        () -> registry.roleServices(physicalTenantId).deleteRole(roleId, authentication));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{roleId}")
-  public ResponseEntity<Object> getRole(@PathVariable final String roleId) {
+  public ResponseEntity<Object> getRole(
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final String roleId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toRole(roleServices.getRole(roleId, authentication)));
+          .body(
+              SearchQueryResponseMapper.toRole(
+                  registry.roleServices(physicalTenantId).getRole(roleId, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -128,12 +138,16 @@ public class RoleController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<RoleSearchQueryResult> searchRoles(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toRoleQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> search(registry.roleServices(physicalTenantId), q));
   }
 
-  private ResponseEntity<RoleSearchQueryResult> search(final RoleQuery query) {
+  private ResponseEntity<RoleSearchQueryResult> search(
+      final RoleServices roleServices, final RoleQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = roleServices.search(query, authentication);
@@ -146,16 +160,18 @@ public class RoleController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/users/search")
   public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleUserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            userQuery -> searchUsersInRole(roleId, userQuery));
+            userQuery ->
+                searchUsersInRole(registry.roleServices(physicalTenantId), roleId, userQuery));
   }
 
   private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
-      final String roleId, final RoleMemberQuery query) {
+      final RoleServices roleServices, final String roleId, final RoleMemberQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -170,16 +186,18 @@ public class RoleController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/clients/search")
   public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            roleQuery -> searchClientsInRole(roleId, roleQuery));
+            roleQuery ->
+                searchClientsInRole(registry.roleServices(physicalTenantId), roleId, roleQuery));
   }
 
   private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
-      final String tenantId, final RoleMemberQuery query) {
+      final RoleServices roleServices, final String tenantId, final RoleMemberQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -201,16 +219,21 @@ public class RoleController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingQuery -> searchMappingRulesInRole(roleId, mappingQuery));
+            mappingQuery ->
+                searchMappingRulesInRole(
+                    registry.mappingRuleServices(physicalTenantId), roleId, mappingQuery));
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInRole(
-      final String roleId, final MappingRuleQuery mappingRuleQuery) {
+      final MappingRuleServices mappingServices,
+      final String roleId,
+      final MappingRuleQuery mappingRuleQuery) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedMappingQuery = buildMappingQuery(roleId, mappingRuleQuery);
@@ -230,30 +253,42 @@ public class RoleController {
 
   @CamundaPutMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToUser(
-      @PathVariable final String roleId, @PathVariable final String username) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String username) {
     return roleMapper
         .toRoleMemberRequest(roleId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{roleId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToClient(
-      @PathVariable final String roleId, @PathVariable final String clientId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String clientId) {
     return roleMapper
         .toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String groupId) {
     return roleMapper
         .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
-      final RoleMemberRequest request) {
+      final RoleServices roleServices, final RoleMemberRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> roleServices.addMember(request, authentication));
@@ -261,58 +296,80 @@ public class RoleController {
 
   @CamundaPutMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToMappingRule(
-      @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String mappingRuleId) {
     return roleMapper
         .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromMappingRule(
-      @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String mappingRuleId) {
     return roleMapper
         .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromUser(
-      @PathVariable final String roleId, @PathVariable final String username) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String username) {
     return roleMapper
         .toRoleMemberRequest(roleId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromClient(
-      @PathVariable final String roleId, @PathVariable final String clientId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String clientId) {
     return roleMapper
         .toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String roleId,
+      @PathVariable final String groupId) {
     return roleMapper
         .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/groups/search")
   public ResponseEntity<RoleGroupSearchResult> searchGroupsByRole(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleGroupSearchQueryRequest query) {
 
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            roleQuery -> searchGroupsInRole(roleId, roleQuery));
+            roleQuery ->
+                searchGroupsInRole(registry.roleServices(physicalTenantId), roleId, roleQuery));
   }
 
   private ResponseEntity<RoleGroupSearchResult> searchGroupsInRole(
-      final String roleId, final RoleMemberQuery query) {
+      final RoleServices roleServices, final String roleId, final RoleMemberQuery query) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -325,7 +382,7 @@ public class RoleController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
-      final RoleMemberRequest request) {
+      final RoleServices roleServices, final RoleMemberRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> roleServices.removeMember(request, authentication));

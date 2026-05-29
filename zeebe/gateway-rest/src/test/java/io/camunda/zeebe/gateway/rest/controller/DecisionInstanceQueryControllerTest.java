@@ -29,6 +29,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -112,9 +113,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private DecisionInstanceServices decisionInstanceServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.decisionInstanceServices(any())).thenReturn(decisionInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
