@@ -82,7 +82,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Allowlist of nightly workflows to scan. Each entry: workflow file | version | test_type | tasklist_mode (optional)
+          # Allowlist of nightly workflows to scan. Each entry: workflow file | version | test_type
           # test_type ∈ {e2e, api_es, api_rdbms}.
           declare -a SCOPE=(
             "c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e"
