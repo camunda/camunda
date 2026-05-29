@@ -17,9 +17,11 @@ import io.camunda.operate.entities.JobEntity;
 import io.camunda.operate.entities.ListenerEventType;
 import io.camunda.operate.entities.ListenerState;
 import io.camunda.operate.entities.ListenerType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
@@ -34,12 +36,14 @@ import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Autowired MockMvcManager mockMvcManager;
   @Autowired JobTemplate jobTemplate;
+  @MockBean ProcessInstanceReader processInstanceReader;
   @Autowired private UserService userService;
   private String jobIndexName;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -55,6 +59,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testListenerReader() throws Exception {
     Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
+    Mockito.when(processInstanceReader.getProcessInstanceByKey(Mockito.any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
 
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeId("test_task");
@@ -104,6 +110,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testListenerReaderPaging() throws Exception {
     Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
+    Mockito.when(processInstanceReader.getProcessInstanceByKey(Mockito.any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
 
     final ListenerRequestDto request1 =
         new ListenerRequestDto().setPageSize(3).setFlowNodeId("test_task");

@@ -18,8 +18,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -50,6 +52,8 @@ public class AuthorizationIT {
   protected static final String USER = "calculon";
 
   @MockBean private UserService<? extends Authentication> userService;
+
+  @MockBean private ProcessInstanceReader processInstanceReader;
 
   @MockBean private BatchOperationWriter batchOperationWriter;
 
@@ -97,6 +101,8 @@ public class AuthorizationIT {
   public void testWritePermissionsForSingleOperation() {
     // given
     userHasPermission(Permission.WRITE);
+    when(processInstanceReader.getProcessInstanceByKey(23L))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("23"));
     when(batchOperationWriter.scheduleSingleOperation(anyLong(), any()))
         .thenReturn(new BatchOperationEntity());
 
