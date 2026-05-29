@@ -831,4 +831,44 @@ describe('<DetailsTab />', () => {
     expect(screen.getByText('inner-1')).toBeInTheDocument();
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
   });
+
+  it('should display child instance data when no anchorElementId is set', async () => {
+    const AD_HOC_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:adHocSubProcess id="ad_hoc_subprocess" name="Ad Hoc">
+      <bpmn:userTask id="user_task_in_ad_hoc_subprocess" name="User Task" />
+    </bpmn:adHocSubProcess>
+  </bpmn:process>
+</bpmn:definitions>`;
+
+    const mockChildInstance = {
+      elementInstanceKey: 'child-1',
+      elementId: 'user_task_in_ad_hoc_subprocess',
+      elementName: 'User Task',
+      type: 'USER_TASK',
+      state: 'ACTIVE',
+      startDate: '2023-01-15T10:00:00.000Z',
+      endDate: null,
+      processDefinitionId: 'process-def-1',
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: PROCESS_DEFINITION_KEY,
+      hasIncident: false,
+      tenantId: '<default>',
+      rootProcessInstanceKey: null,
+      incidentKey: null,
+    } satisfies ElementInstance;
+
+    mockFetchProcessDefinitionXml().withSuccess(AD_HOC_XML);
+    mockFetchElementInstance('child-1').withSuccess(mockChildInstance);
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(
+        'elementId=user_task_in_ad_hoc_subprocess&elementInstanceKey=child-1',
+      ),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.getByText('child-1')).toBeInTheDocument();
+  });
 });

@@ -67,6 +67,8 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
+    // Two one-time handlers needed: JSDOM fires an implicit node selection on the arrow-key
+    // press (triggering a child fetch), then the manual reset-click triggers another fetch.
     mockSearchElementInstances().withSuccess(
       adHocSubProcessInnerInstanceElementInstances.level2,
     );
