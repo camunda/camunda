@@ -234,6 +234,7 @@ public final class ResponseMapper {
             rootProcessInstanceKey > 0 ? keyToString(rootProcessInstanceKey) : null)
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
+        .priority(job.getPriority())
         .build();
   }
 

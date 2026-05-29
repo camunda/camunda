@@ -174,6 +174,20 @@ class ResponseMapperTest {
       assertThat(result.getKind().name()).isEqualTo(jobKind.name());
     }
 
+    @Test
+    void shouldMapPriorityToActivatedJob() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      when(jobRecord.getPriority()).thenReturn(80);
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.getPriority()).isEqualTo(80);
+    }
+
     @ParameterizedTest
     @EnumSource(JobListenerEventType.class)
     void shouldMapActivatedJobWithListenerEventType(final JobListenerEventType listenerEventType) {

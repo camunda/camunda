@@ -122,6 +122,41 @@ class ResponseMapperTest {
               });
     }
 
+    @Test
+    void shouldMapPriorityToActivatedJobResult() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setPriority(80)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.getPriority()).isEqualTo(80));
+    }
+
     static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
       return Stream.of(
           new ActivatedJobWithUserTaskPropsCase(
@@ -283,6 +318,7 @@ class ResponseMapperTest {
           .setElementInstanceKey(jobRecord.getElementInstanceKey())
           .setWorker(jobRecord.getWorker())
           .setRetries(jobRecord.getRetries())
+          .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId());
 
@@ -323,6 +359,7 @@ class ResponseMapperTest {
           .setElementInstanceKey(jobRecord.getElementInstanceKey())
           .setWorker(jobRecord.getWorker())
           .setRetries(jobRecord.getRetries())
+          .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
           .setRootProcessInstanceKey(jobRecord.getRootProcessInstanceKey());

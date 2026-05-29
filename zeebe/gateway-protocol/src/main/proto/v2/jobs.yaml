@@ -377,6 +377,7 @@ components:
         - rootProcessInstanceKey
         - tags
         - userTask
+        - priority
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -459,6 +460,12 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        priority:
+          description: >
+            The priority of the job. Higher values indicate higher priority.
+            Jobs created before 8.10 have no stored priority; the API returns 0 for such jobs.
+          type: integer
+          format: int32
       x-properties-added-in-version:
         - propertyName: kind
           addedInVersion: "8.8"
@@ -470,6 +477,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: priority
+          addedInVersion: "8.10"
 
     UserTaskProperties:
       required:

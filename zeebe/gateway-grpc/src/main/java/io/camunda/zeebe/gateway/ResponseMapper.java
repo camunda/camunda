@@ -390,6 +390,7 @@ public final class ResponseMapper {
             .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
             .setWorker(bufferAsString(job.getWorkerBuffer()))
             .setRetries(job.getRetries())
+            .setPriority(job.getPriority())
             .setDeadline(job.getDeadline())
             .setVariables(bufferAsJson(job.getVariablesBuffer()))
             .setTenantId(job.getTenantId())
