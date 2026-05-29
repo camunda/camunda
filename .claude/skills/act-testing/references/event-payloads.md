@@ -19,7 +19,7 @@ Use these deterministic fixtures with your `act` command on prepared test harnes
 ## Usage example
 
 ```bash
-act push -e .github/skills/act-testing/references/event-payloads/push-release-branch.json \
+act push -e .claude/skills/act-testing/references/event-payloads/push-release-branch.json \
   -W .github/workflows/test-release-branch-notifications.yml --secret-file .secrets --reuse
 ```
 

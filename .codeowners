@@ -53,9 +53,13 @@ buf.yaml                    @camunda/orchestration-cluster
 ## @camunda/monorepo-devops-team
 ################################
 
+/.claude/skills/act-testing/ @camunda/monorepo-devops-team
 /.claude/skills/ci-push-workflow-health/ @camunda/monorepo-devops-team
 /.claude/skills/ci-scheduled-workflow-health/ @camunda/monorepo-devops-team
 /.claude/skills/ci-runner-utilization/ @camunda/monorepo-devops-team
+/.claude/skills/ci-security-compliance/ @camunda/monorepo-devops-team
+/.claude/skills/ci-validation/ @camunda/monorepo-devops-team
+/.claude/skills/ci-workflow-authoring/ @camunda/monorepo-devops-team
 
 /.ci/                       @camunda/monorepo-devops-team
 /.github/                   @camunda/monorepo-devops-team

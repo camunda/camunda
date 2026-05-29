@@ -14,7 +14,7 @@ After creating or editing a workflow:
 1. Assess if the workflow is Tier 1, Tier 2, or Tier 3 (see `references/workflow-tiers.md`).
    - Re-assess tier after every major scope change during iteration (e.g., removed jobs/branches/options).
 2. If Tier 1 or Tier 2, create a temporary `test-<workflow>.yml` harness and run drift guard:
-   - `bash .github/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>`
+   - `bash .claude/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>`
 3. Assess whether `act` execution is possible in the current environment.
 4. Provide the user with concrete test cases and suggested `act` commands to run manually.
 5. If Tier 3, explicitly document why act testing is not applicable.
@@ -78,16 +78,16 @@ Example mock step:
 ## Required Command Loop
 
 1. Run drift check:
-   - `bash .github/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>`
+   - `bash .claude/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>`
 2. Assess `act` feasibility in the current environment (document pass/fail):
    - `command -v act`
    - `command -v docker`
    - `docker info`
 3. Provide user-run commands per scenario (examples):
-   - `act pull_request -e .github/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
-   - `act push -e .github/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
-   - `act workflow_dispatch -e .github/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml --secret-file .secrets --reuse`
-   - `ACT_RUNNER_IMAGE=ghcr.io/catthehacker/ubuntu:act-latest act pull_request -e .github/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
+   - `act pull_request -e .claude/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
+   - `act push -e .claude/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
+   - `act workflow_dispatch -e .claude/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml --secret-file .secrets --reuse`
+   - `ACT_RUNNER_IMAGE=ghcr.io/catthehacker/ubuntu:act-latest act pull_request -e .claude/skills/act-testing/references/event-payloads/<fixture>.json -W .github/workflows/test-<workflow>.yml`
 
 Do not run `act` on behalf of the user. The user remains responsible for executing and interpreting local `act` runs.
 
@@ -97,7 +97,7 @@ Do not run `act` on behalf of the user. The user remains responsible for executi
 - Always use this canonical argument order: `act <event> -e <event-json> -W <test-workflow> --secret-file .secrets --reuse`.
 - Never format command arguments as markdown links or rich-text references.
    - Invalid: command text where the workflow argument is rendered as a clickable markdown link instead of plain text.
-   - Valid: `act pull_request -e .github/skills/act-testing/references/event-payloads/pr-opened-ready.json -W .github/workflows/test-docs-preview.yml`
+   - Valid: `act pull_request -e .claude/skills/act-testing/references/event-payloads/pr-opened-ready.json -W .github/workflows/test-docs-preview.yml`
 
 ## Scenario Matrix Requirements
 
