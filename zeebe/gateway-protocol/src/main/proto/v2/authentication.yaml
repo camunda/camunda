@@ -97,3 +97,5 @@ components:
         canLogout:
           description: Flag for understanding if the user is able to perform logout.
           type: boolean
+
+# triggers openapi-lint for #54270 verification; reverted before merge
