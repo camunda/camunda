@@ -16,7 +16,6 @@ const ACTIVE_STATUSES: AgentInstance['status'][] = [
   'TOOL_DISCOVERY',
   'THINKING',
   'TOOL_CALLING',
-  'IDLE',
 ];
 
 const useProcessInstanceAgentInstances = () => {

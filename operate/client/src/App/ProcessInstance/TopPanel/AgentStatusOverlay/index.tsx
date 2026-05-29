@@ -15,7 +15,7 @@ const AGENT_STATUS_LABELS: Record<AgentInstanceStatus, string | null> = {
   TOOL_DISCOVERY: 'Discovering tools...',
   THINKING: 'Thinking...',
   TOOL_CALLING: 'Calling tools...',
-  IDLE: 'Idle',
+  IDLE: null,
   COMPLETED: null,
 };
 

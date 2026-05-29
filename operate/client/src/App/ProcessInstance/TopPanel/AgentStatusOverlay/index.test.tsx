@@ -16,7 +16,6 @@ describe('AgentStatusOverlay', () => {
     ['TOOL_DISCOVERY', 'Discovering tools...'],
     ['THINKING', 'Thinking...'],
     ['TOOL_CALLING', 'Calling tools...'],
-    ['IDLE', 'Idle'],
   ])(
     'should render a status label for the active %s status',
     (status, label) => {
@@ -28,11 +27,14 @@ describe('AgentStatusOverlay', () => {
     },
   );
 
-  it('should render nothing for the COMPLETED status', () => {
-    render(<AgentStatusOverlay container={document.body} status="COMPLETED" />);
+  it.each<AgentInstanceStatus>(['COMPLETED', 'IDLE'])(
+    'should render nothing for the non-active %s status',
+    (status) => {
+      render(<AgentStatusOverlay container={document.body} status={status} />);
 
-    expect(
-      screen.queryByTestId(/^agent-status-overlay-/),
-    ).not.toBeInTheDocument();
-  });
+      expect(
+        screen.queryByTestId(`agent-status-overlay-${status}`),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
