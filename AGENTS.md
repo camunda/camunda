@@ -173,7 +173,7 @@ be on the target branch — stop and inform the engineer.
 If it is flaky (non-deterministic):
 
 1. Search for an existing open issue in camunda/camunda. If none exists, raise one using
-   `.github/ISSUE_TEMPLATE/bug_report.yml`.
+   the `create-issue` skill (type: bug).
 2. Assign the issue to the engineer.
 3. Treat the baseline as passed and proceed — do not disable the test.
 

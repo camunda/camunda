@@ -34,6 +34,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 
 |             Skill              |                                          Description                                          |
 |--------------------------------|-----------------------------------------------------------------------------------------------|
+| `create-issue`                 | Create a GitHub issue with the correct template, component label, and parent link             |
 | `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches    |
 | `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings        |
 | `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                     |
