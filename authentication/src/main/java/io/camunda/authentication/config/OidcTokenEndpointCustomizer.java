@@ -8,6 +8,7 @@
 package io.camunda.authentication.config;
 
 import com.nimbusds.jose.jwk.JWK;
+import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
