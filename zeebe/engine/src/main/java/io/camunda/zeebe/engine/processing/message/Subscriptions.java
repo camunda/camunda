@@ -44,8 +44,7 @@ public final class Subscriptions {
             subscription.getProcessInstanceKey(),
             0L,
             subscription.getProcessDefinitionKey(),
-            true,
-            subscription.getStartEventId());
+            true);
     addSubscriptionInternal(newSubscription);
   }
 
@@ -73,15 +72,6 @@ public final class Subscriptions {
   public Optional<Subscription> getFirstMessageStartEventSubscription() {
     for (final Subscription subscription : subscriptions.values()) {
       if (subscription.isStartEventSubscription) {
-        return Optional.of(subscription);
-      }
-    }
-    return Optional.empty();
-  }
-
-  public Optional<Subscription> getFirstProcessEventSubscription() {
-    for (final Subscription subscription : subscriptions.values()) {
-      if (!subscription.isStartEventSubscription) {
         return Optional.of(subscription);
       }
     }
@@ -120,8 +110,7 @@ public final class Subscriptions {
       long processInstanceKey,
       long elementInstanceKey,
       long processDefinitionKey,
-      boolean isStartEventSubscription,
-      @org.jspecify.annotations.Nullable String startEventId) {
+      boolean isStartEventSubscription) {
     /* clone the bpmnProcessId buffer */
     public static Subscription cloned(
         final DirectBuffer bpmnProcessId,
@@ -129,29 +118,12 @@ public final class Subscriptions {
         final long elementInstanceKey,
         final long processDefinitionKey,
         final boolean isStartEventSubscription) {
-      return cloned(
-          bpmnProcessId,
-          processInstanceKey,
-          elementInstanceKey,
-          processDefinitionKey,
-          isStartEventSubscription,
-          null);
-    }
-
-    public static Subscription cloned(
-        final DirectBuffer bpmnProcessId,
-        final long processInstanceKey,
-        final long elementInstanceKey,
-        final long processDefinitionKey,
-        final boolean isStartEventSubscription,
-        final @org.jspecify.annotations.Nullable String startEventId) {
       return new Subscription(
           wrapInBufferIfNeeded(cloneBuffer(bpmnProcessId)),
           processInstanceKey,
           elementInstanceKey,
           processDefinitionKey,
-          isStartEventSubscription,
-          startEventId);
+          isStartEventSubscription);
     }
 
     /* Copy without cloning, buffer is already cloned */
@@ -161,8 +133,7 @@ public final class Subscriptions {
           subscription.processInstanceKey(),
           subscription.elementInstanceKey(),
           subscription.processDefinitionKey(),
-          subscription.isStartEventSubscription,
-          subscription.startEventId());
+          subscription.isStartEventSubscription);
     }
   }
 
