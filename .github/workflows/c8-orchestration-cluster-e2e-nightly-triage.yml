@@ -234,7 +234,7 @@ jobs:
           #   - Strip leading 'qa/c8-orchestration-cluster-e2e-test-suite/' prefix so the
           #     value is a path relative to the test suite root (e.g. 'tests/operate/foo.spec.ts')
           # Filter out:
-          #   - tests/identity/* entries for version 8.7 (8.7 has no identity dir)
+          #   - tests/identity/* entries for all stable branches (identity tests only exist on main)
           #   - empty/malformed file fields
 
           # Path normalization + error truncation. Errors are truncated to 600 chars
@@ -253,7 +253,7 @@ jobs:
               | select(.file | test("\\.spec\\.[jt]s$"))
             )
             | map(select(
-                (.version != "8.7") or (.file | test("^tests/identity/") | not)
+                (.version == "main") or (.file | test("^tests/identity/") | not)
               ))
           ' /tmp/all_failures.jsonl > /tmp/failures_normalized.json
 
