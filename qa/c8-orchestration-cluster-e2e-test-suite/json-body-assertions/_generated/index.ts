@@ -14,6 +14,21 @@ import {
 import type {PlaywrightAPIResponse} from 'assert-json-body';
 
 export const RESPONSE_INDEX = {
+  '/agent-instances': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/agent-instances/{agentInstanceKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/agent-instances/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/audit-logs/search': {
     POST: {
       '200': 1,
@@ -161,6 +176,11 @@ export const RESPONSE_INDEX = {
       '201': 1,
     },
   },
+  '/element-instances/wait-states/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/element-instances/search': {
     POST: {
       '200': 1,
@@ -178,6 +198,11 @@ export const RESPONSE_INDEX = {
   },
   '/expression/evaluation': {
     POST: {
+      '200': 1,
+    },
+  },
+  '/forms/{formKey}': {
+    GET: {
       '200': 1,
     },
   },
@@ -436,6 +461,11 @@ export const RESPONSE_INDEX = {
     },
   },
   '/resources/{resourceKey}': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/resources/{resourceKey}/content': {
     GET: {
       '200': 1,
     },

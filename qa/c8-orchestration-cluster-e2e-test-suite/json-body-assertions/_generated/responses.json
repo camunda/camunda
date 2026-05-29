@@ -1,12 +1,398 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "304a6b608bad29c893c4597fc951ac967e9f4124",
-    "generatedAt": "2026-05-06T09:43:55.169Z",
+    "commit": "168e118db8d26b7283ccd36a3fef1834dc1f7c20",
+    "generatedAt": "2026-05-29T07:50:19.279Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "7b59672a1557b1183147696e37f62e5e7d56a17fceb2a30cc4ec078086b41261"
+    "specSha256": "1c86dd320071c70c1cd2a97d3d29cb4aeb9e39d11b01b44dbb9e5c13f688fd02"
   },
   "responses": [
+    {
+      "path": "/agent-instances",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "agentInstanceKey",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-instances/{agentInstanceKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "agentInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "completionDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
+            "name": "definition",
+            "type": "0",
+            "children": {
+              "required": [
+                {
+                  "name": "model",
+                  "type": "string"
+                },
+                {
+                  "name": "provider",
+                  "type": "string"
+                },
+                {
+                  "name": "systemPrompt",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKeys",
+            "type": "array<string>"
+          },
+          {
+            "name": "lastUpdatedDate",
+            "type": "string"
+          },
+          {
+            "name": "limits",
+            "type": "0",
+            "children": {
+              "required": [
+                {
+                  "name": "maxModelCalls",
+                  "type": "number"
+                },
+                {
+                  "name": "maxTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "maxToolCalls",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "metrics",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "inputTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "modelCalls",
+                  "type": "number"
+                },
+                {
+                  "name": "outputTokens",
+                  "type": "number"
+                },
+                {
+                  "name": "toolCalls",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processDefinitionVersionTag",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "enumValues": [
+              "UNKNOWN",
+              "COMPLETED",
+              "IDLE",
+              "INITIALIZING",
+              "THINKING",
+              "TOOL_CALLING",
+              "TOOL_DISCOVERY"
+            ]
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "tools",
+            "type": "array<items>",
+            "children": {
+              "required": [
+                {
+                  "name": "description",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "elementId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-instances/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [
+                {
+                  "name": "agentInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "completionDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "creationDate",
+                  "type": "string"
+                },
+                {
+                  "name": "definition",
+                  "type": "0",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "model",
+                        "type": "string"
+                      },
+                      {
+                        "name": "provider",
+                        "type": "string"
+                      },
+                      {
+                        "name": "systemPrompt",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKeys",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "lastUpdatedDate",
+                  "type": "string"
+                },
+                {
+                  "name": "limits",
+                  "type": "0",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "maxModelCalls",
+                        "type": "number"
+                      },
+                      {
+                        "name": "maxTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "maxToolCalls",
+                        "type": "number"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "metrics",
+                  "type": "object",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "inputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "modelCalls",
+                        "type": "number"
+                      },
+                      {
+                        "name": "outputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "toolCalls",
+                        "type": "number"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "processDefinitionVersionTag",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "status",
+                  "type": "string",
+                  "enumValues": [
+                    "UNKNOWN",
+                    "COMPLETED",
+                    "IDLE",
+                    "INITIALIZING",
+                    "THINKING",
+                    "TOOL_CALLING",
+                    "TOOL_DISCOVERY"
+                  ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "tools",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "description",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "elementId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
     {
       "path": "/audit-logs/search",
       "method": "POST",
@@ -512,10 +898,7 @@
                 },
                 {
                   "name": "tenantId",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
+                  "type": "string"
                 }
               ],
               "optional": []
@@ -2683,6 +3066,47 @@
       }
     },
     {
+      "path": "/element-instances/wait-states/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object|0>"
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/element-instances/search",
       "method": "POST",
       "status": "200",
@@ -3076,6 +3500,36 @@
               ],
               "optional": []
             }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/forms/{formKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "formId",
+            "type": "string"
+          },
+          {
+            "name": "formKey",
+            "type": "string"
+          },
+          {
+            "name": "schema",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
           }
         ],
         "optional": []
@@ -4050,6 +4504,7 @@
                   "enumValues": [
                     "ASSIGNING",
                     "BEFORE_ALL",
+                    "CANCEL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4260,6 +4715,7 @@
                   "enumValues": [
                     "ASSIGNING",
                     "BEFORE_ALL",
+                    "CANCEL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4268,6 +4724,10 @@
                     "UNSPECIFIED",
                     "UPDATING"
                   ]
+                },
+                {
+                  "name": "priority",
+                  "type": "number"
                 },
                 {
                   "name": "processDefinitionId",
@@ -5000,10 +5460,6 @@
                   "nullable": true
                 },
                 {
-                  "name": "toolProperties",
-                  "type": "object"
-                },
-                {
                   "name": "inboundConnectorType",
                   "type": "string",
                   "nullable": true
@@ -5078,6 +5534,10 @@
                   "name": "toolName",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "toolProperties",
+                  "type": "object"
                 }
               ],
               "optional": []
@@ -6335,6 +6795,15 @@
       }
     },
     {
+      "path": "/resources/{resourceKey}/content",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
       "path": "/resources/{resourceKey}/deletion",
       "method": "POST",
       "status": "200",
@@ -6739,10 +7208,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -6803,6 +7269,72 @@
       "schema": {
         "required": [
           {
+            "name": "authentication",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "canLogout",
+                  "type": "boolean"
+                },
+                {
+                  "name": "isLoginDelegated",
+                  "type": "boolean"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "cloud",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "stage",
+                  "type": "string",
+                  "enumValues": [
+                    "dev",
+                    "int",
+                    "prod"
+                  ],
+                  "nullable": true
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "components",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "active",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "deployment",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "isMultiTenancyEnabled",
+                  "type": "boolean"
+                },
+                {
+                  "name": "maxRequestSize",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
             "name": "jobMetrics",
             "type": "object",
             "children": {
@@ -6856,10 +7388,7 @@
           },
           {
             "name": "tenantId",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -6887,10 +7416,7 @@
                 },
                 {
                   "name": "tenantId",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
+                  "type": "string"
                 }
               ],
               "optional": []
@@ -6944,10 +7470,7 @@
           },
           {
             "name": "tenantId",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -6970,10 +7493,7 @@
           },
           {
             "name": "tenantId",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -7362,10 +7882,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -7394,10 +7911,7 @@
                 },
                 {
                   "name": "username",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
+                  "type": "string"
                 }
               ],
               "optional": []
@@ -7452,10 +7966,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -7479,10 +7990,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "schema",
-            "wrapper": true
+            "type": "string"
           }
         ],
         "optional": []
