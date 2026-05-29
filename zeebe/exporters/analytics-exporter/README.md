@@ -39,14 +39,13 @@ team or open a support ticket.
 attached to every event as the `camunda.cluster.id` resource attribute and is part of the
 deduplication key used by the analytics backend (`camunda.cluster.id` +
 `camunda.partition.id` + `camunda.log.position`). The value should be stable per cluster —
-changing it makes existing events look like they come from a different cluster. Any
-unique string works; many operators use a UUID or an environment-derived name (for
-example, `prod-eu-1`).
+changing it makes existing events look like they come from a different cluster.
 
 How the exporter obtains these values depends on your Camunda version:
 
-- **Camunda 8.10 and later:** both values are resolved automatically from the broker
-  context. No additional setup is needed.
+- **Camunda 8.10 and later:** [cluster id](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#cluster)
+  and [license key](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/properties/#licensing)
+  values are resolved automatically from the broker context. No additional setup is needed.
 - **Camunda 8.9 and earlier:** the broker does not expose the license key or cluster ID
   through the context API. Provide them via environment variables on every broker:
   - `CAMUNDA_LICENSE_KEY` — the Camunda license key.
@@ -146,6 +145,9 @@ rarely need to be changed.
 Each supported record is emitted as an [OpenTelemetry log record](https://opentelemetry.io/docs/specs/semconv/general/events/),
 identified by the `event.name` attribute following the OTel Events semantic convention.
 
+The exporter does **not** include process variables, payloads, message contents, job
+variables, or any other end-user data.
+
 ### Event types
 
 |        Source record        |       Intent        |          Event name          |                                       Notes                                       |
@@ -164,35 +166,6 @@ These attributes are set on every log record:
 | `camunda.log.position`    | long   | Log stream position. Used as a deduplication key.                                                        |
 | `camunda.sequence_number` | long   | Monotonic per-partition counter incremented for each emitted event. Used for ordering and gap detection. |
 
-### `process_instance_created` attributes
-
-|            Attribute             |  Type  |                       Description                       |
-|----------------------------------|--------|---------------------------------------------------------|
-| `camunda.bpmn_process_id`        | string | BPMN process ID.                                        |
-| `camunda.process_version`        | long   | Process definition version.                             |
-| `camunda.process_definition_key` | long   | Process definition key.                                 |
-| `camunda.process_instance_key`   | long   | Process instance key.                                   |
-| `camunda.tenant_id`              | string | Tenant ID, or the default tenant when not multi-tenant. |
-
-### `adhoc_subprocess_activated` attributes
-
-|            Attribute             |  Type  |                       Description                       |
-|----------------------------------|--------|---------------------------------------------------------|
-| `camunda.bpmn_process_id`        | string | BPMN process ID.                                        |
-| `camunda.process_definition_key` | long   | Process definition key.                                 |
-| `camunda.process_instance_key`   | long   | Process instance key.                                   |
-| `camunda.element_id`             | string | BPMN element ID of the ad-hoc sub-process.              |
-| `camunda.tenant_id`              | string | Tenant ID, or the default tenant when not multi-tenant. |
-
-### `usage_metric_exported` attributes
-
-|               Attribute               |  Type  |                                        Description                                        |
-|---------------------------------------|--------|-------------------------------------------------------------------------------------------|
-| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (process instances), `EDI` (decision instances), or `TU` (task users). |
-| `camunda.usage_metric.count`          | long   | Total occurrences in the interval. For `TU`, the count of distinct task users.            |
-| `camunda.usage_metric.interval_start` | long   | Interval start timestamp, in epoch milliseconds.                                          |
-| `camunda.usage_metric.interval_end`   | long   | Interval end timestamp, in epoch milliseconds.                                            |
-
 ### Resource attributes
 
 Cluster-wide attributes attached to every log record:
@@ -202,9 +175,6 @@ Cluster-wide attributes attached to every log record:
 | `camunda.cluster.id`   | string | Cluster identifier.     |
 | `camunda.partition.id` | long   | Partition ID.           |
 | `service.name`         | string | Always `camunda-zeebe`. |
-
-The exporter does **not** include process variables, payloads, message contents, job
-variables, or any other end-user data. Only the process metadata listed above is exported.
 
 ## Failure behavior
 
@@ -217,7 +187,7 @@ and analytics records may be dropped silently. Specifically, events can be lost 
 - **The broker crashes or restarts.** The in-memory queue is not persisted, so any records
   buffered at the time of the crash are lost.
 - **The OTLP endpoint returns an error.** The exporter does not retry persistently and
-  does not buffer to disk; the affected batch is dropped.
+  does not buffer to disk; the affected events are dropped.
 
 Because each event carries `camunda.cluster.id`, `camunda.partition.id`, and
 `camunda.log.position`, downstream consumers can deduplicate events using the combination
@@ -232,9 +202,6 @@ of these attributes as a composite key.
   other potentially sensitive fields are never sent.
 - **Fixed event set.** The exporter emits a small, hardcoded set of event types. There is
   no runtime configuration to add, remove, or filter event types.
-- **Camunda endpoint only.** The exporter is intended for use with the Camunda analytics
-  endpoint. While the `endpoint` option accepts any OTLP/HTTP URL, redirecting to a
-  custom backend is not a supported deployment pattern.
 
 ## Install on older clusters (standalone JAR)
 
@@ -243,6 +210,9 @@ JAR will be provided. Drop the JAR onto the broker classpath (for example, into
 `/usr/local/zeebe/exporters/`), point the exporter configuration at it with `jarPath`,
 and provide the `CAMUNDA_LICENSE_KEY` and `ZEEBE_BROKER_CLUSTER_CLUSTERID` environment
 variables described in [Prerequisites](#prerequisites).
+
+For the general procedure for adding custom exporters to a broker, see
+[installing Zeebe exporters](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/zeebe/exporters/install-zeebe-exporters/).
 
 ## How it works
 
