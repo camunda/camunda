@@ -97,12 +97,6 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   }
 
   @Override
-  public CorrelateMessageCommandStep3 agentToolName(final String agentToolName) {
-    request.setAgentToolName(agentToolName);
-    return this;
-  }
-
-  @Override
   protected CorrelateMessageCommandImpl setVariablesInternal(final String variables) {
     request.setVariables(jsonMapper.fromJsonAsMap(variables));
     return this;
