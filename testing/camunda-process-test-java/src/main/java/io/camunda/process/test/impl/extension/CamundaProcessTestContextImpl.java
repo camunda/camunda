@@ -791,9 +791,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  /**
-   * Resolves the output variables for a variable-mapper-based completion
-   */
+  /** Resolves the output variables for a variable-mapper-based completion */
   private Map<String, Object> mapOutputVariablesOnce(
       final CamundaClient client,
       final String selectorDescription,

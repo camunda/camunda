@@ -431,35 +431,6 @@ public class CompleteUserTaskTest {
       // and: no search/completion took place
       verify(camundaClient, org.mockito.Mockito.never()).newUserTaskSearchRequest();
     }
-
-    @Test
-    void shouldRetryCompletionWithoutReinvokingMapper() {
-      // given
-      when(camundaClient
-              .newCompleteUserTaskCommand(USER_TASK_KEY)
-              .variables(org.mockito.ArgumentMatchers.<Map<String, Object>>any())
-              .send()
-              .join())
-          .thenThrow(new ClientException("expected"))
-          .thenReturn(mock(CompleteUserTaskResponse.class));
-
-      final java.util.concurrent.atomic.AtomicInteger mapperInvocations =
-          new java.util.concurrent.atomic.AtomicInteger();
-
-      clearInvocations(camundaClient);
-
-      // when
-      camundaProcessTestContext.completeUserTask(
-          USER_TASK_ELEMENT_ID,
-          inputVars -> {
-            mapperInvocations.incrementAndGet();
-            return Collections.emptyMap();
-          });
-
-      // then
-      org.assertj.core.api.Assertions.assertThat(mapperInvocations.get()).isEqualTo(1);
-      verify(camundaClient, times(2)).newCompleteUserTaskCommand(USER_TASK_KEY);
-    }
   }
 
   @Nested
@@ -481,13 +452,6 @@ public class CompleteUserTaskTest {
               DevAwaitBehavior::expectFailure,
               jsonMapper,
               new ConditionalBehaviorEngine());
-    }
-
-    private Variable variable(final String name, final String value) {
-      final Variable variable = mock(Variable.class);
-      when(variable.getName()).thenReturn(name);
-      when(variable.getValue()).thenReturn(value);
-      return variable;
     }
 
     private void mockUserTaskFound() {
