@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.69
+
+### 🚀 Enhancements
+
+- Add Element Instance Inspection schemas and endpoint for 8.10 ([#52038](https://github.com/camunda/camunda/issues/52038))
+  - `elementInstanceInspectionSchema` with `waitStateType`, `details`, and related fields
+  - `queryElementInstanceInspectionFilterSchema` for search filtering
+  - `POST /v2/element-instances/wait-states/search` endpoint
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
 ## v0.0.68
 
 ### 🚀 Enhancements

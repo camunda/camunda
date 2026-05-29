@@ -21,6 +21,7 @@ import {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
+  WAITING_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -30,6 +31,7 @@ import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {WaitingStateOverlay} from 'modules/components/WaitingStateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
@@ -51,7 +53,9 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
+import {getWaitStateLabel} from 'modules/utils/waitStates';
 import type {ElementState} from 'modules/bpmn-js/overlayTypes';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
@@ -61,6 +65,7 @@ import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram'
 
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -104,6 +109,10 @@ const TopPanel: React.FC = observer(() => {
       sourceElementIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
+  const {data: inspectionData} = useElementInstanceInspection({
+    processInstanceKey: processInstanceId,
+    enabled: processInstance?.state === 'ACTIVE',
+  });
   const modificationsByElement = useModificationsByElement();
   const affectedTokenCount = sourceElementInstanceKeyForMoveOperation
     ? 1
@@ -168,6 +177,41 @@ const TopPanel: React.FC = observer(() => {
       : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
 
+  const waitingStateOverlays = useMemo(() => {
+    if (!inspectionData?.items?.length) {
+      return [];
+    }
+
+    // Group wait states by elementId (show only 1 label per element)
+    const waitStatesByElement = new Map<string, typeof inspectionData.items>();
+    for (const item of inspectionData.items) {
+      const existing = waitStatesByElement.get(item.elementId) ?? [];
+      existing.push(item);
+      waitStatesByElement.set(item.elementId, existing);
+    }
+
+    const overlays: Array<{
+      elementId: string;
+      type: string;
+      position: typeof WAITING_BADGE;
+      payload: {label: string};
+    }> = [];
+
+    for (const [elementId, waitStates] of waitStatesByElement) {
+      const label = getWaitStateLabel(waitStates);
+      if (label) {
+        overlays.push({
+          elementId,
+          type: OVERLAY_TYPE_WAITING_STATE,
+          position: WAITING_BADGE,
+          payload: {label},
+        });
+      }
+    }
+
+    return overlays;
+  }, [inspectionData]);
+
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
       ? [selectedAnchorElementId]
@@ -228,6 +272,9 @@ const TopPanel: React.FC = observer(() => {
   );
   const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
+  );
+  const waitingOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_WAITING_STATE,
   );
 
   const modifiableElements = useModifiableElements();
@@ -376,7 +423,7 @@ const TopPanel: React.FC = observer(() => {
                         ...(elementStateOverlays ?? []),
                         ...modificationBadgesPerElement.get(),
                       ]
-                    : elementStateOverlays
+                    : [...(elementStateOverlays ?? []), ...waitingStateOverlays]
                 }
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />
@@ -434,6 +481,17 @@ const TopPanel: React.FC = observer(() => {
                       container={overlay.container}
                       newTokenCount={payload.newTokenCount}
                       cancelledTokenCount={payload.cancelledTokenCount}
+                    />
+                  );
+                })}
+                {waitingOverlays?.map((overlay) => {
+                  const payload = overlay.payload as {label: string};
+
+                  return (
+                    <WaitingStateOverlay
+                      key={`waiting-${overlay.elementId}`}
+                      container={overlay.container}
+                      label={payload.label}
                     />
                   );
                 })}

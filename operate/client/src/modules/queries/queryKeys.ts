@@ -20,6 +20,7 @@ import type {
   QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
+  QueryElementInstanceInspectionRequestBody,
   QueryElementInstancesRequestBody,
   QueryJobsRequestBody,
   QueryMessageSubscriptionsRequestBody,
@@ -256,6 +257,12 @@ const queryKeys = {
   messageSubscriptions: {
     search: (payload: QueryMessageSubscriptionsRequestBody) => [
       'messageSubscriptionsSearch',
+      payload,
+    ],
+  },
+  elementInstanceInspection: {
+    search: (payload: QueryElementInstanceInspectionRequestBody) => [
+      'elementInstanceInspectionSearch',
       payload,
     ],
   },

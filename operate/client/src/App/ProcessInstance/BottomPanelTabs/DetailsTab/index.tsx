@@ -31,6 +31,9 @@ import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
 import {AgentDetails} from './AgentDetails';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
+import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import {WaitingStatus} from './WaitingStatus';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const formatTaskLink = (
@@ -47,6 +50,7 @@ const formatTaskLink = (
 
 const DetailsTab: React.FC = () => {
   const clientConfig = getClientConfig();
+  const {processInstanceId = ''} = useProcessInstancePageParams();
   const {
     resolvedElementInstance,
     selectedElementId,
@@ -66,6 +70,23 @@ const DetailsTab: React.FC = () => {
   const elementInstanceKey =
     resolvedElementInstance?.elementInstanceKey ?? null;
   const resolvedElementType = resolvedElementInstance?.type;
+
+  const {data: inspectionData} = useElementInstanceInspection({
+    processInstanceKey: processInstanceId,
+    elementInstanceKey: elementInstanceKey ?? undefined,
+    enabled:
+      !!elementInstanceKey &&
+      processInstance?.state === 'ACTIVE' &&
+      resolvedElementInstance?.state === 'ACTIVE',
+  });
+
+  const elementWaitStates = useMemo(() => {
+    return (
+      inspectionData?.items?.filter(
+        (item) => item.elementInstanceKey === elementInstanceKey,
+      ) ?? []
+    );
+  }, [inspectionData, elementInstanceKey]);
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
     {
@@ -493,6 +514,7 @@ const DetailsTab: React.FC = () => {
             isError={isAgentError}
           />
         )}
+      <WaitingStatus waitStates={elementWaitStates} />
     </Container>
   );
 };

@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-api-zod-schemas",
-	"version": "0.0.68",
+	"version": "0.0.69",
 	"license": "LicenseRef-Camunda-1.0",
 	"description": "Zod schemas and TypeScript types for Camunda 8 unified API",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
@@ -592,6 +592,12 @@
 			"import": {
 				"types": "./dist/8.10/system-configuration.d.ts",
 				"default": "./dist/8.10/system-configuration.js"
+			}
+		},
+		"./8.10/element-instance-inspection": {
+			"import": {
+				"types": "./dist/8.10/element-instance-inspection.d.ts",
+				"default": "./dist/8.10/element-instance-inspection.js"
 			}
 		},
 		"./package.json": "./package.json"

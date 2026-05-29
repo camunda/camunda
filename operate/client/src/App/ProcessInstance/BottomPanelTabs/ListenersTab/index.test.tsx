@@ -129,6 +129,7 @@ const baseJobFields = {
   creationTime: null,
   lastUpdateTime: null,
   tags: [],
+  priority: 0,
 } satisfies Omit<
   Job,
   'jobKey' | 'type' | 'state' | 'kind' | 'listenerEventType'

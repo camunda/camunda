@@ -29,6 +29,10 @@ type ModificationBadgePayload = {
   cancelledTokenCount?: number;
 };
 
+type WaitingStatePayload = {
+  label: string;
+};
+
 const isStatisticsPayload = (
   payload: unknown,
 ): payload is StatisticsPayload => {
@@ -50,5 +54,11 @@ const isModificationBadgePayload = (
   );
 };
 
-export {isStatisticsPayload, isModificationBadgePayload};
-export type {ElementState, OverlayData};
+const isWaitingStatePayload = (
+  payload: unknown,
+): payload is WaitingStatePayload => {
+  return typeof payload === 'object' && payload !== null && 'label' in payload;
+};
+
+export {isStatisticsPayload, isModificationBadgePayload, isWaitingStatePayload};
+export type {ElementState, OverlayData, WaitingStatePayload};
