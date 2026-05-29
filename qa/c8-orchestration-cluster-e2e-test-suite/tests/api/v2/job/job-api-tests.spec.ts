@@ -242,7 +242,7 @@ test.describe.parallel('Job API Tests', () => {
 
       await assertBadRequest(
         res,
-        "Unexpected value '123' for enum field 'field'. Use any of the following values: [deadline, deniedReason, elementId, elementInstanceKey, endTime, errorCode, errorMessage, hasFailedWithRetriesLeft, isDenied, jobKey, kind, listenerEventType, processDefinitionId, processDefinitionKey, processInstanceKey, retries, state, tenantId, type, worker]",
+        "Unexpected value '123' for enum field 'field'. Use any of the following values: [deadline, deniedReason, elementId, elementInstanceKey, endTime, errorCode, errorMessage, hasFailedWithRetriesLeft, isDenied, jobKey, kind, listenerEventType, priority, processDefinitionId, processDefinitionKey, processInstanceKey, retries, state, tenantId, type, worker]",
       );
     });
   });
