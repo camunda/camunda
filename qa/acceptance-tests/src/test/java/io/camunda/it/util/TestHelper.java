@@ -23,6 +23,7 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
@@ -2072,6 +2073,49 @@ public final class TestHelper {
                       .page(p -> p.limit(listenerIds.size()))
                       .execute();
               assertThat(result.items()).hasSize(listenerIds.size());
+            });
+  }
+
+  /**
+   * Waits for an agent instance to be indexed in secondary storage after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param agentInstanceKey the key of the agent instance to wait for
+   */
+  public static void waitForAgentInstanceToBeIndexed(
+      final CamundaClient camundaClient, final long agentInstanceKey) {
+    Awaitility.await("should index agent instance")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newAgentInstanceGetRequest(agentInstanceKey).execute();
+              assertThat(result).isNotNull();
+            });
+  }
+
+  /**
+   * Waits for an agent instance with a provided {@code status} to be indexed in secondary storage
+   * after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param agentInstanceKey the key of the agent instance to wait for
+   * @param status expected AgentInstanceStatus
+   */
+  public static void waitForAgentInstanceWithStatusToBeIndexed(
+      final CamundaClient camundaClient,
+      final long agentInstanceKey,
+      final AgentInstanceStatus status) {
+    Awaitility.await("should index agent instance with '%s' status".formatted(status))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newAgentInstanceGetRequest(agentInstanceKey).execute();
+              assertThat(result).isNotNull();
+              assertThat(result.getStatus()).isEqualTo(status);
             });
   }
 }

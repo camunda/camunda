@@ -118,6 +118,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AgentInstanceGetRequest;
 import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
@@ -152,6 +153,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AgentInstanceSearchRequest;
 import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
@@ -300,6 +302,7 @@ import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.AgentInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.AuditLogGetRequestImpl;
 import io.camunda.client.impl.fetch.AuthorizationGetRequestImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
@@ -333,6 +336,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.request.AgentInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.AuditLogSearchRequestImpl;
 import io.camunda.client.impl.search.request.AuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
@@ -1748,6 +1752,16 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest() {
     return new GlobalTaskListenerSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AgentInstanceGetRequest newAgentInstanceGetRequest(final long agentInstanceKey) {
+    return new AgentInstanceGetRequestImpl(httpClient, agentInstanceKey);
+  }
+
+  @Override
+  public AgentInstanceSearchRequest newAgentInstanceSearchRequest() {
+    return new AgentInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

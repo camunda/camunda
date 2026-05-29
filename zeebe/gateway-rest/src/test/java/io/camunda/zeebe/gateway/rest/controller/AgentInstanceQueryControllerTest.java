@@ -319,4 +319,54 @@ class AgentInstanceQueryControllerTest extends RestControllerTest {
                     .build()),
             any());
   }
+
+  @Test
+  void shouldSearchAgentInstancesWithProcessDefinitionFilters() {
+    // given
+    when(agentInstanceServices.search(any(AgentInstanceQuery.class), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<AgentInstanceEntity>()
+                .total(1)
+                .startCursor("f")
+                .endCursor("v")
+                .items(List.of(AGENT_INSTANCE_ENTITY))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "processDefinitionId": { "$eq": "myProcessId" },
+                "processDefinitionVersion": { "$eq": 1 },
+                "processDefinitionVersionTag": { "$eq": "v1" }
+              }
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(agentInstanceServices)
+        .search(
+            eq(
+                new AgentInstanceQuery.Builder()
+                    .filter(
+                        new AgentInstanceFilter.Builder()
+                            .processDefinitionIdOperations(List.of(Operation.eq("myProcessId")))
+                            .processDefinitionVersionOperations(List.of(Operation.eq(1)))
+                            .versionTagOperations(List.of(Operation.eq("v1")))
+                            .build())
+                    .build()),
+            any());
+  }
 }
