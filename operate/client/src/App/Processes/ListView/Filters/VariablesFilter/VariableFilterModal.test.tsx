@@ -546,6 +546,35 @@ describe('<VariableFilterModal />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should show truncation warning when one of multiple conditions uses contains', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+    const operatorDropdowns = screen.getAllByRole('combobox', {name: 'Operator'});
+    await user.click(operatorDropdowns[1]!);
+    await user.click(screen.getByText('contains'));
+
+    expect(
+      screen.getByText(
+        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
+      ),
+    ).toBeInTheDocument();
+
+    const deleteButtons = screen.getAllByRole('button', {
+      name: 'Remove condition',
+    });
+    await user.click(deleteButtons[1]!);
+
+    expect(
+      screen.queryByText(
+        '"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it('should hide truncation warning when operator is changed away from contains', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
