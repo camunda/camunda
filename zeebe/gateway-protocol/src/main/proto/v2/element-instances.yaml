@@ -41,6 +41,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceWaitStates
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search element instance wait states
       description: >
         Returns the wait states for element instances matching the given filter.
