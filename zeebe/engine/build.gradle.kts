@@ -55,7 +55,6 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
-    testImplementation(project(":zeebe-logstreams", configuration = "tests"))
     testImplementation(libs.org.openjdk.jmh.jmh.core)
     testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
     testImplementation(libs.org.instancio.instancio.core)

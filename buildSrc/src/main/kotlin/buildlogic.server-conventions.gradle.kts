@@ -3,6 +3,7 @@
  */
 
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("buildlogic.java-conventions")
@@ -43,4 +44,10 @@ dependencies {
 // Force the POM-pinned 8.x version to win over enforced BOM constraints.
 configurations.all {
     resolutionStrategy.force("co.elastic.clients:elasticsearch-java:$esJavaVersion")
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform {
+        excludeTags("performance", "strace")
+    }
 }
