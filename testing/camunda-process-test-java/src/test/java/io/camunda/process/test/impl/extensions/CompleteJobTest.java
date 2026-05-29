@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -769,7 +770,7 @@ public class CompleteJobTest {
       assertThatThrownBy(
               () ->
                   camundaProcessTestContext.completeJob(
-                      JOB_TYPE, (Function<Map<String, Object>, Map<String, Object>>) null))
+                      JOB_TYPE, (UnaryOperator<Map<String, Object>>) null))
           .isInstanceOf(NullPointerException.class)
           .hasMessageContaining("variableMapper");
 

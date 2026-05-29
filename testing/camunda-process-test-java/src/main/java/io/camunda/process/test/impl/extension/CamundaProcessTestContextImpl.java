@@ -72,6 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -342,15 +343,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeJob(
-      final String jobType,
-      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+      final String jobType, final UnaryOperator<Map<String, Object>> variableMapper) {
     completeJob(JobSelectors.byJobType(jobType), variableMapper);
   }
 
   @Override
   public void completeJob(
-      final JobSelector jobSelector,
-      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+      final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper) {
     Objects.requireNonNull(variableMapper, "variableMapper must not be null");
     final CamundaClient client = createClient();
     final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
@@ -526,15 +525,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeUserTask(
-      final String elementId,
-      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+      final String elementId, final UnaryOperator<Map<String, Object>> variableMapper) {
     completeUserTask(UserTaskSelectors.byElementId(elementId), variableMapper);
   }
 
   @Override
   public void completeUserTask(
       final UserTaskSelector userTaskSelector,
-      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+      final UnaryOperator<Map<String, Object>> variableMapper) {
     Objects.requireNonNull(variableMapper, "variableMapper must not be null");
     final CamundaClient client = createClient();
     final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
@@ -822,7 +820,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final String operation,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+      final UnaryOperator<Map<String, Object>> variableMapper) {
     final Map<String, Object> cached = cache.get();
     if (cached != null) {
       return cached;
