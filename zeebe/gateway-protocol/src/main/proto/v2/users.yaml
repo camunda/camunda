@@ -8,7 +8,7 @@ paths:
         - User
       operationId: createUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Create user
       description: Create a new user.
@@ -54,7 +54,7 @@ paths:
         - User
       operationId: searchUsers
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search users
       description: Search for users based on given criteria.
@@ -87,7 +87,7 @@ paths:
         - User
       operationId: getUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get user
       description: Get a user by its username.
@@ -129,7 +129,7 @@ paths:
         - User
       operationId: updateUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update user
       description: Updates a user.
@@ -179,7 +179,7 @@ paths:
         - User
       operationId: deleteUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Delete user
       description: Deletes a user.

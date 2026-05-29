@@ -8,7 +8,7 @@ paths:
         - Form
       operationId: getFormByKey
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get form by key
       description: |

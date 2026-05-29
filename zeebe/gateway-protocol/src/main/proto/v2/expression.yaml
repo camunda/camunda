@@ -5,7 +5,7 @@ paths:
     post:
       operationId: evaluateExpression
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:

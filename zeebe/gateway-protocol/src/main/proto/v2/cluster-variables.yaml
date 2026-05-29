@@ -5,7 +5,7 @@ paths:
     post:
       operationId: createGlobalClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:
@@ -48,7 +48,7 @@ paths:
     post:
       operationId: createTenantClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:
@@ -111,7 +111,7 @@ paths:
         - Cluster Variable
       operationId: searchClusterVariables
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: true
       description: Search for cluster variables based on given criteria. By default, long variable values in the response are truncated.
@@ -148,7 +148,7 @@ paths:
     get:
       operationId: getGlobalClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: true
       tags:
@@ -191,7 +191,7 @@ paths:
     put:
       operationId: updateGlobalClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:
@@ -242,7 +242,7 @@ paths:
     delete:
       operationId: deleteGlobalClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:
@@ -282,7 +282,7 @@ paths:
     get:
       operationId: getTenantClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: true
       tags:
@@ -332,7 +332,7 @@ paths:
     put:
       operationId: updateTenantClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:
@@ -390,7 +390,7 @@ paths:
     delete:
       operationId: deleteTenantClusterVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       x-eventually-consistent: false
       tags:

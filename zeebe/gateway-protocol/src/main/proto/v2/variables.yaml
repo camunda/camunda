@@ -8,7 +8,7 @@ paths:
         - Variable
       operationId: searchVariables
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search variables
       description: |-
@@ -58,7 +58,7 @@ paths:
         - Variable
       operationId: getVariable
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get variable
       description: |-

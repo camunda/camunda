@@ -8,7 +8,7 @@ paths:
         - Job
       operationId: activateJobs
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Activate jobs
       description: |
@@ -43,7 +43,7 @@ paths:
         - Job
       operationId: searchJobs
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search jobs
       description: Search for jobs based on given criteria.
@@ -77,7 +77,7 @@ paths:
         - Job
       operationId: failJob
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Fail job
       description: |
@@ -130,7 +130,7 @@ paths:
         - Job
       operationId: throwJobError
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Throw error for job
       description: |
@@ -181,7 +181,7 @@ paths:
         - Job
       operationId: completeJob
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Complete job
       description: |
@@ -231,7 +231,7 @@ paths:
         - Job
       operationId: updateJob
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update job
       description: Update a job with the given key.

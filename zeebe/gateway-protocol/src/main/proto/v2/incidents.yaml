@@ -8,7 +8,7 @@ paths:
         - Incident
       operationId: searchIncidents
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search incidents
       description: |
@@ -43,7 +43,7 @@ paths:
         - Incident
       operationId: getIncident
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get incident
       description: |
@@ -85,7 +85,7 @@ paths:
         - Incident
       operationId: resolveIncident
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Resolve incident
       description: |
@@ -136,7 +136,7 @@ paths:
         - Incident
       operationId: getProcessInstanceStatisticsByError
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process instance statistics by error
       description: |
@@ -174,7 +174,7 @@ paths:
         - Incident
       operationId: getProcessInstanceStatisticsByDefinition
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process instance statistics by definition
       description: |

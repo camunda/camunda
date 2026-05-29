@@ -8,7 +8,7 @@ paths:
         - Tenant
       operationId: createTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Create tenant
       description: Creates a new tenant.
@@ -58,7 +58,7 @@ paths:
         - Tenant
       operationId: searchTenants
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search tenants
       description: Retrieves a filtered and sorted list of tenants.
@@ -98,7 +98,7 @@ paths:
         - Tenant
       operationId: getTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get tenant
       description: Retrieves a single tenant by tenant ID.
@@ -142,7 +142,7 @@ paths:
         - Tenant
       operationId: updateTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update tenant
       description: Updates an existing tenant.
@@ -192,7 +192,7 @@ paths:
         - Tenant
       operationId: deleteTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Delete tenant
       description: Deletes an existing tenant.
@@ -233,7 +233,7 @@ paths:
         - Tenant
       operationId: assignUserToTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a user to a tenant
       description: Assign a single user to a specified tenant. The user can then access tenant data and perform authorized actions.
@@ -281,7 +281,7 @@ paths:
         - Tenant
       operationId: unassignUserFromTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a user from a tenant
       description: |
@@ -331,7 +331,7 @@ paths:
         - Tenant
       operationId: searchUsersForTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
@@ -368,7 +368,7 @@ paths:
         - Tenant
       operationId: assignClientToTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a client to a tenant
       description: |
@@ -418,7 +418,7 @@ paths:
         - Tenant
       operationId: unassignClientFromTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a client from a tenant
       description: |
@@ -468,7 +468,7 @@ paths:
         - Tenant
       operationId: searchClientsForTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search clients for tenant
       description: Retrieves a filtered and sorted list of clients for a specified tenant.
@@ -505,7 +505,7 @@ paths:
         - Tenant
       operationId: assignGroupToTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a group to a tenant
       description: |
@@ -561,7 +561,7 @@ paths:
         - Tenant
       operationId: unassignGroupFromTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a group from a tenant
       description: |
@@ -611,7 +611,7 @@ paths:
         - Tenant
       operationId: searchGroupIdsForTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search groups for tenant
       description: Retrieves a filtered and sorted list of groups for a specified tenant.
@@ -648,7 +648,7 @@ paths:
         - Tenant
       operationId: searchRolesForTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search roles for tenant
       description: Retrieves a filtered and sorted list of roles for a specified tenant.
@@ -685,7 +685,7 @@ paths:
         - Tenant
       operationId: assignRoleToTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a role to a tenant
       description: |
@@ -735,7 +735,7 @@ paths:
         - Tenant
       operationId: unassignRoleFromTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a role from a tenant
       description: |
@@ -786,7 +786,7 @@ paths:
         - Tenant
       operationId: assignMappingRuleToTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
@@ -834,7 +834,7 @@ paths:
         - Tenant
       operationId: unassignMappingRuleFromTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a mapping rule from a tenant
       description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
@@ -882,7 +882,7 @@ paths:
         - Tenant
       operationId: searchMappingRulesForTenant
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.

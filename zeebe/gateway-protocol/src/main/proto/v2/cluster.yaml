@@ -8,7 +8,7 @@ paths:
         - Cluster
       operationId: getTopology
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.

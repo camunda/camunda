@@ -8,7 +8,7 @@ paths:
         - Element instance
       operationId: searchElementInstances
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search element instances
       description: Search for element instances based on given criteria.
@@ -74,7 +74,7 @@ paths:
         - Element instance
       operationId: getElementInstance
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get element instance
       description: Returns element instance as JSON.
@@ -117,7 +117,7 @@ paths:
         - Element instance
       operationId: createElementInstanceVariables
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update element instance variables
       description: |
@@ -163,7 +163,7 @@ paths:
         - Element instance
       operationId: searchElementInstanceIncidents
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search for incidents of a specific element instance
       description: |
@@ -217,7 +217,7 @@ paths:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Activate activities within an ad-hoc sub-process
       description: |

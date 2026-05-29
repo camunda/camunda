@@ -8,7 +8,7 @@ paths:
         - Signal
       operationId: broadcastSignal
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Broadcast signal
       description: Broadcasts a signal.

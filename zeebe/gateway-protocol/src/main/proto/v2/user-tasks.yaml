@@ -8,7 +8,7 @@ paths:
         - User task
       operationId: completeUserTask
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Complete user task
       description: >
@@ -63,7 +63,7 @@ paths:
         - User task
       operationId: assignUserTask
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign user task
       description: >
@@ -119,7 +119,7 @@ paths:
         - User task
       operationId: getUserTask
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get user task
       description: Get the user task by the user task key.
@@ -159,7 +159,7 @@ paths:
         - User task
       operationId: updateUserTask
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update user task
       description: >
@@ -214,7 +214,7 @@ paths:
         - User task
       operationId: getUserTaskForm
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get user task form
       description: |
@@ -259,7 +259,7 @@ paths:
         - User task
       operationId: unassignUserTask
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign user task
       description: >
@@ -309,7 +309,7 @@ paths:
         - User task
       operationId: searchUserTasks
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search user tasks
       description: Search for user tasks based on given criteria.
@@ -343,7 +343,7 @@ paths:
         - User task
       operationId: searchUserTaskVariables
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search user task variables
       description: |
@@ -393,7 +393,7 @@ paths:
         - User task
       operationId: searchUserTaskEffectiveVariables
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search user task effective variables
       description: |
@@ -442,7 +442,7 @@ paths:
         - User task
       operationId: searchUserTaskAuditLogs
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search user task audit logs
       description: Search for user task audit logs based on given criteria.

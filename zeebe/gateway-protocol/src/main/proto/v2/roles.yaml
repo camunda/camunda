@@ -8,7 +8,7 @@ paths:
         - Role
       operationId: createRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Create role
       description: Create a new role.
@@ -53,7 +53,7 @@ paths:
         - Role
       operationId: searchRoles
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search roles
       description: Search for roles based on given criteria.
@@ -87,7 +87,7 @@ paths:
         - Role
       operationId: getRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get role
       description: Get a role by its ID.
@@ -129,7 +129,7 @@ paths:
         - Role
       operationId: updateRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update role
       description: Update a role with the given ID.
@@ -179,7 +179,7 @@ paths:
         - Role
       operationId: deleteRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Delete role
       description: Deletes the role with the given ID.
@@ -218,7 +218,7 @@ paths:
         - Role
       operationId: assignRoleToUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a role to a user
       description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
@@ -272,7 +272,7 @@ paths:
         - Role
       operationId: unassignRoleFromUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a role from a user
       description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
@@ -320,7 +320,7 @@ paths:
         - Role
       operationId: searchUsersForRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search role users
       description: Search users with assigned role.
@@ -371,7 +371,7 @@ paths:
         - Role
       operationId: assignRoleToClient
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a role to a client
       description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
@@ -425,7 +425,7 @@ paths:
         - Role
       operationId: unassignRoleFromClient
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a role from a client
       description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
@@ -473,7 +473,7 @@ paths:
         - Role
       operationId: searchClientsForRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search role clients
       description: Search clients with assigned role.
@@ -524,7 +524,7 @@ paths:
         - Role
       operationId: assignRoleToGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a role to a group
       description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
@@ -584,7 +584,7 @@ paths:
         - Role
       operationId: unassignRoleFromGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a role from a group
       description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
@@ -632,7 +632,7 @@ paths:
         - Role
       operationId: searchGroupsForRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search role groups
       description: Search groups with assigned role.
@@ -683,7 +683,7 @@ paths:
         - Role
       operationId: assignRoleToMappingRule
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a role to a mapping rule
       description: Assigns a role to a mapping rule.
@@ -737,7 +737,7 @@ paths:
         - Role
       operationId: unassignRoleFromMappingRule
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a role from a mapping rule
       description: Unassigns a role from a mapping rule.
@@ -785,7 +785,7 @@ paths:
         - Role
       operationId: searchMappingRulesForRole
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search role mapping rules
       description: Search mapping rules with assigned role.

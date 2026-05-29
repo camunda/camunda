@@ -8,7 +8,7 @@ paths:
         - Agent instance
       operationId: createAgentInstance
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Create agent instance
       description: |
@@ -54,7 +54,7 @@ paths:
         - Agent instance
       operationId: getAgentInstance
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get agent instance
       description: Returns agent instance as JSON.
@@ -98,7 +98,7 @@ paths:
         - Agent instance
       operationId: updateAgentInstance
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update agent instance
       description: |
@@ -146,7 +146,7 @@ paths:
         - Agent instance
       operationId: searchAgentInstances
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search agent instances
       description: Search for agent instances based on given criteria.

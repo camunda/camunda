@@ -8,7 +8,7 @@ paths:
         - Batch operation
       operationId: getBatchOperation
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get batch operation
       description: Get batch operation by key.
@@ -49,7 +49,7 @@ paths:
         - Batch operation
       operationId: searchBatchOperations
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search batch operations
       description: Search for batch operations based on given criteria.
@@ -83,7 +83,7 @@ paths:
         - Batch operation
       operationId: cancelBatchOperation
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Cancel Batch operation
       description: |
@@ -125,7 +125,7 @@ paths:
         - Batch operation
       operationId: suspendBatchOperation
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Suspend Batch operation
       description: |
@@ -169,7 +169,7 @@ paths:
         - Batch operation
       operationId: resumeBatchOperation
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Resume Batch operation
       description: |
@@ -213,7 +213,7 @@ paths:
         - Batch operation
       operationId: searchBatchOperationItems
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search batch operation items
       description: Search for batch operation items based on given criteria.

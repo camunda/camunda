@@ -8,7 +8,7 @@ paths:
         - Process definition
       operationId: searchProcessDefinitions
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search process definitions
       description: Search for process definitions based on given criteria.
@@ -42,7 +42,7 @@ paths:
         - Process definition
       operationId: getProcessDefinition
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process definition
       description: Returns process definition as JSON.
@@ -87,7 +87,7 @@ paths:
         - Process definition
       operationId: getProcessDefinitionXML
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process definition XML
       description: Returns process definition as XML.
@@ -137,7 +137,7 @@ paths:
         - Process definition
       operationId: getStartProcessForm
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process start form
       description: |
@@ -182,7 +182,7 @@ paths:
         - Process definition
       operationId: getProcessDefinitionStatistics
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process definition statistics
       description: Get statistics about elements in currently running process instances by process definition key and search filter.
@@ -223,7 +223,7 @@ paths:
         - Process definition
       operationId: getProcessDefinitionMessageSubscriptionStatistics
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get message subscription statistics
       description: |
@@ -258,7 +258,7 @@ paths:
         - Process definition
       operationId: getProcessDefinitionInstanceStatistics
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process instance statistics
       description: |
@@ -293,7 +293,7 @@ paths:
         - Process definition
       operationId: getProcessDefinitionInstanceVersionStatistics
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get process instance statistics by version
       description: |

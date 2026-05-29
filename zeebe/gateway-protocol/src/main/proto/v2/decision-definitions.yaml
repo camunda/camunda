@@ -8,7 +8,7 @@ paths:
         - Decision definition
       operationId: searchDecisionDefinitions
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search decision definitions
       description: Search for decision definitions based on given criteria.
@@ -42,7 +42,7 @@ paths:
         - Decision definition
       operationId: getDecisionDefinition
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get decision definition
       description: Returns a decision definition by key.
@@ -85,7 +85,7 @@ paths:
         - Decision definition
       operationId: getDecisionDefinitionXML
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get decision definition XML
       description: Returns decision definition as XML.
@@ -128,7 +128,7 @@ paths:
         - Decision definition
       operationId: evaluateDecision
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Evaluate decision
       description: |

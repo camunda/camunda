@@ -7,7 +7,7 @@ paths:
         - Group
       operationId: createGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Create group
       description: |
@@ -68,7 +68,7 @@ paths:
         - Group
       operationId: searchGroups
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search groups
       description: Search for groups based on given criteria.
@@ -102,7 +102,7 @@ paths:
         - Group
       operationId: getGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Get group
       description: Get a group by its ID.
@@ -144,7 +144,7 @@ paths:
         - Group
       operationId: updateGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Update group
       description: Update a group with the given ID.
@@ -194,7 +194,7 @@ paths:
         - Group
       operationId: deleteGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Delete group
       description: Deletes the group with the given ID.
@@ -233,7 +233,7 @@ paths:
         - Group
       operationId: assignUserToGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a user to a group
       description: |
@@ -289,7 +289,7 @@ paths:
         - Group
       operationId: unassignUserFromGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a user from a group
       description: |
@@ -339,7 +339,7 @@ paths:
         - Group
       operationId: searchUsersForGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search group users
       description: Search users assigned to a group.
@@ -390,7 +390,7 @@ paths:
         - Group
       operationId: assignClientToGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a client to a group
       description: |
@@ -446,7 +446,7 @@ paths:
         - Group
       operationId: unassignClientFromGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a client from a group
       description: |
@@ -496,7 +496,7 @@ paths:
         - Group
       operationId: searchClientsForGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search group clients
       description: Search clients assigned to a group.
@@ -547,7 +547,7 @@ paths:
         - Group
       operationId: assignMappingRuleToGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Assign a mapping rule to a group
       description: Assigns a mapping rule to a group.
@@ -601,7 +601,7 @@ paths:
         - Group
       operationId: unassignMappingRuleFromGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Unassign a mapping rule from a group
       description: Unassigns a mapping rule from a group.
@@ -649,7 +649,7 @@ paths:
         - Group
       operationId: searchMappingRulesForGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search group mapping rules
       description: Search mapping rules assigned to a group.
@@ -700,7 +700,7 @@ paths:
         - Group
       operationId: searchRolesForGroup
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       summary: Search group roles
       description: Search roles assigned to a group.
