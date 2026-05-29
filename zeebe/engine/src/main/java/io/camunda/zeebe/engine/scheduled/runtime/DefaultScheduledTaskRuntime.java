@@ -102,7 +102,7 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
     clock = processingContext.getClock();
     recovered = true;
     for (final var task : tasks.values()) {
-      armNextRun(task);
+      armWithRecoverySweep(task);
     }
   }
 
@@ -128,8 +128,23 @@ public final class DefaultScheduledTaskRuntime implements ScheduledTaskRuntime {
   public void onResumed() {
     schedulingEnabled = true;
     for (final var task : tasks.values()) {
-      armNextRun(task);
+      armWithRecoverySweep(task);
     }
+  }
+
+  /**
+   * Arms a task on recovery or resume. An on-demand task backed by durable state must reconcile
+   * once here: work may have come due while the runtime was down or paused, and nothing else will
+   * nudge it until new work arrives. Pulling its next run forward to now (raised to the resolution
+   * floor by {@link #armNextRun}) mirrors the mandatory sweep the former {@code
+   * DueDateCheckScheduler} performed via {@code schedule(-1)}. An earlier retained nudge is
+   * preserved. Periodic tasks already schedule their first run on recovery, so they need no sweep.
+   */
+  private void armWithRecoverySweep(final RegisteredTask task) {
+    if (task.schedule instanceof Schedule.OnDemand) {
+      task.latestNudgeAtOrBefore = Math.min(task.latestNudgeAtOrBefore, clock.millis());
+    }
+    armNextRun(task);
   }
 
   private void cancelAll() {

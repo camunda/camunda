@@ -150,29 +150,30 @@ class DefaultScheduledTaskRuntimeTest {
   final class OnDemandScheduleTest {
 
     @Test
-    void shouldNotRunOnDemandTaskAfterRecoveryWithoutNudge() {
+    void shouldSweepOnDemandTaskOnceAfterRecovery() {
       // given
       final var clock = new FakeClock(1000);
       final var scheduleService = new FakeScheduleService(clock);
       final var context = TestProcessorContext.with(scheduleService, clock);
-      final var runs = new java.util.concurrent.atomic.AtomicInteger();
+      final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       runtime.register(
           "task-a",
           new Schedule.OnDemand(Duration.ofMillis(100)),
           ctx -> {
-            runs.incrementAndGet();
+            fireTimes.add(ctx.clock().millis());
             return Result.idle(ctx.resultBuilder());
           },
           TaskOptions.sync());
 
       // when
       runtime.onRecovered(context);
-      scheduleService.advanceTo(10_000);
+      scheduleService.advanceTo(1100); // recovery sweep fires at now + minDelay = 1100
+      scheduleService.advanceTo(10_000); // no further runs — task stays dormant until nudged
 
-      // then
-      assertThat(runs.get()).isZero();
+      // then — an on-demand task reconciles durable state exactly once on recovery
+      assertThat(fireTimes).containsExactly(1100L);
     }
 
     @Test
@@ -181,7 +182,7 @@ class DefaultScheduledTaskRuntimeTest {
       final var clock = new FakeClock(1000);
       final var scheduleService = new FakeScheduleService(clock);
       final var context = TestProcessorContext.with(scheduleService, clock);
-      final var runs = new java.util.concurrent.atomic.AtomicInteger();
+      final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
       final var handle =
@@ -189,18 +190,19 @@ class DefaultScheduledTaskRuntimeTest {
               "task-a",
               new Schedule.OnDemand(Duration.ofMillis(100)),
               ctx -> {
-                runs.incrementAndGet();
+                fireTimes.add(ctx.clock().millis());
                 return Result.idle(ctx.resultBuilder());
               },
               TaskOptions.sync());
 
-      // when
+      // when — drain the recovery sweep first, then nudge to verify the nudge itself triggers a run
       runtime.onRecovered(context);
-      handle.nudge(1050);
+      scheduleService.advanceTo(1100); // recovery sweep fires, task goes dormant
+      handle.nudge(1200);
       scheduleService.advanceTo(1200);
 
-      // then
-      assertThat(runs.get()).isEqualTo(1);
+      // then — recovery sweep at 1100, nudged run at 1200
+      assertThat(fireTimes).containsExactly(1100L, 1200L);
     }
 
     @Test
@@ -222,14 +224,45 @@ class DefaultScheduledTaskRuntimeTest {
               },
               TaskOptions.sync());
       runtime.onRecovered(context);
+      scheduleService.advanceTo(1050); // drain the recovery sweep (now + minDelay = 1050)
 
       // when
       handle.nudge(1200); // earlier
       handle.nudge(1500); // later — should be ignored
       scheduleService.advanceTo(1200);
 
-      // then
-      assertThat(fireTimes).containsExactly(1200L);
+      // then — recovery sweep at 1050, then the earlier nudge at 1200 (later nudge ignored)
+      assertThat(fireTimes).containsExactly(1050L, 1200L);
+    }
+
+    @Test
+    void shouldSweepOnDemandTaskOnceOnResumed() {
+      // given
+      final var clock = new FakeClock(1000);
+      final var scheduleService = new FakeScheduleService(clock);
+      final var context = TestProcessorContext.with(scheduleService, clock);
+      final var fireTimes = new java.util.ArrayList<Long>();
+
+      final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(50)),
+          ctx -> {
+            fireTimes.add(ctx.clock().millis());
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
+      runtime.onRecovered(context);
+      scheduleService.advanceTo(1050); // drain the recovery sweep
+
+      // when — lifecycle pause then resume; resume must trigger a fresh sweep even without a
+      // retained nudge
+      runtime.onPaused();
+      runtime.onResumed();
+      scheduleService.advanceTo(1100);
+
+      // then — recovery sweep at 1050, resume sweep at 1050 + minDelay = 1100
+      assertThat(fireTimes).containsExactly(1050L, 1100L);
     }
   }
 
@@ -245,28 +278,26 @@ class DefaultScheduledTaskRuntimeTest {
       final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
-      final var handle =
-          runtime.register(
-              "task-a",
-              new Schedule.OnDemand(Duration.ofMillis(50)),
-              ctx -> {
-                final long now = ctx.clock().millis();
-                fireTimes.add(now);
-                if (fireTimes.size() == 1) {
-                  return Result.nextDueAt(now + 500, ctx.resultBuilder());
-                }
-                return Result.idle(ctx.resultBuilder());
-              },
-              TaskOptions.sync());
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(50)),
+          ctx -> {
+            final long now = ctx.clock().millis();
+            fireTimes.add(now);
+            if (fireTimes.size() == 1) {
+              return Result.nextDueAt(now + 500, ctx.resultBuilder());
+            }
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
       runtime.onRecovered(context);
-      handle.nudge(1100);
-      scheduleService.advanceTo(1100);
+      scheduleService.advanceTo(1050); // recovery sweep at now + minDelay = 1050
 
-      // when — the first run returned NextDueAt(1600); next run should be at 1600
-      scheduleService.advanceTo(1600);
+      // when — the recovery sweep returned NextDueAt(1550); next run should be at 1550
+      scheduleService.advanceTo(1550);
 
       // then
-      assertThat(fireTimes).containsExactly(1100L, 1600L);
+      assertThat(fireTimes).containsExactly(1050L, 1550L);
     }
 
     @Test
@@ -278,28 +309,26 @@ class DefaultScheduledTaskRuntimeTest {
       final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
-      final var handle =
-          runtime.register(
-              "task-a",
-              new Schedule.OnDemand(Duration.ofMillis(50)),
-              ctx -> {
-                final long now = ctx.clock().millis();
-                fireTimes.add(now);
-                if (fireTimes.size() == 1) {
-                  return Result.moreWorkPending(ctx.resultBuilder());
-                }
-                return Result.idle(ctx.resultBuilder());
-              },
-              TaskOptions.sync());
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(50)),
+          ctx -> {
+            final long now = ctx.clock().millis();
+            fireTimes.add(now);
+            if (fireTimes.size() == 1) {
+              return Result.moreWorkPending(ctx.resultBuilder());
+            }
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
       runtime.onRecovered(context);
-      handle.nudge(1100);
+      scheduleService.advanceTo(1050); // recovery sweep at now + minDelay = 1050
+
+      // when — recovery sweep returned MoreWorkPending; next run should be at 1050+50=1100
       scheduleService.advanceTo(1100);
 
-      // when — first run returned MoreWorkPending; next run should be at 1100+50=1150
-      scheduleService.advanceTo(1150);
-
       // then
-      assertThat(fireTimes).containsExactly(1100L, 1150L);
+      assertThat(fireTimes).containsExactly(1050L, 1100L);
     }
   }
 
@@ -362,19 +391,20 @@ class DefaultScheduledTaskRuntimeTest {
               },
               TaskOptions.sync());
       runtime.onRecovered(context);
+      scheduleService.advanceTo(1050); // drain the recovery sweep so the nudge below is retained
 
       runtime.pause("task-a");
       handle.nudge(1100); // retained while paused
 
       scheduleService.advanceTo(2000);
-      assertThat(fireA).isEmpty();
+      assertThat(fireA).containsExactly(1050L); // only the recovery sweep so far
 
       // when
       runtime.resume("task-a");
       scheduleService.advanceTo(2050);
 
-      // then — runs at now + minDelay = 2050 (floor)
-      assertThat(fireA).containsExactly(2050L);
+      // then — resumes from the retained nudge, floored to now + minDelay = 2050
+      assertThat(fireA).containsExactly(1050L, 2050L);
     }
   }
 
@@ -390,35 +420,33 @@ class DefaultScheduledTaskRuntimeTest {
       final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
-      final var handle =
-          runtime.register(
-              "task-a",
-              new Schedule.OnDemand(Duration.ofMillis(10)),
-              ctx -> {
-                final long now = ctx.clock().millis();
-                fireTimes.add(now);
-                if (fireTimes.size() == 1) {
-                  return Result.moreWorkPending(ctx.resultBuilder());
-                }
-                return Result.idle(ctx.resultBuilder());
-              },
-              TaskOptions.sync());
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(10)),
+          ctx -> {
+            final long now = ctx.clock().millis();
+            fireTimes.add(now);
+            if (fireTimes.size() == 1) {
+              return Result.moreWorkPending(ctx.resultBuilder());
+            }
+            return Result.idle(ctx.resultBuilder());
+          },
+          TaskOptions.sync());
       runtime.onRecovered(context);
       runtime.throttle("task-a", ThrottlePolicy.minInterval(Duration.ofMillis(500)));
-      handle.nudge(1100);
 
-      // when
-      scheduleService.advanceTo(1100);
-      scheduleService.advanceTo(1599); // before throttle's 500ms floor
+      // when — recovery sweep fires at now + minDelay = 1010 and returns MoreWorkPending
+      scheduleService.advanceTo(1010);
+      scheduleService.advanceTo(1509); // before the throttle's 500ms floor (1010 + 500 = 1510)
 
       // then
-      assertThat(fireTimes).containsExactly(1100L);
+      assertThat(fireTimes).containsExactly(1010L);
 
       // when — past the throttle floor
-      scheduleService.advanceTo(1600);
+      scheduleService.advanceTo(1510);
 
       // then
-      assertThat(fireTimes).containsExactly(1100L, 1600L);
+      assertThat(fireTimes).containsExactly(1010L, 1510L);
     }
   }
 
@@ -474,26 +502,24 @@ class DefaultScheduledTaskRuntimeTest {
       final var fireTimes = new java.util.ArrayList<Long>();
 
       final var runtime = new DefaultScheduledTaskRuntime(BackPressureSignal.alwaysGreen());
-      final var handle =
-          runtime.register(
-              "task-a",
-              new Schedule.OnDemand(Duration.ofMillis(10)),
-              ctx -> {
-                final int d = depth.incrementAndGet();
-                maxDepth.updateAndGet(prev -> Math.max(prev, d));
-                fireTimes.add(ctx.clock().millis());
-                try {
-                  if (fireTimes.size() < 5) {
-                    return Result.moreWorkPending(ctx.resultBuilder());
-                  }
-                  return Result.idle(ctx.resultBuilder());
-                } finally {
-                  depth.decrementAndGet();
-                }
-              },
-              TaskOptions.sync());
-      runtime.onRecovered(context);
-      handle.nudge(1100);
+      runtime.register(
+          "task-a",
+          new Schedule.OnDemand(Duration.ofMillis(10)),
+          ctx -> {
+            final int d = depth.incrementAndGet();
+            maxDepth.updateAndGet(prev -> Math.max(prev, d));
+            fireTimes.add(ctx.clock().millis());
+            try {
+              if (fireTimes.size() < 5) {
+                return Result.moreWorkPending(ctx.resultBuilder());
+              }
+              return Result.idle(ctx.resultBuilder());
+            } finally {
+              depth.decrementAndGet();
+            }
+          },
+          TaskOptions.sync());
+      runtime.onRecovered(context); // recovery sweep kicks off the first run
 
       // when
       // The fake scheduler dispatches tasks via advanceTo only; the runtime cannot
