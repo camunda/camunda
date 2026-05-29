@@ -147,27 +147,10 @@ public final class MessageCorrelationCorrelateProcessor
       return;
     }
 
-    // Propagate agent context so follow-up events (process CREATED, message CORRELATED) carry
-    // traceability info
+    // Propagate agent context so all follow-up records carry traceability info
     final var agentToolName = messageCorrelationRecord.getAgentToolName();
-    if (StringUtils.isNotBlank(agentToolName)) {
-      tempCorrelatingSubscriptions
-          .getFirstMessageStartEventSubscription()
-          .ifPresentOrElse(
-              // the first start event subscription is preferred, if there is any
-              subscription ->
-                  session.appendAgentInfoToFollowUps(
-                      new AgentInfo()
-                          .setElementId(subscription.startEventId())
-                          .setToolName(agentToolName)),
-              // otherwise, the first process event subscription is used without element id
-              () ->
-                  tempCorrelatingSubscriptions
-                      .getFirstProcessEventSubscription()
-                      .ifPresent(
-                          subscription ->
-                              session.appendAgentInfoToFollowUps(
-                                  new AgentInfo().setToolName(agentToolName))));
+    if (StringUtils.isNotBlank(agentToolName) && !tempCorrelatingSubscriptions.isEmpty()) {
+      session.appendAgentInfoToFollowUps(new AgentInfo().setToolName(agentToolName));
     }
 
     // Now that authorization passed, write the message and correlations to state
