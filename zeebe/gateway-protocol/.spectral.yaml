@@ -13,6 +13,7 @@ functions:
   - verifyAddedInVersion
   - verifySemanticKindsRegistered
   - verifyNoAmbiguousIdentifierProperty
+  - verifyOperationSecurityModes
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -160,6 +161,14 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  require-operation-security-modes:
+    description: "Every operation must declare supported security modes (Basic + BearerAuth) or an explicit empty security set."
+    severity: error
+    given: "$"
+    message: "{{error}}"
+    then:
+      function: verifyOperationSecurityModes
 
   # ── x-semantic-establishes / x-semantic-requires (camunda/camunda#52272) ──
   # Three rules:
