@@ -156,6 +156,10 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     setCancelHandler.accept(() -> onRequestCancel(jobType, longPollingRequest));
     actor.run(
         () -> {
+          if (!longPollingRequest.isOpen()) {
+            return;
+          }
+
           final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
                   jobType,
@@ -172,6 +176,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           final var state = jobTypeState.get(type);
           if (state != null) {
             state.removeRequest(longPollingRequest);
+            state.removeActiveRequest(longPollingRequest);
           }
         });
   }
@@ -181,7 +186,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final InflightActivateJobsRequest<T> request) {
 
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
-    if (topology != null) {
+    if (topology != null && request.isOpen()) {
       state.addActiveRequest(request);
 
       final int partitionsCount = topology.getPartitionsCount();
@@ -251,6 +256,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return;
     }
 
+    if (request.isCanceled()) {
+      // already cancelled, nothing to do here
+      return;
+    }
+
     final var state =
         jobTypeState.computeIfAbsent(
             request.getType(),
@@ -272,6 +282,10 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   void internalActivateJobsRetry(final InflightActivateJobsRequest<T> request) {
     actor.run(
         () -> {
+          if (!request.isOpen()) {
+            return;
+          }
+
           final String jobType = request.getType();
           final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
