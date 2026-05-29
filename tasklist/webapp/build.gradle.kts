@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(project(":camunda-gateway-mapping-http"))
     api(libs.io.grpc.grpc.api)
     implementation(project(":zeebe-util"))
