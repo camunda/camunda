@@ -155,7 +155,48 @@ describe('VariablesTab document variables', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not render a download button for regular variables', async () => {
+  it('should render a view documents button for variables with multiple documents', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocumentList',
+          value: JSON.stringify([
+            makeDocumentRef({documentId: 'doc-1'}),
+            makeDocumentRef({documentId: 'doc-2'}),
+          ]),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await screen.findByTestId('variables-list');
+
+    const variableRow = within(screen.getByTestId('variable-myDocumentList'));
+    expect(
+      variableRow.getByLabelText('View documents for variable myDocumentList'),
+    ).toBeInTheDocument();
+  });
+
+  it('should not render a view documents button for single-document variables', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocument',
+          value: JSON.stringify(makeDocumentRef()),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await screen.findByTestId('variables-list');
+
+    const variableRow = within(screen.getByTestId('variable-myDocument'));
+    expect(
+      variableRow.queryByLabelText(/view documents for variable/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not render document-related buttons for regular variables', async () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     render(<VariablesTab />, {wrapper: getWrapper()});
@@ -164,6 +205,12 @@ describe('VariablesTab document variables', () => {
     const variableRow = within(screen.getByTestId('variable-testVariableName'));
     expect(
       variableRow.queryByLabelText(/download document for variable/i),
+    ).not.toBeInTheDocument();
+    expect(
+      variableRow.queryByLabelText(/view documents for variable/i),
+    ).not.toBeInTheDocument();
+    expect(
+      variableRow.queryByLabelText(/preview document for variable/i),
     ).not.toBeInTheDocument();
   });
 });

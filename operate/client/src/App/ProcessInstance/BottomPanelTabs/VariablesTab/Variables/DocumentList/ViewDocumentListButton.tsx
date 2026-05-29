@@ -10,19 +10,19 @@ import {Button} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
-import {DocumentPreviewModal} from './DocumentPreviewModal';
+import {DocumentListModal} from './DocumentListModal';
 
 type Props = {
-  document: DocumentInfo;
+  documents: DocumentInfo[];
+  isLowerBound: boolean;
   variableName: string;
 };
 
-const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
-  const tooltipText =
-    document.type !== 'unknown'
-      ? 'Preview'
-      : 'Preview not available for this document type';
-
+const ViewDocumentListButton: React.FC<Props> = ({
+  documents,
+  isLowerBound,
+  variableName,
+}) => {
   return (
     <ModalStateManager
       renderLauncher={({setOpen}) => (
@@ -31,25 +31,25 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
           size="sm"
           hasIconOnly
           renderIcon={View}
-          iconDescription={tooltipText}
+          iconDescription="View documents"
           tooltipPosition="top"
-          // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-          autoAlign={true}
-          aria-label={`Preview document for variable ${variableName}`}
-          disabled={document.type === 'unknown'}
+          tooltipAlignment="end"
+          aria-label={`View documents for variable ${variableName}`}
           onClick={() => setOpen(true)}
         />
       )}
     >
       {({open, setOpen}) => (
-        <DocumentPreviewModal
+        <DocumentListModal
           open={open}
           setOpen={setOpen}
-          document={document}
+          documents={documents}
+          isLowerBound={isLowerBound}
+          variableName={variableName}
         />
       )}
     </ModalStateManager>
   );
 };
 
-export {PreviewDocumentButton};
+export {ViewDocumentListButton};
