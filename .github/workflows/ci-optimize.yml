@@ -407,26 +407,43 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
-      - name: Install Google Chrome and ffmpeg
-        # Required for TestCafe headless browser tests on self-hosted runners.
-        # gcp-perf-core-8-default does not ship with Chrome or ffmpeg preinstalled.
+      - name: Setup CI runtime (TestCafe + Chrome + Xvfb)
         run: |
           set -euo pipefail
+
+          sudo apt-get update
+
+          # ----------------------------
+          # Core system dependencies
+          # ----------------------------
+          sudo apt-get install -y --no-install-recommends \
+            wget gnupg ca-certificates xdg-utils curl \
+            fonts-dejavu fonts-noto fonts-liberation \
+            xvfb ffmpeg \
+            libgbm1 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+            libgtk-3-0 libxcomposite1 libxrandr2 libxdamage1 libxfixes3 \
+            libasound2t64 libpangocairo-1.0-0
+
+          # ----------------------------
+          # Google Chrome install
+          # ----------------------------
           if ! command -v google-chrome >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates xdg-utils
             wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
               | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+
             echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
               | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends google-chrome-stable
           fi
+
           google-chrome --version
-          if ! command -v ffmpeg >/dev/null 2>&1; then
-            sudo apt-get install -y --no-install-recommends ffmpeg
-          fi
-          ffmpeg -version
+
+          # ----------------------------
+          # Sanity check (CI debug safety)
+          # ----------------------------
+          xvfb-run -a google-chrome --version
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
