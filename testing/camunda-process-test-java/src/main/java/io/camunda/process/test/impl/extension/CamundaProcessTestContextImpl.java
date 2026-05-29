@@ -62,6 +62,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -837,11 +838,16 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final List<Variable> localVariables =
         fetchVariables(client, processInstanceKey, elementInstanceKey);
 
-    final JsonMapper clientJsonMapper = client.getConfiguration().getJsonMapper();
-    final Map<String, Object> result = new HashMap<>();
-    result.putAll(toVariableMap(clientJsonMapper, globalVariables));
-    result.putAll(toVariableMap(clientJsonMapper, localVariables));
-    return result;
+    // Merge by name first so that only the winning variable per name is deserialized.
+    final Map<String, Variable> mergedVariables = new HashMap<>();
+    for (final Variable variable : globalVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+    for (final Variable variable : localVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+
+    return toVariableMap(client.getConfiguration().getJsonMapper(), mergedVariables.values());
   }
 
   private static List<Variable> fetchVariables(
@@ -856,7 +862,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   private static Map<String, Object> toVariableMap(
-      final JsonMapper jsonMapper, final List<Variable> variables) {
+      final JsonMapper jsonMapper, final Collection<Variable> variables) {
     final Map<String, Object> result = new HashMap<>();
     for (final Variable variable : variables) {
       if (variable.isTruncated()) {
