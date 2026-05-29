@@ -10,6 +10,7 @@ package io.camunda.it.mcp.auditlog;
 import static io.camunda.it.mcp.McpServerTest.createBasicAuthCustomizer;
 import static io.camunda.it.mcp.McpServerTest.createMcpClient;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
 import static io.camunda.it.util.TestHelper.waitForAuditLogEntries;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_PASSWORD;
@@ -79,13 +80,17 @@ public class McpAuditLogIT {
       mcpClient.callTool(CallToolRequest.builder().name(fullToolName).arguments(Map.of()).build());
     }
 
+    // start a control instance via direct message correlation (no agentToolName)
+    startProcessInstanceWithMessage(client, MSG_NAME);
+
+    // wait until both process instance creation audit log entries are indexed
     waitForAuditLogEntries(
         client,
         f ->
             f.operationType(AuditLogOperationTypeEnum.CREATE)
                 .entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
                 .processDefinitionId(PROCESS_ID),
-        1);
+        2);
   }
 
   @Test

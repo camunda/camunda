@@ -62,9 +62,8 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   @Override
-  @JsonIgnore
   public boolean isEmpty() {
-    return super.isEmpty();
+    return getElementId().isEmpty() && getToolName().isEmpty();
   }
 
   @Override
