@@ -101,8 +101,6 @@ public class AnalyticsExporter implements Exporter {
       metricFlushTask = null;
     }
     otelSdkManager.shutdown();
-    controller.updateLastExportedRecordPosition(
-        controller.getLastExportedRecordPosition(), metadata.serialize());
     LOG.info("Analytics exporter closed");
   }
 
@@ -126,8 +124,6 @@ public class AnalyticsExporter implements Exporter {
   private void flushMetricsAndReschedule() {
     try {
       otelSdkManager.flushMetrics();
-      controller.updateLastExportedRecordPosition(
-          controller.getLastExportedRecordPosition(), metadata.serialize());
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to flush metrics", e);
     } finally {

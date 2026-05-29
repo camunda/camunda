@@ -9,6 +9,7 @@ package io.camunda.exporter.analytics;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
@@ -17,17 +18,39 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Worst-case benchmark: measures collectAndExport() with many metrics and high cardinality. Not a
- * JMH benchmark — uses System.nanoTime for rough timing.
+ * Worst-case benchmark for {@code collectAndExport()} with varying metric counts and high
+ * cardinality (1999 dimensions per metric — the SDK default limit).
  *
- * <p>Run: {@code mvn test -pl zeebe/exporters/analytics-exporter -Dtest=MetricFlushBenchmark
+ * <p>Run: {@code mvn verify -pl zeebe/exporters/analytics-exporter -Dtest=MetricFlushBenchmark
  * -DskipTests=false -Dbenchmark=true}
  */
-class MetricFlushBenchmark {
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@State(Scope.Thread)
+@Warmup(iterations = 3, time = 1)
+@Measurement(iterations = 5, time = 1)
+@Fork(1)
+public class MetricFlushBenchmark {
+
+  private static final int DIMENSIONS_PER_METRIC = 1999;
 
   private static final MetricExporter NOOP_EXPORTER =
       new MetricExporter() {
@@ -54,86 +77,60 @@ class MetricFlushBenchmark {
         }
       };
 
+  @Param({"1", "10", "50", "100", "1000"})
+  private int metricCount;
+
+  private ManualMetricReader reader;
+  private SdkMeterProvider provider;
+  private LongCounter[] counters;
+
+  @Setup(Level.Trial)
+  public void setUp() {
+    reader = new ManualMetricReader(NOOP_EXPORTER);
+    provider = SdkMeterProvider.builder().registerMetricReader(reader).build();
+    final var meter = provider.get("bench");
+    counters = new LongCounter[metricCount];
+    for (int m = 0; m < metricCount; m++) {
+      counters[m] = meter.counterBuilder("metric." + m).build();
+    }
+    populateCounters();
+    reader.collectAndExport();
+  }
+
+  @Setup(Level.Iteration)
+  public void populateCounters() {
+    for (final LongCounter counter : counters) {
+      for (int d = 0; d < DIMENSIONS_PER_METRIC; d++) {
+        counter.add(
+            1,
+            Attributes.of(
+                AttributeKey.stringKey("process.id"), "process-" + d,
+                AttributeKey.longKey("version"), (long) (d % 10),
+                AttributeKey.stringKey("tenant"), "tenant-" + (d % 50)));
+      }
+    }
+  }
+
+  @Benchmark
+  public CompletableResultCode collectAndExport() {
+    return reader.collectAndExport();
+  }
+
+  @TearDown
+  public void tearDown() {
+    provider.shutdown();
+  }
+
   @Test
   @EnabledIfSystemProperty(named = "benchmark", matches = "true")
-  void measureFlushPerformance() {
-    final int[] metricCounts = {1, 10, 50, 100, 1000};
-    final int dimensionsPerMetric = 1999; // SDK cardinality limit
-    final int warmupRuns = 3;
-    final int measurementRuns = 5;
-
-    System.out.printf(
-        "%n=== MetricFlushBenchmark: collectAndExport() with %d dimensions per metric ===%n%n",
-        dimensionsPerMetric);
-    System.out.printf(
-        "%-12s %-12s %-12s %-15s%n", "Metrics", "Dimensions", "Flush (ms)", "Data points");
-
-    for (final int metricCount : metricCounts) {
-      final var reader = new ManualMetricReader(NOOP_EXPORTER);
-      final var provider = SdkMeterProvider.builder().registerMetricReader(reader).build();
-      final var meter = provider.get("bench");
-
-      // Create counters and populate with dimensions
-      for (int m = 0; m < metricCount; m++) {
-        final var counter = meter.counterBuilder("metric." + m).build();
-        for (int d = 0; d < dimensionsPerMetric; d++) {
-          counter.add(
-              1,
-              Attributes.of(
-                  AttributeKey.stringKey("process.id"), "process-" + d,
-                  AttributeKey.longKey("version"), (long) (d % 10),
-                  AttributeKey.stringKey("tenant"), "tenant-" + (d % 50)));
-        }
-      }
-
-      // Warmup
-      for (int i = 0; i < warmupRuns; i++) {
-        reader.collectAndExport();
-        // Re-populate for next run
-        for (int m = 0; m < metricCount; m++) {
-          final var counter = meter.counterBuilder("metric." + m).build();
-          for (int d = 0; d < dimensionsPerMetric; d++) {
-            counter.add(
-                1,
-                Attributes.of(
-                    AttributeKey.stringKey("process.id"), "process-" + d,
-                    AttributeKey.longKey("version"), (long) (d % 10),
-                    AttributeKey.stringKey("tenant"), "tenant-" + (d % 50)));
-          }
-        }
-      }
-
-      // Measure
-      long totalNs = 0;
-      for (int i = 0; i < measurementRuns; i++) {
-        // Re-populate
-        for (int m = 0; m < metricCount; m++) {
-          final var counter = meter.counterBuilder("metric." + m).build();
-          for (int d = 0; d < dimensionsPerMetric; d++) {
-            counter.add(
-                1,
-                Attributes.of(
-                    AttributeKey.stringKey("process.id"), "process-" + d,
-                    AttributeKey.longKey("version"), (long) (d % 10),
-                    AttributeKey.stringKey("tenant"), "tenant-" + (d % 50)));
-          }
-        }
-
-        final long start = System.nanoTime();
-        reader.collectAndExport();
-        totalNs += System.nanoTime() - start;
-      }
-
-      final double avgMs = (totalNs / (double) measurementRuns) / 1_000_000.0;
-      final int expectedDataPoints = metricCount * Math.min(dimensionsPerMetric, 2000);
-
-      System.out.printf(
-          "%-12d %-12d %-12.2f %-15d%n",
-          metricCount, dimensionsPerMetric, avgMs, expectedDataPoints);
-
-      provider.shutdown();
-    }
-
-    System.out.println();
+  void runBenchmarks() throws Exception {
+    final var options =
+        new org.openjdk.jmh.runner.options.OptionsBuilder()
+            .include(MetricFlushBenchmark.class.getSimpleName())
+            .warmupIterations(3)
+            .measurementIterations(5)
+            .forks(0)
+            .build();
+    new org.openjdk.jmh.runner.Runner(options).run();
   }
 }
