@@ -17,10 +17,10 @@ Use this skill for every workflow modification.
 3. Format:
    - `./mvnw spotless:apply -T1C`
 4. Tier classification (mandatory, before act):
-   - For each changed workflow, assign Tier 1/2/3 using `.github/skills/act-testing/references/workflow-tiers.md` and the rubric in `.github/skills/act-testing/SKILL.md`.
+   - For each changed workflow, assign Tier 1/2/3 using `.claude/skills/act-testing/references/workflow-tiers.md` and the rubric in `.claude/skills/act-testing/SKILL.md`.
    - Record: workflow path, tier, one-line rationale, and validation path.
 5. Act test (harness-style, mandatory):
-   - Read `.github/skills/act-testing/SKILL.md` before proceeding.
+   - Read `.claude/skills/act-testing/SKILL.md` before proceeding.
    - Tier 1 or 2: create a temporary `test-*.yml` harness, run `check-drift.sh`, assess `act` feasibility (`act`, `docker`, daemon), and provide user-run scenario commands.
    - Keep test harness files available while sharing commands so users can execute them.
    - Remove `test-*.yml` files only after user-run `act` validation is complete.

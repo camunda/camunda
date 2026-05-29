@@ -145,5 +145,11 @@
 ## Claude skills  ##
 ####################
 
+# CI skills
+/.claude/skills/act-testing/**             @camunda/monorepo-devops-team
+/.claude/skills/ci-security-compliance/**  @camunda/monorepo-devops-team
+/.claude/skills/ci-validation/**           @camunda/monorepo-devops-team
+/.claude/skills/ci-workflow-authoring/**   @camunda/monorepo-devops-team
+
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
