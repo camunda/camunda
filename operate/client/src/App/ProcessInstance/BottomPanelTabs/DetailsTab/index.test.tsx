@@ -126,6 +126,7 @@ const mockJob = {
   creationTime: null,
   lastUpdateTime: null,
   tags: [],
+  priority: 0,
 } satisfies Job;
 
 const mockCalledProcessInstance = {
