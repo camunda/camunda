@@ -196,7 +196,7 @@ describe('VariablesTab document variables', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not render a document-related buttons for regular variables', async () => {
+  it('should not render document-related buttons for regular variables', async () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     render(<VariablesTab />, {wrapper: getWrapper()});
