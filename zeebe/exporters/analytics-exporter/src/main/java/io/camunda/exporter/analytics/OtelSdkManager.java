@@ -18,6 +18,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.api.logs.Severity;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
@@ -30,6 +31,7 @@ import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -46,6 +48,7 @@ public class OtelSdkManager {
   private Logger otelLogger;
   private Meter otelMeter;
   private AnalyticsExporterMetadata metadata;
+  private final HashMap<String, LongCounter> counters = new HashMap<>();
 
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
@@ -82,7 +85,9 @@ public class OtelSdkManager {
 
   /** Increments the named counter by 1 with the given dimension attributes. */
   public void incrementMetric(final String metricName, final Attributes dimensions) {
-    otelMeter.counterBuilder(metricName).build().add(1, dimensions);
+    counters
+        .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
+        .add(1, dimensions);
   }
 
   void shutdown() {
