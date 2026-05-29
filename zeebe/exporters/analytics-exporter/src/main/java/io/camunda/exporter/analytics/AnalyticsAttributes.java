@@ -30,8 +30,8 @@ public final class AnalyticsAttributes {
   // Log domain
   public static final AttributeKey<Long> LOG_POSITION =
       AttributeKey.longKey("camunda.log.position");
-  public static final AttributeKey<Long> LOG_SEQUENCE_NUMBER =
-      AttributeKey.longKey("camunda.log.sequence_number");
+  public static final AttributeKey<Long> EVENT_SEQUENCE_NUMBER =
+      AttributeKey.longKey("camunda.event.sequence_number");
 
   // Tenant domain
   public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant.id");

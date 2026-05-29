@@ -100,7 +100,7 @@ class AnalyticsExporterTest {
                   //                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition())
-                  .containsEntry(AnalyticsAttributes.LOG_SEQUENCE_NUMBER, 1L);
+                  .containsEntry(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER, 1L);
             });
   }
 
@@ -190,7 +190,7 @@ class AnalyticsExporterTest {
         .get()
         .satisfies(
             bytes ->
-                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getRawEventSequenceNumber())
+                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getEventSequenceNumber())
                     .isEqualTo(3L));
   }
 
@@ -209,7 +209,7 @@ class AnalyticsExporterTest {
     // then
     assertThat(freshMemoryExporter.getFinishedLogRecordItems())
         .singleElement()
-        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
         .isEqualTo(6L);
   }
 

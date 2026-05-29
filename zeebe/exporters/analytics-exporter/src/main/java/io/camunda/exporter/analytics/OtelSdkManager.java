@@ -9,8 +9,8 @@ package io.camunda.exporter.analytics;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
@@ -78,7 +78,7 @@ public class OtelSdkManager {
             .setSeverityText("INFO")
             .setAttribute(EVENT_NAME, eventName)
             .setAttribute(LOG_POSITION, logPosition)
-            .setAttribute(LOG_SEQUENCE_NUMBER, metadata.incrementAndGetRawEventSequenceNumber());
+            .setAttribute(EVENT_SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
     builder.accept(record);
     record.emit();
   }
