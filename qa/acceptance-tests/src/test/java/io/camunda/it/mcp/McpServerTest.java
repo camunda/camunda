@@ -12,6 +12,8 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 public abstract class McpServerTest {
@@ -27,6 +29,15 @@ public abstract class McpServerTest {
 
   protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
     return DEFAULT_REQUEST_CUSTOMIZER;
+  }
+
+  public static McpSyncHttpClientRequestCustomizer createBasicAuthCustomizer(
+      final String username, final String password) {
+    final var credentials = "%s:%s".formatted(username, password);
+    final var encoded =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    return (builder, method, endpoint, body, context) ->
+        builder.header("Authorization", "Basic " + encoded);
   }
 
   public static McpSyncClient createMcpClient(
