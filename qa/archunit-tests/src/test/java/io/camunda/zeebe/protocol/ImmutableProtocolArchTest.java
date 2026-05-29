@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
 import java.lang.reflect.Method;
 import org.immutables.value.Value;
 
@@ -86,6 +87,7 @@ final class ImmutableProtocolArchTest {
     return Predicates.equivalentTo(ProcessInstanceRelated.class)
         .or(Predicates.equivalentTo(BatchOperationRelated.class))
         .or(Predicates.equivalentTo(TenantOwned.class))
+        .or(Predicates.equivalentTo(WaitStateRelated.class))
         .or(Predicates.equivalentTo(AuditLogProcessInstanceRelated.class));
   }
 
