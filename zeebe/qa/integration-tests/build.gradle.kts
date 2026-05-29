@@ -47,7 +47,9 @@ dependencies {
     testImplementation(libs.io.netty.netty.handler)
     testImplementation(libs.io.grpc.grpc.api)
     testImplementation(libs.org.openjdk.jmh.jmh.core)
-    testImplementation(libs.org.apache.tomcat.embed.tomcat.embed.core)
+    testImplementation(libs.org.apache.tomcat.embed.tomcat.embed.core) {
+        exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+    }
     testImplementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.io.grpc.grpc.core)
     testImplementation(project(":zeebe-test-util"))
@@ -110,6 +112,7 @@ dependencies {
     testImplementation(libs.org.apache.httpcomponents.httpcore)
     testImplementation(libs.com.google.guava.guava)
     testImplementation(project(":configuration"))
+    testImplementation(project(":analytics-exporter"))
     testImplementation(libs.org.apache.logging.log4j.log4j.api)
     testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
 }

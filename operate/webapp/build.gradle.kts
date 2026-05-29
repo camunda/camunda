@@ -24,6 +24,7 @@ dependencies {
     implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.boot.spring.boot.starter.web) {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+        exclude(group = "org.elasticsearch.client", module = "transport")
     }
     api(libs.org.springframework.boot.spring.boot.starter.log4j2)
     api(libs.org.springframework.boot.spring.boot.starter.validation)
@@ -63,7 +64,9 @@ dependencies {
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
     implementation(libs.org.apache.commons.commons.lang3)
     api(libs.org.apache.commons.commons.collections4)
-    api(libs.org.apache.tomcat.embed.tomcat.embed.core)
+    api(libs.org.apache.tomcat.embed.tomcat.embed.core) {
+        exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+    }
     api(libs.io.grpc.grpc.api)
     api(libs.software.amazon.awssdk.sts)
     runtimeOnly(libs.jakarta.servlet.jakarta.servlet.api)

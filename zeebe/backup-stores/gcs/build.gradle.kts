@@ -11,7 +11,10 @@ dependencies {
     api(project(":zeebe-backup-store-common"))
     implementation(project(":zeebe-protocol"))
     api(libs.com.google.cloud.google.cloud.core)
-    api(libs.com.google.cloud.google.cloud.storage)
+    api(libs.com.google.cloud.google.cloud.storage) {
+        exclude(group = "org.codehaus.mojo", module = "animal-sniffer-annotations")
+        exclude(group = "io.perfmark", module = "perfmark-api")
+    }
     api(libs.com.google.api.gax)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)

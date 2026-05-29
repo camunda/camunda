@@ -6,9 +6,10 @@ plugins {
     id("buildlogic.frontend-webjar-conventions")
 }
 
+layout.buildDirectory.set(layout.projectDirectory.dir("target/gradle-build"))
+
 frontendWebjar {
     frontendBuildDirectory.set(layout.projectDirectory.dir("build"))
-    frontendPackagedDirectory.set(layout.projectDirectory.dir("build/assets"))
     resourceTargetPath.set("META-INF/resources/operate")
 }
 

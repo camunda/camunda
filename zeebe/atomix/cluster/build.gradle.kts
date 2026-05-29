@@ -57,7 +57,9 @@ dependencies {
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.awaitility.awaitility)
-    testImplementation(libs.org.jmock.jmock)
+    testImplementation(libs.org.jmock.jmock) {
+        exclude(group = "net.bytebuddy", module = "byte-buddy")
+    }
     testImplementation(libs.net.jqwik.jqwik)
     testImplementation(libs.net.jqwik.jqwik.api)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)

@@ -8,8 +8,18 @@ plugins {
 
 dependencies {
     implementation(libs.info.picocli.picocli)
-    implementation(project(":zeebe-cluster-config"))
-    implementation(project(":zeebe-atomix-cluster"))
+    implementation(project(":zeebe-cluster-config")) {
+        exclude(group = "org.springframework")
+        exclude(group = "org.springframework.boot")
+        exclude(group = "io.netty")
+        exclude(group = "io.github.resilience4j")
+    }
+    implementation(project(":zeebe-atomix-cluster")) {
+        exclude(group = "org.springframework")
+        exclude(group = "org.springframework.boot")
+        exclude(group = "io.netty")
+        exclude(group = "io.github.resilience4j")
+    }
     api(libs.com.google.protobuf.protobuf.java.util)
     api(libs.com.google.protobuf.protobuf.java)
     api(libs.uk.co.real.logic.sbe.tool)

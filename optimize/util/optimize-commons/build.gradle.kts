@@ -9,7 +9,9 @@ plugins {
 dependencies {
     implementation(project(":camunda-search-client-connect"))
     api(libs.jakarta.validation.jakarta.validation.api)
-    api(libs.org.springframework.spring.context)
+    api(libs.org.springframework.spring.context) {
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.jakarta.json.jakarta.json.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
@@ -24,7 +26,9 @@ dependencies {
     api(libs.net.jodah.failsafe)
     implementation(libs.com.vdurmont.semver4j)
     api(libs.org.apache.httpcomponents.core5.httpcore5)
-    api(libs.org.opensearch.client.opensearch.java)
+    api(libs.org.opensearch.client.opensearch.java) {
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     api(libs.org.apache.httpcomponents.client5.httpclient5)
     api(libs.org.springframework.spring.web)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)

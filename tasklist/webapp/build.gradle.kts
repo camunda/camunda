@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":camunda-client-java"))
     api(libs.org.springframework.boot.spring.boot.starter.web) {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+        exclude(group = "org.elasticsearch.client", module = "transport")
     }
     api(libs.org.springframework.boot.spring.boot.starter.log4j2)
     api(libs.org.springframework.boot.spring.boot.starter.security)
@@ -54,7 +55,9 @@ dependencies {
     api(libs.org.springdoc.springdoc.openapi.starter.common) {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
     }
-    api(libs.org.apache.tomcat.embed.tomcat.embed.core)
+    api(libs.org.apache.tomcat.embed.tomcat.embed.core) {
+        exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+    }
     api(libs.org.elasticsearch.elasticsearch)
     api(libs.org.springframework.spring.beans)
     api(libs.jakarta.annotation.jakarta.annotation.api)

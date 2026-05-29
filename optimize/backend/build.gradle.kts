@@ -15,8 +15,31 @@ plugins {
 tasks.named<ProcessResources>("processTestResources") {
     val resourceTokens = project.optimizeBackendTestResourceTokens()
 
+    from("src/it/webapp") {
+        into("webapp")
+    }
+
     filesMatching("integration-extensions.properties") {
         filter(mavenResourceFilterArgs(resourceTokens), ReplaceTokens::class.java)
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    from("../client/dist") {
+        into("META-INF/resources")
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir("src/main/ssl")
+        }
+    }
+    test {
+        resources {
+            srcDir("src/it/resources")
+        }
     }
 }
 
@@ -27,10 +50,15 @@ dependencies {
     implementation(project(":optimize-commons"))
     implementation(libs.org.camunda.bpm.model.camunda.bpmn.model)
     implementation(libs.org.camunda.bpm.model.camunda.dmn.model)
-    implementation(libs.org.camunda.bpm.camunda.engine)
+    implementation(libs.org.camunda.bpm.camunda.engine) {
+        exclude(group = "org.camunda.feel", module = "feel-engine")
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     implementation(project(":camunda-search-client-connect"))
     implementation(project(":zeebe-protocol"))
-    implementation(libs.io.camunda.identity.spring.boot.starter)
+    implementation(libs.io.camunda.identity.spring.boot.starter) {
+        exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+    }
     implementation(libs.org.springframework.spring.context.support)
     implementation(libs.org.springframework.spring.tx)
     implementation(libs.org.springframework.spring.context)
@@ -38,7 +66,9 @@ dependencies {
     implementation(libs.org.springframework.spring.webmvc)
     implementation(libs.org.springframework.spring.web)
     implementation(libs.org.springframework.spring.beans)
-    implementation(libs.org.apache.tomcat.embed.tomcat.embed.core)
+    implementation(libs.org.apache.tomcat.embed.tomcat.embed.core) {
+        exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+    }
     implementation(libs.org.javassist.javassist)
     implementation(libs.org.springframework.security.spring.security.web)
     implementation(libs.org.springframework.security.spring.security.config)
@@ -47,11 +77,17 @@ dependencies {
     implementation(libs.org.springframework.security.spring.security.oauth2.resource.server)
     implementation(libs.org.springframework.security.spring.security.core)
     implementation(libs.org.springframework.security.spring.security.oauth2.core)
-    implementation(libs.com.auth0.java.jwt)
-    implementation(libs.org.quartz.scheduler.quartz)
+    implementation(libs.com.auth0.java.jwt) {
+        exclude(group = "com.fasterxml.jackson.core", module = "jackson-databind")
+    }
+    implementation(libs.org.quartz.scheduler.quartz) {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
     implementation(libs.org.freemarker.freemarker)
     implementation(libs.org.springframework.boot.spring.boot.freemarker)
-    implementation(libs.com.opencsv.opencsv)
+    implementation(libs.com.opencsv.opencsv) {
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     implementation(libs.com.github.ben.manes.caffeine.caffeine)
     implementation(libs.org.apache.commons.commons.math3)
     implementation(libs.com.github.sisyphsu.dateparser)
@@ -59,7 +95,9 @@ dependencies {
     implementation(libs.org.apache.lucene.lucene.core)
     implementation(libs.com.github.wnameless.json.json.flattener)
     implementation(libs.org.apache.httpcomponents.core5.httpcore5)
-    implementation(libs.org.opensearch.client.opensearch.java)
+    implementation(libs.org.opensearch.client.opensearch.java) {
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     implementation(libs.org.camunda.bpm.camunda.license.check)
     implementation(libs.io.github.classgraph.classgraph)
     implementation(libs.org.agrona.agrona)
@@ -71,7 +109,9 @@ dependencies {
     implementation(libs.jakarta.json.jakarta.json.api)
     implementation(libs.org.springframework.boot.spring.boot.actuator)
     implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
-    implementation(libs.org.springframework.boot.spring.boot.starter.web)
+    implementation(libs.org.springframework.boot.spring.boot.starter.web) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     implementation(libs.org.springframework.boot.spring.boot.starter.tomcat)
     implementation(libs.org.springframework.boot.spring.boot)
     implementation(libs.com.nimbusds.oauth2.oidc.sdk)
@@ -116,7 +156,10 @@ dependencies {
     testImplementation(libs.org.mock.server.mockserver.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.test) {
+        exclude(group = "junit", module = "junit")
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     testImplementation(libs.org.mock.server.mockserver.netty)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mock.server.mockserver.client.java)

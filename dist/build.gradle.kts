@@ -48,6 +48,7 @@ val openApiGenerateBackups by tasks.registering(org.openapitools.generator.gradl
         mapOf(
             "additionalModelTypeAnnotations" to
                 "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "hideGenerationTimestamp" to "true",
             "useSpringBoot3" to "true",
             "sourceFolder" to "src/main/java",
         ),
@@ -83,6 +84,7 @@ val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradl
         mapOf(
             "additionalModelTypeAnnotations" to
                 "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "hideGenerationTimestamp" to "true",
             "useSpringBoot3" to "true",
             "sourceFolder" to "src/main/java",
         ),
@@ -118,6 +120,7 @@ val openApiGenerateExporter by tasks.registering(org.openapitools.generator.grad
         mapOf(
             "additionalModelTypeAnnotations" to
                 "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "hideGenerationTimestamp" to "true",
             "useSpringBoot3" to "true",
             "sourceFolder" to "src/main/java",
         ),

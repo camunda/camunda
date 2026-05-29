@@ -44,8 +44,14 @@ dependencies {
     api(libs.jakarta.validation.jakarta.validation.api)
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
     api(libs.io.swagger.core.v3.swagger.models.jakarta)
-    api(libs.io.swagger.parser.v3.swagger.parser.v3)
-    api(libs.io.swagger.parser.v3.swagger.parser.core)
+    api(libs.io.swagger.parser.v3.swagger.parser.v3) {
+        exclude(group = "io.swagger.core.v3", module = "swagger-models")
+        exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
+    }
+    api(libs.io.swagger.parser.v3.swagger.parser.core) {
+        exclude(group = "io.swagger.core.v3", module = "swagger-models")
+        exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
+    }
     api(libs.org.springdoc.springdoc.openapi.starter.common) {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
     }

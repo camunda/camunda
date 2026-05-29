@@ -48,6 +48,7 @@ dependencies {
     testImplementation(libs.org.opensearch.opensearch.testcontainers)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":camunda-search-test-utils"))
+    testImplementation(project(":camunda-client-java"))
     testImplementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
     testImplementation(libs.org.apache.httpcomponents.httpcore)
     testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)

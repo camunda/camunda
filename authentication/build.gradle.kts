@@ -30,7 +30,9 @@ dependencies {
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-search-client"))
     implementation(project(":camunda-search-client-reader"))
-    api(libs.org.springframework.security.spring.security.oauth2.client)
+    api(libs.org.springframework.security.spring.security.oauth2.client) {
+        exclude(group = "com.nimbusds", module = "oauth2-oidc-sdk")
+    }
     api(libs.org.springframework.security.spring.security.oauth2.core)
     api(libs.com.nimbusds.oauth2.oidc.sdk)
     api(libs.com.nimbusds.nimbus.jose.jwt)

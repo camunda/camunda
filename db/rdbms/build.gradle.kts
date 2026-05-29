@@ -22,7 +22,9 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     api(libs.com.github.ben.manes.caffeine.caffeine)
-    implementation(project(":camunda-db-rdbms-schema"))
+    implementation(project(":camunda-db-rdbms-schema")) {
+        exclude(group = "com.github.vertical-blank", module = "sql-formatter")
+    }
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
     testImplementation(libs.org.instancio.instancio.core)

@@ -28,7 +28,7 @@ extensions.configure<NodeExtension> {
     nodeProjectDir.set(layout.projectDirectory)
 }
 
-val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(true)
+val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(false)
 
 val npmVersionPackage by tasks.registering(NpmTask::class) {
     enabled = !skipFrontendBuild.get()

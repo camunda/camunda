@@ -7,8 +7,21 @@ plugins {
 }
 
 // Configure SBE generation
+val journalSchema = layout.projectDirectory.file("src/main/resources/journal-schema.xml")
+val generatedSbePackageInfo =
+    layout.buildDirectory.file("generated-sources/sbe/io/camunda/zeebe/journal/file/package-info.java")
+
 tasks.named<JavaExec>("generateSbe") {
-    args("${project.projectDir}/src/main/resources/journal-schema.xml")
+    args(journalSchema.asFile.absolutePath)
+}
+
+val deleteGeneratedSbePackageInfo by tasks.registering(Delete::class) {
+    dependsOn("generateSbe")
+    delete(generatedSbePackageInfo)
+}
+
+tasks.named("compileJava") {
+    dependsOn(deleteGeneratedSbePackageInfo)
 }
 
 dependencies {

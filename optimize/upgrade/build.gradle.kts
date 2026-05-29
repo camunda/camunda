@@ -14,7 +14,9 @@ dependencies {
     implementation(libs.org.springframework.spring.context)
     implementation(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
-    implementation(libs.org.opensearch.client.opensearch.java)
+    implementation(libs.org.opensearch.client.opensearch.java) {
+        exclude(group = "commons-logging", module = "commons-logging")
+    }
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.com.fasterxml.jackson.core.jackson.core)
     implementation(libs.com.fasterxml.jackson.core.jackson.annotations)

@@ -1,5 +1,6 @@
 import buildlogic.clientJavaResourceTokens
 import buildlogic.mavenResourceFilterArgs
+import buildlogic.OptionalDependenciesPomAction
 import org.apache.tools.ant.filters.ReplaceTokens
 
 /*
@@ -12,6 +13,19 @@ plugins {
     id("org.openapi.generator")
 }
 
+publishing {
+    publications.named<MavenPublication>("maven") {
+        pom.withXml(
+            OptionalDependenciesPomAction(
+                setOf(
+                    "io.micrometer:micrometer-core",
+                    "io.micrometer:micrometer-commons",
+                )
+            )
+        )
+    }
+}
+
 java {
     disableAutoTargetJvm()
 }
@@ -21,11 +35,13 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
+val rawGeneratedOpenApiDir = layout.buildDirectory.dir("generated/openapi-raw")
+val generatedOpenApiSources = layout.buildDirectory.dir("generated/openapi/src/main/java")
 
 openApiGenerate {
     generatorName.set("java")
     inputSpec.set("$openapiDir/rest-api.yaml")
-    outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi")
+    outputDir.set(rawGeneratedOpenApiDir.map { it.asFile.absolutePath })
     modelPackage.set("io.camunda.client.protocol.rest")
     templateDir.set("${project.projectDir}/src/main/resources/templates")
 
@@ -91,6 +107,7 @@ openApiGenerate {
                 "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
             "documentationProvider" to "none",
             "enumUnknownDefaultCase" to "true",
+            "hideGenerationTimestamp" to "true",
             "library" to "google-api-client",
             "java8" to "true",
             "openApiNullable" to "false",
@@ -119,7 +136,15 @@ tasks.named("openApiGenerate") {
 }
 
 tasks.named("compileJava") {
+    dependsOn("stripJsonFormatFromGeneratedOpenApiSources")
+}
+
+val stripJsonFormatFromGeneratedOpenApiSources by tasks.registering(Sync::class) {
     dependsOn("openApiGenerate")
+    from(rawGeneratedOpenApiDir.map { it.dir("src/main/java") })
+    into(generatedOpenApiSources)
+    include("**/*.java")
+    filter { line: String -> line.takeUnless { it == "@JsonFormat(shape=JsonFormat.Shape.OBJECT)" } }
 }
 
 tasks.named<ProcessResources>("processResources") {

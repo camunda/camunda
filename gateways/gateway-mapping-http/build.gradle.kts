@@ -8,7 +8,9 @@ plugins {
 
 dependencies {
     implementation(project(":camunda-gateway-model"))
-    implementation(project(":camunda-authentication"))
+    implementation(project(":camunda-authentication")) {
+        isTransitive = false
+    }
     implementation(project(":camunda-service"))
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
@@ -27,6 +29,7 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.springframework.spring.web)
     api(libs.org.springframework.spring.core)
+    api(libs.org.springframework.security.spring.security.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.jakarta.validation.jakarta.validation.api)
     testImplementation(project(":zeebe-msgpack-core"))
