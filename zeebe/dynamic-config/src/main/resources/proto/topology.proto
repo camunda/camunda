@@ -224,3 +224,36 @@ enum ExportingStateEnum {
   SOFT_PAUSED = 2;
   PAUSED = 3;
 }
+
+message PartitionGroupClusterTopology {
+  ClusterTopology clusterMembership = 1;
+  map<string, ClusterTopology> partitionGroups = 2;
+  PartitionGroupChangePlan pendingPlan = 3;
+}
+
+message PartitionGroupChangePlan {
+  int64 id = 1;
+  google.protobuf.Timestamp startedAt = 2;
+  int32 currentPhaseIndex = 3;
+  repeated PartitionGroupPhase phases = 4;
+  CompletedChange lastChange = 5;
+}
+
+message PartitionGroupPhase {
+  oneof phase_type {
+    ClusterMembershipPhase membershipPhase = 1;
+    PartitionGroupParallelPhase partitionPhase = 2;
+  }
+}
+
+message ClusterMembershipPhase {
+  repeated TopologyChangeOperation operations = 1;
+}
+
+message PartitionGroupParallelPhase {
+  map<string, PartitionGroupOperationList> operationsPerGroup = 1;
+}
+
+message PartitionGroupOperationList {
+  repeated TopologyChangeOperation operations = 1;
+}
