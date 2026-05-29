@@ -17,11 +17,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * H2-based test that verifies {@link LiquibaseSchemaManager} runs an isolated Liquibase migration
- * per physical tenant: each tenant gets its own datasource, its own table prefix, and the resulting
- * Liquibase tracking tables are visible only in the tenant's own database.
+ * H2-based test that verifies {@link DefaultRdbmsSchemaManagerRegistry} runs an isolated Liquibase
+ * migration per physical tenant: each tenant gets its own datasource and its own table prefix, and
+ * the resulting Liquibase tracking tables are visible only in the tenant's own database.
  */
-class LiquibaseSchemaManagerMultiTenantH2Test {
+class DefaultRdbmsSchemaManagerRegistryH2Test {
 
   private static final String TENANT_A = "tenant-a";
   private static final String TENANT_B = "tenant-b";
@@ -57,14 +57,14 @@ class LiquibaseSchemaManagerMultiTenantH2Test {
         TENANT_B,
         new PerTenantSchemaConfig(
             dataSourceB, VendorDatabasePropertiesLoader.load("h2"), "B_", true, null));
-    final var schemaManager = new LiquibaseSchemaManager(configs, "8.10.0");
+    final var registry = DefaultRdbmsSchemaManagerRegistry.fromConfigs(configs, "8.10.0");
 
     // when
-    schemaManager.afterPropertiesSet();
+    registry.afterPropertiesSet();
 
     // then - both tenants report initialized
-    assertThat(schemaManager.isInitialized(TENANT_A)).isTrue();
-    assertThat(schemaManager.isInitialized(TENANT_B)).isTrue();
+    assertThat(registry.isInitialized(TENANT_A)).isTrue();
+    assertThat(registry.isInitialized(TENANT_B)).isTrue();
 
     // and the prefixed Liquibase tracking tables exist only in their respective databases
     assertThat(tableExists(dataSourceA, "A_DATABASECHANGELOG")).isTrue();

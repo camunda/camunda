@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
@@ -80,7 +80,7 @@ public class RdbmsExporterWrapper implements Exporter {
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   private final RdbmsService rdbmsService;
-  private final RdbmsSchemaManager rdbmsSchemaManager;
+  private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   private final VendorDatabaseProperties vendorDatabaseProperties;
 
   private RdbmsExporter exporter;
@@ -88,10 +88,10 @@ public class RdbmsExporterWrapper implements Exporter {
 
   public RdbmsExporterWrapper(
       final RdbmsService rdbmsService,
-      final RdbmsSchemaManager rdbmsSchemaManager,
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final VendorDatabaseProperties vendorDatabaseProperties) {
     this.rdbmsService = rdbmsService;
-    this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
@@ -151,13 +151,7 @@ public class RdbmsExporterWrapper implements Exporter {
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
     createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);
 
-    exporter =
-        builder
-            .rdbmsSchemaManager(rdbmsSchemaManager)
-            // TODO(#51921): replace with context.getPhysicalTenant() once available.
-            // Matches PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.
-            .physicalTenantId("default")
-            .build();
+    exporter = builder.rdbmsSchemaManagerRegistry(rdbmsSchemaManagerRegistry).build();
   }
 
   @Override

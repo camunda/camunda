@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -43,7 +43,7 @@ public final class RdbmsExporter {
   private final int partitionId;
   private final String physicalTenantId;
   private final RdbmsWriters rdbmsWriters;
-  private final RdbmsSchemaManager rdbmsSchemaManager;
+  private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   // services
   private final HistoryCleanupService historyCleanupService;
   private final HistoryDeletionService historyDeletionService;
@@ -73,7 +73,7 @@ public final class RdbmsExporter {
       final int queueSize,
       final RdbmsWriters rdbmsWriters,
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
-      final RdbmsSchemaManager rdbmsSchemaManager,
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
       final ReplicationControllerFactory replicationControllerFactory) {
@@ -85,7 +85,7 @@ public final class RdbmsExporter {
     this.physicalTenantId = physicalTenantId;
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
-    this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
     this.historyDeletionService = historyDeletionService;
     this.replicationControllerFactory = replicationControllerFactory;
 
@@ -103,7 +103,7 @@ public final class RdbmsExporter {
         partitionId,
         controller.getLastExportedRecordPosition());
 
-    if (!rdbmsSchemaManager.isInitialized(physicalTenantId)) {
+    if (!rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId)) {
       LOG.warn(
           "[RDBMS Exporter P{}] Schema for physical tenant '{}' is not yet ready for use",
           partitionId,
@@ -417,7 +417,7 @@ public final class RdbmsExporter {
     private Duration flushInterval;
     private int queueSize;
     private RdbmsWriters rdbmsWriters;
-    private RdbmsSchemaManager rdbmsSchemaManager;
+    private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
@@ -453,8 +453,8 @@ public final class RdbmsExporter {
       return this;
     }
 
-    public Builder rdbmsSchemaManager(final RdbmsSchemaManager value) {
-      rdbmsSchemaManager = value;
+    public Builder rdbmsSchemaManagerRegistry(final RdbmsSchemaManagerRegistry value) {
+      rdbmsSchemaManagerRegistry = value;
       return this;
     }
 
@@ -491,7 +491,7 @@ public final class RdbmsExporter {
           queueSize,
           rdbmsWriters,
           handlers,
-          rdbmsSchemaManager,
+          rdbmsSchemaManagerRegistry,
           historyCleanupService,
           historyDeletionService,
           replicationControllerFactory);

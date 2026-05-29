@@ -22,7 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -63,7 +63,7 @@ class RdbmsExporterTest {
   private HistoryCleanupService historyCleanupService;
   private HistoryDeletionService historyDeletionService;
   private RdbmsWriterMetrics metrics;
-  private RdbmsSchemaManager schemaManager;
+  private RdbmsSchemaManagerRegistry schemaManager;
   private ReplicationControllerFactory replicationControllerFactory;
   private ReplicationController replicationController;
 
@@ -671,7 +671,7 @@ class RdbmsExporterTest {
     when(rdbmsWriters.getMetrics()).thenReturn(metrics);
 
     // Mock schema manager
-    schemaManager = mock(RdbmsSchemaManager.class);
+    schemaManager = mock(RdbmsSchemaManagerRegistry.class);
     when(schemaManager.isInitialized(anyString())).thenReturn(schemaInitialized);
 
     doAnswer(
@@ -690,7 +690,7 @@ class RdbmsExporterTest {
             .physicalTenantId("default")
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
-            .rdbmsSchemaManager(schemaManager)
+            .rdbmsSchemaManagerRegistry(schemaManager)
             .historyCleanupService(historyCleanupService)
             .historyDeletionService(historyDeletionService)
             .replicationControllerFactory(replicationControllerFactory);

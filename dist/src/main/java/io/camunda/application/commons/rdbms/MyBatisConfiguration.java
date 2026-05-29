@@ -10,9 +10,9 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
+import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -78,7 +78,7 @@ public class MyBatisConfiguration {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
   @Bean
-  public RdbmsSchemaManager rdbmsExporterLiquibase(
+  public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
       final RdbmsDataSources rdbmsDataSources,
       final PhysicalTenantResolver physicalTenantResolver) {
     final Map<String, PerTenantSchemaConfig> physicalTenantConfigs = new LinkedHashMap<>();
@@ -100,12 +100,13 @@ public class MyBatisConfiguration {
               rdbmsDataSources.dataSourceFor(physicalTenantId),
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
               trimmedPrefix,
-              Boolean.TRUE.equals(rdbms.getAutoDdl()),
+              rdbms.getAutoDdl(),
               rdbms.getDdlLockWaitTimeout()));
     }
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
-    // LiquibaseSchemaManager will skip the schema-version check in that case.
-    return new LiquibaseSchemaManager(physicalTenantConfigs, VersionUtil.getVersion());
+    // the schema-version check is skipped in that case.
+    return DefaultRdbmsSchemaManagerRegistry.fromConfigs(
+        physicalTenantConfigs, VersionUtil.getVersion());
   }
 
   @Bean
@@ -127,7 +128,7 @@ public class MyBatisConfiguration {
 
   // The following 2 beans expose the default physical tenant's DataSource and
   // VendorDatabaseProperties so that downstream consumers (sqlSessionFactory,
-  // rdbmsExporterLiquibase, rdbmsWriterFactory, rdbmsExporterFactory)
+  // rdbmsSchemaManagerRegistry, rdbmsWriterFactory, rdbmsExporterFactory)
   // can keep injecting them as singletons. They will be removed in future PRs.
 
   @Bean

@@ -8,19 +8,22 @@
 package io.camunda.db.rdbms;
 
 /**
- * Interface for managing RDBMS database schemas on a per-physical-tenant basis.
+ * Manages the RDBMS schema of a single physical tenant.
  *
- * <p>Each physical tenant has its own data source and its own Liquibase schema. The exporter
- * consults this interface, scoped to a single tenant id, before exporting records to make sure the
- * target schema is ready.
+ * @see LiquibaseSchemaManager runs Liquibase migrations ({@code auto-ddl=true})
+ * @see NoopSchemaManager skips migration for externally managed schemas ({@code auto-ddl=false})
  */
 public interface RdbmsSchemaManager {
 
   /**
-   * Returns {@code true} if the schema for the given physical tenant has been fully initialized
-   * (i.e. Liquibase migrations completed successfully, or {@code auto-ddl} is disabled for that
-   * tenant). Returns {@code false} for unknown tenants and for tenants whose migration has not yet
-   * finished or failed.
+   * Initializes the schema (e.g. runs Liquibase migrations). Called once at startup. Throwing
+   * aborts startup.
    */
-  boolean isInitialized(String physicalTenantId);
+  void initialize() throws Exception;
+
+  /**
+   * Returns {@code true} once the schema has been fully initialized so that the RDBMS exporter may
+   * open against it.
+   */
+  boolean isInitialized();
 }

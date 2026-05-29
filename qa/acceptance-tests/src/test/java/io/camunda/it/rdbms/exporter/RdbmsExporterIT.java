@@ -13,7 +13,7 @@ import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
@@ -151,7 +151,7 @@ class RdbmsExporterIT {
               setProperty("disableFkBeforeTruncate", "true");
             }
           });
-  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
+  @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   @Autowired private RdbmsService rdbmsService;
   @Autowired private ExporterPositionMapper exporterPositionMapper;
   private RdbmsExporterWrapper exporter;
@@ -159,7 +159,8 @@ class RdbmsExporterIT {
   @BeforeEach
   void setUp() {
     exporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(
+            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,
@@ -1477,7 +1478,8 @@ class RdbmsExporterIT {
     // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
     final var intervalController = new ExporterTestController();
     final var intervalExporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(
+            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
     intervalExporter.configure(
         new ExporterContext(
             null,

@@ -15,18 +15,16 @@ import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
  * H2-based test that verifies stale Liquibase lock detection and release against a real in-memory
- * database via {@link LiquibaseSchemaManager} configured for a single physical tenant.
+ * database via {@link LiquibaseSchemaManager}.
  */
 class LiquibaseSchemaManagerStaleLockH2Test {
 
-  private static final String TENANT_ID = "test-tenant";
   private static final String DB_URL = "jdbc:h2:mem:liquibase-lock-test;DB_CLOSE_DELAY=-1";
   private static final String LOCK_TABLE = "DATABASECHANGELOGLOCK";
 
@@ -54,10 +52,10 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
     // when - run LiquibaseSchemaManager with a 10-minute timeout (so the 1-hour-old lock is stale)
     final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
 
     // then - migration completed successfully and the stale lock was released
-    assertThat(schemaManager.isInitialized(TENANT_ID)).isTrue();
+    assertThat(schemaManager.isInitialized()).isTrue();
     assertThat(isLockHeld()).isFalse();
   }
 
@@ -66,11 +64,10 @@ class LiquibaseSchemaManagerStaleLockH2Test {
     // given - insert a recent lock (just acquired)
     insertLock(Instant.now(), "another-running-pod");
 
-    // when - call releaseStaleLockIfPresent with a 10-minute timeout (lock is fresh, must not be
+    // when - releaseStaleLockIfPresent with a 10-minute timeout (lock is fresh, must not be
     // released)
     final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
-    final var tenant = schemaManager.buildPerTenant(TENANT_ID, configFor(Duration.ofMinutes(10)));
-    schemaManager.releaseStaleLockIfPresent(tenant);
+    schemaManager.releaseStaleLockIfPresent();
 
     // then - the recent lock remains held
     assertThat(isLockHeld()).isTrue();
@@ -83,8 +80,7 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
     // when - timeout is null (feature disabled)
     final var schemaManager = buildSchemaManager(null);
-    final var tenant = schemaManager.buildPerTenant(TENANT_ID, configFor(null));
-    schemaManager.releaseStaleLockIfPresent(tenant);
+    schemaManager.releaseStaleLockIfPresent();
 
     // then - the stale lock should still be held (not released because timeout is disabled)
     assertThat(isLockHeld()).isTrue();
@@ -94,7 +90,7 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
   private LiquibaseSchemaManager buildSchemaManager(final Duration ddlLockWaitTimeout)
       throws Exception {
-    return new LiquibaseSchemaManager(Map.of(TENANT_ID, configFor(ddlLockWaitTimeout)), "8.10.0");
+    return new LiquibaseSchemaManager(configFor(ddlLockWaitTimeout), "8.10.0");
   }
 
   private PerTenantSchemaConfig configFor(final Duration ddlLockWaitTimeout) throws Exception {
