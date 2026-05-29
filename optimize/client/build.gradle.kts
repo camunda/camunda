@@ -4,6 +4,10 @@
 
 import com.github.gradle.node.NodeExtension
 import com.github.gradle.node.yarn.task.YarnTask
+import org.gradle.api.provider.Provider
+
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
+    map { value -> value.isEmpty() || value.toBoolean() }
 
 plugins {
     id("buildlogic.server-conventions")
@@ -19,7 +23,11 @@ extensions.configure<NodeExtension> {
     nodeProjectDir.set(layout.projectDirectory)
 }
 
-val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(false)
+val skipFrontendBuild =
+    providers.gradleProperty("skip.fe.build")
+        .orElse(providers.gradleProperty("quickly"))
+        .asEnabledFlag()
+        .orElse(false)
 
 val yarnInstall by tasks.registering(YarnTask::class) {
     enabled = !skipFrontendBuild.get()

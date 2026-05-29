@@ -1,10 +1,19 @@
+import org.gradle.api.provider.Provider
+
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
+    map { value -> value.isEmpty() || value.toBoolean() }
+
 plugins {
     id("buildlogic.frontend-webjar-conventions")
 }
 
-val skipFrontendBuild = providers.gradleProperty("skip.fe.build").map(String::toBoolean).orElse(true)
+val skipFrontendBuild =
+    providers.gradleProperty("skip.fe.build")
+        .orElse(providers.gradleProperty("quickly"))
+        .asEnabledFlag()
+        .orElse(true)
 val skipProcessTestFrontendBuild =
-    providers.gradleProperty("skip.fe.process-test.build").map(String::toBoolean).orElse(true)
+    providers.gradleProperty("skip.fe.process-test.build").asEnabledFlag().orElse(true)
 val shouldBuildFrontend = !skipFrontendBuild.get() || !skipProcessTestFrontendBuild.get()
 
 frontendWebjar {

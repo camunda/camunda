@@ -10,6 +10,10 @@
  */
 
 import com.diffplug.gradle.spotless.SpotlessExtension
+import org.gradle.api.provider.Provider
+
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
+    map { value -> value.isEmpty() || value.toBoolean() }
 
 plugins {
     base
@@ -19,6 +23,7 @@ plugins {
 val isCi = providers.environmentVariable("CI")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
+val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
 
 extensions.configure<SpotlessExtension> {
     isEnforceCheck = isCi
@@ -53,3 +58,6 @@ extensions.configure<SpotlessExtension> {
     }
 }
 
+tasks.withType<com.diffplug.gradle.spotless.SpotlessTask>().configureEach {
+    enabled = !quickly.get()
+}

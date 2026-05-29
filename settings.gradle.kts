@@ -46,6 +46,11 @@ fun tasklistQaPomVersion(key: String) =
 fun optimizePomVersion(key: String) =
     optimizePomVersions[key] ?: error("Missing Optimize POM property: $key")
 
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
+    map { value -> value.isEmpty() || value.toBoolean() }
+
+val quickly = providers.gradleProperty("quickly").asEnabledFlag().getOrElse(false)
+
 rootProject.name = "camunda-8-root"
 
 dependencyResolutionManagement {
@@ -727,7 +732,9 @@ dependencyResolutionManagement {
 include(":camunda-search")
 include(":operate-common")
 include(":zeebe-gateway-grpc")
-include(":camunda-optimize")
+if (!quickly) {
+    include(":camunda-optimize")
+}
 include(":zeebe-qa-update-tests")
 include(":camunda-spring-boot-starter-virtual-threads")
 include(":zeebe-gateway")
@@ -771,7 +778,9 @@ include(":camunda-process-test-coverage-frontend-new")
 include(":webapps-schema")
 include(":identity-webjar")
 include(":zeebe-broker-client")
-include(":optimize-commons")
+if (!quickly) {
+    include(":optimize-commons")
+}
 include(":camunda-zeebe")
 include(":zeebe-util")
 include(":camunda-qa-compatibility-test")
@@ -789,13 +798,17 @@ include(":camunda-search-domain")
 include(":operate-qa-it-tests")
 include(":operate-webapp")
 include(":camunda-spring-boot-4-starter")
-include(":optimize-parent")
+if (!quickly) {
+    include(":optimize-parent")
+}
 include(":zeebe-gateway-rest")
 include(":camunda-security-protocol")
 include(":camunda-qa-acceptance-tests")
 include(":camunda-qa-util")
 include(":camunda-spring-boot-starter")
-include(":optimize-backend")
+if (!quickly) {
+    include(":optimize-backend")
+}
 include(":zeebe-protocol-jackson")
 include(":camunda-search-client-opensearch")
 include(":camunda-testing")
@@ -805,7 +818,9 @@ include(":zeebe-atomix-cluster")
 include(":tasklist-it-tests")
 include(":tasklist-webjar")
 include(":zeebe-msgpack-value")
-include(":upgrade-optimize")
+if (!quickly) {
+    include(":upgrade-optimize")
+}
 include(":zeebe-qa-util")
 include(":camunda-schema-manager")
 include(":zeebe-auth")
@@ -814,13 +829,17 @@ include(":camunda-spring-utils")
 include(":configuration")
 include(":zeebe-snapshots")
 include(":zeebe-backup-store-filesystem")
-include(":optimize-client")
+if (!quickly) {
+    include(":optimize-client")
+}
 include(":zeebe-protocol-test-util")
 include(":zeebe-broker")
 include(":camunda-security-validation")
 include(":zeebe-root")
 include(":webapps-backup")
-include(":optimize-util")
+if (!quickly) {
+    include(":optimize-util")
+}
 include(":zeebe-feel-integration")
 include(":zeebe-restore")
 include(":zeebe-qa")
@@ -874,7 +893,9 @@ include(":camunda-gateway-mapping-http")
 project(":camunda-search").projectDir = file("search")
 project(":operate-common").projectDir = file("operate/common")
 project(":zeebe-gateway-grpc").projectDir = file("zeebe/gateway-grpc")
-project(":camunda-optimize").projectDir = file("optimize-distro")
+if (!quickly) {
+    project(":camunda-optimize").projectDir = file("optimize-distro")
+}
 project(":zeebe-qa-update-tests").projectDir = file("zeebe/qa/update-tests")
 project(":camunda-spring-boot-starter-virtual-threads").projectDir = file("clients/camunda-spring-boot-starter-virtual-threads")
 project(":zeebe-gateway").projectDir = file("zeebe/gateway")
@@ -917,7 +938,9 @@ project(":camunda-process-test-java").projectDir = file("testing/camunda-process
 project(":camunda-process-test-coverage-frontend-new").projectDir = file("testing/camunda-process-test-coverage-frontend-new")
 project(":identity-webjar").projectDir = file("identity/client")
 project(":zeebe-broker-client").projectDir = file("zeebe/broker-client")
-project(":optimize-commons").projectDir = file("optimize/util/optimize-commons")
+if (!quickly) {
+    project(":optimize-commons").projectDir = file("optimize/util/optimize-commons")
+}
 project(":camunda-zeebe").projectDir = file("dist")
 project(":zeebe-util").projectDir = file("zeebe/util")
 project(":camunda-qa-compatibility-test").projectDir = file("qa/compatibility-test")
@@ -934,13 +957,17 @@ project(":camunda-search-domain").projectDir = file("search/search-domain")
 project(":operate-qa-it-tests").projectDir = file("operate/qa/integration-tests")
 project(":operate-webapp").projectDir = file("operate/webapp")
 project(":camunda-spring-boot-4-starter").projectDir = file("clients/camunda-spring-boot-4-starter")
-project(":optimize-parent").projectDir = file("optimize")
+if (!quickly) {
+    project(":optimize-parent").projectDir = file("optimize")
+}
 project(":zeebe-gateway-rest").projectDir = file("zeebe/gateway-rest")
 project(":camunda-security-protocol").projectDir = file("security/security-protocol")
 project(":camunda-qa-acceptance-tests").projectDir = file("qa/acceptance-tests")
 project(":camunda-qa-util").projectDir = file("qa/util")
 project(":camunda-spring-boot-starter").projectDir = file("clients/camunda-spring-boot-starter")
-project(":optimize-backend").projectDir = file("optimize/backend")
+if (!quickly) {
+    project(":optimize-backend").projectDir = file("optimize/backend")
+}
 project(":zeebe-protocol-jackson").projectDir = file("zeebe/protocol-jackson")
 project(":camunda-search-client-opensearch").projectDir = file("search/search-client-opensearch")
 project(":camunda-testing").projectDir = file("testing")
@@ -950,7 +977,9 @@ project(":zeebe-atomix-cluster").projectDir = file("zeebe/atomix/cluster")
 project(":tasklist-it-tests").projectDir = file("tasklist/qa/integration-tests")
 project(":tasklist-webjar").projectDir = file("tasklist/client")
 project(":zeebe-msgpack-value").projectDir = file("zeebe/msgpack-value")
-project(":upgrade-optimize").projectDir = file("optimize/upgrade")
+if (!quickly) {
+    project(":upgrade-optimize").projectDir = file("optimize/upgrade")
+}
 project(":zeebe-qa-util").projectDir = file("zeebe/qa/util")
 project(":camunda-schema-manager").projectDir = file("schema-manager")
 project(":zeebe-auth").projectDir = file("zeebe/auth")
@@ -958,12 +987,16 @@ project(":zeebe-gateway-protocol-impl").projectDir = file("zeebe/gateway-protoco
 project(":camunda-spring-utils").projectDir = file("spring-utils")
 project(":zeebe-snapshots").projectDir = file("zeebe/snapshot")
 project(":zeebe-backup-store-filesystem").projectDir = file("zeebe/backup-stores/filesystem")
-project(":optimize-client").projectDir = file("optimize/client")
+if (!quickly) {
+    project(":optimize-client").projectDir = file("optimize/client")
+}
 project(":zeebe-protocol-test-util").projectDir = file("zeebe/protocol-test-util")
 project(":zeebe-broker").projectDir = file("zeebe/broker")
 project(":camunda-security-validation").projectDir = file("security/security-validation")
 project(":zeebe-root").projectDir = file("zeebe")
-project(":optimize-util").projectDir = file("optimize/util")
+if (!quickly) {
+    project(":optimize-util").projectDir = file("optimize/util")
+}
 project(":zeebe-feel-integration").projectDir = file("zeebe/feel")
 project(":zeebe-restore").projectDir = file("zeebe/restore")
 project(":zeebe-qa").projectDir = file("zeebe/qa")

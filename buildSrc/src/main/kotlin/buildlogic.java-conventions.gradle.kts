@@ -1,6 +1,10 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.provider.Provider
+
+fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
+    map { value -> value.isEmpty() || value.toBoolean() }
 
 plugins {
     `java-library`
@@ -19,6 +23,7 @@ val googleJavaFormatVersion =
 val isCi = providers.environmentVariable("CI")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
+val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
 
 dependencies {
     add("implementation", platform(versionCatalog.findLibrary("org-junit-junit-bom").get()))
@@ -74,7 +79,8 @@ tasks.withType<Javadoc> {
     options.encoding = "utf-8"
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
+    enabled = !quickly.get()
     jvmArgs(
         "--add-opens=java.base/java.io=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
