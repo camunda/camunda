@@ -1,7 +1,7 @@
 # description: Submits the resolved Maven dependency tree to the GitHub Dependency Submission API.
-# Runs on push to main/stable (base snapshot) and on PRs that change dependency manifests (head snapshot).
-# Both snapshots are required for the Dependency Review API to diff transitive dependencies — catching
-# BOM-driven regressions that are invisible to GitHub's pom.xml auto-parse.
+# Runs on push to main/stable to keep the base snapshot current.
+# PR-side (head) snapshot submission is handled by the pr-maven-snapshot job in ci.yml,
+# which pr-vuln-check depends on — ensuring the snapshot is ready before the gate runs.
 # type: Security
 # owner: @camunda/monorepo-devops-team
 name: Maven Dependency Snapshot
@@ -11,13 +11,6 @@ on:
     branches:
       - main
       - stable/**
-      - ci/maven-dependency-snapshot  # temporary: remove before merge
-    paths:
-      - '**/pom.xml'
-      - 'bom/**'
-      - 'parent/**'
-      - '.github/workflows/maven-dependency-snapshot.yml'  # temporary: remove before merge
-  pull_request:
     paths:
       - '**/pom.xml'
       - 'bom/**'
