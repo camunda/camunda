@@ -44,6 +44,6 @@ and follow the **"## Nightly Fix Agent"** section exactly. That section contains
 - Fix ONLY the tests listed in `/tmp/test_specs.json`
 - NEVER use `test.skip()`, `test.fixme()`, or any skip/pending variant
 - Commit type must be `test:` — commitlint rejects `fix:` for test-only changes
-- Run `npx prettier --write <files>` + `npx eslint <files> --ext .ts` before committing
+- Run `npx prettier --write <files>` + `npx eslint <files> --fix` before committing
 - If no safe fix exists, write `{"prs":[]}` to `/tmp/fix-meta.json` and stop
 

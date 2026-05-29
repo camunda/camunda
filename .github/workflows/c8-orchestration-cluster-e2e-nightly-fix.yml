@@ -143,7 +143,7 @@ jobs:
         env:
           GOPRIVATE: github.com/camunda/*
         run: |
-          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          go install github.com/camunda/workspace-cli/cmd/workspace@0d062533bd9da7e29be8974d3c34f8788fd4ef6c
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
           npm install -g @anthropic-ai/claude-code@2.1.156
           claude --version
