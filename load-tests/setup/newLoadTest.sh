@@ -211,8 +211,12 @@ helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-he
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
-# Clone Platform Helm so we can run the latest chart
-git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
+# Clone Camunda Platform Helm so we can run the latest chart
+# TODO: 347642d30179479f8ab8a2f00b2d979be05f5a8c is the latest commit before the removal of the
+# embedded Bitnami Helm Chart.
+# We should remove the checkout of this specific revision once we have a solution to replace these
+# removed dependencies.
+git clone --depth 1 --revision 347642d30179479f8ab8a2f00b2d979be05f5a8c --single-branch https://github.com/camunda/camunda-platform-helm.git
 
 # Make deps
 helm dependency build "camunda-platform-helm/charts/$helm_chart"
