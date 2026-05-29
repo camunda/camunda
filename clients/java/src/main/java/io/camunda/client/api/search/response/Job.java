@@ -37,6 +37,8 @@ public interface Job {
 
   Integer getRetries();
 
+  Integer getPriority();
+
   Boolean isDenied();
 
   String getDeniedReason();

@@ -1054,6 +1054,87 @@ public class JobSearchIT {
   }
 
   @Test
+  void shouldSearchJobsByPriorityEq() {
+    // given
+    final var priority = 30;
+
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.priority(o -> o.eq(priority)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getType()).isEqualTo("taskABpmn");
+    assertThat(result.items().getFirst().getPriority()).isEqualTo(priority);
+  }
+
+  @Test
+  void shouldSearchJobsByPriorityLte() {
+    // given
+    final var priority = 5;
+
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.priority(o -> o.lte(priority)))
+            .send()
+            .join();
+
+    assertThat(result.items()).hasSize(5);
+    assertThat(result.items())
+        .allSatisfy(j -> assertThat(j.getPriority()).isLessThanOrEqualTo(priority));
+  }
+
+  @Test
+  void shouldSearchJobsByPriorityGt() {
+    // given
+    final var priority = 20;
+
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.priority(o -> o.gt(priority)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).allSatisfy(j -> assertThat(j.getPriority()).isGreaterThan(priority));
+  }
+
+  @Test
+  void shouldSortJobsByPriorityAsc() {
+    // given/when
+    final var result =
+        camundaClient.newJobSearchRequest().sort(s -> s.priority().asc()).send().join();
+
+    // then
+    assertThat(result.items().getFirst().getPriority()).isEqualTo(-20);
+    assertThat(result.items().getFirst().getType()).isEqualTo("taskCBpmn");
+    assertThat(result.items().getLast().getPriority()).isEqualTo(50);
+    assertThat(result.items().getLast().getType()).isEqualTo("taskA");
+  }
+
+  @Test
+  void shouldSortJobsByPriorityDesc() {
+    // given/when
+    final var result =
+        camundaClient.newJobSearchRequest().sort(s -> s.priority().desc()).send().join();
+
+    // then
+    assertThat(result.items().getFirst().getPriority()).isEqualTo(50);
+    assertThat(result.items().getFirst().getType()).isEqualTo("taskA");
+    assertThat(result.items().getLast().getPriority()).isEqualTo(-20);
+    assertThat(result.items().getLast().getType()).isEqualTo("taskCBpmn");
+  }
+
+  @Test
   void shouldSearchByFromLimit() {
     // given
     final var allJobs =

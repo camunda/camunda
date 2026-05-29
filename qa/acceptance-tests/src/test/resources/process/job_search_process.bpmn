@@ -11,6 +11,7 @@
     <bpmn:serviceTask id="taskA_activity" name="Task A">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskABpmn" />
+        <zeebe:jobPriorityDefinition priority="30" />
         <zeebe:executionListeners>
           <zeebe:executionListener eventType="start" type="taskAExecutionListener" />
           <zeebe:executionListener eventType="end" type="taskAExecutionListener" />
@@ -39,6 +40,7 @@
     <bpmn:serviceTask id="taskC_activity" name="Task C">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskCBpmn" />
+        <zeebe:jobPriorityDefinition priority="-20" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0na5ala</bpmn:incoming>
       <bpmn:outgoing>Flow_1bi1z5i</bpmn:outgoing>
