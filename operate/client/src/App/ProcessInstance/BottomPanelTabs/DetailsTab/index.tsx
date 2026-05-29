@@ -54,6 +54,7 @@ const DetailsTab: React.FC = () => {
   const {
     resolvedElementInstance,
     selectedElementId,
+    selectedAnchorElementId,
     selectedInstancesCount,
     isFetchingElement,
   } = useProcessInstanceElementSelection();
@@ -63,8 +64,9 @@ const DetailsTab: React.FC = () => {
     processDefinitionKey: processInstance?.processDefinitionKey,
   });
 
-  const businessObject = selectedElementId
-    ? xmlData?.businessObjects[selectedElementId]
+  const effectiveElementId = selectedAnchorElementId ?? selectedElementId;
+  const businessObject = effectiveElementId
+    ? xmlData?.businessObjects[effectiveElementId]
     : null;
 
   const elementInstanceKey =
@@ -155,7 +157,7 @@ const DetailsTab: React.FC = () => {
     agentInstance,
     isLoading: isAgentLoading,
     isError: isAgentError,
-  } = useAgentInstanceForElement(selectedElementId, elementInstanceKey);
+  } = useAgentInstanceForElement(effectiveElementId, elementInstanceKey);
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
