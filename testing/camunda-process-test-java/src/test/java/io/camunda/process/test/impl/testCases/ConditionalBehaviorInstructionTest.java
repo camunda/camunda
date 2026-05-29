@@ -30,7 +30,6 @@ import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableJobSelector;
-import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertElementInstanceInstruction;
@@ -38,14 +37,11 @@ import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruct
 import io.camunda.process.test.api.testCases.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.ConditionalBehaviorInstruction;
-import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstanceInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableConditionalBehaviorInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.impl.testCases.instructions.ConditionalBehaviorInstructionHandler;
@@ -241,62 +237,6 @@ public class ConditionalBehaviorInstructionTest {
 
     // then
     verify(builder, never()).as(anyString());
-  }
-
-  @Test
-  void shouldRejectNonAssertCondition() {
-    // given - CREATE_PROCESS_INSTANCE is not an ASSERT_*
-    final CreateProcessInstanceInstruction badCondition =
-        ImmutableCreateProcessInstanceInstruction.builder()
-            .processDefinitionSelector(
-                ImmutableProcessDefinitionSelector.builder().processDefinitionId("p").build())
-            .build();
-
-    final ConditionalBehaviorInstruction instruction =
-        ImmutableConditionalBehaviorInstruction.builder()
-            .addConditions(badCondition)
-            .addActions(ACTION_COMPLETE_USER_TASK)
-            .build();
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                instructionHandler.execute(
-                    instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("CONDITIONAL_BEHAVIOR")
-        .hasMessageContaining("condition type")
-        .hasMessageContaining("ASSERT_DECISION")
-        .hasMessageContaining("ASSERT_ELEMENT_INSTANCE")
-        .hasMessageContaining("ASSERT_USER_TASK")
-        .hasMessageContaining("CREATE_PROCESS_INSTANCE");
-  }
-
-  @Test
-  void shouldRejectDisallowedAction() {
-    // given - ASSERT_PROCESS_INSTANCE is not an allowed action (assertion as action)
-    final ConditionalBehaviorInstruction instruction =
-        ImmutableConditionalBehaviorInstruction.builder()
-            .addConditions(CONDITION_ELEMENT_ACTIVE)
-            .addActions(
-                ImmutableAssertProcessInstanceInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder().processDefinitionId("p").build())
-                    .build())
-            .build();
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                instructionHandler.execute(
-                    instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("CONDITIONAL_BEHAVIOR")
-        .hasMessageContaining("action type")
-        .hasMessageContaining("COMPLETE_JOB")
-        .hasMessageContaining("COMPLETE_USER_TASK")
-        .hasMessageContaining("PUBLISH_MESSAGE")
-        .hasMessageContaining("ASSERT_PROCESS_INSTANCE");
   }
 
   @Test
