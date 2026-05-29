@@ -28,12 +28,31 @@ The exact shape of the configuration depends on your Camunda version:
 
 The exporter requires a Camunda license key and a cluster ID.
 
+**License key.** The exporter authenticates to the Camunda analytics endpoint using your
+Camunda 8 Self-Managed license key. The raw key is never sent over the network — it is
+hashed into a fingerprint (sent as the `x-camunda-fingerprint` header) and used as the
+HMAC secret for signing each batch of events. This is the same license key you already
+use to run Camunda 8 Self-Managed; if you do not have it, contact your Camunda account
+team or open a support ticket.
+
+**Cluster ID.** The cluster ID identifies which cluster a given event came from. It is
+attached to every event as the `camunda.cluster.id` resource attribute and is part of the
+deduplication key used by the analytics backend (`camunda.cluster.id` +
+`camunda.partition.id` + `camunda.log.position`). The value should be stable per cluster —
+changing it makes existing events look like they come from a different cluster. Any
+unique string works; many operators use a UUID or an environment-derived name (for
+example, `prod-eu-1`).
+
+How the exporter obtains these values depends on your Camunda version:
+
 - **Camunda 8.10 and later:** both values are resolved automatically from the broker
   context. No additional setup is needed.
 - **Camunda 8.9 and earlier:** the broker does not expose the license key or cluster ID
   through the context API. Provide them via environment variables on every broker:
   - `CAMUNDA_LICENSE_KEY` — the Camunda license key.
-  - `ZEEBE_BROKER_CLUSTER_CLUSTERID` — the cluster identifier.
+  - `ZEEBE_BROKER_CLUSTER_CLUSTERID` — the cluster identifier. This is the broker's
+    standard cluster-ID setting (`zeebe.broker.cluster.clusterId`); if it is already
+    configured on the broker, the analytics exporter picks it up automatically.
 
   Without these variables, the exporter fails to start on 8.9 and earlier.
 
