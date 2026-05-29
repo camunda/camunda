@@ -53,6 +53,8 @@ public final class ProcessInstanceCreationHandler
 
     otelSdkManager.incrementMetric(
         METRIC_PROCESS_INSTANCE_CREATED,
+        record.getPosition(),
+        record.getTimestamp(),
         Attributes.of(
             BPMN_PROCESS_ID, value.getBpmnProcessId(),
             PROCESS_VERSION, (long) value.getVersion(),

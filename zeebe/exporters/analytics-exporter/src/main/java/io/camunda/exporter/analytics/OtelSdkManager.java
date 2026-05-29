@@ -11,6 +11,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
@@ -49,12 +50,15 @@ public class OtelSdkManager {
   private Meter otelMeter;
   private AnalyticsExporterMetadata metadata;
   private final HashMap<String, LongCounter> counters = new HashMap<>();
+  private final MetricWindow metricWindow = new MetricWindow();
 
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
       final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata) {
     this.metadata = metadata;
+    counters.clear();
+    metricWindow.reset();
     final var loggerProvider = createLoggerProvider(config, context);
     final var meterProvider = createMeterProvider(config, context);
 
@@ -66,6 +70,7 @@ public class OtelSdkManager {
     otelLogger =
         sdk.getLogsBridge().loggerBuilder(INSTRUMENTATION_SCOPE).setSchemaUrl(SCHEMA_URL).build();
     otelMeter = sdk.getMeterProvider().get(INSTRUMENTATION_SCOPE);
+    registerExportWindowGauge();
     return this;
   }
 
@@ -83,11 +88,29 @@ public class OtelSdkManager {
     record.emit();
   }
 
-  /** Increments the named counter by 1 with the given dimension attributes. */
-  public void incrementMetric(final String metricName, final Attributes dimensions) {
+  /** Increments the named counter by 1 and updates the export window tracking fields. */
+  public void incrementMetric(
+      final String metricName,
+      final long position,
+      final long eventTimeMs,
+      final Attributes dimensions) {
     counters
         .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
         .add(1, dimensions);
+    metricWindow.record(position, eventTimeMs);
+  }
+
+  private void registerExportWindowGauge() {
+    otelMeter
+        .gaugeBuilder(METRIC_EXPORT_WINDOW)
+        .ofLongs()
+        .buildWithCallback(
+            measurement -> {
+              // Always report — acts as heartbeat even when no events occurred
+              final long seq = metadata.incrementAndGetMetricSequenceNumber();
+              measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
+              metricWindow.reset();
+            });
   }
 
   void shutdown() {

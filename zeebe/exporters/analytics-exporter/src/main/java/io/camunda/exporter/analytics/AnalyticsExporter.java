@@ -94,6 +94,9 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void close() {
     otelSdkManager.shutdown();
+    // Persist final metricSequenceNumber so it survives restart
+    controller.updateLastExportedRecordPosition(
+        controller.getLastExportedRecordPosition(), metadata.serialize());
     LOG.info("Analytics exporter closed");
   }
 
