@@ -920,7 +920,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(size)
-        .aggregations(agg -> agg.)
         .build();
   }
 }
