@@ -25,18 +25,18 @@ queries:
   - name: process-instances-started
     description: Process instances submitted by the starter
     query: |
-      max(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S])
+      sum(increase(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
     higher_is_better: true
     format: integer
 
   - name: process-instances-completed
     description: Root process instances completed by the engine
     query: |
-      max(zeebe_executed_instances_total{
+      sum(increase(zeebe_executed_instances_total{
         action="completed",
         type="ROOT_PROCESS_INSTANCE",
         namespace="$NAMESPACE"
-      }[$DURATION_S])
+      }[$DURATION_S]))
     higher_is_better: true
     format: integer
 
