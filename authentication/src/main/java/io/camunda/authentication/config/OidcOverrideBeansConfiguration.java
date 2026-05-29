@@ -454,12 +454,6 @@ public class OidcOverrideBeansConfiguration {
     return oidcUserService;
   }
 
-  @Bean
-  @ConditionalOnSecondaryStorageEnabled
-  public WebappRedirectStrategy webappRedirectStrategy() {
-    return new WebappRedirectStrategy();
-  }
-
   /**
    * OAuth2 login failure handler bean exposed for the library's OIDC webapp chain. Lifted from the
    * inline {@code .oauth2Login(...).failureHandler(new OAuth2AuthenticationExceptionHandler())} in
