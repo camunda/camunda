@@ -2055,6 +2055,7 @@ jobs:
       - operate-ci
       - optimize-ci
       - pin-check
+      - pr-maven-snapshot
       - pr-vuln-check
       - protobuf-checks
       - rdbms-integration-tests
