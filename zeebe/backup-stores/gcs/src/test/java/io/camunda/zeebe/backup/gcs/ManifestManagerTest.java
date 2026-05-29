@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -33,7 +34,9 @@ final class ManifestManagerTest {
   void shouldCreateInitialManifest() {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -64,7 +67,9 @@ final class ManifestManagerTest {
   void shouldCompleteManifest() throws IOException {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -104,7 +109,9 @@ final class ManifestManagerTest {
   void shouldThrowWhenManifestAlreadyExists() {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -127,7 +134,9 @@ final class ManifestManagerTest {
   void shouldThrowWhenUnexpectedStorageExceptionOccurs() {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -150,7 +159,9 @@ final class ManifestManagerTest {
   void shouldThrowWhenManifestChangedBeforeCompletion() {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
@@ -182,7 +193,9 @@ final class ManifestManagerTest {
   void shouldThrowWhenCompletingManifestThrowsUnexpectedStorageException() {
     // given
     final var client = Mockito.mock(Storage.class);
-    final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
