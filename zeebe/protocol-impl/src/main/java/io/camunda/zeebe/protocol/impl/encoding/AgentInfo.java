@@ -30,6 +30,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   @Override
+  @JsonInclude(Include.NON_EMPTY)
   public String getElementId() {
     return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
@@ -39,7 +40,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
     return this;
   }
 
-  @Override
+  @JsonInclude(Include.NON_EMPTY)
   public String getToolName() {
     return BufferUtil.bufferAsString(toolNameProp.getValue());
   }
@@ -62,6 +63,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
   }
 
   @Override
+  @JsonIgnore
   public boolean isEmpty() {
     return getElementId().isEmpty() && getToolName().isEmpty();
   }
