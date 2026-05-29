@@ -16,8 +16,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.McpSyncClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,27 +46,11 @@ public class McpServerConfigurationIT {
   @MultiDbTest
   class McpServerEnabledWithRestGatewayDisabledIT {
 
-    @MultiDbTestApplication(managedLifecycle = false)
+    @MultiDbTestApplication
     static final TestCamundaApplication TEST_INSTANCE =
         new TestCamundaApplication()
             .withProperty("camunda.mcp.enabled", true)
             .withProperty("camunda.rest.enabled", false);
-
-    @BeforeEach
-    void setUp() {
-      if (!TEST_INSTANCE.isStarted()) {
-        TEST_INSTANCE.start();
-        try (final var grpcClient =
-            TEST_INSTANCE.newClientBuilder().preferRestOverGrpc(false).build()) {
-          TEST_INSTANCE.awaitCompleteTopology(TEST_INSTANCE.unifiedConfig(), grpcClient);
-        }
-      }
-    }
-
-    @AfterAll
-    static void tearDown() {
-      TEST_INSTANCE.stop();
-    }
 
     @ParameterizedTest
     @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
