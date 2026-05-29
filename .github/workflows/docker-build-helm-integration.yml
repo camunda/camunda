@@ -100,10 +100,142 @@ jobs:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
+
+
+  # Preflight checks. Validates the things that have historically broken
+  # downstream stages silently:
+  #   1. required org secrets are present
+  #   2. expected Vault paths are readable from this repo
+  #   3. when a user supplies inputs.version on workflow_dispatch, it
+  #      matches one of the two documented tag shapes — otherwise the
+  #      build would push a tag that the Harbor replication filter
+  #      (`**-mq**-run**`) silently drops, and helm-deploy would later
+  #      fail with ImagePullBackOff.
+  # Fails fast before any expensive build job runs.
+  preflight:
+    name: Preflight checks
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # NB: NO `continue-on-error` here. Preflight is meant to fail-fast and
+    # block the expensive downstream stages — including on merge_group runs
+    # (one of the two protected events this hardening targets). Letting
+    # preflight failures pass through here would defeat the entire rationale.
+    permissions: { }
+    steps:
+      - name: Verify required org secrets are set
+        id: check-secrets
+        env:
+          VAULT_ADDR_PRESENT: ${{ secrets.VAULT_ADDR != '' }}
+          VAULT_ROLE_ID_PRESENT: ${{ secrets.VAULT_ROLE_ID != '' }}
+          VAULT_SECRET_ID_PRESENT: ${{ secrets.VAULT_SECRET_ID != '' }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ "$VAULT_ADDR_PRESENT" == "true" ]] || missing+=(VAULT_ADDR)
+          [[ "$VAULT_ROLE_ID_PRESENT" == "true" ]] || missing+=(VAULT_ROLE_ID)
+          [[ "$VAULT_SECRET_ID_PRESENT" == "true" ]] || missing+=(VAULT_SECRET_ID)
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing org secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+          echo "All required org secrets are present."
+
+      - name: Verify Vault paths are reachable
+        id: check-vault
+        # Read-only smoke check: only proves the role can resolve the paths
+        # this workflow depends on. Failure here means the Vault policy for
+        # this repo lost a path binding (or the secret was rotated to a
+        # different path) — a known historical break mode.
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Validate inputs.version shape (when provided)
+        id: check-tag-shape
+        # The only tag this job has access to before build-and-push runs is
+        # the user-supplied workflow_dispatch override. Validate that it
+        # matches one of the two documented shapes:
+        #   - "...-mq<PR_NUMBER|SHA>-run<run_id>-a<attempt>"   (replicated)
+        #   - "...-dispatch-run<run_id>-a<attempt>"            (not replicated)
+        # Other event paths (push, merge_group) synthesize the tag inside
+        # build-and-push.set-image-tag, which is the single source of truth
+        # for that logic — preflight cannot validate that tag without
+        # duplicating the producer.
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$INPUT_VERSION" ]]; then
+            echo "No inputs.version provided — tag will be synthesized by build-and-push.set-image-tag."
+            exit 0
+          fi
+          mq_re='^.+-mq[A-Za-z0-9]+-run[0-9]+-a[0-9]+$'
+          dispatch_re='^.+-dispatch-run[0-9]+-a[0-9]+$'
+          echo "Validating inputs.version: $INPUT_VERSION"
+          if [[ ! "$INPUT_VERSION" =~ $mq_re && ! "$INPUT_VERSION" =~ $dispatch_re ]]; then
+            echo "inputs.version '$INPUT_VERSION' does not match either documented shape:" >&2
+            echo "  - **-mq**-run**-a**     (Harbor-replicated)" >&2
+            echo "  - **-dispatch-run**-a** (not replicated)" >&2
+            exit 1
+          fi
+          echo "inputs.version shape OK."
+
+      - name: Add preflight summary
+        if: always()
+        env:
+          # Each check's `outcome` is one of: success, failure, cancelled,
+          # skipped. Map the raw value to a glyph so the summary reflects
+          # reality even when an earlier step failed and later ones never
+          # ran. Without this the summary unconditionally claimed "validated".
+          SECRETS_OUTCOME: ${{ steps.check-secrets.outcome }}
+          VAULT_OUTCOME: ${{ steps.check-vault.outcome }}
+          TAG_OUTCOME: ${{ steps.check-tag-shape.outcome }}
+        run: |
+          format_outcome() {
+            case "$1" in
+              success)   echo ":white_check_mark: passed" ;;
+              failure)   echo ":x: failed" ;;
+              cancelled) echo ":no_entry_sign: cancelled" ;;
+              skipped|"") echo ":heavy_minus_sign: skipped (an earlier check failed)" ;;
+              *)         echo ":grey_question: $1" ;;
+            esac
+          }
+          {
+            echo "### AlwaysGreen Preflight"
+            echo ""
+            echo "- secrets: $(format_outcome "$SECRETS_OUTCOME")"
+            echo "- vault paths: $(format_outcome "$VAULT_OUTCOME")"
+            echo "- image tag shape: $(format_outcome "$TAG_OUTCOME")"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Same CI Health observability hook every other job in this workflow
+      # uses. Without it the Monorepo CI Health linter flags this job.
+      - name: Checkout (for observe-build-status)
+        if: always()
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-preflight
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   # Parallel frontend builds
   build-operate-frontend:
     name: Build Operate Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -158,7 +290,7 @@ jobs:
           retention-days: 5
   build-tasklist-frontend:
     name: Build Tasklist Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -213,7 +345,7 @@ jobs:
           retention-days: 5
   build-identity-frontend:
     name: Build Identity Frontend
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -421,7 +553,7 @@ jobs:
   format-identifier:
     name: Format Identifier
     # Runs in parallel with frontend builds (no dependency on their outputs)
-    needs: should-run
+    needs: preflight
     permissions: { }
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -761,6 +893,141 @@ jobs:
             echo ""
             echo "**Full guide:** [CI Debugging Cookbook — SaaS E2E section](${COOKBOOK_URL}#failure-type-5--saas-e2e-tests)"
           } >> "$GITHUB_STEP_SUMMARY"
+      # Propagate the downstream SaaS E2E failure category. Computed from
+      # the downstream json-report artifact using the decision tree in
+      # camunda/c8-cross-component-e2e-tests/docs/ci-failure-categories.md
+      # so an alwaysgreen medic can immediately tell whether a downstream
+      # failure was infrastructure / product / mixed without opening the
+      # downstream HTML report. Emitted as a separate artifact
+      # (alwaysgreen-saas-category) so the streak detector and any other
+      # consumer can read it alongside the per-job failure-context artifacts.
+      - name: Resolve downstream SaaS E2E failure category
+        id: downstream-category
+        if: always() && steps.wait-downstream.outputs.downstream_run_url != ''
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          RUN_ID="${DOWNSTREAM_URL##*/}"
+          TARGET_REPO="camunda/c8-cross-component-e2e-tests"
+
+          # Resolve the downstream conclusion directly from the GitHub API
+          # so this step does not depend on outputs produced by any other
+          # workflow change. Possible values per the REST API include
+          # `success`, `failure`, `timed_out`, `cancelled`, `neutral`,
+          # `action_required`, `skipped`, `stale`, `null` (still running).
+          DOWNSTREAM_CONCLUSION=$(gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID" \
+            --jq '.conclusion // "unknown"' 2>/dev/null || echo "unknown")
+          echo "Resolved downstream conclusion from API: $DOWNSTREAM_CONCLUSION"
+
+          DOWNSTREAM_CATEGORY="unknown"
+          DOWNSTREAM_OWNER="@camunda/test-automation-team"
+
+          case "$DOWNSTREAM_CONCLUSION" in
+            success)
+              DOWNSTREAM_CATEGORY="none"
+              DOWNSTREAM_OWNER="none"
+              ;;
+            timed_out|cancelled)
+              DOWNSTREAM_CATEGORY="infrastructure"
+              ;;
+            failure)
+              WORK_DIR="${RUNNER_TEMP}/downstream-report"
+              mkdir -p "$WORK_DIR"
+              # Capture stderr so we can surface a real reason (404 / 403 /
+              # auth scope) rather than silently classifying as `unknown`.
+              # Common modes:
+              #   - GitHub App installation on c8-cross-component-e2e-tests
+              #     lacks `actions: read` → 403
+              #   - artifact retention expired → 404
+              #   - downstream run still publishing → transient 404
+              DOWNLOAD_LOG="${WORK_DIR}/.gh-run-download.log"
+              if gh run download "$RUN_ID" --repo "$TARGET_REPO" \
+                  --pattern 'json-report*' --dir "$WORK_DIR" 2>"$DOWNLOAD_LOG"; then
+                TOTAL=0
+                FAILED=0
+                FLAKY=0
+                SETUP_FAILED=0
+                while IFS= read -r -d '' RESULTS; do
+                  T=$(jq '[.suites[]?.specs[]?] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  F=$(jq '[.suites[]?.specs[]? | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  K=$(jq '[.suites[]?.specs[]? | select(.tests[]?.results | length > 1) | select(.ok==true)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  S=$(jq '[.suites[]?.specs[]? | select((.file // "") | endswith("test-setup.spec.ts")) | select(.ok==false)] | length' "$RESULTS" 2>/dev/null || echo 0)
+                  TOTAL=$((TOTAL + T))
+                  FAILED=$((FAILED + F))
+                  FLAKY=$((FLAKY + K))
+                  SETUP_FAILED=$((SETUP_FAILED + S))
+                done < <(find "$WORK_DIR" -type f -name 'results.json' -print0)
+
+                echo "downstream totals: total=$TOTAL failed=$FAILED flaky=$FLAKY setup_failed=$SETUP_FAILED"
+                if (( TOTAL == 0 )) || (( SETUP_FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="infrastructure"
+                elif (( FAILED > 0 )) && (( FLAKY > 0 )); then
+                  DOWNSTREAM_CATEGORY="mixed"
+                elif (( FAILED > 0 )); then
+                  DOWNSTREAM_CATEGORY="product"
+                else
+                  DOWNSTREAM_CATEGORY="unknown"
+                fi
+              else
+                # The artifact was unreachable. Distinguish this from a
+                # genuinely "unknown" categorisation so consumers don't
+                # confuse "we couldn't tell" with "we tried and the data
+                # was ambiguous". Routing falls to monorepo-devops since
+                # this is an integration / permissions problem with the
+                # parent workflow, not a downstream test failure.
+                DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
+                echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
+                DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
+                DOWNSTREAM_OWNER="@camunda/monorepo-devops-team"
+                {
+                  echo "### Downstream Category Unavailable"
+                  echo ""
+                  echo "\`gh run download\` failed for run $RUN_ID on $TARGET_REPO."
+                  echo "Common causes: the dispatch GitHub App installation lacks \`actions: read\` on the downstream repo, or the artifact retention window has expired."
+                  echo ""
+                  echo "stderr: \`${DOWNLOAD_ERR:-(empty)}\`"
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              ;;
+          esac
+
+          CONTEXT_FILE="${RUNNER_TEMP}/alwaysgreen-saas-category.json"
+          jq -n \
+            --arg stage "${{ github.job }}" \
+            --arg downstream_conclusion "$DOWNSTREAM_CONCLUSION" \
+            --arg downstream_category "$DOWNSTREAM_CATEGORY" \
+            --arg owner_team "$DOWNSTREAM_OWNER" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg downstream_run_url "$DOWNSTREAM_URL" \
+            '{
+              stage:$stage,
+              downstream_conclusion:$downstream_conclusion,
+              downstream_category:$downstream_category,
+              owner_team:$owner_team,
+              run_url:$run_url,
+              downstream_run_url:$downstream_run_url
+            }' > "$CONTEXT_FILE"
+
+          echo "downstream_category=$DOWNSTREAM_CATEGORY" >> "$GITHUB_OUTPUT"
+          echo "downstream_owner=$DOWNSTREAM_OWNER" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Downstream SaaS E2E Failure Category"
+            echo ""
+            echo "- conclusion: $DOWNSTREAM_CONCLUSION"
+            echo "- category: $DOWNSTREAM_CATEGORY"
+            echo "- owner: $DOWNSTREAM_OWNER"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload downstream SaaS E2E category artifact
+        if: ${{ always() && steps.downstream-category.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-saas-category
+          path: ${{ runner.temp }}/alwaysgreen-saas-category.json
+          retention-days: 14
+
 
       - name: Observe build status
         if: always()
