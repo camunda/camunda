@@ -1124,6 +1124,7 @@ jobs:
       - junit-vintage-check
       - maven-spotless-linter
       - pin-check
+      - pr-maven-snapshot
       - pr-vuln-check
       - protobuf-checks
       - spring-boot-compatibility-tests
