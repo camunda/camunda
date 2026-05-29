@@ -32,6 +32,7 @@ dependencies {
     testImplementation(libs.org.mock.server.mockserver.client.java)
     testImplementation(libs.org.springframework.spring.web)
     testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.apache.httpcomponents.httpcore)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.com.vdurmont.semver4j)
