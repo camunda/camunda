@@ -292,6 +292,27 @@ async function runBatchAndWaitForCompletion(
   await expectBatchState(request, batchKey, 'COMPLETED');
 }
 
+export async function expectProcessState(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  state: string,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/process-instances/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey}},
+    });
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].state).toBe(state);
+  }).toPass(assertionOptions);
+}
+
 export async function clearAllProcessInstances(
   request: APIRequestContext,
 ): Promise<void> {

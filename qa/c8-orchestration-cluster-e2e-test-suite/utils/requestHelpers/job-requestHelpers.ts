@@ -80,6 +80,12 @@ export interface ActivatedJob {
   customHeaders: JSONDoc;
 }
 
+export interface ActivatedJobWithVars {
+  jobKey: number;
+  processInstanceKey: number;
+  variables: Record<string, unknown>;
+}
+
 export async function activateJobAndGetHeaders(
   request: APIRequestContext,
   jobType: string,
@@ -110,14 +116,54 @@ export async function activateJobAndGetHeaders(
 export async function completeJob(
   request: APIRequestContext,
   jobKey: number,
+  variables?: Record<string, unknown>,
 ): Promise<void> {
   const completeRes = await request.post(
     buildUrl(`/jobs/${jobKey}/completion`),
     {
       headers: jsonHeaders(),
+      ...(variables !== undefined && {data: {variables}}),
     },
   );
   await assertStatusCode(completeRes, 204);
+}
+
+/**
+ * Activates jobs of a given type and returns those belonging to the given
+ * process instance. Optionally fetches specific variables per job.
+ *
+ * NOTE: /jobs/activation has no processInstanceKey filter — results are
+ * filtered client-side using the processInstanceKey field on each activated job.
+ */
+export async function activateJobsByType(
+  request: APIRequestContext,
+  jobType: string,
+  processInstanceKey: string,
+  fetchVariables: string[] = [],
+  maxJobs = 10,
+): Promise<ActivatedJobWithVars[]> {
+  const res = await request.post(buildUrl('/jobs/activation'), {
+    headers: jsonHeaders(),
+    data: {
+      type: jobType,
+      maxJobsToActivate: maxJobs,
+      timeout: 10_000,
+      ...(fetchVariables.length > 0 && {fetchVariable: fetchVariables}),
+    },
+  });
+  await assertStatusCode(res, 200);
+  const jobs: Array<{
+    jobKey: number;
+    processInstanceKey: number;
+    variables: Record<string, unknown>;
+  }> = (await res.json()).jobs ?? [];
+  return jobs
+    .filter((j) => String(j.processInstanceKey) === processInstanceKey)
+    .map((j) => ({
+      jobKey: j.jobKey,
+      processInstanceKey: j.processInstanceKey,
+      variables: j.variables ?? {},
+    }));
 }
 
 export function setupProcessInstanceForTests(
@@ -158,6 +204,40 @@ export function setupProcessInstanceForTests(
       }
     },
   };
+}
+
+/**
+ * Searches for jobs by type and returns their count. Asserts that
+ * /v2/jobs/search returns HTTP 200 (never 500).
+ */
+export async function countJobsByType(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  type: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/jobs/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {processInstanceKey, type}, page: {limit: 100}},
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).items.length;
+}
+
+export async function expectJobsByType(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  type: string,
+  expected: number,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    expect(await countJobsByType(request, processInstanceKey, type)).toBe(
+      expected,
+    );
+  }).toPass(assertionOptions);
 }
 
 export function getLast24HoursRange() {

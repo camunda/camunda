@@ -678,6 +678,14 @@ class OperateProcessInstancePage {
     return this.page.getByRole('row').filter({hasText: /listener/i});
   }
 
+  getExecutionListenerRowsByEventType(
+    eventType: 'Start' | 'End' | 'Before all',
+  ): Locator {
+    return this.getListenerRows('execution').filter({
+      has: this.page.getByRole('cell', {name: eventType, exact: true}),
+    });
+  }
+
   getInstanceHistoryElement(elementText: string | RegExp): Locator {
     return this.instanceHistory.getByText(elementText);
   }
