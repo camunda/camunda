@@ -180,7 +180,9 @@ const FilteredElementInstancesList: React.FC<Props> = ({
   return (
     <>
       <StatusRegion aria-live="polite">
-        {query.data?.totalCount ?? 0} matching elements
+        {!query.isFetching
+          ? `${query.data?.totalCount ?? 0} matching elements`
+          : ''}
       </StatusRegion>
       <ScrollContainer ref={scrollableContainerRef}>
         <InfiniteScroller

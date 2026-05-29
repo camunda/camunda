@@ -98,7 +98,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       return () => clearTimeout(timer);
     }, [searchText]);
 
-    const isFiltered = debouncedSearchText.length > 0;
+    const isFiltered = debouncedSearchText.trim().length > 0;
 
     const searchInputElement = (
       <SearchInput
@@ -155,7 +155,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           </HiddenTreeWrapper>
           {isFiltered && (
             <FilteredElementInstancesList
-              searchText={debouncedSearchText}
+              searchText={debouncedSearchText.trim()}
               processInstanceKey={processInstance!.processInstanceKey}
               businessObjects={businessObjects!}
             />
