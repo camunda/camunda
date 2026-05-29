@@ -270,7 +270,7 @@ jobs:
             sort_by(.version) | group_by(.version)
             | map({
                 version: .[0].version,
-                test_specs: map(del(.version)),
+                test_specs: (map(del(.version)) | .[0:50]),
                 ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
               })
             | map(select(.test_specs | length > 0))
