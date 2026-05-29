@@ -21,7 +21,6 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -37,7 +36,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * gateway, the resulting process instance's audit log entries carry the MCP tool name as
  * agentToolName.
  */
-@MultiDbTest(DatabaseType.RDBMS_H2)
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class McpAuditLogIT {
 
