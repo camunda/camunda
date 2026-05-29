@@ -141,7 +141,6 @@
       <scope>test</scope>
     </dependency>
 
-
     <dependency>
       <groupId>net.jqwik</groupId>
       <artifactId>jqwik</artifactId>
@@ -168,6 +167,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <usedDependencies>
+            <dependency>net.jqwik:jqwik</dependency>
+          </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <!-- Will be used soon and is already useful for bringing in dependencies on auto-generated google api libraries -->
             <ignoredUnusedDeclaredDependency>com.google.cloud:google-cloud-storage</ignoredUnusedDeclaredDependency>
