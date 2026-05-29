@@ -145,7 +145,7 @@ jobs:
         run: |
           go install github.com/camunda/workspace-cli/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-          npm install -g @anthropic-ai/claude-code
+          npm install -g @anthropic-ai/claude-code@2.1.156
           claude --version
 
       - name: Compute workspace name
@@ -314,17 +314,15 @@ jobs:
               done
             fi
 
-            # Patch PR body to add the verification links
+            # Patch PR body with the verification links (idempotent: strip any
+            # existing "## On-demand verification runs" section before appending
+            # so re-runs do not accumulate duplicate blocks)
             current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
-            verification_block="
-
-          ## On-demand verification runs
-          "
-            [ -n "$e2e_run_url" ] && verification_block+="- E2E: ${e2e_run_url}
-          "
-            [ -n "$api_run_url" ] && verification_block+="- API: ${api_run_url}
-          "
-            new_body="${current_body}${verification_block}"
+            base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
+            verification_block=$'\n\n## On-demand verification runs\n'
+            [ -n "$e2e_run_url" ] && verification_block+="- E2E: ${e2e_run_url}"$'\n'
+            [ -n "$api_run_url" ] && verification_block+="- API: ${api_run_url}"$'\n'
+            new_body="${base_body}${verification_block}"
             printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
           done
 

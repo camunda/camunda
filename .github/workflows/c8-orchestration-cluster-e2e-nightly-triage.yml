@@ -231,8 +231,8 @@ jobs:
 
           # Normalize file paths:
           #   - Strip absolute prefixes (anything before 'qa/c8-orchestration-cluster-e2e-test-suite/')
-          #   - Strip leading 'qa/c8-orchestration-cluster-e2e-test-suite/' or 'tests/' prefix so the
-          #     value is a path relative to the test suite root (the fix agent prepends the suite path)
+          #   - Strip leading 'qa/c8-orchestration-cluster-e2e-test-suite/' prefix so the
+          #     value is a path relative to the test suite root (e.g. 'tests/operate/foo.spec.ts')
           # Filter out:
           #   - identity/* entries for version 8.7 (8.7 has no identity dir)
           #   - empty/malformed file fields
@@ -271,7 +271,7 @@ jobs:
              --argjson openrefs "$open_pr_versions" \
              --argjson cap "${DAILY_CAP}" '
             # group failures by version
-            group_by(.version)
+            sort_by(.version) | group_by(.version)
             | map({
                 version: .[0].version,
                 test_specs: map(del(.version)),
@@ -316,7 +316,7 @@ jobs:
               echo "| Version | Count | Test types |"
               echo "|---------|-------|------------|"
               jq -r '
-                group_by(.version)[]
+                sort_by(.version) | group_by(.version)[]
                 | (.[0].version) as $v
                 | (length) as $n
                 | ([.[].test_type] | unique | join(", ")) as $types
@@ -361,7 +361,7 @@ jobs:
               n=$(echo "$line"       | jq -r '.count')
               types=$(echo "$line"   | jq -r '.types')
               text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
-            done < <(jq -c 'group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
+            done < <(jq -c 'sort_by(.version) | group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
                       /tmp/failures_normalized.json)
             dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
             if [ "$dispatches" -gt 0 ]; then
