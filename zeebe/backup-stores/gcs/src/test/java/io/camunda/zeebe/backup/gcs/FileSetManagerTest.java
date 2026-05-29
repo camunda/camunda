@@ -26,12 +26,15 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class FileSetManagerTest {
   private static final int BUFFER_SIZE = 2 * 1024 * 1024;
+  private static final int MAX_CONCURRENT = 50;
 
   private static final byte[] FILE_CONTENT = new byte[1024];
 
@@ -39,12 +42,21 @@ final class FileSetManagerTest {
     Arrays.fill(FILE_CONTENT, 0, 1024, (byte) 1);
   }
 
+  private static FileSetManager newManager(final Storage client) {
+    return new FileSetManager(
+        client,
+        BucketInfo.of("bucket"),
+        "basePath",
+        Executors.newVirtualThreadPerTaskExecutor(),
+        MAX_CONCURRENT,
+        BUFFER_SIZE);
+  }
+
   @Test
   void shouldSaveFileSet(@TempDir final Path tempDir) throws IOException {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var file1 = Files.createFile(tempDir.resolve("file1"));
     final var file2 = Files.createFile(tempDir.resolve("file2"));
@@ -52,9 +64,9 @@ final class FileSetManagerTest {
         new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
 
     // when
-    manager.save(backupIdentifier, "filesetName", namedFileSet);
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
 
-    // then
+    // then - snapshots are uploaded in parallel using the executor
     verify(mockClient, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
   }
 
@@ -62,8 +74,7 @@ final class FileSetManagerTest {
   void shouldThrowExceptionOnSaveFileSet(@TempDir final Path tempDir) throws IOException {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var file1 = Files.createFile(tempDir.resolve("file1"));
     final var file2 = Files.createFile(tempDir.resolve("file2"));
@@ -72,9 +83,52 @@ final class FileSetManagerTest {
     when(mockClient.createFrom(any(), any(InputStream.class), anyInt(), any()))
         .thenThrow(new StorageException(412, "expected"));
 
-    // when throw
-    Assertions.assertThatThrownBy(() -> manager.save(backupIdentifier, "filesetName", namedFileSet))
-        .isInstanceOf(StorageException.class)
+    // when throw - parallel execution wraps exception in CompletionException
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(StorageException.class)
+        .hasMessageContaining("expected");
+  }
+
+  @Test
+  void shouldSaveSegmentFilesInParallel(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var mockClient = mock(Storage.class);
+    final var manager = newManager(mockClient);
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
+
+    // then - segments are uploaded in parallel using the executor
+    verify(mockClient, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
+  }
+
+  @Test
+  void shouldThrowExceptionOnSaveSegments(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var mockClient = mock(Storage.class);
+    final var manager = newManager(mockClient);
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+    when(mockClient.createFrom(any(), any(InputStream.class), anyInt(), any()))
+        .thenThrow(new StorageException(412, "expected"));
+
+    // when throw - parallel execution wraps exception in CompletionException
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
@@ -82,8 +136,7 @@ final class FileSetManagerTest {
   void shouldUseFileSizeAsBufferSize(@TempDir final Path tempDir) throws IOException {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var file1 = Files.createFile(tempDir.resolve("file1"));
     final var file2 = Files.createFile(tempDir.resolve("file2"));
@@ -93,7 +146,7 @@ final class FileSetManagerTest {
     Files.write(file2, FILE_CONTENT);
 
     // when
-    manager.save(backupIdentifier, "snapshot", namedFileSet);
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
 
     // then - the file size is used as the upload buffer size
     verify(mockClient, times(2)).createFrom(any(), any(InputStream.class), eq(1024), any());
@@ -104,8 +157,7 @@ final class FileSetManagerTest {
   void shouldDeleteFileSet() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final var mockBlob = mock(Blob.class);
@@ -124,8 +176,7 @@ final class FileSetManagerTest {
   void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     when(mockClient.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
@@ -140,8 +191,7 @@ final class FileSetManagerTest {
   void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final Blob mockBlob = mock(Blob.class);
@@ -160,8 +210,7 @@ final class FileSetManagerTest {
   void shouldRestoreFileSet() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
@@ -185,8 +234,7 @@ final class FileSetManagerTest {
   void shouldThrowRestoreFileSetWhenDownloadToFails() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager =
-        new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath", BUFFER_SIZE);
+    final var manager = newManager(mockClient);
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
@@ -195,9 +243,10 @@ final class FileSetManagerTest {
         .when(mockClient)
         .downloadTo(any(), any(Path.class));
 
-    // when - then throw
+    // when - then throw; parallel execution wraps exception in CompletionException
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))
-        .isInstanceOf(StorageException.class)
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 }

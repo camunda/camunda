@@ -14,15 +14,21 @@ import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 
 public record GcsBackupConfig(
-    String bucketName, String basePath, GcsConnectionConfig connection, int bufferSize) {
+    String bucketName,
+    String basePath,
+    GcsConnectionConfig connection,
+    int maxConcurrentTransfers,
+    int bufferSize) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
       final GcsConnectionConfig connection,
+      final int maxConcurrentTransfers,
       final int bufferSize) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
     if (bufferSize <= 0) {
       throw new ConfigurationException("Expected bufferSize to be > 0, but got " + bufferSize);
     }
@@ -70,6 +76,9 @@ public record GcsBackupConfig(
     // 2MiB matches the default used by the GCS library's Path-based upload
     private int bufferSize = 2 * 1024 * 1024;
 
+    /** Default parallelism for file transfers (uploads and downloads) using virtual threads */
+    private int maxConcurrentTransfers = 50;
+
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
       return this;
@@ -82,6 +91,11 @@ public record GcsBackupConfig(
 
     public Builder withHost(final String host) {
       this.host = host;
+      return this;
+    }
+
+    public Builder withMaxConcurrentTransfers(final int maxConcurrentTransfers) {
+      this.maxConcurrentTransfers = maxConcurrentTransfers;
       return this;
     }
 
@@ -103,7 +117,11 @@ public record GcsBackupConfig(
 
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
-          bucketName, basePath, new GcsConnectionConfig(host, auth), bufferSize);
+          bucketName,
+          basePath,
+          new GcsConnectionConfig(host, auth),
+          maxConcurrentTransfers,
+          bufferSize);
     }
   }
 }

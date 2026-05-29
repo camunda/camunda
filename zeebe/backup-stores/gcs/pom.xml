@@ -156,6 +156,7 @@
             -->
             <ignoredUsedUndeclaredDependency>com.google.auth:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.apis:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.api:*</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
