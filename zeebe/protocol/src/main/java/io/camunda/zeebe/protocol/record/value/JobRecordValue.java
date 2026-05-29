@@ -34,6 +34,7 @@ public interface JobRecordValue
     extends RecordValueWithVariables,
         ProcessInstanceRelated,
         AuditLogProcessInstanceRelated,
+        WaitStateRelated,
         TenantOwned {
 
   /**
@@ -103,13 +104,31 @@ public interface JobRecordValue
   /**
    * @return the element id of the corresponding service task
    */
+  @Override
   String getElementId();
+
+  /**
+   * @return the BPMN element type that created the job
+   */
+  BpmnElementType getElementType();
 
   /**
    * @return the element instance key of the corresponding service task
    */
   @Override
   long getElementInstanceKey();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For jobs in top-level process
+   * instances, this is equal to {@link #getProcessInstanceKey()}. For jobs in child process
+   * instances (created via call activities), this is the key of the topmost parent process
+   * instance.
+   *
+   * @return the key of the root process instance, or {@code -1L} if not set for versions prior to
+   *     8.9
+   */
+  @Override
+  long getRootProcessInstanceKey();
 
   /**
    * @return the bpmn process id of the corresponding process definition
@@ -152,17 +171,6 @@ public interface JobRecordValue
    * @return true if the job is part of a user task migration
    */
   boolean isJobToUserTaskMigration();
-
-  /**
-   * Returns the key of the root process instance in the hierarchy. For jobs in top-level process
-   * instances, this is equal to {@link #getProcessInstanceKey()}. For jobs in child process
-   * instances (created via call activities), this is the key of the topmost parent process
-   * instance.
-   *
-   * @return the key of the root process instance, or {@code -1L} if not set for versions prior to
-   *     8.9
-   */
-  long getRootProcessInstanceKey();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)

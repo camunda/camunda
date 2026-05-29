@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
@@ -591,6 +592,7 @@ public final class BpmnJobBehavior {
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(context.getElementId())
+        .setElementType(getBpmnElementTypeForLogging(jobKind, context))
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setTags(getTagsFromProcessInstance(context))
@@ -601,6 +603,15 @@ public final class BpmnJobBehavior {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
     jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
+  }
+
+  private BpmnElementType getBpmnElementTypeForLogging(
+      final JobKind jobKind, final BpmnElementContext context) {
+    return switch (jobKind) {
+      case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
+      case TASK_LISTENER -> BpmnElementType.USER_TASK;
+      case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
+    };
   }
 
   private Set<String> getTagsFromProcessInstance(final BpmnElementContext context) {
