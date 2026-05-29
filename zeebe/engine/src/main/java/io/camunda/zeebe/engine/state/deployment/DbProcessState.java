@@ -535,6 +535,11 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public List<Long> getKnownProcessVersions(final String bpmnProcessId, final String tenantId) {
+    return versionManager.getKnownResourceVersions(bpmnProcessId, tenantId);
+  }
+
+  @Override
   public <T extends ExecutableFlowElement> T getFlowElement(
       final long processDefinitionKey,
       final String tenantId,
