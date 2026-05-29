@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -334,5 +336,94 @@ public class CamundaProcessTestExtensionIT {
                     .contains("camundaProcessTestExtensionIT/greeting.dmn");
               });
     }
+  }
+
+  @Test
+  void shouldCompleteJobWithVariableMapper() {
+    // given
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(Collections.singletonMap("id", 1))
+            .send()
+            .join();
+
+    // when
+    processTestContext.completeJob(
+        "test",
+        inputVars -> {
+          final int id = ((Number) inputVars.get("id")).intValue();
+          return Collections.singletonMap("user", id == 1 ? "Alice" : "Bob");
+        });
+
+    // then
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Alice");
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithVariableMapper() {
+    // given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(Collections.singletonMap("id", 2))
+            .send()
+            .join();
+
+    // when
+    processTestContext.completeUserTask(
+        "user-task-1",
+        inputVars -> {
+          final int id = ((Number) inputVars.get("id")).intValue();
+          return Collections.singletonMap("user", id == 1 ? "Alice" : "Bob");
+        });
+
+    // then
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Bob");
+  }
+
+  private long deployProcessModel(final BpmnModelInstance processModel) {
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, "testProcess.bpmn")
+        .send()
+        .join()
+        .getProcesses()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private BpmnModelInstance processModelWithServiceTask() {
+    return Bpmn.createExecutableProcess("test-process-with-service-task")
+        .startEvent("start-1")
+        .serviceTask("service-task-1")
+        .zeebeJobType("test")
+        .boundaryEvent("error-boundary-event")
+        .error("bpmn-error")
+        .zeebeOutputExpression("abc", "error_code")
+        .endEvent("error-end")
+        .moveToActivity("service-task-1")
+        .endEvent("success-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithUserTask() {
+    return Bpmn.createExecutableProcess("test-process-with-user-task")
+        .startEvent("start-1")
+        .userTask("user-task-1")
+        .name("user-task")
+        .zeebeUserTask()
+        .boundaryEvent("error-boundary-event")
+        .error("bpmn-error")
+        .endEvent("error-end")
+        .moveToActivity("user-task-1")
+        .endEvent("success-end")
+        .done();
   }
 }
