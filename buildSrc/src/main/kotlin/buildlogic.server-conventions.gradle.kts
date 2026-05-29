@@ -12,6 +12,8 @@ plugins {
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val esJavaVersion =
     versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
+val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
+val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
 
 dependencies {
     add("implementation", platform(versionCatalog.findLibrary("com-azure-azure-sdk-bom").get()))
@@ -48,6 +50,17 @@ configurations.all {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform {
-        excludeTags("performance", "strace")
+        val excludedTags = buildList {
+            if (!includePerformanceTests) {
+                add("performance")
+            }
+            if (!includeStraceTests) {
+                add("strace")
+            }
+        }
+
+        if (excludedTags.isNotEmpty()) {
+            excludeTags(*excludedTags.toTypedArray())
+        }
     }
 }
