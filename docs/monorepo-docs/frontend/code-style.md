@@ -15,6 +15,7 @@ similar lines beat a premature wrapper.
 - **Booleans**: prefix with `is` or `has` (e.g. `isLoading`, `isVisible`, `hasIncident`).
 - **Constants**: `SCREAMING_SNAKE_CASE` (e.g. `MAX_RETRY_COUNT`).
 - **Components**: `PascalCase` (e.g. `DashboardHeader`).
+- **Pages**: `PascalCase` + `Page` suffix (e.g. `DashboardPage`). Co-located styles and tests use the same name (`DashboardPage.module.scss`, `DashboardPage.test.tsx`).
 
 ## Exports
 

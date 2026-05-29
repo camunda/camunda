@@ -67,12 +67,15 @@ etc.) sits at the module root.
 Keep filenames consistent so the role of each file is obvious at a
 glance:
 
-| Kind      | Pattern          | Example              |
-| --------- | ---------------- | -------------------- |
-| Hook      | `use*.ts(x)`     | `useAuth.ts`         |
-| Store     | `*.store.ts`     | `session.store.ts`   |
-| Component | `PascalCase.tsx` | `LoadingSpinner.tsx` |
-| Unit test | `*.test.ts(x)`   | `request.test.ts`    |
+| Kind      | Pattern          | Example                  |
+| --------- | ---------------- | ------------------------ |
+| Hook      | `use*.ts(x)`     | `useAuth.ts`             |
+| Store     | `*.store.ts`     | `session.store.ts`       |
+| Component | `PascalCase.tsx` | `LoadingSpinner.tsx`     |
+| Page      | `*Page.tsx`      | `DashboardPage.tsx`      |
+| Unit test | `*.test.ts(x)`   | `request.test.ts`        |
+
+Page co-located styles and tests mirror the component name (e.g. `DashboardPage.module.scss`, `DashboardPage.test.tsx`).
 
 There is **no** `modules/process-instances/` covering an entire large page;
 pages are assembled in `src/pages/` from these building blocks.

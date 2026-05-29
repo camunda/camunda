@@ -15,7 +15,7 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
 - Use `#/` path aliases for all imports — `#/modules/*`, `#/assets/*`, `#/pages/*`. They are resolved by Vite and the relevant tsconfig.
 - Prefer **types** from `@camunda/camunda-api-zod-schemas` to type API responses — trust the API contract. Use Zod schema validation only for **user input** (forms, URL search params, path params). For general validation needs beyond API contracts, use Zod directly.
 - Routes go in `src/routes/` (file-based, TanStack Router); pages go in `src/pages/`; reusable logic goes in `src/modules/`. A module owns one small concern — not an entire page. Keep internal structure flat; cap depth at `modules/<thing>/components/<Component>/`.
-- Follow filename conventions: `use*.ts(x)` for hooks, `*.store.ts` for stores, `PascalCase.tsx` for components, `*.test.ts(x)` for tests.
+- Follow filename conventions: `use*.ts(x)` for hooks, `*.store.ts` for stores, `PascalCase.tsx` for components, `*.test.ts(x)` for tests. Page components use a `Page` suffix (e.g. `DashboardPage.tsx`); co-located styles and tests mirror the component name (`DashboardPage.module.scss`, `DashboardPage.test.tsx`).
 - Use a single `export {}` block at the end of each file — no inline `export` on declarations. Only export symbols that are actually imported by other files. Don't export internal helpers, types used only within the same file, or constants that nothing else references. This keeps the public surface minimal and scannable.
 - YAGNI — don't build abstractions for hypothetical future use. Three similar lines beat a premature wrapper. Wait until a real requirement forces the shape.
 
@@ -24,6 +24,7 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
 - **Booleans**: prefix with `is` (e.g., `isLoading`, `isVisible`).
 - **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `MAX_RETRY_COUNT`).
 - **Components**: `PascalCase` (e.g., `DashboardHeader`).
+- **Pages**: `PascalCase` + `Page` suffix (e.g., `DashboardPage`); co-located styles and tests use the same name (`DashboardPage.module.scss`, `DashboardPage.test.tsx`).
 - **Comments**: avoid them. Code should explain itself. When a comment is necessary, explain *why*, not *how*.
 - **Memoize derived data**: when creating new values inside a component (e.g., `.map()`, `.filter()`, transformations), always wrap in `useMemo` to avoid recomputing on every render.
 - **SCSS spacing**: use Carbon design token CSS variables for spacing (e.g., `$spacing-05`, `var(--cds-spacing-05)`). Never hardcode pixel or rem values for layout spacing.
