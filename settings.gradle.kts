@@ -28,7 +28,23 @@ val pomVersions: Map<String, String> =
         providers.fileContents(layout.rootDirectory.file("parent/pom.xml")).asText.get()
     )
 
+val tasklistQaPomVersions: Map<String, String> =
+    parsePomProperties(
+        providers.fileContents(layout.rootDirectory.file("tasklist/qa/pom.xml")).asText.get()
+    )
+
+val optimizePomVersions: Map<String, String> =
+    parsePomProperties(
+        providers.fileContents(layout.rootDirectory.file("optimize/pom.xml")).asText.get()
+    )
+
 fun pomVersion(key: String) = pomVersions[key] ?: error("Missing POM property: $key")
+
+fun tasklistQaPomVersion(key: String) =
+    tasklistQaPomVersions[key] ?: error("Missing Tasklist QA POM property: $key")
+
+fun optimizePomVersion(key: String) =
+    optimizePomVersions[key] ?: error("Missing Optimize POM property: $key")
 
 rootProject.name = "camunda-8-root"
 
@@ -331,11 +347,15 @@ dependencyResolutionManagement {
             version("thymeleaf", pomVersion("version.thymeleaf"))
             version("tomcat", pomVersion("version.tomcat"))
             version("toxiproxy", pomVersion("version.toxiproxy"))
+            version("tasklist-qa-docker-current", tasklistQaPomVersion("version.tasklist.docker.current"))
+            version("tasklist-qa-docker-repo", tasklistQaPomVersion("version.tasklist.docker.repo"))
             version("uk-co-real-logic-sbe-tool", pomVersion("version.sbe"))
             version("wiremock", pomVersion("version.wiremock"))
             // from testing/camunda-process-test-example/pom.xml; versioned separately from wiremock
             version("wiremock-spring-boot", "4.2.1")
             version("zeebe-test-container", pomVersion("version.zeebe-test-container"))
+            version("optimize-zeebe-docker", optimizePomVersion("zeebe.docker.version"))
+            version("optimize-database-type", optimizePomVersion("database.type"))
 
             library("co-elastic-clients-elasticsearch-java", "co.elastic.clients", "elasticsearch-java").versionRef("co-elastic-clients-elasticsearch-java")
             library("com-auth0-java-jwt", "com.auth0", "java-jwt").versionRef("java-jwt")
