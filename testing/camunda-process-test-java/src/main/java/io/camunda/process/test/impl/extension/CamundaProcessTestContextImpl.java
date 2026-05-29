@@ -69,7 +69,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -340,38 +339,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper) {
     Objects.requireNonNull(variableMapper, "variableMapper must not be null");
     final CamundaClient client = createClient();
-    final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
     doCompleteJob(
         client,
         jobSelector,
         job ->
             mapOutputVariablesOnce(
                 client,
-                outputVariablesRef,
                 jobSelector.describe(),
                 "complete job",
                 job.getProcessInstanceKey(),
                 job.getElementInstanceKey(),
                 variableMapper));
-  }
-
-  // completing the job inside the await block to handle the eventual consistency of the API
-  private void doCompleteJob(
-      final CamundaClient client,
-      final JobSelector jobSelector,
-      final Function<Job, Map<String, Object>> variableResolver) {
-    awaitJob(
-        jobSelector,
-        client,
-        job -> {
-          final Map<String, Object> outputVariables = variableResolver.apply(job);
-          LOGGER.debug(
-              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              outputVariables);
-          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
-        });
   }
 
   @Override
@@ -514,42 +492,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final UnaryOperator<Map<String, Object>> variableMapper) {
     Objects.requireNonNull(variableMapper, "variableMapper must not be null");
     final CamundaClient client = createClient();
-    final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
     doCompleteUserTask(
         client,
         userTaskSelector,
         userTask ->
             mapOutputVariablesOnce(
                 client,
-                outputVariablesRef,
                 userTaskSelector.describe(),
                 "complete user task",
                 userTask.getProcessInstanceKey(),
                 userTask.getElementInstanceKey(),
                 variableMapper));
-  }
-
-  // completing the user task inside the await block to handle the eventual consistency of the API
-  private void doCompleteUserTask(
-      final CamundaClient client,
-      final UserTaskSelector userTaskSelector,
-      final Function<UserTask, Map<String, Object>> variableResolver) {
-    awaitUserTask(
-        userTaskSelector,
-        client,
-        userTask -> {
-          final Map<String, Object> outputVariables = variableResolver.apply(userTask);
-          LOGGER.debug(
-              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
-              userTaskSelector.describe(),
-              userTask.getUserTaskKey(),
-              outputVariables);
-          client
-              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-              .variables(outputVariables)
-              .send()
-              .join();
-        });
   }
 
   @Override
@@ -741,6 +694,48 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
+  // completing the job inside the await block to handle the eventual consistency of the API
+  private void doCompleteJob(
+      final CamundaClient client,
+      final JobSelector jobSelector,
+      final Function<Job, Map<String, Object>> variableResolver) {
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(job);
+          LOGGER.debug(
+              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              outputVariables);
+          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+        });
+  }
+
+  // completing the user task inside the await block to handle the eventual consistency of the API
+  private void doCompleteUserTask(
+      final CamundaClient client,
+      final UserTaskSelector userTaskSelector,
+      final Function<UserTask, Map<String, Object>> variableResolver) {
+    awaitUserTask(
+        userTaskSelector,
+        client,
+        userTask -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(userTask);
+          LOGGER.debug(
+              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+              userTaskSelector.describe(),
+              userTask.getUserTaskKey(),
+              outputVariables);
+          client
+              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+              .variables(outputVariables)
+              .send()
+              .join();
+        });
+  }
+
   private void awaitUserTask(
       final UserTaskSelector userTaskSelector,
       final CamundaClient client,
@@ -797,21 +792,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   /**
-   * Resolves the output variables for a variable-mapper-based completion, caching the result so
-   * that the mapper is invoked at most once even when the completion retries on transient errors.
+   * Resolves the output variables for a variable-mapper-based completion
    */
   private Map<String, Object> mapOutputVariablesOnce(
       final CamundaClient client,
-      final AtomicReference<Map<String, Object>> cache,
       final String selectorDescription,
       final String operation,
       final long processInstanceKey,
       final long elementInstanceKey,
       final UnaryOperator<Map<String, Object>> variableMapper) {
-    final Map<String, Object> cached = cache.get();
-    if (cached != null) {
-      return cached;
-    }
     final Map<String, Object> inputVariables =
         readInputVariables(client, processInstanceKey, elementInstanceKey);
     final Map<String, Object> outputVariables = variableMapper.apply(inputVariables);
@@ -821,7 +810,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               "Expected to %s [%s] but the variableMapper returned null.",
               operation, selectorDescription));
     }
-    cache.set(outputVariables);
     return outputVariables;
   }
 
