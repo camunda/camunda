@@ -59,9 +59,9 @@ final class ZeebeIntegrationExtensionTest {
     final var brokerB0 = CLUSTER.brokers().get(MemberId.from("zoneB", 0));
 
     // then
-    assertWorkingDirectory(brokerA0, "broker-zoneA-0");
-    assertWorkingDirectory(brokerA1, "broker-zoneA-1");
-    assertWorkingDirectory(brokerB0, "broker-zoneB-0");
+    assertWorkingDirectory(brokerA0, "broker-zoneA_0");
+    assertWorkingDirectory(brokerA1, "broker-zoneA_1");
+    assertWorkingDirectory(brokerB0, "broker-zoneB_0");
   }
 
   @Test
@@ -71,9 +71,9 @@ final class ZeebeIntegrationExtensionTest {
 
     // then
     assertThat(workingDirectory).isNotNull().exists().isDirectory();
-    assertThat(workingDirectory.getFileName()).hasToString("broker-zoneA-1");
+    assertThat(workingDirectory.getFileName()).hasToString("broker-zoneA_1");
     assertThat(workingDirectory.getParent().getFileName().toString())
-        .startsWith("junit-broker-zoneA-1");
+        .startsWith("junit-broker-zoneA_1");
   }
 
   private static void assertWorkingDirectory(
