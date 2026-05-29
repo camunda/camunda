@@ -139,10 +139,44 @@ jobs:
             --description "Bot-opened fix PR for failing nightly orchestration cluster tests" \
             2>/dev/null || true
 
-      - name: Install Claude Code CLI
+      - name: Install workspace-cli and Claude Code CLI
+        env:
+          GOPRIVATE: github.com/camunda/*
         run: |
+          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
           npm install -g @anthropic-ai/claude-code
           claude --version
+
+      - name: Compute workspace name
+        id: ws
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          name="fix-oc-${VERSION}-$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Stage workspace manifest
+        run: |
+          mkdir -p "$HOME/.workspace-templates"
+          cp qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.yaml \
+             "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.yaml"
+          cp qa/c8-orchestration-cluster-e2e-test-suite/workspace-templates/camunda-orchestration-cluster-nightly.guidance.md \
+             "$HOME/.workspace-templates/camunda-orchestration-cluster-nightly.guidance.md"
+
+      - name: Create workspace
+        run: |
+          workspace create "${{ steps.ws.outputs.name }}" \
+            --manifest camunda-orchestration-cluster-nightly
+
+      - name: Switch workspace to target branch
+        env:
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
+          git -C "$ws_dir" checkout "${TARGET_REF}"
 
       - name: Determine which artifact downloads + on-demand verifications are needed
         id: scope
@@ -174,8 +208,10 @@ jobs:
           HAS_API_ES:          ${{ steps.scope.outputs.has_api_es }}
           HAS_API_RDBMS:       ${{ steps.scope.outputs.has_api_rdbms }}
           REPO:                ${{ github.repository }}
+          WORKSPACE_NAME:      ${{ steps.ws.outputs.name }}
         run: |
           set -euo pipefail
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
 
           # Pre-create artifact dirs so Claude does not need to mkdir
           mkdir -p /tmp/nightly-artifacts
@@ -184,12 +220,12 @@ jobs:
           # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
           # read first). This keeps the per-run prompt small and the source-of-truth
           # for behaviour in a single file the team can update without editing CI.
-          claude --dangerously-skip-permissions -p "$(cat <<EOF
-          You are the Camunda orchestration-cluster nightly fix agent. The repo is
-          already on the correct target branch (${TARGET_REF}).
+          prompt=$(cat <<EOF
+          You are the Camunda orchestration-cluster nightly fix agent.
+          Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
 
-          STEP 0 — read qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md, the
-          "## Nightly Fix Agent" section. That file is your full operating manual:
+          STEP 0 — read ${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md,
+          the "## Nightly Fix Agent" section. That file is your full operating manual:
           diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
           PR conventions ('test:' not 'fix:'), and the /tmp/fix-meta.json schema.
 
@@ -207,7 +243,10 @@ jobs:
 
           When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
           EOF
-          )"
+          )
+
+          cd "${ws_dir}"
+          claude -p "$prompt" --dangerously-skip-permissions
 
       - name: Trigger on-demand verification runs and patch PR body
         if: always()
