@@ -208,6 +208,63 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldReturnEmptyListForUnknownProcessIdOnGetKnownProcessVersions() {
+    // given / when
+    final var versions = processState.getKnownProcessVersions("unknownProcess", TENANT_ID);
+
+    // then
+    assertThat(versions).isEmpty();
+  }
+
+  @Test
+  public void shouldReturnAllVersionsOnGetKnownProcessVersions() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    final var v3 = creatingProcessRecord(processingState, "processId", 3);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.putProcess(v3.getKey(), v3);
+
+    // when
+    final var versions = processState.getKnownProcessVersions("processId", TENANT_ID);
+
+    // then
+    assertThat(versions).containsExactlyInAnyOrder(1L, 2L, 3L);
+  }
+
+  @Test
+  public void shouldNotReturnVersionsForDifferentProcessIdOnGetKnownProcessVersions() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState, "processId", 1);
+    final var otherRecord = creatingProcessRecord(processingState, "otherProcess", 1);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.putProcess(otherRecord.getKey(), otherRecord);
+
+    // when
+    final var versions = processState.getKnownProcessVersions("processId", TENANT_ID);
+
+    // then
+    assertThat(versions).containsExactly(1L);
+  }
+
+  @Test
+  public void shouldNotReturnDeletedVersionOnGetKnownProcessVersions() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+
+    // when
+    processState.deleteProcess(v1);
+    final var versions = processState.getKnownProcessVersions("processId", TENANT_ID);
+
+    // then
+    assertThat(versions).containsExactly(2L);
+  }
+
+  @Test
   public void shouldNotIncrementNextProcessVersionForDifferentProcessId() {
     // given
     final var processRecord = creatingProcessRecord(processingState);

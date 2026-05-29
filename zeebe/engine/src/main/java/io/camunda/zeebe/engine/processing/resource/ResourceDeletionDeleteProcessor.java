@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+import static io.camunda.zeebe.protocol.ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -76,11 +77,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ResourceDeletionDeleteProcessor.class);
   private static final List<ResourceType> SUPPORTED_HISTORY_DELETION_TYPES =
       List.of(ResourceType.PROCESS_DEFINITION, ResourceType.DECISION_REQUIREMENTS);
 
@@ -354,6 +359,7 @@ public class ResourceDeletionDeleteProcessor
     // We don't add the checksum or resource in this event. The checksum is not easily available
     // and the resources are left out to prevent exceeding the maximum batch size.
     final var processIdBuffer = process.getBpmnProcessId();
+    final var tenantId = process.getTenantId();
     final var processRecord =
         new ProcessRecord()
             .setBpmnProcessId(processIdBuffer)
@@ -361,27 +367,30 @@ public class ResourceDeletionDeleteProcessor
             .setVersionTag(process.getVersionTag())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
-            .setTenantId(process.getTenantId())
+            .setTenantId(tenantId)
             .setDeploymentKey(process.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
-    final var latestVersion =
-        processState.getLatestProcessVersion(processId, processRecord.getTenantId());
+    final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
       final var previousVersion =
-          processState.findProcessVersionBefore(
-              processId, latestVersion, processRecord.getTenantId());
+          processState.findProcessVersionBefore(processId, latestVersion, tenantId);
       // If there is a previous version we must resubscribe to the previous version's start events.
       if (previousVersion.isPresent()) {
         final var previousProcess =
             processState.getProcessByProcessIdAndVersion(
-                processIdBuffer, previousVersion.get(), process.getTenantId());
-        startEventSubscriptions.resubscribeToStartEvents(previousProcess);
+                processIdBuffer, previousVersion.get(), tenantId);
+        if (previousProcess == null) {
+          warnPreviousProcessNotFound(
+              processIdBuffer, previousVersion.get(), tenantId, processId, latestVersion);
+        } else {
+          startEventSubscriptions.resubscribeToStartEvents(previousProcess);
+        }
       }
     }
 
@@ -500,6 +509,24 @@ public class ResourceDeletionDeleteProcessor
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+  }
+
+  private void warnPreviousProcessNotFound(
+      final DirectBuffer processIdBuffer,
+      final int previousVersion,
+      final String tenantId,
+      final String processId,
+      final int latestVersion) {
+    LOG.warn(
+        "Expected to find previous process: {} with version: {} and tenant: '{}' to "
+            + "resubscribe start events, but no row exists in {}. "
+            + "knownVersions: {}, current latest version: {}.",
+        bufferAsString(processIdBuffer),
+        previousVersion,
+        tenantId,
+        PROCESS_CACHE_BY_ID_AND_VERSION.name(),
+        processState.getKnownProcessVersions(processId, tenantId),
+        latestVersion);
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {

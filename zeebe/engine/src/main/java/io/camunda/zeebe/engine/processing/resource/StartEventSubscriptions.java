@@ -35,6 +35,10 @@ public final class StartEventSubscriptions {
   }
 
   public void resubscribeToStartEvents(final DeployedProcess deployedProcess) {
+    if (deployedProcess == null) {
+      return;
+    }
+
     final var process = deployedProcess.getProcess();
     if (process.hasTimerStartEvent()) {
       process.getStartEvents().stream()
