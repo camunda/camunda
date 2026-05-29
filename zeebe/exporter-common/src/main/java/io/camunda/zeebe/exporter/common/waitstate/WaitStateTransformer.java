@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +17,11 @@ import org.slf4j.LoggerFactory;
  * Extracts waiting-state data from a Zeebe record.
  *
  * <p>Implementations declare which record intents trigger an index write or removal via {@link
- * #config()}, and provide the extraction logic in {@link #extract(Record)}.
+ * #config()}, and provide the extraction logic in {@link #extract(Record, WaitStateEntry)}.
  *
  * @param <R> the record value type this transformer handles
  */
-public interface WaitStateTransformer<R extends RecordValue> {
+public interface WaitStateTransformer<R extends RecordValue & WaitStateRelated> {
 
   Logger LOG = LoggerFactory.getLogger(WaitStateTransformer.class);
 
@@ -29,10 +30,33 @@ public interface WaitStateTransformer<R extends RecordValue> {
   /**
    * Extracts a {@link WaitStateEntry} from the given record.
    *
-   * <p>Called only when {@link #supports(Record)} returns {@code true}. Returns {@code null} when
-   * the record does not carry enough data to build a meaningful entry.
+   * <p>Called only when {@link #triggersAdd(Record)} or {@link #triggersRemoval(Record)} returns
+   * {@code true}.
    */
-  WaitStateEntry extract(Record<R> record);
+  void extract(final Record<R> record, final WaitStateEntry entry);
+
+  default WaitStateEntry transform(final Record<R> record) {
+    final WaitStateEntry waitStateEntry =
+        WaitStateEntry.of(record).setWaitStateType(config().waitStateType());
+
+    try {
+      extract(record, waitStateEntry);
+    } catch (final Exception e) {
+      LOG.error(
+          "Error extracting wait state entity for record with key {}: {}",
+          record.getKey(),
+          e.getMessage(),
+          e);
+    }
+
+    final var elementType = waitStateEntry.getElementType();
+    if (elementType == null || !config().supportedElementTypes().contains(elementType)) {
+      final var errorMsg = "Undefined or unsupported element type: %s".formatted(elementType);
+      LOG.error(errorMsg);
+    }
+
+    return waitStateEntry;
+  }
 
   default boolean supports(final Record<R> record) {
     return config().supports(record);

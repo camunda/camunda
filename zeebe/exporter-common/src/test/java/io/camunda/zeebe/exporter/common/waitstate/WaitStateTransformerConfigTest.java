@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -29,7 +30,6 @@ class WaitStateTransformerConfigTest {
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.CREATED));
 
     // when / then
-    assertThat(config.supports(record)).isTrue();
     assertThat(config.triggersAdd(record)).isTrue();
     assertThat(config.triggersRemoval(record)).isFalse();
   }
@@ -44,7 +44,6 @@ class WaitStateTransformerConfigTest {
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.COMPLETED));
 
     // when / then
-    assertThat(config.supports(record)).isTrue();
     assertThat(config.triggersAdd(record)).isFalse();
     assertThat(config.triggersRemoval(record)).isTrue();
   }
@@ -60,7 +59,8 @@ class WaitStateTransformerConfigTest {
             r -> r.withRecordType(RecordType.COMMAND).withIntent(JobIntent.COMPLETE));
 
     // when / then
-    assertThat(config.supports(record)).isFalse();
+    assertThat(config.triggersAdd(record)).isFalse();
+    assertThat(config.triggersRemoval(record)).isFalse();
   }
 
   @Test
@@ -74,7 +74,6 @@ class WaitStateTransformerConfigTest {
             r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.RECURRED_AFTER_BACKOFF));
 
     // when / then
-    assertThat(config.supports(record)).isFalse();
     assertThat(config.triggersAdd(record)).isFalse();
     assertThat(config.triggersRemoval(record)).isFalse();
   }
@@ -101,5 +100,15 @@ class WaitStateTransformerConfigTest {
     assertThat(config.addIntents()).containsExactly(JobIntent.CREATED);
     assertThat(config.removeIntents()).containsExactly(JobIntent.COMPLETED);
     assertThat(config.valueType()).isEqualTo(ValueType.JOB);
+  }
+
+  @Test
+  void shouldUseDefinedWaitStateType() {
+    // given
+    final var config =
+        WaitStateTransformerConfig.of(ValueType.JOB).withWaitStateType(WaitStateType.JOB);
+
+    // when / then
+    assertThat(config.waitStateType()).isEqualTo(WaitStateType.JOB);
   }
 }

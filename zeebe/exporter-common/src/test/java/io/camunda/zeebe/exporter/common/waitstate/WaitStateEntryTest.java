@@ -9,8 +9,8 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateElementType;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class WaitStateEntryTest {
             .setProcessInstanceKey(200L)
             .setElementInstanceKey(300L)
             .setElementId("task-1")
-            .setElementType(WaitStateElementType.SERVICE_TASK)
+            .setElementType(BpmnElementType.SERVICE_TASK)
             .setWaitStateType(WaitStateType.JOB)
             .setDetails(details)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -38,7 +38,7 @@ class WaitStateEntryTest {
     assertThat(entry.getProcessInstanceKey()).isEqualTo(200L);
     assertThat(entry.getElementInstanceKey()).isEqualTo(300L);
     assertThat(entry.getElementId()).isEqualTo("task-1");
-    assertThat(entry.getElementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
+    assertThat(entry.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK);
     assertThat(entry.getWaitStateType()).isEqualTo(WaitStateType.JOB);
     assertThat(entry.getDetails()).isEqualTo(details);
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -50,7 +50,7 @@ class WaitStateEntryTest {
     // given / when
     final var entry =
         new WaitStateEntry()
-            .setElementType(WaitStateElementType.USER_TASK)
+            .setElementType(BpmnElementType.USER_TASK)
             .setWaitStateType(WaitStateType.USER_TASK)
             .setDetails(Map.of())
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -58,23 +58,6 @@ class WaitStateEntryTest {
     // then
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(entry.getDetails()).isEmpty();
-  }
-
-  @Test
-  void shouldExposeExpectedWaitStateElementTypes() {
-    // when / then
-    assertThat(WaitStateElementType.values())
-        .containsExactlyInAnyOrder(
-            WaitStateElementType.SERVICE_TASK,
-            WaitStateElementType.SEND_TASK,
-            WaitStateElementType.RECEIVE_TASK,
-            WaitStateElementType.USER_TASK,
-            WaitStateElementType.BUSINESS_RULE_TASK,
-            WaitStateElementType.SCRIPT_TASK,
-            WaitStateElementType.INTERMEDIATE_CATCH_EVENT,
-            WaitStateElementType.BOUNDARY_EVENT,
-            WaitStateElementType.EVENT_BASED_GATEWAY,
-            WaitStateElementType.CALL_ACTIVITY);
   }
 
   @Test

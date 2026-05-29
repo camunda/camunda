@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class WaitStateEntry {
   private long processInstanceKey;
   private long elementInstanceKey;
   private String elementId;
-  private WaitStateElementType elementType;
+  private BpmnElementType elementType;
   private WaitStateType waitStateType;
   private Map<String, Object> details;
   private String tenantId;
@@ -71,11 +72,11 @@ public class WaitStateEntry {
     return this;
   }
 
-  public WaitStateElementType getElementType() {
+  public BpmnElementType getElementType() {
     return elementType;
   }
 
-  public WaitStateEntry setElementType(final WaitStateElementType elementType) {
+  public WaitStateEntry setElementType(final BpmnElementType elementType) {
     this.elementType = elementType;
     return this;
   }
@@ -135,19 +136,6 @@ public class WaitStateEntry {
         .setElementId(value.getElementId())
         .setTenantId(value.getTenantId())
         .setPartitionId(record.getPartitionId());
-  }
-
-  public enum WaitStateElementType {
-    SERVICE_TASK,
-    SEND_TASK,
-    RECEIVE_TASK,
-    USER_TASK,
-    BUSINESS_RULE_TASK,
-    SCRIPT_TASK,
-    INTERMEDIATE_CATCH_EVENT,
-    BOUNDARY_EVENT,
-    EVENT_BASED_GATEWAY,
-    CALL_ACTIVITY
   }
 
   public enum WaitStateType {

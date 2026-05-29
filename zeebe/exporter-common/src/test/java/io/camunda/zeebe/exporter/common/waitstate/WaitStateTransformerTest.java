@@ -9,13 +9,13 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateElementType;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
@@ -30,7 +30,7 @@ class WaitStateTransformerTest {
           .withAddIntents(JobIntent.CREATED)
           .withRemoveIntents(JobIntent.COMPLETED);
 
-  private final WaitStateTransformer<RecordValue> transformer =
+  private final WaitStateTransformer<JobRecordValue> transformer =
       new WaitStateTransformer<>() {
         @Override
         public WaitStateTransformerConfig config() {
@@ -38,13 +38,13 @@ class WaitStateTransformerTest {
         }
 
         @Override
-        public WaitStateEntry extract(final Record<RecordValue> record) {
-          return new WaitStateEntry()
+        public void extract(final Record<JobRecordValue> record, final WaitStateEntry entry) {
+          entry
               .setRootProcessInstanceKey(1L)
               .setProcessInstanceKey(2L)
               .setElementInstanceKey(record.getKey())
               .setElementId("job-element")
-              .setElementType(WaitStateElementType.SERVICE_TASK)
+              .setElementType(BpmnElementType.SERVICE_TASK)
               .setWaitStateType(WaitStateType.JOB)
               .setDetails(Map.of())
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -55,22 +55,24 @@ class WaitStateTransformerTest {
   @Test
   void shouldDelegateSupportsToConfig() {
     // given
-    final var supported =
+    final Record<JobRecordValue> supported =
         factory.generateRecord(
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.CREATED));
-    final var unsupported =
+    final Record<JobRecordValue> unsupported =
         factory.generateRecord(
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.FAILED));
 
     // when / then
-    assertThat(transformer.supports(supported)).isTrue();
-    assertThat(transformer.supports(unsupported)).isFalse();
+    assertThat(transformer.triggersAdd(supported)).isTrue();
+    assertThat(transformer.triggersRemoval(supported)).isFalse();
+    assertThat(transformer.triggersAdd(unsupported)).isFalse();
+    assertThat(transformer.triggersRemoval(unsupported)).isFalse();
   }
 
   @Test
   void shouldDelegateTriggersAddToConfig() {
     // given
-    final var record =
+    final Record<JobRecordValue> record =
         factory.generateRecord(
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.CREATED));
 
@@ -82,7 +84,7 @@ class WaitStateTransformerTest {
   @Test
   void shouldDelegateTriggersRemovalToConfig() {
     // given
-    final var record =
+    final Record<JobRecordValue> record =
         factory.generateRecord(
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.COMPLETED));
 
@@ -94,17 +96,18 @@ class WaitStateTransformerTest {
   @Test
   void shouldExtractEntryFromRecord() {
     // given
-    final var record =
+    final Record<JobRecordValue> record =
         factory.generateRecord(
             ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.CREATED));
 
     // when
-    final var entry = transformer.extract(record);
+    final var entry = new WaitStateEntry();
+    transformer.extract(record, entry);
 
     // then
     assertThat(entry).isNotNull();
     assertThat(entry.getElementInstanceKey()).isEqualTo(record.getKey());
-    assertThat(entry.getElementType()).isEqualTo(WaitStateElementType.SERVICE_TASK);
+    assertThat(entry.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK);
     assertThat(entry.getWaitStateType()).isEqualTo(WaitStateType.JOB);
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(entry.getPartitionId()).isEqualTo(record.getPartitionId());
