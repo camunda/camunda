@@ -20,9 +20,6 @@ import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,10 +96,10 @@ public class ZeebeIncidentImportService
           if (incident.getIntent() == IncidentIntent.CREATED
               && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {
             incidentForKey.setIncidentStatus(IncidentStatus.OPEN);
-            incidentForKey.setCreateTime(dateForTimestamp(incident));
+            incidentForKey.setCreateTime(dateForTimestamp(incident.getTimestamp()));
           } else if (incident.getIntent() == IncidentIntent.RESOLVED) {
             incidentForKey.setIncidentStatus(IncidentStatus.RESOLVED);
-            incidentForKey.setEndTime(dateForTimestamp(incident));
+            incidentForKey.setEndTime(dateForTimestamp(incident.getTimestamp()));
           }
           updateDurationIfMissing(incidentForKey);
           incidentsByRecordKey.put(recordKey, incidentForKey);
@@ -130,10 +127,5 @@ public class ZeebeIncidentImportService
     incidentDto.setIncidentMessage(incidentDataDto.getErrorMessage());
     incidentDto.setTenantId(incidentDataDto.getTenantId());
     return incidentDto;
-  }
-
-  private OffsetDateTime dateForTimestamp(final ZeebeIncidentRecordDto zeebeRecord) {
-    return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(zeebeRecord.getTimestamp()), ZoneId.systemDefault());
   }
 }
