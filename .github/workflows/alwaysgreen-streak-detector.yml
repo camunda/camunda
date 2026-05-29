@@ -1,0 +1,520 @@
+# description: AlwaysGreen streak detector. Reacts to completion of the
+# main AlwaysGreen pipeline and maintains ONE live Slack message per
+# protected base branch in #alwaysgreen-reliability — same
+# find-and-update pattern as .github/workflows/stale-backport-tracker.yml.
+#
+# Behaviour:
+#   - First failure that crosses STREAK_THRESHOLD on a base ref:
+#     chat.postMessage (medic notified once).
+#   - Every subsequent failed run on the same base while the streak is
+#     active: chat.update on the existing message (silent — Slack does
+#     not re-notify on edits). The streak counter increments in-place.
+#   - First successful run after a streak: chat.update marks the message
+#     as resolved (header + marker text both flip). No new notification.
+#   - Subsequent successful runs find no active message, do nothing.
+#
+# Tracks both `push` and `merge_group` events on protected refs. For
+# merge_group, the parent run's head_branch is a per-PR queue ref
+# (`gh-readonly-queue/<base>/pr-<n>-<suffix>`), so we normalise it to its
+# `<base>` before counting streaks. That way several consecutive failing
+# PR batches against the same `stable/x` line aggregate into one streak
+# rather than each batch starting at zero.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: AlwaysGreen Streak Detector
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Helm Integration Test"]
+    types:
+      - completed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+env:
+  STREAK_THRESHOLD: '3'
+  LOOKBACK_RUNS: '10'
+  ALERT_CHANNEL: 'alwaysgreen-reliability'
+  # conversations.history requires the channel ID; chat.postMessage and
+  # chat.update accept either ID or name. Use the ID for both so they all
+  # operate on the same target. Same value referenced in
+  # docker-build-helm-integration.yml's help-text link.
+  ALERT_CHANNEL_ID: 'C0AK0AVKRL0'
+  PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
+  # Slack subteam handles for medic pings. These are workspace identifiers,
+  # not secrets — same hardcoded convention as
+  # .ci/scripts/ci/setup-medic-lookup.sh.
+  MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
+  MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
+  MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
+  # Marker used in the Slack message text so subsequent runs can find
+  # their own previous message via conversations.history. Includes the
+  # base ref so concurrent streaks on `main` and `stable/x` don't
+  # collide.
+  STREAK_MARKER_ACTIVE: 'AlwaysGreen streak (active)'
+  STREAK_MARKER_RESOLVED: 'AlwaysGreen streak (resolved)'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect-streak:
+    name: Detect failure streak
+    # React to ALL completed `push` and `merge_group` runs (success,
+    # failure, timed_out, cancelled). Failure paths grow the streak;
+    # success paths can RESOLVE an existing live streak message. Without
+    # the success path we'd leave stale ":rotating_light:" alerts in the
+    # channel after a streak heals.
+    if: |
+      github.event.workflow_run.event == 'push' ||
+      github.event.workflow_run.event == 'merge_group'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Import Slack token from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Detect failure streak on this base branch
+        id: streak
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          # Normalise the triggering run's head_branch to its protected
+          # base ref:
+          #   - push to `main` or `stable/x`        → branch stays as-is
+          #   - merge_group queue branch
+          #     (`gh-readonly-queue/<base>/pr-...`) → strip down to <base>
+          # `<base>` matches `main` or `stable/<version>` — that's the
+          # protected ref we want to accumulate streaks against.
+          normalise_branch() {
+            local b="$1"
+            if [[ "$b" =~ ^gh-readonly-queue/(.+)/pr-[0-9]+ ]]; then
+              echo "${BASH_REMATCH[1]}"
+            else
+              echo "$b"
+            fi
+          }
+          BASE_REF=$(normalise_branch "${HEAD_BRANCH}")
+          echo "Normalised base ref: ${BASE_REF} (raw: ${HEAD_BRANCH})"
+
+          # Pull the recent workflow runs. We can't filter by `--branch
+          # ${BASE_REF}` because merge_group runs are stored under the
+          # transient queue ref, not the base; instead we fetch a wider
+          # window and normalise each entry the same way below.
+          RUNS_JSON=$(gh run list \
+            --workflow "${PARENT_WORKFLOW_FILE}" \
+            --limit "${LOOKBACK_RUNS}" \
+            --json conclusion,status,headBranch,event,databaseId,createdAt,url,displayTitle 2>/dev/null || echo '[]')
+
+          # Build a jq regex matching either a literal base ref or the
+          # queue ref shape that normalises to that base. Protected refs
+          # in this workflow are only `main` or `stable/<version>` (e.g.
+          # `stable/8.9`), so the only regex-special character we need to
+          # escape is `.`. Use bash parameter expansion rather than sed
+          # to satisfy SC2001.
+          ESCAPED_BASE="${BASE_REF//./\\.}"
+          BASE_PATTERN="^(${ESCAPED_BASE}|gh-readonly-queue/${ESCAPED_BASE}/pr-[0-9]+)"
+
+          # Filter to completed runs whose head_branch matches the base
+          # (after normalisation), sort newest-first, then count leading
+          # consecutive failures. `failure`, `timed_out`, and `cancelled`
+          # are all treated as a streak hit; this set must stay in sync
+          # with the job-level `if:` condition above.
+          STREAK=$(jq --arg pat "$BASE_PATTERN" '
+            [ .[] | select(.status == "completed")
+                  | select((.headBranch // "") | test($pat)) ]
+            | sort_by(.createdAt) | reverse
+            | (reduce .[] as $r ({count:0, broken:false};
+                if .broken then .
+                elif ($r.conclusion == "failure"
+                      or $r.conclusion == "timed_out"
+                      or $r.conclusion == "cancelled") then
+                  .count = (.count + 1)
+                else
+                  .broken = true
+                end
+              ))
+            | .count
+          ' <<<"$RUNS_JSON")
+          STREAK=${STREAK:-0}
+
+          # `is_streak`: the active streak count meets/exceeds threshold,
+          #              i.e. the latest run is a streak hit and we want
+          #              to maintain a live alert message.
+          # `latest_success`: the triggering run succeeded. Used to detect
+          #              "streak just healed" — i.e. resolve any active
+          #              alert for this base ref.
+          LATEST_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          IS_STREAK=$([[ ${STREAK} -ge ${STREAK_THRESHOLD} ]] && echo true || echo false)
+          LATEST_SUCCESS=$([[ "${LATEST_CONCLUSION}" == "success" ]] && echo true || echo false)
+
+          {
+            echo "streak_count=${STREAK}"
+            echo "threshold=${STREAK_THRESHOLD}"
+            echo "base_ref=${BASE_REF}"
+            echo "is_streak=${IS_STREAK}"
+            echo "latest_success=${LATEST_SUCCESS}"
+            echo "latest_conclusion=${LATEST_CONCLUSION}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Streak count on ${BASE_REF}: ${STREAK} / ${STREAK_THRESHOLD}"
+          echo "$RUNS_JSON" | jq -r --arg pat "$BASE_PATTERN" '
+            [ .[] | select((.headBranch // "") | test($pat)) ]
+            | sort_by(.createdAt) | reverse
+            | "Recent runs on this base:",
+              (.[] | "  - \(.conclusion // .status)  \(.event)  \(.headBranch)  \(.createdAt)  \(.url)")
+          '
+
+      - name: Find existing Slack streak message for this base
+        id: find-message
+        # We only need to look up the existing message when we're either
+        # extending a live streak (failure path) or potentially resolving
+        # one (success path). Below-threshold failures touch nothing.
+        if: |
+          steps.streak.outputs.is_streak == 'true' ||
+          steps.streak.outputs.latest_success == 'true'
+        # Slack's conversations.history requires the channels:history
+        # scope. If the bot lacks it, this step fails — but we want to
+        # degrade gracefully to "post a fresh message" rather than block
+        # the alert entirely, so continue-on-error mirrors the pattern in
+        # .github/workflows/stale-backport-tracker.yml.
+        continue-on-error: true
+        env:
+          SLACK_TOKEN: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          BASE_REF: ${{ steps.streak.outputs.base_ref }}
+        run: |
+          set -euo pipefail
+
+          # Marker is base-ref-scoped so concurrent streaks on `main`
+          # and `stable/x` don't collide on the same Slack thread.
+          ACTIVE_MARKER="${STREAK_MARKER_ACTIVE} on ${BASE_REF}"
+          echo "active_marker=${ACTIVE_MARKER}" >> "$GITHUB_OUTPUT"
+
+          # Look back 100 messages — enough to span a multi-day streak
+          # without paginating. The bot only posts on real streak events
+          # so the channel is sparse.
+          RESPONSE=$(curl -sS -X GET \
+            -H "Authorization: Bearer ${SLACK_TOKEN}" \
+            "https://slack.com/api/conversations.history?channel=${ALERT_CHANNEL_ID}&limit=100")
+
+          OK=$(jq -r '.ok // false' <<<"$RESPONSE")
+          if [[ "$OK" != "true" ]]; then
+            ERR=$(jq -r '.error // "unknown"' <<<"$RESPONSE")
+            echo "conversations.history failed: ${ERR} — will fall back to chat.postMessage"
+            echo "existing_ts=" >> "$GITHUB_OUTPUT"
+            echo "existing_is_resolved=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Find this bot's most recent message whose text still contains
+          # the ACTIVE marker for this base ref. A message that's already
+          # been flipped to STREAK_MARKER_RESOLVED won't match, so a new
+          # streak after a resolution starts fresh (correct: we want
+          # medic re-pinged for the new incident).
+          MATCH=$(jq -c --arg marker "$ACTIVE_MARKER" '
+            [ .messages[]?
+              | select((.text // "") | contains($marker))
+            ] | sort_by(.ts) | reverse | .[0] // null
+          ' <<<"$RESPONSE")
+
+          if [[ "$MATCH" == "null" || -z "$MATCH" ]]; then
+            echo "No active streak message found for ${BASE_REF}"
+            echo "existing_ts=" >> "$GITHUB_OUTPUT"
+          else
+            TS=$(jq -r '.ts' <<<"$MATCH")
+            echo "Found existing active streak message: ts=${TS}"
+            echo "existing_ts=${TS}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Aggregate failure-context artifacts from triggering run
+        id: aggregate-context
+        # Only aggregate when we're about to post or update a failure
+        # alert. The "resolved on success" path doesn't need failure
+        # context — it just flips the marker on the existing message.
+        if: steps.streak.outputs.is_streak == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARENT_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          WORK_DIR="${RUNNER_TEMP}/streak-context"
+          mkdir -p "$WORK_DIR"
+          # Pull every context artifact produced by the parent run:
+          #   - alwaysgreen-failure-context-* (per-job, emitted by each
+          #     stage of the parent workflow)
+          #   - alwaysgreen-saas-category    (downstream SaaS E2E category)
+          # Missing artifacts are tolerated — the message degrades
+          # gracefully if either kind isn't present.
+          gh run download "${PARENT_RUN_ID}" \
+            --pattern 'alwaysgreen-*' \
+            --dir "$WORK_DIR" 2>/dev/null || true
+
+          SUMMARY_JSON="${WORK_DIR}/aggregated.json"
+          shopt -s globstar nullglob
+          json_files=( "${WORK_DIR}"/**/*.json )
+          if (( ${#json_files[@]} > 0 )); then
+            jq -s '.' "${json_files[@]}" > "$SUMMARY_JSON"
+          else
+            echo '[]' > "$SUMMARY_JSON"
+          fi
+          echo "summary_path=$SUMMARY_JSON" >> "$GITHUB_OUTPUT"
+
+          jq -r '
+            if length == 0 then "- (no failure-context artifacts produced)"
+            else map(
+              if .stage and .failure_category and .owner_team then
+                "- *\(.stage)* — `\(.failure_category)` → \(.owner_team)"
+              elif .downstream_category then
+                "- *saas-e2e* — `\(.downstream_category)` → \(.owner_team // "@camunda/test-automation-team")"
+              else empty
+              end
+            ) | unique | join("\n")
+            end
+          ' "$SUMMARY_JSON" > "${WORK_DIR}/stages.md"
+          {
+            echo "stages_markdown<<EOF_STAGES"
+            cat "${WORK_DIR}/stages.md"
+            echo "EOF_STAGES"
+          } >> "$GITHUB_OUTPUT"
+
+          # Build the list of Slack medic mentions to ping. We deduplicate
+          # by team so the same medic isn't pinged multiple times when
+          # several stages failed under the same owner.
+          OWNERS=$(jq -r '
+            [ .[] | (.owner_team // empty) ] | unique | .[]
+          ' "$SUMMARY_JSON")
+
+          mentions=()
+          while IFS= read -r owner; do
+            case "$owner" in
+              "@camunda/test-automation-team")
+                mentions+=("${MEDIC_TEST_AUTOMATION}")
+                ;;
+              "@camunda/distribution")
+                mentions+=("${MEDIC_DISTRIBUTION}")
+                ;;
+              "@camunda/monorepo-devops-team")
+                mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+                ;;
+            esac
+          done <<<"$OWNERS"
+
+          # If no failure context was attributable to a team (e.g. the
+          # parent run died before any job emitted context), default to
+          # pinging the monorepo-devops medic since they own the workflow
+          # plumbing itself.
+          if (( ${#mentions[@]} == 0 )); then
+            mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+          fi
+
+          # Dedup + join with spaces for the Slack message body.
+          medic_pings=$(printf '%s\n' "${mentions[@]}" | awk '!seen[$0]++' | paste -sd ' ' -)
+          echo "medic_pings=${medic_pings}" >> "$GITHUB_OUTPUT"
+          echo "Will ping: ${medic_pings}"
+
+      - name: Upload streak-context artifact
+        if: steps.streak.outputs.is_streak == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: alwaysgreen-streak-context
+          path: ${{ runner.temp }}/streak-context
+          retention-days: 14
+
+      # ----------------------------------------------------------------
+      # Slack message handling — three mutually exclusive paths:
+      #
+      #   1. is_streak && no existing message → chat.postMessage
+      #      (medic NOTIFIED. First crossing of the threshold for this
+      #      base ref since the last resolution.)
+      #
+      #   2. is_streak && existing message    → chat.update
+      #      (medic NOT re-notified — Slack does not emit notifications
+      #      for edits. Live message stays current with the new count
+      #      and the latest failing run link.)
+      #
+      #   3. latest_success && existing message → chat.update with
+      #      resolved marker. (Silent. Marker flips from
+      #      STREAK_MARKER_ACTIVE to STREAK_MARKER_RESOLVED so the next
+      #      streak — if any — starts fresh and re-notifies.)
+      #
+      # When `find-message` failed (missing channels:history scope, API
+      # error), `existing_ts` is empty. The failure path falls through to
+      # path 1 (always post) so we never silently drop alerts. The
+      # success path is a no-op when the bot couldn't look up history,
+      # which is acceptable: a stale active message will simply be
+      # overwritten by the next failure-path update.
+      # ----------------------------------------------------------------
+
+      - name: Post new streak alert to Slack (notifies medic)
+        if: |
+          steps.streak.outputs.is_streak == 'true' &&
+          steps.find-message.outputs.existing_ts == ''
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          method: chat.postMessage
+          token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "${{ env.ALERT_CHANNEL_ID }}"
+            text: ":rotating_light: ${{ env.STREAK_MARKER_ACTIVE }} on ${{ steps.streak.outputs.base_ref }} (${{ steps.streak.outputs.streak_count }} consecutive failures)"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: ":rotating_light: AlwaysGreen streak: ${{ steps.streak.outputs.streak_count }} consecutive failures"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.aggregate-context.outputs.medic_pings }} — please triage."
+              - type: "section"
+                fields:
+                  - type: "mrkdwn"
+                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|${{ env.PARENT_WORKFLOW_FILE }}>"
+                  - type: "mrkdwn"
+                    text: "*Base ref:*\n`${{ steps.streak.outputs.base_ref }}`"
+                  - type: "mrkdwn"
+                    text: "*Latest failing run:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}> (`${{ github.event.workflow_run.event }}` on `${{ github.event.workflow_run.head_branch }}`)"
+                  - type: "mrkdwn"
+                    text: "*Streak threshold:*\n${{ steps.streak.outputs.threshold }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(format('*Stages that emitted context this run:*{0}{1}', '\n', steps.aggregate-context.outputs.stages_markdown)) }}
+              - type: "context"
+                elements:
+                  - type: "mrkdwn"
+                    text: "Routing context is in `alwaysgreen-streak-context` artifact on this run. Full categorisation model: <https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-failure-categories.md|ci-failure-categories.md>"
+
+      - name: Update existing streak alert in Slack (silent edit)
+        if: |
+          steps.streak.outputs.is_streak == 'true' &&
+          steps.find-message.outputs.existing_ts != ''
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          method: chat.update
+          token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "${{ env.ALERT_CHANNEL_ID }}"
+            ts: "${{ steps.find-message.outputs.existing_ts }}"
+            text: ":rotating_light: ${{ env.STREAK_MARKER_ACTIVE }} on ${{ steps.streak.outputs.base_ref }} (${{ steps.streak.outputs.streak_count }} consecutive failures)"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: ":rotating_light: AlwaysGreen streak: ${{ steps.streak.outputs.streak_count }} consecutive failures (ongoing)"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.aggregate-context.outputs.medic_pings }} — still triaging."
+              - type: "section"
+                fields:
+                  - type: "mrkdwn"
+                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|${{ env.PARENT_WORKFLOW_FILE }}>"
+                  - type: "mrkdwn"
+                    text: "*Base ref:*\n`${{ steps.streak.outputs.base_ref }}`"
+                  - type: "mrkdwn"
+                    text: "*Latest failing run:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}> (`${{ github.event.workflow_run.event }}` on `${{ github.event.workflow_run.head_branch }}`)"
+                  - type: "mrkdwn"
+                    text: "*Streak threshold:*\n${{ steps.streak.outputs.threshold }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(format('*Stages that emitted context this run:*{0}{1}', '\n', steps.aggregate-context.outputs.stages_markdown)) }}
+              - type: "context"
+                elements:
+                  - type: "mrkdwn"
+                    text: "Routing context is in `alwaysgreen-streak-context` artifact on this run. Full categorisation model: <https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-failure-categories.md|ci-failure-categories.md>"
+
+      - name: Mark streak as resolved in Slack (silent edit)
+        if: |
+          steps.streak.outputs.latest_success == 'true' &&
+          steps.find-message.outputs.existing_ts != ''
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          method: chat.update
+          token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "${{ env.ALERT_CHANNEL_ID }}"
+            ts: "${{ steps.find-message.outputs.existing_ts }}"
+            text: ":white_check_mark: ${{ env.STREAK_MARKER_RESOLVED }} on ${{ steps.streak.outputs.base_ref }}"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: ":white_check_mark: AlwaysGreen streak resolved"
+              - type: "section"
+                fields:
+                  - type: "mrkdwn"
+                    text: "*Workflow:*\n<https://github.com/${{ github.repository }}/actions/workflows/${{ env.PARENT_WORKFLOW_FILE }}|${{ env.PARENT_WORKFLOW_FILE }}>"
+                  - type: "mrkdwn"
+                    text: "*Base ref:*\n`${{ steps.streak.outputs.base_ref }}`"
+                  - type: "mrkdwn"
+                    text: "*First green run after streak:*\n<${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.id }}> (`${{ github.event.workflow_run.event }}` on `${{ github.event.workflow_run.head_branch }}`)"
+              - type: "context"
+                elements:
+                  - type: "mrkdwn"
+                    text: "If failures resume on this base, a fresh alert will re-notify the medic."
+
+      - name: Add streak summary to job log
+        if: always()
+        env:
+          IS_STREAK: ${{ steps.streak.outputs.is_streak }}
+          LATEST_SUCCESS: ${{ steps.streak.outputs.latest_success }}
+          EXISTING_TS: ${{ steps.find-message.outputs.existing_ts }}
+        run: |
+          {
+            echo "### AlwaysGreen Streak Detector"
+            echo ""
+            echo "- base ref: ${{ steps.streak.outputs.base_ref }}"
+            echo "- raw head_branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "- parent event: ${{ github.event.workflow_run.event }}"
+            echo "- parent conclusion: ${{ steps.streak.outputs.latest_conclusion }}"
+            echo "- parent run: ${{ github.event.workflow_run.html_url }}"
+            echo "- consecutive failures: ${{ steps.streak.outputs.streak_count }} / ${{ steps.streak.outputs.threshold }}"
+            if [[ "${IS_STREAK}" == "true" && -z "${EXISTING_TS}" ]]; then
+              echo "- :rotating_light: posted NEW streak alert to *#${{ env.ALERT_CHANNEL }}* (medic notified)"
+            elif [[ "${IS_STREAK}" == "true" && -n "${EXISTING_TS}" ]]; then
+              echo "- :pencil2: updated existing streak alert (silent edit, ts=${EXISTING_TS})"
+            elif [[ "${LATEST_SUCCESS}" == "true" && -n "${EXISTING_TS}" ]]; then
+              echo "- :white_check_mark: marked streak as resolved on existing message (ts=${EXISTING_TS})"
+            elif [[ "${LATEST_SUCCESS}" == "true" ]]; then
+              echo "- :white_check_mark: run was green; no active streak message to resolve"
+            else
+              echo "- below threshold (${{ steps.streak.outputs.streak_count }} < ${{ steps.streak.outputs.threshold }}) — no Slack action"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # CI Health hook — same observe-build-status action every other
+      # workflow in this repo ends jobs with. Keep this as the final step so
+      # the Monorepo CI Health linter recognises it.
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: alwaysgreen-streak-detector
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
