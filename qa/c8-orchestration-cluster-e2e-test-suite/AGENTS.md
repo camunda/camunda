@@ -424,7 +424,7 @@ If a minimal test-side fix exists, apply it.
 
    ```bash
    gh pr list --repo camunda/camunda \
-     --search "nightly is:open label:failing-test-fix" \
+     --search "is:open label:failing-test-fix" \
      --json number,title,baseRefName,headRefName
    ```
 
