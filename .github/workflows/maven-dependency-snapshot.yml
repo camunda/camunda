@@ -11,6 +11,7 @@ on:
     branches:
       - main
       - stable/**
+      - ci/maven-dependency-snapshot  # temporary: remove before merge
     paths:
       - '**/pom.xml'
       - 'bom/**'
