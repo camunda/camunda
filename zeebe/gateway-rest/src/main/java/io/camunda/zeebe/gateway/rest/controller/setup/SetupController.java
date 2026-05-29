@@ -16,7 +16,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
 import io.camunda.service.RoleServices;
@@ -46,19 +46,19 @@ public class SetupController {
           .formatted(DefaultRole.ADMIN.getId());
   private final UserServices userServices;
   private final RoleServices roleServices;
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties cslProperties,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
     this.userServices = userServices;
     this.roleServices = roleServices;
-    this.securityConfiguration = securityConfiguration;
+    this.cslProperties = cslProperties;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
@@ -66,7 +66,7 @@ public class SetupController {
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
-    if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
+    if (cslProperties.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(

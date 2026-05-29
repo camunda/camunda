@@ -18,7 +18,7 @@ import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
@@ -39,7 +39,8 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = GlobalTaskListenerController.class)
 public class GlobalTaskListenerControllerTest extends RestControllerTest {
 
-  static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   static final String GLOBAL_TASK_LISTENER_URL = "/v2/global-task-listeners";
   static final String GLOBAL_TASK_LISTENER_WITH_ID_URL = GLOBAL_TASK_LISTENER_URL + "/%s";
   static final String GLOBAL_TASK_LISTENER_SEARCH_URL = GLOBAL_TASK_LISTENER_URL + "/search";
@@ -47,14 +48,14 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<GlobalListenerRecord> listenerRecordCaptor;
   @Captor ArgumentCaptor<GlobalListenerQuery> searchQueryCaptor;
   @MockitoBean GlobalListenerServices globalListenerServices;
-  @MockitoBean SecurityConfiguration securityConfiguration;
+  @MockitoBean CamundaSecurityLibraryProperties cslProperties;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test

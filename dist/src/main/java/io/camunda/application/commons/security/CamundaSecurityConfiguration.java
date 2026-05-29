@@ -7,23 +7,21 @@
  */
 package io.camunda.application.commons.security;
 
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import java.util.regex.PatternSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(CamundaSecurityProperties.class)
+@Import(io.camunda.security.spring.CamundaSecurityConfiguration.class)
 public class CamundaSecurityConfiguration {
 
   @VisibleForTesting
@@ -34,36 +32,34 @@ public class CamundaSecurityConfiguration {
   public static final String AUTHORIZATION_CHECKS_ENV_VAR =
       "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
 
-  private final CamundaSecurityProperties camundaSecurityProperties;
+  private final CamundaSecurityLibraryProperties properties;
 
   @Autowired
-  public CamundaSecurityConfiguration(final CamundaSecurityProperties camundaSecurityProperties) {
-    this.camundaSecurityProperties = camundaSecurityProperties;
+  public CamundaSecurityConfiguration(final CamundaSecurityLibraryProperties properties) {
+    this.properties = properties;
   }
 
   @Bean
-  public InitializationConfiguration initializationConfiguration(
-      final SecurityConfiguration securityConfiguration) {
-    return securityConfiguration.getInitialization();
+  public InitializationConfiguration initializationConfiguration() {
+    return properties.getInitialization();
   }
 
   @Bean
-  public MultiTenancyConfiguration multiTenancyConfiguration(
-      final SecurityConfiguration securityConfiguration) {
-    return securityConfiguration.getMultiTenancy();
+  public MultiTenancyConfiguration multiTenancyConfiguration() {
+    return properties.getMultiTenancy();
   }
 
   @Bean
   public IdentifierValidator identifierValidator() {
     return new IdentifierValidator(
-        camundaSecurityProperties.getCompiledIdValidationPattern(),
-        camundaSecurityProperties.getCompiledGroupIdValidationPattern());
+        properties.getCompiledIdValidationPattern(),
+        properties.getCompiledGroupIdValidationPattern());
   }
 
   @PostConstruct
   public void validate() {
-    final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
-    final var apiUnprotected = camundaSecurityProperties.getAuthentication().isUnprotectedApi();
+    final var multiTenancyEnabled = properties.getMultiTenancy().isChecksEnabled();
+    final var apiUnprotected = properties.getAuthentication().isUnprotectedApi();
 
     if (multiTenancyEnabled && apiUnprotected) {
       throw new IllegalStateException(
@@ -75,9 +71,9 @@ public class CamundaSecurityConfiguration {
                   true));
     }
 
-    final var idRegex = camundaSecurityProperties.getIdValidationPattern();
+    final var idRegex = properties.getIdValidationPattern();
     try {
-      final var idPattern = camundaSecurityProperties.getCompiledIdValidationPattern();
+      final var idPattern = properties.getCompiledIdValidationPattern();
       if (idPattern != null && idPattern.matcher(AuthorizationScope.WILDCARD_CHAR).matches()) {
         throw new IllegalStateException(
             "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
@@ -89,7 +85,4 @@ public class CamundaSecurityConfiguration {
               .formatted("camunda.security.id-validation-pattern", idRegex));
     }
   }
-
-  @ConfigurationProperties("camunda.security")
-  public static final class CamundaSecurityProperties extends SecurityConfiguration {}
 }

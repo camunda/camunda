@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +24,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class TenantRequestValidatorTest {
 
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   private static final TenantRequestValidator VALIDATOR =
       new TenantRequestValidator(

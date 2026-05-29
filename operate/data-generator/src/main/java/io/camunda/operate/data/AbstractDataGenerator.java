@@ -14,7 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
-  @Autowired private SecurityConfiguration securityConfiguration;
+  @Autowired private CamundaSecurityLibraryProperties cslProperties;
   private boolean shutdown = false;
 
   @Autowired(required = false)
@@ -168,7 +168,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   protected String getTenant(final String tenantId) {
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
+    if (cslProperties.getMultiTenancy().isChecksEnabled()) {
       return tenantId;
     }
     return DEFAULT_TENANT_ID;

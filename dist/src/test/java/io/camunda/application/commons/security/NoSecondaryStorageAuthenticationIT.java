@@ -18,16 +18,16 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanInstantiationException;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Integration test for authentication behavior in no-database mode. This test validates that the
@@ -93,11 +93,11 @@ public class NoSecondaryStorageAuthenticationIT {
     context.close();
   }
 
-  @Configuration
+  @TestConfiguration
   static class TestOidcAuthConfiguration {
     @Bean
-    public SecurityConfiguration securityConfiguration() {
-      final var config = new SecurityConfiguration();
+    public CamundaSecurityLibraryProperties cslProperties() {
+      final var config = new CamundaSecurityLibraryProperties();
       final var authConfig = new AuthenticationConfiguration();
       final var oidcConfig = new OidcConfiguration();
       oidcConfig.setUsernameClaim("preferred_username");
@@ -111,16 +111,16 @@ public class NoSecondaryStorageAuthenticationIT {
 
     @Bean
     public NoDBMembershipService noDBMembershipService(
-        final SecurityConfiguration securityConfiguration) {
-      return new NoDBMembershipService(securityConfiguration);
+        final CamundaSecurityLibraryProperties cslProperties) {
+      return new NoDBMembershipService(cslProperties);
     }
 
     @Bean
     public LazyTokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
-        final SecurityConfiguration securityConfiguration,
+        final CamundaSecurityLibraryProperties cslProperties,
         final NoDBMembershipService noDBMembershipService) {
       return new LazyTokenClaimsConverter(
-          securityConfiguration.getAuthentication().getOidc(), noDBMembershipService);
+          cslProperties.getAuthentication().getOidc(), noDBMembershipService);
     }
   }
 }

@@ -19,7 +19,7 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
@@ -50,7 +50,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class UserControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(UserController.class)
@@ -59,13 +60,13 @@ public class UserControllerTest {
 
     @MockitoBean private UserServices userServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
 
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -333,7 +334,7 @@ public class UserControllerTest {
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-              .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, USER_BASE_URL));
+              .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, USER_BASE_URL));
       verifyNoInteractions(userServices);
     }
 

@@ -12,26 +12,26 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class PermissionsService {
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
   private final AuthorizationChecker authorizationChecker;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
 
   public PermissionsService(
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties cslProperties,
       final AuthorizationChecker authorizationChecker,
       final ResourceAccessProvider resourceAccessProvider,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.securityConfiguration = securityConfiguration;
+    this.cslProperties = cslProperties;
     this.authorizationChecker = authorizationChecker;
     this.resourceAccessProvider = resourceAccessProvider;
     this.authenticationProvider = authenticationProvider;
@@ -131,7 +131,7 @@ public class PermissionsService {
    * @return true if permissions checks are enabled
    */
   public boolean permissionsEnabled() {
-    return securityConfiguration.getAuthorizations().isEnabled();
+    return cslProperties.getAuthorizations().isEnabled();
   }
 
   private CamundaAuthentication getAuthentication() {

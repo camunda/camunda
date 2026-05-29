@@ -24,7 +24,6 @@ import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -50,32 +49,29 @@ public class DocumentServicesTest {
   private DocumentServices services;
   private final SimpleDocumentStoreRegistry registry = mock(SimpleDocumentStoreRegistry.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
-  private final SecurityConfiguration securityConfiguration = mock(SecurityConfiguration.class);
+  private final AuthorizationsConfiguration authorizationsConfig =
+      new AuthorizationsConfiguration();
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
 
   @BeforeEach
   public void before() {
+    authorizationsConfig.setEnabled(false);
     services =
         new DocumentServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             registry,
             authorizationChecker,
-            securityConfiguration,
+            authorizationsConfig,
             mock(ApiServicesExecutorProvider.class),
             null);
-
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    authorizationConfiguration.setEnabled(false);
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
   }
 
   @Test
   public void createDocumentShouldCompleteExceptionallyWhenAUserHasNoAuthorizations() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Collections.emptySet());
     final var fileMock = mock(DocumentCreateRequest.class);
@@ -90,8 +86,7 @@ public class DocumentServicesTest {
   public void createDocumentShouldCompleteExceptionallyWhenAUserIsNotAuthorizedToCreate() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.READ));
     final var fileMock = mock(DocumentCreateRequest.class);
@@ -106,8 +101,7 @@ public class DocumentServicesTest {
   public void deleteDocumentShouldCompleteExceptionallyWhenAUserIsNotAuthorizedToDelete() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.READ));
 
@@ -122,8 +116,7 @@ public class DocumentServicesTest {
   public void getDocumentShouldCompleteExceptionallyWhenAUserIsNotAuthorizedToRead() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Collections.emptySet());
 
@@ -175,8 +168,7 @@ public class DocumentServicesTest {
   public void shouldDeleteDocumentWhenUserIsAuthorized() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.DELETE));
 
@@ -200,8 +192,7 @@ public class DocumentServicesTest {
   public void shouldCreateADocumentWhenUserIsAuthorized() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.CREATE));
 
@@ -296,8 +287,7 @@ public class DocumentServicesTest {
   public void shouldGetDocumentWhenUserIsAuthorized() {
     // given
     // Authorizations are enabled by default
-    final var authorizationConfiguration = new AuthorizationsConfiguration();
-    when(securityConfiguration.getAuthorizations()).thenReturn(authorizationConfiguration);
+    authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.READ));
 

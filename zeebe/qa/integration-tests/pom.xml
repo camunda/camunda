@@ -161,6 +161,21 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <!-- module uses spring-boot-starter-log4j2; excluding the default starter-logging
+             keeps log4j-core as the sole Log4jProvider and prevents log4j-to-slf4j from
+             returning SLF4JLoggerContext (breaks IdentitySetupOnStartupTest's LoggerContext cast) -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>

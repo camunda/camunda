@@ -11,7 +11,7 @@ import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
 import io.camunda.security.configuration.SaasConfigurationHelper;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
@@ -39,16 +39,16 @@ public class WebappIndexController {
 
   private final WebappConfiguration webappConfiguration;
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties securityProperties;
 
   public WebappIndexController(
       final ServletContext context,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
-      @Autowired(required = false) final SecurityConfiguration securityConfiguration) {
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties) {
     this.context = context;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
-    this.securityConfiguration = securityConfiguration;
+    this.securityProperties = securityProperties;
   }
 
   @GetMapping({"/webapp", "/webapp/", "/webapp/index.html"})
@@ -60,11 +60,9 @@ public class WebappIndexController {
         "mixpanelToken", nullToEmpty(webappConfiguration.getCloud().getMixpanelToken()));
     model.addAttribute(
         "mixpanelApiHost", nullToEmpty(webappConfiguration.getCloud().getMixpanelApiHost()));
-    model.addAttribute(
-        "organizationId",
-        nullToEmpty(SaasConfigurationHelper.organizationId(securityConfiguration)));
-    model.addAttribute(
-        "clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(securityConfiguration)));
+    final var saas = securityProperties != null ? securityProperties.getSaas() : null;
+    model.addAttribute("organizationId", nullToEmpty(SaasConfigurationHelper.organizationId(saas)));
+    model.addAttribute("clusterId", nullToEmpty(SaasConfigurationHelper.clusterId(saas)));
     return "webapp/index";
   }
 

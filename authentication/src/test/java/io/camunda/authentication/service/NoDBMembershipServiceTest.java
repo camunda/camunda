@@ -9,9 +9,9 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -31,13 +31,13 @@ class NoDBMembershipServiceTest {
 
   @Test
   void groupIdsReturnsEmptyWhenNoGroupsClaimConfigured() {
-    final var service = new NoDBMembershipService(new SecurityConfiguration());
+    final var service = new NoDBMembershipService(new CamundaSecurityLibraryProperties());
     assertThat(service.groupIds(query(Map.of("groups", List.of("eng"))))).isEmpty();
   }
 
   @Test
   void allOtherMethodsReturnEmpty() {
-    final var service = new NoDBMembershipService(new SecurityConfiguration());
+    final var service = new NoDBMembershipService(new CamundaSecurityLibraryProperties());
     final var q = query(Map.of());
     assertThat(service.mappingRuleIds(q)).isEmpty();
     assertThat(service.roleIds(q)).isEmpty();
@@ -45,7 +45,7 @@ class NoDBMembershipServiceTest {
   }
 
   private static NoDBMembershipService serviceWithGroupsClaim(final String claim) {
-    final var config = new SecurityConfiguration();
+    final var config = new CamundaSecurityLibraryProperties();
     config.getAuthentication().getOidc().setGroupsClaim(claim);
     return new NoDBMembershipService(config);
   }

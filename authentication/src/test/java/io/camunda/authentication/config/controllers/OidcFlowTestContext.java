@@ -12,14 +12,14 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import java.util.Map;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
 @Configuration
+@EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class OidcFlowTestContext {
 
   @Bean
@@ -82,19 +83,8 @@ public class OidcFlowTestContext {
     return new ObjectMapper();
   }
 
-  /**
-   * So that camunda.security properties can be used in tests; must be prefixed with
-   * 'camunda.security' because this prefix is hardcoded in AuthenticationProperties.
-   */
-  @SuppressWarnings("ConfigurationProperties")
   @Bean
-  @ConfigurationProperties("camunda.security")
-  public SecurityConfiguration createSecurityConfiguration() {
-    return new SecurityConfiguration();
-  }
-
-  @Bean
-  public MembershipPort createMembershipPort(final SecurityConfiguration securityConfiguration) {
-    return new NoDBMembershipService(securityConfiguration);
+  public MembershipPort createMembershipPort(final CamundaSecurityLibraryProperties properties) {
+    return new NoDBMembershipService(properties);
   }
 }

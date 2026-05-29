@@ -21,10 +21,10 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 public class PermissionsServiceTest {
 
-  private SecurityConfiguration mockSecurityConfiguration;
+  private CamundaSecurityLibraryProperties mockCamundaSecurityLibraryProperties;
   private AuthorizationsConfiguration mockAuthorizationsConfiguration;
   private AuthorizationChecker mockAuthorizationChecker;
   private CamundaAuthenticationProvider mockAuthenticationProvider;
@@ -47,13 +47,14 @@ public class PermissionsServiceTest {
 
   @BeforeEach
   public void setUp() {
-    mockSecurityConfiguration = mock(SecurityConfiguration.class);
+    mockCamundaSecurityLibraryProperties = mock(CamundaSecurityLibraryProperties.class);
     mockAuthorizationsConfiguration = mock(AuthorizationsConfiguration.class);
     mockAuthorizationChecker = mock(AuthorizationChecker.class);
     mockAuthenticationProvider = mock(CamundaAuthenticationProvider.class);
     mockResourceAccessProvider = mock(ResourceAccessProvider.class);
 
-    when(mockSecurityConfiguration.getAuthorizations()).thenReturn(mockAuthorizationsConfiguration);
+    when(mockCamundaSecurityLibraryProperties.getAuthorizations())
+        .thenReturn(mockAuthorizationsConfiguration);
     when(mockAuthorizationsConfiguration.isEnabled()).thenReturn(true);
 
     final var camundaUser = mock(CamundaAuthentication.class);
@@ -65,7 +66,7 @@ public class PermissionsServiceTest {
 
     permissionsService =
         new PermissionsService(
-            mockSecurityConfiguration,
+            mockCamundaSecurityLibraryProperties,
             mockAuthorizationChecker,
             mockResourceAccessProvider,
             mockAuthenticationProvider);

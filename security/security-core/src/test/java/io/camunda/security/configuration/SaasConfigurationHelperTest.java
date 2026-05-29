@@ -33,79 +33,68 @@ class SaasConfigurationHelperTest {
   }
 
   @Test
-  void shouldReturnNullOrganizationIdWhenSaasIsNull() {
+  void shouldReturnNullOrganizationIdWhenOrganizationIdNotSet() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
-    config.setSaas(null);
+    final SaasConfiguration saas = new SaasConfiguration();
 
     // when / then
-    assertThat(SaasConfigurationHelper.organizationId(config)).isNull();
+    assertThat(SaasConfigurationHelper.organizationId(saas)).isNull();
   }
 
   @Test
-  void shouldReturnNullClusterIdWhenSaasIsNull() {
+  void shouldReturnNullClusterIdWhenClusterIdNotSet() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
-    config.setSaas(null);
+    final SaasConfiguration saas = new SaasConfiguration();
 
     // when / then
-    assertThat(SaasConfigurationHelper.clusterId(config)).isNull();
+    assertThat(SaasConfigurationHelper.clusterId(saas)).isNull();
   }
 
   @Test
-  void shouldReturnNotSaasWhenSaasIsNull() {
+  void shouldReturnNotSaasWhenClusterIdNotSet() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
-    config.setSaas(null);
+    final SaasConfiguration saas = new SaasConfiguration();
 
     // when / then
-    assertThat(SaasConfigurationHelper.isSaas(config)).isFalse();
+    assertThat(SaasConfigurationHelper.isSaas(saas)).isFalse();
   }
 
   @Test
   void shouldReturnOrganizationId() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
     final SaasConfiguration saas = new SaasConfiguration();
     saas.setOrganizationId("org-123");
-    config.setSaas(saas);
 
     // when / then
-    assertThat(SaasConfigurationHelper.organizationId(config)).isEqualTo("org-123");
+    assertThat(SaasConfigurationHelper.organizationId(saas)).isEqualTo("org-123");
   }
 
   @Test
   void shouldReturnClusterId() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
     final SaasConfiguration saas = new SaasConfiguration();
     saas.setClusterId("cluster-456");
-    config.setSaas(saas);
 
     // when / then
-    assertThat(SaasConfigurationHelper.clusterId(config)).isEqualTo("cluster-456");
+    assertThat(SaasConfigurationHelper.clusterId(saas)).isEqualTo("cluster-456");
   }
 
   @Test
   void shouldReturnIsSaasWhenClusterIdPresent() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
     final SaasConfiguration saas = new SaasConfiguration();
     saas.setClusterId("cluster-456");
-    config.setSaas(saas);
 
     // when / then
-    assertThat(SaasConfigurationHelper.isSaas(config)).isTrue();
+    assertThat(SaasConfigurationHelper.isSaas(saas)).isTrue();
   }
 
   @Test
   void shouldReturnNotSaasWhenClusterIdAbsent() {
     // given
-    final SecurityConfiguration config = new SecurityConfiguration();
     final SaasConfiguration saas = new SaasConfiguration();
-    config.setSaas(saas);
 
     // when / then
-    assertThat(SaasConfigurationHelper.isSaas(config)).isFalse();
+    assertThat(SaasConfigurationHelper.isSaas(saas)).isFalse();
   }
 }

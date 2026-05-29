@@ -9,8 +9,8 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -22,14 +22,14 @@ public class OidcAuthenticationConfigurationRepository implements OidcProviderCo
   private final Map<String, OidcConfiguration> providers;
 
   public OidcAuthenticationConfigurationRepository(
-      final SecurityConfiguration securityConfiguration) {
-    providers = initializeProviders(securityConfiguration);
+      final CamundaSecurityLibraryProperties cslProperties) {
+    providers = initializeProviders(cslProperties);
   }
 
   protected Map<String, OidcConfiguration> initializeProviders(
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties cslProperties) {
     final var providers = new HashMap<String, OidcConfiguration>();
-    final var authenticationConfiguration = securityConfiguration.getAuthentication();
+    final var authenticationConfiguration = cslProperties.getAuthentication();
 
     Optional.ofNullable(authenticationConfiguration.getOidc())
         .filter(c -> Objects.nonNull(c.getClientId()) && !c.getClientId().isBlank())

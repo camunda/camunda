@@ -8,7 +8,7 @@
 package io.camunda.authentication.config.controllers;
 
 import io.camunda.authentication.service.DefaultMembershipService;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -33,8 +33,8 @@ public class WebSecurityOidcTestContext {
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final SecurityConfiguration securityConfiguration) {
+      final CamundaSecurityLibraryProperties cslProperties) {
     return new DefaultMembershipService(
-        mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
+        mappingRuleServices, tenantServices, roleServices, groupServices, cslProperties);
   }
 }

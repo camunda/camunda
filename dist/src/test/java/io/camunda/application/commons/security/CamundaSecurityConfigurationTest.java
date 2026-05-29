@@ -9,11 +9,14 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.commons.CommonsModuleConfiguration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 public class CamundaSecurityConfigurationTest {
 
@@ -26,6 +29,13 @@ public class CamundaSecurityConfigurationTest {
     System.setProperty(apiProperty, "true");
   }
 
+  @AfterEach
+  void tearDown() {
+    System.clearProperty("camunda.security.multiTenancy.checksEnabled");
+    System.clearProperty("camunda.security.authentication.unprotected-api");
+    System.clearProperty("camunda.security.id-validation-pattern");
+  }
+
   @Test
   public void whenMultiTenancyEnabledAndApiUnprotectedThenFailsToStart() {
     final var mtProperty = "camunda.security.multiTenancy.checksEnabled";
@@ -35,7 +45,8 @@ public class CamundaSecurityConfigurationTest {
 
     assertThatThrownBy(
             () -> {
-              final SpringApplication app = new SpringApplication(CommonsModuleConfiguration.class);
+              final SpringApplication app = new SpringApplication(TestConfig.class);
+              app.setWebApplicationType(WebApplicationType.NONE);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -54,15 +65,14 @@ public class CamundaSecurityConfigurationTest {
 
     assertThatThrownBy(
             () -> {
-              final SpringApplication app = new SpringApplication(CommonsModuleConfiguration.class);
+              final SpringApplication app = new SpringApplication(TestConfig.class);
+              app.setWebApplicationType(WebApplicationType.NONE);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
         .cause()
         .isInstanceOf(IllegalStateException.class)
-        .hasMessage(
-            "The configured identifier pattern (%s=%s) is invalid. Please use a different pattern."
-                .formatted(idPatternProperty, idPatternValue));
+        .hasMessage("Invalid regex for %s: %s".formatted(idPatternProperty, idPatternValue));
   }
 
   @Test
@@ -73,7 +83,8 @@ public class CamundaSecurityConfigurationTest {
 
     assertThatThrownBy(
             () -> {
-              final SpringApplication app = new SpringApplication(CommonsModuleConfiguration.class);
+              final SpringApplication app = new SpringApplication(TestConfig.class);
+              app.setWebApplicationType(WebApplicationType.NONE);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -83,4 +94,8 @@ public class CamundaSecurityConfigurationTest {
             "The configured identifier pattern (%s=%s) allows the asterisk ('*') which is a reserved character. Please use a different pattern."
                 .formatted(idPatternProperty, idPatternValue));
   }
+
+  @Configuration
+  @Import(CamundaSecurityConfiguration.class)
+  static class TestConfig {}
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
+import static io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_EXTERNAL_ID_PATTERN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -19,7 +19,7 @@ import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -53,7 +53,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class RoleControllerTest {
 
   static final String ROLE_BASE_URL = "/v2/roles";
-  static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(RoleController.class)
@@ -265,7 +266,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, ROLE_BASE_URL),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, ROLE_BASE_URL),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -575,7 +576,7 @@ public class RoleControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -606,7 +607,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -780,7 +781,7 @@ public class RoleControllerTest {
                 "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -811,7 +812,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -924,7 +925,7 @@ public class RoleControllerTest {
                   "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -954,7 +955,7 @@ public class RoleControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1068,7 +1069,7 @@ public class RoleControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1099,7 +1100,7 @@ public class RoleControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1212,7 +1213,7 @@ public class RoleControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1242,7 +1243,7 @@ public class RoleControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
+                  .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(roleServices);
     }
@@ -1266,7 +1267,7 @@ public class RoleControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldAssignExternalGroupToRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
@@ -1293,7 +1294,7 @@ public class RoleControllerTest {
 
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
+     * not match the default regex {@link CamundaSecurityLibraryProperties#DEFAULT_ID_REGEX}
      */
     @Test
     void shouldUnassignExternalGroupFromRoleAndReturnNoContentWhenGroupsAreExternallyManaged() {
@@ -1323,7 +1324,7 @@ public class RoleControllerTest {
       @Bean
       @Primary
       public IdentifierValidator byogIdentifierValidator() {
-        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_PATTERN);
       }
     }
   }

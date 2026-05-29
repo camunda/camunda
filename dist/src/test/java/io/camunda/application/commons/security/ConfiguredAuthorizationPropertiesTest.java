@@ -9,11 +9,11 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.security.api.model.authz.AuthorizationOwnerType;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.initialization.ConfiguredAuthorization;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Import;
     properties = "spring.config.location=classpath:properties/application-authorization-props.yaml")
 class ConfiguredAuthorizationPropertiesTest {
 
-  @Autowired private CamundaSecurityProperties securityProperties;
+  @Autowired private CamundaSecurityLibraryProperties securityProperties;
 
   @Test
   void shouldLoadAuthorizationsFromYaml() {

@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -39,14 +39,14 @@ public class AdminClientConfigController {
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
 
-  public AdminClientConfigController(final SecurityConfiguration securityConfiguration) {
+  public AdminClientConfigController(final CamundaSecurityLibraryProperties cslProperties) {
     objectMapper = new ObjectMapper();
-    clientConfigAsJS = generateClientConfig(securityConfiguration);
+    clientConfigAsJS = generateClientConfig(cslProperties);
   }
 
-  private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
+  private String generateClientConfig(final CamundaSecurityLibraryProperties cslProperties) {
     try {
-      final Map<String, Object> config = createConfigMap(securityConfiguration);
+      final Map<String, Object> config = createConfigMap(cslProperties);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -55,31 +55,30 @@ public class AdminClientConfigController {
     }
   }
 
-  private Map<String, Object> createConfigMap(final SecurityConfiguration securityConfiguration) {
+  private Map<String, Object> createConfigMap(
+      final CamundaSecurityLibraryProperties cslProperties) {
     final var config = new java.util.HashMap<String, Object>();
-    final var saasConfiguration = securityConfiguration.getSaas();
+    final var saasConfiguration = cslProperties.getSaas();
 
-    config.put(IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)));
+    config.put(IS_OIDC, String.valueOf(isOidcAuthentication(cslProperties)));
+    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(cslProperties)));
     config.put(
-        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)));
-    config.put(
-        IS_TENANTS_API_ENABLED,
-        String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
+        IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
-    config.put(ID_PATTERN, securityConfiguration.getIdValidationPattern());
+    config.put(ID_PATTERN, cslProperties.getIdValidationPattern());
     config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
     config.put(DEFAULT_ROLE_IDS, DefaultRole.ids());
 
     return config;
   }
 
-  private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {
-    return AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
+  private boolean isOidcAuthentication(final CamundaSecurityLibraryProperties cslProperties) {
+    return AuthenticationMethod.OIDC.equals(cslProperties.getAuthentication().getMethod());
   }
 
-  private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
-    final var authentication = securityConfiguration.getAuthentication();
+  private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
+    final var authentication = cslProperties.getAuthentication();
     final var oidcConfig = authentication.getOidc();
     return oidcConfig == null
         || oidcConfig.getGroupsClaim() == null

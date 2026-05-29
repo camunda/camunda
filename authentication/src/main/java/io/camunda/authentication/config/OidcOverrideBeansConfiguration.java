@@ -13,12 +13,12 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.oidc.OidcUserInfoClient;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
@@ -100,15 +100,15 @@ public class OidcOverrideBeansConfiguration {
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
 
-  public OidcOverrideBeansConfiguration(final SecurityConfiguration securityConfiguration) {
-    this.securityConfiguration = securityConfiguration;
+  public OidcOverrideBeansConfiguration(final CamundaSecurityLibraryProperties cslProperties) {
+    this.cslProperties = cslProperties;
   }
 
   @PostConstruct
   public void verifyOidcConfiguration() {
-    final List<ConfiguredUser> users = securityConfiguration.getInitialization().getUsers();
+    final List<ConfiguredUser> users = cslProperties.getInitialization().getUsers();
     if (users != null && !users.isEmpty()) {
       throw new IllegalStateException(
           "Creation of initial users is not supported with `OIDC` authentication method");
@@ -117,9 +117,9 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public LazyTokenClaimsConverter tokenClaimsConverter(
-      final SecurityConfiguration securityConfiguration, final MembershipPort membershipPort) {
+      final CamundaSecurityLibraryProperties cslProperties, final MembershipPort membershipPort) {
     return new LazyTokenClaimsConverter(
-        securityConfiguration.getAuthentication().getOidc(), membershipPort);
+        cslProperties.getAuthentication().getOidc(), membershipPort);
   }
 
   @Bean
@@ -189,12 +189,12 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   @ConditionalOnMissingBean(OidcClaimsProvider.class)
   public OidcClaimsProvider oidcClaimsProvider(
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties cslProperties,
       final ClientRegistrationRepository clientRegistrationRepository,
       final OidcAuthenticationConfigurationRepository oidcProviderRepository,
       @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
       final MeterRegistry meterRegistry) {
-    final var oidc = securityConfiguration.getAuthentication().getOidc();
+    final var oidc = cslProperties.getAuthentication().getOidc();
     if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
       return new NoopOidcClaimsProvider();
     }
@@ -245,8 +245,8 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public OidcAuthenticationConfigurationRepository oidcProviderRepository(
-      final SecurityConfiguration securityConfiguration) {
-    return new OidcAuthenticationConfigurationRepository(securityConfiguration);
+      final CamundaSecurityLibraryProperties cslProperties) {
+    return new OidcAuthenticationConfigurationRepository(cslProperties);
   }
 
   private List<ClientRegistration> extractClientRegistrations(
@@ -265,19 +265,18 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
-      final SecurityConfiguration securityConfiguration,
+      final CamundaSecurityLibraryProperties cslProperties,
       final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
-    if (securityConfiguration.getSaas().isConfigured()) {
-      extraValidators.add(
-          new OrganizationValidator(securityConfiguration.getSaas().getOrganizationId()));
-      extraValidators.add(new ClusterValidator(securityConfiguration.getSaas().getClusterId()));
+    if (cslProperties.getSaas().isConfigured()) {
+      extraValidators.add(new OrganizationValidator(cslProperties.getSaas().getOrganizationId()));
+      extraValidators.add(new ClusterValidator(cslProperties.getSaas().getClusterId()));
     }
     return new TokenValidatorFactory(
         oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations(),
-        securityConfiguration.getAuthentication().getOidc().getClockSkew(),
+        cslProperties.getAuthentication().getOidc().getClockSkew(),
         extraValidators);
   }
 

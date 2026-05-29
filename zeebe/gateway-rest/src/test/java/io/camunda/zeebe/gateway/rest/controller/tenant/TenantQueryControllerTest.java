@@ -28,7 +28,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -53,7 +53,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
-  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  private static final Pattern ID_PATTERN =
+      Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
@@ -225,13 +226,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
 
   @BeforeEach
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test

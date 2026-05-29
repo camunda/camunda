@@ -23,7 +23,7 @@ import io.camunda.gateway.protocol.model.WebappComponent;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SaasConfigurationHelper;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -46,7 +46,7 @@ public class SystemController {
   private final UsageMetricsServices usageMetricsServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
 
@@ -54,13 +54,13 @@ public class SystemController {
       final UsageMetricsServices usageMetricsServices,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
-      @Autowired(required = false) final SecurityConfiguration securityConfiguration,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
     this.usageMetricsServices = usageMetricsServices;
     this.authenticationProvider = authenticationProvider;
     this.gatewayRestConfiguration = gatewayRestConfiguration;
-    this.securityConfiguration = securityConfiguration;
+    this.cslProperties = cslProperties;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
@@ -112,9 +112,9 @@ public class SystemController {
 
   private DeploymentConfigurationResponse buildDeploymentConfiguration() {
     final boolean isMultiTenancyEnabled =
-        securityConfiguration != null
-            && securityConfiguration.getMultiTenancy() != null
-            && securityConfiguration.getMultiTenancy().isChecksEnabled();
+        cslProperties != null
+            && cslProperties.getMultiTenancy() != null
+            && cslProperties.getMultiTenancy().isChecksEnabled();
 
     return DeploymentConfigurationResponse.Builder.create()
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
@@ -123,7 +123,8 @@ public class SystemController {
   }
 
   private AuthenticationConfigurationResponse buildAuthenticationConfiguration() {
-    final boolean canLogout = !SaasConfigurationHelper.isSaas(securityConfiguration);
+    final boolean canLogout =
+        !SaasConfigurationHelper.isSaas(cslProperties != null ? cslProperties.getSaas() : null);
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)

@@ -12,8 +12,8 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.port.out.MembershipPort;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.LazyUsernamePasswordAuthenticationTokenConverter;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -35,27 +35,28 @@ import org.springframework.security.core.Authentication;
 @ConditionalOnSecondaryStorageEnabled
 public class BasicAuthBeansConfiguration {
 
-  private final SecurityConfiguration securityConfiguration;
+  private final CamundaSecurityLibraryProperties cslProperties;
 
-  public BasicAuthBeansConfiguration(final SecurityConfiguration securityConfiguration) {
-    this.securityConfiguration = securityConfiguration;
+  public BasicAuthBeansConfiguration(final CamundaSecurityLibraryProperties cslProperties) {
+    this.cslProperties = cslProperties;
   }
 
   @PostConstruct
   public void verifyBasicConfiguration() {
-    if (isOidcConfigurationEnabled(securityConfiguration)) {
+    if (isOidcConfigurationEnabled(cslProperties)) {
       throw new IllegalStateException(
           "Oidc configuration is not supported with `BASIC` authentication method");
     }
   }
 
-  protected boolean isOidcConfigurationEnabled(final SecurityConfiguration securityConfiguration) {
-    final var oidc = securityConfiguration.getAuthentication().getOidc();
+  protected boolean isOidcConfigurationEnabled(
+      final CamundaSecurityLibraryProperties cslProperties) {
+    final var oidc = cslProperties.getAuthentication().getOidc();
     if (oidc != null && oidc.isAnyPropertySet()) {
       return true;
     }
 
-    return Optional.ofNullable(securityConfiguration.getAuthentication())
+    return Optional.ofNullable(cslProperties.getAuthentication())
         .map(AuthenticationConfiguration::getProviders)
         .map(OidcProvidersConfiguration::getOidc)
         .map(Map::values)
