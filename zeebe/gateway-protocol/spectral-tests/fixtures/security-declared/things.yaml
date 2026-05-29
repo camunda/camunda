@@ -12,26 +12,26 @@ paths:
     get:
       operationId: getValidBoth
       summary: Both schemes declared
-      description: Canonical OR-pattern across BearerAuth and basicAuth.
+      description: Canonical OR-pattern across bearerAuth and basicAuth.
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: []
+        - bearerAuth: []
         - basicAuth: []
       responses:
         '200':
           description: OK
 
-  # ── Valid: BearerAuth only (e.g. getAuthentication today) ─────
+  # ── Valid: bearerAuth only (e.g. getAuthentication today) ─────
   /valid/bearer-only:
     get:
       operationId: getValidBearerOnly
-      summary: BearerAuth only
+      summary: bearerAuth only
       description: Single-scheme operation.
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: OK
@@ -80,7 +80,7 @@ paths:
     get:
       operationId: getInvalidUnknownScheme
       summary: Unknown scheme
-      description: Uses a scheme name that is not BearerAuth or basicAuth.
+      description: Uses a scheme name that is not bearerAuth or basicAuth.
       x-added-in-version: "8.8"
       tags: [Test]
       security:
@@ -94,11 +94,11 @@ paths:
     get:
       operationId: getInvalidNonEmptyScopes
       summary: Non-empty scopes
-      description: BearerAuth/basicAuth do not use OAuth scopes.
+      description: bearerAuth/basicAuth do not use OAuth scopes.
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: [read:thing]
+        - bearerAuth: [read:thing]
       responses:
         '200':
           description: OK
@@ -126,7 +126,7 @@ paths:
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: []
+        - bearerAuth: []
           basicAuth: []
       responses:
         '200':
@@ -141,8 +141,8 @@ paths:
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: []
-        - BearerAuth: []
+        - bearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: OK
@@ -156,7 +156,7 @@ paths:
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        BearerAuth: []
+        bearerAuth: []
       responses:
         '200':
           description: OK
@@ -170,7 +170,7 @@ paths:
       x-added-in-version: "8.8"
       tags: [Test]
       security:
-        - BearerAuth: "not-an-array"
+        - bearerAuth: "not-an-array"
       responses:
         '200':
           description: OK

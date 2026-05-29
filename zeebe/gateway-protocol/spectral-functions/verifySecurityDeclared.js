@@ -13,10 +13,10 @@
 //      /license).
 //
 //   2. A list whose entries each select one of the two conditionally-enforced
-//      security schemes (`BearerAuth`, `basicAuth`) with empty scopes:
+//      security schemes (`bearerAuth`, `basicAuth`) with empty scopes:
 //
 //        security:
-//          - BearerAuth: []
+//          - bearerAuth: []
 //          - basicAuth: []
 //
 //      Each entry must reference exactly one scheme. Schemes other than the
@@ -28,7 +28,7 @@
 // delete).
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
-const ALLOWED_SCHEMES = new Set(['BearerAuth', 'basicAuth']);
+const ALLOWED_SCHEMES = new Set(['bearerAuth', 'basicAuth']);
 
 module.exports = (input, _opts, context) => {
   const errors = [];
@@ -54,7 +54,7 @@ module.exports = (input, _opts, context) => {
         `Operation ${location} is missing \`security:\`. Every operation must ` +
         `declare its security modes — either \`security: []\` for a publicly ` +
         `unauthenticated endpoint, or a list of conditionally-enforced schemes ` +
-        `(\`BearerAuth\` and/or \`basicAuth\`).`,
+        `(\`bearerAuth\` and/or \`basicAuth\`).`,
       path: [...context.path],
     });
     return errors;
@@ -119,7 +119,7 @@ module.exports = (input, _opts, context) => {
         message:
           `Operation ${location} \`security[${i}]\` references unknown scheme ` +
           `\`${schemeName}\`. Only the conditionally-enforced schemes ` +
-          `\`BearerAuth\` and \`basicAuth\` are accepted.`,
+          `\`bearerAuth\` and \`basicAuth\` are accepted.`,
         path: [...entryPath, schemeName],
       });
       continue;
@@ -131,7 +131,7 @@ module.exports = (input, _opts, context) => {
       errors.push({
         message:
           `Operation ${location} \`security[${i}].${schemeName}\` must be an array ` +
-          `(scopes). For \`BearerAuth\`/\`basicAuth\`, this array must be empty.`,
+          `(scopes). For \`bearerAuth\`/\`basicAuth\`, this array must be empty.`,
         path: [...entryPath, schemeName],
       });
       continue;
@@ -141,7 +141,7 @@ module.exports = (input, _opts, context) => {
       errors.push({
         message:
           `Operation ${location} \`security[${i}].${schemeName}\` must declare an ` +
-          `empty scopes array — \`BearerAuth\` and \`basicAuth\` do not use OAuth ` +
+          `empty scopes array — \`bearerAuth\` and \`basicAuth\` do not use OAuth ` +
           `scopes.`,
         path: [...entryPath, schemeName],
       });

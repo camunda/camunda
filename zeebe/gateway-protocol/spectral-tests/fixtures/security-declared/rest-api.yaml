@@ -1,7 +1,7 @@
 # Entry point for require-security-declared rule tests.
 # Mirrors the real spec structure: paths $ref to a domain file, and the
 # securitySchemes are declared at the top level so $ref resolution can see
-# both BearerAuth and basicAuth.
+# both bearerAuth and basicAuth.
 openapi: "3.0.3"
 info:
   title: Test Fixture — require-security-declared
@@ -50,7 +50,7 @@ paths:
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT

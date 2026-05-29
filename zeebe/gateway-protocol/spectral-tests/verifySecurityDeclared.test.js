@@ -21,11 +21,11 @@ describe('verifySecurityDeclared', () => {
   // ── Valid cases (should produce zero violations) ─────────────────
 
   describe('valid: operation declares accepted security shapes', () => {
-    it('produces no violations for both schemes (BearerAuth + basicAuth)', () => {
+    it('produces no violations for both schemes (bearerAuth + basicAuth)', () => {
       assert.equal(violationsFor('getValidBoth').length, 0);
     });
 
-    it('produces no violations for BearerAuth only', () => {
+    it('produces no violations for bearerAuth only', () => {
       assert.equal(violationsFor('getValidBearerOnly').length, 0);
     });
 
@@ -49,7 +49,7 @@ describe('verifySecurityDeclared', () => {
   });
 
   describe('invalid: unknown scheme reference', () => {
-    it('flags operation referencing scheme other than BearerAuth/basicAuth', () => {
+    it('flags operation referencing scheme other than bearerAuth/basicAuth', () => {
       const v = violationsFor('getInvalidUnknownScheme');
       assert.equal(v.length, 1);
       assert.match(v[0].message, /unknown scheme `OAuth2`/);
@@ -57,7 +57,7 @@ describe('verifySecurityDeclared', () => {
   });
 
   describe('invalid: non-empty scopes', () => {
-    it('flags BearerAuth/basicAuth entry with scope values', () => {
+    it('flags bearerAuth/basicAuth entry with scope values', () => {
       const v = violationsFor('getInvalidNonEmptyScopes');
       assert.equal(v.length, 1);
       assert.match(v[0].message, /empty scopes array/);
