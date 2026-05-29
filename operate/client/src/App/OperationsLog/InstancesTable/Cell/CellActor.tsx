@@ -32,9 +32,18 @@ const CellActor: React.FC<Props> = ({item}) => {
     return (
       <AuthorTooltip>
         <span>{label}</span>
-        <TooltipCodeSnippet wrapText>
-          {actor === 'AGENT' ? item.agentElementId : item.actorId}
-        </TooltipCodeSnippet>
+        {actor === 'AGENT' ? (
+          <>
+            {item.agentToolName && (
+              <TooltipCodeSnippet wrapText>{item.agentToolName}</TooltipCodeSnippet>
+            )}
+            {item.agentElementId && (
+              <TooltipCodeSnippet wrapText>{item.agentElementId}</TooltipCodeSnippet>
+            )}
+          </>
+        ) : (
+          <TooltipCodeSnippet wrapText>{item.actorId}</TooltipCodeSnippet>
+        )}
       </AuthorTooltip>
     );
   };
@@ -49,7 +58,7 @@ const CellActor: React.FC<Props> = ({item}) => {
           <ActorIcon />
         </Tooltip>
       )}
-      {item.agentElementId && (
+      {(item.agentToolName || item.agentElementId) && (
         <Tooltip
           align="bottom-start"
           description={getTooltipActorContent('AGENT')}

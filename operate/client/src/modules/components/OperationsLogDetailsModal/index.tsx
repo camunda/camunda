@@ -128,12 +128,19 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                   </CodeSnippet>
                 </IconText>
               )}
-              {auditLog.agentElementId && (
+              {(auditLog.agentToolName || auditLog.agentElementId) && (
                 <IconTextWithTopMargin>
                   <AiAgentIcon />
-                  <CodeSnippet type="inline" wrapText>
-                    {auditLog.agentElementId}
-                  </CodeSnippet>
+                  {auditLog.agentToolName && (
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.agentToolName}
+                    </CodeSnippet>
+                  )}
+                  {auditLog.agentElementId && (
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.agentElementId}
+                    </CodeSnippet>
+                  )}
                 </IconTextWithTopMargin>
               )}
             </SecondColumn>

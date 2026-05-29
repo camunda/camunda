@@ -111,6 +111,7 @@ describe('OperationsLogTab', () => {
           userTaskKey: null,
           formKey: null,
           agentElementId: null,
+          agentToolName: null,
         },
       ],
       page: {

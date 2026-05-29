@@ -43,6 +43,7 @@ const baseAuditLog: AuditLog = {
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
+  agentToolName: null,
 };
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
@@ -119,5 +120,64 @@ describe('DetailsModal', () => {
     });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/batch-operations/999');
+  });
+
+  it('renders agentToolName and agentElementId in actor section for process instance CREATE', () => {
+    const createAuditLog: AuditLog = {
+      ...baseAuditLog,
+      entityType: 'PROCESS_INSTANCE',
+      operationType: 'CREATE',
+      agentToolName: 'start-process',
+      agentElementId: 'agent-element-42',
+    };
+
+    render(
+      <DetailsModal isOpen onClose={() => {}} auditLog={createAuditLog} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByText('start-process')).toBeInTheDocument();
+    expect(screen.getByText('agent-element-42')).toBeInTheDocument();
+    expect(screen.queryByText('Details:')).not.toBeInTheDocument();
+  });
+
+  it('renders only agentToolName in actor section for process instance CREATE when agentElementId is absent', () => {
+    const createAuditLog: AuditLog = {
+      ...baseAuditLog,
+      entityType: 'PROCESS_INSTANCE',
+      operationType: 'CREATE',
+      agentToolName: 'start-process',
+    };
+
+    render(
+      <DetailsModal isOpen onClose={() => {}} auditLog={createAuditLog} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByText('start-process')).toBeInTheDocument();
+    expect(screen.queryByText('agent-element-42')).not.toBeInTheDocument();
+    expect(screen.queryByText('Details:')).not.toBeInTheDocument();
+  });
+
+  it('renders no agent info in actor section for process instance CREATE when neither field is set', () => {
+    const createAuditLog: AuditLog = {
+      ...baseAuditLog,
+      entityType: 'PROCESS_INSTANCE',
+      operationType: 'CREATE',
+    };
+
+    render(
+      <DetailsModal isOpen onClose={() => {}} auditLog={createAuditLog} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.queryByText('Details:')).not.toBeInTheDocument();
+    expect(screen.queryByText('start-process')).not.toBeInTheDocument();
   });
 });
