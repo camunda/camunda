@@ -52,6 +52,9 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> ELEMENT_ID =
       AttributeKey.stringKey("camunda.element.id");
 
+  // Metric names
+  public static final String METRIC_PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
+
   // Event names
   public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";
   public static final String EVENT_ADHOC_SUBPROCESS_ACTIVATED = "adhoc_subprocess_activated";
