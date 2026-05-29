@@ -2079,7 +2079,6 @@ public final class TestHelper {
   }
 
   /**
-<<<<<<< HEAD
    * Waits for an agent instance to be indexed in secondary storage after creation.
    *
    * @param camundaClient CamundaClient

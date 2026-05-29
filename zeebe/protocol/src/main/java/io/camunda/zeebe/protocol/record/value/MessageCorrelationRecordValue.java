@@ -64,5 +64,4 @@ public interface MessageCorrelationRecordValue
    * @since 8.10
    */
   String getBusinessId();
-
 }

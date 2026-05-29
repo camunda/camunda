@@ -40,6 +40,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
