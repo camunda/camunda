@@ -5,7 +5,7 @@
 #              triggers the matching on-demand workflow(s) and patches the PR body with
 #              the run URL(s) for verification.
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: C8 Orchestration Cluster Nightly Fix Agent
 

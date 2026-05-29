@@ -5,7 +5,7 @@
 #              one fix-agent run per version. Skips dispatch when an open failing-test-fix
 #              PR already exists for the same base branch.
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: C8 Orchestration Cluster Nightly Triage
 
