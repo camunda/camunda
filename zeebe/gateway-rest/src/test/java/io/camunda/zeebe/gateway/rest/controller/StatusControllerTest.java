@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
@@ -31,7 +32,7 @@ class StatusControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(serviceRegistry.topologyServices()).thenReturn(topologyServices);
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
   }
 
   @Test

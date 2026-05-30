@@ -48,115 +48,42 @@ import java.util.Map;
  * tenant-scoped service type plus direct references for the cluster-wide services. All maps are
  * populated once at startup (see {@code CamundaServicesConfiguration#serviceRegistry}).
  */
-public final class DefaultServiceRegistry implements ServiceRegistry {
-
-  private final Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant;
-  private final Map<String, AgentInstanceServices> agentInstanceByTenant;
-  private final Map<String, AuditLogServices> auditLogByTenant;
-  private final Map<String, AuthorizationServices> authorizationByTenant;
-  private final Map<String, BatchOperationServices> batchOperationByTenant;
-  private final Map<String, ClockServices> clockByTenant;
-  private final Map<String, ClusterVariableServices> clusterVariableByTenant;
-  private final Map<String, ConditionalServices> conditionalByTenant;
-  private final Map<String, DecisionDefinitionServices> decisionDefinitionByTenant;
-  private final Map<String, DecisionInstanceServices> decisionInstanceByTenant;
-  private final Map<String, DecisionRequirementsServices> decisionRequirementsByTenant;
-  private final Map<String, DocumentServices> documentByTenant;
-  private final Map<String, ElementInstanceServices> elementInstanceByTenant;
-  private final Map<String, ExpressionServices> expressionByTenant;
-  private final Map<String, FormServices> formByTenant;
-  private final Map<String, GlobalListenerServices> globalListenerByTenant;
-  private final Map<String, GroupServices> groupByTenant;
-  private final Map<String, IncidentServices> incidentByTenant;
-  private final Map<String, JobServices<?>> jobByTenant;
-  private final Map<String, MappingRuleServices> mappingRuleByTenant;
-  private final Map<String, MessageServices> messageByTenant;
-  private final Map<String, MessageSubscriptionServices> messageSubscriptionByTenant;
-  private final Map<String, ProcessDefinitionServices> processDefinitionByTenant;
-  private final Map<String, ProcessInstanceServices> processInstanceByTenant;
-  private final Map<String, ResourceServices> resourceByTenant;
-  private final Map<String, RoleServices> roleByTenant;
-  private final Map<String, SignalServices> signalByTenant;
-  private final Map<String, TenantServices> tenantByTenant;
-  private final Map<String, UsageMetricsServices> usageMetricsByTenant;
-  private final Map<String, UserServices> userByTenant;
-  private final Map<String, UserTaskServices> userTaskByTenant;
-  private final Map<String, VariableServices> variableByTenant;
-
-  // both cluster wide and per physicalTenant
-  private final ManagementServices managementServices;
-  private final TopologyServices topologyServices;
-
-  public DefaultServiceRegistry(
-      final Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant,
-      final Map<String, AgentInstanceServices> agentInstanceByTenant,
-      final Map<String, AuditLogServices> auditLogByTenant,
-      final Map<String, AuthorizationServices> authorizationByTenant,
-      final Map<String, BatchOperationServices> batchOperationByTenant,
-      final Map<String, ClockServices> clockByTenant,
-      final Map<String, ClusterVariableServices> clusterVariableByTenant,
-      final Map<String, ConditionalServices> conditionalByTenant,
-      final Map<String, DecisionDefinitionServices> decisionDefinitionByTenant,
-      final Map<String, DecisionInstanceServices> decisionInstanceByTenant,
-      final Map<String, DecisionRequirementsServices> decisionRequirementsByTenant,
-      final Map<String, DocumentServices> documentByTenant,
-      final Map<String, ElementInstanceServices> elementInstanceByTenant,
-      final Map<String, ExpressionServices> expressionByTenant,
-      final Map<String, FormServices> formByTenant,
-      final Map<String, GlobalListenerServices> globalListenerByTenant,
-      final Map<String, GroupServices> groupByTenant,
-      final Map<String, IncidentServices> incidentByTenant,
-      final Map<String, JobServices<?>> jobByTenant,
-      final Map<String, MappingRuleServices> mappingRuleByTenant,
-      final Map<String, MessageServices> messageByTenant,
-      final Map<String, MessageSubscriptionServices> messageSubscriptionByTenant,
-      final Map<String, ProcessDefinitionServices> processDefinitionByTenant,
-      final Map<String, ProcessInstanceServices> processInstanceByTenant,
-      final Map<String, ResourceServices> resourceByTenant,
-      final Map<String, RoleServices> roleByTenant,
-      final Map<String, SignalServices> signalByTenant,
-      final Map<String, TenantServices> tenantByTenant,
-      final Map<String, UsageMetricsServices> usageMetricsByTenant,
-      final Map<String, UserServices> userByTenant,
-      final Map<String, UserTaskServices> userTaskByTenant,
-      final Map<String, VariableServices> variableByTenant,
-      final ManagementServices managementServices,
-      final TopologyServices topologyServices) {
-    this.adHocSubProcessActivityByTenant = adHocSubProcessActivityByTenant;
-    this.agentInstanceByTenant = agentInstanceByTenant;
-    this.auditLogByTenant = auditLogByTenant;
-    this.authorizationByTenant = authorizationByTenant;
-    this.batchOperationByTenant = batchOperationByTenant;
-    this.clockByTenant = clockByTenant;
-    this.clusterVariableByTenant = clusterVariableByTenant;
-    this.conditionalByTenant = conditionalByTenant;
-    this.decisionDefinitionByTenant = decisionDefinitionByTenant;
-    this.decisionInstanceByTenant = decisionInstanceByTenant;
-    this.decisionRequirementsByTenant = decisionRequirementsByTenant;
-    this.documentByTenant = documentByTenant;
-    this.elementInstanceByTenant = elementInstanceByTenant;
-    this.expressionByTenant = expressionByTenant;
-    this.formByTenant = formByTenant;
-    this.globalListenerByTenant = globalListenerByTenant;
-    this.groupByTenant = groupByTenant;
-    this.incidentByTenant = incidentByTenant;
-    this.jobByTenant = jobByTenant;
-    this.mappingRuleByTenant = mappingRuleByTenant;
-    this.messageByTenant = messageByTenant;
-    this.messageSubscriptionByTenant = messageSubscriptionByTenant;
-    this.processDefinitionByTenant = processDefinitionByTenant;
-    this.processInstanceByTenant = processInstanceByTenant;
-    this.resourceByTenant = resourceByTenant;
-    this.roleByTenant = roleByTenant;
-    this.signalByTenant = signalByTenant;
-    this.tenantByTenant = tenantByTenant;
-    this.usageMetricsByTenant = usageMetricsByTenant;
-    this.userByTenant = userByTenant;
-    this.userTaskByTenant = userTaskByTenant;
-    this.variableByTenant = variableByTenant;
-    this.managementServices = managementServices;
-    this.topologyServices = topologyServices;
-  }
+public record DefaultServiceRegistry(
+    Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant,
+    Map<String, AgentInstanceServices> agentInstanceByTenant,
+    Map<String, AuditLogServices> auditLogByTenant,
+    Map<String, AuthorizationServices> authorizationByTenant,
+    Map<String, BatchOperationServices> batchOperationByTenant,
+    Map<String, ClockServices> clockByTenant,
+    Map<String, ClusterVariableServices> clusterVariableByTenant,
+    Map<String, ConditionalServices> conditionalByTenant,
+    Map<String, DecisionDefinitionServices> decisionDefinitionByTenant,
+    Map<String, DecisionInstanceServices> decisionInstanceByTenant,
+    Map<String, DecisionRequirementsServices> decisionRequirementsByTenant,
+    Map<String, DocumentServices> documentByTenant,
+    Map<String, ElementInstanceServices> elementInstanceByTenant,
+    Map<String, ExpressionServices> expressionByTenant,
+    Map<String, FormServices> formByTenant,
+    Map<String, GlobalListenerServices> globalListenerByTenant,
+    Map<String, GroupServices> groupByTenant,
+    Map<String, IncidentServices> incidentByTenant,
+    Map<String, JobServices<?>> jobByTenant,
+    Map<String, MappingRuleServices> mappingRuleByTenant,
+    Map<String, MessageServices> messageByTenant,
+    Map<String, MessageSubscriptionServices> messageSubscriptionByTenant,
+    Map<String, ProcessDefinitionServices> processDefinitionByTenant,
+    Map<String, ProcessInstanceServices> processInstanceByTenant,
+    Map<String, ResourceServices> resourceByTenant,
+    Map<String, RoleServices> roleByTenant,
+    Map<String, SignalServices> signalByTenant,
+    Map<String, TenantServices> tenantByTenant,
+    Map<String, TopologyServices> topologyByTenant,
+    Map<String, UsageMetricsServices> usageMetricsByTenant,
+    Map<String, UserServices> userByTenant,
+    Map<String, UserTaskServices> userTaskByTenant,
+    Map<String, VariableServices> variableByTenant,
+    ManagementServices managementServices)
+    implements ServiceRegistry {
 
   private static <S> S byTenant(final Map<String, S> byTenant, final String physicalTenantId) {
     final S service = byTenant.get(physicalTenantId);
@@ -308,6 +235,11 @@ public final class DefaultServiceRegistry implements ServiceRegistry {
   }
 
   @Override
+  public TopologyServices topologyServices(final String physicalTenantId) {
+    return byTenant(topologyByTenant, physicalTenantId);
+  }
+
+  @Override
   public UsageMetricsServices usageMetricsServices(final String physicalTenantId) {
     return byTenant(usageMetricsByTenant, physicalTenantId);
   }
@@ -330,10 +262,5 @@ public final class DefaultServiceRegistry implements ServiceRegistry {
   @Override
   public ManagementServices managementServices() {
     return managementServices;
-  }
-
-  @Override
-  public TopologyServices topologyServices() {
-    return topologyServices;
   }
 }

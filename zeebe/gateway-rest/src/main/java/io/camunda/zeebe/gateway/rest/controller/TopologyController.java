@@ -11,6 +11,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -29,9 +30,10 @@ public final class TopologyController {
   }
 
   @CamundaGetMapping(path = "/topology")
-  public CompletableFuture<ResponseEntity<Object>> getTopology() {
+  public CompletableFuture<ResponseEntity<Object>> getTopology(
+      @PhysicalTenantId final String physicalTenantId) {
     return RequestExecutor.executeServiceMethod(
-        registry.topologyServices()::getTopology,
+        registry.topologyServices(physicalTenantId)::getTopology,
         ResponseMapper::toTopologyResponse,
         HttpStatus.OK);
   }

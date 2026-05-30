@@ -111,6 +111,8 @@ public interface ServiceRegistry {
 
   TenantServices tenantServices(String physicalTenantId);
 
+  TopologyServices topologyServices(String physicalTenantId);
+
   UsageMetricsServices usageMetricsServices(String physicalTenantId);
 
   UserServices userServices(String physicalTenantId);
@@ -122,6 +124,4 @@ public interface ServiceRegistry {
   // -- cluster-wide --
 
   ManagementServices managementServices();
-
-  TopologyServices topologyServices();
 }

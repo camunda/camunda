@@ -37,7 +37,7 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
   @BeforeEach
   void setupServices() {
     when(serviceRegistry.processInstanceServices(any())).thenReturn(processInstanceServices);
-    when(serviceRegistry.topologyServices()).thenReturn(topologyServices);
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
     when(topologyServices.getTopology())

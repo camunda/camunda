@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
@@ -36,7 +38,7 @@ public class TopologyControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    Mockito.when(serviceRegistry.topologyServices()).thenReturn(topologyServices);
+    Mockito.when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
   }
 
   @ParameterizedTest
