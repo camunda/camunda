@@ -76,7 +76,7 @@ public class AgentInstanceRequestValidator {
         () -> {
           final List<String> violations = new ArrayList<>();
 
-          validateKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
+          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
 
           if (request.getElementInstanceKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
