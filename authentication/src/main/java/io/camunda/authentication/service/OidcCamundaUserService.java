@@ -18,7 +18,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
-import io.camunda.service.TenantServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import jakarta.json.Json;
 import jakarta.json.JsonString;
@@ -51,19 +51,19 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
-  private final TenantServices tenantServices;
+  private final ServiceRegistry serviceRegistry;
   private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final HttpServletRequest request;
 
   public OidcCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
-      final TenantServices tenantServices,
+      final ServiceRegistry serviceRegistry,
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final HttpServletRequest request) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
-    this.tenantServices = tenantServices;
+    this.serviceRegistry = serviceRegistry;
     this.authorizedClientRepository = authorizedClientRepository;
     this.request = request;
   }
@@ -187,7 +187,8 @@ public class OidcCamundaUserService implements CamundaUserService {
   }
 
   protected List<TenantEntity> getTenants(final List<String> tenantIds) {
-    return tenantServices
+    return serviceRegistry
+        .tenantServices("default") // TODO replace with contextual physicalTenantId
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
             CamundaAuthentication.anonymous())

@@ -9,7 +9,7 @@ package io.camunda.application.commons.identity;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import java.util.Optional;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,10 +18,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsService implements UserDetailsService {
 
-  private final UserServices userServices;
+  private final ServiceRegistry serviceRegistry;
 
-  public CamundaUserDetailsService(final UserServices userServices) {
-    this.userServices = userServices;
+  public CamundaUserDetailsService(final ServiceRegistry serviceRegistry) {
+    this.serviceRegistry = serviceRegistry;
   }
 
   @Override
@@ -35,7 +35,9 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   private UserEntity getUser(final String username) {
     try {
-      return userServices.getUser(username, CamundaAuthentication.anonymous());
+      return serviceRegistry
+          .userServices("default") // TODO use the contextual physicalTenantId
+          .getUser(username, CamundaAuthentication.anonymous());
     } catch (final Exception e) {
       throw new UsernameNotFoundException(username, e);
     }

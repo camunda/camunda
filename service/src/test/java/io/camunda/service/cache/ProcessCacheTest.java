@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache.Configuration;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -56,6 +57,9 @@ class ProcessCacheTest {
 
     configuration = ProcessCache.Configuration.getDefault();
     processDefinitionSearchClient = mock(ProcessDefinitionSearchClient.class);
+    when(processDefinitionSearchClient.withSecurityContext(
+            SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true)))))
+        .thenReturn(processDefinitionSearchClient);
     brokerTopologyManager = mock(BrokerTopologyManager.class);
     meterRegistry = new SimpleMeterRegistry();
     processCache =

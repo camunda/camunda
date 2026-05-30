@@ -20,10 +20,7 @@ import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.service.GroupServices;
-import io.camunda.service.MappingRuleServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -47,23 +44,13 @@ import org.springframework.stereotype.Service;
 public class DefaultMembershipService implements MembershipPort {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMembershipService.class);
 
-  private final MappingRuleServices mappingRuleServices;
-  private final TenantServices tenantServices;
-  private final RoleServices roleServices;
-  private final GroupServices groupServices;
+  private final ServiceRegistry serviceRegistry;
   private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
   public DefaultMembershipService(
-      final MappingRuleServices mappingRuleServices,
-      final TenantServices tenantServices,
-      final RoleServices roleServices,
-      final GroupServices groupServices,
-      final CamundaSecurityLibraryProperties cslProperties) {
-    this.mappingRuleServices = mappingRuleServices;
-    this.tenantServices = tenantServices;
-    this.roleServices = roleServices;
-    this.groupServices = groupServices;
+      final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties cslProperties) {
+    this.serviceRegistry = serviceRegistry;
     oidcGroupsExtractor =
         new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured = cslProperties.getAuthentication().getOidc().isGroupsClaimConfigured();
@@ -76,7 +63,8 @@ public class DefaultMembershipService implements MembershipPort {
       return List.of();
     }
     final var ids =
-        mappingRuleServices
+        serviceRegistry
+            .mappingRuleServices("default") // TODO replace with contextual physicalTenantId
             .getMatchingMappingRules(query.tokenClaims(), CamundaAuthentication.anonymous())
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
@@ -98,7 +86,8 @@ public class DefaultMembershipService implements MembershipPort {
     }
     final var owners = buildOwners(query);
     final var ids =
-        groupServices
+        serviceRegistry
+            .groupServices("default") // TODO replace with contextual physicalTenantId
             .getGroupsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(GroupEntity::groupId)
@@ -113,7 +102,8 @@ public class DefaultMembershipService implements MembershipPort {
       owners.put(GROUP, new HashSet<>(query.resolvedGroupIds()));
     }
     final var ids =
-        roleServices
+        serviceRegistry
+            .roleServices("default") // TODO replace with contextual physicalTenantId
             .getRolesByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
             .stream()
             .map(RoleEntity::roleId)
@@ -130,7 +120,8 @@ public class DefaultMembershipService implements MembershipPort {
     if (!query.resolvedRoleIds().isEmpty()) {
       owners.put(EntityType.ROLE, new HashSet<>(query.resolvedRoleIds()));
     }
-    return tenantServices
+    return serviceRegistry
+        .tenantServices("default") // TODO replace with contextual physicalTenantId
         .getTenantsByMemberTypeAndMemberIds(owners, CamundaAuthentication.anonymous())
         .stream()
         .map(TenantEntity::tenantId)

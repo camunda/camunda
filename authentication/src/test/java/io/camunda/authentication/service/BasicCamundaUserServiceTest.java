@@ -26,6 +26,7 @@ import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,9 +59,13 @@ public class BasicCamundaUserServiceTest {
     when(user.email()).thenReturn("foo@bar.com");
     when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
 
+    final var serviceRegistry = mock(ServiceRegistry.class);
+    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+    when(serviceRegistry.userServices(any())).thenReturn(userServices);
+
     basicCamundaUserService =
         new BasicCamundaUserService(
-            authenticationProvider, resourceAccessProvider, userServices, tenantServices);
+            authenticationProvider, resourceAccessProvider, serviceRegistry);
   }
 
   @Test

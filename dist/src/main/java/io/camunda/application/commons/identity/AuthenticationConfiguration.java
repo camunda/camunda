@@ -8,7 +8,7 @@
 package io.camunda.application.commons.identity;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +26,8 @@ public class AuthenticationConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(UserDetailsService.class)
-  public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
-    return new CamundaUserDetailsService(userServices);
+  public CamundaUserDetailsService camundaUserDetailsService(
+      final ServiceRegistry serviceRegistry) {
+    return new CamundaUserDetailsService(serviceRegistry);
   }
 }
