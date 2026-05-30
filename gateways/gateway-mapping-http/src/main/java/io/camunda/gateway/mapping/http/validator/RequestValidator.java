@@ -133,6 +133,30 @@ public final class RequestValidator {
   }
 
   /**
+   * Validates that a string-encoded key can be parsed as a valid Long and is positive (> 0).
+   *
+   * <p>Use this variant when the key is also used for partition routing (e.g. as an element
+   * instance key or agent instance key), because keys ≤ 0 always decode to non-existent partition
+   * IDs and would cause a misleading 503 UNAVAILABLE instead of a clear 400 INVALID_ARGUMENT.
+   *
+   * @param keyValue the string value to validate
+   * @param fieldName the name of the field for error messaging
+   * @param violations the list to add validation errors to
+   */
+  public static void validatePositiveKeyFormat(
+      final @Nullable String keyValue, final String fieldName, final List<String> violations) {
+    if (keyValue == null) {
+      return;
+    }
+    final var parsed = tryParseLong(keyValue);
+    if (parsed.isEmpty()) {
+      violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
+    } else if (parsed.get() < 1) {
+      violations.add(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(fieldName, keyValue, "> 0"));
+    }
+  }
+
+  /**
    * Validates that a {@code decisionEvaluationInstanceKey} matches the expected format produced by
    * the engine: {@code <decisionEvaluationKey>-<index>} where both parts are non-negative integers
    * (e.g. {@code "2251799813684367-1"}).
