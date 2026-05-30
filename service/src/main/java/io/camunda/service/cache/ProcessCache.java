@@ -10,7 +10,7 @@ package io.camunda.service.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -38,10 +38,10 @@ public class ProcessCache {
 
   public ProcessCache(
       final Configuration configuration,
-      final ProcessDefinitionServices processDefinitionServices,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
-    processDefinitionProvider = new ProcessDefinitionProvider(processDefinitionServices);
+    processDefinitionProvider = new ProcessDefinitionProvider(processDefinitionSearchClient);
 
     final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =

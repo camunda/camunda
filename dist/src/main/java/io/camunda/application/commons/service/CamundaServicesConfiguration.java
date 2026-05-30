@@ -141,14 +141,11 @@ public class CamundaServicesConfiguration {
     return Map.copyOf(out);
   }
 
+  // TODO use GatewayRestConfiguration per tenant once available
   @Bean
   public Map<String, ProcessCache> processCacheByTenant(
       final PhysicalTenantResolver resolver,
       final GatewayRestConfiguration configuration,
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final Map<String, ApiServicesExecutorProvider> executorByTenant,
-      final Map<String, BrokerRequestAuthorizationConverter> converterByTenant,
       final SearchClientsProxy searchClients,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
@@ -158,15 +155,6 @@ public class CamundaServicesConfiguration {
         .keySet()
         .forEach(
             id -> {
-              final var search = searchClients.withPhysicalTenant(id);
-              final var executor = executorByTenant.get(id);
-              final var converter = converterByTenant.get(id);
-              final var formSvc =
-                  new FormServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
-              final var processDefSvc =
-                  new ProcessDefinitionServices(
-                      brokerClient, securityContextProvider, search, formSvc, executor, converter);
               final var cacheConfiguration =
                   new ProcessCache.Configuration(
                       configuration.getProcessCache().getMaxSize(),
@@ -174,7 +162,10 @@ public class CamundaServicesConfiguration {
               out.put(
                   id,
                   new ProcessCache(
-                      cacheConfiguration, processDefSvc, brokerTopologyManager, meterRegistry));
+                      cacheConfiguration,
+                      searchClients.withPhysicalTenant(id),
+                      brokerTopologyManager,
+                      meterRegistry));
             });
     return Map.copyOf(out);
   }

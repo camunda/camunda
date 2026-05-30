@@ -9,32 +9,27 @@ package io.camunda.service.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
-import io.camunda.service.cache.ProcessDefinitionProvider.ProcessElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class ProcessDefinitionProviderTest {
 
   public static final String PROC_DEF_ID1 = "testProcess";
@@ -44,15 +39,9 @@ class ProcessDefinitionProviderTest {
   public static final String PROC_DEF_ID42 = "Process_18z2cdf";
   private static final Long PROC_DEF_KEY = 1L;
 
-  @InjectMocks ProcessDefinitionProvider processDefinitionProvider;
-
-  @Mock(lenient = true)
-  ProcessDefinitionServices processDefinitionServices;
-
-  @Mock(lenient = true)
-  ProcessDefinitionEntity processDefinition;
-
-  @Mock BiConsumer<Long, ProcessElement> mockConsumer;
+  private ProcessDefinitionProvider processDefinitionProvider;
+  private ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private ProcessDefinitionEntity processDefinition;
   private String bpmn1;
   private String bpmn2;
   private String bpmn3;
@@ -67,13 +56,23 @@ class ProcessDefinitionProviderTest {
 
   @BeforeEach
   void setupServices() throws Exception {
+    processDefinitionSearchClient = mock(ProcessDefinitionSearchClient.class);
+    processDefinition = mock(ProcessDefinitionEntity.class);
+    final var searchClient = mock(ProcessDefinitionSearchClient.class);
+    when(searchClient.withSecurityContext(
+            SecurityContext.of(b -> b.withAuthentication(CamundaAuthentication.anonymous()))))
+        .thenReturn(processDefinitionSearchClient);
+    processDefinitionProvider = new ProcessDefinitionProvider(searchClient);
+
     bpmn1 = loadBpmn("xmlUtil-test1.bpmn");
     bpmn2 = loadBpmn("xmlUtil-test2.bpmn");
     bpmn3 = loadBpmn("xmlUtil-test3.bpmn");
     bpmn4 = loadBpmn("xmlUtil-test4.bpmn");
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID1);
-    when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY), any())).thenReturn(processDefinition);
+    when(processDefinition.bpmnXml()).thenReturn(bpmn1);
+    when(processDefinitionSearchClient.getProcessDefinition(PROC_DEF_KEY))
+        .thenReturn(processDefinition);
   }
 
   private void verifyElementsBpmn1(final ProcessCacheData processCacheData) {
@@ -198,7 +197,8 @@ class ProcessDefinitionProviderTest {
         new ProcessDefinitionEntity(2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "");
     final var processDefinition3 =
         new ProcessDefinitionEntity(3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "");
-    when(processDefinitionServices.search(any(), any()))
+
+    when(processDefinitionSearchClient.searchProcessDefinitions(any()))
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
                 .items(List.of(processDefinition, processDefinition2, processDefinition3))
@@ -222,7 +222,7 @@ class ProcessDefinitionProviderTest {
     verifyElementsBpmn3(processData3);
 
     final var searchRequestCaptor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
-    verify(processDefinitionServices).search(searchRequestCaptor.capture(), any());
+    verify(processDefinitionSearchClient).searchProcessDefinitions(searchRequestCaptor.capture());
     final var actualQuery = searchRequestCaptor.getValue();
     assertThat(actualQuery.filter().processDefinitionKeys()).hasSize(3);
     assertThat(actualQuery.filter().processDefinitionKeys()).containsOnly(PROC_DEF_KEY, 2L, 3L);

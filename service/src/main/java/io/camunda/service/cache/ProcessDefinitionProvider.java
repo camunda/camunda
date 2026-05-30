@@ -7,10 +7,10 @@
  */
 package io.camunda.service.cache;
 
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -25,17 +25,19 @@ import org.slf4j.LoggerFactory;
 public class ProcessDefinitionProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionProvider.class);
-  private final ProcessDefinitionServices processDefinitionServices;
+  private final ProcessDefinitionSearchClient processDefinitionSearchClient;
 
-  public ProcessDefinitionProvider(final ProcessDefinitionServices processDefinitionServices) {
-    this.processDefinitionServices = processDefinitionServices;
+  public ProcessDefinitionProvider(
+      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+    this.processDefinitionSearchClient =
+        processDefinitionSearchClient.withSecurityContext(
+            SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true))));
   }
 
   public ProcessCacheData extractProcessData(final Long processDefinitionKey) {
     try {
       final var processDefinition =
-          processDefinitionServices.getByKey(
-              processDefinitionKey, CamundaAuthentication.anonymous());
+          processDefinitionSearchClient.getProcessDefinition(processDefinitionKey);
       return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
@@ -57,13 +59,12 @@ public class ProcessDefinitionProvider {
 
     try {
       final var searchResult =
-          processDefinitionServices.search(
+          processDefinitionSearchClient.searchProcessDefinitions(
               ProcessDefinitionQuery.of(
                   q ->
                       q.filter(f -> f.processDefinitionKeys(keysList))
                           .page(p -> p.size(keysList.size()))
-                          .resultConfig(c -> c.includeXml(true))),
-              CamundaAuthentication.anonymous());
+                          .resultConfig(c -> c.includeXml(true))));
 
       if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn(
