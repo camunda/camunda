@@ -113,6 +113,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Counter bulkOperations;
   private final Counter flushReasonBatchSize;
   private final Counter flushReasonBatchMemory;
+  private final Counter flushReasonDelay;
   private final Counter flushReasonScheduled;
   private final Timer flushDuration;
   private final Counter failedFlush;
@@ -307,6 +308,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description("Number of flushes due to batch memory limit being exceeded")
             .tag("reason", "memory")
             .register(meterRegistry);
+    flushReasonDelay =
+        Counter.builder(flushReasonName)
+            .description("Number of delay-based flushes")
+            .tag("reason", "delay")
+            .register(meterRegistry);
     flushReasonScheduled =
         Counter.builder(flushReasonName)
             .description("Number of scheduled/time-based flushes")
@@ -363,6 +369,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordFlushReasonScheduled() {
     flushReasonScheduled.increment();
+  }
+
+  public void recordFlushReasonDelay() {
+    flushReasonDelay.increment();
   }
 
   public CloseableSilently measureFlushDuration() {
