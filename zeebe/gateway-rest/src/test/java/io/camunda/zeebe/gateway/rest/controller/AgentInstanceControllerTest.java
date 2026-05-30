@@ -229,6 +229,34 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 + " Did you pass an entity id instead of an entity key?."),
         Arguments.of(
             named(
+                "zero elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": "0",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
+            "The value for elementInstanceKey is '0' but must be > 0."),
+        Arguments.of(
+            named(
+                "negative elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": "-1",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
+            "The value for elementInstanceKey is '-1' but must be > 0."),
+        Arguments.of(
+            named(
                 "missing definition",
                 """
                 {
