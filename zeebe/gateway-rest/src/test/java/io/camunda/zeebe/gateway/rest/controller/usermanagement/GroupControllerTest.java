@@ -63,7 +63,7 @@ public class GroupControllerTest {
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
-    public static final String FORBIDDEN_MESSAGE =
+    private static final String FORBIDDEN_MESSAGE =
         """
         {
           "type": "about:blank",

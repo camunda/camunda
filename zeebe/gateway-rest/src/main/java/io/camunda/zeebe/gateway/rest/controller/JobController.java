@@ -105,7 +105,8 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return failJob(jobSvc(physicalTenantId), RequestMapper.toJobFailRequest(failureRequest, jobKey));
+    return failJob(
+        jobSvc(physicalTenantId), RequestMapper.toJobFailRequest(failureRequest, jobKey));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/error")
