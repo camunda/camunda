@@ -122,12 +122,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     final int agentLength = decoder.agentLength();
     if (agentLength > 0) {
-      agent = new AgentInfo();
+      final var agentInfo = new AgentInfo();
       final var agentBuffer = new UnsafeBuffer();
       decoder.wrapAgent(agentBuffer);
-      agent.wrap(agentBuffer);
+      agentInfo.wrap(agentBuffer);
+      // Only keep the agent if it has meaningful content
+      agent = agentInfo.isEmpty() ? null : agentInfo;
     } else {
       decoder.skipAgent();
+      agent = null;
     }
   }
 
